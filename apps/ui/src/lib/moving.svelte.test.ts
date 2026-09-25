@@ -80,3 +80,26 @@ test("an empty list filled after it was drawn, as the cache fills one on a reloa
   await next(false, ["one", "two", "three"]);
   expect(seen).toEqual([{ item: "three", still: false }]);
 });
+
+test("the first capture into a list the pool answered empty moves, as a drained queue's does", async () => {
+  const seen: Seen = [];
+  const shown = render(Moving, {
+    reading: false,
+    items: [],
+    answered: true,
+    seen,
+  });
+  await tick();
+  await tick();
+
+  await shown.rerender({
+    reading: false,
+    items: ["one"],
+    answered: true,
+    seen,
+  });
+  await tick();
+  await tick();
+
+  expect(seen).toEqual([{ item: "one", still: false }]);
+});

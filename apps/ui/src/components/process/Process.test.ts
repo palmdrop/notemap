@@ -410,6 +410,42 @@ test("takes a template, draws what it resolved to, and leaves it editable", asyn
   expect(directory.value).toBe("reading/2026");
 });
 
+/**
+ * The refusal lands on the destination's own line; the place section has
+ * nothing left to ask about and must not stand there asking.
+ */
+test("a template whose destination cannot describe itself leaves nothing applied, and asks nothing", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: {},
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "unusable",
+        detail: "nothing here speaks the kanban kind",
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+  await choose("research");
+
+  await screen.findByText(/nothing here speaks the kanban kind/);
+  await vi.waitFor(() =>
+    expect(document.querySelector("[data-asking]")).toBeNull(),
+  );
+});
+
 /** The capability choice is part of the form, so a taken template hides it too. */
 test("a template's summary hides the capability choice until edit", async () => {
   pool((request) => {
@@ -1856,7 +1892,7 @@ test("walks only what is drawn", async () => {
 
 /**
  * The ask still goes out; what the cache buys is that the wait is filled with
- * the answer from last time rather than with `loading…`.
+ * the answer from last time rather than with the asking mark.
  */
 test("draws what it was told last time while it asks again", async () => {
   let held = (): void => {};
@@ -1892,7 +1928,8 @@ test("draws what it was told last time while it asks again", async () => {
   await choose(/Vault/);
 
   expect(await screen.findByText("inbox")).toBeDefined();
-  expect(screen.queryByText("loading…")).toBeNull();
+  const list = screen.getByRole("listbox", { name: "directory candidates" });
+  expect(list.querySelector("[data-asking]")).toBeNull();
   held();
 });
 
@@ -3421,7 +3458,6 @@ test("a browse being asked stands the mark where its entries will be", async () 
     expect(asked().some((route) => route.endsWith("/candidates"))).toBe(true);
   });
   expect(list.querySelector("[data-asking]")).not.toBeNull();
-  expect(screen.queryByText("loading…")).toBeNull();
 
   answer(
     json(200, {

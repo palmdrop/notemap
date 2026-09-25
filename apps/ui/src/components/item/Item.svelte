@@ -31,6 +31,7 @@
     NO_SUCH_ITEM,
     NO_SUCH_RECORD,
   } from "$lib/said";
+  import { undrainedSince } from "$lib/undrained-since";
 
   /**
    * The item as a register: the capture is the first row, then a rule, then
@@ -124,7 +125,7 @@
       {/if}
 
       {#if undrained.has(item.id)}
-        <Pending />
+        <Pending since={undrainedSince(item.id)} />
       {/if}
 
       <!-- An item view is where a person looks to find out what happened, so

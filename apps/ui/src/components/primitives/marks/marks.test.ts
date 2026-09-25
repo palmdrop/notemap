@@ -27,17 +27,10 @@ test("lays the day over the time below the breakpoint", () => {
   expect(written?.className).toContain("max-narrow:flex-col");
   const [day, between, time] = [...(written?.children ?? [])];
   expect(day?.tagName).toBe("TIME");
-  expect(between?.className).toContain("max-narrow:hidden");
+  // The space between is a thing of its own, for no reader to read.
+  expect(between?.getAttribute("aria-hidden")).toBe("true");
+  expect(between?.textContent).toBe("");
   expect(time?.textContent).toBe("11:14");
-});
-
-test("holds the space between day and time at the ordinary weight", () => {
-  const at = new Date(2026, 8, 2, 11, 14).toISOString();
-  const { container } = render(Stamp, { at, inline: true });
-
-  const between = container.querySelector("[aria-hidden]");
-  expect(between?.className).toContain("font-normal");
-  expect(between?.className).not.toContain("max-narrow:hidden");
 });
 
 test("says what became of an item, in one word", () => {
@@ -53,14 +46,12 @@ describe("the asking mark", () => {
     render(Asking);
     const mark = screen.getByRole("status", { hidden: true });
     expect(mark.dataset["asking"]).toBe("hidden");
-    expect(mark.className).toContain("invisible");
 
     await vi.advanceTimersByTimeAsync(SHOWN_AFTER - 1);
     expect(mark.dataset["asking"]).toBe("hidden");
 
     await vi.advanceTimersByTimeAsync(1);
     expect(mark.dataset["asking"]).toBe("shown");
-    expect(mark.className).not.toContain("invisible");
   });
 
   test("says no word on screen, only to a reader that cannot see it", async () => {
@@ -93,13 +84,19 @@ describe("the pending mark", () => {
   afterEach(() => vi.useRealTimers());
 
   test("is not drawn for work that drains before the asking mark would show", async () => {
-    render(Pending);
+    render(Pending, { since: Date.now() });
     expect(screen.queryByText("pending")).toBeNull();
 
     await vi.advanceTimersByTimeAsync(SHOWN_AFTER - 1);
     expect(screen.queryByText("pending")).toBeNull();
 
     await vi.advanceTimersByTimeAsync(1);
+    expect(screen.getByText("pending")).toBeDefined();
+  });
+
+  /** Drawn again on every visit, it would grow its row a line each time. */
+  test("is drawn at once for work that has already waited that long", () => {
+    render(Pending, { since: Date.now() - SHOWN_AFTER });
     expect(screen.getByText("pending")).toBeDefined();
   });
 });

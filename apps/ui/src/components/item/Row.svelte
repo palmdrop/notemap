@@ -13,8 +13,9 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
-  import { fade, growing, slide } from "$lib/motion";
+  import { fade, following, slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
+  import { undrainedSince } from "$lib/undrained-since";
 
   /**
    * One row, on either register. The queue's says nothing about what became
@@ -91,60 +92,66 @@
 </script>
 
 <!-- One element on the register's own tracks, so the row has a height of its
-     own and the columns stay in register with every other row. -->
+     own and the columns stay in register with every other row: the outer box
+     is what moves, the inner what its height follows. -->
 <div
   class="col-span-full grid grid-cols-subgrid"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
-  {@attach growing}
+  {@attach following}
 >
-  <Rail bind:this={rail} {selected} onpick={onselect} onreach={onprocess}>
-    <Stamp at={item.createdAt} opened={selected} onopen={onselect} />
+  <div class="col-span-full grid grid-cols-subgrid">
+    <Rail bind:this={rail} {selected} onpick={onselect} onreach={onprocess}>
+      <Stamp at={item.createdAt} opened={selected} onopen={onselect} />
 
-    {#if word !== undefined}
-      <StateWord {word} />
-    {/if}
+      {#if word !== undefined}
+        <StateWord {word} />
+      {/if}
 
-    {#if pending}
-      <Pending />
-    {/if}
+      {#if pending}
+        <Pending since={undrainedSince(item.id)} />
+      {/if}
 
-    <div class="mt-0.5">
-      <Tags bind:this={tags} {item} addable={selected} />
-    </div>
+      <div class="mt-0.5">
+        <Tags bind:this={tags} {item} addable={selected} />
+      </div>
 
-    {#if finished}
-      <Routing
-        summary={item.routing}
-        records={records.all}
-        onundone={() => records.reread()}
-      />
-    {/if}
+      {#if finished}
+        <Routing
+          summary={item.routing}
+          records={records.all}
+          onundone={() => records.reread()}
+        />
+      {/if}
 
-    {#if records.refused !== ""}
-      <div role="status" class="mt-2 text-alarm">{records.refused}</div>
-    {/if}
-  </Rail>
+      {#if records.refused !== ""}
+        <div role="status" class="mt-2 text-alarm">{records.refused}</div>
+      {/if}
+    </Rail>
 
-  <Body {selected} onpick={onselect} onreach={onprocess}>
-    {#if editing && mayEdit}
-      <Edit {item} ondone={() => (editing = false)} />
+    <Body {selected} onpick={onselect} onreach={onprocess}>
+      {#if editing && mayEdit}
+        <Edit {item} ondone={() => (editing = false)} />
+      {:else}
+        <Payload {item} />
+      {/if}
+    </Body>
+
+    <!-- The box's foot, spanning both columns and closing the rail's rule. Every
+         row reserves this height, selected or not, so selecting a row shifts
+         nothing above or below it; unselected, the rail's rule runs through it. -->
+    {#if selected}
+      <div
+        class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+        transition:fade
+      >
+        <Actions {commands} />
+      </div>
     {:else}
-      <Payload {item} />
+      <div
+        class="col-start-1 row-start-2 h-9 border-r border-ink"
+        transition:fade
+      ></div>
+      <div class="col-start-2 row-start-2 h-9"></div>
     {/if}
-  </Body>
-
-  <!-- The box's foot, spanning both columns and closing the rail's rule. Every
-       row reserves this height, selected or not, so selecting a row shifts
-       nothing above or below it; unselected, the rail's rule runs through it. -->
-  {#if selected}
-    <div
-      class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
-      transition:fade
-    >
-      <Actions {commands} />
-    </div>
-  {:else}
-    <div class="col-start-1 row-start-2 h-9 border-r border-ink"></div>
-    <div class="col-start-2 row-start-2 h-9"></div>
-  {/if}
+  </div>
 </div>

@@ -9,6 +9,7 @@
   import { log } from "$lib/log.svelte";
   import { session } from "$lib/session.svelte";
   import { slide } from "$lib/motion";
+  import { forgetOutputs } from "$lib/outputs";
 
   const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
@@ -29,8 +30,10 @@
     } finally {
       signingOut = false;
       // Dropped either way, on the same terms as the client's own cache: the
-      // log is the pool's and this shell is the only thing holding it.
+      // log and what its deliveries sent are the pool's, and this shell is
+      // the only thing holding them.
       log.forget();
+      forgetOutputs();
     }
   }
 

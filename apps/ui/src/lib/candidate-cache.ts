@@ -8,7 +8,7 @@ type Answered = Extract<DestinationCandidates, { kind: "answered" }>;
  * page so that opening the composer a second time draws what it drew the first
  * time **while** it asks again. Asking is a round trip to somebody else's
  * server — an are.na account's channels, a vault over WebDAV — and staring at
- * `loading…` for an answer that has not changed since a minute ago is the
+ * the asking mark for an answer that has not changed since a minute ago is the
  * whole of what this avoids.
  *
  * Never a substitute for asking: what is held is drawn *and* the ask goes out,

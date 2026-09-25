@@ -119,7 +119,7 @@
     at = draft.trim() === "" ? undefined : 0;
   });
 
-  let panel = $state<HTMLElement | undefined>(undefined);
+  let panel = $state<HTMLElement | null>(null);
   let tall: number | undefined;
 
   // The offer narrows at typing speed; each change turns the panel toward its
@@ -131,7 +131,7 @@
 
   $effect(() => {
     void rows;
-    if (panel !== undefined && tall !== undefined) grow(panel, tall);
+    if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
   const active = $derived(
@@ -224,10 +224,8 @@
       </span>
     {:else}
       <span
-        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 transition-[outline-color] duration-(--duration-short) ease-fade {chosen ===
-        name
-          ? 'outline-ink'
-          : 'outline-transparent'}"
+        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 outline-transparent transition-[outline-color] duration-(--duration-short) ease-fade data-chosen:outline-ink"
+        data-chosen={chosen === name ? "" : undefined}
       >
         <button
           type="button"

@@ -9,7 +9,6 @@ import {
   fade,
   following,
   grow,
-  growing,
   revealed,
   rise,
   slide,
@@ -73,7 +72,9 @@ test("a fade eases evenly, and what travels decelerates", () => {
 test("a sliding fade ends on the opacity it asked for", () => {
   root.style.setProperty("--duration-long", "220ms");
   const css = slide(document.createElement("div"), { fade: true }).css;
-  expect(css?.(0.5, 0.5)).toMatch(/min-height: 0;opacity: 0\.5$/);
+  expect(
+    Number(/opacity:\s*([\d.]+)\s*$/.exec(css?.(0.5, 0.5) ?? "")?.[1]),
+  ).toBe(0.5);
 });
 
 describe("bezier", () => {
@@ -120,19 +121,22 @@ describe("grow", () => {
     const node = document.createElement("div");
     Object.defineProperty(node, "offsetHeight", { value: height });
     const animate = vi.fn();
-    const running = { cancel: vi.fn() };
-    const getAnimations = vi.fn(() => [running]);
+    const running = { id: "growing", cancel: vi.fn() };
+    const sliding = { id: "", cancel: vi.fn() };
+    const getAnimations = vi.fn(() => [running, sliding]);
     Object.assign(node, { animate, getAnimations });
-    return { node, animate, running };
+    return { node, animate, running, sliding };
   }
 
   test("turns a box already growing toward the new height from where it stands", () => {
     root.style.setProperty("--duration-short", "150ms");
-    const { node, animate, running } = box(200);
+    const { node, animate, running, sliding } = box(200);
 
     grow(node, 120);
 
     expect(running.cancel).toHaveBeenCalled();
+    // A row slides in on the same box it grows on; that is the list's, not this.
+    expect(sliding.cancel).not.toHaveBeenCalled();
     const [frames] = animate.mock.calls[0] as [{ height: string }[]];
     expect(frames.map((frame) => frame.height)).toEqual(["120px", "200px"]);
   });
@@ -200,8 +204,10 @@ test("widening caps the width at the share of it the moment has reached", () => 
   const opening = widen(node);
 
   expect(opening.duration).toBe(150);
-  expect(opening.css?.(0.5, 0.5)).toContain("max-width: 100px");
-  expect(opening.css?.(0, 1)).toContain("min-width: 0");
+  const cap = (css: string | undefined) =>
+    Number(/max-width:\s*([\d.]+)px/.exec(css ?? "")?.[1]);
+  expect(cap(opening.css?.(0.5, 0.5))).toBe(100);
+  expect(cap(opening.css?.(1, 0))).toBe(200);
 });
 
 describe("revealed", () => {
@@ -217,84 +223,6 @@ describe("revealed", () => {
     expect(coming.dataset["loaded"]).toBeUndefined();
     coming.dispatchEvent(new Event("load"));
     expect(coming.dataset["loaded"]).toBe("");
-  });
-});
-
-describe("growing", () => {
-  let told: (() => void) | undefined;
-
-  function box() {
-    const node = document.createElement("div");
-    let size = { height: 100, width: 400 };
-    Object.defineProperty(node, "offsetHeight", { get: () => size.height });
-    Object.defineProperty(node, "offsetWidth", { get: () => size.width });
-    const animate = vi.fn();
-    let running: Animation[] = [];
-    Object.assign(node, { animate, getAnimations: () => running });
-    return {
-      node,
-      animate,
-      resize(next: Partial<typeof size>) {
-        size = { ...size, ...next };
-        told?.();
-      },
-      moving(yes: boolean) {
-        running = yes
-          ? [{ finished: new Promise(() => undefined) } as unknown as Animation]
-          : [];
-      },
-    };
-  }
-
-  beforeEach(() => {
-    root.style.setProperty("--duration-short", "150ms");
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        constructor(callback: () => void) {
-          told = callback;
-        }
-        observe() {
-          told?.();
-        }
-        disconnect() {
-          told = undefined;
-        }
-      },
-    );
-  });
-
-  afterEach(() => vi.unstubAllGlobals());
-
-  test("grows and shrinks from the height it had, and not on first sight", () => {
-    const { node, animate, resize } = box();
-    growing(node);
-    expect(animate).not.toHaveBeenCalled();
-
-    resize({ height: 160 });
-    resize({ height: 120 });
-
-    const froms = animate.mock.calls.map(
-      ([frames]) => (frames as { height: string }[])[0]?.height,
-    );
-    expect(froms).toEqual(["100px", "160px"]);
-  });
-
-  test("a change of width is the window's, and moves nothing", () => {
-    const { node, animate, resize } = box();
-    growing(node);
-
-    resize({ height: 140, width: 300 });
-    expect(animate).not.toHaveBeenCalled();
-  });
-
-  test("leaves a box that is already moving to finish", () => {
-    const { node, animate, resize, moving } = box();
-    growing(node);
-
-    moving(true);
-    resize({ height: 180 });
-    expect(animate).not.toHaveBeenCalled();
   });
 });
 

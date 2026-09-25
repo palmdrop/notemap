@@ -21,7 +21,8 @@ Out of scope: a view of everything in flight (the outbox), which stays its own i
 
 Settled in a grilling session on 2026-09-25. Two turned out otherwise in the building: an index
 line never opens, so there was no index row to slide; and the rule that keeps a read still watches
-`loading` changing either way, since a turned order starts by emptying the list.
+`loading` changing either way, since a turned order starts by emptying the list. More were
+reversed in use, in phases 7 and 8; they are struck below, each with what replaced it.
 
 - **Asking** is the glossary's word for a request the shell holds no answer to yet — a read, a
   description, a preview, a route — and is never **pending**, which is the outbox's. Already in
@@ -46,19 +47,26 @@ line never opens, so there was no index row to slide; and the rule that keeps a 
   - **Lists** (queue, feed, log): a row slides and fades in or out over `long`. **What a read
     brought never moves** — a page, a re-read, a turn of order, the pool's first answer over the
     cache. The shell infers it: the update in which a list's `loading` changes is a read's
-    start or landing, and every other change is a change. A decided row leaves when the selection lets it
+    start or landing, and every other change is a change. ~~The log follows the same rule on its
+    own `loading`.~~ *(Phase 8: the log is told instead — a row the watcher brought moves, and a
+    reading the person turned to fades out and in.)* A decided row leaves when the selection lets it
     go, as the spec already holds it.
   - **The corner**: a notice fades in rising from below, fades out, and the rest close over
     `long`.
   - **Disclosure** — a process section, a settings row, `more` on a clamp or a preview: height slides over `short`, no fade. The selected row's box and foot **fade only**,
-    since selecting shifts nothing and a slide would bring the shift back.
+    since selecting shifts nothing and a slide would bring the shift back. *(Phase 8: the capture
+    box's picture is not a disclosure — it comes as a row does, sliding and fading over `long`, at
+    the developer's asking.)*
   - **The process advance**: the next item fades up over `long`; the one decided goes at once.
-  - **Overlays** — the order chooser, the tag chooser, the path and candidate lists — do not move.
+  - **Overlays** — the order chooser, ~~the tag chooser,~~ the path and candidate lists — do not
+    move. *(Phase 8: the tag chooser's line widens and its panel unrolls and follows its
+    narrowing, short and never holding a key back.)*
 - **A row is one element**: a `col-span-full` subgrid wrapper per item in the register, so a row
   has a height to slide and the columns stay in register.
 - **Durations are tokens named by magnitude**: `--duration-short` (~150ms), `--duration-long`
-  (~220ms), `--duration-step` (~300ms, the mark's loop), one `--ease-motion`, Tailwind's easings
-  cleared. All zeroed under `prefers-reduced-motion` in `tokens.css`. This is the one exception to
+  (~220ms), `--duration-step` (~300ms, the mark's loop), ~~one `--ease-motion`~~ `--ease-motion`
+  for what travels and `--ease-fade` for what changes in place *(phase 8: a fade on the first read
+  as a snap)*, Tailwind's easings cleared. All zeroed under `prefers-reduced-motion` in `tokens.css`. This is the one exception to
   naming by role, and *Tokens and themes* says so.
 - **No ADR.** Nothing here is hard to reverse, and the one reversal weighed — a grey — was declined.
 
@@ -95,6 +103,8 @@ Depends on phase 1 (`--duration-step`).
       stacked cell `More` uses; `More` moves onto it. _(2026-09-25)_
 - [x] Every busy button onto it: capture, edit's `save` and `attach`, sign in, the settings forms,
       `check again` on a destination, a template and the server, the pool settings' options. _(2026-09-25)_
+      *`check again` is the exception as built: it is only disabled while it asks, and the mark
+      stands in the status fact it will rewrite — the line whose answer is awaited.*
 - [x] shell.md: *Reachable, pending, refused* gains asking — how it is drawn, and that it is never
       pending's mark; *Draining*'s `loading…` becomes the mark. _(2026-09-25)_
 - [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
@@ -229,6 +239,15 @@ Asked for after phase 7, as the developer finds them.
 - [x] `ease-fade` for what changes in place, measured in a browser: the selected row's box faded
       in on `ease-motion` at 73% by its third frame, and its foot left at once. It now fades both
       ways, in step. _(2026-09-25)_
+- [x] Review findings (docs/reviews/loading-and-motion-2026-09-25.md), all taken: a template whose
+      destination cannot describe itself no longer leaves the place asking; a row follows its
+      height the way a form does, turned mid-way rather than snapping, and `growing` is gone; the
+      log is told which reading the person chose, so the watcher's re-read stands still and
+      entering holds nothing stale; a pending mark keys on how long its work has waited; sign-out
+      forgets what deliveries sent; the first capture into a queue answered empty slides; the
+      selected row's foot fades with the rule it covers; Destinations' `+ add` behaves as its
+      siblings; tests assert states rather than classes, and the duration gate no longer reads a
+      `transition:` directive as a duration. _(2026-09-25)_
 
 ---
 

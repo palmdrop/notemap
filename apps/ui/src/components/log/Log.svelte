@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import type { Action } from "@notemap/client";
 
@@ -26,11 +26,17 @@
    * What is drawn. A reading turned to another holds the last one while it
    * fades out, rather than emptying for the frame a quick answer takes; the
    * answer then fades in. One slower than the fade finds the log emptied and
-   * asking, as a read always did.
+   * asking, as a read always did. Rows held from before this surface was drawn
+   * are not held: they belong to a reading nobody is looking at.
    */
   let drawn = $state.raw<readonly Action[]>(untrack(() => log.rows));
   let dim = $state(false);
   let fading: ReturnType<typeof setTimeout> | undefined;
+  let entered = false;
+
+  onMount(() => {
+    void tick().then(() => (entered = true));
+  });
 
   $effect(() => {
     const now = log.rows;
@@ -39,6 +45,10 @@
       if (fading !== undefined) return;
       if (!turning) {
         drawn = now;
+        return;
+      }
+      if (!entered) {
+        drawn = [];
         return;
       }
       if (drawn.length === 0) return;

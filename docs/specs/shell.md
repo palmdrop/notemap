@@ -10,11 +10,19 @@
   nothing on the page moves to say it is waiting. Rows slide into and out of the queue, the feed and
   the log, except for what a read brought; a notice rises into the corner; a section, a settings row
   and `more` open by sliding; the selected row's box fades; the process surface's next item fades
-  up. Durations are three tokens, zero under `prefers-reduced-motion`. And the jumps a working
-  session found are gone: a row keeps its tag line, so selecting it and opening the tag line move
-  nothing; the page keeps its scrollbar's gutter and its face from the first paint; a reload draws
-  its rows where they stand; the log reads what a record sent once a page; an unfurl keeps its
-  picture's room and fades the picture in. See [loading-and-motion](../plans/loading-and-motion.md).
+  up. Durations are three tokens, zero under `prefers-reduced-motion`, with an easing for what
+  travels and an even one for what fades. And the jumps a working session found are gone: a row
+  keeps its tag line, so selecting it and opening the tag line move nothing; the page keeps its
+  scrollbar's gutter and its face from the first paint; a reload draws its rows where they stand;
+  the log reads what a record sent once a page; an unfurl keeps its picture's room and fades the
+  picture in; a row, a section of the process surface and a settings form grow into whatever they
+  come to hold. Every surface and the bar share one 72rem measure, a paragraph keeping its 38rem, so
+  nothing in the bar moves on the way to the process surface. The capture box rules its picture
+  off above the words; a selected tag is ruled round, its `×` inside; tags slide in and out, and
+  the tag chooser opens and follows its narrowing without holding a key back. A bold word — the
+  current surface, view, index line or log tab — holds its width, and a selection fades evenly
+  both ways. The log moves only what the watcher brings, and a view or order chosen fades the old
+  reading out and the new one in. See [loading-and-motion](../plans/loading-and-motion.md).
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
   landed `routed · research` no longer stand: a notice that offers something lingers long enough to
   reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
@@ -820,7 +828,8 @@ slow to answer — the description being the call that can hang.
 
 **After manual, discard or a template tag the surface advances to the next unprocessed item** in
 the queue's order, and returns to the queue when there is none. **The next item fades up** into
-the surface *(2026-09-25)*; the one decided goes at once, so the advance costs no wait on top of
+the surface *(2026-09-25)*, as it does on `← previous` and `next →`, which walk the surface in
+place rather than navigating away from it; the one decided goes at once, so the advance costs no wait on top of
 itself and two items are never on the surface together. That is what a queue worked from
 one end is; single-capture mode is not a separate feature. The queue is read a page at a time, so
 where the item was the last row held the next page is read before the queue is declared empty,
@@ -1460,6 +1469,8 @@ of them the same colour.)*
   so neither mark is drawn in the shape a refusal is. **A row's mark waits as long as the asking
   mark does** *(2026-09-25)*: work that drains within 250ms — a capture made while the pool
   answers — is never marked, since the line it takes would come and go and move the row twice.
+  The wait is the work's, not the row's: work that has already waited that long is marked at once
+  whenever its row is drawn again, rather than growing the row a line on every visit.
 - **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
@@ -1700,11 +1711,14 @@ Reaching the end is what the queue is for, so it is said once and quietly: no pa
 an order turned, the pool's first answer over what the cache drew, the cache filling an empty list
 as a page reloads — appear and go without moving,
 because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
-arrives or leaves between reads slides: a capture landing, an item heard about, a row let go, a row
-processed on another device. The same holds on the feed, the queue's index and the log. **A row
+arrives or leaves between reads slides: a capture landing — the first one into a queue the pool
+had answered empty included — an item heard about, a row let go, a row processed on another
+device. The same holds on the feed, the queue's index and the log. **A row
 that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
-rather than jumping, over the short duration; a change of width is the window's and moves nothing.
+rather than jumping, over the short duration, and a change that lands while it is still moving is
+turned toward from wherever it stands; a change of width is the window's and moves nothing. On the
+log only a heard row grows: what a read brought, and what it goes on to fill in, stands still.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view toggle, and acts on the list it heads; settings and an item have no end to
@@ -1902,7 +1916,8 @@ slides in at its head, as a capture does on the queue, and grows into what it go
 Everything a read brings — a view chosen, the order turned, a page, a re-read — stands still, and
 so does all it fills in afterwards, what was sent included: a view switched while every row
 settled its height at once read as motion about nothing. **A turned reading fades** — another
-view, the order, the subject: what was drawn fades out over `short` and is held while it does, and
+view, the order, the subject, a reading the person chose; the watcher's re-read and a retry stand
+still, and entering the log draws nothing held from a reading nobody was looking at: what was drawn fades out over `short` and is held while it does, and
 the answer fades in, so a quick answer is never a frame of empty log. One slower than the fade
 finds the log emptied and asking, as any read does.
 
@@ -2021,8 +2036,8 @@ opens in place, `duration-long` for what enters, leaves or moves across, `ease-m
 travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both ends,
 since a fade on `ease-motion` is most of the way there in its first frames and reads as a snap on
 the way in *(amended 2026-09-25; there was one easing)*, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
-far a thing moves rather than by what it is, which is why these alone are not roles. All three are
-zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
+far a thing moves rather than by what it is, which is why these alone are not roles. The durations
+are zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
 and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
 inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
 
@@ -2093,15 +2108,18 @@ indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
 slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
-settings row, `more` and the capture box's picture slide open and shut; an open section of the
+settings row and `more` slide open and shut over `short`; the capture box's picture comes and goes
+as a row does, sliding and fading over `long`, being a thing arriving rather than a disclosure; an
+open section of the
 process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
 described, the decision cleared by `route` — over `short`, turned from wherever it stands when a
 change lands mid-way, typing included; the process surface's next item fades up; a form in
 settings — adding or editing a template, a destination, an account, a token — and the server's
-sources slide open and shut, a `+ add` sliding shut as its form opens, and a form grows and
+sources slide open and shut, a `+ add` sliding shut as its form opens — or, where its line also
+holds the disabled destinations, fading out of it — and a form grows and
 shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
-row's box fades in and out whole, its foot with its edges, the one leaving and the one arriving
-in step. The current surface in the
+row's box fades in and out whole, its foot with its edges and the rail's rule it covers, the one
+leaving and the one arriving in step. The current surface in the
 bar, the current view and the selected index line **ease into bold and out of it** over `short`,
 each word holding its bold width throughout so nothing beside it moves. A surface is current
 anywhere under its own address — `settings` at a section's. No navigation moves: an item carried from its

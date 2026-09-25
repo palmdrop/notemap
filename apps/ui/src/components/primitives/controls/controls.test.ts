@@ -70,14 +70,16 @@ test("an action that has asked cannot be taken again, and keeps its label until 
       action.querySelector("[data-asking]")?.getAttribute("data-asking"),
     ).toBe("shown");
     // Both sit in one cell, so the button is as wide as the wider of them throughout.
-    expect(screen.getByText("save").className).toContain("invisible");
+    expect(screen.getByText("save").getAttribute("aria-hidden")).toBe("true");
 
     await rerender({ label: "save", working: false, onclick: taken });
     expect(action.querySelector("[data-asking]")).toBeNull();
     expect((action as HTMLButtonElement).disabled).toBe(false);
 
     await rerender({ label: "save", working: true, onclick: taken });
-    expect(screen.getByText("save").className).not.toContain("invisible");
+    expect(screen.getByText("save").getAttribute("aria-hidden")).not.toBe(
+      "true",
+    );
   } finally {
     vi.useRealTimers();
   }
@@ -358,12 +360,12 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
   // Selected is ruled round, the × inside the rule, so the × has a word it
   // visibly belongs to.
   const remove = screen.getByRole("button", { name: "remove notemap" });
-  expect(word.parentElement!.classList.contains("outline-ink")).toBe(true);
+  expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
   expect(word.parentElement!.contains(remove)).toBe(true);
   expect(
     screen
       .getByRole("button", { name: "design" })
-      .parentElement!.classList.contains("outline-ink"),
+      .parentElement!.hasAttribute("data-chosen"),
   ).toBe(false);
 
   await fireEvent.click(remove);
@@ -465,7 +467,30 @@ test("a tag set that cannot be added to still holds the +'s place, unreachable",
   const held = [...container.querySelectorAll("button")].find(
     (button) => button.textContent?.trim() === "+",
   );
-  expect(held?.className).toContain("invisible");
+  expect(held?.getAttribute("aria-hidden")).toBe("true");
   expect(held?.getAttribute("tabindex")).toBe("-1");
   expect((held as HTMLButtonElement).disabled).toBe(true);
+});
+
+/** The offer narrows at typing speed; its panel turns toward each new height from where it stands. */
+test("the offer's panel grows and shrinks with the narrowing, from the height it stood at", async () => {
+  tagSet({ offered: ["reading", "research", "design"] });
+  const line = await opened();
+  const list = screen.getByRole("listbox", { name: "Tags in use" });
+
+  const tall = () => list.querySelectorAll("[role='option']").length * 20;
+  Object.defineProperty(list, "offsetHeight", { get: tall });
+  list.getBoundingClientRect = () => ({ height: tall() }) as DOMRect;
+  const animate = vi.fn();
+  Object.assign(list, { animate, getAnimations: () => [] });
+  document.documentElement.style.setProperty("--duration-short", "150ms");
+
+  try {
+    await typed(line, "rea");
+
+    const [frames] = animate.mock.calls.at(-1) as [{ height: string }[]];
+    expect(frames.map((frame) => frame.height)).toEqual(["60px", "40px"]);
+  } finally {
+    document.documentElement.style.removeProperty("--duration-short");
+  }
 });

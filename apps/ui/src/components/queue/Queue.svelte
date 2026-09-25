@@ -59,6 +59,7 @@
   const motion = moving(
     () => $queue.loading,
     () => $queue.items.length,
+    () => !$queue.loading && !$queue.fromCache && $queue.failure === undefined,
   );
 
   const drained = $derived(

@@ -35,7 +35,7 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
   {
     what: "a duration, delay or easing of its own",
     found:
-      /\b(?:duration|delay)-(?:\d|\[)|\b(?:ease|animate)-(?:in|out|linear|spin|ping|pulse|bounce|\[)|\b(?:duration|delay):\s*\d|(?:transition|animation)(?:-duration|-delay|-timing-function)?\s*:(?![^;]*var\()[^;{]*\d/,
+      /\b(?:duration|delay)-(?:\d|\[)|\b(?:ease|animate)-(?:in|out|linear|spin|ping|pulse|bounce|\[)|\b(?:duration|delay):\s*\d|(?:transition|animation)(?:-duration|-delay|-timing-function)?\s*:(?![^;]*var\()[^;{]*(?:\d(?:ms|s)\b|cubic-bezier\(|steps\()/,
   },
   // Roles the shell used to have. One face at one size, and no muted ink,
   // no green and no accent — each of these is a name for something retired.
@@ -93,4 +93,39 @@ test.each(FORBIDDEN)("no file in the shell names $what", ({ found }) => {
     found.test(readFileSync(join(src, file), "utf8")),
   );
   expect(named).toEqual([]);
+});
+
+/**
+ * A Svelte `transition:` directive is not a CSS declaration, and a digit
+ * somewhere after one is not a duration of its own.
+ */
+test("the duration gate knows a declaration from a directive", () => {
+  const gate = FORBIDDEN.find((one) => one.what.startsWith("a duration"));
+  const named = (text: string) => gate?.found.test(text);
+
+  expect(named("transition: opacity 150ms ease")).toBe(true);
+  expect(named("animation-duration: 0.2s")).toBe(true);
+  expect(named("transition-timing-function: cubic-bezier(0, 0, 1, 1)")).toBe(
+    true,
+  );
+  expect(named("transition: opacity var(--duration-short)")).toBe(false);
+  expect(named('transition:fade\n></div>\n<div class="row-start-2 h-9">')).toBe(
+    false,
+  );
+});
+
+/**
+ * The face is preloaded by the page and declared by the stylesheet; a preload
+ * of a file the stylesheet no longer names is a download for nothing, and the
+ * face then swaps in late.
+ */
+test("the page preloads the face the stylesheet declares", () => {
+  const page = readFileSync(join(src, "app.html"), "utf8");
+  const sheet = readFileSync(join(src, "styles", "tokens.css"), "utf8");
+
+  const preloaded = /rel="preload"[^>]*?href="([^"]+\.woff2)"/s.exec(page)?.[1];
+  const declared = /@font-face[^}]*url\("([^"]+)"\)/s.exec(sheet)?.[1];
+
+  expect(preloaded).toBeDefined();
+  expect(preloaded).toBe(declared);
 });

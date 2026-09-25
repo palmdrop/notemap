@@ -36,9 +36,7 @@ export function duration(magnitude: Magnitude): number {
   return found[2] === "s" ? value * 1000 : value;
 }
 
-export function easing(
-  curve: "motion" | "fade" = "motion",
-): (t: number) => number {
+function easing(curve: "motion" | "fade" = "motion"): (t: number) => number {
   return bezier(token(`--ease-${curve}`)) ?? ((t) => t);
 }
 
@@ -132,15 +130,21 @@ export function rise(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), y: RISE });
 }
 
+/** Names this module's own height animations, so turning one leaves a slide on the same box be. */
+const GROWING = "growing";
+
 /**
- * A box that has just changed height in place, grown from the height it had:
- * what a `more` opens, where there is no block coming or going to slide. One
- * already growing is turned toward the new height from wherever it stands.
+ * A box that has just changed height in place, grown from the height it had
+ * to the height it now has, where there is no block coming or going to slide:
+ * a `more` opened, and whatever `following` sees change. One already growing is
+ * turned toward the new height from wherever it stands.
  */
 export function grow(node: HTMLElement, from: number): void {
   const time = duration("short");
   if (time === 0 || typeof node.animate !== "function") return;
-  for (const moving of node.getAnimations()) moving.cancel();
+  for (const moving of node.getAnimations()) {
+    if (moving.id === GROWING) moving.cancel();
+  }
   const to = node.offsetHeight;
   if (to === from) return;
   node.animate(
@@ -148,7 +152,11 @@ export function grow(node: HTMLElement, from: number): void {
       { height: `${String(from)}px`, overflow: "hidden" },
       { height: `${String(to)}px`, overflow: "hidden" },
     ],
-    { duration: time, easing: token("--ease-motion") || "linear" },
+    {
+      id: GROWING,
+      duration: time,
+      easing: token("--ease-motion") || "linear",
+    },
   );
 }
 
@@ -167,11 +175,12 @@ export function revealed(node: HTMLImageElement): () => void {
 }
 
 /**
- * A box whose height follows its one child: each change to the child's height
- * grows or shrinks the box into it, turned from wherever the box stands if the
- * change lands mid-way. The child is what is measured and the box what moves,
- * so a change mid-way is never mistaken for the box's own motion. A change of
- * width is the window's, and moves nothing.
+ * A box whose height follows its one child — a row as a tag wraps, a record is
+ * read or a picture arrives, a form as a choice brings fields — growing or
+ * shrinking into each change rather than jumping, and turned from wherever the
+ * box stands when a change lands mid-way. The child is what is measured and the
+ * box what moves, so a change mid-way is never mistaken for the box's own
+ * motion. A change of width is the window's, and moves nothing.
  */
 export function following(node: HTMLElement): () => void {
   const content = node.firstElementChild;
@@ -193,38 +202,5 @@ export function following(node: HTMLElement): () => void {
   });
 
   watching.observe(content);
-  return () => watching.disconnect();
-}
-
-/**
- * A box that grows or shrinks into every height it changes to in place — a
- * tag wrapping, a record read, a picture arriving — rather than jumping. A
- * change of width is the window's, and moves nothing; while the box is
- * already moving, it is left to finish and measured again after.
- */
-export function growing(node: HTMLElement): () => void {
-  let height: number | undefined;
-  let width: number | undefined;
-
-  const measure = () => {
-    height = node.offsetHeight;
-    width = node.offsetWidth;
-  };
-
-  const watching = new ResizeObserver(() => {
-    const moving = node.getAnimations();
-    if (moving.length > 0) {
-      void Promise.allSettled(moving.map((one) => one.finished)).then(measure);
-      return;
-    }
-    const was = height;
-    const across = width;
-    measure();
-    if (was !== undefined && across === width && was !== height) {
-      grow(node, was);
-    }
-  });
-
-  watching.observe(node);
   return () => watching.disconnect();
 }

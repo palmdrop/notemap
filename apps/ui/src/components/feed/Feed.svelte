@@ -51,6 +51,7 @@
   const motion = moving(
     () => $feed.loading,
     () => $feed.items.length,
+    () => !$feed.loading && !$feed.fromCache && $feed.failure === undefined,
   );
 
   const bare = $derived(

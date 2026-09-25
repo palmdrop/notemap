@@ -16,6 +16,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
+  import { fade, slide } from "$lib/motion";
 
   const destinations = client.destinations.all;
   const pool = reachable();
@@ -187,21 +188,31 @@
     </Unfolding>
   {/if}
 
-  <div class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]">
-    {#if !adding}
-      <Action
-        disabled={!pool.yes || kinds.length === 0}
-        onclick={() => (adding = true)}
-      >
-        + add a destination
-      </Action>
-    {:else}
-      <span></span>
-    {/if}
-    {#if disabled > 0}
-      <Action onclick={() => (showDisabled = !showDisabled)}>
-        {disabled} disabled · {showDisabled ? "hide" : "show"}
-      </Action>
-    {/if}
-  </div>
+  <!-- `+ add` slides shut with its line as the form opens, as its siblings'
+       do; where the line also carries the disabled ones it stays, and `+ add`
+       fades out of it instead. -->
+  {#if !adding || disabled > 0}
+    <div
+      class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]"
+      transition:slide={{ magnitude: "short" }}
+    >
+      {#if !adding}
+        <span transition:fade>
+          <Action
+            disabled={!pool.yes || kinds.length === 0}
+            onclick={() => (adding = true)}
+          >
+            + add a destination
+          </Action>
+        </span>
+      {:else}
+        <span></span>
+      {/if}
+      {#if disabled > 0}
+        <Action onclick={() => (showDisabled = !showDisabled)}>
+          {disabled} disabled · {showDisabled ? "hide" : "show"}
+        </Action>
+      {/if}
+    </div>
+  {/if}
 </Section>

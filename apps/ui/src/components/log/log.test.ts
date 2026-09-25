@@ -689,3 +689,38 @@ test("a turned reading holds the last one while it fades, rather than emptying a
   await screen.findByText("routed");
   expect(screen.queryByText("captured")).toBeNull();
 });
+
+/** Held from a reading nobody is looking at, they would stand under the new one's head. */
+test("entering at another reading does not draw the one held from before", async () => {
+  pool(async (request: Request) => {
+    if (routeOf(request) !== "GET /v1/actions")
+      return json(200, { values: [] });
+    if (!new URL(request.url).searchParams.has("kind")) {
+      return json(200, { values: [anAction("one", { kind: "captured" })] });
+    }
+    await new Promise(() => undefined);
+    return json(200, { values: [] });
+  });
+  reading();
+  await vi.waitFor(() => expect(log.rows).toHaveLength(1));
+
+  render(Log);
+  log.reading("newest-first", undefined, ["routed"]);
+  await tick();
+
+  expect(screen.queryByText("captured")).toBeNull();
+});
+
+/** What the watcher brings moves in; what a read brought stands still. */
+test("marks a row the watcher brought as heard, and a row a read brought not", async () => {
+  pool(held([anAction("one", { kind: "captured" })]));
+  render(Log);
+  reading();
+  const read = await screen.findByText("captured");
+
+  log.arrived(arriving(anAction("two", { kind: "routed" })));
+  const brought = await screen.findByText("routed");
+
+  expect(brought.closest("[data-heard]")).not.toBeNull();
+  expect(read.closest("[data-heard]")).toBeNull();
+});

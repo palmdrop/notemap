@@ -250,3 +250,18 @@ test("tells a row the watcher brought from one a read brought, until the next re
   log.reading("newest-first", undefined, ["captured"]);
   expect(log.heard("two")).toBe(false);
 });
+
+test("a reading the person turns to is a turn; the watcher's re-read is not", async () => {
+  answering([anAction("one")]);
+  log.reading("newest-first", undefined);
+  await settled();
+
+  log.reading("newest-first", undefined, ["captured"]);
+  expect(log.turning).toBe(true);
+  await settled();
+  expect(log.turning).toBe(false);
+
+  log.raced();
+  expect(log.loading).toBe(true);
+  expect(log.turning).toBe(false);
+});
