@@ -7,7 +7,10 @@
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
 
+  import { tick } from "svelte";
+
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { grow } from "$lib/motion";
 
   /**
    * The head of the file the destination would write, in a ruled block: five
@@ -35,6 +38,15 @@
   const LINES = 5;
 
   let whole = $state(false);
+  let written = $state<HTMLElement>();
+
+  async function unclamp() {
+    const element = written;
+    const from = element?.offsetHeight ?? 0;
+    whole = true;
+    await tick();
+    if (element !== undefined) grow(element, from);
+  }
 
   const text = $derived(
     shown?.kind === "previewed" ? shown.content?.text : undefined,
@@ -79,7 +91,9 @@
         <Asking {subject} />
       {/if}
     {:else if drawn !== undefined}
-      <pre class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
+      <pre
+        bind:this={written}
+        class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
       {#if shown.kind === "previewed" && shown.note !== undefined}
         <div class="mt-2 break-words">{shown.note}</div>
       {/if}
@@ -88,7 +102,7 @@
           {#if cut}
             <button
               type="button"
-              onclick={() => (whole = true)}
+              onclick={() => void unclamp()}
               class="hover:underline">more ▾</button
             >
           {:else}

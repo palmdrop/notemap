@@ -91,3 +91,20 @@ export function fade(node: Element, params: Moving = {}): TransitionConfig {
 export function rise(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), y: RISE });
 }
+
+/**
+ * A box that has just changed height in place, grown from the height it had:
+ * what a `more` opens, where there is no block coming or going to slide.
+ */
+export function grow(node: HTMLElement, from: number): void {
+  const time = duration("short");
+  const to = node.offsetHeight;
+  if (time === 0 || to === from || typeof node.animate !== "function") return;
+  node.animate(
+    [
+      { height: `${String(from)}px`, overflow: "hidden" },
+      { height: `${String(to)}px`, overflow: "hidden" },
+    ],
+    { duration: time, easing: token("--ease-motion") || "linear" },
+  );
+}

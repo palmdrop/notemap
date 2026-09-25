@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { rise, slide } from "$lib/motion";
+
   /**
    * Something that has already happened, said to somebody who did not ask. The
    * alarm is spent where it may want acting on; a confirmation is the ink.
@@ -33,6 +35,8 @@
 </script>
 
 <div
+  in:rise
+  out:slide={{ fade: true }}
   role={alarming ? "alert" : "status"}
   class="grid gap-1.5 border bg-ground px-3 py-2.5 {alarming
     ? 'border-alarm text-alarm'

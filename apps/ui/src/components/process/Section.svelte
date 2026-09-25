@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { slide } from "$lib/motion";
+
   /**
    * One ruled section of the surface: a label column and a content column.
    * Drawn collapsed — the label alone — until it is pressed or the flow reaches
@@ -31,7 +33,7 @@
     {name}
   </button>
   {#if open}
-    <div class="min-w-0">
+    <div class="min-w-0" transition:slide={{ magnitude: "short" }}>
       {@render children()}
     </div>
   {/if}

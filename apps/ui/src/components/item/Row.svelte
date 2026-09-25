@@ -13,7 +13,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
-  import { slide } from "$lib/motion";
+  import { fade, slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
 
   /**
@@ -138,6 +138,7 @@
   {#if selected}
     <div
       class="col-span-full -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+      in:fade
     >
       <Actions {commands} />
     </div>

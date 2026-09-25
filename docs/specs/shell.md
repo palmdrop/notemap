@@ -4,6 +4,14 @@
 **Last updated**: 2026-09-25
 **Shipped**:
 
+- 2026-09-25 — **A wait is seen, and a change moves.** A request the shell holds no answer to
+  draws three stepping squares where its answer or its action already stands — after 250ms, gone
+  the moment it lands, never a word, and naming a destination once it is slow to answer — so
+  nothing on the page moves to say it is waiting. Rows slide into and out of the queue, the feed and
+  the log, except for what a read brought; a notice rises into the corner; a section, a settings row
+  and `more` open by sliding; the selected row's box fades; the process surface's next item fades
+  up. Durations are three tokens, zero under `prefers-reduced-motion`. See
+  [loading-and-motion](../plans/loading-and-motion.md).
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
   landed `routed · research` no longer stand: a notice that offers something lingers long enough to
   reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
@@ -804,7 +812,9 @@ the `place` section holds the asking mark on its first line, naming the destinat
 slow to answer — the description being the call that can hang.
 
 **After manual, discard or a template tag the surface advances to the next unprocessed item** in
-the queue's order, and returns to the queue when there is none. That is what a queue worked from
+the queue's order, and returns to the queue when there is none. **The next item fades up** into
+the surface *(2026-09-25)*; the one decided goes at once, so the advance costs no wait on top of
+itself and two items are never on the surface together. That is what a queue worked from
 one end is; single-capture mode is not a separate feature. The queue is read a page at a time, so
 where the item was the last row held the next page is read before the queue is declared empty,
 and an item that was never on the queue — reached from the feed — goes on from its top. **A route
@@ -1494,7 +1504,9 @@ corner would be a reader learning where to look to learn nothing more.
 **A confirmation goes on its own and a failure holds.** Anything a person may have to act on stays
 until they clear it, which is the rule the refusal already followed; a success is a glance and
 leaves after a few seconds. The accent is spent on the second kind and on nothing else, as it is in
-the log.
+the log. **A notice rises into the corner and fades out of it** *(2026-09-25)*, and the ones beside
+it close the gap it leaves rather than jumping into it: the corner is read at the edge of the eye,
+and motion is what tells that edge something was said.
 
 **A confirmation that offers something lingers longer** *(amended 2026-09-24)* — ten seconds rather
 than four — which is long enough to reach for an `undo`. It still goes on its own, because the way
@@ -2038,7 +2050,7 @@ indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
 slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
-settings row, an index row and `more` slide open and shut; the process surface's next item fades
+settings row and `more` slide open and shut; the process surface's next item fades
 up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
 overlays — the order chooser, the tag chooser, the path and candidate lists — do not move: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **What a read

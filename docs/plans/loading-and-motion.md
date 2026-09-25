@@ -1,9 +1,9 @@
 # Loading and motion in the shell
 
 **Date**: 2026-09-25
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-09-25
 
 ---
 
@@ -19,7 +19,9 @@ Out of scope: a view of everything in flight (the outbox), which stays its own i
 
 ## Decisions taken
 
-Settled in a grilling session on 2026-09-25.
+Settled in a grilling session on 2026-09-25. Two turned out otherwise in the building: an index
+line never opens, so there was no index row to slide; and the rule that keeps a read still watches
+`loading` changing either way, since a turned order starts by emptying the list.
 
 - **Asking** is the glossary's word for a request the shell holds no answer to yet — a read, a
   description, a preview, a route — and is never **pending**, which is the outbox's. Already in
@@ -43,13 +45,12 @@ Settled in a grilling session on 2026-09-25.
   screen reorders; a row's height sliding carries its neighbours by layout.
   - **Lists** (queue, feed, log): a row slides and fades in or out over `long`. **What a read
     brought never moves** — a page, a re-read, a turn of order, the pool's first answer over the
-    cache. The shell infers it: the update in which a list's `loading` goes false is a read's
-    landing, and every other change is a change. A decided row leaves when the selection lets it
+    cache. The shell infers it: the update in which a list's `loading` changes is a read's
+    start or landing, and every other change is a change. A decided row leaves when the selection lets it
     go, as the spec already holds it.
   - **The corner**: a notice fades in rising from below, fades out, and the rest close over
     `long`.
-  - **Disclosure** — a process section, a settings row, an index row, `more` on a clamp or a
-    preview: height slides over `short`, no fade. The selected row's box and foot **fade only**,
+  - **Disclosure** — a process section, a settings row, `more` on a clamp or a preview: height slides over `short`, no fade. The selected row's box and foot **fade only**,
     since selecting shifts nothing and a slide would bring the shift back.
   - **The process advance**: the next item fades up over `long`; the one decided goes at once.
   - **Overlays** — the order chooser, the tag chooser, the path and candidate lists — do not move.
@@ -69,17 +70,17 @@ Settled in a grilling session on 2026-09-25.
 
 Depends on nothing.
 
-- [ ] Branch `agent/loading-and-motion`; commit `CONTEXT.md`'s **Asking** first, on its own.
-- [ ] `tokens.css`: the three durations and the easing; `--ease-*: initial` in the clearing block;
-      the reduced-motion override zeroing all three.
-- [ ] `tokens.test.ts`: the gate learns the new names, and still fails on a duration or easing
-      named outside `tokens.css`.
-- [ ] `lib/motion.ts`: the transitions the shell uses — slide, fade, the rise — reading duration
+- [x] Branch `agent/loading-and-motion`; commit `CONTEXT.md`'s **Asking** first, on its own. _(2026-09-25)_
+- [x] `tokens.css`: the three durations and the easing; `--ease-*: initial` in the clearing block;
+      the reduced-motion override zeroing all three. _(2026-09-25)_
+- [x] `tokens.test.ts`: the gate learns the new names, and still fails on a duration or easing
+      named outside `tokens.css`. _(2026-09-25)_
+- [x] `lib/motion.ts`: the transitions the shell uses — slide, fade, the rise — reading duration
       and easing off the tokens at the moment they run, so reduced motion and a test's missing
-      stylesheet both come out as zero.
-- [ ] shell.md: *Motion* no longer "not yet built" — what moves, what does not, the two magnitudes;
-      *Tokens and themes* names the durations and the exception.
-- [ ] Typecheck, tests, lint; `git commit`.
+      stylesheet both come out as zero. _(2026-09-25)_
+- [x] shell.md: *Motion* no longer "not yet built" — what moves, what does not, the two magnitudes;
+      *Tokens and themes* names the durations and the exception. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: `pnpm -r --silent test` green; a unit test shows the transitions resolving to zero
 duration when the tokens are absent and when reduced motion is on.
@@ -88,15 +89,15 @@ duration when the tokens are absent and when reduced motion is on.
 
 Depends on phase 1 (`--duration-step`).
 
-- [ ] `primitives/marks/Asking.svelte`: the squares, the 250ms delay, an optional subject and
-      threshold for the slow word; one line tall; a label for a reader that cannot see it.
-- [ ] `Action` draws the mark in place of its label at the label's width, generalised from the
-      stacked cell `More` uses; `More` moves onto it.
-- [ ] Every busy button onto it: capture, edit's `save` and `attach`, sign in, the settings forms,
-      `check again` on a destination, a template and the server, the pool settings' options.
-- [ ] shell.md: *Reachable, pending, refused* gains asking — how it is drawn, and that it is never
-      pending's mark; *Draining*'s `loading…` becomes the mark.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] `primitives/marks/Asking.svelte`: the squares, the 250ms delay, an optional subject and
+      threshold for the slow word; one line tall; a label for a reader that cannot see it. _(2026-09-25)_
+- [x] `Action` draws the mark in place of its label at the label's width, generalised from the
+      stacked cell `More` uses; `More` moves onto it. _(2026-09-25)_
+- [x] Every busy button onto it: capture, edit's `save` and `attach`, sign in, the settings forms,
+      `check again` on a destination, a template and the server, the pool settings' options. _(2026-09-25)_
+- [x] shell.md: *Reachable, pending, refused* gains asking — how it is drawn, and that it is never
+      pending's mark; *Draining*'s `loading…` becomes the mark. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: tests with fake timers — nothing before 250ms, the mark after, gone on the answer; a
 subject and threshold add the word after the threshold; a button's width is the same both ways.
@@ -105,19 +106,19 @@ subject and threshold add the word after the threshold; a button's width is the 
 
 Depends on phase 2.
 
-- [ ] Process surface: the mark on the place section's first line while the destination is being
+- [x] Process surface: the mark on the place section's first line while the destination is being
       described, with the slow word naming it; the preview block reserves five lines and asks
       with the mark and the slow word; `route` carries the mark and the status line is failure's
-      alone.
-- [ ] The candidate browser and the path line: the mark where the list will be, with the slow word;
-      the `loading…` paragraph goes.
-- [ ] A cold first read — queue, feed, log, an item, the process surface's item — draws the mark
-      where the first row or the item will stand, not a blank page.
-- [ ] The unfurl's asking state draws the mark inside its fixed frame, with no word: the wait is the
-      daemon's.
-- [ ] shell.md: where each region draws its mark; *Prior decisions* records skeletons and a grey as
-      declined.
-- [ ] Typecheck, tests, lint; `git commit`.
+      alone. _(2026-09-25)_
+- [x] The candidate browser and the path line: the mark where the list will be, with the slow word;
+      the `loading…` paragraph goes. _(2026-09-25)_
+- [x] A cold first read — queue, feed, log, an item, the process surface's item — draws the mark
+      where the first row or the item will stand, not a blank page. _(2026-09-25)_
+- [x] The unfurl's asking state draws the mark inside its fixed frame, with no word: the wait is the
+      daemon's. _(2026-09-25)_
+- [x] shell.md: where each region draws its mark; *Prior decisions* records skeletons and a grey as
+      declined. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: tests per region asserting the mark and the slow word under a held answer, and that
 the process surface's status line is absent while routing. By hand in a browser, with a
@@ -127,10 +128,10 @@ destination made slow: nothing below a region moves until its answer lands.
 
 Depends on nothing; lands before phase 5 so a structural change is looked at without motion on top.
 
-- [ ] `Register`: each item one `col-span-full` subgrid wrapper. `Row`, the queue's `Index` and
-      `LogRow` drop their cells into it.
-- [ ] shell.md *Visual direction*, *Grid*: an item is one element on the shared tracks.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] `Register`: each item one `col-span-full` subgrid wrapper. `Row`, the queue's `Index` and
+      `LogRow` drop their cells into it. _(2026-09-25)_
+- [x] shell.md *Visual direction*, *Grid*: an item is one element on the shared tracks. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: the existing register and row tests unchanged and green. By hand, at desk and phone
 widths: columns in register, the rail's rule unbroken, the selected row's box where it was.
@@ -139,15 +140,15 @@ widths: columns in register, the rail's rule unbroken, the selected row's box wh
 
 Depends on phases 1 and 4.
 
-- [ ] Client: a test pinning that a read's rows and the end of its `loading` arrive in one
-      emission, since the shell relies on it.
-- [ ] The shell's rule, as a function of the previous and next list: which rows arriving or leaving
+- [x] Client: a test pinning that a read's rows and the end of its `loading` arrive in one
+      emission, since the shell relies on it. _(2026-09-25)_
+- [x] The shell's rule, as a function of the previous and next list: which rows arriving or leaving
       move, and none when `loading` just went false. The log follows the same rule on its own
-      `loading`.
-- [ ] Queue, feed and log rows slide in and out by it; the held row slides when the selection
-      releases it, and the selection and keys never land on a row on its way out.
-- [ ] shell.md: *Draining* and the queue's held row say what moves and what a read brings in still.
-- [ ] Typecheck, tests, lint; `git commit`.
+      `loading`. _(2026-09-25)_
+- [x] Queue, feed and log rows slide in and out by it; the held row slides when the selection
+      releases it, and the selection and keys never land on a row on its way out. _(2026-09-25)_
+- [x] shell.md: *Draining* and the queue's held row say what moves and what a read brings in still. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: unit tests on the rule — a page, a turn and the pool's first answer over the cache
 move nothing; a decision released, a capture and a live arrival move one row. By hand: decide on
@@ -157,14 +158,15 @@ the queue, `j` off, the row slides out; scroll the feed deep, pages appear still
 
 Depends on phase 1.
 
-- [ ] The corner: a notice rises in, fades out, the rest close; the hold under the pointer and focus
-      is unchanged.
-- [ ] Disclosure: process sections, a settings row opening, an index row opening, `more` on a clamp
-      and on the preview slide; the selected row's box and foot fade.
-- [ ] The process advance: the next item fades up.
-- [ ] shell.md: *The corner says what happened*, *The process surface* and the index say what moves.
-- [ ] `docs/todo.md`: the loading item ticked.
-- [ ] Typecheck, tests, lint; `git commit`.
+- [x] The corner: a notice rises in, fades out, the rest close; the hold under the pointer and focus
+      is unchanged. _(2026-09-25)_
+- [x] Disclosure: process sections, a settings row opening, `more` on a clamp and on the preview
+      slide; the selected row's box and foot fade. _(2026-09-25)_
+- [-] An index row opening. _(dropped — selecting an index line only bolds it; nothing opens)_
+- [x] The process advance: the next item fades up. _(2026-09-25)_
+- [x] shell.md: *The corner says what happened*, *The process surface* and the index say what moves. _(2026-09-25)_
+- [x] `docs/todo.md`: the loading item ticked. _(2026-09-25)_
+- [x] Typecheck, tests, lint; `git commit`. _(2026-09-25)_
 
 **Verify**: the existing corner, process and settings tests green with motion present. By hand,
 with reduced motion on and off: each moves when on, none when off, and the index row's height

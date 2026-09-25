@@ -2,7 +2,7 @@
 
 ## Shell — layout and interaction
 
-- [ ] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
+- [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in

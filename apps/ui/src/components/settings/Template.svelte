@@ -7,6 +7,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { slide } from "$lib/motion";
   import { pickable } from "$lib/pick";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
@@ -162,7 +163,7 @@
   {/if}
 
   {#if opened && !editing}
-    <div class="mt-4">
+    <div class="mt-4" transition:slide={{ magnitude: "short" }}>
       <Fact name="tag">
         {one.triggerTag ?? "none — taken in the composer"}
       </Fact>

@@ -60,6 +60,7 @@
     valuesFrom,
   } from "$lib/schema-form";
   import { whenOf } from "$lib/when";
+  import { rise } from "$lib/motion";
 
   import Band from "./Band.svelte";
   import Entry from "./Entry.svelte";
@@ -876,6 +877,7 @@
 <!-- The bar, then a frame whose head and foot are fixed and whose middle
      scrolls: two columns from `wide` up, stacked below. -->
 <div
+  in:rise
   class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-measure-wide wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
 >
   <div

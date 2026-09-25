@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { bezier, duration, fade, rise, slide } from "./motion";
+import { bezier, duration, fade, grow, rise, slide } from "./motion";
 
 const root = document.documentElement;
 
@@ -85,4 +85,39 @@ test("reduced motion zeroes every duration the tokens name", () => {
   for (const name of new Set(named)) {
     expect(reduced).toMatch(new RegExp(`${name}: 0ms`));
   }
+});
+
+describe("grow", () => {
+  function box(height: number) {
+    const node = document.createElement("div");
+    Object.defineProperty(node, "offsetHeight", { value: height });
+    const animate = vi.fn();
+    Object.assign(node, { animate });
+    return { node, animate };
+  }
+
+  test("grows a box from the height it had to the height it has", () => {
+    root.style.setProperty("--duration-short", "150ms");
+    const { node, animate } = box(200);
+
+    grow(node, 80);
+
+    expect(animate).toHaveBeenCalledTimes(1);
+    const [frames, timing] = animate.mock.calls[0] as [
+      { height: string }[],
+      { duration: number },
+    ];
+    expect(frames.map((frame) => frame.height)).toEqual(["80px", "200px"]);
+    expect(timing.duration).toBe(150);
+  });
+
+  test("does nothing where nothing would move, or nothing is allowed to", () => {
+    const { node, animate } = box(200);
+    grow(node, 80);
+
+    root.style.setProperty("--duration-short", "150ms");
+    grow(node, 200);
+
+    expect(animate).not.toHaveBeenCalled();
+  });
 });
