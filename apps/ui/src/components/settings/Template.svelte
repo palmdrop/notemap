@@ -6,6 +6,7 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { pickable } from "$lib/pick";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
@@ -55,7 +56,7 @@
    */
   const said = $derived.by(() => {
     if (report === undefined) {
-      return { text: asking ? "asking" : "not asked yet", alarm: false };
+      return { text: "not asked yet", alarm: false, asking };
     }
 
     switch (report.kind) {
@@ -148,7 +149,11 @@
         ? 'text-alarm'
         : ''} max-narrow:ml-0 max-narrow:w-full"
     >
-      {said.text}
+      {#if said.asking === true}
+        <Asking subject={destination?.name} />
+      {:else}
+        {said.text}
+      {/if}
     </span>
   </div>
 

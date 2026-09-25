@@ -38,6 +38,9 @@
   let addingToken = $state(false);
   let name = $state("");
   let going = $state(false);
+  /** Which token a `revoke` was pressed on, while it is asked. */
+  let revoking = $state<string | undefined>(undefined);
+  let minting = $state(false);
   let said = $state("");
 
   /**
@@ -86,21 +89,24 @@
     event.preventDefault();
     if (going || name.trim() === "") return;
 
+    minting = true;
     void attempt(async () => {
       minted = await client.tokens.mint({ name: name.trim() });
       copied = false;
       name = "";
       addingToken = false;
       held = await client.tokens.list();
-    });
+    }).finally(() => (minting = false));
   };
 
-  const revoke = (token: Token) =>
-    attempt(async () => {
+  const revoke = (token: Token) => {
+    revoking = token.id;
+    return attempt(async () => {
       await client.tokens.revoke(token.id);
       if (minted?.id === token.id) minted = undefined;
       held = await client.tokens.list();
-    });
+    }).finally(() => (revoking = undefined));
+  };
 
   async function copy() {
     if (minted === undefined) return;
@@ -126,7 +132,7 @@
             <span class="text-alarm">— {signOutFailed}</span>
           {/if}
         </span>
-        <Action disabled={signingOut} onclick={() => void signOut()}>
+        <Action working={signingOut} onclick={() => void signOut()}>
           sign out
         </Action>
       </span>
@@ -146,7 +152,11 @@
             class="flex flex-wrap items-baseline justify-between gap-x-[2ch]"
           >
             <span>{why(token)}</span>
-            <Action disabled={going} onclick={() => void revoke(token)}>
+            <Action
+              disabled={going}
+              working={revoking === token.id}
+              onclick={() => void revoke(token)}
+            >
               revoke
             </Action>
           </span>
@@ -179,7 +189,13 @@
             bind:value={name}
             class="{FIELD} max-w-[24ch] flex-1"
           />
-          <Action submit disabled={going || name.trim() === ""}>create</Action>
+          <Action
+            submit
+            disabled={going || name.trim() === ""}
+            working={minting}
+          >
+            create
+          </Action>
         </form>
       {:else}
         <div class="mt-4">

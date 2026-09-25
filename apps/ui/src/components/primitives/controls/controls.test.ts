@@ -5,6 +5,7 @@ import Action from "./Action.svelte";
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
 import ActionFixture from "./Action.fixture.svelte";
+import { SHOWN_AFTER } from "../marks/Asking.svelte";
 
 test("an unavailable action reads as unavailable rather than as broken", () => {
   render(ActionFixture, { label: "route", disabled: true, onclick: vi.fn() });
@@ -45,6 +46,41 @@ test("an available action is taken once", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "capture" }));
 
   expect(taken).toHaveBeenCalledTimes(1);
+});
+
+test("an action that has asked cannot be taken again, and keeps its label until the mark is due", async () => {
+  vi.useFakeTimers();
+  try {
+    const taken = vi.fn();
+    const { rerender } = render(ActionFixture, {
+      label: "save",
+      working: true,
+      onclick: taken,
+    });
+
+    const action = screen.getByRole("button", { name: /save/ });
+    expect((action as HTMLButtonElement).disabled).toBe(true);
+    expect(action.getAttribute("aria-busy")).toBe("true");
+    expect(
+      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
+    ).toBe("hidden");
+
+    await vi.advanceTimersByTimeAsync(SHOWN_AFTER);
+    expect(
+      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
+    ).toBe("shown");
+    // Both sit in one cell, so the button is as wide as the wider of them throughout.
+    expect(screen.getByText("save").className).toContain("invisible");
+
+    await rerender({ label: "save", working: false, onclick: taken });
+    expect(action.querySelector("[data-asking]")).toBeNull();
+    expect((action as HTMLButtonElement).disabled).toBe(false);
+
+    await rerender({ label: "save", working: true, onclick: taken });
+    expect(screen.getByText("save").className).not.toContain("invisible");
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 /** A word, a mark, and a panel of marked options: the shell draws its own. */

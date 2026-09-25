@@ -6,6 +6,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { since } from "$lib/stamp";
@@ -34,11 +35,9 @@
   );
 
   const status = $derived(
-    asking
-      ? "checking"
-      : pool.yes
-        ? `available${answered === undefined ? "" : ` · checked ${answered}`}`
-        : `unavailable${said === "" ? "" : ` — ${said}`}`,
+    pool.yes
+      ? `available${answered === undefined ? "" : ` · checked ${answered}`}`
+      : `unavailable${said === "" ? "" : ` — ${said}`}`,
   );
 
   async function knock() {
@@ -85,7 +84,11 @@
   <Fact name="address">{address}</Fact>
   <Fact name="version">{pool.version ?? "unknown"}</Fact>
   <Fact name="status">
-    {status}
+    {#if asking}
+      <Asking />
+    {:else}
+      {status}
+    {/if}
     <Action disabled={asking} onclick={() => void knock()}>check again</Action>
   </Fact>
   <Fact name="api">

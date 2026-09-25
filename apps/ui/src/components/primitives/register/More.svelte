@@ -47,22 +47,7 @@
     {#if offline}
       <span>{NO_MORE_OFFLINE}</span>
     {:else}
-      <Action disabled={loading} onclick={onmore}>
-        <span class="inline-grid">
-          <span
-            class="col-start-1 row-start-1 {loading ? 'invisible' : ''}"
-            aria-hidden={loading}
-          >
-            load more
-          </span>
-          <span
-            class="col-start-1 row-start-1 {loading ? '' : 'invisible'}"
-            aria-hidden={!loading}
-          >
-            loading…
-          </span>
-        </span>
-      </Action>
+      <Action working={loading} onclick={onmore}>load more</Action>
     {/if}
   </div>
 </Foot>

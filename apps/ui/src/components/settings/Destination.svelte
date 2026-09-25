@@ -10,6 +10,7 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { pickable } from "$lib/pick";
   import { since } from "$lib/stamp";
 
@@ -85,14 +86,16 @@
   });
 
   /** What the row leads with, collapsed and in the facts grid alike. */
-  const status = $derived.by(() => {
-    if (refusing !== undefined) return { said: refusing, alarm: true };
-    if (reach !== undefined) return reach;
-    if (asking || probing) return { said: "asking", alarm: false };
-    if (can !== undefined) return { said: "answered", alarm: false };
-    if (disabled) return { said: "disabled", alarm: false };
-    return { said: "not asked yet", alarm: false };
-  });
+  const status = $derived.by(
+    (): { said: string; alarm: boolean; asking?: boolean } => {
+      if (refusing !== undefined) return { said: refusing, alarm: true };
+      if (reach !== undefined) return reach;
+      if (asking || probing) return { said: "", alarm: false, asking: true };
+      if (can !== undefined) return { said: "answered", alarm: false };
+      if (disabled) return { said: "disabled", alarm: false };
+      return { said: "not asked yet", alarm: false };
+    },
+  );
 
   const since_ = $derived(
     checkedAt === undefined ? undefined : since(checkedAt),
@@ -164,24 +167,31 @@
         ? 'text-alarm'
         : ''}"
     >
-      {status.said}
+      {#if status.asking === true}
+        <Asking subject={one.name} />
+      {:else}
+        {status.said}
+      {/if}
     </span>
   </div>
 
   {#if opened && !editing}
     <div class="mt-4">
       <Fact name="actions">
-        {can ??
-          (asking
-            ? "asking now"
-            : disabled
-              ? "not offered, so not asked"
-              : "unasked")}
+        {#if can !== undefined}
+          {can}
+        {:else if asking}
+          <Asking />
+        {:else}
+          {disabled ? "not offered, so not asked" : "unasked"}
+        {/if}
       </Fact>
       <Fact name="status">
-        {probing ? "asking now" : status.said}{since_ === undefined
-          ? ""
-          : ` · checked ${since_}`}
+        {#if status.asking === true}
+          <Asking />
+        {:else}
+          {status.said}{since_ === undefined ? "" : ` · checked ${since_}`}
+        {/if}
       </Fact>
       {#each Object.entries(one.settings ?? {}) as [key, value] (key)}
         <Fact name={key}>{String(value)}</Fact>
@@ -194,13 +204,14 @@
           {#if refusal !== undefined}
             <span>{refusal}</span>
             <Action
+              working={busy}
               onclick={() => void toggleRetire().then(() => (asked = false))}
             >
               disable instead
             </Action>
           {:else}
             <span>Delete {one.name}?</span>
-            <Action disabled={busy} onclick={() => void confirmDelete()}>
+            <Action working={busy} onclick={() => void confirmDelete()}>
               delete
             </Action>
           {/if}
@@ -215,7 +226,8 @@
           </Action>
           <Action disabled={offline} onclick={onedit}>edit</Action>
           <Action
-            disabled={offline || busy}
+            disabled={offline}
+            working={busy}
             onclick={() => void toggleRetire()}
           >
             {disabled ? "enable" : "disable"}

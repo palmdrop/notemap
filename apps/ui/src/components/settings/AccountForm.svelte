@@ -118,7 +118,7 @@
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
-      <Action submit disabled={busy || disabled}>
+      <Action submit {disabled} working={busy}>
         {editing === undefined ? "create" : "save"}
       </Action>
     </span>

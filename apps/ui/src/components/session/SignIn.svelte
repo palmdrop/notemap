@@ -61,8 +61,8 @@
   </Register>
 
   <div class="mt-6 flex items-baseline gap-6">
-    <Action submit primary disabled={sending || password === ""}>
-      {sending ? "signing in" : "sign in"}
+    <Action submit primary disabled={password === ""} working={sending}>
+      sign in
     </Action>
     {#if refused !== undefined}
       <span role="alert" class="text-alarm">{refused}</span>

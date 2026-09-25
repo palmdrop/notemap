@@ -229,7 +229,8 @@ test("says a row is being asked while its probe is still out", async () => {
   // Describing has landed; only the probe is still out.
   await screen.findByText("create");
   expect(screen.queryByText("unasked")).toBeNull();
-  await screen.findByText("asking now");
+  // The row's lead and its status both stand where the answer will.
+  expect((await screen.findAllByText("loading")).length).toBe(2);
 
   answer?.(json(200, { kind: "ready" }));
   await screen.findAllByText(/available/);

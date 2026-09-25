@@ -15,6 +15,8 @@
   let adding = $state(false);
   let editing = $state<string | undefined>(undefined);
   let going = $state(false);
+  /** Which account a `remove` was pressed on, while it is asked. */
+  let removing = $state<string | undefined>(undefined);
   let said = $state("");
 
   const keyOf = (one: Account) =>
@@ -51,11 +53,13 @@
     if (pool.yes && kinds.length === 0) void read();
   });
 
-  const remove = (one: Account) =>
-    attempt(async () => {
+  const remove = (one: Account) => {
+    removing = keyOf(one);
+    return attempt(async () => {
       await client.accounts.remove(one.kind, one.name);
       held = await client.accounts.list();
-    });
+    }).finally(() => (removing = undefined));
+  };
 
   const saved = () => {
     adding = false;
@@ -106,6 +110,7 @@
                 {#if one.from === "stored"}
                   <Action
                     disabled={going || !pool.yes}
+                    working={removing === keyOf(one)}
                     onclick={() => void remove(one)}
                   >
                     remove

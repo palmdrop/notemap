@@ -170,7 +170,7 @@
     </span>
 
     <span class="border-l border-ink px-3 leading-8">
-      <Action primary submit disabled={busy}>capture</Action>
+      <Action primary submit working={busy}>capture</Action>
     </span>
 
     <input

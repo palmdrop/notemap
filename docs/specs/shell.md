@@ -1025,7 +1025,7 @@ held back more than it answered is its own limit and said separately.
 
 **What a destination last answered is drawn while it answers again.** Kept for the life of the
 page and never instead of asking, so a list is stale only for as long as the round trip it fills —
-which is what the second visit to the surface spends staring at `loading…` otherwise. A browse that
+which is what the second visit to the surface spends staring at the asking mark otherwise. A browse that
 fails with something held says so and keeps drawing it, the field being typed either way.
 
 **A capability nothing can be chosen among is not a step** *(2026-09-08)*. Where a destination
@@ -1430,6 +1430,21 @@ of them the same colour.)*
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
 
+**Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
+pool and holds no answer to — a read, a description, a preview, a route, a save — is drawn as
+**three small squares stepping**, one filled at a time, in ink, with no fade; under
+`prefers-reduced-motion` they stand hollow and still. It is never pending's mark, being about
+nothing the outbox holds, and it is never a word: `loading` tells a reader nothing the squares do
+not. **Nothing is drawn for the first 250ms**, since the cache answers first and most waits are
+over before then, and the mark goes the moment the answer lands, never held to finish its step.
+**It takes the place the answer will, from the start**: hidden until it is due, so appearing
+moves nothing. On an action it stands in the label's place at the label's width, and the action
+cannot be taken again until it is answered. A word joins it only when it says what the screen
+does not: a wait on a **destination** that passes three seconds adds `vault is slow to answer`,
+naming it, because the pool is fine and nothing else on screen says which of the things behind it
+is keeping the reader waiting. Settings' `asking`, `asking now` and `checking`, sign-in's `signing
+in`, and the pool settings' `reading…` all became the mark.
+
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
 that this was what the client holds. That entry is gone. Between the chrome's `offline` mark and a
@@ -1631,8 +1646,8 @@ log read it once the foot comes within a screen of the view, and go on reading w
 there. `j` past the last row held reads the next page and steps into it — waiting for a page
 already being read rather than giving up on the step — unless the reader has moved or let go in
 the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
-failed is asked for again, since scrolling never retries one. While a page is read the foot says
-`loading…` in the width `load more` already took. **The drained queue is one line where the rows were** —
+failed is asked for again, since scrolling never retries one. While a page is read the foot draws
+the asking mark in the width `load more` already took. **The drained queue is one line where the rows were** —
 `Nothing left to process.` — in the body column's position, with no register drawn under it.
 Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
 `zero`, and not as a notice.
