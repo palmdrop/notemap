@@ -2014,7 +2014,9 @@ capture field, a record block, a control, and the selected row.
 as a dated entry in a ledger, which is why the capture time is its title. The left column is a
 **metadata rail** — the stamp, the tags, and on the feed the state word and where the item went.
 The right column holds nothing but what was captured. Both surfaces are one grid, each item
-dropping two cells into it, so the columns stay in register down the whole page.
+one element laid on the grid's own tracks, so the columns stay in register down the whole page
+and a row still has a height of its own to arrive and leave by *(amended 2026-09-25; an item
+dropped two bare cells into the grid, which left nothing to slide)*.
 
 **A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
 time, and the two columns survive, because the rail is what says what a thing is.

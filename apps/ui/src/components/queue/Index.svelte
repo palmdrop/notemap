@@ -68,7 +68,7 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       data-gap={line.gap ? "" : undefined}
-      class="contents {on ? 'font-semibold' : ''}"
+      class="col-span-full grid grid-cols-subgrid {on ? 'font-semibold' : ''}"
       onclick={(event) => {
         if (event.detail > 1) return;
         onselect(line.item.id);

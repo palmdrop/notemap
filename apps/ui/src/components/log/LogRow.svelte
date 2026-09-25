@@ -110,52 +110,54 @@
   );
 </script>
 
-<Rail {gap}>
-  <Stamp at={action.at} />
-  <div class="mt-2 tracking-caps uppercase {bad ? 'text-alarm' : ''}">
-    {kindWord(action.kind)}
-  </div>
-</Rail>
-
-<Body {gap}>
-  <div
-    class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col"
-  >
-    {#if action.subject !== undefined}
-      <span class="min-w-0 truncate">
-        <Says id={action.subject} href={itemHref(action.subject)} />
-      </span>
-    {:else}
-      <span></span>
-    {/if}
-
-    {#if fact !== undefined}
-      <span
-        class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
-        true
-          ? 'text-alarm'
-          : ''} {trigger === undefined
-          ? ''
-          : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"
-      >
-        {trigger ?? fact.said}
-      </span>
-    {/if}
-  </div>
-
-  {#if pairs.length > 0}
-    <Detail {pairs} failed={bad} />
-  {/if}
-
-  {#if record !== undefined}
-    <div class="mt-2.5">
-      <Block
-        {record}
-        {said}
-        alarm={bad}
-        inLog
-        blind={action.kind === "routed"}
-      />
+<div class="col-span-full grid grid-cols-subgrid">
+  <Rail {gap}>
+    <Stamp at={action.at} />
+    <div class="mt-2 tracking-caps uppercase {bad ? 'text-alarm' : ''}">
+      {kindWord(action.kind)}
     </div>
-  {/if}
-</Body>
+  </Rail>
+
+  <Body {gap}>
+    <div
+      class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col"
+    >
+      {#if action.subject !== undefined}
+        <span class="min-w-0 truncate">
+          <Says id={action.subject} href={itemHref(action.subject)} />
+        </span>
+      {:else}
+        <span></span>
+      {/if}
+
+      {#if fact !== undefined}
+        <span
+          class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
+          true
+            ? 'text-alarm'
+            : ''} {trigger === undefined
+            ? ''
+            : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"
+        >
+          {trigger ?? fact.said}
+        </span>
+      {/if}
+    </div>
+
+    {#if pairs.length > 0}
+      <Detail {pairs} failed={bad} />
+    {/if}
+
+    {#if record !== undefined}
+      <div class="mt-2.5">
+        <Block
+          {record}
+          {said}
+          alarm={bad}
+          inLog
+          blind={action.kind === "routed"}
+        />
+      </div>
+    {/if}
+  </Body>
+</div>
