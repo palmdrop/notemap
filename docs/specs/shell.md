@@ -539,8 +539,8 @@ settings. A refusal goes to the corner.
 
 *Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
 one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
-foot along its bottom rule carrying `attach` and the tag chooser at the left and a bold `capture`
-at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
+foot along its bottom rule carrying `attach` behind a rule of its own and the tag chooser at the
+left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
 stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
 
 A capture asks nothing — text, an optional attachment, send. Nothing waits on the pool: the client
@@ -576,8 +576,9 @@ restored after a reload comes back with its words and no picture, which is picke
 draft per origin — two tabs share it, and the last write wins; it is never sent and the pool
 never sees it.
 
-**An attached picture is drawn before it is committed**, inside the box above the text, beside its
-name and with a way to drop it. The bytes go up with the capture and cannot be taken back once they
+**An attached picture is drawn before it is committed**, inside the box above the text and ruled
+off from it, beside its name and a `×` that drops it. The section slides open, fading in, as a
+picture is attached, and shut as it is dropped or captured. The bytes go up with the capture and cannot be taken back once they
 have, so the one moment to look at what was picked is before the button, not afterwards in the
 feed.
 
@@ -2075,8 +2076,8 @@ indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
 slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
-settings row and `more` slide open and shut; the process surface's next item fades
-up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
+settings row, `more` and the capture box's picture slide open and shut; the process surface's
+next item fades up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
 overlays — the order chooser, the tag chooser, the path and candidate lists — do not move: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **What a read
 brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.

@@ -196,6 +196,14 @@ Reported after phases 1–6, each measured in a browser before it was changed.
       height in place — on the queue, the feed or the log — now grows or shrinks into it, which
       replaces the tag-only case above. _(2026-09-25)_
 
+### Phase 8 — added in use
+
+Asked for after phase 7, as the developer finds them.
+
+- [x] The capture box: `attach` stands behind a rule of its own, as `capture` does; the attached
+      picture sits in a section ruled off above the text, which slides open and fades in; `drop`
+      becomes `×`. _(2026-09-25)_
+
 ---
 
 ## Unknowns
