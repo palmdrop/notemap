@@ -9,7 +9,7 @@
   import { factOf, failed, flattened, known } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
-  import { slide } from "$lib/motion";
+  import { growing, slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
 
   import Detail from "./Detail.svelte";
@@ -123,6 +123,7 @@
 <div
   class="col-span-full grid grid-cols-subgrid"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
+  {@attach growing}
 >
   <Rail {gap}>
     <Stamp at={action.at} />

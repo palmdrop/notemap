@@ -122,3 +122,36 @@ export function revealed(node: HTMLImageElement): () => void {
   else node.addEventListener("load", show, { once: true });
   return () => node.removeEventListener("load", show);
 }
+
+/**
+ * A box that grows or shrinks into every height it changes to in place — a
+ * tag wrapping, a record read, a picture arriving — rather than jumping. A
+ * change of width is the window's, and moves nothing; while the box is
+ * already moving, it is left to finish and measured again after.
+ */
+export function growing(node: HTMLElement): () => void {
+  let height: number | undefined;
+  let width: number | undefined;
+
+  const measure = () => {
+    height = node.offsetHeight;
+    width = node.offsetWidth;
+  };
+
+  const watching = new ResizeObserver(() => {
+    const moving = node.getAnimations();
+    if (moving.length > 0) {
+      void Promise.allSettled(moving.map((one) => one.finished)).then(measure);
+      return;
+    }
+    const was = height;
+    const across = width;
+    measure();
+    if (was !== undefined && across === width && was !== height) {
+      grow(node, was);
+    }
+  });
+
+  watching.observe(node);
+  return () => watching.disconnect();
+}

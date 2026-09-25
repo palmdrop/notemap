@@ -1,9 +1,18 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { bezier, duration, fade, grow, revealed, rise, slide } from "./motion";
+import {
+  bezier,
+  duration,
+  fade,
+  grow,
+  growing,
+  revealed,
+  rise,
+  slide,
+} from "./motion";
 
 const root = document.documentElement;
 
@@ -135,5 +144,83 @@ describe("revealed", () => {
     expect(coming.dataset["loaded"]).toBeUndefined();
     coming.dispatchEvent(new Event("load"));
     expect(coming.dataset["loaded"]).toBe("");
+  });
+});
+
+describe("growing", () => {
+  let told: (() => void) | undefined;
+
+  function box() {
+    const node = document.createElement("div");
+    let size = { height: 100, width: 400 };
+    Object.defineProperty(node, "offsetHeight", { get: () => size.height });
+    Object.defineProperty(node, "offsetWidth", { get: () => size.width });
+    const animate = vi.fn();
+    let running: Animation[] = [];
+    Object.assign(node, { animate, getAnimations: () => running });
+    return {
+      node,
+      animate,
+      resize(next: Partial<typeof size>) {
+        size = { ...size, ...next };
+        told?.();
+      },
+      moving(yes: boolean) {
+        running = yes
+          ? [{ finished: new Promise(() => undefined) } as unknown as Animation]
+          : [];
+      },
+    };
+  }
+
+  beforeEach(() => {
+    root.style.setProperty("--duration-short", "150ms");
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: () => void) {
+          told = callback;
+        }
+        observe() {
+          told?.();
+        }
+        disconnect() {
+          told = undefined;
+        }
+      },
+    );
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("grows and shrinks from the height it had, and not on first sight", () => {
+    const { node, animate, resize } = box();
+    growing(node);
+    expect(animate).not.toHaveBeenCalled();
+
+    resize({ height: 160 });
+    resize({ height: 120 });
+
+    const froms = animate.mock.calls.map(
+      ([frames]) => (frames as { height: string }[])[0]?.height,
+    );
+    expect(froms).toEqual(["100px", "160px"]);
+  });
+
+  test("a change of width is the window's, and moves nothing", () => {
+    const { node, animate, resize } = box();
+    growing(node);
+
+    resize({ height: 140, width: 300 });
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  test("leaves a box that is already moving to finish", () => {
+    const { node, animate, resize, moving } = box();
+    growing(node);
+
+    moving(true);
+    resize({ height: 180 });
+    expect(animate).not.toHaveBeenCalled();
   });
 });

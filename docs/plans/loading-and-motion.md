@@ -192,6 +192,9 @@ Reported after phases 1–6, each measured in a browser before it was changed.
       hand is not asked. `read it` carries the asking mark rather than `reading…`. _(2026-09-25)_
 - [x] An unfurl's picture pushed its words aside: its room is kept, and it fades in. _(2026-09-25)_
 - [x] shell.md, and typecheck, tests, lint; `git commit`. _(2026-09-25)_
+- [x] A selected row's routing records still snapped it to its new height. Any change of a row's
+      height in place — on the queue, the feed or the log — now grows or shrinks into it, which
+      replaces the tag-only case above. _(2026-09-25)_
 
 ---
 

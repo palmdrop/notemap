@@ -1697,7 +1697,10 @@ an order turned, the pool's first answer over what the cache drew, the cache fil
 as a page reloads — appear and go without moving,
 because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
 arrives or leaves between reads slides: a capture landing, an item heard about, a row let go, a row
-processed on another device. The same holds on the feed, the queue's index and the log.
+processed on another device. The same holds on the feed, the queue's index and the log. **A row
+that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
+as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
+rather than jumping, over the short duration; a change of width is the window's and moves nothing.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view toggle, and acts on the list it heads; settings and an item have no end to
