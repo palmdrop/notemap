@@ -22,6 +22,7 @@
   import { commandsFor } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -46,6 +47,8 @@
   let index = $state<Index | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
+
+  const motion = moving(() => $feed.loading);
 
   const bare = $derived(
     !$feed.loading &&
@@ -154,6 +157,7 @@
   {/if}
 
   <Index
+    {motion}
     bind:this={index}
     items={rows}
     {selected}
@@ -185,6 +189,7 @@
 
     {#each rows as item (item.id)}
       <Row
+        {motion}
         bind:this={drawn[item.id]}
         {item}
         surface="feed"

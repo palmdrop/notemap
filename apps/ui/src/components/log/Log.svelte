@@ -9,6 +9,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
+  import { moving } from "$lib/moving.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { NOTHING_LOGGED } from "$lib/said";
 
@@ -18,6 +19,7 @@
   import Views from "./Views.svelte";
 
   const pool = reachable();
+  const motion = moving(() => log.loading);
 
   const HALF_A_DAY = 12 * 60 * 60 * 1000;
 
@@ -77,7 +79,7 @@
   {/if}
 
   {#each rows as row (row.action.id)}
-    <LogRow action={row.action} gap={row.gap} />
+    <LogRow action={row.action} gap={row.gap} {motion} />
   {/each}
 
   {#if log.more || (log.loading && rows.length === 0)}

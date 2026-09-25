@@ -4,6 +4,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import { client } from "$lib/client";
   import { lineOf } from "$lib/excerpt";
+  import { slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
 
   /**
@@ -15,11 +16,14 @@
   let {
     items,
     selected,
+    motion,
     onselect,
     onprocess,
   }: {
     items: readonly Item[];
     selected: string | undefined;
+    /** Whether the list's latest change is one a read brought; absent, nothing moves. */
+    motion?: { readonly still: boolean };
     onselect: (id: string) => void;
     onprocess: (id: string) => void;
   } = $props();
@@ -69,6 +73,7 @@
     <div
       data-gap={line.gap ? "" : undefined}
       class="col-span-full grid grid-cols-subgrid {on ? 'font-semibold' : ''}"
+      transition:slide={{ fade: true, still: motion?.still ?? true }}
       onclick={(event) => {
         if (event.detail > 1) return;
         onselect(line.item.id);

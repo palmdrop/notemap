@@ -642,8 +642,10 @@ before, and a first trigger tag only seemed to hold it)*: a decision made on it 
 `discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
 and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
 line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
-or selecting another row lets it go. So `D` `D` `D` no longer walks the list — `D` `j` `D` `j`
-does — which is the price of being able to read what one just did.
+or selecting another row lets it go, and **letting go is when it slides out** *(2026-09-25)*: the
+selection is already on the next row while it does, and no key can land on a row on its way out.
+So `D` `D` `D` no longer walks the list — `D` `j` `D` `j` does — which is the price of being able to
+read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
@@ -1668,6 +1670,12 @@ the asking mark in the width `load more` already took. **The drained queue is on
 `Nothing left to process.` — in the body column's position, with no register drawn under it.
 Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
 `zero`, and not as a notice.
+
+**A page arrives still** *(2026-09-25)*. Rows a read brought — the next page, the list read again,
+an order turned, the pool's first answer over what the cache drew — appear and go without moving,
+because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
+arrives or leaves between reads slides: a capture landing, an item heard about, a row let go, a row
+processed on another device. The same holds on the feed, the queue's index and the log.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view toggle, and acts on the list it heads; settings and an item have no end to

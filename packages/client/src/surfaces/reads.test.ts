@@ -101,3 +101,46 @@ describe("a turn the pool did not answer", () => {
     expect(walked(transport).at(-1)).toEqual({ order: turned, after: null });
   });
 });
+
+/**
+ * A shell tells a read's rows from a change by the emission they arrive in: the
+ * one that ends the read. Were they to land first and the read end after, a
+ * page would draw as though every row on it had just arrived.
+ */
+describe("a read's answer", () => {
+  it("lands in the same emission that ends the read, and in no other", async () => {
+    const { client } = clientOver((request) => {
+      if (routeOf(request) !== "GET /v1/queue")
+        return json(200, { values: [] });
+      return new URL(request.url).searchParams.get("after") === null
+        ? json(200, {
+            values: [anItem("one"), anItem("two")],
+            next: "/v1/queue?after=two",
+          })
+        : json(200, { values: [anItem("three")] });
+    });
+
+    const seen: ListState[] = [];
+    const watching = client.queue.subscribe((list) => seen.push(list));
+
+    await client.enter("queue");
+    await client.loadQueue();
+    watching.unsubscribe();
+
+    const grew = seen.flatMap((list, at) => {
+      const before = seen[at - 1];
+      return before !== undefined && list.items.length > before.items.length
+        ? [{ before, list }]
+        : [];
+    });
+
+    expect(grew.map(({ list }) => ids(list))).toEqual([
+      ["one", "two"],
+      ["one", "two", "three"],
+    ]);
+    for (const { before, list } of grew) {
+      expect(before.loading).toBe(true);
+      expect(list.loading).toBe(false);
+    }
+  });
+});

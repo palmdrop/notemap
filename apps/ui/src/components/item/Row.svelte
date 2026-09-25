@@ -13,6 +13,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
+  import { slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
 
   /**
@@ -27,6 +28,7 @@
     surface,
     commands,
     pending = false,
+    motion,
     onselect,
     onprocess,
   }: {
@@ -37,6 +39,8 @@
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
+    /** Whether the list's latest change is one a read brought; absent, nothing moves. */
+    motion?: { readonly still: boolean };
     onselect: () => void;
     onprocess: () => void;
   } = $props();
@@ -88,7 +92,10 @@
 
 <!-- One element on the register's own tracks, so the row has a height of its
      own and the columns stay in register with every other row. -->
-<div class="col-span-full grid grid-cols-subgrid">
+<div
+  class="col-span-full grid grid-cols-subgrid"
+  transition:slide={{ fade: true, still: motion?.still ?? true }}
+>
   <Rail bind:this={rail} {selected} onpick={onselect} onreach={onprocess}>
     <Stamp at={item.createdAt} opened={selected} onopen={onselect} />
 

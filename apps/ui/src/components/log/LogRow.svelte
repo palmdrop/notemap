@@ -9,6 +9,7 @@
   import { factOf, failed, flattened, known } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
+  import { slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
 
   import Detail from "./Detail.svelte";
@@ -19,7 +20,16 @@
    * it was about and the one fact the kind carries in the body; and under a
    * routing kind, the record itself as the block the item draws.
    */
-  let { action, gap = false }: { action: Action; gap?: boolean } = $props();
+  let {
+    action,
+    gap = false,
+    motion,
+  }: {
+    action: Action;
+    gap?: boolean;
+    /** Whether the log's latest change is one a read brought; absent, nothing moves. */
+    motion?: { readonly still: boolean };
+  } = $props();
 
   const destinations = client.destinations.all;
   const templates = client.templates.all;
@@ -110,7 +120,10 @@
   );
 </script>
 
-<div class="col-span-full grid grid-cols-subgrid">
+<div
+  class="col-span-full grid grid-cols-subgrid"
+  transition:slide={{ fade: true, still: motion?.still ?? true }}
+>
   <Rail {gap}>
     <Stamp at={action.at} />
     <div class="mt-2 tracking-caps uppercase {bad ? 'text-alarm' : ''}">
