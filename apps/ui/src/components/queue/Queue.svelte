@@ -56,7 +56,10 @@
 
   const refused = $derived(refusalIn($queue));
 
-  const motion = moving(() => $queue.loading);
+  const motion = moving(
+    () => $queue.loading,
+    () => $queue.items.length,
+  );
 
   const drained = $derived(
     !$queue.loading &&

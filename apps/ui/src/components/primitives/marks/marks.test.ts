@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import Asking, { SHOWN_AFTER, SLOW_AFTER } from "./Asking.svelte";
+import Pending from "./Pending.svelte";
 import Stamp from "./Stamp.svelte";
 import StateWord from "./StateWord.svelte";
 
@@ -72,5 +73,21 @@ describe("the asking mark", () => {
     for (const square of squares) {
       expect(square.className).toContain("motion-reduce:animate-none");
     }
+  });
+});
+
+describe("the pending mark", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  test("is not drawn for work that drains before the asking mark would show", async () => {
+    render(Pending);
+    expect(screen.queryByText("pending")).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(SHOWN_AFTER - 1);
+    expect(screen.queryByText("pending")).toBeNull();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(screen.getByText("pending")).toBeDefined();
   });
 });

@@ -238,3 +238,21 @@ test("stands the asking mark inside the block while the daemon reads the link", 
   await screen.findByText("A post");
   expect(block("A post").querySelector("[data-asking]")).toBeNull();
 });
+
+test("keeps the picture's room whether or not a picture comes", async () => {
+  await serving(true, {
+    "https://a.example/post": () =>
+      json(200, {
+        url: "https://a.example/post",
+        reached: true,
+        title: "A post",
+      }),
+  });
+
+  render(Unfurls, { text: "read https://a.example/post" });
+  await screen.findByText("A post");
+
+  const room = block("A post").querySelector(".aspect-square");
+  expect(room).not.toBeNull();
+  expect(room?.querySelector("img")).toBeNull();
+});

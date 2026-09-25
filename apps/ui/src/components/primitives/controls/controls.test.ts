@@ -446,3 +446,21 @@ test("a trigger tag is marked with the template it applies, carried or offered",
 
 /** Referenced so a rename cannot leave the fixture pointing at nothing. */
 void Action;
+
+test("a tag set that cannot be added to still holds the +'s place, unreachable", () => {
+  const { container } = render(TagSet, {
+    names: ["one"],
+    offered: [],
+    addable: false,
+    onadd: vi.fn(),
+    onremove: vi.fn(),
+  });
+
+  expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
+  const held = [...container.querySelectorAll("button")].find(
+    (button) => button.textContent?.trim() === "+",
+  );
+  expect(held?.className).toContain("invisible");
+  expect(held?.getAttribute("tabindex")).toBe("-1");
+  expect((held as HTMLButtonElement).disabled).toBe(true);
+});

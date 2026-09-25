@@ -19,7 +19,10 @@
   import Views from "./Views.svelte";
 
   const pool = reachable();
-  const motion = moving(() => log.loading);
+  const motion = moving(
+    () => log.loading,
+    () => log.rows.length,
+  );
 
   const HALF_A_DAY = 12 * 60 * 60 * 1000;
 

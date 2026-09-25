@@ -10,8 +10,11 @@
   nothing on the page moves to say it is waiting. Rows slide into and out of the queue, the feed and
   the log, except for what a read brought; a notice rises into the corner; a section, a settings row
   and `more` open by sliding; the selected row's box fades; the process surface's next item fades
-  up. Durations are three tokens, zero under `prefers-reduced-motion`. See
-  [loading-and-motion](../plans/loading-and-motion.md).
+  up. Durations are three tokens, zero under `prefers-reduced-motion`. And the jumps a working
+  session found are gone: a row keeps its tag line, so selecting it and opening the tag line move
+  nothing; the page keeps its scrollbar's gutter and its face from the first paint; a reload draws
+  its rows where they stand; the log reads what a record sent once a page; an unfurl keeps its
+  picture's room and fades the picture in. See [loading-and-motion](../plans/loading-and-motion.md).
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
   landed `routed · research` no longer stand: a notice that offers something lingers long enough to
   reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
@@ -630,7 +633,9 @@ one in its place — at most one, the capture's own shape, and other kinds of at
 they are. `save` sends the edit naming what the box then holds, uploading a fresh picture on the
 way, and stamps it `web-image` where a picture is carried and `web-manual` where none is, the
 capture's own rule. The one thing the selected row adds to the rail is a `+` after the last tag, which
-opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
+opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
+a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
+nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
 leaves the shape too: the box's foot goes with the box, and a collapsed row holding a half-written
@@ -1354,7 +1359,9 @@ is a row of pressed words, a trigger tag marked with the template it applies, ea
 select it — **drawn inverted**, ink behind it, so the selection reads at a glance *(amended
 2026-09-18; a selected tag used to look like every other)* — and taken off on the `×` that then
 appears beside it *(amended 2026-09-15; a single press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
-losing its selection clears the selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
+losing its selection clears the selection without taking anything off. `+` opens a line **where
+the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width
+and a little taller, and wrapped under the tags)*, and an **absolute panel** beneath it —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
@@ -1446,7 +1453,9 @@ of them the same colour.)*
   `routed`, `archived` and `revised` use: those say what became of the item in the pool, this says
   what this client has not sent, and an archived row that has not drained carries both without
   either shouting over the other. Pending is the ordinary state of a mutation and it heals itself,
-  so neither mark is drawn in the shape a refusal is.
+  so neither mark is drawn in the shape a refusal is. **A row's mark waits as long as the asking
+  mark does** *(2026-09-25)*: work that drains within 250ms — a capture made while the pool
+  answers — is never marked, since the line it takes would come and go and move the row twice.
 - **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
@@ -1684,7 +1693,8 @@ Reaching the end is what the queue is for, so it is said once and quietly: no pa
 `zero`, and not as a notice.
 
 **A page arrives still** *(2026-09-25)*. Rows a read brought — the next page, the list read again,
-an order turned, the pool's first answer over what the cache drew — appear and go without moving,
+an order turned, the pool's first answer over what the cache drew, the cache filling an empty list
+as a page reloads — appear and go without moving,
 because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
 arrives or leaves between reads slides: a capture landing, an item heard about, a row let go, a row
 processed on another device. The same holds on the feed, the queue's index and the log.
@@ -1872,7 +1882,10 @@ item, and a row of the log offers nothing about narrowing.
 **A routing kind draws the record.** `routed` draws the block under its row from what the action
 says — destination, capability, place, template — with what was sent read by the record's id on
 arrival, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
-failure; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
+failure. **What was sent is read once a page** *(2026-09-25)*: it never changes, so a record read
+before — or read and found to have kept nothing — is drawn at once and asked for again by no one,
+and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known
+to hold what it sent, its line is held with the asking mark until it lands; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
 `template-fired` draws no block — its fact is the template's name, and the routing it began is a
 row of its own. The block is the item's, drawn once and the same wherever a record is read.
@@ -1946,7 +1959,10 @@ has one, then its site name (or the host), its title in bold and two lines of it
 whole block is the link. It is an **unfurl**, read by the daemon, never by the browser; only the
 picture is fetched by the browser, from wherever `og:image` points, on the rule a capture's own
 image already follows, and with no referrer. It is **automatic, everywhere a note's links appear** —
-the rows on the queue and the feed, the item surface, and the process surface. Three states are
+the rows on the queue and the feed, the item surface, and the process surface. **The picture's
+room is kept in every state** *(2026-09-25)*, a square at the block's left whether or not a picture
+comes, and a picture fades in over it once it has arrived, so the words beside it never move.
+Three states are
 ordinary, never the alarm: a block still asking draws the host alone; one whose page said nothing
 reads **`says nothing about itself`**; one that could not be reached — by the daemon, or the daemon
 by this device — reads **`out of reach`**, and is asked again the next time it is drawn; one the
@@ -2020,7 +2036,13 @@ served by the daemon beside the app — a face on the same origin is exactly as 
 which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
 captured prose, timestamps, labels, actions, the bar. Hierarchy is weight, capitals or small-caps
 with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
-under the cursor is underlined, never coloured.
+under the cursor is underlined, never coloured. **The face is asked for in the page's head and never
+swapped in** *(2026-09-25)*: it comes from the same origin as the page, so it is there before first
+paint, and a fallback laid out first and replaced would move every line on the page once.
+
+**The page's width does not depend on its length** *(2026-09-25)*. The scrollbar's gutter is kept
+whether or not the page scrolls, so a list emptied for a moment while it is read again, or a page
+growing past the window as it loads, moves nothing sideways.
 
 **Grid.** Two idioms, and the rule for which is where. *Lists are open*: queue, feed and log rows
 align on shared columns with no rule between rows; whitespace separates entries. *Rules mark a
@@ -2238,7 +2260,7 @@ view is how a reader sees more at once.
 ## Acceptance criteria
 
 - An unfurl arriving, or failing, moves nothing on the page: the block is the same height asking
-  as answered.
+  as answered, and its words stand in the same place with a picture as without one.
 - While the pool setting `unfurl` is off, or before it has been read, no request to `/v1/unfurl`
   is made and no block is drawn.
 - A bare URL typed in prose is a followable link; an email address is not.

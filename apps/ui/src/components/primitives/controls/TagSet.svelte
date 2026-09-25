@@ -206,7 +206,11 @@
       {fired === undefined ? name : trigger(name)}
     </span>
   {:else}
-    <span class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}">
+    <span
+      class="-my-0.25 px-0.75 py-0.25 {chosen === name
+        ? 'bg-ink text-ground'
+        : ''}"
+    >
       <button
         type="button"
         aria-pressed="true"
@@ -244,7 +248,9 @@
 {/each}
 
 {#if adding}
-  <div class="relative">
+  <div
+    class="relative h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
+  >
     <!-- svelte-ignore a11y_autofocus -->
     <input
       bind:value={draft}
@@ -260,7 +266,7 @@
       aria-expanded={rows.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
-      class="w-32 border-b border-ink px-2 py-0.5 outline-none"
+      class="h-full w-full border-b border-ink px-1 outline-none"
     />
     {#if rows.length > 0}
       <!-- Rows taken on `mousedown` with the default prevented, so taking one
@@ -291,11 +297,16 @@
       </div>
     {/if}
   </div>
-{:else if addable}
+{:else}
+  <!-- Held in place on every row, drawn only where it can be taken: selecting
+       a row, and opening the line, then move nothing under it. -->
   <button
     type="button"
-    aria-label={label}
+    aria-label={addable ? label : undefined}
+    aria-hidden={!addable || undefined}
+    tabindex={addable ? undefined : -1}
+    disabled={!addable}
     onclick={open}
-    class="hover:underline">+</button
+    class="hover:underline {addable ? '' : 'invisible'}">+</button
   >
 {/if}

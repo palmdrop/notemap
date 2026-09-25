@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { Item } from "@notemap/client";
 
   import Actions from "$components/item/Actions.svelte";
@@ -13,7 +14,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
-  import { fade, slide } from "$lib/motion";
+  import { fade, grow, slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
 
   /**
@@ -46,6 +47,20 @@
   } = $props();
 
   let editing = $state(false);
+  let box = $state<HTMLElement | undefined>(undefined);
+
+  // A tag that wraps onto a line of its own changes the row's height, and a
+  // row that changes height in place grows into it rather than jumping.
+  let stood = 0;
+  $effect.pre(() => {
+    void item.tags?.length;
+    stood = untrack(() => box?.offsetHeight ?? 0);
+  });
+  $effect(() => {
+    void item.tags?.length;
+    const element = untrack(() => box);
+    if (element !== undefined && stood > 0) grow(element, stood);
+  });
   let rail = $state<Rail | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
@@ -93,6 +108,7 @@
 <!-- One element on the register's own tracks, so the row has a height of its
      own and the columns stay in register with every other row. -->
 <div
+  bind:this={box}
   class="col-span-full grid grid-cols-subgrid"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
 >

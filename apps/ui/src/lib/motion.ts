@@ -108,3 +108,17 @@ export function grow(node: HTMLElement, from: number): void {
     { duration: time, easing: token("--ease-motion") || "linear" },
   );
 }
+
+/**
+ * Marks a picture `data-loaded` once it has arrived, so it can fade in over
+ * the room already kept for it. One the browser already held is marked before
+ * it is ever painted, and so is simply there.
+ */
+export function revealed(node: HTMLImageElement): () => void {
+  const show = () => {
+    node.dataset["loaded"] = "";
+  };
+  if (node.complete && node.naturalWidth > 0) show();
+  else node.addEventListener("load", show, { once: true });
+  return () => node.removeEventListener("load", show);
+}

@@ -65,3 +65,18 @@ test("a read that starts by clearing the list, as a turn does, drops the rows st
     { item: "two", still: true },
   ]);
 });
+
+test("an empty list filled after it was drawn, as the cache fills one on a reload, stands still", async () => {
+  const seen: Seen = [];
+  const next = await drawn([], seen);
+
+  await next(false, ["one", "two"]);
+  expect(seen).toEqual([
+    { item: "one", still: true },
+    { item: "two", still: true },
+  ]);
+
+  seen.length = 0;
+  await next(false, ["one", "two", "three"]);
+  expect(seen).toEqual([{ item: "three", still: false }]);
+});

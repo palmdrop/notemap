@@ -2,14 +2,19 @@ import { onMount, tick, untrack } from "svelte";
 
 /**
  * Whether the rows a list is about to draw or drop got there by a read — a
- * page, a re-read, a turned order, the pool's first answer over the cache —
- * and so draw still. A read starts and lands in the same update that flips
- * `reading`, so that update and only that one is still; every other change is
- * one a person should see move. The first draw is still too.
+ * page, a re-read, a turned order, the pool's first answer over the cache, the
+ * cache itself filling an empty list — and so draw still. A read starts and
+ * lands in the same update that flips `reading`, and a list going from nothing
+ * to something was filled rather than added to, so those updates and only
+ * those are still; every other change is one a person should see move.
  */
-export function moving(reading: () => boolean): { readonly still: boolean } {
+export function moving(
+  reading: () => boolean,
+  count: () => number,
+): { readonly still: boolean } {
   let still = true;
   let was = untrack(reading);
+  let held = untrack(count);
 
   function settle(): void {
     still = true;
@@ -18,9 +23,12 @@ export function moving(reading: () => boolean): { readonly still: boolean } {
 
   $effect.pre(() => {
     const now = reading();
-    if (now === was) return;
+    const size = count();
+    const filled = held === 0 && size > 0;
+    const turned = now !== was;
     was = now;
-    settle();
+    held = size;
+    if (filled || turned) settle();
   });
 
   onMount(settle);

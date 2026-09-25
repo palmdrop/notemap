@@ -48,7 +48,10 @@
 
   const refused = $derived(refusalIn($feed));
 
-  const motion = moving(() => $feed.loading);
+  const motion = moving(
+    () => $feed.loading,
+    () => $feed.items.length,
+  );
 
   const bare = $derived(
     !$feed.loading &&

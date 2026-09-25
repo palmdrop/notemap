@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import {
     Refused,
     saidBy,
@@ -9,6 +10,7 @@
 
   import { itemHref } from "$components/item/href";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { argumentsOf, type Argument } from "$lib/arguments";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
@@ -17,6 +19,7 @@
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
+  import { keepOutput, outputOf } from "$lib/outputs";
   import { placeNamed } from "$lib/routing";
   import {
     BY_HAND,
@@ -123,17 +126,19 @@
 
   const images = $derived(held === undefined ? [] : client.images(held));
 
-  let output = $state<string | undefined>(undefined);
+  let output = $state<string | undefined>(
+    untrack(() => outputOf(record.id) ?? undefined),
+  );
   let reading = $state(false);
   let unreadable = $state("");
 
   // One component may be reused across a change of record, and what was read
   // for one would otherwise be drawn as what the next one sent.
   $effect(() => {
-    void record.id;
-    output = undefined;
+    const known = outputOf(record.id);
+    output = known ?? undefined;
     unreadable = "";
-    none = false;
+    none = known === null || (blind && byHand);
     named = undefined;
   });
 
@@ -141,7 +146,9 @@
    * Read on arrival: whoever is looking at a record came to see what was sent.
    * A read that failed is not tried again on its own — `read it` is offered.
    */
-  let none = $state(false);
+  let none = $state(
+    untrack(() => outputOf(record.id) === null || (blind && byHand)),
+  );
 
   $effect(() => {
     if (!kept) return;
@@ -155,10 +162,12 @@
     unreadable = "";
     try {
       const bytes = await client.routing.output(asked);
+      keepOutput(asked, bytes);
       if (asked === record.id) output = bytes;
     } catch (error) {
       if (asked !== record.id) return;
       if (blind && error instanceof Refused && error.code === "no-output") {
+        keepOutput(asked, null);
         none = true;
       } else {
         unreadable = `${OUTPUT_UNREADABLE} ${saidBy(error)}`;
@@ -258,7 +267,7 @@
   {:else if !delivered}
     <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
   {:else}
-    {#if images.length > 0 || body !== undefined || (!kept && !byHand)}
+    {#if images.length > 0 || body !== undefined || (!kept && !byHand) || (kept && !blind && unreadable === "")}
       <div class="px-3 py-2.5">
         {#each images as image (image)}
           <img
@@ -272,6 +281,9 @@
           <pre class="break-words whitespace-pre-wrap">{body}</pre>
         {:else if !kept && !byHand}
           <div>{NOTHING_KEPT}</div>
+        {:else if kept && !blind && unreadable === ""}
+          <!-- The line the output will take, held while it is read. -->
+          <Asking />
         {/if}
       </div>
     {/if}
@@ -280,9 +292,7 @@
       <div class="px-3 py-2.5">
         <div role="status">{unreadable}</div>
         <div class="mt-2">
-          <Action disabled={reading} onclick={() => void read()}>
-            {reading ? "reading…" : "read it"}
-          </Action>
+          <Action working={reading} onclick={() => void read()}>read it</Action>
         </div>
       </div>
     {/if}

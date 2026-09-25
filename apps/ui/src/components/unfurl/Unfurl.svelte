@@ -2,6 +2,7 @@
   import { Refused, type Unfurl } from "@notemap/client";
 
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { revealed } from "$lib/motion";
 
   import {
     UNFURL_NOT_READ,
@@ -76,15 +77,20 @@
   <div
     class="flex h-[calc(var(--text-shell--line-height)*4)] gap-3 overflow-hidden"
   >
-    {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
-      <img
-        src={drawn.unfurl.image}
-        alt=""
-        loading="lazy"
-        referrerpolicy="no-referrer"
-        class="aspect-square h-full flex-none object-cover"
-      />
-    {/if}
+    <!-- The picture's room is kept whether or not one comes, so the words
+         beside it never move when it does. -->
+    <div class="aspect-square h-full flex-none">
+      {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
+        <img
+          src={drawn.unfurl.image}
+          alt=""
+          loading="lazy"
+          referrerpolicy="no-referrer"
+          {@attach revealed}
+          class="size-full object-cover opacity-0 transition-opacity duration-(--duration-short) ease-motion data-loaded:opacity-100"
+        />
+      {/if}
+    </div>
     <div class="min-w-0 flex-1">
       <div class="truncate">
         {drawn.kind === "read" ? (drawn.unfurl.siteName ?? host) : host}

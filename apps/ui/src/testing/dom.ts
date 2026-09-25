@@ -6,6 +6,7 @@ import { dispatch } from "$lib/command/dispatch";
 import { published } from "$lib/command/stack.svelte";
 import { clearDraft } from "$lib/draft";
 import { forgetEveryName } from "$lib/names.svelte";
+import { forgetOutputs } from "$lib/outputs";
 
 /**
  * jsdom lays nothing out, so it implements neither scrolling nor a scroll
@@ -140,6 +141,7 @@ beforeEach(() => {
   // this process already read out of it.
   forgetEverything();
   forgetEveryName();
+  forgetOutputs();
   clearDraft();
   delete document.documentElement.dataset["theme"];
 });

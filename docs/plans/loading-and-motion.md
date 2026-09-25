@@ -172,6 +172,27 @@ Depends on phase 1.
 with reduced motion on and off: each moves when on, none when off, and the index row's height
 settles where it did before.
 
+### Phase 7 — the jumps found in use
+
+Reported after phases 1–6, each measured in a browser before it was changed.
+
+- [x] A new capture slid toward a height it never kept: the `pending` mark was drawn for the few
+      milliseconds before the capture drained. The mark now waits 250ms, as the asking mark does. _(2026-09-25)_
+- [x] Selecting a row, and opening the tag line, grew it: the `+` took a line of its own and the
+      line was taller than a line and fixed in width. Every row now keeps its tag line (settled
+      with the developer); the line opens where the `+` stood, one line tall. _(2026-09-25)_
+- [x] A tag that wraps onto a new line grows the row rather than jumping; a tag's inverted box no
+      longer adds to its line. _(2026-09-25)_
+- [x] Turning the order moved everything sideways: the list emptied, the scrollbar went. The
+      scrollbar's gutter is kept. _(2026-09-25)_
+- [x] Every reload slid its rows in: the cache fills the list after the first draw. A list going from
+      nothing to something now stands still. The face is preloaded and never swapped. _(2026-09-25)_
+- [x] The log's records grew as their outputs landed, on every visit. Outputs, and their absence,
+      are read once a page; a record known to hold one holds its line meanwhile; a decision made by
+      hand is not asked. `read it` carries the asking mark rather than `reading…`. _(2026-09-25)_
+- [x] An unfurl's picture pushed its words aside: its room is kept, and it fades in. _(2026-09-25)_
+- [x] shell.md, and typecheck, tests, lint; `git commit`. _(2026-09-25)_
+
 ---
 
 ## Unknowns

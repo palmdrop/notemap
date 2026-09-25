@@ -92,6 +92,8 @@
   font-family: "Bricolage Grotesque";
   font-style: normal;
   font-weight: 400 600;
-  font-display: swap;
+  /* Served from the same origin as the page and asked for in its head, so it
+     is here before first paint; swapping would lay every line out twice. */
+  font-display: block;
   src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
 }

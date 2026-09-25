@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { bezier, duration, fade, grow, rise, slide } from "./motion";
+import { bezier, duration, fade, grow, revealed, rise, slide } from "./motion";
 
 const root = document.documentElement;
 
@@ -119,5 +119,21 @@ describe("grow", () => {
     grow(node, 200);
 
     expect(animate).not.toHaveBeenCalled();
+  });
+});
+
+describe("revealed", () => {
+  test("marks a picture already held at once, and one still coming when it lands", () => {
+    const held = document.createElement("img");
+    Object.defineProperty(held, "complete", { value: true });
+    Object.defineProperty(held, "naturalWidth", { value: 10 });
+    revealed(held);
+    expect(held.dataset["loaded"]).toBe("");
+
+    const coming = document.createElement("img");
+    revealed(coming);
+    expect(coming.dataset["loaded"]).toBeUndefined();
+    coming.dispatchEvent(new Event("load"));
+    expect(coming.dataset["loaded"]).toBe("");
   });
 });
