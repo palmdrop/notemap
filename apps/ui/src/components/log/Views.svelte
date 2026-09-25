@@ -30,26 +30,26 @@
 <div
   class="flex items-end justify-between border-b border-ink pt-5 max-narrow:pt-3.5"
 >
+  <!-- Every tab keeps the box's room, the current one drawing it, so choosing
+       another moves nothing: the first word still starts on the column, its
+       box bleeding past it as a selected row's does. -->
   <nav
-    class="flex min-w-0 flex-1 [scrollbar-width:none] overflow-x-auto"
+    class="-ml-3.5 flex min-w-0 flex-1 [scrollbar-width:none] overflow-x-auto max-narrow:-ml-2.5"
     aria-label="Narrow the log to"
   >
     {#each tabs as tab (tab.name)}
-      {#if tab.on}
-        <span
-          aria-current="page"
-          class="-mb-px h-8 border border-ink border-b-ground px-3.5 leading-8 font-semibold whitespace-nowrap max-narrow:px-2.5"
-        >
-          {tab.name}
-        </span>
-      {:else}
-        <a
-          href={tab.href}
-          class="h-8 px-3.5 leading-8 whitespace-nowrap first:pl-0 max-narrow:px-2.5"
-        >
-          {tab.name}
-        </a>
-      {/if}
+      <!-- The current one is no link, and stays the same element, so its box
+           fades between tabs rather than being drawn anew. -->
+      <a
+        href={tab.on ? undefined : tab.href}
+        aria-current={tab.on ? "page" : undefined}
+        data-word={tab.name}
+        class="steady-weight -mb-px h-8 border px-3.5 leading-8 whitespace-nowrap transition-[border-color,font-weight] duration-(--duration-short) ease-fade max-narrow:px-2.5 {tab.on
+          ? 'border-ink border-b-ground font-semibold'
+          : 'border-transparent'}"
+      >
+        {tab.name}
+      </a>
     {/each}
   </nav>
   <span class="shrink-0 pb-1 pl-3.5"><Order /></span>

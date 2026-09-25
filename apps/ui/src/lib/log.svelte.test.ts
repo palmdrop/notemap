@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
+import type { Action } from "@notemap/client";
 import { json, refusal, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
@@ -234,4 +235,18 @@ test("forgetting drops the page and leaves nothing loading", async () => {
   release();
   await vi.waitFor(() => expect(log.rows).toEqual([]));
   expect(log.loading).toBe(false);
+});
+
+test("tells a row the watcher brought from one a read brought, until the next read", async () => {
+  answering([anAction("one")]);
+  log.reading("newest-first", undefined);
+  await settled();
+
+  log.arrived([anAction("two"), anAction("one")] as unknown as Action[]);
+
+  expect(log.heard("two")).toBe(true);
+  expect(log.heard("one")).toBe(false);
+
+  log.reading("newest-first", undefined, ["captured"]);
+  expect(log.heard("two")).toBe(false);
 });

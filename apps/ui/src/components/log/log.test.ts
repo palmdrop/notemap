@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { Action } from "@notemap/client";
@@ -658,4 +659,33 @@ test("opens a gap where more than half a day passed, and not where less did", as
     false,
     true,
   ]);
+});
+
+/**
+ * Emptied at the turn and filled at the answer, a quick answer was a frame
+ * with nothing in it: the log flickered.
+ */
+test("a turned reading holds the last one while it fades, rather than emptying at once", async () => {
+  let answer: (() => void) | undefined;
+  pool(async (request: Request) => {
+    if (routeOf(request) !== "GET /v1/actions")
+      return json(200, { values: [] });
+    if (!new URL(request.url).searchParams.has("kind")) {
+      return json(200, { values: [anAction("one", { kind: "captured" })] });
+    }
+    await new Promise<void>((resolve) => (answer = resolve));
+    return json(200, { values: [anAction("two", { kind: "routed" })] });
+  });
+  render(Log);
+  reading();
+  await screen.findByText("captured");
+
+  log.reading("newest-first", undefined, ["routed"]);
+  await tick();
+  expect(screen.getByText("captured")).toBeDefined();
+
+  await vi.waitFor(() => expect(answer).toBeDefined());
+  answer?.();
+  await screen.findByText("routed");
+  expect(screen.queryByText("captured")).toBeNull();
 });

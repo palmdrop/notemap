@@ -217,10 +217,15 @@ Asked for after phase 7, as the developer finds them.
       out 2026-09-25 — the developer preferred the cut)_
 - [x] The bar's surfaces and the view toggle ease into bold and out, holding their bold width so
       their neighbours stay put. _(2026-09-25)_
+- [x] The log: only a record heard from the watcher slides in and grows; what a read brings, and
+      what it fills in after, stands still. _(2026-09-25)_
 - [x] Settings: add and edit forms, the minted token and the server's sources slide open and shut;
       a form follows its height as a kind changes its fields. _(2026-09-25)_
 - [x] The selected index line eases into bold without widening the stamp column; `settings` is
       current in the bar at a section's address. _(2026-09-25)_
+- [x] The log's tabs keep one box's room each, the box fading between them; a turned reading
+      fades out and in rather than emptying for a frame; an index line is selected from its
+      stamp too. Measured in a browser: no tab moves, the log never empties on a quick answer. _(2026-09-25)_
 - [x] `ease-fade` for what changes in place, measured in a browser: the selected row's box faded
       in on `ease-motion` at 73% by its third frame, and its foot left at once. It now fades both
       ways, in step. _(2026-09-25)_

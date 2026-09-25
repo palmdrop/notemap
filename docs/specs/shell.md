@@ -1897,6 +1897,15 @@ the failure's own words as the body, in alarm; `delivery-cancelled` the head and
 `template-fired` draws no block — its fact is the template's name, and the routing it began is a
 row of its own. The block is the item's, drawn once and the same wherever a record is read.
 
+**Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
+slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
+Everything a read brings — a view chosen, the order turned, a page, a re-read — stands still, and
+so does all it fills in afterwards, what was sent included: a view switched while every row
+settled its height at once read as motion about nothing. **A turned reading fades** — another
+view, the order, the subject: what was drawn fades out over `short` and is held while it does, and
+the answer fades in, so a quick answer is never a frame of empty log. One slower than the fade
+finds the log emptied and asking, as any read does.
+
 **`history` is the log narrowed to one item**, reached from the item's actions, and says so above
 the head: `HISTORY`, the item's first words as a link to it, and `all of the log`, which widens
 while keeping the view. The order and the filter both live on the URL, so a reload and a shared
@@ -1905,7 +1914,9 @@ link come back to the same reading.
 **The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
 `classification`, `pool`, drawn as **tabs on the head's rule** — the one being read bold and
 boxed on three sides so it sits on the rule, the rest as links, the order control at the right of
-the same rule. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
+the same rule. Every tab keeps the box's room and a bold word's width *(2026-09-25)*, so choosing
+another moves nothing: the box fades from the one to the other over `short` and the weight eases
+with it, the first word starting on the column and its box bleeding past it. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
 the pool's own kinds and the URL carries the kinds rather than the name — `?kind=routed,template-fired`
 — so a link somebody writes by hand reads the same way as one of these, and a set that is not
 exactly a view lights none of them. The pool does the narrowing: a page holds what it shows, where

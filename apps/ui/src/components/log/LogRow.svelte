@@ -23,12 +23,16 @@
   let {
     action,
     gap = false,
-    motion,
+    heard = false,
   }: {
     action: Action;
     gap?: boolean;
-    /** Whether the log's latest change is one a read brought; absent, nothing moves. */
-    motion?: { readonly still: boolean };
+    /**
+     * Arrived from the watcher rather than with a read: it slides in, and grows
+     * into what it goes on to hold. What a read brings, and all it goes on to
+     * fill in, stands still.
+     */
+    heard?: boolean;
   } = $props();
 
   const destinations = client.destinations.all;
@@ -122,8 +126,8 @@
 
 <div
   class="col-span-full grid grid-cols-subgrid"
-  transition:slide={{ fade: true, still: motion?.still ?? true }}
-  {@attach growing}
+  transition:slide={{ fade: true, still: !heard }}
+  {@attach heard && growing}
 >
   <Rail {gap}>
     <Stamp at={action.at} />

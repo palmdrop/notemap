@@ -8,6 +8,8 @@ import {
   type Order,
 } from "@notemap/client";
 
+import { SvelteSet } from "svelte/reactivity";
+
 import { client } from "./client";
 
 /**
@@ -25,6 +27,8 @@ let loading = $state(false);
 let answered = $state(false);
 let refused = $state<string | undefined>(undefined);
 let failed = $state(false);
+/** What arrived from the watcher since the last read: the rows that move in. */
+const heard = new SvelteSet<Action["id"]>();
 
 /**
  * Which walk is the current one. A read that lands after the log has been
@@ -107,6 +111,7 @@ function restart(
   item = subject;
   kinds = narrowed;
   rows = [];
+  heard.clear();
   after = undefined;
   more = false;
   answered = false;
@@ -132,6 +137,10 @@ export const log = {
   get loading() {
     return loading;
   },
+  /** A reading read from its start — a view, an order, a subject — not yet answered. */
+  get turning() {
+    return loading && !answered;
+  },
   get failed() {
     return failed;
   },
@@ -144,6 +153,10 @@ export const log = {
   },
   get shown() {
     return rows.length;
+  },
+  /** Whether a row arrived from the watcher rather than with a read. */
+  heard(id: Action["id"]): boolean {
+    return heard.has(id);
   },
 
   /**
@@ -183,6 +196,9 @@ export const log = {
     );
     if (wanted.length === 0) return;
 
+    for (const action of wanted) {
+      if (!rows.some((one) => one.id === action.id)) heard.add(action.id);
+    }
     rows = ahead(rows, [...wanted].reverse());
   },
 
@@ -235,6 +251,7 @@ export const log = {
     item = undefined;
     kinds = undefined;
     rows = [];
+    heard.clear();
     after = undefined;
     more = false;
     answered = false;
