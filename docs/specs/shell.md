@@ -1,7 +1,7 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-25
 **Shipped**:
 
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
@@ -1928,7 +1928,14 @@ The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one g
 nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
 with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`, `measure-wide`,
 `read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
-breakpoints. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
+breakpoints.
+
+**Durations are the one scale named by magnitude** *(2026-09-25)*: `duration-short` for what
+opens in place, `duration-long` for what enters, leaves or moves across, one `ease-motion` for
+both, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
+far a thing moves rather than by what it is, which is why these alone are not roles. All three are
+zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
+and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
 inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
 
 **Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
@@ -1987,8 +1994,15 @@ is capped at 38rem** — about seventy characters — inside the body column: th
 width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
 indent.
 
-**Motion.** Few, structural, ~150–200ms, `prefers-reduced-motion` honoured. Nothing else moves.
-*(Not yet built; phase 7 of the plan.)*
+**Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
+slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
+settings row, an index row and `more` slide open and shut; the process surface's next item fades
+up. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
+overlays — the order chooser, the tag chooser, the path and candidate lists — do not move: they
+are used at typing speed, and a panel fading in behind a keystroke reads as lag. **What a read
+brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.
+Only a change moves — a decision let go, a capture, an item heard about, a row processed
+elsewhere — so the reader's eye goes to the one thing that changed. Nothing else moves.
 
 *What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
 for a result and red for an action, the accent edge on the open row, the furlable rail — was the

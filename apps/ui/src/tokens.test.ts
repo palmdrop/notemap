@@ -32,6 +32,11 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
     found:
       /\b(?:text|bg|border|fill|stroke|ring|shadow|accent|caret|decoration|outline|divide|placeholder|from|via|to)-\[(?!var\()/,
   },
+  {
+    what: "a duration, delay or easing of its own",
+    found:
+      /\b(?:duration|delay)-(?:\d|\[)|\b(?:ease|animate)-(?:in|out|linear|spin|ping|pulse|bounce|\[)|\b(?:duration|delay):\s*\d|(?:transition|animation)(?:-duration|-delay|-timing-function)?\s*:(?![^;]*var\()[^;{]*\d/,
+  },
   // Roles the shell used to have. One face at one size, and no muted ink,
   // no green and no accent — each of these is a name for something retired.
   ...[
