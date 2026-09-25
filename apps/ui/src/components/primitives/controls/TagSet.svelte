@@ -224,7 +224,7 @@
       </span>
     {:else}
       <span
-        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 transition-[outline-color] duration-(--duration-short) ease-motion {chosen ===
+        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 transition-[outline-color] duration-(--duration-short) ease-fade {chosen ===
         name
           ? 'outline-ink'
           : 'outline-transparent'}"

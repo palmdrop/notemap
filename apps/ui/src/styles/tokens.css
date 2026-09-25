@@ -61,6 +61,10 @@
   /* One square of the asking mark's loop. */
   --duration-step: 300ms;
   --ease-motion: cubic-bezier(0.2, 0, 0, 1);
+  /* What changes in place rather than travelling — a fade, a colour, a weight.
+     Even at both ends: on `motion`'s curve a fade is most of the way there in
+     its first frames and reads as a snap on the way in. */
+  --ease-fade: cubic-bezier(0.4, 0, 0.6, 1);
 
   --animate-step: step calc(var(--duration-step) * 3) steps(1, end) infinite;
 

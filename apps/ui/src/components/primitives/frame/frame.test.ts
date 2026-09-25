@@ -20,6 +20,18 @@ test("marks the surface being read, and only that one", () => {
   expect(link("queue").classList.contains("font-semibold")).toBe(false);
 });
 
+test("marks a surface read at an address under its own", () => {
+  render(Nav, {
+    surfaces: [...SURFACES, { href: "/settings", label: "settings" }],
+    current: "/settings/destinations",
+  });
+
+  const link = (name: string) => screen.getByRole("link", { name });
+
+  expect(link("settings").getAttribute("aria-current")).toBe("page");
+  expect(link("queue").getAttribute("aria-current")).toBeNull();
+});
+
 /** Pending is ordinary and heals itself, so an idle outbox is not a state of its own. */
 test("one glyph says whether the pool is within reach and whether work waits", () => {
   const { rerender } = render(Status, { reachable: true, waiting: 0 });

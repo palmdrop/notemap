@@ -87,7 +87,7 @@
           loading="lazy"
           referrerpolicy="no-referrer"
           {@attach revealed}
-          class="size-full object-cover opacity-0 transition-opacity duration-(--duration-short) ease-motion data-loaded:opacity-100"
+          class="size-full object-cover opacity-0 transition-opacity duration-(--duration-short) ease-fade data-loaded:opacity-100"
         />
       {/if}
     </div>

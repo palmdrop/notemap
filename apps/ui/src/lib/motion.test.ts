@@ -54,6 +54,22 @@ describe("duration", () => {
   });
 });
 
+test("a fade eases evenly, and what travels decelerates", () => {
+  root.style.setProperty("--ease-motion", "cubic-bezier(0.2, 0, 0, 1)");
+  root.style.setProperty("--ease-fade", "cubic-bezier(0.4, 0, 0.6, 1)");
+  const node = document.createElement("div");
+
+  const faded = fade(node).easing!;
+  const slid = slide(node).easing!;
+
+  expect(faded(0.5)).toBeCloseTo(0.5, 2);
+  expect(faded(0.1)).toBeLessThan(0.1);
+  expect(slid(0.1)).toBeGreaterThan(faded(0.1) * 3);
+
+  root.style.removeProperty("--ease-motion");
+  root.style.removeProperty("--ease-fade");
+});
+
 test("a sliding fade ends on the opacity it asked for", () => {
   root.style.setProperty("--duration-long", "220ms");
   const css = slide(document.createElement("div"), { fade: true }).css;

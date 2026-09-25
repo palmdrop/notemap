@@ -138,13 +138,13 @@
        nothing above or below it; unselected, the rail's rule runs through it. -->
   {#if selected}
     <div
-      class="col-span-full -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
-      in:fade
+      class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+      transition:fade
     >
       <Actions {commands} />
     </div>
   {:else}
-    <div class="col-start-1 h-9 border-r border-ink"></div>
-    <div class="col-start-2 h-9"></div>
+    <div class="col-start-1 row-start-2 h-9 border-r border-ink"></div>
+    <div class="col-start-2 row-start-2 h-9"></div>
   {/if}
 </div>

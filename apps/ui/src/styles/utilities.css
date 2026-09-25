@@ -11,6 +11,27 @@
 }
 
 /**
+ * A word that turns bold in place, as the current one of a row of them does:
+ * its bold width is held from the start, so the words beside it never move.
+ * The word is repeated in `data-word`, where only its width is drawn and
+ * nothing is read aloud.
+ */
+@utility steady-weight {
+  display: inline-flex;
+  flex-direction: column;
+
+  &::after {
+    content: attr(data-word) / "";
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: var(--font-weight-semibold);
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+/**
  * The room a surface has rather than the room a row has. The drained queue is
  * the thing the queue exists to reach, so it is not drawn as a notice.
  */

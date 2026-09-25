@@ -25,7 +25,19 @@ test("lays the day over the time below the breakpoint", () => {
 
   const written = container.querySelector("span");
   expect(written?.className).toContain("max-narrow:flex-col");
-  expect(written?.children).toHaveLength(2);
+  const [day, between, time] = [...(written?.children ?? [])];
+  expect(day?.tagName).toBe("TIME");
+  expect(between?.className).toContain("max-narrow:hidden");
+  expect(time?.textContent).toBe("11:14");
+});
+
+test("holds the space between day and time at the ordinary weight", () => {
+  const at = new Date(2026, 8, 2, 11, 14).toISOString();
+  const { container } = render(Stamp, { at, inline: true });
+
+  const between = container.querySelector("[aria-hidden]");
+  expect(between?.className).toContain("font-normal");
+  expect(between?.className).not.toContain("max-narrow:hidden");
 });
 
 test("says what became of an item, in one word", () => {

@@ -36,8 +36,10 @@ export function duration(magnitude: Magnitude): number {
   return found[2] === "s" ? value * 1000 : value;
 }
 
-export function easing(): (t: number) => number {
-  return bezier(token("--ease-motion")) ?? ((t) => t);
+export function easing(
+  curve: "motion" | "fade" = "motion",
+): (t: number) => number {
+  return bezier(token(`--ease-${curve}`)) ?? ((t) => t);
 }
 
 /** `cubic-bezier(x1, y1, x2, y2)` as the function of time CSS would make of it. */
@@ -65,8 +67,11 @@ export function bezier(said: string): ((t: number) => number) | undefined {
   };
 }
 
-function timing({ magnitude = "long", still = false }: Moving = {}) {
-  return { duration: still ? 0 : duration(magnitude), easing: easing() };
+function timing(
+  { magnitude = "long", still = false }: Moving = {},
+  curve: "motion" | "fade" = "motion",
+) {
+  return { duration: still ? 0 : duration(magnitude), easing: easing(curve) };
 }
 
 /**
@@ -119,7 +124,7 @@ export function widen(node: Element, params: Moving = {}): TransitionConfig {
 }
 
 export function fade(node: Element, params: Moving = {}): TransitionConfig {
-  return fading(node, timing({ magnitude: "short", ...params }));
+  return fading(node, timing({ magnitude: "short", ...params }, "fade"));
 }
 
 /** Fading in from a little below where it comes to rest. */

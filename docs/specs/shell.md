@@ -524,7 +524,8 @@ two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second colu
 rail, and it survives a phone rather than collapsing into the first.
 
 Navigation names **four** surfaces — `queue · feed · log · settings` — as four equals at the
-bar's left, the current one bold. *Amended 2026-09-14*: the log and settings joined the two; the
+bar's left, the current one bold, each holding its bold width so the one beside it does not move
+([Motion](#visual-direction)). *Amended 2026-09-14*: the log and settings joined the two; the
 wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
 surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
 where the surfaces would be.
@@ -2005,8 +2006,10 @@ with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutte
 breakpoints.
 
 **Durations are the one scale named by magnitude** *(2026-09-25)*: `duration-short` for what
-opens in place, `duration-long` for what enters, leaves or moves across, one `ease-motion` for
-both, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
+opens in place, `duration-long` for what enters, leaves or moves across, `ease-motion` for what
+travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both ends,
+since a fade on `ease-motion` is most of the way there in its first frames and reads as a snap on
+the way in *(amended 2026-09-25; there was one easing)*, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
 far a thing moves rather than by what it is, which is why these alone are not roles. All three are
 zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
 and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
@@ -2085,7 +2088,12 @@ described, the decision cleared by `route` — over `short`, turned from whereve
 change lands mid-way, typing included; the process surface's next item fades up; a form in
 settings — adding or editing a template, a destination, an account, a token — and the server's
 sources slide open and shut, a `+ add` sliding shut as its form opens, and a form grows and
-shrinks into the fields a choice in it brings — a destination's kind, an account's. No navigation moves: an item carried from its
+shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
+row's box fades in and out whole, its foot with its edges, the one leaving and the one arriving
+in step. The current surface in the
+bar, the current view and the selected index line **ease into bold and out of it** over `short`,
+each word holding its bold width throughout so nothing beside it moves. A surface is current
+anywhere under its own address — `settings` at a section's. No navigation moves: an item carried from its
 row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
 overlays — the order chooser, the path and candidate lists — do not move of themselves: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
