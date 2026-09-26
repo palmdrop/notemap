@@ -10,7 +10,7 @@ import {
 } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
-import Edit from "./Edit.svelte";
+import Edit from "./Edit.fixture.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 

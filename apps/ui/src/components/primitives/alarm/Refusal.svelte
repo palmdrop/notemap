@@ -15,8 +15,8 @@
   role="alert"
   class="grid gap-1.5 border border-alarm bg-ground px-3 py-2.5 text-alarm"
 >
-  <span class="break-words">{what}</span>
-  <span class="break-words">{why}</span>
+  <span class="wrap-anywhere">{what}</span>
+  <span class="wrap-anywhere">{why}</span>
   <button type="button" onclick={ondismiss} class="justify-self-end underline">
     dismiss
   </button>

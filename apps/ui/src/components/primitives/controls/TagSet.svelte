@@ -22,6 +22,7 @@
     fires,
     held,
     addable = true,
+    still = false,
     label = "Add a tag",
     onadd,
     onremove,
@@ -43,6 +44,8 @@
     held?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
+    /** Every tag drawn as a word and nothing pressable, while the item is being rewritten. */
+    still?: boolean;
     /** What the `+` and the line are called, where two sets share a page. */
     label?: string;
     onadd: (name: string) => void;
@@ -210,11 +213,14 @@
      offer below keeps the whole name, being what is typed against. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
-  {@const inert = held?.(name) === true}
+  {@const filed = held?.(name) === true}
+  {@const inert = still || filed}
   <span class="whitespace-nowrap" transition:unfold={{ fade: true }}>
     {#if inert}
       <span
-        title="filed the item — cancel the routing to take it off"
+        title={filed
+          ? "filed the item — cancel the routing to take it off"
+          : undefined}
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}

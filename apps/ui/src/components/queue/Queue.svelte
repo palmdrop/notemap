@@ -20,7 +20,7 @@
   import { client } from "$lib/client";
   import { commandsFor } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
-  import { publish } from "$lib/command/stack.svelte";
+  import { holding, publish } from "$lib/command/stack.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -41,6 +41,10 @@
 
   /** Processing starts on the row, and one row is selected at a time. */
   let selected = $state<string | undefined>(undefined);
+
+  /** The capture box is selected rather than a row: it is the head of the queue. */
+  let atCapture = $state(false);
+  let capture = $state<Capture | undefined>(undefined);
 
   /** Where the selected row last stood, for when it leaves. */
   let stood = $state<number | undefined>(undefined);
@@ -129,6 +133,7 @@
   });
 
   function select(id: string) {
+    if (holding()) return;
     if (selected === id) deselect();
     else selected = id;
   }
@@ -136,6 +141,26 @@
   function deselect() {
     selected = undefined;
     stood = undefined;
+    atCapture = false;
+  }
+
+  // A row taken by any way at all — a click, a key, the way back from
+  // processing — is the one selection there is.
+  $effect(() => {
+    if (selected !== undefined) atCapture = false;
+  });
+
+  /** Writing in the box is being at the head of the queue, and no row is selected meanwhile. */
+  function captureFocused() {
+    if (holding()) return;
+    deselect();
+    atCapture = true;
+  }
+
+  function toCapture() {
+    deselect();
+    atCapture = true;
+    capture?.take();
   }
 
   /** The deep tier: a surface of its own, which comes back here when it is done. */
@@ -163,6 +188,13 @@
   async function walk(step: 1 | -1) {
     if (rows.length === 0) return;
     const from = selected;
+    if (
+      step === -1 &&
+      (atCapture || (from !== undefined && rows[0]?.id === from))
+    ) {
+      toCapture();
+      return;
+    }
     const last = () => rows.at(-1)?.id === from;
     if (step === 1 && from !== undefined && last() && pool.yes) {
       await readPast(
@@ -204,14 +236,26 @@
     ...listCommands({
       ondown: () => void walk(1),
       onup: () => void walk(-1),
-      onselect: () => (current !== undefined ? process(current) : void walk(1)),
+      onselect: () => {
+        if (current !== undefined) process(current);
+        else if (atCapture) capture?.take();
+        else void walk(1);
+      },
       ondeselect: deselect,
     }),
     ...commands,
+    ...(atCapture
+      ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
+      : []),
   ]);
 </script>
 
-<Capture focus={arrived === null} />
+<Capture
+  bind:this={capture}
+  focus={arrived === null}
+  selected={atCapture}
+  onfocus={captureFocused}
+/>
 
 <Head>
   <ViewToggle {view} onchoose={read} />

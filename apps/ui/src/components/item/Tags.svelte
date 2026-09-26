@@ -7,14 +7,24 @@
   import { offerable, triggeredBy } from "$lib/templates";
 
   /** `addable` is the selected row's: a `+` on every row is a `+` nobody reads. */
-  let { item, addable = false }: { item: Item; addable?: boolean } = $props();
+  let {
+    item,
+    addable = false,
+    still = false,
+  }: { item: Item; addable?: boolean; still?: boolean } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
 
   const names = $derived((item.tags ?? []).map((tag) => tag.name));
 
   const inUse = client.tags.inUse;
-  const offered = $derived(offerable($inUse.map((use) => use.name)));
+  const templates = client.templates.all;
+  const offered = $derived(
+    offerable(
+      $inUse.map((use) => use.name),
+      $templates,
+    ),
+  );
 
   export function add(): void {
     set?.add();
@@ -35,6 +45,7 @@
     {names}
     {offered}
     {addable}
+    {still}
     fires={(name) => triggeredBy(name)?.name}
     held={(name) => {
       const template = triggeredBy(name);

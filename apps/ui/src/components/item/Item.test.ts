@@ -523,12 +523,32 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   render(Item, { id: "linked" });
   await screen.findByText("what the link names");
 
-  await fireEvent.keyDown(window, { key: "e" });
-  expect(await screen.findByLabelText("What it says")).toBeTruthy();
-
   await fireEvent.keyDown(window, { key: "t" });
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
 
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual(["/items/linked/process"]);
+});
+
+/** A rewrite is finished or cancelled before anything else is done with the item. */
+test("the editable shape holds the item's other commands until it is left", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(screen.getByRole("button", { name: "save" })).toBeDefined();
+
+  field.blur();
+  await fireEvent.keyDown(window, { key: "p" });
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(went.to).toEqual([]);
+  expect(screen.queryByLabelText("Add a tag")).toBeNull();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual(["/items/linked/process"]);
 });

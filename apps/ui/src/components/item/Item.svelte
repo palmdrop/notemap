@@ -3,6 +3,8 @@
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
+  import EditFoot from "$components/item/EditFoot.svelte";
+  import { Rewrite } from "$components/item/rewrite.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -45,7 +47,7 @@
   const undrained = pending();
 
   let read = $state<ItemState | undefined>(undefined);
-  let editing = $state(false);
+  let rewrite = $state<Rewrite | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
   // The read settles what is drawn and what it was drawn from; the item itself
@@ -66,7 +68,7 @@
   $effect(() => {
     const wanted = id;
     read = undefined;
-    editing = false;
+    rewrite = undefined;
 
     void (async () => {
       const answer = await client.item(wanted);
@@ -85,7 +87,14 @@
       : commandsFor(item, {
           offline: !pool.yes,
           onprocess: () => void goto(processHref(id)),
-          onedit: () => (editing = !editing),
+          onedit: () => {
+            const current = item;
+            if (current === undefined) return;
+            rewrite =
+              rewrite === undefined
+                ? new Rewrite(current, () => (rewrite = undefined))
+                : undefined;
+          },
           tag: () => tags?.add(),
         }),
   );
@@ -135,19 +144,28 @@
       {/if}
 
       <div class="mt-0.5">
-        <Tags bind:this={tags} {item} addable />
+        <Tags
+          bind:this={tags}
+          {item}
+          addable={rewrite === undefined}
+          still={rewrite !== undefined}
+        />
       </div>
     </Rail>
 
     <Body>
-      {#if editing}
-        <Edit {item} ondone={() => (editing = false)} />
+      {#if rewrite !== undefined}
+        <Edit {rewrite} />
       {:else}
         <Payload {item} />
       {/if}
 
       <div class="mt-3.5">
-        <Actions {commands} />
+        {#if rewrite !== undefined}
+          <EditFoot {rewrite} />
+        {:else}
+          <Actions {commands} />
+        {/if}
       </div>
     </Body>
 

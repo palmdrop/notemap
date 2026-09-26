@@ -3,6 +3,8 @@
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
+  import EditFoot from "$components/item/EditFoot.svelte";
+  import { Rewrite } from "$components/item/rewrite.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
@@ -46,7 +48,7 @@
     onprocess: () => void;
   } = $props();
 
-  let editing = $state(false);
+  let rewrite = $state<Rewrite | undefined>(undefined);
   let rail = $state<Rail | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
@@ -72,7 +74,7 @@
   // The box's foot is where `cancel` and `save` are, so a row that loses the
   // selection has no way out of the editable shape and must not be left in it.
   $effect(() => {
-    if (!selected) editing = false;
+    if (!selected) rewrite = undefined;
   });
 
   /** Opens the tag chooser, for the key that asks for it. */
@@ -82,8 +84,16 @@
 
   /** Toggles the capture into its editable shape, for the key that asks for it. */
   export function edit(): void {
-    if (mayEdit) editing = !editing;
+    if (!mayEdit) return;
+    rewrite =
+      rewrite === undefined
+        ? new Rewrite(item, () => (rewrite = undefined))
+        : undefined;
   }
+
+  /** A row being rewritten is not picked, nor processed, until that is left. */
+  const pick = $derived(rewrite === undefined ? onselect : undefined);
+  const reach = $derived(rewrite === undefined ? onprocess : undefined);
 
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
@@ -100,8 +110,8 @@
   {@attach following}
 >
   <div class="col-span-full grid grid-cols-subgrid">
-    <Rail bind:this={rail} {selected} onpick={onselect} onreach={onprocess}>
-      <Stamp at={item.createdAt} opened={selected} onopen={onselect} />
+    <Rail bind:this={rail} {selected} onpick={pick} onreach={reach}>
+      <Stamp at={item.createdAt} opened={selected} onopen={() => pick?.()} />
 
       {#if word !== undefined}
         <StateWord {word} />
@@ -112,7 +122,12 @@
       {/if}
 
       <div class="mt-0.5">
-        <Tags bind:this={tags} {item} addable={selected} />
+        <Tags
+          bind:this={tags}
+          {item}
+          addable={selected && rewrite === undefined}
+          still={rewrite !== undefined}
+        />
       </div>
 
       {#if finished}
@@ -128,9 +143,9 @@
       {/if}
     </Rail>
 
-    <Body {selected} onpick={onselect} onreach={onprocess}>
-      {#if editing && mayEdit}
-        <Edit {item} ondone={() => (editing = false)} />
+    <Body {selected} onpick={pick} onreach={reach}>
+      {#if rewrite !== undefined && mayEdit}
+        <Edit {rewrite} />
       {:else}
         <Payload {item} />
       {/if}
@@ -144,7 +159,11 @@
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
         transition:fade
       >
-        <Actions {commands} />
+        {#if rewrite !== undefined && mayEdit}
+          <EditFoot {rewrite} />
+        {:else}
+          <Actions {commands} />
+        {/if}
       </div>
     {:else}
       <div

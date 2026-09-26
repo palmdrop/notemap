@@ -17,11 +17,21 @@
   import { slide } from "$lib/motion";
   import { offerable, triggeredBy } from "$lib/templates";
 
-  /**
-   * Whether the field takes the caret when the queue is drawn. Not on the way
-   * back from processing with a row still selected: the keys are the row's then.
-   */
-  let { focus = true }: { focus?: boolean } = $props();
+  let {
+    focus = true,
+    selected = false,
+    onfocus,
+  }: {
+    /**
+     * Whether the field takes the caret when the queue is drawn. Not on the way
+     * back from processing with a row still selected: the keys are the row's then.
+     */
+    focus?: boolean;
+    /** The box is the queue's head, and selected as a row is: one of them at a time. */
+    selected?: boolean;
+    /** Anything in the box took the focus, which selects it. */
+    onfocus?: () => void;
+  } = $props();
 
   // Read where the box is drawn, so coming back from another surface restores
   // it the same way a reload does.
@@ -33,6 +43,17 @@
   let said = $state("");
   let picker: HTMLInputElement;
   let box = $state<HTMLTextAreaElement | undefined>(undefined);
+  let chooser = $state<TagSet | undefined>(undefined);
+
+  /** Gives the field the caret, for the key that goes back into it. */
+  export function take(): void {
+    box?.focus();
+  }
+
+  /** Opens the tag chooser, for the key that asks for it. */
+  export function tag(): void {
+    chooser?.add();
+  }
 
   /**
    * The bytes as the browser can draw them. A picture goes up with the capture
@@ -66,7 +87,13 @@
   });
 
   const inUse = client.tags.inUse;
-  const offered = $derived(offerable($inUse.map((use) => use.name)));
+  const templates = client.templates.all;
+  const offered = $derived(
+    offerable(
+      $inUse.map((use) => use.name),
+      $templates,
+    ),
+  );
 
   function pick(event: Event) {
     chosen = (event.currentTarget as HTMLInputElement).files?.[0];
@@ -118,7 +145,9 @@
     event.preventDefault();
     void capture();
   }}
-  class="mt-6 border border-ink"
+  onfocusin={() => onfocus?.()}
+  data-selected={selected ? "" : undefined}
+  class="mt-6 border border-ink transition-[box-shadow] duration-(--duration-short) ease-fade data-selected:inset-ring data-selected:inset-ring-ink"
 >
   {#if chosen !== undefined}
     <div
@@ -170,6 +199,7 @@
       <span class="flex items-baseline gap-x-4 px-3 leading-8">
         <span class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
           <TagSet
+            bind:this={chooser}
             names={tags}
             {offered}
             label="Tag the capture"

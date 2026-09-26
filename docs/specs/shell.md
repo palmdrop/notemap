@@ -1,9 +1,20 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-25
+**Last updated**: 2026-09-27
 **Shipped**:
 
+- 2026-09-27 — **A rewrite holds the row, and the capture box is walked.** `edit` rewrites the
+  capture in the body itself, and `cancel · attach` and `save` take the actions' place in the foot;
+  until one is taken nothing else is reached — no decision, no tag, no other row. The item's own
+  surface does the same. The capture box is selected as a row is: focusing it lets go of the row,
+  its rule doubles while selected, `esc` then `t` tags the capture, `j` goes to the first row and
+  `k` from there comes back into the field. The process surface says where the item has gone
+  already on one line under its stamp, keeps `tags` open so its `+` is always there, marks a
+  preview awaited from the keystroke rather than from the request, and leaves disabled
+  destinations out of the bands — a template on one says `its destination is disabled`. A notice
+  wraps a long path rather than overflowing, and the corner keeps inside a narrow screen. A chooser
+  drawn before the templates were read now offers their trigger tags once they are.
 - 2026-09-25 — **A wait is seen, and a change moves.** A request the shell holds no answer to
   draws three stepping squares where its answer or its action already stands — after 250ms, gone
   the moment it lands, never a word, and naming a destination once it is slow to answer — so
@@ -564,6 +575,16 @@ exists to be typed into, and a click before the first keystroke is a click nothi
 *Except on the way back from processing with a row still selected* *(amended 2026-09-14)*: the
 keys are that row's then, and a caret in the field would swallow them.
 
+**The box is selected the way a row is** *(2026-09-27)*. It is the head of the queue, and one thing
+is selected at a time, the box or a row: anything in the box taking the focus selects it and lets
+go of the selected row, which slides out if it was held. Selected, the box's rule is drawn twice as
+heavy, inside it so nothing moves. The ink edges a selected row gains mean nothing on a box ruled on
+four sides already. `esc` in the field leaves the field and keeps the box selected, so the keys
+reach it: `t` opens its tag chooser, `enter` goes back into the field, `j` goes down to the first
+row, and `esc` again lets go of it. `k` on the first row comes back up into the field. So the box
+is walked as the row above the first, and `esc` backs out of it as it backs out of everything else
+rather than going down into the list.
+
 **`mod+⏎` commits it**, from inside the field it is written in — the same chord that routes on the
 process surface, and the one most editors commit on. `⏎` there is a new line, which prose wants,
 and so is `⇧⏎` *(amended 2026-09-18; `⇧⏎` used to commit, which is a line break nearly everywhere
@@ -634,22 +655,29 @@ both columns — the rail's own rule running through it — with the **actions a
 `process · manual · discard` on the left, `process` bold and `discard` in the alarm; `edit · copy
 · open` on the right, ruled on all four sides so the foot is a strip of its own. Words only, no
 marks. The box reaches a little outside the columns so the text inside it does not move when it
-appears. **Nothing else changes**: no fill, no colour, no facts appear. `edit` on the row draws
-the capture in the capture box's own shape — a ruled box with `cancel` and a bold `save` along its
-foot — with no ring or colour from the browser: rewriting looks like writing. **The picture is
-editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as
-the capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks
-one in its place — at most one, the capture's own shape, and other kinds of attachment are left as
-they are. `save` sends the edit naming what the box then holds, uploading a fresh picture on the
-way, and stamps it `web-image` where a picture is carried and `web-manual` where none is, the
-capture's own rule. The one thing the selected row adds to the rail is a `+` after the last tag, which
+appears. **Nothing else changes**: no fill, no colour, no facts appear.
+
+**`edit` rewrites the capture where it is read** *(amended 2026-09-27; it drew a second ruled box
+inside the body, with its own foot, and the row's actions still under that)*. The body's words
+become the field, with no ring or colour from the browser, and **the box's foot trades the actions
+for `cancel · attach` on the left and a bold `save` on the right**. **Nothing else is reached until
+one of those is taken**: no decision, no tag taken on or off — the rail's tags are drawn as words
+and its `+` is gone — no other row selected by key or by click, and no double click to process. A
+half-written rewrite is finished or given up, never walked away from by accident. **The picture is
+editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as the
+capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks one
+in its place — at most one, the capture's own shape, and other kinds of attachment are left as they
+are. `save` sends the edit naming what the field then holds, uploading a fresh picture on the way,
+and stamps it `web-image` where a picture is carried and `web-manual` where none is, the capture's
+own rule. The item's own surface rewrites the same way, its actions giving way to the same three
+words. The one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
 nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
-([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
-leaves the shape too: the box's foot goes with the box, and a collapsed row holding a half-written
-rewrite would have no way out of it.
+([below](#a-command-is-what-a-key-and-a-button-both-reach)). Where the selection is lost all the
+same — the item gone from under it — the shape goes too: the box's foot goes with the box, and a
+collapsed row holding a half-written rewrite would have no way out of it.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -706,7 +734,9 @@ none is, and opens process on the one that is; `esc` leaves the row's editable s
 one and deselects otherwise. The selected row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
-button reaches, on either surface, and a control that is not drawn has no key either.
+button reaches, on either surface, and a control that is not drawn has no key either. On the queue
+the capture box is the row above the first ([above](#capture-is-the-head-of-the-queue)): `k` off
+the first row goes into its field, and `j` from the box is the first row.
 
 **Discard is the one deed shift guards.** `D`, not `d`: it is the only key here that sends an item
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is
@@ -740,7 +770,11 @@ of the height and scrolling within itself. Only the middle ever scrolls; the hea
 always visible.
 
 **The head is the capture, read-only until `edit`.** The stamp and the tags on one line with
-`edit` at the right; under them the words, at the prose measure; a picture capture draws the
+`edit` at the right; **under them, where the item has gone already** *(2026-09-27)* — one line,
+`→ Obsidian vault · …/2026-09-13.md, manual`, the records as a row's routing line names them, cut
+with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
+than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
+second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure; a picture capture draws the
 picture above them. Under the words, while not editing, a block per link they name *(2026-09-24;
 [Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
 ruled box with the caret in it, `keep the capture's` puts them back and a bold `done` closes the
@@ -751,15 +785,18 @@ wanting the row's `edit`.
 
 **The middle is ruled sections**, each a label column and a content column, the label in bold
 capitals; below `narrow` the label stacks over the content. In order: `destination`, `place`,
-`tags`, `preview`. **Sections after the first are drawn collapsed** — the label alone, opened by a
-press or when the flow reaches them — except where they already hold something: an item with tags
-draws its tags section open, and a preview that has answered draws open.
+`tags`, `preview`. **`place` and `preview` are drawn collapsed** — the label alone, opened by a
+press or when the flow reaches them — except where they already hold something: a preview that has
+answered draws open. **`tags` is always open** *(amended 2026-09-27; it was collapsed on an item
+with no tags, which hid the `+` behind the label)*: the chooser's `+` is what the section holds.
 
 **`destination` is one field that narrows three bands** drawn under it as it is typed, each with
 its own label and a rule between them: `templates` (name left, no pattern beside it — a decision
 already made is not read as a pattern here *(amended 2026-09-15; the pattern used to sit to the
 right)*), `destinations` (name left), and `otherwise` — `manual` with `processed by hand` beside it, and
-`discard` in the alarm. The three narrow together by the one matching rule every line uses;
+`discard` in the alarm. **A disabled destination is not in the band** *(2026-09-27)*: disabling one
+is saying it is not somewhere to route to, and it is not about the item, so leaving it out does not
+make the list change shape by what happened to the item. The three narrow together by the one matching rule every line uses;
 the one entry the line has narrowed to is drawn bold and `⏎` or `⇥` takes it, an ambiguous line
 taking nothing. Typing is an accelerator: the bands are the way in for a pointer and for somebody
 who does not know the names. **Taken, the destination leaves the line** and the section reads the
@@ -792,8 +829,9 @@ where something was. Which of the two went is read off whether anything changed.
 applied here carries its trigger tag onto the item**, after the route, so an item filed by a
 template carries the same classification whichever way the template was reached; a decision the
 person corrected is their own and takes no tag; cancelled, the tag comes back off. **A template
-that cannot apply is drawn with its reason and not removed** — stranded, its destination unusable,
-its capability no longer declared. Never a pattern: expansion is statically total.
+that cannot apply is drawn with its reason and not removed** — stranded, its destination disabled
+(`its destination is disabled`), its capability no longer declared. A template is the person's own
+decision, and hiding it because of a setting elsewhere is the worse surprise. Never a pattern: expansion is statically total.
 
 **A trigger tag taken in the surface's own tags section files the item**, and the surface moves on
 rather than leaving a second decision half-made beside a route already on its way. Said on the
@@ -809,8 +847,12 @@ for this destination`; one that cannot be reached, `out of reach` — neither in
 being a failure of the decision. The label is `preview`, and nothing says who writes.
 **The block is five lines tall before it holds anything** *(2026-09-25)*: the section opens when the
 preview is asked for, with the asking mark on the first of those lines, so the answer landing
-moves nothing under it. While a later answer is in flight over one that is up, the mark stands at
-the end of the head line instead.
+moves nothing under it. While a later answer is awaited over one that is up, the mark stands at
+the end of the head line instead. **A preview is awaited from the keystroke, not from the
+request** *(2026-09-27)*: the settling wait is a wait on the preview too, and what is up meanwhile
+answers a decision that no longer stands. So the mark starts when the decision changes, is drawn
+after the mark's own 250ms like any other wait, and goes when the answer for the decision as it
+stands lands.
 
 **The block's own head names the destination and the full place, bold** *(amended 2026-09-15)* —
 `Obsidian vault / research/2026-09-13.md`, above the content and ruled under it: the preview says
@@ -1115,7 +1157,9 @@ delivery converts again when it runs
 ([ADR 33](../adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md)), and
 where the two differ that is a fact about the destination rather than a fault.
 
-Changing any part of the decision **drops what was shown** rather than leaving it under the line: a
+*Superseded 2026-09-27 by [the process surface](#the-process-surface): the last preview stays up
+while the next is awaited, with the asking mark beside its head, rather than being dropped. The
+paragraph below is kept for its reasoning.* Changing any part of the decision **drops what was shown** rather than leaving it under the line: a
 preview belongs to the arguments it was asked with, and a stale one reads as a promise about the new
 ones. **The words are part of the decision** for this, so a keystroke in them clears the preview too
 — a preview of words that have since changed is indistinguishable from a good one, which is the
@@ -1304,14 +1348,14 @@ arriving over the one it replaces wants.
 is ⌘ or ctrl depending on the keyboard. **A command with a refusal has no key**, the same refusal
 that greys its button.
 
-**An editable shape publishes its own way out.** The box a capture is rewritten in draws `cancel`
-beside `save`, and publishes that `cancel` on `esc` for as long as it is drawn — so the shape is
-what `esc` leaves, wherever it was opened, and the surface it was opened on needs to know nothing
-about it. `save` is `mod+⏎` from inside its field *(added 2026-09-18)*, the capture box's own
-chord, and handled by the field rather than published: the field keeps the press, and `⏎` and
-`⇧⏎` stay new lines. Being drawn inside that surface is what puts it first. The next press is the surface's
-own: deselecting on a register, and nothing at all on the item's own surface, where the page is
-the item and there is nothing behind the shape to leave.
+**An editable shape publishes its own way out, and holds everything behind it.** A capture being
+rewritten publishes `cancel` on `esc` and `save` on `mod+⏎` for as long as it is drawn — so the
+shape is what `esc` leaves, wherever it was opened. `save` fires from inside the field too *(added
+2026-09-18)*, the capture box's own chord, and `⏎` and `⇧⏎` stay new lines. **The shape holds the
+surface** *(2026-09-27)*: while it is drawn no key reaches past it, and the surface it was opened on
+lets no other row be selected under it. Being drawn inside that surface is what puts it first. Once
+it is left the next press is the surface's own: deselecting on a register, and nothing at all on the
+item's own surface, where the page is the item and there is nothing behind the shape to leave.
 
 **Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
 says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
@@ -1539,7 +1583,10 @@ offers `undo` on the item surface. **Nothing leaves the corner while the pointer
 focus is inside it** — not by lingering out, and not by being trimmed for room, which waits too — so
 nothing vanishes under somebody's hand, including a notice that arrived while they were there. Let
 go, everything in it lingers again from the start.
-**Every notice can be dismissed**, a confirmation as well as what stands.
+**Every notice can be dismissed**, a confirmation as well as what stands. **A notice is never wider
+than the screen allows** *(2026-09-27)*: the corner is capped at its measure or the viewport less
+its margins, whichever is narrower, and a path or an address with no break in it wraps anywhere
+rather than pushing the notice past its edge.
 
 **The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
 the bottom of the corner is its reachable end. Above them the newest notice sits nearest, and the
@@ -2362,6 +2409,18 @@ view is how a reader sees more at once.
 - Taking a template fills the place line with what it expanded to, leaves it editable, and commits
   as the template where nothing was touched and as a plain decision where something was.
 - A template whose destination was deleted is drawn in `where` with that as its reason, not removed.
+- A disabled destination is not offered on the process surface; a template filing to one is drawn
+  with `its destination is disabled`.
+- A row being rewritten offers `cancel`, `attach` and `save` in its foot and nothing else: no key or
+  click reaches a decision, a tag or another row until one of the three is taken.
+- On the queue, the capture box is selected whenever its field has the caret and never together
+  with a row; `esc` then `t` opens its tag chooser, `j` selects the first row, and `k` there returns
+  the caret to the field.
+- The process surface says where an item has gone already on one line under its stamp, and the
+  tags section's `+` is there without pressing anything.
+- A change to a settled decision marks the preview as awaited before the next preview is asked.
+- A notice carrying a path with no break in it stays inside the corner, and the corner inside a
+  320px screen.
 - A tag a template declared is drawn with the template's name beside it wherever tags are offered,
   and a tag under `route/` that no template claims is drawn like any other.
 - Putting a trigger tag on an item leaves the corner reading `routing · <template>` with a working

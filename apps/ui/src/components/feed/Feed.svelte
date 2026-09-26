@@ -21,7 +21,7 @@
   import { client } from "$lib/client";
   import { commandsFor } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
-  import { publish } from "$lib/command/stack.svelte";
+  import { holding, publish } from "$lib/command/stack.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -72,6 +72,7 @@
   });
 
   function select(id: string) {
+    if (holding()) return;
     selected = selected === id ? undefined : id;
   }
 

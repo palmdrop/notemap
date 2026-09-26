@@ -635,7 +635,8 @@ test("draws the box around the selected row and nowhere else", async () => {
 
   const { container } = render(Queue);
   await screen.findByText("one");
-  const boxed = () => container.querySelectorAll("[data-selected]");
+  // The capture box answers `data-selected` too, and has its own test.
+  const boxed = () => container.querySelectorAll("[data-selected]:not(form)");
 
   expect(boxed()).toHaveLength(0);
   expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
@@ -729,6 +730,8 @@ test("enter selects, and enter on a selected row opens process", async () => {
   render(Queue);
   await screen.findByText("one");
 
+  // Out of the capture box, which is selected when the queue is drawn.
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "Enter" });
   expect(stamps(true)).toHaveLength(1);
   expect(went.to).toEqual([]);
@@ -901,6 +904,67 @@ test("the first esc leaves the capture box, and the next one deselects", async (
   expect(stamps(true)).toHaveLength(0);
 });
 
+/** The box is the head of the queue, and selected as a row is. */
+test("focusing the capture box selects it, and lets go of the selected row", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  const form = () => container.querySelector("form")!;
+  const box = screen.getByLabelText("What to capture");
+
+  box.focus();
+  await fireEvent.keyDown(box, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+  expect(form().hasAttribute("data-selected")).toBe(false);
+
+  box.focus();
+  await tick();
+  expect(stamps(true)).toHaveLength(0);
+  expect(form().hasAttribute("data-selected")).toBe(true);
+});
+
+/**
+ * `esc` in the box leaves the field and keeps the box: `t` tags the capture,
+ * `enter` goes back in, `j` goes down to the first row, and `k` from there
+ * comes back up into the field.
+ */
+test("the capture box is walked as the row above the first", async () => {
+  pool(queued("one", "two"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+  box.focus();
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  expect(document.activeElement).not.toBe(box);
+  expect(container.querySelector("form")!.hasAttribute("data-selected")).toBe(
+    true,
+  );
+
+  await fireEvent.keyDown(window, { key: "t" });
+  const line = await screen.findByRole("combobox", { name: "Tag the capture" });
+  await fireEvent.keyDown(line, { key: "Escape" });
+  line.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+  expect(container.querySelector("form")!.hasAttribute("data-selected")).toBe(
+    false,
+  );
+
+  await fireEvent.keyDown(window, { key: "k" });
+  await tick();
+  expect(stamps(true)).toHaveLength(0);
+  expect(document.activeElement).toBe(box);
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(document.activeElement).toBe(box);
+});
+
 /**
  * The editable shape holds a draft and its own `cancel`, so `esc` leaves it
  * before it leaves the selection — and losing the selection any other way
@@ -956,7 +1020,8 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-test("walking to another row leaves the one being rewritten as it was", async () => {
+/** A rewrite is finished or cancelled before the list is walked, or the item decided. */
+test("a row being rewritten holds the selection and its actions until it is left", async () => {
   pool(queued("one", "two"));
 
   render(Queue);
@@ -964,9 +1029,20 @@ test("walking to another row leaves the one being rewritten as it was", async ()
 
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "e" });
-  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+  const field = await screen.findByLabelText("What it says");
+  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
 
+  field.blur();
   await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "D" });
+  await fireEvent.click(screen.getByText("two"));
   await tick();
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+  expect(asked()).not.toContain("POST /v1/items/one/archive");
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent.click(screen.getByRole("button", { name: "cancel" }));
   expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
 });
