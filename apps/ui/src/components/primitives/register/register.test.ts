@@ -59,7 +59,7 @@ test("the foot offers the next page, or says why it cannot", async () => {
   expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 
   void rerender({ loading: true, offline: false, failed: false, onmore: more });
-  expect(screen.getByRole("button", { name: "loading…" })).toHaveProperty(
+  expect(screen.getByRole("button", { name: /load more/ })).toHaveProperty(
     "disabled",
     true,
   );
@@ -151,9 +151,19 @@ test("the foot asks for nothing while offline", async () => {
   expect(more).not.toHaveBeenCalled();
 });
 
+test("the first page read is the mark alone, there being nothing yet to have more of", () => {
+  render(More, { ...reading, loading: true, first: true, onmore: vi.fn() });
+
+  expect(screen.queryByRole("button")).toBeNull();
+  expect(document.querySelector("[data-asking]")).not.toBeNull();
+});
+
 test("the foot keeps its width while it loads", () => {
   render(More, { ...reading, loading: true, onmore: vi.fn() });
 
-  const button = screen.getByRole("button", { name: "loading…" });
+  const button = screen.getByRole("button", { name: /load more/ });
+  expect(button.getAttribute("aria-busy")).toBe("true");
+  // The label and the mark share one cell, so the wider of them sets the width.
   expect(button.textContent).toContain("load more");
+  expect(button.querySelector("[data-asking]")).not.toBeNull();
 });

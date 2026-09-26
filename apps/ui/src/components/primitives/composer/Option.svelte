@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Asking from "$components/primitives/marks/Asking.svelte";
+
   /**
    * `why` is the reason an option **cannot be taken**; an unavailable one says
    * so and stays in the list rather than disappearing. `note` is the other
@@ -9,6 +11,9 @@
    * `implied` is the option the field comes out as while nobody has chosen —
    * a destination's setting, a schema's default — marked hollow so it can be
    * read without being mistaken for a choice.
+   *
+   * `working` is this option having been taken and not yet answered for: it
+   * cannot be taken again, and the asking mark stands where a remark would.
    */
   let {
     label,
@@ -16,6 +21,7 @@
     implied = false,
     why,
     note,
+    working = false,
     onchoose,
   }: {
     label: string;
@@ -23,6 +29,7 @@
     implied?: boolean;
     why?: string;
     note?: string;
+    working?: boolean;
     onchoose: () => void;
   } = $props();
 
@@ -32,7 +39,8 @@
 <button
   type="button"
   onclick={onchoose}
-  disabled={why !== undefined}
+  disabled={why !== undefined || working}
+  aria-busy={working || undefined}
   aria-pressed={chosen}
   class="flex w-full items-baseline gap-2.5 py-px text-left"
 >
@@ -43,7 +51,9 @@
   {#if implied && !chosen}
     <span class="sr-only">(default)</span>
   {/if}
-  {#if said !== undefined}
+  {#if working}
+    <span class="ml-auto"><Asking /></span>
+  {:else if said !== undefined}
     <span class="ml-auto">{said}</span>
   {/if}
 </button>

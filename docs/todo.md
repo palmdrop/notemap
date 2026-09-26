@@ -2,7 +2,7 @@
 
 ## Shell — layout and interaction
 
-- [ ] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
+- [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
@@ -128,6 +128,7 @@
 
 - [ ] in-file edits: instead of creating or appending, notemap allows for *inserting* a capture in a file. Only works if file is parsed by, for example, a markdown parser, or some other pattern/filetype that the destination supports. For example, inserting a capture item below a pre-existing heading in a file, or adding a todo list entry at the top of a todo list
     - test if JEV can be used for this
+    - notemap keeps a backup of the original file when doing this?
 
 ## Destinations and adapters
 
@@ -169,8 +170,6 @@
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
 
 ## Pool, store and correctness
-
-- [ ] All captures seem to end up in the `assets` folder in the Notemap data directory, even for captures that are text only. Not sure why. These are also mirrored by the mirror, so all text data is effectively duplicated on disk, while also being present in the db
 
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an

@@ -69,7 +69,7 @@ test("a cold client draws it as unread rather than as on, while the read is in f
 
   render(PoolSettings);
 
-  await screen.findByText("reading…");
+  await screen.findByText("loading");
   expect(screen.queryByRole("button", { name: "yes" })).toBeNull();
 
   settle(json(200, { values: [{ name: "unfurl", value: true }] }));

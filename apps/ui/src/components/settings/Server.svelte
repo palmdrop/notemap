@@ -6,9 +6,11 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { since } from "$lib/stamp";
+  import { slide } from "$lib/motion";
 
   const address = $derived(
     import.meta.env.VITE_API_URL ??
@@ -34,11 +36,9 @@
   );
 
   const status = $derived(
-    asking
-      ? "checking"
-      : pool.yes
-        ? `available${answered === undefined ? "" : ` · checked ${answered}`}`
-        : `unavailable${said === "" ? "" : ` — ${said}`}`,
+    pool.yes
+      ? `available${answered === undefined ? "" : ` · checked ${answered}`}`
+      : `unavailable${said === "" ? "" : ` — ${said}`}`,
   );
 
   async function knock() {
@@ -85,7 +85,11 @@
   <Fact name="address">{address}</Fact>
   <Fact name="version">{pool.version ?? "unknown"}</Fact>
   <Fact name="status">
-    {status}
+    {#if asking}
+      <Asking />
+    {:else}
+      {status}
+    {/if}
     <Action disabled={asking} onclick={() => void knock()}>check again</Action>
   </Fact>
   <Fact name="api">
@@ -103,13 +107,15 @@
     {/snippet}
 
     {#if showSources}
-      {#each sources as source (source.id)}
-        <Fact name={source.id}>{sourceSince(source)}</Fact>
-      {/each}
+      <div transition:slide={{ magnitude: "short" }}>
+        {#each sources as source (source.id)}
+          <Fact name={source.id}>{sourceSince(source)}</Fact>
+        {/each}
 
-      {#if sourcesFailed !== ""}
-        <p class="mt-2 text-alarm">{sourcesFailed}</p>
-      {/if}
+        {#if sourcesFailed !== ""}
+          <p class="mt-2 text-alarm">{sourcesFailed}</p>
+        {/if}
+      </div>
     {/if}
   </Section>
 </Section>

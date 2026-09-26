@@ -845,6 +845,22 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   );
 });
 
+/** The stamp is a button of its own, and a click on it must not reach the line as a second one. */
+test("an index line is selected from its stamp as from anywhere else on it", async () => {
+  pool(queued("one"));
+  rememberView("queue", "index");
+
+  render(Queue);
+  const words = await screen.findByText("one");
+  const line = words.closest(".grid-cols-subgrid")!;
+
+  await fireEvent.click(line.querySelector("button")!);
+  expect(line.className).toContain("font-semibold");
+
+  await fireEvent.click(words);
+  expect(line.className).not.toContain("font-semibold");
+});
+
 /** Shift is the guard on the one decision that sends an item away. */
 test("a bare d discards nothing, and e opens the row for editing", async () => {
   pool(queued("one"));

@@ -499,6 +499,12 @@ when an operation about it is: the client answers those as the **undrained** set
 operation that is not refused and so is wider than the one operation state named `pending`.
 _Avoid_: unsynced, unsaved, queued, offline
 
+**Asking**:
+Said of a request a shell has put to the pool and holds no answer to yet — a read, a description, a
+preview, a route. Lives only as long as the surface that asked: never held, never replayed, and
+never **pending**, which is the outbox's. The concept, not the word a shell prints for it.
+_Avoid_: loading, busy, in flight, waiting
+
 **Watched**:
 Said of a client whose surfaces someone is looking at — a visible page, a foregrounded app. What a
 shell tells its client, and what decides whether the reachability probe runs: an unwatched client

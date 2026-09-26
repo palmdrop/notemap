@@ -5,6 +5,7 @@ import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
 import Access from "./Access.svelte";
+import { keepOutput, outputOf } from "$lib/outputs";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
@@ -94,6 +95,27 @@ test("signing out tells the daemon", async () => {
   await waitFor(() => {
     expect(asked()).toContain("DELETE /v1/session");
   });
+});
+
+/** What deliveries sent is the pool's, and goes with the session as the log does. */
+test("signing out forgets what deliveries sent", async () => {
+  keepOutput("record", "what was sent");
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return said(true, true, { kind: "session", id: "abc" });
+    }
+    if (route === "DELETE /v1/session")
+      return new Response(null, { status: 204 });
+    return json(200, {});
+  });
+
+  render(Access);
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /sign out/i }),
+  );
+
+  await waitFor(() => expect(outputOf("record")).toBeUndefined());
 });
 
 test("a token-carrying shell is not offered the tokens at all", async () => {

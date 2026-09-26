@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
+
+  import type { Action } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Body from "$components/primitives/register/Body.svelte";
@@ -9,6 +11,7 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
+  import { duration } from "$lib/motion";
   import { reachable } from "$lib/reachable.svelte";
   import { NOTHING_LOGGED } from "$lib/said";
 
@@ -19,12 +22,53 @@
 
   const pool = reachable();
 
+  /**
+   * What is drawn. A reading turned to another holds the last one while it
+   * fades out, rather than emptying for the frame a quick answer takes; the
+   * answer then fades in. One slower than the fade finds the log emptied and
+   * asking, as a read always did. Rows held from before this surface was drawn
+   * are not held: they belong to a reading nobody is looking at.
+   */
+  let drawn = $state.raw<readonly Action[]>(untrack(() => log.rows));
+  let dim = $state(false);
+  let fading: ReturnType<typeof setTimeout> | undefined;
+  let entered = false;
+
+  onMount(() => {
+    void tick().then(() => (entered = true));
+  });
+
+  $effect(() => {
+    const now = log.rows;
+    const turning = log.turning;
+    untrack(() => {
+      if (fading !== undefined) return;
+      if (!turning) {
+        drawn = now;
+        return;
+      }
+      if (!entered) {
+        drawn = [];
+        return;
+      }
+      if (drawn.length === 0) return;
+      dim = true;
+      fading = setTimeout(() => {
+        fading = undefined;
+        drawn = log.turning ? [] : log.rows;
+        dim = false;
+      }, duration("short"));
+    });
+  });
+
+  $effect(() => () => clearTimeout(fading));
+
   const HALF_A_DAY = 12 * 60 * 60 * 1000;
 
   /** A gap opens where more than half a day passed before a row, in reading order. */
   const rows = $derived(
-    log.rows.map((action, at) => {
-      const before = log.rows[at - 1];
+    drawn.map((action, at) => {
+      const before = drawn[at - 1];
       return {
         action,
         gap:
@@ -66,28 +110,39 @@
 
 <Views />
 
-<Register>
-  {#if log.quiet}
-    <Rail>
-      <div class="cleared"><StateWord word="quiet" inline /></div>
-    </Rail>
-    <Body>
-      <div class="cleared">{NOTHING_LOGGED}</div>
-    </Body>
-  {/if}
+<div
+  class="transition-opacity duration-(--duration-short) ease-fade {dim
+    ? 'opacity-0'
+    : ''}"
+>
+  <Register>
+    {#if log.quiet && drawn.length === 0}
+      <Rail>
+        <div class="cleared"><StateWord word="quiet" inline /></div>
+      </Rail>
+      <Body>
+        <div class="cleared">{NOTHING_LOGGED}</div>
+      </Body>
+    {/if}
 
-  {#each rows as row (row.action.id)}
-    <LogRow action={row.action} gap={row.gap} />
-  {/each}
+    {#each rows as row (row.action.id)}
+      <LogRow
+        action={row.action}
+        gap={row.gap}
+        heard={log.heard(row.action.id)}
+      />
+    {/each}
 
-  {#if log.more}
-    <More
-      loading={log.loading}
-      offline={!pool.yes}
-      failed={log.failed}
-      onmore={() => {
-        log.next();
-      }}
-    />
-  {/if}
-</Register>
+    {#if log.more || (log.loading && rows.length === 0)}
+      <More
+        loading={log.loading}
+        first={rows.length === 0}
+        offline={!pool.yes}
+        failed={log.failed}
+        onmore={() => {
+          log.next();
+        }}
+      />
+    {/if}
+  </Register>
+</div>

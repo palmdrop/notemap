@@ -419,3 +419,56 @@ test("says a capability it has never heard of by its name", async () => {
 
   expect(await screen.findByText("post-to-board")).toBeDefined();
 });
+
+test("draws what was sent at once the second time, without asking again", async () => {
+  await named();
+
+  const first = render(Block, { record: KEPT });
+  await screen.findByText(/# a thought/);
+  first.unmount();
+
+  render(Block, { record: KEPT });
+  expect(screen.getByText(/# a thought/)).toBeDefined();
+  expect(
+    asked().filter((route) => route === "GET /v1/routing/rec/output"),
+  ).toHaveLength(1);
+});
+
+test("holds the line what was sent will take while it is read", async () => {
+  await named();
+  let answer!: (response: Response) => void;
+  pool((request) =>
+    routeOf(request) === "GET /v1/routing/rec/output"
+      ? new Promise<Response>((resolve) => (answer = resolve))
+      : json(200, { values: [] }),
+  );
+
+  const { container } = render(Block, { record: KEPT });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/routing/rec/output");
+  });
+  expect(container.querySelector("[data-asking]")).not.toBeNull();
+
+  answer(markdown(NOTE));
+  await screen.findByText(/# a thought/);
+  expect(container.querySelector("[data-asking]")).toBeNull();
+});
+
+test("the log asks nothing of a decision made by hand, which never sends anything", async () => {
+  await named();
+
+  render(Block, {
+    record: {
+      id: "rec",
+      item: "one",
+      target: { kind: "user" },
+      state: "delivered",
+      at: "2026-08-19T22:14:00.000Z",
+    },
+    inLog: true,
+    blind: true,
+  });
+
+  await screen.findByText("by hand");
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
+});

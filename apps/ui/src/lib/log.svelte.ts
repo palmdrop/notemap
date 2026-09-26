@@ -8,6 +8,8 @@ import {
   type Order,
 } from "@notemap/client";
 
+import { SvelteSet } from "svelte/reactivity";
+
 import { client } from "./client";
 
 /**
@@ -25,6 +27,10 @@ let loading = $state(false);
 let answered = $state(false);
 let refused = $state<string | undefined>(undefined);
 let failed = $state(false);
+/** What arrived from the watcher since the last read: the rows that move in. */
+const heard = new SvelteSet<Action["id"]>();
+/** Whether the walk from the start was asked for by the person, rather than by the watcher or a retry. */
+let chosen = $state(false);
 
 /**
  * Which walk is the current one. A read that lands after the log has been
@@ -100,13 +106,16 @@ function restart(
   wanted: Order,
   subject: ItemId | undefined,
   narrowed: readonly ActionKind[] | undefined,
+  asking: boolean,
 ): void {
   walking += 1;
+  chosen = asking;
   asked = true;
   order = wanted;
   item = subject;
   kinds = narrowed;
   rows = [];
+  heard.clear();
   after = undefined;
   more = false;
   answered = false;
@@ -132,6 +141,10 @@ export const log = {
   get loading() {
     return loading;
   },
+  /** A reading the person turned to — a view, an order, a subject — not yet answered. */
+  get turning() {
+    return chosen && loading && !answered;
+  },
   get failed() {
     return failed;
   },
@@ -144,6 +157,10 @@ export const log = {
   },
   get shown() {
     return rows.length;
+  },
+  /** Whether a row arrived from the watcher rather than with a read. */
+  heard(id: Action["id"]): boolean {
+    return heard.has(id);
   },
 
   /**
@@ -159,7 +176,7 @@ export const log = {
     const same =
       wanted === order && subject === item && sameKinds(narrowed, kinds);
     if (same && (answered || loading)) return;
-    restart(wanted, subject, narrowed);
+    restart(wanted, subject, narrowed, true);
   },
 
   /**
@@ -183,6 +200,9 @@ export const log = {
     );
     if (wanted.length === 0) return;
 
+    for (const action of wanted) {
+      if (!rows.some((one) => one.id === action.id)) heard.add(action.id);
+    }
     rows = ahead(rows, [...wanted].reverse());
   },
 
@@ -198,7 +218,7 @@ export const log = {
   raced(): void {
     if (!answered || order !== "newest-first") return;
 
-    restart(order, item, kinds);
+    restart(order, item, kinds, false);
   },
 
   /**
@@ -207,7 +227,7 @@ export const log = {
    * cache for it to keep, so it has to ask for itself or stay blank.
    */
   again(): void {
-    if (asked && !answered && !loading) restart(order, item, kinds);
+    if (asked && !answered && !loading) restart(order, item, kinds, false);
   },
 
   /**
@@ -216,7 +236,7 @@ export const log = {
    * assigning `page.url`, so nothing here can be driven by reading it back.
    */
   turn(wanted: Order): void {
-    restart(wanted, item, kinds);
+    restart(wanted, item, kinds, true);
   },
 
   next(): void {
@@ -235,6 +255,8 @@ export const log = {
     item = undefined;
     kinds = undefined;
     rows = [];
+    heard.clear();
+    chosen = false;
     after = undefined;
     more = false;
     answered = false;

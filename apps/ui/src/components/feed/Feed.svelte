@@ -22,6 +22,7 @@
   import { commandsFor } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -46,6 +47,12 @@
   let index = $state<Index | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
+
+  const motion = moving(
+    () => $feed.loading,
+    () => $feed.items.length,
+    () => !$feed.loading && !$feed.fromCache && $feed.failure === undefined,
+  );
 
   const bare = $derived(
     !$feed.loading &&
@@ -154,6 +161,7 @@
   {/if}
 
   <Index
+    {motion}
     bind:this={index}
     items={rows}
     {selected}
@@ -164,6 +172,7 @@
   {#if $feed.more}
     <More
       loading={$feed.loading}
+      first={rows.length === 0}
       offline={!pool.yes}
       failed={$feed.failure !== undefined}
       onmore={() => void client.loadFeed()}
@@ -184,6 +193,7 @@
 
     {#each rows as item (item.id)}
       <Row
+        {motion}
         bind:this={drawn[item.id]}
         {item}
         surface="feed"
@@ -199,6 +209,7 @@
     {#if $feed.more}
       <More
         loading={$feed.loading}
+        first={rows.length === 0}
         offline={!pool.yes}
         failed={$feed.failure !== undefined}
         onmore={() => void client.loadFeed()}

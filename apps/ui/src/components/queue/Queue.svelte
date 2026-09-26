@@ -21,6 +21,7 @@
   import { commandsFor } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -54,6 +55,12 @@
   let index = $state<Index | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
+
+  const motion = moving(
+    () => $queue.loading,
+    () => $queue.items.length,
+    () => !$queue.loading && !$queue.fromCache && $queue.failure === undefined,
+  );
 
   const drained = $derived(
     !$queue.loading &&
@@ -219,6 +226,7 @@
   {/if}
 
   <Index
+    {motion}
     bind:this={index}
     items={rows}
     {selected}
@@ -232,6 +240,7 @@
   {#if $queue.more}
     <More
       loading={$queue.loading}
+      first={rows.length === 0}
       offline={!pool.yes}
       failed={$queue.failure !== undefined}
       onmore={() => void client.loadQueue()}
@@ -245,6 +254,7 @@
 
     {#each rows as row (row.id)}
       <Row
+        {motion}
         bind:this={drawn[row.id]}
         item={row}
         surface="queue"
@@ -260,6 +270,7 @@
     {#if $queue.more}
       <More
         loading={$queue.loading}
+        first={rows.length === 0}
         offline={!pool.yes}
         failed={$queue.failure !== undefined}
         onmore={() => void client.loadQueue()}

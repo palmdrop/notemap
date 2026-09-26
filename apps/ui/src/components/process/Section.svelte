@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
+
   /**
    * One ruled section of the surface: a label column and a content column.
    * Drawn collapsed — the label alone — until it is pressed or the flow reaches
@@ -32,7 +34,7 @@
   </button>
   {#if open}
     <div class="min-w-0">
-      {@render children()}
+      <Unfolding>{@render children()}</Unfolding>
     </div>
   {/if}
 </section>

@@ -644,3 +644,23 @@ test("draws the tree it was told last time while it asks again", async () => {
 
   expect(await screen.findByText("projects/")).toBeDefined();
 });
+
+test("stands the asking mark in the tree's place until the first answer, and not over a tree", async () => {
+  let answer!: (response: Response) => void;
+  pool((request) =>
+    routeOf(request).endsWith("/candidates")
+      ? new Promise<Response>((resolve) => (answer = resolve))
+      : json(200, { truncated: false, places: [] }),
+  );
+  draw();
+
+  const places = screen.getByRole("listbox", { name: "places" });
+  await vi.waitFor(() => {
+    expect(asked().some((route) => route.endsWith("/candidates"))).toBe(true);
+  });
+  expect(places.querySelector("[data-asking]")).not.toBeNull();
+
+  answer(json(200, answered(TREE[""]!)));
+  await screen.findByText("journal/");
+  expect(places.querySelector("[data-asking]")).toBeNull();
+});

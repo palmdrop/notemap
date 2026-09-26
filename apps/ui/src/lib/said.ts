@@ -49,3 +49,11 @@ export const UNDONE = "undone";
 
 /** A delivery that kept no copy of what it sent: ordinary, and said in two words. */
 export const NOTHING_KEPT = "nothing kept";
+
+/** Beside the asking mark, once a destination has kept the shell waiting a while. */
+export function slowToAnswer(subject: string): string {
+  return `${subject} is slow to answer`;
+}
+
+/** What a reader that cannot see the asking mark is told instead. */
+export const ASKING = "loading";

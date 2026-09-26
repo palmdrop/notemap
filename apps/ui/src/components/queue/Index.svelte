@@ -4,6 +4,8 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import { client } from "$lib/client";
   import { lineOf } from "$lib/excerpt";
+  import { doubled, pickable } from "$lib/pick";
+  import { slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
 
   /**
@@ -15,11 +17,14 @@
   let {
     items,
     selected,
+    motion,
     onselect,
     onprocess,
   }: {
     items: readonly Item[];
     selected: string | undefined;
+    /** Whether the list's latest change is one a read brought; absent, nothing moves. */
+    motion?: { readonly still: boolean };
     onselect: (id: string) => void;
     onprocess: (id: string) => void;
   } = $props();
@@ -68,12 +73,12 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       data-gap={line.gap ? "" : undefined}
-      class="contents {on ? 'font-semibold' : ''}"
-      onclick={(event) => {
-        if (event.detail > 1) return;
-        onselect(line.item.id);
-      }}
-      ondblclick={() => onprocess(line.item.id)}
+      class="col-span-full grid grid-cols-subgrid transition-[font-weight] duration-(--duration-short) ease-fade {on
+        ? 'font-semibold'
+        : ''}"
+      transition:slide={{ fade: true, still: motion?.still ?? true }}
+      onclick={pickable(() => onselect(line.item.id))}
+      ondblclick={doubled(() => onprocess(line.item.id))}
     >
       <span
         bind:this={stamps[line.item.id]}
@@ -102,14 +107,17 @@
       >
         <span class="inline-flex gap-x-[1ch]">
           {#each line.tags as tag (tag.name)}
-            <span
-              class={tag.fires
-                ? "font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]"
-                : ""}
-            >
-              {tag.fires && tag.name.startsWith(NAMESPACE)
+            {@const said =
+              tag.fires && tag.name.startsWith(NAMESPACE)
                 ? tag.name.slice(NAMESPACE.length)
                 : tag.name}
+            <span
+              data-word={said}
+              class="steady-weight {tag.fires
+                ? 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'
+                : ''}"
+            >
+              {said}
             </span>
           {/each}
         </span>

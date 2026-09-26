@@ -17,7 +17,8 @@
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */
     gap?: boolean;
-    children: Snippet;
+    /** Absent where nothing is known yet to put in it: the rule still runs. */
+    children?: Snippet;
   } = $props();
 
   let cell = $state<HTMLElement | undefined>(undefined);
@@ -38,10 +39,10 @@
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-selected={selected ? "" : undefined}
-  class="col-start-1 -ml-3 min-w-0 border-t border-r border-l border-ink pr-4 pb-3 pl-3 max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
+  class="col-start-1 -ml-3 min-w-0 border-t border-r border-l border-ink pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >
-  {@render children()}
+  {@render children?.()}
 </div>

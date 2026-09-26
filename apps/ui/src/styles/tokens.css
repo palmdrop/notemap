@@ -13,6 +13,8 @@
   --breakpoint-*: initial;
   --tracking-*: initial;
   --max-width-*: initial;
+  --ease-*: initial;
+  --animate-*: initial;
 
   /* Two colours and one red. Dark is the inversion: ground and ink swap, the
      red stays. */
@@ -40,9 +42,7 @@
   --spacing-rail: 11rem;
   --spacing-rail-narrow: 5.75rem;
   --spacing-gutter: 1.5rem;
-  --spacing-measure: 56rem;
-  /* The process surface alone, two columns from `wide`. */
-  --spacing-measure-wide: 72rem;
+  --spacing-measure: 72rem;
   --spacing-read: 44rem;
   --spacing-prose: 38rem;
   --spacing-gap-time: 28px;
@@ -51,11 +51,51 @@
   --breakpoint-wide: 64rem;
 }
 
+/* Motion, named by magnitude rather than role: it is the one scale here whose
+   users are chosen by how far a thing moves rather than by what it is.
+   Static, because the transitions read these from script and no class would
+   otherwise keep them. */
+@theme static {
+  --duration-short: 150ms;
+  --duration-long: 220ms;
+  /* One square of the asking mark's loop. */
+  --duration-step: 300ms;
+  --ease-motion: cubic-bezier(0.2, 0, 0, 1);
+  /* What changes in place rather than travelling — a fade, a colour, a weight.
+     Even at both ends: on `motion`'s curve a fade is most of the way there in
+     its first frames and reads as a snap on the way in. */
+  --ease-fade: cubic-bezier(0.4, 0, 0.6, 1);
+
+  --animate-step: step calc(var(--duration-step) * 3) steps(1, end) infinite;
+
+  @keyframes step {
+    0% {
+      background-color: currentColor;
+    }
+    33.333% {
+      background-color: transparent;
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-short: 0ms;
+    --duration-long: 0ms;
+    --duration-step: 0ms;
+  }
+}
+
 /* Served by the daemon beside the app, so it is exactly as offline as the app. */
 @font-face {
   font-family: "Bricolage Grotesque";
   font-style: normal;
   font-weight: 400 600;
-  font-display: swap;
+  /* Served from the same origin as the page and asked for in its head, so it
+     is here before first paint; swapping would lay every line out twice. */
+  font-display: block;
   src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
 }

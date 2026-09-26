@@ -331,7 +331,7 @@
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
-      <Action disabled={disabled || busy} onclick={() => void save()}>
+      <Action {disabled} working={busy} onclick={() => void save()}>
         save
       </Action>
     </span>

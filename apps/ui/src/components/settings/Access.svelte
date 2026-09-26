@@ -8,6 +8,8 @@
   import { copyable } from "$lib/clipboard";
   import { log } from "$lib/log.svelte";
   import { session } from "$lib/session.svelte";
+  import { slide } from "$lib/motion";
+  import { forgetOutputs } from "$lib/outputs";
 
   const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
@@ -28,8 +30,10 @@
     } finally {
       signingOut = false;
       // Dropped either way, on the same terms as the client's own cache: the
-      // log is the pool's and this shell is the only thing holding it.
+      // log and what its deliveries sent are the pool's, and this shell is
+      // the only thing holding them.
       log.forget();
+      forgetOutputs();
     }
   }
 
@@ -38,6 +42,9 @@
   let addingToken = $state(false);
   let name = $state("");
   let going = $state(false);
+  /** Which token a `revoke` was pressed on, while it is asked. */
+  let revoking = $state<string | undefined>(undefined);
+  let minting = $state(false);
   let said = $state("");
 
   /**
@@ -86,21 +93,24 @@
     event.preventDefault();
     if (going || name.trim() === "") return;
 
+    minting = true;
     void attempt(async () => {
       minted = await client.tokens.mint({ name: name.trim() });
       copied = false;
       name = "";
       addingToken = false;
       held = await client.tokens.list();
-    });
+    }).finally(() => (minting = false));
   };
 
-  const revoke = (token: Token) =>
-    attempt(async () => {
+  const revoke = (token: Token) => {
+    revoking = token.id;
+    return attempt(async () => {
       await client.tokens.revoke(token.id);
       if (minted?.id === token.id) minted = undefined;
       held = await client.tokens.list();
-    });
+    }).finally(() => (revoking = undefined));
+  };
 
   async function copy() {
     if (minted === undefined) return;
@@ -126,7 +136,7 @@
             <span class="text-alarm">— {signOutFailed}</span>
           {/if}
         </span>
-        <Action disabled={signingOut} onclick={() => void signOut()}>
+        <Action working={signingOut} onclick={() => void signOut()}>
           sign out
         </Action>
       </span>
@@ -146,7 +156,11 @@
             class="flex flex-wrap items-baseline justify-between gap-x-[2ch]"
           >
             <span>{why(token)}</span>
-            <Action disabled={going} onclick={() => void revoke(token)}>
+            <Action
+              disabled={going}
+              working={revoking === token.id}
+              onclick={() => void revoke(token)}
+            >
               revoke
             </Action>
           </span>
@@ -154,7 +168,10 @@
       {/each}
 
       {#if minted !== undefined}
-        <div class="mt-4 border border-alarm p-3">
+        <div
+          class="mt-4 border border-alarm p-3"
+          transition:slide={{ magnitude: "short" }}
+        >
           <p class="text-alarm">Copy now. The token will not be shown again.</p>
           <p class="mt-2 break-all select-all">{minted.token}</p>
           <div class="mt-2 flex flex-wrap items-baseline gap-x-6">
@@ -172,6 +189,7 @@
         <form
           onsubmit={mint}
           class="mt-4 flex flex-wrap items-baseline gap-x-3"
+          transition:slide={{ magnitude: "short" }}
         >
           <label for="token-name" class="tracking-caps uppercase">name</label>
           <input
@@ -179,10 +197,16 @@
             bind:value={name}
             class="{FIELD} max-w-[24ch] flex-1"
           />
-          <Action submit disabled={going || name.trim() === ""}>create</Action>
+          <Action
+            submit
+            disabled={going || name.trim() === ""}
+            working={minting}
+          >
+            create
+          </Action>
         </form>
       {:else}
-        <div class="mt-4">
+        <div class="mt-4" transition:slide={{ magnitude: "short" }}>
           <Action onclick={() => (addingToken = true)}>+ add a token</Action>
         </div>
       {/if}

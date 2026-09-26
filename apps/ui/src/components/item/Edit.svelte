@@ -110,7 +110,7 @@
       <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
     </span>
     <span class="border-l border-ink px-3 leading-8">
-      <Action primary submit disabled={busy}>save</Action>
+      <Action primary submit working={busy}>save</Action>
     </span>
 
     <input

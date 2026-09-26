@@ -3,11 +3,12 @@
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { completed, narrowed } from "$lib/candidate-list";
+  import { grow, slide, unfold, widen } from "$lib/motion";
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it — drawn
-   * inverted — and again on the `×` that appears. `+` opens a line with the pool's offer in a
+   * of pressed words, each taken off by pressing it once to select it — ruled
+   * round — and again on the `×` that appears inside the rule. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
@@ -118,6 +119,21 @@
     at = draft.trim() === "" ? undefined : 0;
   });
 
+  let panel = $state<HTMLElement | null>(null);
+  let tall: number | undefined;
+
+  // The offer narrows at typing speed; each change turns the panel toward its
+  // new height from wherever it stands, and never holds a key back.
+  $effect.pre(() => {
+    void rows;
+    tall = panel?.getBoundingClientRect().height;
+  });
+
+  $effect(() => {
+    void rows;
+    if (panel !== null && tall !== undefined) grow(panel, tall);
+  });
+
   const active = $derived(
     at !== undefined && rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
@@ -195,56 +211,62 @@
 {#each names as name (name)}
   {@const fired = fires?.(name)}
   {@const inert = held?.(name) === true}
-  {#if inert}
-    <span
-      title="filed the item — cancel the routing to take it off"
-      aria-label={fired === undefined
-        ? undefined
-        : `${name}, routes to ${fired}`}
-      class={fired === undefined ? "" : TRIGGER}
-    >
-      {fired === undefined ? name : trigger(name)}
-    </span>
-  {:else}
-    <span class="px-0.75 py-0.25 {chosen === name ? 'bg-ink text-ground' : ''}">
-      <button
-        type="button"
-        aria-pressed="true"
-        onclick={() => press(name)}
-        onkeydown={(event) => {
-          if (event.key === "Escape" && chosen === name) {
-            event.stopPropagation();
-            chosen = undefined;
-          }
-        }}
+  <span class="whitespace-nowrap" transition:unfold={{ fade: true }}>
+    {#if inert}
+      <span
+        title="filed the item — cancel the routing to take it off"
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}
-        class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
-          ? ''
-          : TRIGGER}"
+        class={fired === undefined ? "" : TRIGGER}
       >
         {fired === undefined ? name : trigger(name)}
-      </button>
-      {#if chosen === name}
+      </span>
+    {:else}
+      <span
+        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 outline-transparent transition-[outline-color] duration-(--duration-short) ease-fade data-chosen:outline-ink"
+        data-chosen={chosen === name ? "" : undefined}
+      >
         <button
           type="button"
-          aria-label={`remove ${name}`}
-          onclick={() => {
-            chosen = undefined;
-            onremove(name);
+          aria-pressed="true"
+          onclick={() => press(name)}
+          onkeydown={(event) => {
+            if (event.key === "Escape" && chosen === name) {
+              event.stopPropagation();
+              chosen = undefined;
+            }
           }}
-          class="hover:underline"
+          aria-label={fired === undefined
+            ? undefined
+            : `${name}, routes to ${fired}`}
+          class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
+            ? ''
+            : TRIGGER}"
         >
-          ×
-        </button>
-      {/if}
-    </span>
-  {/if}
+          {fired === undefined ? name : trigger(name)}
+        </button>{#if chosen === name}<button
+            type="button"
+            aria-label={`remove ${name}`}
+            onclick={() => {
+              chosen = undefined;
+              onremove(name);
+            }}
+            class="ml-1 hover:underline"
+            transition:slide={{ axis: "x", magnitude: "short" }}
+          >
+            ×
+          </button>{/if}
+      </span>
+    {/if}
+  </span>
 {/each}
 
 {#if adding}
-  <div class="relative">
+  <div
+    class="relative h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
+    transition:widen={{ magnitude: "short" }}
+  >
     <!-- svelte-ignore a11y_autofocus -->
     <input
       bind:value={draft}
@@ -260,42 +282,54 @@
       aria-expanded={rows.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
-      class="w-32 border-b border-ink px-2 py-0.5 outline-none"
+      class="h-full w-full border-b border-ink px-1 outline-none"
     />
     {#if rows.length > 0}
       <!-- Rows taken on `mousedown` with the default prevented, so taking one
            never blurs the line out from under the click. -->
       <div
-        id="{id}-tags"
-        role="listbox"
-        aria-label="Tags in use"
-        class="absolute top-full left-0 z-30 mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
+        class="absolute top-full left-0 z-30 mt-1"
+        transition:slide|global={{ magnitude: "short" }}
       >
-        {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-          {@const on = at === index}
-          {@const fired = row.fresh ? undefined : fires?.(row.label)}
-          <Walked
-            id={on ? `${id}-tag-${index}` : undefined}
-            {on}
-            onhover={() => (at = index)}
-            ontake={() => take(row.label)}
-          >
-            {#if row.fresh}
-              new · {row.label}
-            {:else}
-              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-              >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
-            {/if}
-          </Walked>
-        {/each}
+        <div
+          bind:this={panel}
+          id="{id}-tags"
+          role="listbox"
+          aria-label="Tags in use"
+          class="max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
+        >
+          {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+            {@const on = at === index}
+            {@const fired = row.fresh ? undefined : fires?.(row.label)}
+            <Walked
+              id={on ? `${id}-tag-${index}` : undefined}
+              {on}
+              onhover={() => (at = index)}
+              ontake={() => take(row.label)}
+            >
+              {#if row.fresh}
+                new · {row.label}
+              {:else}
+                <span class={fired === undefined ? "" : TRIGGER}
+                  >{row.label}</span
+                >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
+              {/if}
+            </Walked>
+          {/each}
+        </div>
       </div>
     {/if}
   </div>
-{:else if addable}
+{:else}
+  <!-- Held in place on every row, drawn only where it can be taken: selecting
+       a row, and opening the line, then move nothing under it. -->
   <button
     type="button"
-    aria-label={label}
+    aria-label={addable ? label : undefined}
+    aria-hidden={!addable || undefined}
+    tabindex={addable ? undefined : -1}
+    disabled={!addable}
     onclick={open}
-    class="hover:underline">+</button
+    class="hover:underline {addable ? '' : 'invisible'}">+</button
   >
 {/if}

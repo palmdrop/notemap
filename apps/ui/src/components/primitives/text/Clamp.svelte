@@ -1,5 +1,7 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { tick, type Snippet } from "svelte";
+
+  import { grow } from "$lib/motion";
 
   let { children }: { children: Snippet } = $props();
 
@@ -28,6 +30,14 @@
     watching.observe(element);
     return () => watching.disconnect();
   });
+
+  async function unclamp() {
+    const element = box;
+    const from = element?.offsetHeight ?? 0;
+    open = true;
+    await tick();
+    if (element !== undefined) grow(element, from);
+  }
 </script>
 
 <!-- Ten lines, then a cue saying how many more there are. -->
@@ -38,7 +48,7 @@
 {#if over > 0}
   <button
     type="button"
-    onclick={() => (open = true)}
+    onclick={() => void unclamp()}
     class="mt-1.5 hover:underline"
   >
     + {over} lines

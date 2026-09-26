@@ -14,7 +14,11 @@
       type="button"
       aria-pressed={view === one}
       onclick={() => onchoose(one)}
-      class="hover:underline {view === one ? 'font-semibold' : ''}"
+      data-word={one}
+      class="steady-weight transition-[font-weight] duration-(--duration-short) ease-fade hover:underline {view ===
+      one
+        ? 'font-semibold'
+        : ''}"
     >
       {one}
     </button>

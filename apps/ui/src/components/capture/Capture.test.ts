@@ -142,7 +142,9 @@ test("draws an attached picture before it is committed, and offers a way to drop
   expect(drawn.getAttribute("src")).toBe("blob:held");
   expect(screen.getByText("shot.png")).toBeDefined();
 
-  await fireEvent.click(screen.getByRole("button", { name: "drop" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove shot.png" }),
+  );
 
   expect(screen.queryByAltText("What is about to be captured")).toBeNull();
   expect(screen.queryByText("shot.png")).toBeNull();
@@ -164,7 +166,9 @@ test("a dropped picture is not sent with the capture that follows", async () => 
 
   render(Capture);
   await attach();
-  await fireEvent.click(screen.getByRole("button", { name: "drop" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove shot.png" }),
+  );
   await capture("just words");
 
   await vi.waitFor(() => expect(sent).toHaveLength(1));

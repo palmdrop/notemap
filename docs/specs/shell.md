@@ -1,9 +1,28 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-25
 **Shipped**:
 
+- 2026-09-25 — **A wait is seen, and a change moves.** A request the shell holds no answer to
+  draws three stepping squares where its answer or its action already stands — after 250ms, gone
+  the moment it lands, never a word, and naming a destination once it is slow to answer — so
+  nothing on the page moves to say it is waiting. Rows slide into and out of the queue, the feed and
+  the log, except for what a read brought; a notice rises into the corner; a section, a settings row
+  and `more` open by sliding; the selected row's box fades; the process surface's next item fades
+  up. Durations are three tokens, zero under `prefers-reduced-motion`, with an easing for what
+  travels and an even one for what fades. And the jumps a working session found are gone: a row
+  keeps its tag line, so selecting it and opening the tag line move nothing; the page keeps its
+  scrollbar's gutter and its face from the first paint; a reload draws its rows where they stand;
+  the log reads what a record sent once a page; an unfurl keeps its picture's room and fades the
+  picture in; a row, a section of the process surface and a settings form grow into whatever they
+  come to hold. Every surface and the bar share one 72rem measure, a paragraph keeping its 38rem, so
+  nothing in the bar moves on the way to the process surface. The capture box rules its picture
+  off above the words; a selected tag is ruled round, its `×` inside; tags slide in and out, and
+  the tag chooser opens and follows its narrowing without holding a key back. A bold word — the
+  current surface, view, index line or log tab — holds its width, and a selection fades evenly
+  both ways. The log moves only what the watcher brings, and a view or order chosen fades the old
+  reading out and the new one in. See [loading-and-motion](../plans/loading-and-motion.md).
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
   landed `routed · research` no longer stand: a notice that offers something lingers long enough to
   reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
@@ -513,7 +532,8 @@ two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second colu
 rail, and it survives a phone rather than collapsing into the first.
 
 Navigation names **four** surfaces — `queue · feed · log · settings` — as four equals at the
-bar's left, the current one bold. *Amended 2026-09-14*: the log and settings joined the two; the
+bar's left, the current one bold, each holding its bold width so the one beside it does not move
+([Motion](#visual-direction)). *Amended 2026-09-14*: the log and settings joined the two; the
 wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
 surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
 where the surfaces would be.
@@ -528,8 +548,8 @@ settings. A refusal goes to the corner.
 
 *Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
 one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
-foot along its bottom rule carrying `attach` and the tag chooser at the left and a bold `capture`
-at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
+foot along its bottom rule carrying `attach` behind a rule of its own and the tag chooser at the
+left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
 stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
 
 A capture asks nothing — text, an optional attachment, send. Nothing waits on the pool: the client
@@ -565,8 +585,9 @@ restored after a reload comes back with its words and no picture, which is picke
 draft per origin — two tabs share it, and the last write wins; it is never sent and the pool
 never sees it.
 
-**An attached picture is drawn before it is committed**, inside the box above the text, beside its
-name and with a way to drop it. The bytes go up with the capture and cannot be taken back once they
+**An attached picture is drawn before it is committed**, inside the box above the text and ruled
+off from it, beside its name and a `×` that drops it. The section slides open, fading in, as a
+picture is attached, and shut as it is dropped or captured. The bytes go up with the capture and cannot be taken back once they
 have, so the one moment to look at what was picked is before the button, not afterwards in the
 feed.
 
@@ -622,7 +643,9 @@ one in its place — at most one, the capture's own shape, and other kinds of at
 they are. `save` sends the edit naming what the box then holds, uploading a fresh picture on the
 way, and stamps it `web-image` where a picture is carried and `web-manual` where none is, the
 capture's own rule. The one thing the selected row adds to the rail is a `+` after the last tag, which
-opens the chooser in place ([Tagging](#tagging)) — and is how a template is applied, a template
+opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
+a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
+nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
 leaves the shape too: the box's foot goes with the box, and a collapsed row holding a half-written
@@ -642,8 +665,10 @@ before, and a first trigger tag only seemed to hold it)*: a decision made on it 
 `discard`, a trigger tag, a route made on the surface and come back from — takes it off the queue
 and leaves it drawn where it stood, from the client's own copy, with its state word and its routing
 line, so the decision can be looked at and taken back from the row it was made on. `esc`, `j`/`k`
-or selecting another row lets it go. So `D` `D` `D` no longer walks the list — `D` `j` `D` `j`
-does — which is the price of being able to read what one just did.
+or selecting another row lets it go, and **letting go is when it slides out** *(2026-09-25)*: the
+selection is already on the next row while it does, and no key can land on a row on its way out.
+So `D` `D` `D` no longer walks the list — `D` `j` `D` `j` does — which is the price of being able to
+read what one just did.
 
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
@@ -782,6 +807,10 @@ it; while the next answer is in flight the last one stays up, and one that resol
 decision moved on is dropped. A destination that offers no preview draws the block with `no preview
 for this destination`; one that cannot be reached, `out of reach` — neither in the alarm, neither
 being a failure of the decision. The label is `preview`, and nothing says who writes.
+**The block is five lines tall before it holds anything** *(2026-09-25)*: the section opens when the
+preview is asked for, with the asking mark on the first of those lines, so the answer landing
+moves nothing under it. While a later answer is in flight over one that is up, the mark stands at
+the end of the head line instead.
 
 **The block's own head names the destination and the full place, bold** *(amended 2026-09-15)* —
 `Obsidian vault / research/2026-09-13.md`, above the content and ruled under it: the preview says
@@ -790,10 +819,18 @@ block sit together rather than one of them living only in the `place` section ab
 
 **The foot** holds `← previous` and `next →` on the left, which walk the queue in its current
 order without deciding anything, and a bold inverted `route` on the right, enabled exactly when
-there is a destination and a capability to send.
+there is a destination and a capability to send. **While a route is asked, `route` carries the
+asking mark** in its label's place, still inverted, and nothing is drawn under the sections: the
+line there is a failure's alone *(2026-09-25; it said `routing…`, which appeared and went and moved
+the foot twice)*. **While the chosen destination describes itself**, and while a template resolves,
+the `place` section holds the asking mark on its first line, naming the destination once it is
+slow to answer — the description being the call that can hang.
 
 **After manual, discard or a template tag the surface advances to the next unprocessed item** in
-the queue's order, and returns to the queue when there is none. That is what a queue worked from
+the queue's order, and returns to the queue when there is none. **The next item fades up** into
+the surface *(2026-09-25)*, as it does on `← previous` and `next →`, which walk the surface in
+place rather than navigating away from it; the one decided goes at once, so the advance costs no wait on top of
+itself and two items are never on the surface together. That is what a queue worked from
 one end is; single-capture mode is not a separate feature. The queue is read a page at a time, so
 where the item was the last row held the next page is read before the queue is declared empty,
 and an item that was never on the queue — reached from the feed — goes on from its top. **A route
@@ -1025,7 +1062,7 @@ held back more than it answered is its own limit and said separately.
 
 **What a destination last answered is drawn while it answers again.** Kept for the life of the
 page and never instead of asking, so a list is stale only for as long as the round trip it fills —
-which is what the second visit to the surface spends staring at `loading…` otherwise. A browse that
+which is what the second visit to the surface spends staring at the asking mark otherwise. A browse that
 fails with something held says so and keeps drawing it, the field being typed either way.
 
 **A capability nothing can be chosen among is not a step** *(2026-09-08)*. Where a destination
@@ -1330,10 +1367,14 @@ sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
-select it — **drawn inverted**, ink behind it, so the selection reads at a glance *(amended
-2026-09-18; a selected tag used to look like every other)* — and taken off on the `×` that then
-appears beside it *(amended 2026-09-15; a single press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
-losing its selection clears the selection without taking anything off. `+` opens a line, an **absolute panel** beneath it —
+select it — **ruled round**, one line tall, the shell's mark for what is selected as a selected
+row's box is *(amended 2026-09-25; it was drawn inverted, ink behind it, which filled the capture
+box's foot; before 2026-09-18 a selected tag looked like every other)* — and taken off on the `×`
+that then slides in inside the rule, the tag growing to hold it *(amended 2026-09-15; a single
+press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+losing its selection clears the selection without taking anything off. `+` opens a line **where
+the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width
+and a little taller, and wrapped under the tags)*, and an **absolute panel** beneath it —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
@@ -1425,10 +1466,37 @@ of them the same colour.)*
   `routed`, `archived` and `revised` use: those say what became of the item in the pool, this says
   what this client has not sent, and an archived row that has not drained carries both without
   either shouting over the other. Pending is the ordinary state of a mutation and it heals itself,
-  so neither mark is drawn in the shape a refusal is.
+  so neither mark is drawn in the shape a refusal is. **A row's mark waits as long as the asking
+  mark does** *(2026-09-25)*: work that drains within 250ms — a capture made while the pool
+  answers — is never marked, since the line it takes would come and go and move the row twice.
+  The wait is the work's, not the row's: work that has already waited that long is marked at once
+  whenever its row is drawn again, rather than growing the row a line on every visit.
 - **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
   why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
   drawn in the same shape as pending work.
+
+**Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
+pool and holds no answer to — a read, a description, a preview, a route, a save — is drawn as
+**three small squares stepping**, one filled at a time, in ink, with no fade; under
+`prefers-reduced-motion` they stand hollow and still. It is never pending's mark, being about
+nothing the outbox holds, and it is never a word: `loading` tells a reader nothing the squares do
+not. **Nothing is drawn for the first 250ms**, since the cache answers first and most waits are
+over before then, and the mark goes the moment the answer lands, never held to finish its step.
+**It takes the place the answer will, from the start**: hidden until it is due, so appearing
+moves nothing. On an action it stands in the label's place at the label's width, and the action
+cannot be taken again until it is answered. A word joins it only when it says what the screen
+does not: a wait on a **destination** that passes three seconds adds `vault is slow to answer`,
+naming it, because the pool is fine and nothing else on screen says which of the things behind it
+is keeping the reader waiting. Settings' `asking`, `asking now` and `checking`, sign-in's `signing
+in`, and the pool settings' `reading…` all became the mark.
+
+Where a region is waiting rather than an action, the mark stands on the first line its answer will
+take: a list read cold draws it in the foot's place, where `load more` would have been, and no
+`load more` beside it, there being nothing yet to have more of; an item read cold, in the body
+column where the capture will be; an item's routing records, under the rule, where the first
+record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
+line's tree, at the top of the floor the list already keeps. A browse or a tree already drawn is
+not marked while it is asked again, being what the last answer said and exactly as useful.
 
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
@@ -1460,7 +1528,9 @@ corner would be a reader learning where to look to learn nothing more.
 **A confirmation goes on its own and a failure holds.** Anything a person may have to act on stays
 until they clear it, which is the rule the refusal already followed; a success is a glance and
 leaves after a few seconds. The accent is spent on the second kind and on nothing else, as it is in
-the log.
+the log. **A notice rises into the corner and fades out of it** *(2026-09-25)*, and the ones beside
+it close the gap it leaves rather than jumping into it: the corner is read at the edge of the eye,
+and motion is what tells that edge something was said.
 
 **A confirmation that offers something lingers longer** *(amended 2026-09-24)* — ten seconds rather
 than four — which is long enough to reach for an `undo`. It still goes on its own, because the way
@@ -1631,11 +1701,24 @@ log read it once the foot comes within a screen of the view, and go on reading w
 there. `j` past the last row held reads the next page and steps into it — waiting for a page
 already being read rather than giving up on the step — unless the reader has moved or let go in
 the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
-failed is asked for again, since scrolling never retries one. While a page is read the foot says
-`loading…` in the width `load more` already took. **The drained queue is one line where the rows were** —
+failed is asked for again, since scrolling never retries one. While a page is read the foot draws
+the asking mark in the width `load more` already took. **The drained queue is one line where the rows were** —
 `Nothing left to process.` — in the body column's position, with no register drawn under it.
 Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
 `zero`, and not as a notice.
+
+**A page arrives still** *(2026-09-25)*. Rows a read brought — the next page, the list read again,
+an order turned, the pool's first answer over what the cache drew, the cache filling an empty list
+as a page reloads — appear and go without moving,
+because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
+arrives or leaves between reads slides: a capture landing — the first one into a queue the pool
+had answered empty included — an item heard about, a row let go, a row processed on another
+device. The same holds on the feed, the queue's index and the log. **A row
+that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
+as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
+rather than jumping, over the short duration, and a change that lands while it is still moving is
+turned toward from wherever it stands; a change of width is the window's and moves nothing. On the
+log only a heard row grows: what a read brought, and what it goes on to fill in, stands still.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view toggle, and acts on the list it heads; settings and an item have no end to
@@ -1820,10 +1903,23 @@ item, and a row of the log offers nothing about narrowing.
 **A routing kind draws the record.** `routed` draws the block under its row from what the action
 says — destination, capability, place, template — with what was sent read by the record's id on
 arrival, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
-failure; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
+failure. **What was sent is read once a page** *(2026-09-25)*: it never changes, so a record read
+before — or read and found to have kept nothing — is drawn at once and asked for again by no one,
+and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known
+to hold what it sent, its line is held with the asking mark until it lands; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
 `template-fired` draws no block — its fact is the template's name, and the routing it began is a
 row of its own. The block is the item's, drawn once and the same wherever a record is read.
+
+**Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
+slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
+Everything a read brings — a view chosen, the order turned, a page, a re-read — stands still, and
+so does all it fills in afterwards, what was sent included: a view switched while every row
+settled its height at once read as motion about nothing. **A turned reading fades** — another
+view, the order, the subject, a reading the person chose; the watcher's re-read and a retry stand
+still, and entering the log draws nothing held from a reading nobody was looking at: what was drawn fades out over `short` and is held while it does, and
+the answer fades in, so a quick answer is never a frame of empty log. One slower than the fade
+finds the log emptied and asking, as any read does.
 
 **`history` is the log narrowed to one item**, reached from the item's actions, and says so above
 the head: `HISTORY`, the item's first words as a link to it, and `all of the log`, which widens
@@ -1833,7 +1929,9 @@ link come back to the same reading.
 **The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
 `classification`, `pool`, drawn as **tabs on the head's rule** — the one being read bold and
 boxed on three sides so it sits on the rule, the rest as links, the order control at the right of
-the same rule. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
+the same rule. Every tab keeps the box's room and a bold word's width *(2026-09-25)*, so choosing
+another moves nothing: the box fades from the one to the other over `short` and the weight eases
+with it, the first word starting on the column and its box bleeding past it. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
 the pool's own kinds and the URL carries the kinds rather than the name — `?kind=routed,template-fired`
 — so a link somebody writes by hand reads the same way as one of these, and a set that is not
 exactly a view lights none of them. The pool does the narrowing: a page holds what it shows, where
@@ -1894,7 +1992,10 @@ has one, then its site name (or the host), its title in bold and two lines of it
 whole block is the link. It is an **unfurl**, read by the daemon, never by the browser; only the
 picture is fetched by the browser, from wherever `og:image` points, on the rule a capture's own
 image already follows, and with no referrer. It is **automatic, everywhere a note's links appear** —
-the rows on the queue and the feed, the item surface, and the process surface. Three states are
+the rows on the queue and the feed, the item surface, and the process surface. **The picture's
+room is kept in every state** *(2026-09-25)*, a square at the block's left whether or not a picture
+comes, and a picture fades in over it once it has arrived, so the words beside it never move.
+Three states are
 ordinary, never the alarm: a block still asking draws the host alone; one whose page said nothing
 reads **`says nothing about itself`**; one that could not be reached — by the daemon, or the daemon
 by this device — reads **`out of reach`**, and is asked again the next time it is drawn; one the
@@ -1926,9 +2027,18 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
 
 The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
 nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
-with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`, `measure-wide`,
+with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
 `read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
-breakpoints. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
+breakpoints.
+
+**Durations are the one scale named by magnitude** *(2026-09-25)*: `duration-short` for what
+opens in place, `duration-long` for what enters, leaves or moves across, `ease-motion` for what
+travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both ends,
+since a fade on `ease-motion` is most of the way there in its first frames and reads as a snap on
+the way in *(amended 2026-09-25; there was one easing)*, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
+far a thing moves rather than by what it is, which is why these alone are not roles. The durations
+are zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
+and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
 inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
 
 **Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
@@ -1961,7 +2071,13 @@ served by the daemon beside the app — a face on the same origin is exactly as 
 which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
 captured prose, timestamps, labels, actions, the bar. Hierarchy is weight, capitals or small-caps
 with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
-under the cursor is underlined, never coloured.
+under the cursor is underlined, never coloured. **The face is asked for in the page's head and never
+swapped in** *(2026-09-25)*: it comes from the same origin as the page, so it is there before first
+paint, and a fallback laid out first and replaced would move every line on the page once.
+
+**The page's width does not depend on its length** *(2026-09-25)*. The scrollbar's gutter is kept
+whether or not the page scrolls, so a list emptied for a moment while it is read again, or a page
+growing past the window as it loads, moves nothing sideways.
 
 **Grid.** Two idioms, and the rule for which is where. *Lists are open*: queue, feed and log rows
 align on shared columns with no rule between rows; whitespace separates entries. *Rules mark a
@@ -1975,20 +2091,51 @@ capture field, a record block, a control, and the selected row.
 as a dated entry in a ledger, which is why the capture time is its title. The left column is a
 **metadata rail** — the stamp, the tags, and on the feed the state word and where the item went.
 The right column holds nothing but what was captured. Both surfaces are one grid, each item
-dropping two cells into it, so the columns stay in register down the whole page.
+one element laid on the grid's own tracks, so the columns stay in register down the whole page
+and a row still has a height of its own to arrive and leave by *(amended 2026-09-25; an item
+dropped two bare cells into the grid, which left nothing to slide)*.
 
 **A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
 time, and the two columns survive, because the rail is what says what a thing is.
 
-**The measure.** The page and the bar are capped at 56rem *(amended 2026-09-14; the drawings
-said 72rem, and at a desk the capture field and the bar read as wider than anything under them)*;
-the process surface alone takes 72rem from `wide`, its two columns needing the room. **A paragraph
+**The measure.** Every surface, the bar with it, is capped at 72rem *(amended 2026-09-25; the page
+and the bar were 56rem and the process surface alone 72rem, which widened the bar and moved the
+navigation on the way in; before 2026-09-14 the page was 72rem too, when at a desk the capture
+field and the bar read as wider than anything under them)*. **A paragraph
 is capped at 38rem** — about seventy characters — inside the body column: the column keeps its
 width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
 indent.
 
-**Motion.** Few, structural, ~150–200ms, `prefers-reduced-motion` honoured. Nothing else moves.
-*(Not yet built; phase 7 of the plan.)*
+**Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
+slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
+settings row and `more` slide open and shut over `short`; the capture box's picture comes and goes
+as a row does, sliding and fading over `long`, being a thing arriving rather than a disclosure; an
+open section of the
+process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
+described, the decision cleared by `route` — over `short`, turned from wherever it stands when a
+change lands mid-way, typing included; the process surface's next item fades up; a form in
+settings — adding or editing a template, a destination, an account, a token — and the server's
+sources slide open and shut, a `+ add` sliding shut as its form opens — or, where its line also
+holds the disabled destinations, fading out of it — and a form grows and
+shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
+row's box fades in and out whole, its foot with its edges and the rail's rule it covers, the one
+leaving and the one arriving in step. The current surface in the
+bar, the current view and the selected index line **ease into bold and out of it** over `short`,
+each word holding its bold width throughout so nothing beside it moves. A surface is current
+anywhere under its own address — `settings` at a section's. No navigation moves: an item carried from its
+row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
+overlays — the order chooser, the path and candidate lists — do not move of themselves: they
+are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
+chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
+right, and its panel unrolls downward, both over `short` and back again as it closes; the panel
+grows and shrinks over `short` as typing narrows it, turned from wherever it stands at each key.
+Nothing waits on either: the caret is live from the first frame and a key is never held back,
+though a quick hand may be a step ahead of the panel. **A tag slides in** across its line when it
+is added and out when it is taken off, down where a narrow width stacks the tags; one drawn with
+its row does not. **What a read
+brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.
+Only a change moves — a decision let go, a capture, an item heard about, a row processed
+elsewhere — so the reader's eye goes to the one thing that changed. Nothing else moves.
 
 *What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
 for a result and red for an action, the accent edge on the open row, the furlable rail — was the
@@ -2014,6 +2161,16 @@ view is how a reader sees more at once.
 ---
 
 ## Prior decisions
+
+- **No skeletons, and no grey to draw one.** *2026-09-25.* A placeholder shaped like a typical
+  answer was weighed for the waits the asking mark now covers, with a grey admitted to fill it.
+  Declined: the cache draws the queue, the feed and an item before the pool answers, so an empty
+  surface is a cold cache or a question the cache never holds — a description, a preview, a
+  browse — and most of those are over before 250ms. None of the answers has a shape worth guessing
+  — a row is a line or forty, a picture or two unfurls — so a skeleton guessing wrong moves the page
+  when the answer replaces it, which is what it was for. And grey went on 2026-09-14 for reasons a
+  rarely-seen state does not outweigh. What a skeleton is for, where it is right, the shell already
+  has without one: the unfurl block's fixed four lines, and the preview's five.
 
 - **A held row is released by selection, not by a clock.** *2026-09-08; retired 2026-09-14: the
   queue holds no processed row now that processing is a surface which moves on to the next item,
@@ -2160,7 +2317,7 @@ view is how a reader sees more at once.
 ## Acceptance criteria
 
 - An unfurl arriving, or failing, moves nothing on the page: the block is the same height asking
-  as answered.
+  as answered, and its words stand in the same place with a picture as without one.
 - While the pool setting `unfurl` is off, or before it has been read, no request to `/v1/unfurl`
   is made and no block is drawn.
 - A bare URL typed in prose is a followable link; an email address is not.

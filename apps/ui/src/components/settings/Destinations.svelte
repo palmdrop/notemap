@@ -9,12 +9,14 @@
     type DestinationProbe,
   } from "@notemap/client";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
   import DestinationRow from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
+  import { fade, slide } from "$lib/motion";
 
   const destinations = client.destinations.all;
   const pool = reachable();
@@ -162,41 +164,55 @@
       ondelete={() => client.destinations.delete(one.id)}
     >
       {#if editing === one.id}
-        <DestinationForm
-          {kinds}
-          existing={$destinations}
-          editing={one}
-          disabled={!pool.yes}
-          done={() => (editing = undefined)}
-        />
+        <Unfolding>
+          <DestinationForm
+            {kinds}
+            existing={$destinations}
+            editing={one}
+            disabled={!pool.yes}
+            done={() => (editing = undefined)}
+          />
+        </Unfolding>
       {/if}
     </DestinationRow>
   {/each}
 
   {#if adding}
-    <DestinationForm
-      {kinds}
-      existing={$destinations}
-      disabled={!pool.yes}
-      done={() => (adding = false)}
-    />
+    <Unfolding>
+      <DestinationForm
+        {kinds}
+        existing={$destinations}
+        disabled={!pool.yes}
+        done={() => (adding = false)}
+      />
+    </Unfolding>
   {/if}
 
-  <div class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]">
-    {#if !adding}
-      <Action
-        disabled={!pool.yes || kinds.length === 0}
-        onclick={() => (adding = true)}
-      >
-        + add a destination
-      </Action>
-    {:else}
-      <span></span>
-    {/if}
-    {#if disabled > 0}
-      <Action onclick={() => (showDisabled = !showDisabled)}>
-        {disabled} disabled · {showDisabled ? "hide" : "show"}
-      </Action>
-    {/if}
-  </div>
+  <!-- `+ add` slides shut with its line as the form opens, as its siblings'
+       do; where the line also carries the disabled ones it stays, and `+ add`
+       fades out of it instead. -->
+  {#if !adding || disabled > 0}
+    <div
+      class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]"
+      transition:slide={{ magnitude: "short" }}
+    >
+      {#if !adding}
+        <span transition:fade>
+          <Action
+            disabled={!pool.yes || kinds.length === 0}
+            onclick={() => (adding = true)}
+          >
+            + add a destination
+          </Action>
+        </span>
+      {:else}
+        <span></span>
+      {/if}
+      {#if disabled > 0}
+        <Action onclick={() => (showDisabled = !showDisabled)}>
+          {disabled} disabled · {showDisabled ? "hide" : "show"}
+        </Action>
+      {/if}
+    </div>
+  {/if}
 </Section>

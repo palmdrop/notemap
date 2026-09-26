@@ -14,6 +14,7 @@
   } from "$lib/draft";
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
+  import { slide } from "$lib/motion";
   import { offerable, triggeredBy } from "$lib/templates";
 
   /**
@@ -120,17 +121,29 @@
   class="mt-6 border border-ink"
 >
   {#if chosen !== undefined}
-    <div class="flex items-end gap-4 px-3 pt-2.5">
-      {#if preview !== undefined}
-        <img
-          src={preview}
-          alt="What is about to be captured"
-          class="size-21 border border-ink object-cover"
-        />
-      {/if}
+    <div
+      class="flex items-end gap-4 border-b border-ink px-3 py-2.5"
+      transition:slide={{ fade: true }}
+    >
+      <!-- The picture's room is there before the picture is, so the section
+           opens to the height it keeps. -->
+      <div class="size-21 shrink-0 border border-ink">
+        {#if preview !== undefined}
+          <img
+            src={preview}
+            alt="What is about to be captured"
+            class="size-full object-cover"
+          />
+        {/if}
+      </div>
       <span class="min-w-0 break-words">{chosen.name}</span>
-      <button type="button" onclick={drop} class="shrink-0 hover:underline">
-        drop
+      <button
+        type="button"
+        onclick={drop}
+        aria-label={`remove ${chosen.name}`}
+        class="shrink-0 hover:underline"
+      >
+        ×
       </button>
     </div>
   {/if}
@@ -149,28 +162,32 @@
   ></textarea>
 
   <div class="flex items-baseline justify-between border-t border-ink">
-    <span class="flex items-baseline gap-x-4 px-3 leading-8">
-      <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
-
-      <span class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
-        <TagSet
-          names={tags}
-          {offered}
-          label="Tag the capture"
-          fires={(name) => triggeredBy(name)?.name}
-          onadd={(name) => (tags = [...tags, name])}
-          onremove={(name) => (tags = tags.filter((one) => one !== name))}
-        />
+    <span class="flex items-baseline">
+      <span class="border-r border-ink px-3 leading-8">
+        <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
       </span>
 
-      {#if said !== ""}
-        <!-- Only a failure reaches this: the capture itself waits on nothing. -->
-        <span role="status" class="text-alarm">{said}</span>
-      {/if}
+      <span class="flex items-baseline gap-x-4 px-3 leading-8">
+        <span class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
+          <TagSet
+            names={tags}
+            {offered}
+            label="Tag the capture"
+            fires={(name) => triggeredBy(name)?.name}
+            onadd={(name) => (tags = [...tags, name])}
+            onremove={(name) => (tags = tags.filter((one) => one !== name))}
+          />
+        </span>
+
+        {#if said !== ""}
+          <!-- Only a failure reaches this: the capture itself waits on nothing. -->
+          <span role="status" class="text-alarm">{said}</span>
+        {/if}
+      </span>
     </span>
 
     <span class="border-l border-ink px-3 leading-8">
-      <Action primary submit disabled={busy}>capture</Action>
+      <Action primary submit working={busy}>capture</Action>
     </span>
 
     <input

@@ -7,21 +7,49 @@
     PREVIEW_UNREACHABLE,
   } from "$lib/said";
 
+  import { tick } from "svelte";
+
+  import Asking from "$components/primitives/marks/Asking.svelte";
+  import { grow } from "$lib/motion";
+
   /**
    * The head of the file the destination would write, in a ruled block: five
    * lines, and the rest behind `more`. A destination that offers no preview,
    * or that cannot be reached, says so in the block in plain ink — neither is
    * a failure of the decision. `place` is the full path above it, bold, so
-   * the block says both where and what.
+   * the block says both where and what. It is five lines tall before there is
+   * anything to draw in it, so an answer landing moves nothing under it;
+   * while `asking`, the mark stands on the first of them, or beside the path
+   * over an answer that is about to be replaced.
    */
-  let { shown, place }: { shown: RoutingPreview; place?: string } = $props();
+  let {
+    shown,
+    place,
+    asking = false,
+    subject,
+  }: {
+    shown?: RoutingPreview;
+    place?: string;
+    asking?: boolean;
+    /** What is being asked, named once it is slow to answer. */
+    subject?: string;
+  } = $props();
 
   const LINES = 5;
 
   let whole = $state(false);
+  let written = $state<HTMLElement>();
+
+  async function unclamp() {
+    const element = written;
+    const from = element?.offsetHeight ?? 0;
+    whole = true;
+    await tick();
+    if (element !== undefined) grow(element, from);
+  }
 
   const text = $derived(
-    shown.kind === "previewed" ? shown.content?.text : undefined,
+    shown?.kind === "previewed" ? shown.content?.text : undefined,
   );
 
   const lines = $derived(text?.split("\n") ?? []);
@@ -29,7 +57,7 @@
   const drawn = $derived(cut ? lines.slice(0, LINES).join("\n") : text);
 
   const said = $derived.by(() => {
-    switch (shown.kind) {
+    switch (shown?.kind) {
       case "not-offered":
         return NO_PREVIEW_OFFERED;
       case "unreachable":
@@ -48,31 +76,44 @@
 
 <div class="border border-ink px-3 py-2">
   {#if place !== undefined}
-    <div class="mb-2 border-b border-ink pb-2 font-semibold break-words">
-      {place}
+    <div
+      class="mb-2 flex items-baseline justify-between gap-x-[2ch] border-b border-ink pb-2"
+    >
+      <span class="min-w-0 font-semibold break-words">{place}</span>
+      {#if asking && shown !== undefined}
+        <Asking {subject} />
+      {/if}
     </div>
   {/if}
-  {#if drawn !== undefined}
-    <pre class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
-    {#if shown.kind === "previewed" && shown.note !== undefined}
-      <div class="mt-2 break-words">{shown.note}</div>
+  <div class="min-h-[calc(var(--text-shell--line-height)*5)]">
+    {#if shown === undefined}
+      {#if asking}
+        <Asking {subject} />
+      {/if}
+    {:else if drawn !== undefined}
+      <pre
+        bind:this={written}
+        class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
+      {#if shown.kind === "previewed" && shown.note !== undefined}
+        <div class="mt-2 break-words">{shown.note}</div>
+      {/if}
+      {#if cut || (shown.kind === "previewed" && shown.content?.truncated === true && !cut)}
+        <div class="flex justify-end">
+          {#if cut}
+            <button
+              type="button"
+              onclick={() => void unclamp()}
+              class="hover:underline">more ▾</button
+            >
+          {:else}
+            <span>shown in part</span>
+          {/if}
+        </div>
+      {/if}
+    {:else if said !== undefined}
+      <span role="status" class={shown.kind === "rejected" ? "text-alarm" : ""}
+        >{said}</span
+      >
     {/if}
-    {#if cut || (shown.kind === "previewed" && shown.content?.truncated === true && !cut)}
-      <div class="flex justify-end">
-        {#if cut}
-          <button
-            type="button"
-            onclick={() => (whole = true)}
-            class="hover:underline">more ▾</button
-          >
-        {:else}
-          <span>shown in part</span>
-        {/if}
-      </div>
-    {/if}
-  {:else if said !== undefined}
-    <span role="status" class={shown.kind === "rejected" ? "text-alarm" : ""}
-      >{said}</span
-    >
-  {/if}
+  </div>
 </div>

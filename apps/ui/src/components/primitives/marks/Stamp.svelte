@@ -16,13 +16,22 @@
 </script>
 
 {#snippet written()}
-  <span
-    class="flex gap-[1ch] tabular-nums {inline
-      ? ''
-      : 'max-narrow:flex-col max-narrow:gap-0'}"
-  >
-    <time datetime={at} class="whitespace-nowrap">{dayOf(at)}</time>
-    <span class="whitespace-nowrap">{timeOf(at)}</span>
+  <span class="flex tabular-nums {inline ? '' : 'max-narrow:flex-col'}">
+    <!-- Bold on a selected index line, which must not widen the column: each
+         part holds its bold width, and the space between is a normal-weight
+         `ch` rather than one that grows with the weight. -->
+    <time
+      datetime={at}
+      data-word={dayOf(at)}
+      class="steady-weight whitespace-nowrap">{dayOf(at)}</time
+    >
+    <span
+      aria-hidden="true"
+      class="w-[1ch] shrink-0 font-normal {inline ? '' : 'max-narrow:hidden'}"
+    ></span>
+    <span data-word={timeOf(at)} class="steady-weight whitespace-nowrap"
+      >{timeOf(at)}</span
+    >
   </span>
 {/snippet}
 

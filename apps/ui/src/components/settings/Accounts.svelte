@@ -1,12 +1,14 @@
 <script lang="ts">
   import { saidBy, type Account, type AccountKind } from "@notemap/client";
 
+  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
   import AccountForm from "$components/settings/AccountForm.svelte";
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
+  import { slide } from "$lib/motion";
 
   const pool = reachable();
 
@@ -15,6 +17,8 @@
   let adding = $state(false);
   let editing = $state<string | undefined>(undefined);
   let going = $state(false);
+  /** Which account a `remove` was pressed on, while it is asked. */
+  let removing = $state<string | undefined>(undefined);
   let said = $state("");
 
   const keyOf = (one: Account) =>
@@ -51,11 +55,13 @@
     if (pool.yes && kinds.length === 0) void read();
   });
 
-  const remove = (one: Account) =>
-    attempt(async () => {
+  const remove = (one: Account) => {
+    removing = keyOf(one);
+    return attempt(async () => {
       await client.accounts.remove(one.kind, one.name);
       held = await client.accounts.list();
-    });
+    }).finally(() => (removing = undefined));
+  };
 
   const saved = () => {
     adding = false;
@@ -106,6 +112,7 @@
                 {#if one.from === "stored"}
                   <Action
                     disabled={going || !pool.yes}
+                    working={removing === keyOf(one)}
                     onclick={() => void remove(one)}
                   >
                     remove
@@ -116,12 +123,14 @@
           </span>
         </Fact>
         {#if editing === keyOf(one)}
-          <AccountForm
-            {kinds}
-            editing={one}
-            disabled={!pool.yes}
-            done={saved}
-          />
+          <Unfolding>
+            <AccountForm
+              {kinds}
+              editing={one}
+              disabled={!pool.yes}
+              done={saved}
+            />
+          </Unfolding>
         {/if}
       {:else}
         <p class="mt-2">none</p>
@@ -130,11 +139,11 @@
   {/each}
 
   {#if adding}
-    <AccountForm {kinds} disabled={!pool.yes} done={saved} />
-  {/if}
-
-  {#if !adding}
-    <div class="mt-6">
+    <Unfolding>
+      <AccountForm {kinds} disabled={!pool.yes} done={saved} />
+    </Unfolding>
+  {:else}
+    <div class="mt-6" transition:slide={{ magnitude: "short" }}>
       <Action
         disabled={!pool.yes || kinds.length === 0}
         onclick={() => (adding = true)}

@@ -1,6 +1,9 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    /* A page that grows past the window, or stops doing so for a frame while a
+       list is read again, would otherwise move everything centred sideways. */
+    scrollbar-gutter: stable;
   }
 
   /* A person's own answer, where they have given one. */

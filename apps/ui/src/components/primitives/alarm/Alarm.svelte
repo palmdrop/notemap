@@ -35,7 +35,7 @@
 <!-- The left corner, because the right is where a composer lives. -->
 <div
   role="presentation"
-  class="fixed bottom-4 left-4 z-10 grid max-w-84 gap-3"
+  class="fixed bottom-4 left-4 z-10 flex max-w-84 flex-col [&>*+*]:mt-3"
   onpointerenter={() => held(true, focused)}
   onpointerleave={() => held(false, focused)}
   onfocusin={() => held(hovered, true)}

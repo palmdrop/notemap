@@ -54,7 +54,6 @@ export default defineConfig(({ mode }) => {
       // is what lets the daemon send no CORS headers at all.
       proxy: {
         "/v1": daemon,
-        "/log": daemon,
         "/docs": daemon,
       },
     },

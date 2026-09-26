@@ -87,7 +87,11 @@ already says it. *Amended 2026-09-14, once built and looked at*: the feed drops 
 too — `routed`, `manual`, `retrying` — since the line saying where an item went already says
 them; `discarded` stays, no line saying it. And the page is 56rem rather than the drawings' 72:
 at a desk the capture field and the bar read wider than anything under them. The process surface
-alone keeps 72rem for its two columns.
+alone keeps 72rem for its two columns. *Amended 2026-09-25*: every surface takes 72rem, and a
+paragraph keeps its 38rem. The bar is in the same column as the page, so going to the process
+surface widened the bar and moved the navigation under the reader's eye; the process surface at
+56rem, tried the same day, was too narrow for its two columns. The width a paragraph is read at is
+what the 56rem was protecting, and the paragraph's own cap already holds it.
 
 **Records.** An item's page draws its routing records inline as ruled blocks, output rendered
 rather than raw; the record route stays for linking. The log draws routing kinds with the same

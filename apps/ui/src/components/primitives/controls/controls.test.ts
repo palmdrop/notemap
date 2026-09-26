@@ -5,6 +5,7 @@ import Action from "./Action.svelte";
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
 import ActionFixture from "./Action.fixture.svelte";
+import { SHOWN_AFTER } from "../marks/Asking.svelte";
 
 test("an unavailable action reads as unavailable rather than as broken", () => {
   render(ActionFixture, { label: "route", disabled: true, onclick: vi.fn() });
@@ -45,6 +46,43 @@ test("an available action is taken once", async () => {
   await fireEvent.click(screen.getByRole("button", { name: "capture" }));
 
   expect(taken).toHaveBeenCalledTimes(1);
+});
+
+test("an action that has asked cannot be taken again, and keeps its label until the mark is due", async () => {
+  vi.useFakeTimers();
+  try {
+    const taken = vi.fn();
+    const { rerender } = render(ActionFixture, {
+      label: "save",
+      working: true,
+      onclick: taken,
+    });
+
+    const action = screen.getByRole("button", { name: /save/ });
+    expect((action as HTMLButtonElement).disabled).toBe(true);
+    expect(action.getAttribute("aria-busy")).toBe("true");
+    expect(
+      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
+    ).toBe("hidden");
+
+    await vi.advanceTimersByTimeAsync(SHOWN_AFTER);
+    expect(
+      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
+    ).toBe("shown");
+    // Both sit in one cell, so the button is as wide as the wider of them throughout.
+    expect(screen.getByText("save").getAttribute("aria-hidden")).toBe("true");
+
+    await rerender({ label: "save", working: false, onclick: taken });
+    expect(action.querySelector("[data-asking]")).toBeNull();
+    expect((action as HTMLButtonElement).disabled).toBe(false);
+
+    await rerender({ label: "save", working: true, onclick: taken });
+    expect(screen.getByText("save").getAttribute("aria-hidden")).not.toBe(
+      "true",
+    );
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 /** A word, a mark, and a panel of marked options: the shell draws its own. */
@@ -319,13 +357,18 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
 
   await fireEvent.click(word);
   expect(removed).not.toHaveBeenCalled();
-  // Selected is drawn inverted, so the × has a word it visibly belongs to.
-  expect(word.parentElement!.classList.contains("bg-ink")).toBe(true);
+  // Selected is ruled round, the × inside the rule, so the × has a word it
+  // visibly belongs to.
+  const remove = screen.getByRole("button", { name: "remove notemap" });
+  expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
+  expect(word.parentElement!.contains(remove)).toBe(true);
   expect(
-    screen.getByRole("button", { name: "design" }).classList.contains("bg-ink"),
+    screen
+      .getByRole("button", { name: "design" })
+      .parentElement!.hasAttribute("data-chosen"),
   ).toBe(false);
 
-  await fireEvent.click(screen.getByRole("button", { name: "remove notemap" }));
+  await fireEvent.click(remove);
   expect(removed).toHaveBeenCalledWith("notemap");
   expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
 });
@@ -410,3 +453,44 @@ test("a trigger tag is marked with the template it applies, carried or offered",
 
 /** Referenced so a rename cannot leave the fixture pointing at nothing. */
 void Action;
+
+test("a tag set that cannot be added to still holds the +'s place, unreachable", () => {
+  const { container } = render(TagSet, {
+    names: ["one"],
+    offered: [],
+    addable: false,
+    onadd: vi.fn(),
+    onremove: vi.fn(),
+  });
+
+  expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
+  const held = [...container.querySelectorAll("button")].find(
+    (button) => button.textContent?.trim() === "+",
+  );
+  expect(held?.getAttribute("aria-hidden")).toBe("true");
+  expect(held?.getAttribute("tabindex")).toBe("-1");
+  expect((held as HTMLButtonElement).disabled).toBe(true);
+});
+
+/** The offer narrows at typing speed; its panel turns toward each new height from where it stands. */
+test("the offer's panel grows and shrinks with the narrowing, from the height it stood at", async () => {
+  tagSet({ offered: ["reading", "research", "design"] });
+  const line = await opened();
+  const list = screen.getByRole("listbox", { name: "Tags in use" });
+
+  const tall = () => list.querySelectorAll("[role='option']").length * 20;
+  Object.defineProperty(list, "offsetHeight", { get: tall });
+  list.getBoundingClientRect = () => ({ height: tall() }) as DOMRect;
+  const animate = vi.fn();
+  Object.assign(list, { animate, getAnimations: () => [] });
+  document.documentElement.style.setProperty("--duration-short", "150ms");
+
+  try {
+    await typed(line, "rea");
+
+    const [frames] = animate.mock.calls.at(-1) as [{ height: string }[]];
+    expect(frames.map((frame) => frame.height)).toEqual(["60px", "40px"]);
+  } finally {
+    document.documentElement.style.removeProperty("--duration-short");
+  }
+});

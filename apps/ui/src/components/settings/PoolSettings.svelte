@@ -4,6 +4,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
 
@@ -13,7 +14,8 @@
   const pool = reachable();
 
   let said = $state("");
-  let changing = $state<Record<string, boolean>>({});
+  /** The value each setting is being changed to, while the pool is asked. */
+  let changing = $state<Record<string, boolean | undefined>>({});
 
   async function read() {
     said = "";
@@ -31,15 +33,15 @@
   });
 
   async function change(name: string, value: boolean, now: boolean) {
-    if (value === now) return;
-    changing = { ...changing, [name]: true };
+    if (value === now || changing[name] !== undefined) return;
+    changing = { ...changing, [name]: value };
     said = "";
     try {
       await client.settings.change(name, value);
     } catch (error) {
       said = saidBy(error);
     } finally {
-      changing = { ...changing, [name]: false };
+      changing = { ...changing, [name]: undefined };
     }
   }
 </script>
@@ -49,7 +51,11 @@
     <!-- Not a guess: a cold client, or one that has not yet reached the pool,
          has no answer to draw as either yes or no. -->
     <p role="status" class="mt-4">
-      {pool.yes ? "reading…" : "unavailable while the pool is unreachable"}
+      {#if pool.yes}
+        <Asking />
+      {:else}
+        unavailable while the pool is unreachable
+      {/if}
     </p>
   {:else}
     {#if !pool.yes}
@@ -69,13 +75,13 @@
             <Option
               label="yes"
               chosen={setting.value}
-              why={changing[setting.name] ? "…" : undefined}
+              working={changing[setting.name] === true}
               onchoose={() => void change(setting.name, true, setting.value)}
             />
             <Option
               label="no"
               chosen={!setting.value}
-              why={changing[setting.name] ? "…" : undefined}
+              working={changing[setting.name] === false}
               onchoose={() => void change(setting.name, false, setting.value)}
             />
           </span>
