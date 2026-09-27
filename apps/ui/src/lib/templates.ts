@@ -40,8 +40,11 @@ export function triggeredBy(tag: string): RoutingTemplate | undefined {
  * be fired by typing its tag exactly right, which is the one time nobody knows
  * it. A declared trigger tag is offerable the moment it is declared.
  */
-export function offerable(inUse: readonly string[]): readonly string[] {
-  const declared = client.templates.held.flatMap((one) =>
+export function offerable(
+  inUse: readonly string[],
+  templates: readonly RoutingTemplate[],
+): readonly string[] {
+  const declared = templates.flatMap((one) =>
     one.triggerTag === undefined || inUse.includes(one.triggerTag)
       ? []
       : [one.triggerTag],

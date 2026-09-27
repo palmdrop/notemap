@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from "svelte";
-  import { goto } from "$app/navigation";
+  import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -15,6 +15,7 @@
   import { chordFor } from "$lib/command/bindings";
   import { dispatch } from "$lib/command/dispatch";
   import { published } from "$lib/command/stack.svelte";
+  import { leave, unsaved } from "$lib/leaving.svelte";
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
@@ -69,6 +70,22 @@
   $effect(() => {
     if (!shut) return;
     untrack(() => notices.clear());
+  });
+
+  // An edit with changes is asked about before the page goes: in the shell's
+  // own words within the app, and in the browser's when the tab is left.
+  // Asked, the navigation goes on the way it would have: back and forward move
+  // through history, and a link out of the app is left to the browser.
+  beforeNavigate((navigation) => {
+    if (!unsaved()) return;
+    navigation.cancel();
+    const { type, to, delta, willUnload } = navigation;
+    if (type === "leave" || to === null) return;
+    leave(() => {
+      if (type === "popstate") history.go(delta ?? 0);
+      else if (willUnload) location.assign(to.url);
+      else void goto(to.url);
+    });
   });
 
   // The one listener in the shell. Every chord is resolved against whatever is

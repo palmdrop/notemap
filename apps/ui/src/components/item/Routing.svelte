@@ -15,10 +15,13 @@
   let {
     summary,
     records = [],
+    short = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
     records?: readonly RoutingRecord[];
+    /** Every record on one line, cut where it runs out of room, and nothing to press. */
+    short?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -97,7 +100,20 @@
   }
 </script>
 
-{#if lines.length > 0 || said !== ""}
+{#if short}
+  {#if lines.length > 0}
+    {@const all = lines.map((line) =>
+      line.aside === undefined ? line.said : `${line.said} · ${line.aside}`,
+    )}
+    <div
+      class="truncate"
+      title={lines.map((line) => line.title ?? line.said).join(", ")}
+    >
+      <span aria-hidden="true">→</span>
+      {all.join(", ")}
+    </div>
+  {/if}
+{:else if lines.length > 0 || said !== ""}
   <div class="mt-2">
     {#each lines as line (line.href ?? line.said)}
       <div class="flex flex-wrap items-baseline gap-x-4">

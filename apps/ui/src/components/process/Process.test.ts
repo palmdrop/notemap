@@ -49,15 +49,8 @@ afterEach(() => {
 /** Where the surface went when it was done: the queue, or the next item. */
 const left = () => went.to.at(-1);
 
-/**
- * The tag section is drawn collapsed until it holds something or is pressed,
- * so the `+` is behind its label on an item with no tags.
- */
+/** The tag section is always open, so the `+` is there to press. */
 async function addingTag() {
-  const section = screen.getByRole("button", { name: "tags" });
-  if (section.getAttribute("aria-expanded") !== "true") {
-    await fireEvent.click(section);
-  }
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
   return screen.getByRole("combobox", { name: "Add a tag" });
 }
@@ -927,7 +920,7 @@ test("an unavailable destination stays in the list, says why, and is not routabl
   ).toBe(true);
 });
 
-test("a retired destination stays in the list and is not offered for new routing", async () => {
+test("a disabled destination is not offered at all", async () => {
   serving([
     aDestination({ retired: true }),
     aDestination({ id: BOARD, name: "Board" }),
@@ -935,13 +928,14 @@ test("a retired destination stays in the list and is not offered for new routing
 
   draw();
 
-  const retired = await screen.findByRole("button", { name: /Vault/ });
-  expect((retired as HTMLButtonElement).disabled).toBe(true);
-  expect(retired.textContent).toContain("retired");
   expect(
-    (screen.getByRole("button", { name: /Board/ }) as HTMLButtonElement)
-      .disabled,
+    (
+      (await screen.findByRole("button", {
+        name: /Board/,
+      })) as HTMLButtonElement
+    ).disabled,
   ).toBe(false);
+  expect(screen.queryByRole("button", { name: /Vault/ })).toBeNull();
 });
 
 test("draws the capture in the head", async () => {
@@ -2957,7 +2951,7 @@ test("draws a trigger tag that filed the item as inert, not a control", async ()
       return json(200, { values: [aDestination()] });
     }
     if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
-    return json(200, { values: [] });
+    return json(404, { error: { code: "unknown-route" } });
   });
   await client.templates.load();
   await client.item("one");
@@ -3468,4 +3462,106 @@ test("a browse being asked stands the mark where its entries will be", async () 
   );
   await screen.findByText("inbox");
   expect(list.querySelector("[data-asking]")).toBeNull();
+});
+
+test("the tags section is open with no tags, its + drawn", async () => {
+  serving([aDestination()]);
+
+  draw();
+
+  const label = await screen.findByRole("button", { name: "tags" });
+  expect(label.getAttribute("aria-expanded")).toBe("true");
+  expect(screen.getByRole("button", { name: "Add a tag" })).toBeDefined();
+});
+
+test("a template whose destination is disabled says so", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ retired: true })] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw();
+
+  const option = await screen.findByRole("button", { name: /research/ });
+  expect(option.textContent).toContain("its destination is disabled");
+});
+
+/** The settling wait is a wait on the preview too: what is up answers a decision that no longer stands. */
+test("the asking mark stands from the keystroke, before the next preview is asked", async () => {
+  const transport = serving([aDestination()], {
+    kind: "described",
+    capabilities: [APPEND],
+  });
+
+  draw();
+  await choose("Vault");
+  await screen.findByText(/# a thought/);
+  const previews = () =>
+    sentTo(transport).filter(
+      (request) => routeOf(request) === "POST /v1/items/one/route/preview",
+    );
+  expect(section("preview").querySelector("[data-asking]")).toBeNull();
+
+  await choose("edit");
+  await fireEvent.input(await screen.findByLabelText("words"), {
+    target: { value: "a note, tidied" },
+  });
+
+  expect(previews()).toHaveLength(1);
+  expect(section("preview").querySelector("[data-asking]")).not.toBeNull();
+  expect(screen.getByText(/# a thought/)).toBeDefined();
+
+  await vi.waitFor(() => {
+    expect(previews()).toHaveLength(2);
+  });
+  await vi.waitFor(() => {
+    expect(section("preview").querySelector("[data-asking]")).toBeNull();
+  });
+});
+
+test("says where the item has gone already, on one line under its stamp", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, {
+        values: [
+          {
+            id: "r1",
+            item: "one",
+            at: WHEN,
+            state: "delivered",
+            target: {
+              kind: "destination",
+              destination: VAULT,
+              capability: "create-or-append",
+              arguments: { path: "journal/deep/2026-09-13.md" },
+            },
+          },
+        ],
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  draw(
+    aCapture({
+      routing: {
+        records: 1,
+        pending: 0,
+        to: [{ kind: "destination", destination: VAULT }],
+        templates: [],
+      },
+    }),
+  );
+
+  const line = await screen.findByText(/Vault · …\/2026-09-13\.md/);
+  expect(line.className).toContain("truncate");
+  expect(line.getAttribute("title")).toBe("journal/deep/2026-09-13.md");
 });

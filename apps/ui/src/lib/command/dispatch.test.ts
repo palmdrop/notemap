@@ -19,6 +19,21 @@ function run(id: string): Command {
 }
 
 describe("resolving a chord against the stack", () => {
+  it("leaves a press to an open dialog, wherever the focus is", () => {
+    const dialog = document.createElement("dialog");
+    dialog.setAttribute("open", "");
+    document.body.append(dialog);
+
+    const found = dispatch(
+      keydown({ key: "Escape" }, document.body),
+      [() => [run("back")]],
+      chordFor,
+    );
+
+    expect(found).toBeUndefined();
+    dialog.remove();
+  });
+
   it("takes the top-most layer's live command whose binding matches", () => {
     const bottom = [run("discard")];
     const top = [run("discard")];

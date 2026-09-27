@@ -523,12 +523,33 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   render(Item, { id: "linked" });
   await screen.findByText("what the link names");
 
-  await fireEvent.keyDown(window, { key: "e" });
-  expect(await screen.findByLabelText("What it says")).toBeTruthy();
-
   await fireEvent.keyDown(window, { key: "t" });
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
 
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual(["/items/linked/process"]);
+});
+
+/** An edit offers the item's tags and nothing that decides it, until it is closed. */
+test("while the item is edited only its tags are reached", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(screen.getByRole("button", { name: "save" })).toBeDefined();
+
+  field.blur();
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual([]);
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+  (document.activeElement as HTMLElement).blur();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual(["/items/linked/process"]);
 });

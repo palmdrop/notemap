@@ -42,14 +42,14 @@
     ? 'border-alarm text-alarm'
     : 'border-ink'}"
 >
-  <span class="break-words">{what}</span>
+  <span class="wrap-anywhere">{what}</span>
 
   {#if why !== undefined}
-    <span class="break-words">{why}</span>
+    <span class="wrap-anywhere">{why}</span>
   {/if}
 
   {#if about !== undefined}
-    <span class="break-words">{about}</span>
+    <span class="wrap-anywhere">{about}</span>
   {/if}
 
   {#if href !== undefined || offer !== undefined || ondismiss !== undefined}

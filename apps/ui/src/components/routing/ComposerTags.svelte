@@ -31,7 +31,13 @@
   } = $props();
 
   const inUse = client.tags.inUse;
-  const offered = $derived(offerable($inUse.map((use) => use.name)));
+  const declared = client.templates.all;
+  const offered = $derived(
+    offerable(
+      $inUse.map((use) => use.name),
+      $declared,
+    ),
+  );
 
   function fires(name: string): string | undefined {
     return triggeredBy(name)?.name;

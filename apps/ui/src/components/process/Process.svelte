@@ -29,6 +29,7 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
+  import Routing from "$components/item/Routing.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
@@ -48,6 +49,7 @@
   } from "$lib/processing";
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
+  import { recordsOf } from "$lib/records.svelte";
   import { placeNamed, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
@@ -103,6 +105,17 @@
    */
   const held = $derived(client.held(item.id));
   const tags = $derived((($held ?? item).tags ?? []).map((tag) => tag.name));
+  const summary = $derived(($held ?? item).routing);
+
+  /** Where the item has gone already, said under its stamp so a second route is made knowing the first. */
+  /** Only a change of item or of the records counted asks again, not every change to the held copy. */
+  const routed = $derived(
+    summary === undefined ? undefined : `${item.id}:${summary.records}`,
+  );
+  const records = recordsOf(
+    () => (routed === undefined ? undefined : item.id),
+    () => !offline,
+  );
 
   /** The template a decision started from, which the commit may carry. */
   let applied = $state<RoutingTemplate | undefined>(undefined);
@@ -137,6 +150,8 @@
   let shown = $state<RoutingPreview | undefined>(undefined);
   /** A preview asked for the decision as it stands, and not yet answered. */
   let previewing = $state(false);
+  /** The decision the last answer belongs to, whichever way it came back. */
+  let answeredFor = $state<string | undefined>(undefined);
   let previewFailed = $state("");
 
   /**
@@ -153,8 +168,8 @@
     if (editing) typing?.focus();
   });
 
-  /** Which sections are open. The first always is; the rest open on a press or when the flow reaches them. */
-  let opened = $state({ place: false, tags: false, preview: false });
+  /** Which sections are open. `destination` and `tags` always are; the rest open on a press or when the flow reaches them. */
+  let opened = $state({ place: false, preview: false });
 
   const capabilities = $derived<readonly Capability[]>(
     described?.kind === "described" ? described.capabilities : [],
@@ -319,6 +334,7 @@
     shown = undefined;
     previewFailed = "";
     previewing = false;
+    answeredFor = undefined;
     placing = true;
   }
 
@@ -340,6 +356,15 @@
     return () => clearTimeout(timer);
   });
 
+  /**
+   * From the keystroke rather than the request: the settling wait is a wait
+   * on the preview too, and what is up meanwhile answers a decision that no
+   * longer stands.
+   */
+  const pending = $derived(
+    ready && settledArguments && (previewing || answeredFor !== decision),
+  );
+
   async function show() {
     if (chosen === undefined || capability === undefined) return;
 
@@ -356,12 +381,14 @@
         ...carried(),
       });
       if (asked === decision) {
+        answeredFor = asked;
         shown = answer;
         previewFailed = "";
         opened.preview = true;
       }
     } catch (error) {
       if (asked === decision) {
+        answeredFor = asked;
         previewFailed = saidBy(error);
         opened.preview = true;
       }
@@ -524,8 +551,7 @@
     };
   }
 
-  function reasonFor(id: string, retired: boolean): string | undefined {
-    if (retired) return "retired";
+  function reasonFor(id: string): string | undefined {
     if (offline) return "pool out of reach";
     return refusing[id];
   }
@@ -539,7 +565,7 @@
   const unusable = $derived.by(() => {
     const all: Record<string, string | undefined> = {};
     for (const one of $destinations) {
-      all[one.id] = reasonFor(one.id, one.retired === true);
+      all[one.id] = reasonFor(one.id);
     }
     for (const one of $templates) {
       all[one.id] = templateReason(one);
@@ -560,7 +586,7 @@
       (each) => each.id === one.destination,
     );
     if (destination === undefined) return "its destination was deleted";
-    if (destination.retired === true) return "its destination is retired";
+    if (destination.retired === true) return "its destination is disabled";
     if (offline) return "pool out of reach";
     return refusing[one.id];
   }
@@ -570,7 +596,11 @@
     search(list, typed, (one) => [one.name]);
 
   const templatesShown = $derived(byName($templates));
-  const destinationsShown = $derived(byName($destinations));
+  /** A disabled destination is not somewhere to route to, and is not offered as one. */
+  const offeredDestinations = $derived(
+    $destinations.filter((one) => one.retired !== true),
+  );
+  const destinationsShown = $derived(byName(offeredDestinations));
   const handShown = $derived(byName(HAND));
 
   /** The one entry the line has narrowed to, which `⏎` takes and the bands draw bold. */
@@ -732,6 +762,7 @@
       // The surface stays, cleared: an item may go to more than one place,
       // and `next →` is what moves on.
       release();
+      records.reread();
     } catch (error) {
       said = saidBy(error);
     } finally {
@@ -908,6 +939,12 @@
       {/if}
     </div>
 
+    {#if summary !== undefined}
+      <div class="-mt-1 mb-2 min-w-0">
+        <Routing {summary} records={records.all} short />
+      </div>
+    {/if}
+
     {#each pictures as picture (picture)}
       <img
         src={picture}
@@ -951,7 +988,7 @@
     <Section name="destination" open ontoggle={() => undefined}>
       {#if chosen === undefined}
         <DestinationLine
-          destinations={[...$templates, ...$destinations, ...HAND]}
+          destinations={[...$templates, ...offeredDestinations, ...HAND]}
           {unusable}
           ontake={(id) => void taken(id)}
           ontyped={(text) => (typed = text)}
@@ -1083,29 +1120,25 @@
       {/if}
     </Section>
 
-    <Section
-      name="tags"
-      open={opened.tags || tags.length > 0}
-      ontoggle={() => (opened.tags = !opened.tags)}
-    >
+    <Section name="tags" open ontoggle={() => undefined}>
       <ComposerTags
         item={item.id}
         names={tags}
-        templates={($held ?? item).routing?.templates ?? []}
+        templates={summary?.templates ?? []}
         onfired={() => void advance()}
       />
     </Section>
 
     <Section
       name="preview"
-      open={opened.preview || shown !== undefined || previewing}
+      open={opened.preview || shown !== undefined || pending}
       ontoggle={() => (opened.preview = !opened.preview)}
     >
-      {#if shown !== undefined || previewing}
+      {#if shown !== undefined || pending}
         <Preview
           {shown}
           place={previewPlace}
-          asking={previewing}
+          asking={pending}
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />
       {:else if previewFailed !== ""}

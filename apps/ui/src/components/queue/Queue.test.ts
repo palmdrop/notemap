@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -635,7 +641,8 @@ test("draws the box around the selected row and nowhere else", async () => {
 
   const { container } = render(Queue);
   await screen.findByText("one");
-  const boxed = () => container.querySelectorAll("[data-selected]");
+  // The capture box answers `data-selected` too, and has its own test.
+  const boxed = () => container.querySelectorAll("[data-selected]:not(form)");
 
   expect(boxed()).toHaveLength(0);
   expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
@@ -729,6 +736,8 @@ test("enter selects, and enter on a selected row opens process", async () => {
   render(Queue);
   await screen.findByText("one");
 
+  // Out of the capture box, which is selected when the queue is drawn.
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "Enter" });
   expect(stamps(true)).toHaveLength(1);
   expect(went.to).toEqual([]);
@@ -901,11 +910,68 @@ test("the first esc leaves the capture box, and the next one deselects", async (
   expect(stamps(true)).toHaveLength(0);
 });
 
+/** The box is the head of the queue, and selected as a row is. */
+test("focusing the capture box selects it, and lets go of the selected row", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  const form = () => container.querySelector("form")!;
+  const box = screen.getByLabelText("What to capture");
+
+  box.focus();
+  await fireEvent.keyDown(box, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+  expect(form().hasAttribute("data-selected")).toBe(false);
+
+  box.focus();
+  await tick();
+  expect(stamps(true)).toHaveLength(0);
+  expect(form().hasAttribute("data-selected")).toBe(true);
+});
+
 /**
- * The editable shape holds a draft and its own `cancel`, so `esc` leaves it
- * before it leaves the selection — and losing the selection any other way
- * leaves it too, the box's foot going with the box.
+ * `esc` in the box leaves the field and keeps the box: `t` tags the capture,
+ * `enter` goes back in, `j` goes down to the first row, and `k` from there
+ * comes back up into the field.
  */
+test("the capture box is walked as the row above the first", async () => {
+  pool(queued("one", "two"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+  box.focus();
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  expect(document.activeElement).not.toBe(box);
+  expect(container.querySelector("form")!.hasAttribute("data-selected")).toBe(
+    true,
+  );
+
+  await fireEvent.keyDown(window, { key: "t" });
+  const line = await screen.findByRole("combobox", { name: "Tag the capture" });
+  await fireEvent.keyDown(line, { key: "Escape" });
+  line.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)).toHaveLength(1);
+  expect(container.querySelector("form")!.hasAttribute("data-selected")).toBe(
+    false,
+  );
+
+  await fireEvent.keyDown(window, { key: "k" });
+  await tick();
+  expect(stamps(true)).toHaveLength(0);
+  expect(document.activeElement).toBe(box);
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(document.activeElement).toBe(box);
+});
+
+/** The editable shape publishes its own `close`, so `esc` leaves it before it leaves the selection. */
 test("esc leaves the row's editable shape before it leaves the row", async () => {
   pool(queued("one", "two"));
 
@@ -956,17 +1022,216 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-test("walking to another row leaves the one being rewritten as it was", async () => {
+const dialog = () => screen.queryByRole("dialog", { name: "Unsaved changes" });
+
+/** Leaving an edit with changes asks first, wherever the row has scrolled to. */
+test("leaving a row edited with changes asks, and staying goes back into the field", async () => {
   pool(queued("one", "two"));
 
   render(Queue);
   await screen.findByText("one");
 
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "e" });
-  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
 
   await fireEvent.keyDown(window, { key: "j" });
   await tick();
+  expect(dialog()).not.toBeNull();
+  expect(dialog()!.textContent).toContain("one");
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent(dialog()!, new Event("cancel", { cancelable: true }));
+  await tick();
+  expect(dialog()).toBeNull();
+  expect(document.activeElement).toBe(field);
+  expect((field as HTMLTextAreaElement).value).toBe("rewritten");
+});
+
+test("save in the question saves and goes on; revert lets the changes go and goes on", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  let field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
+
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "revert" }),
+  );
+  await tick();
   expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(asked()).not.toContain("POST /v1/items/one/edit");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  field = await screen.findByLabelText("What it says");
+  expect((field as HTMLTextAreaElement).value).toBe("one");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "save" }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/edit");
+  });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+});
+
+/**
+ * Closing the dialog hands the focus back to the capture box it was asked
+ * from, which is not somebody leaving the edit a second time.
+ */
+test("staying, asked from the capture box, goes back into the field and asks nothing more", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.focus();
+
+  box.focus();
+  await tick();
+  expect(dialog()).not.toBeNull();
+
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "keep editing" }),
+  );
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(field);
+  });
+  expect(dialog()).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+});
+
+test("saving, asked from the capture box, lands the caret in the box", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.focus();
+
+  box.focus();
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "save" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/edit");
+  });
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(box);
+  });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+/** A capture processed while its edit was open closes the edit, and nothing is said: the person processed it. */
+test("an edit whose capture is processed closes quietly", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+
+  void client.archive("one");
+
+  await vi.waitFor(() => {
+    expect(screen.queryByLabelText("What it says")).toBeNull();
+  });
+  expect(notices.shown).toHaveLength(0);
+  expect(dialog()).toBeNull();
+});
+
+/** `enter` opens process on a selected row, and a row being edited is not one to leave that way. */
+test("enter does not open process on a row being edited", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(went.to).toEqual([]);
+});
+
+test("an edit left unchanged closes without asking", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  expect(dialog()).toBeNull();
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+});
+
+/** An edit offers the row's tags and nothing that decides it. */
+test("while a row is edited only its tags are reached", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
+
+  field.blur();
+  await fireEvent.keyDown(window, { key: "D" });
+  await tick();
+  expect(asked()).not.toContain("POST /v1/items/one/archive");
+
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(
+    await screen.findByRole("combobox", { name: "Add a tag" }),
+  ).toBeDefined();
 });

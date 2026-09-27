@@ -14,7 +14,13 @@
   const names = $derived((item.tags ?? []).map((tag) => tag.name));
 
   const inUse = client.tags.inUse;
-  const offered = $derived(offerable($inUse.map((use) => use.name)));
+  const templates = client.templates.all;
+  const offered = $derived(
+    offerable(
+      $inUse.map((use) => use.name),
+      $templates,
+    ),
+  );
 
   export function add(): void {
     set?.add();

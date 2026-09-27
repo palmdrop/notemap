@@ -147,10 +147,12 @@ export function grow(node: HTMLElement, from: number): void {
   }
   const to = node.offsetHeight;
   if (to === from) return;
+  // Clipped on the one axis that moves: `hidden` would clip across too, and a
+  // selected row's box reaches outside its columns.
   node.animate(
     [
-      { height: `${String(from)}px`, overflow: "hidden" },
-      { height: `${String(to)}px`, overflow: "hidden" },
+      { height: `${String(from)}px`, overflowY: "clip" },
+      { height: `${String(to)}px`, overflowY: "clip" },
     ],
     {
       id: GROWING,

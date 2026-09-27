@@ -75,11 +75,11 @@
 </script>
 
 <div class="border border-ink px-3 py-2">
-  {#if place !== undefined}
+  {#if place !== undefined || (asking && shown !== undefined)}
     <div
       class="mb-2 flex items-baseline justify-between gap-x-[2ch] border-b border-ink pb-2"
     >
-      <span class="min-w-0 font-semibold break-words">{place}</span>
+      <span class="min-w-0 font-semibold break-words">{place ?? ""}</span>
       {#if asking && shown !== undefined}
         <Asking {subject} />
       {/if}
