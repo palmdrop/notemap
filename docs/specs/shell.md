@@ -662,7 +662,7 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear.
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
 for `close · revert · attach` on the left and a bold `save` on the right**, `revert` drawn only
-while the field holds something the item does not say. **No decision is reached while it is
+while the field holds something the item does not say, sliding in beside `close` as it appears. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
 the tags are: `+`, `×` and `t` work as
 on any selected row, a tag being an outbox operation of its own and not part of the edit.
@@ -679,10 +679,7 @@ row's foot because the question arrives wherever the person has scrolled to, oft
 row. An edit left with nothing changed closes without asking. Nothing an edit holds outlives it,
 and the row always draws what the item says: `copy`, the process surface and a route all read the
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
-or reloading is the browser's own question, the only one a page may ask then. **An edit that goes
-away holding changes without being left** — its capture processed on another device, or gone from
-the list — cannot be asked about, so the corner says `edit not saved` about it, standing, with
-`copy` for the words where the clipboard can be reached. **The picture is
+or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The picture is
 editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as the
 capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks one
 in its place — at most one, the capture's own shape, and other kinds of attachment are left as they
@@ -696,8 +693,7 @@ nothing — the price being one line more in the rail of a row that carries no t
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)). Every other way the person moves the
 selection asks first where the shape holds changes; losing it to anything else — the item processed
-or gone — leaves the shape too, the box's foot going with the box, and the corner says what was not
-saved.
+or gone — leaves the shape too, the box's foot going with the box, and quietly.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -2451,8 +2447,7 @@ view is how a reader sees more at once.
 - Leaving an edit with changes by any way at all asks in a dialog naming the capture; `save` and
   `revert` answer and go on the way the leaving was asked, `esc` goes back into the field with the
   caret in it, and an unchanged edit closes silently.
-- An edit whose capture is processed elsewhere while it holds changes closes, and the corner says
-  `edit not saved` with the words a press away.
+- An edit whose capture is processed while it is open closes without asking and without a notice.
 - A selected row changing height keeps its box's edges drawn throughout.
 - On the queue, the capture box is selected whenever its field has the caret and never together
   with a row; `esc` then `t` opens its tag chooser, `j` selects the first row, and `k` there returns

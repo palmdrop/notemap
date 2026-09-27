@@ -1152,8 +1152,8 @@ test("saving, asked from the capture box, lands the caret in the box", async () 
   expect(stamps(true)).toHaveLength(0);
 });
 
-/** A capture processed while its edit was open cannot take the edit, and the corner says so. */
-test("an edit closed from under the person says so, the words a press away", async () => {
+/** A capture processed while its edit was open closes the edit, and nothing is said: the person processed it. */
+test("an edit whose capture is processed closes quietly", async () => {
   pool(queued("one"));
 
   render(Queue);
@@ -1170,7 +1170,7 @@ test("an edit closed from under the person says so, the words a press away", asy
   await vi.waitFor(() => {
     expect(screen.queryByLabelText("What it says")).toBeNull();
   });
-  expect(notices.shown.at(-1)?.what).toBe("edit not saved");
+  expect(notices.shown).toHaveLength(0);
   expect(dialog()).toBeNull();
 });
 

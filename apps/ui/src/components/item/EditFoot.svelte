@@ -1,5 +1,6 @@
 <script lang="ts">
   import Action from "$components/primitives/controls/Action.svelte";
+  import { slide } from "$lib/motion";
 
   import type { Editing } from "./editing.svelte";
 
@@ -25,7 +26,14 @@
   <div class="flex flex-wrap items-baseline gap-x-5 max-narrow:gap-x-3">
     <Action onclick={() => editing.close()}>close</Action>
     {#if editing.changed}
-      <Action onclick={() => editing.revert()}>revert</Action>
+      <!-- The gap before it is its own, so the whole of it slides and `attach`
+           moves with it rather than jumping the gap first. -->
+      <span
+        class="-ml-5 pl-5 whitespace-nowrap max-narrow:-ml-3 max-narrow:pl-3"
+        transition:slide={{ axis: "x", fade: true, magnitude: "short" }}
+      >
+        <Action onclick={() => editing.revert()}>revert</Action>
+      </span>
     {/if}
     <Action disabled={editing.busy} onclick={() => picker.click()}>
       attach

@@ -2,10 +2,7 @@ import type { Item } from "@notemap/client";
 
 import { PICTURE, TYPED } from "$lib/channels";
 import { client } from "$lib/client";
-import { copyable } from "$lib/clipboard";
-import { aboutItem } from "$lib/excerpt";
 import { leave } from "$lib/leaving.svelte";
-import { notices } from "$lib/notices.svelte";
 
 type Held = {
   readonly asset: string;
@@ -92,11 +89,6 @@ export class Editing {
   }
 
   /** Waits for a picture still being attached, so it goes with the words. */
-  /** Whether it went: its changes are the pool's to hold now, not lost. */
-  get saved(): boolean {
-    return this.#saving;
-  }
-
   async save(): Promise<void> {
     if (this.#saving) return;
     this.#saving = true;
@@ -111,30 +103,6 @@ export class Editing {
     this.#close();
     void client.edit(this.item.id, payload, channel);
   }
-}
-
-/**
- * An edit that went away holding changes — its capture processed or gone
- * while it was open — says so, the words a press away. Every way the person
- * leaves has asked already, so this is only ever what happened to them.
- */
-export function dropped(editing: Editing): void {
-  if (editing.saved || !editing.changed) return;
-  const words = editing.text;
-  notices.raise({
-    what: "edit not saved",
-    why: "the capture was processed or went while it was open",
-    about: aboutItem(editing.item),
-    standing: true,
-    ...(copyable()
-      ? {
-          offer: {
-            label: "copy",
-            take: () => void navigator.clipboard.writeText(words),
-          },
-        }
-      : {}),
-  });
 }
 
 function carriedBy(item: Item): Held {

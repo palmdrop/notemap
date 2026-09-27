@@ -7,7 +7,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
-  import { dropped, type Editing } from "./editing.svelte";
+  import type { Editing } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
 
@@ -37,13 +37,7 @@
     },
   };
 
-  onMount(() => {
-    const release = opened(self);
-    return () => {
-      release();
-      dropped(editing);
-    };
-  });
+  onMount(() => opened(self));
 
   /** Opened as a modal the moment it is drawn, with `save` taking the focus. */
   function modal(dialog: HTMLDialogElement): () => void {
