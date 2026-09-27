@@ -28,10 +28,8 @@ export type {
 export { namespaceFor, relayInto, type PoolTarget } from "./relay";
 export {
   relayEverything,
-  said,
   type ChannelReport,
   type ChannelTarget,
-  type Log,
   type Scan,
   type Tally,
 } from "./run";

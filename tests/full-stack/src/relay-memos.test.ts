@@ -99,7 +99,7 @@ describe("the memos relay, over a real daemon", () => {
     const where = await relaying();
     where.memos.memos.push(memo("abc", { tags: ["kind/quote"] }));
 
-    expect(await polled(where)).toMatch(/captured 1/);
+    expect(await polled(where)).toMatch(/captured=1/);
 
     const [held] = await where.items();
     expect(held).toMatchObject({
@@ -126,7 +126,7 @@ describe("the memos relay, over a real daemon", () => {
     where.memos.memos.push(memo("abc"), memo("def"));
 
     await polled(where);
-    expect(await polled(where)).toMatch(/captured 0, unchanged 2/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=2/);
 
     expect(await where.items()).toHaveLength(2);
   });
@@ -206,7 +206,7 @@ describe("the memos relay, over a real daemon", () => {
       content: "rewritten since",
       updateTime: "2026-09-07T10:00:00.000Z",
     });
-    expect(await polled(where)).toMatch(/amended 1/);
+    expect(await polled(where)).toMatch(/amended=1/);
 
     const [after] = await where.items();
     expect(after?.id).toBe(before?.id);
@@ -214,7 +214,7 @@ describe("the memos relay, over a real daemon", () => {
 
     // An amended item now says what the memo says, so the poll after an edit
     // is an ordinary one: only a revision leaves the original disagreeing.
-    expect(await polled(where)).toMatch(/captured 0, unchanged 1, amended 0/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=1 amended=0/);
     expect(await where.items()).toHaveLength(1);
   });
 
@@ -223,7 +223,7 @@ describe("the memos relay, over a real daemon", () => {
     where.memos.memos.push(memo("empty", { content: "  " }), memo("said"));
 
     expect(await polled(where)).toMatch(
-      /captured 1, unchanged 0, amended 0, revised 0, empty 1/,
+      /captured=1 unchanged=0 amended=0 revised=0 empty=1/,
     );
 
     expect((await where.items()).map((each) => each.sourceItemId)).toEqual([
@@ -259,7 +259,7 @@ describe("the memos relay, over a real daemon", () => {
 
     const { code, output } = await where.relay.poll();
 
-    expect(output).toMatch(/memos\/gone could not be relayed/);
+    expect(output).toMatch(/could not relay a memo memo=memos\/gone/);
     expect(code).toBe(1);
     expect(await where.items()).toEqual([]);
   });

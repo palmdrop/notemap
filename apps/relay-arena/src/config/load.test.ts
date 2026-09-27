@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { parseConfig, readSecret } from "./load";
+import { parseConfig, readSecret, withEnvironment } from "./load";
 
 const MINIMAL = `
 [arena]
@@ -41,7 +41,37 @@ describe("the config a relay is pointed with", () => {
         { handle: "influences", source: "arena/influences", tags: [] },
       ],
       poll: { intervalMs: 900_000 },
+      log: { level: "info", format: "text" },
     });
+  });
+
+  it("takes a level and a format, and defaults the one that is missing", () => {
+    expect(
+      parseConfig(`${MINIMAL}\n[log]\nlevel = "debug"\n`, "relay.toml").log,
+    ).toEqual({ level: "debug", format: "text" });
+
+    expect(
+      parseConfig(`${MINIMAL}\n[log]\nformat = "json"\n`, "relay.toml").log,
+    ).toEqual({ level: "info", format: "json" });
+  });
+
+  it("refuses a level that is not one", () => {
+    expect(() =>
+      parseConfig(`${MINIMAL}\n[log]\nlevel = "loud"\n`, "relay.toml"),
+    ).toThrow(/is not an arena relay config/);
+  });
+
+  it("lets the environment turn the level up, and refuses one it cannot read", () => {
+    const config = parseConfig(MINIMAL, "relay.toml");
+
+    expect(
+      withEnvironment(config, { NOTEMAP_RELAY_ARENA_LOG_LEVEL: "debug" }).log,
+    ).toEqual({ level: "debug", format: "text" });
+
+    expect(withEnvironment(config, {})).toBe(config);
+    expect(() =>
+      withEnvironment(config, { NOTEMAP_RELAY_ARENA_LOG_LEVEL: "loud" }),
+    ).toThrow(/NOTEMAP_RELAY_ARENA_LOG_LEVEL/);
   });
 
   it("reads one or more channels, each with its own handle, source and tags", () => {

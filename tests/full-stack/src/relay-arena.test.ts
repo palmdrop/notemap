@@ -107,7 +107,7 @@ describe("the arena relay, over a real daemon", () => {
       .channel("one")
       .push(block(1, { content: { markdown: "a note" } }));
 
-    expect(await polled(where)).toMatch(/captured 1/);
+    expect(await polled(where)).toMatch(/captured=1/);
 
     const [held] = await where.items();
     expect(held).toMatchObject({
@@ -124,7 +124,7 @@ describe("the arena relay, over a real daemon", () => {
     where.arena.channel("one").push(block(1), block(2));
 
     await polled(where);
-    expect(await polled(where)).toMatch(/captured 0, unchanged 2/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=2/);
 
     expect(await where.items()).toHaveLength(2);
   });
@@ -186,7 +186,7 @@ describe("the arena relay, over a real daemon", () => {
     where.arena.channel("one")[0] = block(1, {
       content: { markdown: "rewritten since" },
     });
-    expect(await polled(where)).toMatch(/amended 1/);
+    expect(await polled(where)).toMatch(/amended=1/);
 
     const [after] = await where.items();
     expect(after?.id).toBe(before?.id);
@@ -199,7 +199,7 @@ describe("the arena relay, over a real daemon", () => {
       .channel("one")
       .push(block(1, { type: "Channel", content: null }));
 
-    expect(await polled(where)).toMatch(/empty 1/);
+    expect(await polled(where)).toMatch(/empty=1/);
     expect(await where.items()).toEqual([]);
   });
 

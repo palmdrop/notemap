@@ -1,13 +1,8 @@
 import { notThisItem, type Relay } from "@notemap/relay";
+import { reasonOf, type Logger } from "@notemap/log";
 
 import { relayedFrom } from "./memos/relayed";
 import type { Memos } from "./memos/read";
-
-/** Where a poll says what it did, and what it could not do. */
-export type Log = {
-  note(line: string): void;
-  fault(line: string, cause?: unknown): void;
-};
 
 /** What one scan of everything upstream came to. */
 export type Tally = {
@@ -35,7 +30,7 @@ export type Tally = {
 export async function relayEverything(
   from: Memos,
   into: Relay,
-  log: Log,
+  log: Logger,
   signal?: AbortSignal,
 ): Promise<Tally> {
   const tally: Tally = {
@@ -63,16 +58,20 @@ export async function relayEverything(
       else if (landed.kind === "captured") tally.captured += 1;
       else if (landed.kind === "amended") tally.amended += 1;
       else tally.revised += 1;
+
+      log.debug(
+        { memo: memo.name, item: landed.item, landed: landed.kind },
+        "relayed a memo",
+      );
     } catch (cause) {
       if (notThisItem(cause)) throw cause;
       tally.failed += 1;
-      log.fault(`${memo.name} could not be relayed`, cause);
+      log.warn(
+        { memo: memo.name, because: reasonOf(cause) },
+        "could not relay a memo",
+      );
     }
   }
 
   return tally;
-}
-
-export function said(tally: Tally): string {
-  return `read ${String(tally.read)}, captured ${String(tally.captured)}, unchanged ${String(tally.unchanged)}, amended ${String(tally.amended)}, revised ${String(tally.revised)}, empty ${String(tally.empty)}, failed ${String(tally.failed)}`;
 }

@@ -85,23 +85,25 @@ Depends on nothing. Nothing observable changes; the daemon prints what it printe
 
 Depends on phase 1.
 
-- [ ] Both relay apps: `@notemap/log` as a dependency, the `createRequire` banner in
+- [x] Both relay apps: `@notemap/log` as a dependency, the `createRequire` banner in
       `scripts/build.ts` — pino is CommonJS and an ESM bundle has no `require` without it.
-- [ ] A `[log]` table in each config schema, `level` and `format` with the shared defaults, and
+- [x] A `[log]` table in each config schema, `level` and `format` with the shared defaults, and
       `NOTEMAP_RELAY_MEMOS_LOG_LEVEL` / `NOTEMAP_RELAY_ARENA_LOG_LEVEL` read in `loadConfig` and
       refused like a bad file value.
-- [ ] `main.ts` and `run.ts`: the `Log` port and `said()` go; `relayEverything` takes the logger
-      and says facts as fields. `info` for the startup facts and each poll's tally; `warn` for an
+- [x] `main.ts` and `run.ts`: the `Log` port and `said()` go; `relayEverything` takes the logger
+      and says facts as fields. `reasonOf` in `@notemap/log` replaces the `message()` helper each
+      main had a copy of: a `warn` about one item carries the cause chain as `because=`, a one-line
+      fact, and a stack belongs to `err` at `error`. `info` for the startup facts and each poll's tally; `warn` for an
       item that could not be relayed and a channel that could not be read; `error` for a poll that
       could not be finished and for the throw that exits non-zero; `debug` for each item's
       landing. `--help` and the usage text stay program output, as the daemon's CLI does.
-- [ ] Tests: `run.test.ts` in both apps reads `capturedLog()` instead of its `Log` fake; a line
+- [x] Tests: `run.test.ts` in both apps reads `capturedLog()` instead of its `Log` fake; a line
       per level asserted where the fake's `faults` were.
-- [ ] Update the full-stack assertions that read the tally as prose (`/captured 0, unchanged 2/`)
+- [x] Update the full-stack assertions that read the tally as prose (`/captured 0, unchanged 2/`)
       and the one that reads a failure line.
-- [ ] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, both relays `build`, each
+- [x] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, both relays `build`, each
       `--help` and each `--once` against nothing runs from its bundle; `pnpm test:stack`.
-- [ ] `git commit`.
+- [x] `git commit`. _(2026-09-27)_
 
 ### Phase 3 — A tag foot becomes tags
 

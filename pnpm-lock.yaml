@@ -350,6 +350,9 @@ importers:
 
   apps/relay-arena:
     dependencies:
+      '@notemap/log':
+        specifier: workspace:*
+        version: link:../../packages/plumbing/log
       '@notemap/relay':
         specifier: workspace:*
         version: link:../../packages/relay
@@ -375,6 +378,9 @@ importers:
 
   apps/relay-memos:
     dependencies:
+      '@notemap/log':
+        specifier: workspace:*
+        version: link:../../packages/plumbing/log
       '@notemap/relay':
         specifier: workspace:*
         version: link:../../packages/relay

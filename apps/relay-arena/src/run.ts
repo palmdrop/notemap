@@ -1,14 +1,9 @@
+import { reasonOf, type Logger } from "@notemap/log";
 import { notThisItem, type Relay } from "@notemap/relay";
 
 import { ArenaRateLimited, type Arena } from "./arena/read";
 import { relayedFrom } from "./arena/relayed";
 import type { WatchedChannel } from "./config/load";
-
-/** Where a poll says what it did, and what it could not do. */
-export type Log = {
-  note(line: string): void;
-  fault(line: string, cause?: unknown): void;
-};
 
 /** What one scan of one channel came to. */
 export type Tally = {
@@ -66,7 +61,7 @@ export type Scan = {
 export async function relayEverything(
   from: Arena,
   channels: readonly ChannelTarget[],
-  log: Log,
+  log: Logger,
   { full, signal }: Scan,
 ): Promise<readonly ChannelReport[]> {
   const reports: ChannelReport[] = [];
@@ -96,12 +91,26 @@ export async function relayEverything(
             else if (landed.kind === "captured") tally.captured += 1;
             else if (landed.kind === "amended") tally.amended += 1;
             else tally.revised += 1;
+
+            log.debug(
+              {
+                block: block.id,
+                source: channel.source,
+                item: landed.item,
+                landed: landed.kind,
+              },
+              "relayed a block",
+            );
           } catch (cause) {
             if (notThisItem(cause)) throw cause;
             tally.failed += 1;
-            log.fault(
-              `block ${String(block.id)} in ${channel.source} could not be relayed`,
-              cause,
+            log.warn(
+              {
+                block: block.id,
+                source: channel.source,
+                because: reasonOf(cause),
+              },
+              "could not relay a block",
             );
           }
         }
@@ -117,15 +126,14 @@ export async function relayEverything(
         throw cause;
       }
       readFailed = true;
-      log.fault(`${channel.source} could not be read`, cause);
+      log.warn(
+        { source: channel.source, because: reasonOf(cause) },
+        "could not read a channel",
+      );
     }
 
     reports.push({ source: channel.source, tally, readFailed });
   }
 
   return reports;
-}
-
-export function said(tally: Tally): string {
-  return `read ${String(tally.read)}, captured ${String(tally.captured)}, unchanged ${String(tally.unchanged)}, amended ${String(tally.amended)}, revised ${String(tally.revised)}, empty ${String(tally.empty)}, failed ${String(tally.failed)}`;
 }

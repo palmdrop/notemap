@@ -1,10 +1,12 @@
 import { parseArgs } from "node:util";
 
+import { createLogger, reasonOf, type Logger } from "@notemap/log";
+
 import { arenaAt } from "./arena/read";
 import { loadConfig, readSecret, type RelayConfig } from "./config/load";
 import { FULL_SCAN_MS } from "./constants";
 import { relayInto } from "./relay";
-import { relayEverything, said, type ChannelTarget, type Log } from "./run";
+import { relayEverything, type ChannelTarget } from "./run";
 import { sleep } from "./utils/sleep";
 
 const USAGE = `notemap-relay-arena — put what is connected into a watched are.na channel into a notemap pool.
@@ -25,26 +27,6 @@ tries again at the next one.
 The config is --config <path>, then NOTEMAP_RELAY_ARENA_CONFIG, then
 ~/.config/notemap/relay-arena.toml.`;
 
-const log: Log = {
-  note: (line) => {
-    console.log(`relay-arena: ${line}`);
-  },
-  fault: (line, cause) => {
-    console.error(
-      `relay-arena: ${line}${cause === undefined ? "" : `: ${message(cause)}`}`,
-    );
-  },
-};
-
-/** The chain, not the top of it: what `fetch` could not do is under two wrappers. */
-function message(cause: unknown): string {
-  if (!(cause instanceof Error)) return String(cause);
-
-  return cause.cause === undefined
-    ? cause.message
-    : `${cause.message}: ${message(cause.cause)}`;
-}
-
 /**
  * The tokens are read here rather than held from startup, so rotating either
  * one is writing the file it lives in and never restarting the relay.
@@ -55,6 +37,7 @@ function message(cause: unknown): string {
  */
 async function poll(
   config: RelayConfig,
+  log: Logger,
   full: boolean,
   signal: AbortSignal,
 ): Promise<boolean> {
@@ -78,12 +61,12 @@ async function poll(
     ),
   }));
 
-  if (full) log.note("reading every page of every channel");
+  if (full) log.info("reading every page of every channel");
   const reports = await relayEverything(arena, channels, log, { full, signal });
 
   let clean = true;
   for (const report of reports) {
-    log.note(`${report.source}: ${said(report.tally)}`);
+    log.info({ source: report.source, ...report.tally }, "polled a channel");
     if (report.readFailed || report.tally.failed > 0) clean = false;
   }
   return clean;
@@ -100,6 +83,7 @@ async function start(): Promise<void> {
     strict: true,
   });
 
+  // Program output, not a log: somebody asked a question at a terminal.
   if (values.help === true) {
     console.log(USAGE);
     return;
@@ -110,8 +94,28 @@ async function start(): Promise<void> {
   }
 
   const config = loadConfig(values.config);
-  log.note(
-    `${String(config.channels.length)} channel(s) into ${config.pool.url}`,
+  const log = createLogger(config.log);
+
+  // Everything from here on says so through the log, including the failure that
+  // ends the run — a cron line that failed at four in the morning is worth a
+  // clock as much as a successful poll is.
+  try {
+    await relaying(config, log, values.once === true, values.full === true);
+  } catch (cause) {
+    log.error({ err: cause }, "the relay stopped");
+    process.exitCode = 1;
+  }
+}
+
+async function relaying(
+  config: RelayConfig,
+  log: Logger,
+  once: boolean,
+  full: boolean,
+): Promise<void> {
+  log.info(
+    { channels: config.channels.length, pool: config.pool.url },
+    "relaying",
   );
 
   const stopping = new AbortController();
@@ -121,32 +125,39 @@ async function start(): Promise<void> {
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 
-  if (values.once === true) {
-    const clean = await poll(config, values.full === true, stopping.signal);
+  if (once) {
+    const clean = await poll(config, log, full, stopping.signal);
     if (!clean) process.exitCode = 1;
     return;
   }
 
-  log.note(`polling every ${String(config.poll.intervalMs)}ms`);
+  log.info({ everyMs: config.poll.intervalMs }, "polling");
 
   // One poll at a time, and the next is due when this one is done: a scan that
   // outlasts the interval is a large backlog, not a reason to start a second.
   let fullDue = 0;
   while (!stopping.signal.aborted) {
-    const full = Date.now() >= fullDue;
+    const due = Date.now() >= fullDue;
     try {
-      await poll(config, full, stopping.signal);
-      if (full) fullDue = Date.now() + FULL_SCAN_MS;
+      await poll(config, log, due, stopping.signal);
+      if (due) fullDue = Date.now() + FULL_SCAN_MS;
     } catch (cause) {
       if (stopping.signal.aborted) break;
-      log.fault("the poll could not be finished", cause);
+      log.error({ err: cause }, "the poll could not be finished");
     }
 
     await sleep(config.poll.intervalMs, stopping.signal);
   }
+
+  log.info("stopping");
 }
 
+/**
+ * Whatever went wrong before there was a logger — a config that will not load,
+ * a flag that makes no sense — has nowhere to go but the stream, which is where
+ * the log would have gone anyway.
+ */
 start().catch((error: unknown) => {
-  console.error(`relay-arena: ${message(error)}`);
+  console.error(`relay-arena: ${reasonOf(error)}`);
   process.exit(1);
 });

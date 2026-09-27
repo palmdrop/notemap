@@ -36,3 +36,6 @@ export const UNPACED_GAP_MS = 500;
  * channels relayed into one pool never derive one id for two attachments.
  */
 export const RELAY_ARENA = "42f2bf62-27bc-47e9-8989-f37c25ea6f13";
+
+/** Named here rather than in `@notemap/log`: the levels are shared, this variable is this program's. */
+export const LOG_LEVEL_VARIABLE = "NOTEMAP_RELAY_ARENA_LOG_LEVEL";

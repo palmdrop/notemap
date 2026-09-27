@@ -1,10 +1,11 @@
+import { capturedLog } from "@notemap/log/testing";
 import { PoolRefused, PoolUnreachable } from "@notemap/relay";
 import type { Landed, Relay, Relayed } from "@notemap/relay";
 import { describe, expect, it } from "vitest";
 
 import type { Memos } from "./memos/read";
 import type { Memo } from "./memos/types";
-import { relayEverything, type Log } from "./run";
+import { relayEverything } from "./run";
 
 function memo(uid: string, overrides: Partial<Memo> = {}): Memo {
   return {
@@ -38,13 +39,9 @@ function landing(answers: Record<string, Landed["kind"] | Error>): Relay {
   };
 }
 
-function logging(): Log & { faults: string[] } {
-  const faults: string[] = [];
-  return {
-    faults,
-    note: () => {},
-    fault: (line, cause) => faults.push(`${line}: ${String(cause)}`),
-  };
+/** The warnings, which is where a memo that could not be relayed is said. */
+function warnings(said: string[]): string[] {
+  return said.filter((line) => line.startsWith("WARN"));
 }
 
 describe("one scan of everything upstream", () => {
@@ -57,7 +54,7 @@ describe("one scan of everything upstream", () => {
         c: "amended",
         d: "revised",
       }),
-      logging(),
+      capturedLog().log,
     );
 
     expect(tally).toEqual({
@@ -72,34 +69,34 @@ describe("one scan of everything upstream", () => {
   });
 
   it("carries on past a memo it could not relay, and says which", async () => {
-    const log = logging();
+    const log = capturedLog();
 
     const tally = await relayEverything(
       upstream([memo("a"), memo("b"), memo("c")]),
       landing({ b: new Error("the pool refused it") }),
-      log,
+      log.log,
     );
 
     expect(tally).toMatchObject({ read: 3, captured: 2, failed: 1 });
-    expect(log.faults).toEqual([
-      "memos/b could not be relayed: Error: the pool refused it",
+    expect(warnings(log.lines())).toEqual([
+      'WARN could not relay a memo memo=memos/b because="the pool refused it"',
     ]);
   });
 
   it("stops at once where it was the pool that failed, not the memo", async () => {
-    const log = logging();
+    const log = capturedLog();
     const gone = new PoolUnreachable("/v1/captures", new Error("refused"));
 
     await expect(
       relayEverything(
         upstream([memo("a"), memo("b"), memo("c")]),
         landing({ a: gone }),
-        log,
+        log.log,
       ),
     ).rejects.toBe(gone);
 
     // Nothing said per memo: the one thing wrong is said by whoever catches it.
-    expect(log.faults).toEqual([]);
+    expect(warnings(log.lines())).toEqual([]);
   });
 
   it("stops on a token the pool will refuse for every memo alike", async () => {
@@ -109,7 +106,7 @@ describe("one scan of everything upstream", () => {
       relayEverything(
         upstream([memo("a"), memo("b")]),
         landing({ a: shut }),
-        logging(),
+        capturedLog().log,
       ),
     ).rejects.toBe(shut);
   });
@@ -118,7 +115,7 @@ describe("one scan of everything upstream", () => {
     const tally = await relayEverything(
       upstream([memo("a", { content: "" }), memo("b")]),
       landing({}),
-      logging(),
+      capturedLog().log,
     );
 
     expect(tally).toMatchObject({ read: 2, captured: 1, empty: 1, failed: 0 });

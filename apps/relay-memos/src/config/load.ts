@@ -6,9 +6,18 @@ import { parse as parseToml } from "smol-toml";
 import { z } from "zod";
 
 import {
+  DEFAULT_LOG,
+  LOG_FORMATS,
+  LOG_LEVELS,
+  levelFrom,
+  type LogConfig,
+} from "@notemap/log";
+
+import {
   DEFAULT_POLL_MS,
   DEFAULT_POOL_URL,
   DEFAULT_SOURCE,
+  LOG_LEVEL_VARIABLE,
 } from "../constants";
 
 /** Where a token is read from. Never the config file itself. */
@@ -30,6 +39,7 @@ export type RelayConfig = {
   readonly poll: {
     readonly intervalMs: number;
   };
+  readonly log: LogConfig;
 };
 
 const secretKeys = {
@@ -60,6 +70,12 @@ const fileSchema = z.strictObject({
   poll: z
     .strictObject({
       interval: z.number().int().positive().optional(),
+    })
+    .optional(),
+  log: z
+    .strictObject({
+      level: z.enum(LOG_LEVELS).optional(),
+      format: z.enum(LOG_FORMATS).optional(),
     })
     .optional(),
 });
@@ -121,7 +137,25 @@ export function parseConfig(source: string, from: string): RelayConfig {
       token: readSecretKeys(file.memos, `${from}: the memos token`),
     },
     poll: { intervalMs: file.poll?.interval ?? DEFAULT_POLL_MS },
+    log: {
+      level: file.log?.level ?? DEFAULT_LOG.level,
+      format: file.log?.format ?? DEFAULT_LOG.format,
+    },
   };
+}
+
+/**
+ * The one setting the environment may override: a container is easier to turn
+ * up to `debug` from its compose file than by editing the config inside it.
+ */
+export function withEnvironment(
+  config: RelayConfig,
+  env: NodeJS.ProcessEnv,
+): RelayConfig {
+  const level = levelFrom(LOG_LEVEL_VARIABLE, env);
+  return level === undefined
+    ? config
+    : { ...config, log: { ...config.log, level } };
 }
 
 export function loadConfig(
@@ -136,7 +170,7 @@ export function loadConfig(
       { cause },
     );
   }
-  return parseConfig(source, path);
+  return withEnvironment(parseConfig(source, path), process.env);
 }
 
 export function defaultConfigPath(): string {

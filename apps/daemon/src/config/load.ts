@@ -24,7 +24,7 @@ import {
   DEFAULT_LOG,
   LOG_FORMATS,
   LOG_LEVELS,
-  isLogLevel,
+  levelFrom,
   type LogConfig,
 } from "@notemap/log";
 
@@ -511,14 +511,8 @@ export function withEnvironment(
   loaded: LoadedConfig,
   env: NodeJS.ProcessEnv,
 ): LoadedConfig {
-  const level = env[LOG_LEVEL_VARIABLE];
-  if (level === undefined || level === "") return loaded;
-
-  if (!isLogLevel(level)) {
-    throw new Error(
-      `${LOG_LEVEL_VARIABLE} is "${level}", and a level is one of ${LOG_LEVELS.join(", ")}`,
-    );
-  }
+  const level = levelFrom(LOG_LEVEL_VARIABLE, env);
+  if (level === undefined) return loaded;
 
   return {
     ...loaded,
