@@ -5,7 +5,6 @@
   import Edit from "$components/item/Edit.svelte";
   import EditFoot from "$components/item/EditFoot.svelte";
   import { Editing } from "$components/item/editing.svelte";
-  import Drafted from "$components/primitives/marks/Drafted.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -24,8 +23,7 @@
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { drafted } from "$lib/edit-drafts.svelte";
-  import { became, editable } from "$lib/lineage";
+  import { became } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
@@ -92,10 +90,11 @@
           onedit: () => {
             const current = item;
             if (current === undefined) return;
-            editing =
-              editing === undefined
-                ? new Editing(current, () => (editing = undefined))
-                : undefined;
+            if (editing === undefined) {
+              editing = new Editing(current, () => (editing = undefined));
+            } else {
+              editing.close();
+            }
           },
           tag: () => tags?.add(),
         }),
@@ -137,10 +136,6 @@
 
       {#if undrained.has(item.id)}
         <Pending since={undrainedSince(item.id)} />
-      {/if}
-
-      {#if editing === undefined && editable(item) && drafted(item.id)}
-        <Drafted />
       {/if}
 
       <!-- An item view is where a person looks to find out what happened, so

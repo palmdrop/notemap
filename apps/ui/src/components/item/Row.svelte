@@ -5,7 +5,6 @@
   import Edit from "$components/item/Edit.svelte";
   import EditFoot from "$components/item/EditFoot.svelte";
   import { Editing } from "$components/item/editing.svelte";
-  import Drafted from "$components/primitives/marks/Drafted.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
@@ -17,7 +16,6 @@
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
   import { fade, following, slide } from "$lib/motion";
-  import { drafted, dropDraft } from "$lib/edit-drafts.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -79,12 +77,6 @@
     if (!selected) editing = undefined;
   });
 
-  // A draft is only ever of a capture that can still be edited: once the item
-  // is processed, what it held has nowhere to go.
-  $effect(() => {
-    if (!mayEdit && drafted(item.id)) dropDraft(item.id);
-  });
-
   /** Opens the tag chooser, for the key that asks for it. */
   export function tag(): void {
     tags?.add();
@@ -93,10 +85,11 @@
   /** Toggles the capture into its editable shape, for the key that asks for it. */
   export function edit(): void {
     if (!mayEdit) return;
-    editing =
-      editing === undefined
-        ? new Editing(item, () => (editing = undefined))
-        : undefined;
+    if (editing === undefined) {
+      editing = new Editing(item, () => (editing = undefined));
+    } else {
+      editing.close();
+    }
   }
 
   /** Whether the capture is drawn as its field, for the surface deciding what a key reaches. */
@@ -132,10 +125,6 @@
 
       {#if pending}
         <Pending since={undrainedSince(item.id)} />
-      {/if}
-
-      {#if editing === undefined && mayEdit && drafted(item.id)}
-        <Drafted />
       {/if}
 
       <div class="mt-0.5">

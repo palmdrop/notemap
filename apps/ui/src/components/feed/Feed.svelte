@@ -23,6 +23,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -73,7 +74,9 @@
   });
 
   function select(id: string) {
-    selected = selected === id ? undefined : id;
+    leave(() => {
+      selected = selected === id ? undefined : id;
+    });
   }
 
   const rows = $derived($feed.items);
@@ -149,10 +152,10 @@
   // it holds, and a row offers what it draws as buttons.
   publish(() => [
     ...listCommands({
-      ondown: () => void walk(1),
-      onup: () => void walk(-1),
+      ondown: () => leave(() => void walk(1)),
+      onup: () => leave(() => void walk(-1)),
       onselect: () => (current !== undefined ? process(current) : void walk(1)),
-      ondeselect: () => (selected = undefined),
+      ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),
   ]);

@@ -49,6 +49,22 @@ function stubStorage(): void {
 
 stubStorage();
 
+/**
+ * jsdom has `<dialog>` without the methods that open one as a modal. What the
+ * shell relies on is the `open` state and the `close` event.
+ */
+function stubDialogs(): void {
+  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+    this.removeAttribute("open");
+    this.dispatchEvent(new Event("close"));
+  };
+}
+
+stubDialogs();
+
 /** Nothing is ever laid out here, so nothing ever resizes either. */
 function stubResizing(): void {
   window.ResizeObserver = class {

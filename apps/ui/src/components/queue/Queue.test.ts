@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -1020,11 +1026,13 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-/** Leaving an edit is never losing it: what was written is kept on the device as a draft. */
-test("leaving a row being edited keeps what was written, and e comes back to it", async () => {
+const dialog = () => screen.queryByRole("dialog", { name: "Unsaved changes" });
+
+/** Leaving an edit with changes asks first, wherever the row has scrolled to. */
+test("leaving a row edited with changes asks, and staying goes back into the field", async () => {
   pool(queued("one", "two"));
 
-  const { container } = render(Queue);
+  render(Queue);
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "Escape" });
@@ -1036,19 +1044,75 @@ test("leaving a row being edited keeps what was written, and e comes back to it"
 
   await fireEvent.keyDown(window, { key: "j" });
   await tick();
+  expect(dialog()).not.toBeNull();
+  expect(dialog()!.textContent).toContain("one");
+  expect(stamps(true)).toHaveLength(1);
+
+  await fireEvent(dialog()!, new Event("cancel", { cancelable: true }));
+  await tick();
+  expect(dialog()).toBeNull();
+  expect(document.activeElement).toBe(field);
+  expect((field as HTMLTextAreaElement).value).toBe("rewritten");
+});
+
+test("save in the question saves and goes on; revert lets the changes go and goes on", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  let field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
+
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "revert" }),
+  );
+  await tick();
   expect(screen.queryByLabelText("What it says")).toBeNull();
-  expect(container.textContent).toContain("draft");
   expect(asked()).not.toContain("POST /v1/items/one/edit");
 
-  await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "e" });
-  const again = await screen.findByLabelText("What it says");
-  expect((again as HTMLTextAreaElement).value).toBe("rewritten");
+  field = await screen.findByLabelText("What it says");
+  expect((field as HTMLTextAreaElement).value).toBe("one");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
 
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "save" }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/edit");
+  });
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+});
+
+test("an edit left unchanged closes without asking", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
   await fireEvent.click(screen.getByRole("button", { name: "revert" }));
-  expect((again as HTMLTextAreaElement).value).toBe("one");
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
-  expect(container.textContent).not.toContain("draft");
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  expect(dialog()).toBeNull();
+  expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
 /** An edit offers the row's tags and nothing that decides it. */

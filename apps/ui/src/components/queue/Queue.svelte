@@ -22,6 +22,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -134,8 +135,10 @@
   });
 
   function select(id: string) {
-    if (selected === id) deselect();
-    else selected = id;
+    leave(() => {
+      if (selected === id) deselect();
+      else selected = id;
+    });
   }
 
   function deselect() {
@@ -152,8 +155,14 @@
 
   /** Writing in the box is being at the head of the queue, and no row is selected meanwhile. */
   function captureFocused() {
-    deselect();
-    atCapture = true;
+    // Asked first, the question took the focus, and the box is given it back.
+    let asked = false;
+    leave(() => {
+      deselect();
+      atCapture = true;
+      if (asked) capture?.take();
+    });
+    asked = true;
   }
 
   function toCapture() {
@@ -240,14 +249,14 @@
 
   publish(() => [
     ...listCommands({
-      ondown: () => void walk(1),
-      onup: () => void walk(-1),
+      ondown: () => leave(() => void walk(1)),
+      onup: () => leave(() => void walk(-1)),
       onselect: () => {
         if (current !== undefined) process(current);
         else if (atCapture) capture?.take();
         else void walk(1);
       },
-      ondeselect: deselect,
+      ondeselect: () => leave(deselect),
     }),
     ...reached(),
     ...(atCapture

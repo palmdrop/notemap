@@ -2,39 +2,38 @@ import type { Item } from "@notemap/client";
 
 import { PICTURE, TYPED } from "$lib/channels";
 import { client } from "$lib/client";
-import {
-  draftPicture,
-  draftWords,
-  dropDraft,
-  keepDraft,
-  type HeldPicture,
-} from "$lib/edit-drafts.svelte";
+import { leave } from "$lib/leaving.svelte";
+
+type Held = {
+  readonly asset: string;
+  readonly url: string;
+  readonly name: string;
+  readonly image: boolean;
+} | null;
 
 /**
  * A capture being edited where it stands: the words and the picture the body
  * draws, and the `close`, `revert`, `attach` and `save` the row's foot draws
- * in place of its actions. It starts from the draft where there is one and
- * from what the item says otherwise, and whatever it holds that the item does
- * not say is kept as the draft until `save` sends it or `revert` lets it go.
+ * in place of its actions. Nothing it holds outlives it; closing it with
+ * changes asks first.
  */
 export class Editing {
   text = $state("");
-  picture = $state<HeldPicture>(null);
+  picture = $state<Held>(null);
   busy = $state(false);
 
-  readonly #item: Item;
+  readonly item: Item;
   readonly #close: () => void;
   readonly #says: string;
-  readonly #carries: HeldPicture;
+  readonly #carries: Held;
 
   constructor(item: Item, close: () => void) {
-    this.#item = item;
+    this.item = item;
     this.#close = close;
     this.#says = client.says(item);
     this.#carries = carriedBy(item);
-    this.text = draftWords(item.id) ?? this.#says;
-    const drafted = draftPicture(item.id);
-    this.picture = drafted === undefined ? this.#carries : drafted;
+    this.text = this.#says;
+    this.picture = this.#carries;
   }
 
   /** Whether it holds anything the item does not say. */
@@ -42,16 +41,6 @@ export class Editing {
     return (
       this.text !== this.#says || this.picture?.asset !== this.#carries?.asset
     );
-  }
-
-  /** Writes what differs from the item as the draft, and nothing where nothing does. */
-  keep(): void {
-    keepDraft(this.#item.id, {
-      ...(this.text === this.#says ? {} : { words: this.text }),
-      ...(this.picture?.asset === this.#carries?.asset
-        ? {}
-        : { picture: this.picture }),
-    });
   }
 
   async pick(file: File): Promise<void> {
@@ -73,31 +62,36 @@ export class Editing {
     this.picture = null;
   }
 
-  /** Back to what the item says, and the draft with it. */
+  /** Back to what the item says, the edit still open. */
   revert(): void {
     this.text = this.#says;
     this.picture = this.#carries;
-    dropDraft(this.#item.id);
   }
 
+  /** Asks first where there are changes to lose. */
   close(): void {
+    leave(() => this.#close());
+  }
+
+  /** Lets the changes go and closes, for an answer already given. */
+  abandon(): void {
+    this.revert();
     this.#close();
   }
 
   save(): void {
     if (this.busy) return;
     const payload = client.pictured(
-      client.saying(this.#item, this.text),
+      client.saying(this.item, this.text),
       this.picture?.asset,
     );
     const channel = this.picture === null ? TYPED : PICTURE;
-    dropDraft(this.#item.id);
     this.#close();
-    void client.edit(this.#item.id, payload, channel);
+    void client.edit(this.item.id, payload, channel);
   }
 }
 
-function carriedBy(item: Item): HeldPicture {
+function carriedBy(item: Item): Held {
   const carried = client.picture(item);
   if (carried === undefined) return null;
   return {
