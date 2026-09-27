@@ -109,18 +109,19 @@ Depends on phase 1.
 
 Depends on nothing; may run beside phases 1 and 2.
 
-- [ ] `packages/relay/src/tags.ts`: the foot rule as a pure reader, and the merge both mappings
+- [x] `packages/relay/src/tags.ts`: the foot rule as a pure reader, and the merge both mappings
       use. Exported from the package index.
-- [ ] Tests beside it: a one-line foot, a two-line foot, a mid-sentence hashtag left alone, a
+- [x] Tests beside it: a one-line foot, a two-line foot, a mid-sentence hashtag left alone, a
       token that disqualifies its line, a text that is only a foot, trailing blank lines, a
       duplicate across the configured tags and the foot, no text at all.
-- [ ] `hashtags` in both config schemas under the upstream's table, default `false`, and through
-      to `relayedFrom` — for arena, before the version digest, so the digest is over the payload's
+- [x] `hashtags` in both config schemas under the upstream's table, default `false`, and through
+      to `relayedFrom` — memos' `relayEverything` gains a `Scan` of its own rather than a bare
+      boolean argument, which is the shape arena's already had — for arena, before the version digest, so the digest is over the payload's
       prose and a foot edited upstream alone is `already-captured`.
-- [ ] Tests beside both `relayed.test.ts`: on and off, and for memos that a foot's tags merge with
+- [x] Tests beside both `relayed.test.ts`: on and off, and for memos that a foot's tags merge with
       the ones Memos extracted itself rather than replacing them.
-- [ ] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`.
-- [ ] `git commit`.
+- [x] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`.
+- [x] `git commit`. _(2026-09-27)_
 
 ### Phase 4 — Docs and the full stack
 

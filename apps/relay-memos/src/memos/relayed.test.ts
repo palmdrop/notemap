@@ -18,7 +18,7 @@ function memo(overrides: Partial<Memo> = {}): Memo {
 
 describe("a memo as the pool takes it", () => {
   it("carries its uid, its own capture time and its content verbatim", () => {
-    const relaying = relayedFrom(memo(), bytes);
+    const relaying = relayedFrom(memo(), bytes, false);
 
     expect(relaying).toEqual({
       sourceItemId: "abc123",
@@ -43,6 +43,7 @@ describe("a memo as the pool takes it", () => {
         ],
       }),
       bytes,
+      false,
     );
 
     expect(
@@ -67,14 +68,62 @@ describe("a memo as the pool takes it", () => {
         ],
       }),
       bytes,
+      false,
     );
 
     expect(relaying).toMatchObject({ tags: [] });
     expect(relaying && "text" in relaying).toBe(false);
   });
 
+  it("takes a foot of tags off the prose where it was asked to", () => {
+    const relaying = relayedFrom(
+      memo({
+        content: "a thought\n\n#kind/quote #read/later",
+        tags: ["kind/quote", "read/later"],
+      }),
+      bytes,
+      true,
+    );
+
+    expect(relaying).toMatchObject({
+      text: "a thought",
+      // Memos extracted both itself; the foot adds nothing here but its own
+      // absence from the prose.
+      tags: ["kind/quote", "read/later"],
+    });
+  });
+
+  it("adds a tag Memos did not extract, after the ones it did", () => {
+    const relaying = relayedFrom(
+      memo({
+        content: "a thought\n\n#kind/quote #topic/x",
+        tags: ["kind/quote"],
+      }),
+      bytes,
+      true,
+    );
+
+    expect(relaying).toMatchObject({
+      text: "a thought",
+      tags: ["kind/quote", "topic/x"],
+    });
+  });
+
+  it("leaves the prose alone where the foot is the whole of the memo", () => {
+    const relaying = relayedFrom(
+      memo({ content: "#kind/quote", tags: ["kind/quote"] }),
+      bytes,
+      true,
+    );
+
+    expect(relaying).toMatchObject({
+      text: "#kind/quote",
+      tags: ["kind/quote"],
+    });
+  });
+
   it("relays nothing for a memo holding neither prose nor an attachment", () => {
-    expect(relayedFrom(memo({ content: "   " }), bytes)).toBeUndefined();
+    expect(relayedFrom(memo({ content: "   " }), bytes, false)).toBeUndefined();
   });
 
   it("reads an attachment through the reader it was given, once asked", async () => {
@@ -89,6 +138,7 @@ describe("a memo as the pool takes it", () => {
         opened += 1;
         return bytes();
       },
+      false,
     );
 
     expect(opened).toBe(0);

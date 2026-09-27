@@ -35,6 +35,8 @@ export type RelayConfig = {
     /** The Memos server's base URL, without a trailing slash. */
     readonly url: string;
     readonly token: Secret;
+    /** Whether a foot of `#tags` on a memo is read as tags and taken off the prose. */
+    readonly hashtags: boolean;
   };
   readonly poll: {
     readonly intervalMs: number;
@@ -65,6 +67,7 @@ const fileSchema = z.strictObject({
     .optional(),
   memos: z.strictObject({
     url: z.string().url(),
+    hashtags: z.boolean().optional(),
     ...secretKeys,
   }),
   poll: z
@@ -135,6 +138,7 @@ export function parseConfig(source: string, from: string): RelayConfig {
     memos: {
       url: file.memos.url.replace(/\/+$/, ""),
       token: readSecretKeys(file.memos, `${from}: the memos token`),
+      hashtags: file.memos.hashtags ?? false,
     },
     poll: { intervalMs: file.poll?.interval ?? DEFAULT_POLL_MS },
     log: {

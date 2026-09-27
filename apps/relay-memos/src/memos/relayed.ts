@@ -1,3 +1,4 @@
+import { classified } from "@notemap/relay";
 import type { Bytes, Relayed } from "@notemap/relay";
 
 import type { Memo, MemosAttachment } from "./types";
@@ -23,11 +24,16 @@ export function uidOf(name: string): string {
  * One memo as the pool takes it, or nothing where there is nothing to take:
  * core lets an empty capture through, and each relay guards its own input.
  *
- * The content travels verbatim, `#tags` and all. Memos extracts those into
- * `tags` as well, and both are true of the memo — the prose is what was
- * written, and the classification is what it was written with.
+ * Memos extracts a memo's `#tags` into `tags` itself, so the classification
+ * arrives whether or not `hashtags` is set. What the flag decides is the
+ * *prose*: with it, a foot of tags is classification and comes off; without it,
+ * the content travels verbatim, `#tags` and all.
  */
-export function relayedFrom(memo: Memo, open: Open): Relayed | undefined {
+export function relayedFrom(
+  memo: Memo,
+  open: Open,
+  hashtags: boolean,
+): Relayed | undefined {
   const attachments = (memo.attachments ?? []).map((attachment) => ({
     id: attachment.name,
     filename: attachment.filename,
@@ -35,8 +41,10 @@ export function relayedFrom(memo: Memo, open: Open): Relayed | undefined {
     open: (signal?: AbortSignal) => open(attachment, signal),
   }));
 
-  const text = memo.content.trim() === "" ? undefined : memo.content;
-  if (text === undefined && attachments.length === 0) return undefined;
+  const content = memo.content.trim() === "" ? undefined : memo.content;
+  if (content === undefined && attachments.length === 0) return undefined;
+
+  const { text, tags } = classified(content, memo.tags ?? [], hashtags);
 
   return {
     sourceItemId: uidOf(memo.name),
@@ -45,7 +53,7 @@ export function relayedFrom(memo: Memo, open: Open): Relayed | undefined {
     // days back in the feed rather than at the top of the poll that found it.
     capturedAt: memo.createTime,
     ...(text === undefined ? {} : { text }),
-    tags: memo.tags ?? [],
+    tags,
     attachments,
   };
 }

@@ -15,4 +15,4 @@ export type {
   MemosTarget,
 } from "./memos/types";
 export { namespaceFor, relayInto } from "./relay";
-export { relayEverything, type Tally } from "./run";
+export { relayEverything, type Scan, type Tally } from "./run";

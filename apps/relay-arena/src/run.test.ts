@@ -63,7 +63,7 @@ function warnings(said: string[]): string[] {
   return said.filter((line) => line.startsWith("WARN"));
 }
 
-const shallow = { full: false };
+const shallow = { full: false, hashtags: false };
 
 describe("one scan of every watched channel", () => {
   it("counts what each block came to", async () => {
@@ -256,7 +256,7 @@ describe("one scan of every watched channel", () => {
         ),
       ],
       capturedLog().log,
-      { full: true },
+      { full: true, hashtags: false },
     );
 
     expect(reports[0]?.tally).toMatchObject({ read: 3, captured: 1 });

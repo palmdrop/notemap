@@ -40,7 +40,10 @@ async function poll(
     readSecret(config.pool.token, "the pool token"),
   );
 
-  return relayEverything(memos, relay, log, signal);
+  return relayEverything(memos, relay, log, {
+    hashtags: config.memos.hashtags,
+    signal,
+  });
 }
 
 async function start(): Promise<void> {

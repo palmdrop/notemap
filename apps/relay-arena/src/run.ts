@@ -41,6 +41,8 @@ export type ChannelReport = {
 export type Scan = {
   /** Read every page, rather than stopping at the first page the pool knows. */
   readonly full: boolean;
+  /** Whether a foot of `#tags` on a block is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
   readonly signal?: AbortSignal;
 };
 
@@ -62,7 +64,7 @@ export async function relayEverything(
   from: Arena,
   channels: readonly ChannelTarget[],
   log: Logger,
-  { full, signal }: Scan,
+  { full, hashtags, signal }: Scan,
 ): Promise<readonly ChannelReport[]> {
   const reports: ChannelReport[] = [];
 
@@ -78,7 +80,12 @@ export async function relayEverything(
           tally.read += 1;
 
           try {
-            const relaying = relayedFrom(block, from.open, channel.tags);
+            const relaying = relayedFrom(
+              block,
+              from.open,
+              channel.tags,
+              hashtags,
+            );
             if (relaying === undefined) {
               tally.empty += 1;
               continue;

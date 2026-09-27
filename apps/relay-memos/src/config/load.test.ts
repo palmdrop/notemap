@@ -40,10 +40,21 @@ describe("the config a relay is pointed with", () => {
       memos: {
         url: "https://memos.example.com",
         token: { file: "/secrets/memos" },
+        hashtags: false,
       },
       poll: { intervalMs: 300_000 },
       log: { level: "info", format: "text" },
     });
+  });
+
+  it("reads a foot of tags only where it is asked to", () => {
+    expect(parseConfig(MINIMAL, "relay.toml").memos.hashtags).toBe(false);
+    expect(
+      parseConfig(
+        MINIMAL.replace("[memos]", "[memos]\nhashtags = true"),
+        "relay.toml",
+      ).memos.hashtags,
+    ).toBe(true);
   });
 
   it("takes a level and a format, and defaults the one that is missing", () => {

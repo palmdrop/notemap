@@ -4,6 +4,12 @@ import { reasonOf, type Logger } from "@notemap/log";
 import { relayedFrom } from "./memos/relayed";
 import type { Memos } from "./memos/read";
 
+export type Scan = {
+  /** Whether a foot of `#tags` on a memo is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
+  readonly signal?: AbortSignal;
+};
+
 /** What one scan of everything upstream came to. */
 export type Tally = {
   read: number;
@@ -31,7 +37,7 @@ export async function relayEverything(
   from: Memos,
   into: Relay,
   log: Logger,
-  signal?: AbortSignal,
+  { hashtags, signal }: Scan,
 ): Promise<Tally> {
   const tally: Tally = {
     read: 0,
@@ -47,7 +53,7 @@ export async function relayEverything(
     tally.read += 1;
 
     try {
-      const relaying = relayedFrom(memo, from.open);
+      const relaying = relayedFrom(memo, from.open, hashtags);
       if (relaying === undefined) {
         tally.empty += 1;
         continue;

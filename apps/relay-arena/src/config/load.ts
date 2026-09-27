@@ -39,6 +39,8 @@ export type RelayConfig = {
   };
   readonly arena: {
     readonly token: Secret;
+    /** Whether a foot of `#tags` on a block is read as tags and taken off the prose. */
+    readonly hashtags: boolean;
   };
   /** At least one, each with a source found on no other channel. */
   readonly channels: readonly WatchedChannel[];
@@ -69,6 +71,7 @@ const fileSchema = z.strictObject({
     })
     .optional(),
   arena: z.strictObject({
+    hashtags: z.boolean().optional(),
     ...secretKeys,
   }),
   channel: z
@@ -177,6 +180,7 @@ export function parseConfig(source: string, from: string): RelayConfig {
     },
     arena: {
       token: readSecretKeys(file.arena, `${from}: the arena token`),
+      hashtags: file.arena.hashtags ?? false,
     },
     channels: channels.map((channel) => ({
       handle: channel.handle,

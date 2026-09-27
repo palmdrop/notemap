@@ -55,6 +55,7 @@ describe("one scan of everything upstream", () => {
         d: "revised",
       }),
       capturedLog().log,
+      { hashtags: false },
     );
 
     expect(tally).toEqual({
@@ -75,6 +76,7 @@ describe("one scan of everything upstream", () => {
       upstream([memo("a"), memo("b"), memo("c")]),
       landing({ b: new Error("the pool refused it") }),
       log.log,
+      { hashtags: false },
     );
 
     expect(tally).toMatchObject({ read: 3, captured: 2, failed: 1 });
@@ -92,6 +94,7 @@ describe("one scan of everything upstream", () => {
         upstream([memo("a"), memo("b"), memo("c")]),
         landing({ a: gone }),
         log.log,
+        { hashtags: false },
       ),
     ).rejects.toBe(gone);
 
@@ -107,6 +110,7 @@ describe("one scan of everything upstream", () => {
         upstream([memo("a"), memo("b")]),
         landing({ a: shut }),
         capturedLog().log,
+        { hashtags: false },
       ),
     ).rejects.toBe(shut);
   });
@@ -116,6 +120,7 @@ describe("one scan of everything upstream", () => {
       upstream([memo("a", { content: "" }), memo("b")]),
       landing({}),
       capturedLog().log,
+      { hashtags: false },
     );
 
     expect(tally).toMatchObject({ read: 2, captured: 1, empty: 1, failed: 0 });

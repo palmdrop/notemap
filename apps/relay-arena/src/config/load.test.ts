@@ -36,13 +36,23 @@ describe("the config a relay is pointed with", () => {
 
     expect(config).toEqual({
       pool: { url: "http://127.0.0.1:4747", token: { env: "POOL_TOKEN" } },
-      arena: { token: { file: "/secrets/arena" } },
+      arena: { token: { file: "/secrets/arena" }, hashtags: false },
       channels: [
         { handle: "influences", source: "arena/influences", tags: [] },
       ],
       poll: { intervalMs: 900_000 },
       log: { level: "info", format: "text" },
     });
+  });
+
+  it("reads a foot of tags only where it is asked to", () => {
+    expect(parseConfig(MINIMAL, "relay.toml").arena.hashtags).toBe(false);
+    expect(
+      parseConfig(
+        MINIMAL.replace("[arena]", "[arena]\nhashtags = true"),
+        "relay.toml",
+      ).arena.hashtags,
+    ).toBe(true);
   });
 
   it("takes a level and a format, and defaults the one that is missing", () => {

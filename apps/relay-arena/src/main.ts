@@ -62,7 +62,11 @@ async function poll(
   }));
 
   if (full) log.info("reading every page of every channel");
-  const reports = await relayEverything(arena, channels, log, { full, signal });
+  const reports = await relayEverything(arena, channels, log, {
+    full,
+    hashtags: config.arena.hashtags,
+    signal,
+  });
 
   let clean = true;
   for (const report of reports) {
