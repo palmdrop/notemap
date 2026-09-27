@@ -27,8 +27,10 @@ Settled with the developer on 2026-09-27.
   names the relay — because the validation is shared and the variable's name is not.
 - **The tag foot, not every hashtag.** A `#tag` mid-sentence is words somebody wrote and stays
   words. A trailing line made of nothing but hashtags is classification, and comes off the prose.
-  This is how people actually write, and it keeps `#include`, `#ff0000` and `#1` out of the tag
-  set without the parser knowing what a code fence is.
+  This is how people actually write, and — since a line holding anything that is not a hashtag is
+  prose — it keeps `#include <stdio.h>` and `color: #ff0000;` out of the tag set without the parser
+  knowing what a code fence is. A line of nothing but `#ff0000` *is* read: nothing tells that from a
+  tag, and somebody put it there on its own.
 - **The prose loses the foot.** Otherwise a markdown destination with `hashtags = true` writes the
   same tags twice, once in the body and once in the foot it adds itself.
 - **Read by each mapping, not by the relay.** `packages/relay` exports the rule as a pure
@@ -41,9 +43,11 @@ Settled with the developer on 2026-09-27.
 ### The rule, precisely
 
 - A **tag line** is a line that, trimmed, is non-empty and made only of whitespace-separated
-  tokens matching `#` followed by a letter or digit and then any of letters, digits, `/`, `-`, `_`.
-- The **foot** is every tag line at the end of the text, taken together. `#kind/quote` and
-  `#topic/x` on two lines are one foot.
+  hashtags. A hashtag is `#`, then a letter or digit, then any of letters, digits, `/`, `-`, `_`,
+  ending on a letter or a digit — so `#project/` and `#half-` are not ones.
+- The **foot** is every tag line at the end of the text, taken together, whatever blank lines the
+  text ends with. `#kind/quote` and `#topic/x` on two lines are one foot; a blank line *between* two
+  tag lines ends it, so the lower one is the foot and the upper one is prose.
 - The tags are those names in reading order, duplicates dropped, merged after whatever tags the
   relay was configured with.
 - The prose is what stands above, with trailing blank lines trimmed.
@@ -61,6 +65,15 @@ Settled with the developer on 2026-09-27.
 The payload's text changes for every upstream note carrying a foot, so the poll after the flag is
 set captures a changed payload under an identity the pool holds: each affected item is **amended
 or revised once**, and is then stable. Off by default for that reason.
+
+For that to be true of relay-memos, its **version has to follow the payload** rather than being
+`updateTime` alone. An edit is captured under `sourceItemId@version`, and core refuses an identity
+that is already held by a revision carrying different words — so a processed, once-edited memo read
+a second way would be refused `source-item-changed` on that identity every poll, forever, landing
+nothing. So the version carries a digest of the words being sent *wherever this relay changed
+them*, and the bare `updateTime` wherever it did not: nothing already in a pool moves, and two
+readings of one memo never claim one identity. arena needed nothing, digesting what it sends
+already.
 
 ---
 
@@ -140,6 +153,35 @@ Depends on phases 2 and 3.
       without that line, and that it does not with the flag off.
 - [x] Verify: `pnpm test:stack`.
 - [-] Tick the todo in `docs/todo.md` _(dropped — no todo covers either fix)_.
+- [x] `git commit`. _(2026-09-27)_
+
+### Phase 5 — What the review found
+
+A review of the PR turned up two defects the tests had not, both in the tag foot.
+
+- [x] **A trailing newline disabled the rule.** `tagFootOf` scanned back from the last line, and
+      the last line of `…#kind/quote\n` is an empty one — so the foot was found only where the text
+      ended exactly on it. CRLF failed the same way, and so did the very shape the markdown kinds
+      *write* a hashtag foot in. Blank lines at the end are now skipped before the scan.
+- [x] **relay-memos could refuse itself forever.** Its version was `updateTime` alone, so two
+      readings of one memo claimed one edit identity, and a processed, once-edited memo read the
+      second way was refused `source-item-changed` every poll. The version now carries a digest of
+      the words being sent wherever the reading changed them. See *What turning it on costs*.
+- [x] A hashtag must now end on a letter or a digit, so `#project/` is prose rather than the tag
+      `project/`.
+- [x] `relayedFrom` takes a `Reading` rather than a bare positional boolean, for the reason the
+      plan already gave for `Scan`.
+- [x] `LOG_LEVEL_VARIABLE` sits in `constants.ts` in all three programs, and the comment justifying
+      it — three wordings of one restatement — is gone.
+- [x] Corrected what was not true: `debug` is a line per item *relayed* and an empty one says
+      nothing; `error` covers the failure that ends the run; a whole line of `#ff0000` *is* read as
+      a tag; not every tag the markdown kinds write can be read back. In both READMEs, both example
+      configs, `CONTEXT.md` and this plan.
+- [x] Tests for each: a trailing newline, trailing blank lines, CRLF, a blank line between two tag
+      lines, `#project/`, a one-letter tag, the version staying put where nothing was stripped and
+      moving where something was, and a full-stack run of the wedge — archived item, edited memo,
+      then the other reading — which fails without the version fix.
+- [x] Verify: `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, `pnpm test:stack` (86).
 - [x] `git commit`. _(2026-09-27)_
 
 ---

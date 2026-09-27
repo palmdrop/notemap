@@ -70,7 +70,8 @@ tokenFile = "~/.config/notemap/relay-memos/memos-token"
 interval = 300000 # milliseconds — five minutes
 
 # What the relay says on stdout: what each poll came to, what it could not
-# relay, and — at `debug` — a line per memo. `text` is one line a person reads;
+# relay, the failure that ends a run, and — at `debug` — a line per memo
+# relayed. `text` is one line a person reads;
 # `json` is one object a log collector reads. NOTEMAP_RELAY_MEMOS_LOG_LEVEL in
 # the environment overrides `level` and nothing else.
 [log]

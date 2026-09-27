@@ -143,10 +143,12 @@ does not count.
 One levelled line per event on stdout, the same shape the daemon writes —
 `HH:MM:SS.mmm LEVEL message key=value` — or one JSON object per line where
 `[log] format = "json"` asks for it. `level` chooses how much: `debug` is a line
-per block, `info` is what each poll came to, `warn` is a block that could not be
-relayed or a channel that could not be read, `error` is a poll that could not be finished at all.
-`NOTEMAP_RELAY_ARENA_LOG_LEVEL` in the environment turns the level up
-without editing the file.
+per block relayed, `info` is what each poll came to, `warn` is a block that could
+not be relayed or a channel that could not be read, `error` is a poll that could
+not be finished and the failure that ends the run. A block with nothing in it is
+counted `empty` and says nothing at any level.
+`NOTEMAP_RELAY_ARENA_LOG_LEVEL` in the environment turns the level up without
+editing the file.
 
 Failures go there and nowhere else: notemap has nowhere to put another program's
 errors, and a relay that could not reach the pool has nothing to report to it by

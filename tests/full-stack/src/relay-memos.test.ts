@@ -42,7 +42,10 @@ type Relayed = {
   readonly relay: Relaying;
   /** The pool, read the way anything holding a token reads it. */
   read(path: string): Promise<Response>;
+  post(path: string, body?: unknown): Promise<Response>;
   items(): Promise<readonly Item[]>;
+  /** The same upstream and the same pool, read the other way. */
+  alsoReading(hashtags: boolean): Relaying;
 };
 
 /**
@@ -60,15 +63,29 @@ async function relaying(hashtags = false): Promise<Relayed> {
       headers: { authorization: `Bearer ${token}` },
     });
 
-  return {
-    memos,
-    relay: relayMemos({
+  const reading = (hashtags: boolean, name?: string) =>
+    relayMemos({
       directory: on.directory,
       pool: { url: running.url, token },
       memos: { url: memos.url, token: MEMOS_TOKEN },
       hashtags,
-    }),
+      ...(name === undefined ? {} : { name }),
+    });
+
+  return {
+    memos,
+    relay: reading(hashtags),
+    alsoReading: (hashtags: boolean) => reading(hashtags, "relay-memos-also"),
     read,
+    post: (path: string, body?: unknown) =>
+      fetch(`${running.url}${path}`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body ?? {}),
+      }),
     async items() {
       const response = await read("/v1/feed");
       expect(response.status).toBe(200);
@@ -252,6 +269,50 @@ describe("the memos relay, over a real daemon", () => {
     // is an ordinary one: only a revision leaves the original disagreeing.
     expect(await polled(where)).toMatch(/captured=0 unchanged=1 amended=0/);
     expect(await where.items()).toHaveLength(1);
+  });
+
+  it("reads a memo the other way without refusing the revision the first reading made", async () => {
+    const where = await relaying();
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote" }),
+    );
+    await polled(where);
+
+    // Processed, so an edit makes a revision rather than amending in place —
+    // and a revision is what carries the identity an edit is captured under.
+    const [held] = await where.items();
+    const archived = await where.post(`/v1/items/${held?.id ?? ""}/archive`, {
+      reason: "read it, kept nothing",
+    });
+    expect(archived.status).toBe(200);
+
+    where.memos.memos[0] = memo("abc", {
+      content: "rewritten since\n\n#kind/quote",
+      updateTime: "2026-09-07T10:00:00.000Z",
+    });
+    expect(await polled(where)).toMatch(/revised=1/);
+
+    // The same memo, now read with `hashtags`. The words differ from the ones
+    // the first reading sent, and the pool must take that as another revision
+    // rather than as a conflicting resubmission of the one it already has.
+    const stripping = where.alsoReading(true);
+    const first = await stripping.poll();
+    expect(first.output).not.toMatch(/could not/);
+    expect(first.code).toBe(0);
+    expect(first.output).toMatch(/revised=1/);
+
+    // Three items: the archived original, the revision the first reading made,
+    // and the one this reading did.
+    const three = await where.items();
+    expect(three).toHaveLength(3);
+    expect(three.map((each) => each.payload.content["text"])).toContain(
+      "rewritten since",
+    );
+
+    // And stable: the poll after it is answered with the revision it just made.
+    const again = await stripping.poll();
+    expect(again.output).not.toMatch(/could not/);
+    expect(again.code).toBe(0);
   });
 
   it("captures nothing for a memo holding neither prose nor an attachment", async () => {

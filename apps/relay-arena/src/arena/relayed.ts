@@ -5,6 +5,14 @@ import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
 import type { ArenaBlock } from "./types";
 
+/** How this relay was asked to read a block. */
+export type Reading = {
+  /** The watched channel's own tags, which every block from it arrives with. */
+  readonly tags: readonly string[];
+  /** Whether a foot of `#tags` is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
+};
+
 /** How a block's file is reached, so the mapping needs no server. */
 export type Open = (block: ArenaBlock, signal?: AbortSignal) => Promise<Bytes>;
 
@@ -121,8 +129,7 @@ function versionOf(
 export function relayedFrom(
   block: ArenaBlock,
   open: Open,
-  configured: readonly string[],
-  hashtags: boolean,
+  { tags: configured, hashtags }: Reading,
 ): Relayed | undefined {
   if (block.type === "Channel") return undefined;
 

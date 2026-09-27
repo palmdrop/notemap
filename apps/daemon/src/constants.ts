@@ -84,3 +84,5 @@ export const DELIVERY_REPORT_MARGIN_MS = 5_000;
 
 /** How much of a preview is inlined. The answer is JSON, held whole in memory on the way out. */
 export const MAX_PREVIEW_BYTES = 1024 * 1024;
+
+export const LOG_LEVEL_VARIABLE = "NOTEMAP_LOG_LEVEL";

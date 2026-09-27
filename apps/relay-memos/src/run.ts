@@ -53,7 +53,7 @@ export async function relayEverything(
     tally.read += 1;
 
     try {
-      const relaying = relayedFrom(memo, from.open, hashtags);
+      const relaying = relayedFrom(memo, from.open, { hashtags });
       if (relaying === undefined) {
         tally.empty += 1;
         continue;

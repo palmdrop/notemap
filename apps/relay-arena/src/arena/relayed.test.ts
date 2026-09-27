@@ -19,8 +19,7 @@ describe("a block as the pool takes it", () => {
     const relaying = relayedFrom(
       block({ content: { markdown: "a thought" } }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
 
     expect(relaying).toEqual({
@@ -42,8 +41,7 @@ describe("a block as the pool takes it", () => {
         source: { url: "https://example.com/page" },
       }),
       bytes,
-      ["arena/influences"],
-      false,
+      { tags: ["arena/influences"], hashtags: false },
     );
 
     expect(relaying).toMatchObject({
@@ -65,8 +63,7 @@ describe("a block as the pool takes it", () => {
         },
       }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
 
     expect(relaying).toMatchObject({
@@ -87,8 +84,7 @@ describe("a block as the pool takes it", () => {
         },
       }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
 
     expect(relaying).toMatchObject({
@@ -110,8 +106,7 @@ describe("a block as the pool takes it", () => {
         },
       }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
 
     expect(relaying).toMatchObject({
@@ -132,8 +127,7 @@ describe("a block as the pool takes it", () => {
     const untitled = relayedFrom(
       block({ type: "Image", title: "098__resnet-bitstamp.png", image }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
     expect(untitled).not.toHaveProperty("text");
     expect(untitled?.attachments[0]?.filename).toBe("098__resnet-bitstamp.png");
@@ -141,35 +135,29 @@ describe("a block as the pool takes it", () => {
     const titled = relayedFrom(
       block({ type: "Image", title: "a scan.png", image }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
     expect(titled?.text).toBe("a scan.png");
     expect(titled?.attachments[0]?.filename).toBe("495ca161.png");
   });
 
   it("versions a block by what it says, not by when are.na last touched it", () => {
-    const one = relayedFrom(
-      block({ content: { markdown: "a" } }),
-      bytes,
-      [],
-      false,
-    );
+    const one = relayedFrom(block({ content: { markdown: "a" } }), bytes, {
+      tags: [],
+      hashtags: false,
+    });
     const again = relayedFrom(
       block({
         content: { markdown: "a" },
         connection: { connected_at: "2027-01-01T00:00:00Z" },
       }),
       bytes,
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
-    const edited = relayedFrom(
-      block({ content: { markdown: "b" } }),
-      bytes,
-      [],
-      false,
-    );
+    const edited = relayedFrom(block({ content: { markdown: "b" } }), bytes, {
+      tags: [],
+      hashtags: false,
+    });
 
     expect(again?.version).toBe(one?.version);
     expect(edited?.version).not.toBe(one?.version);
@@ -179,8 +167,7 @@ describe("a block as the pool takes it", () => {
     const relaying = relayedFrom(
       block({ content: { markdown: "a thought\n\n#kind/quote #topic/x" } }),
       bytes,
-      ["arena/influences"],
-      true,
+      { tags: ["arena/influences"], hashtags: true },
     );
 
     expect(relaying).toMatchObject({
@@ -193,8 +180,7 @@ describe("a block as the pool takes it", () => {
     const relaying = relayedFrom(
       block({ content: { markdown: "a thought\n\n#kind/quote" } }),
       bytes,
-      ["arena/influences"],
-      false,
+      { tags: ["arena/influences"], hashtags: false },
     );
 
     expect(relaying).toMatchObject({
@@ -205,7 +191,10 @@ describe("a block as the pool takes it", () => {
 
   it("versions the prose the payload carries, so a foot edited alone is not an edit", () => {
     const withFoot = (markdown: string) =>
-      relayedFrom(block({ content: { markdown } }), bytes, [], true)?.version;
+      relayedFrom(block({ content: { markdown } }), bytes, {
+        tags: [],
+        hashtags: true,
+      })?.version;
 
     expect(withFoot("a thought\n\n#kind/quote")).toBe(
       withFoot("a thought\n\n#kind/quote #topic/x"),
@@ -217,16 +206,25 @@ describe("a block as the pool takes it", () => {
 
   it("relays nothing for a Channel block: a channel connected into a channel is not a note", () => {
     expect(
-      relayedFrom(block({ type: "Channel" }), bytes, [], false),
+      relayedFrom(block({ type: "Channel" }), bytes, {
+        tags: [],
+        hashtags: false,
+      }),
     ).toBeUndefined();
   });
 
   it("relays nothing for a block holding neither prose nor a file", () => {
     expect(
-      relayedFrom(block({ content: { markdown: "   " } }), bytes, [], false),
+      relayedFrom(block({ content: { markdown: "   " } }), bytes, {
+        tags: [],
+        hashtags: false,
+      }),
     ).toBeUndefined();
     expect(
-      relayedFrom(block({ type: "Link" }), bytes, [], false),
+      relayedFrom(block({ type: "Link" }), bytes, {
+        tags: [],
+        hashtags: false,
+      }),
     ).toBeUndefined();
   });
 
@@ -245,8 +243,7 @@ describe("a block as the pool takes it", () => {
         opened = b;
         return bytes();
       },
-      [],
-      false,
+      { tags: [], hashtags: false },
     );
 
     expect(opened).toBeUndefined();

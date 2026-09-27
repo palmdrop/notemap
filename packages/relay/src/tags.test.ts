@@ -19,6 +19,26 @@ describe("the tag foot of a note", () => {
     );
   });
 
+  it("is there whatever the text ends with: a newline, blank lines, or CRLF", () => {
+    for (const text of [
+      "a thought\n\n#kind/quote\n",
+      "a thought\n\n#kind/quote\n\n  \n",
+      "a thought\r\n\r\n#kind/quote\r\n",
+    ]) {
+      expect(tagFootOf(text)).toEqual({
+        tags: ["kind/quote"],
+        prose: "a thought",
+      });
+    }
+  });
+
+  it("stops at a blank line between two tag lines: the foot is the last of them", () => {
+    expect(tagFootOf("a\n\n#kind/quote\n\n#topic/x\n")).toEqual({
+      tags: ["topic/x"],
+      prose: "a\n\n#kind/quote",
+    });
+  });
+
   it("takes the blank lines above it with it, and leaves the prose's own alone", () => {
     expect(tagFootOf("one\n\ntwo\n\n#kind/note").prose).toBe("one\n\ntwo");
   });
@@ -44,12 +64,18 @@ describe("the tag foot of a note", () => {
       "#ff0000;",
       "# heading",
       "#",
+      "#project/",
+      "#half-",
     ]) {
       expect(tagFootOf(`a thought\n\n${line}`)).toEqual({
         tags: [],
         prose: `a thought\n\n${line}`,
       });
     }
+  });
+
+  it("reads a whole line of one letter, which is as short as a tag gets", () => {
+    expect(tagFootOf("a thought\n\n#x").tags).toEqual(["x"]);
   });
 
   it("reads a hex colour or an issue number where the whole line is one", () => {

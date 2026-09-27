@@ -7,7 +7,7 @@ export {
   type Secret,
 } from "./config/load";
 export { memosAt, MemosRefused, type Memos } from "./memos/read";
-export { relayedFrom, uidOf, type Open } from "./memos/relayed";
+export { relayedFrom, uidOf, type Open, type Reading } from "./memos/relayed";
 export type {
   Memo,
   MemoPage,

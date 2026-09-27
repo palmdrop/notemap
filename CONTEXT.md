@@ -166,9 +166,11 @@ _Avoid_: label, category, keyword, folder
 **Tag foot**:
 A trailing line of nothing but `#tag`, which a **relay** may be told to read as the note's **tags**
 and take off the prose — the shape the markdown kinds *write* tags in when a destination's
-`hashtags` setting asks for it, read back the other way. Only the foot: a `#tag` in the middle of a
-sentence is a word somebody wrote, and a line carrying anything else is prose. Nothing in notemap
-reads one; a relay does it before it captures, and the pool only ever sees tags.
+`hashtags` setting asks for it, read in the other direction. Only the foot: a `#tag` in the middle
+of a sentence is a word somebody wrote, and a line carrying anything that is not a hashtag is prose.
+Not every tag those kinds write comes back, either — a hashtag here runs from a letter or a digit to
+a letter or a digit, so `#v1.0` is written and is not read. Nothing inside notemap reads one: a
+relay does it before it captures, and the pool only ever sees tags.
 _Avoid_: hashtag parsing, inline tags, tag line (for the whole rule)
 
 **Tags in use**:

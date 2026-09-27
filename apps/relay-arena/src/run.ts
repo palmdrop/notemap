@@ -80,12 +80,10 @@ export async function relayEverything(
           tally.read += 1;
 
           try {
-            const relaying = relayedFrom(
-              block,
-              from.open,
-              channel.tags,
+            const relaying = relayedFrom(block, from.open, {
+              tags: channel.tags,
               hashtags,
-            );
+            });
             if (relaying === undefined) {
               tally.empty += 1;
               continue;

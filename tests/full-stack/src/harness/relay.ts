@@ -28,6 +28,8 @@ export type Told = {
   readonly source?: string;
   /** Whether a memo's trailing line of `#tags` is read as tags. */
   readonly hashtags?: boolean;
+  /** Names the config file, so one directory can hold two relays reading differently. */
+  readonly name?: string;
 };
 
 /**
@@ -37,7 +39,7 @@ export type Told = {
  */
 export function relayMemos(told: Told): Relaying {
   const at = (name: string) => join(told.directory, name);
-  const config = at("relay-memos.toml");
+  const config = at(`${told.name ?? "relay-memos"}.toml`);
 
   writeFileSync(at("pool-token"), told.pool.token, "utf8");
   writeFileSync(at("memos-token"), told.memos.token, "utf8");

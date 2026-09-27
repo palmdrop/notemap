@@ -12,5 +12,4 @@ export const PAGE_SIZE = 100;
  */
 export const RELAY_MEMOS = "d9232936-e488-4cbe-bceb-a7e106c46725";
 
-/** Named here rather than in `@notemap/log`: the levels are shared, this variable is this program's. */
 export const LOG_LEVEL_VARIABLE = "NOTEMAP_RELAY_MEMOS_LOG_LEVEL";

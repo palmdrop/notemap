@@ -17,6 +17,7 @@ import {
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
   DEFAULT_TRIGGER_WINDOW_MS,
+  LOG_LEVEL_VARIABLE,
   defaultZone,
 } from "../constants";
 import type { CookieOptions } from "../auth/sessions/config";
@@ -27,9 +28,6 @@ import {
   levelFrom,
   type LogConfig,
 } from "@notemap/log";
-
-/** Named here rather than in `@notemap/log`: the level is shared, the variable is this program's. */
-export const LOG_LEVEL_VARIABLE = "NOTEMAP_LOG_LEVEL";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */
