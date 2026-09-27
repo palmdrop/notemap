@@ -147,7 +147,7 @@
   }}
   onfocusin={() => onfocus?.()}
   data-selected={selected ? "" : undefined}
-  class="mt-6 border border-ink transition-[box-shadow] duration-(--duration-short) ease-fade data-selected:inset-ring data-selected:inset-ring-ink"
+  class="mt-6 border border-ink"
 >
   {#if chosen !== undefined}
     <div

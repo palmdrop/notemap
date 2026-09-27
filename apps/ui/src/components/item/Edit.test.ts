@@ -73,7 +73,7 @@ test("draws the picture the item carries, and dropping it saves the item without
   const transport = pool(accepting());
   const done = vi.fn();
 
-  render(Edit, { item: pictured("one"), ondone: done });
+  render(Edit, { item: pictured("one"), onclose: done });
 
   expect(screen.getByAltText("What it carries")).toBeDefined();
   expect(screen.getByText("shot.png")).toBeDefined();
@@ -101,7 +101,7 @@ test("attaching a picture puts it in the slot, and the edit names what went up",
     return accepting()(request);
   });
 
-  render(Edit, { item: anItem("one"), ondone: vi.fn() });
+  render(Edit, { item: anItem("one"), onclose: vi.fn() });
   expect(screen.queryByRole("button", { name: "drop" })).toBeNull();
 
   await fireEvent.change(screen.getByLabelText("A picture to carry"), {

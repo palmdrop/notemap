@@ -1020,29 +1020,58 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-/** A rewrite is finished or cancelled before the list is walked, or the item decided. */
-test("a row being rewritten holds the selection and its actions until it is left", async () => {
+/** Leaving an edit is never losing it: what was written is kept on the device as a draft. */
+test("leaving a row being edited keeps what was written, and e comes back to it", async () => {
+  pool(queued("one", "two"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await tick();
+  expect(screen.queryByLabelText("What it says")).toBeNull();
+  expect(container.textContent).toContain("draft");
+  expect(asked()).not.toContain("POST /v1/items/one/edit");
+
+  await fireEvent.keyDown(window, { key: "k" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const again = await screen.findByLabelText("What it says");
+  expect((again as HTMLTextAreaElement).value).toBe("rewritten");
+
+  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  expect((again as HTMLTextAreaElement).value).toBe("one");
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  expect(container.textContent).not.toContain("draft");
+});
+
+/** An edit offers the row's tags and nothing that decides it. */
+test("while a row is edited only its tags are reached", async () => {
   pool(queued("one", "two"));
 
   render(Queue);
   await screen.findByText("one");
 
+  await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
   expect(screen.queryByRole("button", { name: "process" })).toBeNull();
-  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
 
   field.blur();
-  await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "D" });
-  await fireEvent.click(screen.getByText("two"));
   await tick();
-  expect(screen.queryByLabelText("What it says")).not.toBeNull();
   expect(asked()).not.toContain("POST /v1/items/one/archive");
-  expect(stamps(true)).toHaveLength(1);
 
-  await fireEvent.click(screen.getByRole("button", { name: "cancel" }));
-  expect(screen.queryByLabelText("What it says")).toBeNull();
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(
+    await screen.findByRole("combobox", { name: "Add a tag" }),
+  ).toBeDefined();
 });

@@ -1,7 +1,7 @@
 import { render } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
-import { holding, published } from "./stack.svelte";
+import { published } from "./stack.svelte";
 import Fixture from "./stack.fixture.svelte";
 import Nested from "./stack.nested.fixture.svelte";
 
@@ -40,18 +40,4 @@ test("pops the right layer by identity when two are mounted at once", () => {
 test("puts a nested surface above the one it is drawn inside", () => {
   render(Nested, { id: "outer", inside: "inner" });
   expect(ids()).toEqual(["outer", "inner"]);
-});
-
-/** An editable shape is the only way on until it is left. */
-test("a layer that holds hides every layer beneath it", () => {
-  render(Fixture, { id: "surface" });
-  expect(holding()).toBe(false);
-
-  const held = render(Fixture, { id: "draft", holds: true });
-  expect(ids()).toEqual(["draft"]);
-  expect(holding()).toBe(true);
-
-  held.unmount();
-  expect(ids()).toEqual(["surface"]);
-  expect(holding()).toBe(false);
 });

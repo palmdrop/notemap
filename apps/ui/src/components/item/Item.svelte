@@ -4,7 +4,8 @@
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import EditFoot from "$components/item/EditFoot.svelte";
-  import { Rewrite } from "$components/item/rewrite.svelte";
+  import { Editing } from "$components/item/editing.svelte";
+  import Drafted from "$components/primitives/marks/Drafted.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -21,9 +22,10 @@
 
   import { processHref, recordHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { commandsFor } from "$lib/command/item";
+  import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { became } from "$lib/lineage";
+  import { drafted } from "$lib/edit-drafts.svelte";
+  import { became, editable } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
@@ -47,7 +49,7 @@
   const undrained = pending();
 
   let read = $state<ItemState | undefined>(undefined);
-  let rewrite = $state<Rewrite | undefined>(undefined);
+  let editing = $state<Editing | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
   // The read settles what is drawn and what it was drawn from; the item itself
@@ -68,7 +70,7 @@
   $effect(() => {
     const wanted = id;
     read = undefined;
-    rewrite = undefined;
+    editing = undefined;
 
     void (async () => {
       const answer = await client.item(wanted);
@@ -90,16 +92,16 @@
           onedit: () => {
             const current = item;
             if (current === undefined) return;
-            rewrite =
-              rewrite === undefined
-                ? new Rewrite(current, () => (rewrite = undefined))
+            editing =
+              editing === undefined
+                ? new Editing(current, () => (editing = undefined))
                 : undefined;
           },
           tag: () => tags?.add(),
         }),
   );
 
-  publish(() => commands);
+  publish(() => (editing === undefined ? commands : whileEditing(commands)));
 
   const refused = $derived(
     read?.failure?.refused === true ? read.failure.said : undefined,
@@ -137,6 +139,10 @@
         <Pending since={undrainedSince(item.id)} />
       {/if}
 
+      {#if editing === undefined && editable(item) && drafted(item.id)}
+        <Drafted />
+      {/if}
+
       <!-- An item view is where a person looks to find out what happened, so
            it is the worst place to imply the pool has answered for it. -->
       {#if read?.fromCache === true}
@@ -144,25 +150,20 @@
       {/if}
 
       <div class="mt-0.5">
-        <Tags
-          bind:this={tags}
-          {item}
-          addable={rewrite === undefined}
-          still={rewrite !== undefined}
-        />
+        <Tags bind:this={tags} {item} addable />
       </div>
     </Rail>
 
     <Body>
-      {#if rewrite !== undefined}
-        <Edit {rewrite} />
+      {#if editing !== undefined}
+        <Edit {editing} />
       {:else}
         <Payload {item} />
       {/if}
 
       <div class="mt-3.5">
-        {#if rewrite !== undefined}
-          <EditFoot {rewrite} />
+        {#if editing !== undefined}
+          <EditFoot {editing} />
         {:else}
           <Actions {commands} />
         {/if}

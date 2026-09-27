@@ -6,6 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
 import { keyboard, online } from "$testing/dom";
+import { drafted, dropDraft, keepDraft } from "$lib/edit-drafts.svelte";
 import { remember } from "$lib/order";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
@@ -586,4 +587,26 @@ test("t opens the tag chooser on the selected row", async () => {
   await fireEvent.keyDown(window, { key: "t" });
 
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+});
+
+/** A draft is only ever of a capture that can still be edited. */
+test("marks an unprocessed row holding a draft, and lets a processed one's go", async () => {
+  keepDraft("open", { words: "rewritten" });
+  keepDraft("gone", { words: "rewritten" });
+  pool(
+    held(
+      anItem("open"),
+      anItem("gone", { archived: { archivedAt: "2026-09-27T10:00:00.000Z" } }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("open");
+
+  expect(screen.getAllByText("draft")).toHaveLength(1);
+  await vi.waitFor(() => {
+    expect(drafted("gone")).toBe(false);
+  });
+  expect(drafted("open")).toBe(true);
+  dropDraft("open");
 });

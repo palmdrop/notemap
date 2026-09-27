@@ -4,7 +4,8 @@
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import EditFoot from "$components/item/EditFoot.svelte";
-  import { Rewrite } from "$components/item/rewrite.svelte";
+  import { Editing } from "$components/item/editing.svelte";
+  import Drafted from "$components/primitives/marks/Drafted.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
@@ -16,6 +17,7 @@
   import type { Command } from "$lib/command/command";
   import { became, editable } from "$lib/lineage";
   import { fade, following, slide } from "$lib/motion";
+  import { drafted, dropDraft } from "$lib/edit-drafts.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -48,7 +50,7 @@
     onprocess: () => void;
   } = $props();
 
-  let rewrite = $state<Rewrite | undefined>(undefined);
+  let editing = $state<Editing | undefined>(undefined);
   let rail = $state<Rail | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
@@ -74,7 +76,13 @@
   // The box's foot is where `cancel` and `save` are, so a row that loses the
   // selection has no way out of the editable shape and must not be left in it.
   $effect(() => {
-    if (!selected) rewrite = undefined;
+    if (!selected) editing = undefined;
+  });
+
+  // A draft is only ever of a capture that can still be edited: once the item
+  // is processed, what it held has nowhere to go.
+  $effect(() => {
+    if (!mayEdit && drafted(item.id)) dropDraft(item.id);
   });
 
   /** Opens the tag chooser, for the key that asks for it. */
@@ -85,15 +93,20 @@
   /** Toggles the capture into its editable shape, for the key that asks for it. */
   export function edit(): void {
     if (!mayEdit) return;
-    rewrite =
-      rewrite === undefined
-        ? new Rewrite(item, () => (rewrite = undefined))
+    editing =
+      editing === undefined
+        ? new Editing(item, () => (editing = undefined))
         : undefined;
   }
 
+  /** Whether the capture is drawn as its field, for the surface deciding what a key reaches. */
+  export function isEditing(): boolean {
+    return editing !== undefined;
+  }
+
   /** A row being rewritten is not picked, nor processed, until that is left. */
-  const pick = $derived(rewrite === undefined ? onselect : undefined);
-  const reach = $derived(rewrite === undefined ? onprocess : undefined);
+  const pick = $derived(editing === undefined ? onselect : undefined);
+  const reach = $derived(editing === undefined ? onprocess : undefined);
 
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
@@ -121,13 +134,12 @@
         <Pending since={undrainedSince(item.id)} />
       {/if}
 
+      {#if editing === undefined && mayEdit && drafted(item.id)}
+        <Drafted />
+      {/if}
+
       <div class="mt-0.5">
-        <Tags
-          bind:this={tags}
-          {item}
-          addable={selected && rewrite === undefined}
-          still={rewrite !== undefined}
-        />
+        <Tags bind:this={tags} {item} addable={selected} />
       </div>
 
       {#if finished}
@@ -144,8 +156,8 @@
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>
-      {#if rewrite !== undefined && mayEdit}
-        <Edit {rewrite} />
+      {#if editing !== undefined && mayEdit}
+        <Edit {editing} />
       {:else}
         <Payload {item} />
       {/if}
@@ -159,8 +171,8 @@
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
         transition:fade
       >
-        {#if rewrite !== undefined && mayEdit}
-          <EditFoot {rewrite} />
+        {#if editing !== undefined && mayEdit}
+          <EditFoot {editing} />
         {:else}
           <Actions {commands} />
         {/if}

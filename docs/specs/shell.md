@@ -4,11 +4,13 @@
 **Last updated**: 2026-09-27
 **Shipped**:
 
-- 2026-09-27 — **A rewrite holds the row, and the capture box is walked.** `edit` rewrites the
-  capture in the body itself, and `cancel · attach` and `save` take the actions' place in the foot;
-  until one is taken nothing else is reached — no decision, no tag, no other row. The item's own
-  surface does the same. The capture box is selected as a row is: focusing it lets go of the row,
-  its rule doubles while selected, `esc` then `t` tags the capture, `j` goes to the first row and
+- 2026-09-27 — **An edit is a draft until it is saved, and the capture box is walked.** `edit`
+  rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
+  actions' place in the foot; no decision is reached meanwhile, and the tags stay live. Leaving an
+  edit keeps what it held as a draft on this device — the row says `draft`, a reload keeps it, and
+  nothing is sent until `save`. The item's own surface does the same. A selected row growing or
+  shrinking no longer loses its box's edges while it moves. The capture box is selected as a row is: focusing it lets go of the row,
+  `esc` then `t` tags the capture, `j` goes to the first row and
   `k` from there comes back into the field. The process surface says where the item has gone
   already on one line under its stamp, keeps `tags` open so its `+` is always there, marks a
   preview awaited from the keystroke rather than from the request, and leaves disabled
@@ -577,9 +579,8 @@ keys are that row's then, and a caret in the field would swallow them.
 
 **The box is selected the way a row is** *(2026-09-27)*. It is the head of the queue, and one thing
 is selected at a time, the box or a row: anything in the box taking the focus selects it and lets
-go of the selected row, which slides out if it was held. Selected, the box's rule is drawn twice as
-heavy, inside it so nothing moves. The ink edges a selected row gains mean nothing on a box ruled on
-four sides already. `esc` in the field leaves the field and keeps the box selected, so the keys
+go of the selected row, which slides out if it was held. **Nothing marks it selected**: the caret in
+the field says where the keys go, and a heavier rule said it twice. `esc` in the field leaves the field and keeps the box selected, so the keys
 reach it: `t` opens its tag chooser, `enter` goes back into the field, `j` goes down to the first
 row, and `esc` again lets go of it. `k` on the first row comes back up into the field. So the box
 is walked as the row above the first, and `esc` backs out of it as it backs out of everything else
@@ -639,7 +640,8 @@ capture has not drained draws the bytes the client is holding, so the row looks 
 the upload as after it. Text clamps only when it is genuinely long, with a cue saying how many
 lines more. **No state word on the queue**: every row on it is unrouted, and a word saying so on
 each says nothing. A **pending** word stays, under the stamp, where an outbox operation about this
-item has not drained. Nothing on the collapsed row is a control except the tags, which are taken
+item has not drained, and a **`draft`** word where an edit of it is held on this device and not
+yet saved ([below](#the-row)). Nothing on the collapsed row is a control except the tags, which are taken
 off by pressing them, and the stamp, which is the accessible way to select it.
 
 **Under the text, a block per link** *(2026-09-24)* — what each link points at, as
@@ -660,24 +662,34 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear.
 **`edit` rewrites the capture where it is read** *(amended 2026-09-27; it drew a second ruled box
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
-for `cancel · attach` on the left and a bold `save` on the right**. **Nothing else is reached until
-one of those is taken**: no decision, no tag taken on or off — the rail's tags are drawn as words
-and its `+` is gone — no other row selected by key or by click, and no double click to process. A
-half-written rewrite is finished or given up, never walked away from by accident. **The picture is
+for `close · revert · attach` on the left and a bold `save` on the right**, `revert` drawn only
+while the field holds something the item does not say. **No decision is reached while it is
+open** — its foot draws none, so no key reaches one — but the tags are: `+`, `×` and `t` work as
+on any selected row, a tag being an outbox operation of its own and not part of the edit.
+
+**What an edit holds is a draft until it is saved** *(2026-09-27)*. Whatever the field holds that
+the item does not say is kept on this device as it is typed, one draft per item, and nothing is
+sent until `save`. So leaving the edit loses nothing, however it is left: `close` or `esc`, `j`/`k`,
+another row, the capture box. The row then says `draft` under its stamp, and `e` opens the edit
+again from the draft. `revert` puts the field back to what the item says and lets the draft go; an
+edit closed holding nothing the item does not say leaves no draft. The words survive a reload, as
+the capture box's do; a picture picked or dropped survives leaving the row, not the page. A draft
+is only ever of an item that can still be edited: one whose item has been processed since is let
+go when its row is drawn. The pool never sees a draft, and a draft saved over an edit made
+elsewhere in the meantime replaces it. **The picture is
 editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as the
 capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks one
 in its place — at most one, the capture's own shape, and other kinds of attachment are left as they
 are. `save` sends the edit naming what the field then holds, uploading a fresh picture on the way,
 and stamps it `web-image` where a picture is carried and `web-manual` where none is, the capture's
-own rule. The item's own surface rewrites the same way, its actions giving way to the same three
-words. The one thing the selected row adds to the rail is a `+` after the last tag, which
+own rule. The item's own surface edits the same way, its actions giving way to the same foot. The
+one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
 nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
-([below](#a-command-is-what-a-key-and-a-button-both-reach)). Where the selection is lost all the
-same — the item gone from under it — the shape goes too: the box's foot goes with the box, and a
-collapsed row holding a half-written rewrite would have no way out of it.
+([below](#a-command-is-what-a-key-and-a-button-both-reach)). Losing the selection any other way
+leaves the shape too, the box's foot going with the box; what it held stays as the draft.
 
 **Every row reserves the foot's height and the box's edges, selected or not** *(amended
 2026-09-15)*: the strip a selected row's actions sit in is drawn empty on every other row, with the
@@ -1348,14 +1360,14 @@ arriving over the one it replaces wants.
 is ⌘ or ctrl depending on the keyboard. **A command with a refusal has no key**, the same refusal
 that greys its button.
 
-**An editable shape publishes its own way out, and holds everything behind it.** A capture being
-rewritten publishes `cancel` on `esc` and `save` on `mod+⏎` for as long as it is drawn — so the
-shape is what `esc` leaves, wherever it was opened. `save` fires from inside the field too *(added
-2026-09-18)*, the capture box's own chord, and `⏎` and `⇧⏎` stay new lines. **The shape holds the
-surface** *(2026-09-27)*: while it is drawn no key reaches past it, and the surface it was opened on
-lets no other row be selected under it. Being drawn inside that surface is what puts it first. Once
-it is left the next press is the surface's own: deselecting on a register, and nothing at all on the
-item's own surface, where the page is the item and there is nothing behind the shape to leave.
+**An editable shape publishes its own way out.** A capture being edited publishes `close` on `esc`
+and `save` on `mod+⏎` for as long as it is drawn — so the shape is what `esc` leaves, wherever it
+was opened, and leaving keeps what it held as the draft. `save` fires from inside the field too
+*(added 2026-09-18)*, the capture box's own chord, and `⏎` and `⇧⏎` stay new lines. While it is
+drawn the item's own commands are its tags alone, its foot drawing no decision. Being drawn inside
+that surface is what puts it first. Once it is left the next press is the surface's own:
+deselecting on a register, and nothing at all on the item's own surface, where the page is the item
+and there is nothing behind the shape to leave.
 
 **Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
 says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
@@ -2411,8 +2423,11 @@ view is how a reader sees more at once.
 - A template whose destination was deleted is drawn in `where` with that as its reason, not removed.
 - A disabled destination is not offered on the process surface; a template filing to one is drawn
   with `its destination is disabled`.
-- A row being rewritten offers `cancel`, `attach` and `save` in its foot and nothing else: no key or
-  click reaches a decision, a tag or another row until one of the three is taken.
+- A row being edited offers `close`, `attach` and `save` in its foot, and `revert` once it holds a
+  change; no key reaches a decision, and its tags stay taken on and off.
+- Leaving an edit by any way at all sends nothing and keeps what it held: the row says `draft`, a
+  reload keeps it, and `e` reopens it; `revert` lets it go.
+- A selected row changing height keeps its box's edges drawn throughout.
 - On the queue, the capture box is selected whenever its field has the caret and never together
   with a row; `esc` then `t` opens its tag chooser, `j` selects the first row, and `k` there returns
   the caret to the field.

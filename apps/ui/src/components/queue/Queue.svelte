@@ -18,9 +18,10 @@
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { commandsFor } from "$lib/command/item";
+  import type { Command } from "$lib/command/command";
+  import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
-  import { holding, publish } from "$lib/command/stack.svelte";
+  import { publish } from "$lib/command/stack.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -133,7 +134,6 @@
   });
 
   function select(id: string) {
-    if (holding()) return;
     if (selected === id) deselect();
     else selected = id;
   }
@@ -152,7 +152,6 @@
 
   /** Writing in the box is being at the head of the queue, and no row is selected meanwhile. */
   function captureFocused() {
-    if (holding()) return;
     deselect();
     atCapture = true;
   }
@@ -232,6 +231,13 @@
         }),
   );
 
+  /** What a key reaches on the selected row: its tags alone while it is being edited. */
+  function reached(): readonly Command[] {
+    return current !== undefined && drawn[current.id]?.isEditing() === true
+      ? whileEditing(commands)
+      : commands;
+  }
+
   publish(() => [
     ...listCommands({
       ondown: () => void walk(1),
@@ -243,7 +249,7 @@
       },
       ondeselect: deselect,
     }),
-    ...commands,
+    ...reached(),
     ...(atCapture
       ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
       : []),

@@ -141,3 +141,11 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
 
   return commands;
 }
+
+/**
+ * What an item offers while it is being edited: its tags, and nothing that
+ * decides it. The edit's own foot is where the rest of its actions stood.
+ */
+export function whileEditing(commands: readonly Command[]): readonly Command[] {
+  return commands.filter((command) => command.id === "tag");
+}

@@ -7,11 +7,7 @@
   import { offerable, triggeredBy } from "$lib/templates";
 
   /** `addable` is the selected row's: a `+` on every row is a `+` nobody reads. */
-  let {
-    item,
-    addable = false,
-    still = false,
-  }: { item: Item; addable?: boolean; still?: boolean } = $props();
+  let { item, addable = false }: { item: Item; addable?: boolean } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
 
@@ -45,7 +41,6 @@
     {names}
     {offered}
     {addable}
-    {still}
     fires={(name) => triggeredBy(name)?.name}
     held={(name) => {
       const template = triggeredBy(name);

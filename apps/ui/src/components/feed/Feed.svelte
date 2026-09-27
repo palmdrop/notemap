@@ -19,9 +19,10 @@
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
-  import { commandsFor } from "$lib/command/item";
+  import type { Command } from "$lib/command/command";
+  import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
-  import { holding, publish } from "$lib/command/stack.svelte";
+  import { publish } from "$lib/command/stack.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
@@ -72,7 +73,6 @@
   });
 
   function select(id: string) {
-    if (holding()) return;
     selected = selected === id ? undefined : id;
   }
 
@@ -138,6 +138,13 @@
         }),
   );
 
+  /** What a key reaches on the selected row: its tags alone while it is being edited. */
+  function reached(): readonly Command[] {
+    return current !== undefined && drawn[current.id]?.isEditing() === true
+      ? whileEditing(commands)
+      : commands;
+  }
+
   // The same two the queue publishes: a register walks the same way whatever
   // it holds, and a row offers what it draws as buttons.
   publish(() => [
@@ -147,7 +154,7 @@
       onselect: () => (current !== undefined ? process(current) : void walk(1)),
       ondeselect: () => (selected = undefined),
     }),
-    ...commands,
+    ...reached(),
   ]);
 </script>
 

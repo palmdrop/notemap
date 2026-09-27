@@ -2,41 +2,41 @@
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
 
-  import type { Rewrite } from "./rewrite.svelte";
+  import type { Editing } from "./editing.svelte";
 
-  let { rewrite }: { rewrite: Rewrite } = $props();
+  let { editing }: { editing: Editing } = $props();
 
-  // Drawn inside whatever surface opened it, and holding it: the draft is
-  // left by `cancel` or `save` before anything else on the item is reached.
-  publish(
-    () => [
-      { id: "cancel", label: "cancel", run: () => rewrite.cancel() },
-      {
-        id: "save",
-        label: "save",
-        whileWriting: true,
-        run: () => rewrite.save(),
-      },
-    ],
-    { holds: true },
-  );
+  // Drawn inside whatever surface opened it, so its `esc` is reached first.
+  publish(() => [
+    { id: "close", label: "close", run: () => editing.close() },
+    {
+      id: "save",
+      label: "save",
+      whileWriting: true,
+      run: () => editing.save(),
+    },
+  ]);
+
+  $effect(() => {
+    editing.keep();
+  });
 </script>
 
-<!-- The capture's own place, rewritten where it is read: the foot that saves
-     it is the row's, drawn by `EditFoot` in place of the actions. -->
-{#if rewrite.picture !== undefined}
+<!-- The capture's own place, edited where it is read: the foot that saves it
+     is the row's, drawn by `EditFoot` in place of the actions. -->
+{#if editing.picture !== null}
   <div class="mb-2 flex items-end gap-4">
-    {#if rewrite.picture.image}
+    {#if editing.picture.image}
       <img
-        src={rewrite.picture.url}
+        src={editing.picture.url}
         alt="What it carries"
         class="size-21 border border-ink object-cover"
       />
     {/if}
-    <span class="min-w-0 break-words">{rewrite.picture.name}</span>
+    <span class="min-w-0 break-words">{editing.picture.name}</span>
     <button
       type="button"
-      onclick={() => rewrite.drop()}
+      onclick={() => editing.drop()}
       class="shrink-0 hover:underline"
     >
       drop
@@ -46,12 +46,12 @@
 
 <!-- svelte-ignore a11y_autofocus -->
 <textarea
-  bind:value={rewrite.text}
+  bind:value={editing.text}
   autofocus
   onkeydown={(event) => {
     if (commits(event)) {
       event.preventDefault();
-      rewrite.save();
+      editing.save();
     }
   }}
   aria-label="What it says"

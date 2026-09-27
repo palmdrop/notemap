@@ -28,6 +28,6 @@ export type Command = {
   readonly primary?: boolean;
   readonly alarm?: boolean;
   readonly refusal?: string;
-  /** Fires even while a field has the caret: a route, and a rewrite's `save`. */
+  /** Fires even while a field has the caret: a route, and an edit's `save`. */
   readonly whileWriting?: boolean;
 } & (Doable | Goes);

@@ -530,8 +530,8 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   expect(went.to).toEqual(["/items/linked/process"]);
 });
 
-/** A rewrite is finished or cancelled before anything else is done with the item. */
-test("the editable shape holds the item's other commands until it is left", async () => {
+/** An edit offers the item's tags and nothing that decides it, until it is closed. */
+test("while the item is edited only its tags are reached", async () => {
   pool(holding(saying("linked", "what the link names")));
 
   render(Item, { id: "linked" });
@@ -544,9 +544,10 @@ test("the editable shape holds the item's other commands until it is left", asyn
 
   field.blur();
   await fireEvent.keyDown(window, { key: "p" });
-  await fireEvent.keyDown(window, { key: "t" });
   expect(went.to).toEqual([]);
-  expect(screen.queryByLabelText("Add a tag")).toBeNull();
+  await fireEvent.keyDown(window, { key: "t" });
+  expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+  (document.activeElement as HTMLElement).blur();
 
   await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "p" });

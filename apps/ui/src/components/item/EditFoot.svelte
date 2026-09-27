@@ -1,10 +1,10 @@
 <script lang="ts">
   import Action from "$components/primitives/controls/Action.svelte";
 
-  import type { Rewrite } from "./rewrite.svelte";
+  import type { Editing } from "./editing.svelte";
 
-  /** What a rewrite offers, where the item's actions stood: nothing else is reached until it is left. */
-  let { rewrite }: { rewrite: Rewrite } = $props();
+  /** What an edit offers, where the item's actions stood. */
+  let { editing }: { editing: Editing } = $props();
 
   let picker: HTMLInputElement;
 
@@ -12,7 +12,7 @@
     const file = (event.currentTarget as HTMLInputElement).files?.[0];
     if (file === undefined) return;
     try {
-      await rewrite.pick(file);
+      await editing.pick(file);
     } finally {
       picker.value = "";
     }
@@ -23,13 +23,16 @@
   class="flex w-full min-w-0 flex-wrap items-baseline justify-between gap-x-5"
 >
   <div class="flex flex-wrap items-baseline gap-x-5 max-narrow:gap-x-3">
-    <Action onclick={() => rewrite.cancel()}>cancel</Action>
-    <Action disabled={rewrite.busy} onclick={() => picker.click()}>
+    <Action onclick={() => editing.close()}>close</Action>
+    {#if editing.changed}
+      <Action onclick={() => editing.revert()}>revert</Action>
+    {/if}
+    <Action disabled={editing.busy} onclick={() => picker.click()}>
       attach
     </Action>
   </div>
 
-  <Action primary working={rewrite.busy} onclick={() => rewrite.save()}
+  <Action primary working={editing.busy} onclick={() => editing.save()}
     >save</Action
   >
 
