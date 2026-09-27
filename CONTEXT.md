@@ -163,6 +163,14 @@ structure: `project/fiction-a`, `kind/quote`. There is no separate item type and
 — both are tags.
 _Avoid_: label, category, keyword, folder
 
+**Tag foot**:
+A trailing line of nothing but `#tag`, which a **relay** may be told to read as the note's **tags**
+and take off the prose — the shape the markdown kinds *write* tags in when a destination's
+`hashtags` setting asks for it, read back the other way. Only the foot: a `#tag` in the middle of a
+sentence is a word somebody wrote, and a line carrying anything else is prose. Nothing in notemap
+reads one; a relay does it before it captures, and the pool only ever sees tags.
+_Avoid_: hashtag parsing, inline tags, tag line (for the whole rule)
+
 **Tags in use**:
 Every tag the pool carries, each with the number of items carrying it. A reading of what
 classification has produced, never a vocabulary: it is what a person is offered while they type,
@@ -559,7 +567,11 @@ upstream asks not to be read in full every time — which is why it needs no job
 outbox
 ([ADR 39](docs/adr/0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)). There are
 two: `apps/relay-memos`, which reads a Memos server, and `apps/relay-arena`, which reads a watched
-are.na channel.
+are.na channel. Each says what it did in the levelled lines the daemon uses, through the same
+`@notemap/log` and the same `[log]` table, since a poll running on a timer is read after the fact
+or not at all. Each can be told that the **tag foot** — a trailing line of nothing but `#tag` —
+is classification rather than prose, which reads those as **tags** and takes the line off the
+words captured; a `#tag` mid-sentence is a word somebody wrote and stays one.
 _Avoid_: importer, connector, sync agent, ingester, adapter (for this)
 
 **Unfurl**:

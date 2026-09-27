@@ -40,6 +40,22 @@ tokenFile = "~/.config/notemap/relay-arena/pool-token"
 tokenFile = "~/.config/notemap/relay-arena/arena-token"
 # tokenEnv = "NOTEMAP_RELAY_ARENA_TOKEN"
 
+# Whether a block's trailing line of `#tags` is classification rather than
+# prose. With it, that line is read as the block's tags — added after the
+# watched channel's own — and taken off the words captured, so a note delivered
+# to a vault that writes tags as a `#tag` foot carries them once rather than
+# twice. are.na has no tags on a block, so this is the only way one gets there
+# without naming it per channel below.
+#
+# Only the foot: a `#tag` in the middle of a sentence is a word somebody wrote
+# and stays one. A line with anything else on it — `#kind/quote.`, a hashtag and
+# a word — is prose, and so is the whole foot.
+#
+# Turning it on changes the prose of every block carrying a foot, so the next
+# poll amends or revises each of those items once. Off by default for that
+# reason.
+# hashtags = true
+
 # One or more channels to watch. Every block connected into one arrives under
 # that channel's own source — never one source for the whole relay — because a
 # source is finer than the app that sent it, and because policy in notemap is
@@ -78,3 +94,12 @@ source = "arena/my-channel"
 # finished.
 [poll]
 interval = 900000 # milliseconds — fifteen minutes
+
+# What the relay says on stdout: what each channel's poll came to, what it could
+# not relay or read, and — at `debug` — a line per block. `text` is one line a
+# person reads; `json` is one object a log collector reads.
+# NOTEMAP_RELAY_ARENA_LOG_LEVEL in the environment overrides `level` and nothing
+# else.
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json

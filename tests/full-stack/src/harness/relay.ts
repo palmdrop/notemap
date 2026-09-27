@@ -26,6 +26,8 @@ export type Told = {
   readonly pool: { readonly url: string; readonly token: string };
   readonly memos: { readonly url: string; readonly token: string };
   readonly source?: string;
+  /** Whether a memo's trailing line of `#tags` is read as tags. */
+  readonly hashtags?: boolean;
 };
 
 /**
@@ -49,7 +51,7 @@ tokenFile = "${at("pool-token")}"
 [memos]
 url = "${told.memos.url}"
 tokenFile = "${at("memos-token")}"
-`,
+${told.hashtags === true ? "hashtags = true\n" : ""}`,
     "utf8",
   );
 

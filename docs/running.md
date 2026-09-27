@@ -476,6 +476,16 @@ It carries **two** tokens, neither minted for you:
 Both are read from a file or an environment variable, never written inline, and read again at every
 poll — rotating either one is writing the file it lives in, not a restart.
 
+It logs the way the daemon does — the same levelled lines, the same `[log]` table for `level` and
+`format`, and `NOTEMAP_RELAY_ARENA_LOG_LEVEL` in the environment to turn it up from a compose file.
+`relay-memos` is the same in both respects, under its own variable.
+
+One thing worth setting deliberately: `hashtags` under `[arena]`. With it, a block whose prose ends
+in a line of nothing but `#tag` arrives carrying those as tags, without that line in the note —
+which is what you want if a vault downstream writes tags as a `#tag` foot of its own. It is off by
+default because turning it on changes the prose of every block that has one, and the next poll
+amends or revises each of those items once.
+
 ## Cutting a release
 
 From a clone, on the machine you develop on:

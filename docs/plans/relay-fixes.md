@@ -1,9 +1,9 @@
 # Relay fixes: structured logs, and a tag foot read as tags
 
 **Date**: 2026-09-27
-**Status**: In progress
+**Status**: Done
 **Spec**:
-**Closed**:
+**Closed**: 2026-09-27
 
 ---
 
@@ -127,17 +127,20 @@ Depends on nothing; may run beside phases 1 and 2.
 
 Depends on phases 2 and 3.
 
-- [ ] `config.example.toml` in both relays: the `[log]` table and the `hashtags` key, each with
+- [x] `config.example.toml` in both relays: the `[log]` table and the `hashtags` key, each with
       what it costs. `docker/compose/relay-*.toml` the same.
-- [ ] Both READMEs: what the relay says, now that it says it with a clock and a level; the
+- [x] Both READMEs: what the relay says, now that it says it with a clock and a level; the
       mapping table's `content` row, and the amend-or-revise cost of turning `hashtags` on.
       `relay-memos`' table also gains that a foot's tags merge with Memos' own.
-- [ ] `CONTEXT.md` § Relay: a clause that a relay logs as the daemon does, and that a tag foot is
-      read where it is asked for. No new term.
-- [ ] Full-stack: one test per relay that a note with a tag foot arrives with those tags and
+- [x] `CONTEXT.md` § Relay: a clause that a relay logs as the daemon does, and that a tag foot is
+      read where it is asked for — plus a **Tag foot** entry, since the term is now in the code and
+      in both READMEs and the glossary is where a term is fixed rather than invented.
+- [x] `docs/running.md` § relay-arena: the log, the variable, and what setting `hashtags` costs.
+- [x] Full-stack: one test per relay that a note with a tag foot arrives with those tags and
       without that line, and that it does not with the flag off.
-- [ ] Verify: `pnpm test:stack`.
-- [ ] Tick the todo in `docs/todo.md` if one covers this; `git commit`.
+- [x] Verify: `pnpm test:stack`.
+- [-] Tick the todo in `docs/todo.md` _(dropped — no todo covers either fix)_.
+- [x] `git commit`. _(2026-09-27)_
 
 ---
 

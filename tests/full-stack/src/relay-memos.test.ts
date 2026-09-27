@@ -49,7 +49,7 @@ type Relayed = {
  * A Memos server, a notemap daemon with its door shut, and the relay between
  * them — three processes and two sockets, which is the whole of what this is.
  */
-async function relaying(): Promise<Relayed> {
+async function relaying(hashtags = false): Promise<Relayed> {
   const on = await shutWorld();
   const token = await mintToken(on, "relay-memos");
   const running = await daemon(on);
@@ -66,6 +66,7 @@ async function relaying(): Promise<Relayed> {
       directory: on.directory,
       pool: { url: running.url, token },
       memos: { url: memos.url, token: MEMOS_TOKEN },
+      hashtags,
     }),
     read,
     async items() {
@@ -109,6 +110,41 @@ describe("the memos relay, over a real daemon", () => {
       createdAt: WRITTEN,
       payload: { type: "note", content: { text: "written three days ago" } },
       tags: [{ name: "kind/quote", by: { kind: "source", source: SOURCE } }],
+    });
+  });
+
+  it("reads a foot of tags off a memo's prose where its config asks for it", async () => {
+    const where = await relaying(true);
+    // No `tags`: this Memos never extracted them, so the tag on the item is one
+    // the relay read off the prose itself.
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote #topic/x" }),
+    );
+
+    expect(await polled(where)).toMatch(/captured=1/);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { type: "note", content: { text: "a thought" } },
+      tags: [
+        { name: "kind/quote", by: { kind: "source", source: SOURCE } },
+        { name: "topic/x", by: { kind: "source", source: SOURCE } },
+      ],
+    });
+  });
+
+  it("leaves that foot in the prose, and untagged, where it does not", async () => {
+    const where = await relaying();
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote" }),
+    );
+
+    await polled(where);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { content: { text: "a thought\n\n#kind/quote" } },
+      tags: [],
     });
   });
 

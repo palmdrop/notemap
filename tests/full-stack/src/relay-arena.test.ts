@@ -46,7 +46,7 @@ const upstream = upstreamsArena();
  * An are.na stand-in, a notemap daemon with its door shut, and the relay
  * between them, watching two channels under two sources.
  */
-async function relaying(): Promise<Relayed> {
+async function relaying(hashtags = false): Promise<Relayed> {
   const on = await shutWorld();
   const token = await mintToken(on, "relay-arena");
   const running = await daemon(on);
@@ -72,6 +72,7 @@ async function relaying(): Promise<Relayed> {
         { handle: "one", source: "arena/one" },
         { handle: "two", source: "arena/two" },
       ],
+      hashtags,
     }),
     read,
     async items() {
@@ -116,6 +117,38 @@ describe("the arena relay, over a real daemon", () => {
       // connected_at, not created_at, and never the time the poll ran.
       createdAt: CONNECTED,
       payload: { type: "note", content: { text: "a note" } },
+    });
+  });
+
+  it("reads a foot of tags off a block's prose where its config asks for it", async () => {
+    const where = await relaying(true);
+    where.arena
+      .channel("one")
+      .push(block(1, { content: { markdown: "a note\n\n#kind/quote" } }));
+
+    expect(await polled(where)).toMatch(/captured=1/);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { type: "note", content: { text: "a note" } },
+      tags: [
+        { name: "kind/quote", by: { kind: "source", source: "arena/one" } },
+      ],
+    });
+  });
+
+  it("leaves that foot in the prose, and untagged, where it does not", async () => {
+    const where = await relaying();
+    where.arena
+      .channel("one")
+      .push(block(1, { content: { markdown: "a note\n\n#kind/quote" } }));
+
+    await polled(where);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { content: { text: "a note\n\n#kind/quote" } },
+      tags: [],
     });
   });
 
