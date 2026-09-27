@@ -19,15 +19,13 @@ function run(id: string): Command {
 }
 
 describe("resolving a chord against the stack", () => {
-  it("leaves a press inside an open dialog to the dialog", () => {
+  it("leaves a press to an open dialog, wherever the focus is", () => {
     const dialog = document.createElement("dialog");
     dialog.setAttribute("open", "");
-    const button = document.createElement("button");
-    dialog.append(button);
     document.body.append(dialog);
 
     const found = dispatch(
-      keydown({ key: "Escape" }, button),
+      keydown({ key: "Escape" }, document.body),
       [() => [run("back")]],
       chordFor,
     );

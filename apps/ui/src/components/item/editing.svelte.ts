@@ -2,7 +2,10 @@ import type { Item } from "@notemap/client";
 
 import { PICTURE, TYPED } from "$lib/channels";
 import { client } from "$lib/client";
+import { copyable } from "$lib/clipboard";
+import { aboutItem } from "$lib/excerpt";
 import { leave } from "$lib/leaving.svelte";
+import { notices } from "$lib/notices.svelte";
 
 type Held = {
   readonly asset: string;
@@ -26,6 +29,8 @@ export class Editing {
   readonly #close: () => void;
   readonly #says: string;
   readonly #carries: Held;
+  #uploading: Promise<void> | undefined;
+  #saving = false;
 
   constructor(item: Item, close: () => void) {
     this.item = item;
@@ -36,26 +41,33 @@ export class Editing {
     this.picture = this.#carries;
   }
 
-  /** Whether it holds anything the item does not say. */
+  /** Whether it holds anything the item does not say, a picture on its way included. */
   get changed(): boolean {
     return (
-      this.text !== this.#says || this.picture?.asset !== this.#carries?.asset
+      this.busy ||
+      this.text !== this.#says ||
+      this.picture?.asset !== this.#carries?.asset
     );
   }
 
-  async pick(file: File): Promise<void> {
+  pick(file: File): Promise<void> {
     this.busy = true;
-    try {
-      const asset = await client.attach(file);
-      this.picture = {
-        asset,
-        url: client.assetContent(asset),
-        name: file.name,
-        image: file.type.startsWith("image/"),
-      };
-    } finally {
-      this.busy = false;
-    }
+    const uploading = (async () => {
+      try {
+        const asset = await client.attach(file);
+        this.picture = {
+          asset,
+          url: client.assetContent(asset),
+          name: file.name,
+          image: file.type.startsWith("image/"),
+        };
+      } finally {
+        this.busy = false;
+        this.#uploading = undefined;
+      }
+    })();
+    this.#uploading = uploading;
+    return uploading;
   }
 
   drop(): void {
@@ -79,8 +91,18 @@ export class Editing {
     this.#close();
   }
 
-  save(): void {
-    if (this.busy) return;
+  /** Waits for a picture still being attached, so it goes with the words. */
+  /** Whether it went: its changes are the pool's to hold now, not lost. */
+  get saved(): boolean {
+    return this.#saving;
+  }
+
+  async save(): Promise<void> {
+    if (this.#saving) return;
+    this.#saving = true;
+    if (this.#uploading !== undefined) {
+      await this.#uploading.catch(() => undefined);
+    }
     const payload = client.pictured(
       client.saying(this.item, this.text),
       this.picture?.asset,
@@ -89,6 +111,30 @@ export class Editing {
     this.#close();
     void client.edit(this.item.id, payload, channel);
   }
+}
+
+/**
+ * An edit that went away holding changes — its capture processed or gone
+ * while it was open — says so, the words a press away. Every way the person
+ * leaves has asked already, so this is only ever what happened to them.
+ */
+export function dropped(editing: Editing): void {
+  if (editing.saved || !editing.changed) return;
+  const words = editing.text;
+  notices.raise({
+    what: "edit not saved",
+    why: "the capture was processed or went while it was open",
+    about: aboutItem(editing.item),
+    standing: true,
+    ...(copyable()
+      ? {
+          offer: {
+            label: "copy",
+            take: () => void navigator.clipboard.writeText(words),
+          },
+        }
+      : {}),
+  });
 }
 
 function carriedBy(item: Item): Held {

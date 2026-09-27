@@ -1,18 +1,19 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   import Action from "$components/primitives/controls/Action.svelte";
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
-  import { answer, opened, question } from "$lib/leaving.svelte";
+  import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
-  import type { Editing } from "./editing.svelte";
+  import { dropped, type Editing } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
 
+  const id = $props.id();
+
   let field = $state<HTMLTextAreaElement | undefined>(undefined);
-  let asking = $state<HTMLDialogElement | undefined>(undefined);
 
   // Drawn inside whatever surface opened it, so its `esc` is reached first.
   publish(() => [
@@ -21,33 +22,37 @@
       id: "save",
       label: "save",
       whileWriting: true,
-      run: () => editing.save(),
+      run: () => void editing.save(),
     },
   ]);
 
-  onMount(() =>
-    opened({
-      about: aboutItem(editing.item),
-      changed: () => editing.changed,
-      save: () => editing.save(),
-      revert: () => editing.abandon(),
-      resume: () => {
-        field?.scrollIntoView({ block: "nearest" });
-        field?.focus();
-      },
-    }),
-  );
+  const self: Open = {
+    about: aboutItem(untrack(() => editing.item)),
+    changed: () => editing.changed,
+    save: () => editing.save(),
+    revert: () => editing.abandon(),
+    resume: () => {
+      field?.scrollIntoView({ block: "nearest" });
+      field?.focus();
+    },
+  };
 
-  $effect(() => {
-    if (asking === undefined) return;
-    if (question.asked && !asking.open) {
-      asking.showModal();
-      void tick().then(() =>
-        asking?.querySelector<HTMLElement>("[data-first] button")?.focus(),
-      );
-    }
-    if (!question.asked && asking.open) asking.close();
+  onMount(() => {
+    const release = opened(self);
+    return () => {
+      release();
+      dropped(editing);
+    };
   });
+
+  /** Opened as a modal the moment it is drawn, with `save` taking the focus. */
+  function modal(dialog: HTMLDialogElement): () => void {
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>("[data-save] button")?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }
 </script>
 
 <!-- The capture's own place, edited where it is read: the foot that saves it
@@ -80,39 +85,43 @@
   onkeydown={(event) => {
     if (commits(event)) {
       event.preventDefault();
-      editing.save();
+      void editing.save();
     }
   }}
   aria-label="What it says"
   class="block min-h-[88px] w-full resize-y bg-transparent outline-none max-narrow:min-h-[72px]"
 ></textarea>
 
-<!-- Asked wherever the row has scrolled to, so it says which capture. `esc`
-     and the backdrop stay. -->
-<dialog
-  bind:this={asking}
-  aria-label="Unsaved changes"
-  oncancel={(event) => {
-    event.preventDefault();
-    answer("stay");
-  }}
-  onclick={(event) => {
-    if (event.target === event.currentTarget) answer("stay");
-  }}
-  class="m-auto w-[min(28rem,calc(100vw-2rem))] border border-ink bg-ground p-0 text-ink backdrop:bg-ground/70"
->
-  <p class="px-3 py-2.5 wrap-anywhere">
-    unsaved changes to {question.about}
-  </p>
-  <div
-    class="flex items-baseline justify-between border-t border-ink px-3 leading-8"
+<!-- Asked wherever the row has scrolled to, so it says which capture. `esc`,
+     the backdrop and a close nobody answered all stay. -->
+{#if question.about === self}
+  <dialog
+    {@attach modal}
+    aria-label="Unsaved changes"
+    aria-describedby="{id}-about"
+    oncancel={(event) => {
+      event.preventDefault();
+      void answer("stay");
+    }}
+    onclose={() => void answer("stay")}
+    onclick={(event) => {
+      if (event.target === event.currentTarget) void answer("stay");
+    }}
+    class="m-auto w-[min(28rem,calc(100vw-2rem))] border border-ink bg-ground p-0 text-ink backdrop:bg-ground/70"
   >
-    <Action onclick={() => answer("stay")}>keep editing</Action>
-    <span class="flex items-baseline gap-x-5">
-      <Action onclick={() => answer("revert")}>revert</Action>
-      <span data-first class="contents">
-        <Action primary onclick={() => answer("save")}>save</Action>
+    <p id="{id}-about" class="px-3 py-2.5 wrap-anywhere">
+      unsaved changes to {self.about}
+    </p>
+    <div
+      class="flex items-baseline justify-between border-t border-ink px-3 leading-8"
+    >
+      <Action onclick={() => void answer("stay")}>keep editing</Action>
+      <span class="flex items-baseline gap-x-5">
+        <Action onclick={() => void answer("revert")}>revert</Action>
+        <span data-save class="contents">
+          <Action primary onclick={() => void answer("save")}>save</Action>
+        </span>
       </span>
-    </span>
-  </div>
-</dialog>
+    </div>
+  </dialog>
+{/if}

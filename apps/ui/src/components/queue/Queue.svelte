@@ -252,8 +252,9 @@
       ondown: () => leave(() => void walk(1)),
       onup: () => leave(() => void walk(-1)),
       onselect: () => {
-        if (current !== undefined) process(current);
-        else if (atCapture) capture?.take();
+        if (current !== undefined) {
+          if (drawn[current.id]?.isEditing() !== true) process(current);
+        } else if (atCapture) capture?.take();
         else void walk(1);
       },
       ondeselect: () => leave(deselect),

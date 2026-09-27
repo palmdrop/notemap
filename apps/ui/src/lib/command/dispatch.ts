@@ -4,7 +4,7 @@ import type { Command } from "./command";
 /**
  * Resolves one keydown against however many layers are live, top-most last.
  * Four rules live here rather than in any command, none being about a deed:
- * whatever has the press already keeps it, a press inside an open dialog is
+ * whatever has the press already keeps it, a press while a dialog is open is
  * the dialog's, a chord does not fire while a field has the caret unless its
  * command says `whileWriting`, and `esc` in a field leaves the field instead
  * of reaching anything.
@@ -18,8 +18,7 @@ export function dispatch(
   // either has taken the press, and a command taking it too would act twice
   // on one of them.
   if (event.defaultPrevented || activates(event)) return undefined;
-  if (event.target instanceof Element && event.target.closest("dialog[open]"))
-    return undefined;
+  if (document.querySelector("dialog[open]") !== null) return undefined;
 
   const key = chord(event);
   const inField = writing(event.target);

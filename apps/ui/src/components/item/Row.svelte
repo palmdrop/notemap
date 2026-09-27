@@ -71,10 +71,10 @@
   const word = $derived(finished ? became(item) : undefined);
   const mayEdit = $derived(editable(item));
 
-  // The box's foot is where `cancel` and `save` are, so a row that loses the
+  // The box's foot is where `close` and `save` are, so a row that loses the
   // selection has no way out of the editable shape and must not be left in it.
   $effect(() => {
-    if (!selected) editing = undefined;
+    if (!selected || !mayEdit) editing = undefined;
   });
 
   /** Opens the tag chooser, for the key that asks for it. */
@@ -82,13 +82,10 @@
     tags?.add();
   }
 
-  /** Toggles the capture into its editable shape, for the key that asks for it. */
+  /** Opens the capture's editable shape, for the key that asks for it. */
   export function edit(): void {
-    if (!mayEdit) return;
-    if (editing === undefined) {
+    if (mayEdit && editing === undefined) {
       editing = new Editing(item, () => (editing = undefined));
-    } else {
-      editing.close();
     }
   }
 
@@ -145,7 +142,7 @@
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>
-      {#if editing !== undefined && mayEdit}
+      {#if editing !== undefined}
         <Edit {editing} />
       {:else}
         <Payload {item} />
@@ -160,7 +157,7 @@
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
         transition:fade
       >
-        {#if editing !== undefined && mayEdit}
+        {#if editing !== undefined}
           <EditFoot {editing} />
         {:else}
           <Actions {commands} />

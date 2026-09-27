@@ -971,11 +971,7 @@ test("the capture box is walked as the row above the first", async () => {
   expect(document.activeElement).toBe(box);
 });
 
-/**
- * The editable shape holds a draft and its own `cancel`, so `esc` leaves it
- * before it leaves the selection — and losing the selection any other way
- * leaves it too, the box's foot going with the box.
- */
+/** The editable shape publishes its own `close`, so `esc` leaves it before it leaves the selection. */
 test("esc leaves the row's editable shape before it leaves the row", async () => {
   pool(queued("one", "two"));
 
@@ -1093,6 +1089,106 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   });
   expect(screen.queryByLabelText("What it says")).toBeNull();
   expect(stamps(true)).toHaveLength(1);
+});
+
+/**
+ * Closing the dialog hands the focus back to the capture box it was asked
+ * from, which is not somebody leaving the edit a second time.
+ */
+test("staying, asked from the capture box, goes back into the field and asks nothing more", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.focus();
+
+  box.focus();
+  await tick();
+  expect(dialog()).not.toBeNull();
+
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "keep editing" }),
+  );
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(field);
+  });
+  expect(dialog()).toBeNull();
+  expect(stamps(true)).toHaveLength(1);
+});
+
+test("saving, asked from the capture box, lands the caret in the box", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+  field.focus();
+
+  box.focus();
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "save" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/edit");
+  });
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(box);
+  });
+  expect(stamps(true)).toHaveLength(0);
+});
+
+/** A capture processed while its edit was open cannot take the edit, and the corner says so. */
+test("an edit closed from under the person says so, the words a press away", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: "rewritten" } });
+
+  void client.archive("one");
+
+  await vi.waitFor(() => {
+    expect(screen.queryByLabelText("What it says")).toBeNull();
+  });
+  expect(notices.shown.at(-1)?.what).toBe("edit not saved");
+  expect(dialog()).toBeNull();
+});
+
+/** `enter` opens process on a selected row, and a row being edited is not one to leave that way. */
+test("enter does not open process on a row being edited", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  field.blur();
+
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(went.to).toEqual([]);
 });
 
 test("an edit left unchanged closes without asking", async () => {

@@ -154,7 +154,10 @@
     ...listCommands({
       ondown: () => leave(() => void walk(1)),
       onup: () => leave(() => void walk(-1)),
-      onselect: () => (current !== undefined ? process(current) : void walk(1)),
+      onselect: () => {
+        if (current === undefined) void walk(1);
+        else if (drawn[current.id]?.isEditing() !== true) process(current);
+      },
       ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),

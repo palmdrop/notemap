@@ -23,7 +23,7 @@
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { became } from "$lib/lineage";
+  import { became, editable } from "$lib/lineage";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
@@ -78,6 +78,11 @@
 
   const word = $derived(item === undefined ? undefined : became(item));
 
+  // Processed while it was open, an edit has nowhere left to go.
+  $effect(() => {
+    if (item === undefined || !editable(item)) editing = undefined;
+  });
+
   // One subject and no selection: the page is the item, so what it offers is
   // what its own `Actions` draws, built once and published as it stands. No
   // address — this surface is where `open` would lead.
@@ -92,8 +97,6 @@
             if (current === undefined) return;
             if (editing === undefined) {
               editing = new Editing(current, () => (editing = undefined));
-            } else {
-              editing.close();
             }
           },
           tag: () => tags?.add(),

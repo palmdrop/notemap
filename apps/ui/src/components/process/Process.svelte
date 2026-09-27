@@ -108,8 +108,12 @@
   const summary = $derived(($held ?? item).routing);
 
   /** Where the item has gone already, said under its stamp so a second route is made knowing the first. */
+  /** Only a change of item or of the records counted asks again, not every change to the held copy. */
+  const routed = $derived(
+    summary === undefined ? undefined : `${item.id}:${summary.records}`,
+  );
   const records = recordsOf(
-    () => (summary === undefined ? undefined : item.id),
+    () => (routed === undefined ? undefined : item.id),
     () => !offline,
   );
 
@@ -330,6 +334,7 @@
     shown = undefined;
     previewFailed = "";
     previewing = false;
+    answeredFor = undefined;
     placing = true;
   }
 

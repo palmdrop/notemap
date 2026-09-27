@@ -123,3 +123,37 @@ test("attaching a picture puts it in the slot, and the edit names what went up",
   expect(edit?.payload.assets).toEqual([{ slot: "image", asset: uploaded[0] }]);
   expect(edit?.source).toBe("web-image");
 });
+
+/** A picture on its way counts as a change, and `save` waits for it to go with the words. */
+test("save waits for a picture still being attached", async () => {
+  stubObjectUrls();
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const transport = pool(async (request) => {
+    if (routeOf(request).startsWith(UPLOAD)) await held;
+    return accepting()(request);
+  });
+  const closed = vi.fn();
+
+  render(Edit, { item: anItem("one"), onclose: closed });
+
+  await fireEvent.change(screen.getByLabelText("A picture to carry"), {
+    target: {
+      files: [new File(["bytes"], "shot.png", { type: "image/png" })],
+    },
+  });
+  // The button is working meanwhile; the chord still asks for a save.
+  await fireEvent.keyDown(screen.getByLabelText("What it says"), {
+    key: "Enter",
+    metaKey: true,
+  });
+  expect(await edits(transport)).toHaveLength(0);
+
+  release();
+  await vi.waitFor(async () => {
+    expect(await edits(transport)).toHaveLength(1);
+  });
+  const [edit] = await edits(transport);
+  expect(edit?.payload.assets).toHaveLength(1);
+  expect(closed).toHaveBeenCalled();
+});

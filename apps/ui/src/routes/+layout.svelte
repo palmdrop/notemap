@@ -74,12 +74,18 @@
 
   // An edit with changes is asked about before the page goes: in the shell's
   // own words within the app, and in the browser's when the tab is left.
+  // Asked, the navigation goes on the way it would have: back and forward move
+  // through history, and a link out of the app is left to the browser.
   beforeNavigate((navigation) => {
     if (!unsaved()) return;
     navigation.cancel();
-    const to = navigation.to?.url;
-    if (navigation.type === "leave" || to === undefined) return;
-    leave(() => void goto(to));
+    const { type, to, delta, willUnload } = navigation;
+    if (type === "leave" || to === null) return;
+    leave(() => {
+      if (type === "popstate") history.go(delta ?? 0);
+      else if (willUnload) location.assign(to.url);
+      else void goto(to.url);
+    });
   });
 
   // The one listener in the shell. Every chord is resolved against whatever is

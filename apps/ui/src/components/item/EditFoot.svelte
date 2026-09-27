@@ -32,7 +32,7 @@
     </Action>
   </div>
 
-  <Action primary working={editing.busy} onclick={() => editing.save()}
+  <Action primary working={editing.busy} onclick={() => void editing.save()}
     >save</Action
   >
 
