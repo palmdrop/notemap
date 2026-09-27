@@ -37,7 +37,18 @@ url = "https://memos.example.com"
 # a file, never inline.
 tokenFile = "/run/secrets/notemap_relay_memos_token"
 
+# Whether a memo's trailing line of `#tags` is read as its tags and taken off
+# the prose. Turning it on amends or revises every item made from a memo that
+# carries one, once.
+# hashtags = true
+
 # How often everything upstream is read again. A poll holds nothing and repeats
 # everything, so this is latency and nothing else. Polls never overlap.
 [poll]
 interval = 300000 # milliseconds — five minutes
+
+# `docker compose logs` reads these. NOTEMAP_RELAY_MEMOS_LOG_LEVEL=debug in the
+# compose file's `environment` turns the level up without touching this file.
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json

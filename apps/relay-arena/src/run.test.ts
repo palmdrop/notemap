@@ -1,10 +1,11 @@
+import { capturedLog } from "@notemap/log/testing";
 import { PoolRefused, PoolUnreachable } from "@notemap/relay";
 import type { Landed, Relay, Relayed } from "@notemap/relay";
 import { describe, expect, it } from "vitest";
 
 import { ArenaRateLimited, ArenaRefused, type Arena } from "./arena/read";
 import type { ArenaBlock } from "./arena/types";
-import { relayEverything, type ChannelTarget, type Log } from "./run";
+import { relayEverything, type ChannelTarget } from "./run";
 
 function block(id: number, overrides: Partial<ArenaBlock> = {}): ArenaBlock {
   return {
@@ -57,16 +58,12 @@ function channel(source: string, handle: string, relay: Relay): ChannelTarget {
   return { handle, source, tags: [], relay };
 }
 
-function logging(): Log & { faults: string[] } {
-  const faults: string[] = [];
-  return {
-    faults,
-    note: () => {},
-    fault: (line, cause) => faults.push(`${line}: ${String(cause)}`),
-  };
+/** The warnings, which is where a block or a channel that failed is said. */
+function warnings(said: string[]): string[] {
+  return said.filter((line) => line.startsWith("WARN"));
 }
 
-const shallow = { full: false };
+const shallow = { full: false, hashtags: false };
 
 describe("one scan of every watched channel", () => {
   it("counts what each block came to", async () => {
@@ -84,7 +81,7 @@ describe("one scan of every watched channel", () => {
           }),
         ),
       ],
-      logging(),
+      capturedLog().log,
       shallow,
     );
 
@@ -106,7 +103,7 @@ describe("one scan of every watched channel", () => {
   });
 
   it("carries on past a block it could not relay, and says which", async () => {
-    const log = logging();
+    const log = capturedLog();
 
     const reports = await relayEverything(
       upstream({ c: [block(1), block(2), block(3)] }),
@@ -117,7 +114,7 @@ describe("one scan of every watched channel", () => {
           landing({ "2": new Error("the pool refused it") }),
         ),
       ],
-      log,
+      log.log,
       shallow,
     );
 
@@ -126,8 +123,8 @@ describe("one scan of every watched channel", () => {
       captured: 2,
       failed: 1,
     });
-    expect(log.faults).toEqual([
-      "block 2 in arena/x could not be relayed: Error: the pool refused it",
+    expect(warnings(log.lines())).toEqual([
+      'WARN could not relay a block block=2 source=arena/x because="the pool refused it"',
     ]);
   });
 
@@ -140,7 +137,7 @@ describe("one scan of every watched channel", () => {
         ],
       }),
       [channel("arena/x", "c", landing({}))],
-      logging(),
+      capturedLog().log,
       shallow,
     );
 
@@ -148,20 +145,20 @@ describe("one scan of every watched channel", () => {
   });
 
   it("stops at once where it was the pool that failed, not the block", async () => {
-    const log = logging();
+    const log = capturedLog();
     const gone = new PoolUnreachable("/v1/captures", new Error("refused"));
 
     await expect(
       relayEverything(
         upstream({ c: [block(1), block(2)] }),
         [channel("arena/x", "c", landing({ "1": gone }))],
-        log,
+        log.log,
         shallow,
       ),
     ).rejects.toBe(gone);
 
     // Nothing said per block: the one thing wrong is said by whoever catches it.
-    expect(log.faults).toEqual([]);
+    expect(warnings(log.lines())).toEqual([]);
   });
 
   it("stops on a token the pool will refuse for every block alike", async () => {
@@ -171,14 +168,14 @@ describe("one scan of every watched channel", () => {
       relayEverything(
         upstream({ c: [block(1)] }),
         [channel("arena/x", "c", landing({ "1": shut }))],
-        logging(),
+        capturedLog().log,
         shallow,
       ),
     ).rejects.toBe(shut);
   });
 
   it("ends a channel are.na refused, and lets the next channel run", async () => {
-    const log = logging();
+    const log = capturedLog();
 
     const reports = await relayEverything(
       upstream({
@@ -193,7 +190,7 @@ describe("one scan of every watched channel", () => {
         channel("arena/gone", "gone", landing({})),
         channel("arena/fine", "fine", landing({})),
       ],
-      log,
+      log.log,
       shallow,
     );
 
@@ -225,8 +222,8 @@ describe("one scan of every watched channel", () => {
         },
       },
     ]);
-    expect(log.faults).toEqual([
-      "arena/gone could not be read: ArenaRefused: /v3/channels/gone/contents was refused 404: no such channel",
+    expect(warnings(log.lines())).toEqual([
+      'WARN could not read a channel source=arena/gone because="/v3/channels/gone/contents was refused 404: no such channel"',
     ]);
   });
   it("stops after the first page holding a block the pool already had", async () => {
@@ -237,7 +234,7 @@ describe("one scan of every watched channel", () => {
     const reports = await relayEverything(
       from,
       [channel("arena/x", "c", landing({ "2": "already-captured" }))],
-      logging(),
+      capturedLog().log,
       shallow,
     );
 
@@ -258,8 +255,8 @@ describe("one scan of every watched channel", () => {
           landing({ "1": "already-captured", "2": "already-captured" }),
         ),
       ],
-      logging(),
-      { full: true },
+      capturedLog().log,
+      { full: true, hashtags: false },
     );
 
     expect(reports[0]?.tally).toMatchObject({ read: 3, captured: 1 });
@@ -273,7 +270,7 @@ describe("one scan of every watched channel", () => {
         },
       }),
       [channel("arena/x", "c", landing({ "2": new Error("refused") }))],
-      logging(),
+      capturedLog().log,
       shallow,
     );
 
@@ -286,7 +283,7 @@ describe("one scan of every watched channel", () => {
   });
 
   it("ends the whole poll when are.na rate-limits the token, and reads no further channel", async () => {
-    const log = logging();
+    const log = capturedLog();
     const limited = new ArenaRateLimited(
       "/v3/channels/a/contents",
       "slow down",
@@ -301,12 +298,12 @@ describe("one scan of every watched channel", () => {
           channel("arena/a", "a", landing({})),
           channel("arena/b", "b", landing({})),
         ],
-        log,
+        log.log,
         shallow,
       ),
     ).rejects.toBe(limited);
 
     expect(from.asked).toEqual(["a"]);
-    expect(log.faults).toEqual([]);
+    expect(warnings(log.lines())).toEqual([]);
   });
 });

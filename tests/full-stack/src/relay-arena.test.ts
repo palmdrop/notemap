@@ -46,7 +46,7 @@ const upstream = upstreamsArena();
  * An are.na stand-in, a notemap daemon with its door shut, and the relay
  * between them, watching two channels under two sources.
  */
-async function relaying(): Promise<Relayed> {
+async function relaying(hashtags = false): Promise<Relayed> {
   const on = await shutWorld();
   const token = await mintToken(on, "relay-arena");
   const running = await daemon(on);
@@ -72,6 +72,7 @@ async function relaying(): Promise<Relayed> {
         { handle: "one", source: "arena/one" },
         { handle: "two", source: "arena/two" },
       ],
+      hashtags,
     }),
     read,
     async items() {
@@ -107,7 +108,7 @@ describe("the arena relay, over a real daemon", () => {
       .channel("one")
       .push(block(1, { content: { markdown: "a note" } }));
 
-    expect(await polled(where)).toMatch(/captured 1/);
+    expect(await polled(where)).toMatch(/captured=1/);
 
     const [held] = await where.items();
     expect(held).toMatchObject({
@@ -119,12 +120,44 @@ describe("the arena relay, over a real daemon", () => {
     });
   });
 
+  it("reads a foot of tags off a block's prose where its config asks for it", async () => {
+    const where = await relaying(true);
+    where.arena
+      .channel("one")
+      .push(block(1, { content: { markdown: "a note\n\n#kind/quote" } }));
+
+    expect(await polled(where)).toMatch(/captured=1/);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { type: "note", content: { text: "a note" } },
+      tags: [
+        { name: "kind/quote", by: { kind: "source", source: "arena/one" } },
+      ],
+    });
+  });
+
+  it("leaves that foot in the prose, and untagged, where it does not", async () => {
+    const where = await relaying();
+    where.arena
+      .channel("one")
+      .push(block(1, { content: { markdown: "a note\n\n#kind/quote" } }));
+
+    await polled(where);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { content: { text: "a note\n\n#kind/quote" } },
+      tags: [],
+    });
+  });
+
   it("captures nothing at all on a second run over the same channel", async () => {
     const where = await relaying();
     where.arena.channel("one").push(block(1), block(2));
 
     await polled(where);
-    expect(await polled(where)).toMatch(/captured 0, unchanged 2/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=2/);
 
     expect(await where.items()).toHaveLength(2);
   });
@@ -186,7 +219,7 @@ describe("the arena relay, over a real daemon", () => {
     where.arena.channel("one")[0] = block(1, {
       content: { markdown: "rewritten since" },
     });
-    expect(await polled(where)).toMatch(/amended 1/);
+    expect(await polled(where)).toMatch(/amended=1/);
 
     const [after] = await where.items();
     expect(after?.id).toBe(before?.id);
@@ -199,7 +232,7 @@ describe("the arena relay, over a real daemon", () => {
       .channel("one")
       .push(block(1, { type: "Channel", content: null }));
 
-    expect(await polled(where)).toMatch(/empty 1/);
+    expect(await polled(where)).toMatch(/empty=1/);
     expect(await where.items()).toEqual([]);
   });
 

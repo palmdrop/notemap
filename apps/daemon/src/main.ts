@@ -15,7 +15,7 @@ import { runCliCommand } from "./cli";
 import { FORGET_EXPIRED_EVERY_MS } from "./auth/config";
 import { provisionCredential } from "./auth/provision";
 import { createLoginThrottle } from "./auth/throttle";
-import { createLogger } from "./log";
+import { createLogger } from "@notemap/log";
 import { createUnfurler, pinnedFetch, systemResolve } from "./unfurl";
 
 async function start(): Promise<void> {

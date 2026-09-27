@@ -12,7 +12,7 @@ import {
 } from "@notemap/core";
 
 import { DELIVERY_REPORT_MARGIN_MS } from "../constants";
-import type { Logger } from "../log";
+import type { Logger } from "@notemap/log";
 import {
   startRunner,
   wrongSubject,

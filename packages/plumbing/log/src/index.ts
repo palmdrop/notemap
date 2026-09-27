@@ -3,9 +3,11 @@ export {
   DEFAULT_LOG,
   LOG_FORMATS,
   LOG_LEVELS,
-  LOG_LEVEL_VARIABLE,
   isLogLevel,
+  levelFrom,
   type LogConfig,
   type LogFormat,
   type LogLevel,
 } from "./config";
+export { formatLine, textStream } from "./text";
+export { reasonOf } from "./reason";

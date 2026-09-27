@@ -26,6 +26,8 @@ export type ToldArena = {
     readonly source: string;
     readonly tags?: readonly string[];
   }[];
+  /** Whether a block's trailing line of `#tags` is read as tags. */
+  readonly hashtags?: boolean;
 };
 
 /**
@@ -58,7 +60,7 @@ tokenFile = "${at("arena-pool-token")}"
 
 [arena]
 tokenFile = "${at("arena-token")}"
-
+${told.hashtags === true ? "hashtags = true\n" : ""}
 ${channels}`,
     "utf8",
   );

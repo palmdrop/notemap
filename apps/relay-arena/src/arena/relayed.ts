@@ -1,8 +1,17 @@
 import { createHash } from "node:crypto";
 
+import { classified } from "@notemap/relay";
 import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
 import type { ArenaBlock } from "./types";
+
+/** How this relay was asked to read a block. */
+export type Reading = {
+  /** The watched channel's own tags, which every block from it arrives with. */
+  readonly tags: readonly string[];
+  /** Whether a foot of `#tags` is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
+};
 
 /** How a block's file is reached, so the mapping needs no server. */
 export type Open = (block: ArenaBlock, signal?: AbortSignal) => Promise<Bytes>;
@@ -108,20 +117,27 @@ function versionOf(
  * core lets an empty capture through, and each relay guards its own input. A
  * channel connected into a channel is not a note and is never captured.
  *
- * `tags` are the watched channel's configured tags and nothing else — are.na
- * has no tags on a block. They travel once, at capture, and are never
+ * `tags` are the watched channel's configured tags, and — where `hashtags` asks
+ * for it — the foot of tags the block's own prose ends with, which are.na has
+ * nothing of its own to put there. They travel once, at capture, and are never
  * reconciled afterwards.
+ *
+ * The version digests the prose the payload will carry, foot already off, so a
+ * block whose foot alone was edited upstream is `already-captured` rather than
+ * an edit of a payload that did not change.
  */
 export function relayedFrom(
   block: ArenaBlock,
   open: Open,
-  tags: readonly string[],
+  { tags: configured, hashtags }: Reading,
 ): Relayed | undefined {
   if (block.type === "Channel") return undefined;
 
-  const text = textOf(block);
+  const prose = textOf(block);
   const attachment = attachmentOf(block, open);
-  if (text === undefined && attachment === undefined) return undefined;
+  if (prose === undefined && attachment === undefined) return undefined;
+
+  const { text, tags } = classified(prose, configured, hashtags);
 
   return {
     sourceItemId: String(block.id),

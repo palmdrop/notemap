@@ -26,7 +26,7 @@ import { startSweeper } from "../assets/sweeper";
 import { DEFAULT_MAX_UPLOAD_BYTES } from "../constants";
 import { startDeliveryRunner } from "../destinations/runner";
 import { startMirrorRunner } from "../mirror/runner";
-import { silentLogger } from "../log";
+import { silentLogger } from "@notemap/log";
 import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
 import { createUnfurler, type Unfurler } from "../unfurl";

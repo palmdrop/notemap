@@ -30,6 +30,11 @@ tokenFile = "/run/secrets/notemap_relay_arena_pool_token"
 # relay never writes to are.na.
 tokenFile = "/run/secrets/notemap_relay_arena_token"
 
+# Whether a block's trailing line of `#tags` is read as its tags — after the
+# channel's own — and taken off the prose. Turning it on amends or revises every
+# item made from a block that carries one, once.
+# hashtags = true
+
 # One or more channels to watch. Replace with your own; `source` is required
 # and per channel, never derived from `handle`.
 [[channel]]
@@ -41,3 +46,9 @@ source = "arena/my-channel"
 # Polls never overlap.
 [poll]
 interval = 900000 # milliseconds — fifteen minutes
+
+# `docker compose logs` reads these. NOTEMAP_RELAY_ARENA_LOG_LEVEL=debug in the
+# compose file's `environment` turns the level up without touching this file.
+[log]
+level = "info"  # debug | info | warn | error
+format = "text" # text | json

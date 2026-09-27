@@ -1,9 +1,11 @@
 import { parseArgs } from "node:util";
 
+import { createLogger, reasonOf, type Logger } from "@notemap/log";
+
 import { loadConfig, readSecret, type RelayConfig } from "./config/load";
 import { memosAt } from "./memos/read";
 import { relayInto } from "./relay";
-import { relayEverything, said, type Log, type Tally } from "./run";
+import { relayEverything, type Tally } from "./run";
 
 const USAGE = `notemap-relay-memos — put what is in Memos into a notemap pool.
 
@@ -20,31 +22,15 @@ failed poll and tries again at the next one.
 The config is --config <path>, then NOTEMAP_RELAY_MEMOS_CONFIG, then
 ~/.config/notemap/relay-memos.toml.`;
 
-const log: Log = {
-  note: (line) => {
-    console.log(`relay-memos: ${line}`);
-  },
-  fault: (line, cause) => {
-    console.error(
-      `relay-memos: ${line}${cause === undefined ? "" : `: ${message(cause)}`}`,
-    );
-  },
-};
-
-/** The chain, not the top of it: what `fetch` could not do is under two wrappers. */
-function message(cause: unknown): string {
-  if (!(cause instanceof Error)) return String(cause);
-
-  return cause.cause === undefined
-    ? cause.message
-    : `${cause.message}: ${message(cause.cause)}`;
-}
-
 /**
  * The tokens are read here rather than held from startup, so rotating either
  * one is writing the file it lives in and never restarting the relay.
  */
-async function poll(config: RelayConfig, signal: AbortSignal): Promise<Tally> {
+async function poll(
+  config: RelayConfig,
+  log: Logger,
+  signal: AbortSignal,
+): Promise<Tally> {
   const memos = memosAt({
     url: config.memos.url,
     token: readSecret(config.memos.token, "the memos token"),
@@ -54,7 +40,10 @@ async function poll(config: RelayConfig, signal: AbortSignal): Promise<Tally> {
     readSecret(config.pool.token, "the pool token"),
   );
 
-  return relayEverything(memos, relay, log, signal);
+  return relayEverything(memos, relay, log, {
+    hashtags: config.memos.hashtags,
+    signal,
+  });
 }
 
 async function start(): Promise<void> {
@@ -67,14 +56,38 @@ async function start(): Promise<void> {
     strict: true,
   });
 
+  // Program output, not a log: somebody asked a question at a terminal.
   if (values.help === true) {
     console.log(USAGE);
     return;
   }
 
   const config = loadConfig(values.config);
-  log.note(
-    `${config.memos.url} into ${config.pool.url} as ${config.pool.source}`,
+  const log = createLogger(config.log);
+
+  // Everything from here on says so through the log, including the failure that
+  // ends the run — a cron line that failed at four in the morning is worth a
+  // clock as much as a successful poll is.
+  try {
+    await relaying(config, log, values.once === true);
+  } catch (cause) {
+    log.error({ err: cause }, "the relay stopped");
+    process.exitCode = 1;
+  }
+}
+
+async function relaying(
+  config: RelayConfig,
+  log: Logger,
+  once: boolean,
+): Promise<void> {
+  log.info(
+    {
+      memos: config.memos.url,
+      pool: config.pool.url,
+      source: config.pool.source,
+    },
+    "relaying",
   );
 
   const stopping = new AbortController();
@@ -84,27 +97,29 @@ async function start(): Promise<void> {
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
 
-  if (values.once === true) {
-    const tally = await poll(config, stopping.signal);
-    log.note(said(tally));
+  if (once) {
+    const tally = await poll(config, log, stopping.signal);
+    log.info(tally, "polled");
     if (tally.failed > 0) process.exitCode = 1;
     return;
   }
 
-  log.note(`polling every ${String(config.poll.intervalMs)}ms`);
+  log.info({ everyMs: config.poll.intervalMs }, "polling");
 
   // One poll at a time, and the next is due when this one is done: a scan that
   // outlasts the interval is a large backlog, not a reason to start a second.
   while (!stopping.signal.aborted) {
     try {
-      log.note(said(await poll(config, stopping.signal)));
+      log.info(await poll(config, log, stopping.signal), "polled");
     } catch (cause) {
       if (stopping.signal.aborted) break;
-      log.fault("the poll could not be finished", cause);
+      log.error({ err: cause }, "the poll could not be finished");
     }
 
     await waiting(config.poll.intervalMs, stopping.signal);
   }
+
+  log.info("stopping");
 }
 
 function waiting(ms: number, signal: AbortSignal): Promise<void> {
@@ -124,7 +139,12 @@ function waiting(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+/**
+ * Whatever went wrong before there was a logger — a config that will not load,
+ * a token that cannot be read — has nowhere to go but the stream, which is
+ * where the log would have gone anyway.
+ */
 start().catch((error: unknown) => {
-  console.error(`relay-memos: ${message(error)}`);
+  console.error(`relay-memos: ${reasonOf(error)}`);
   process.exit(1);
 });

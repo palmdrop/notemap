@@ -18,7 +18,7 @@ function memo(overrides: Partial<Memo> = {}): Memo {
 
 describe("a memo as the pool takes it", () => {
   it("carries its uid, its own capture time and its content verbatim", () => {
-    const relaying = relayedFrom(memo(), bytes);
+    const relaying = relayedFrom(memo(), bytes, { hashtags: false });
 
     expect(relaying).toEqual({
       sourceItemId: "abc123",
@@ -43,6 +43,7 @@ describe("a memo as the pool takes it", () => {
         ],
       }),
       bytes,
+      { hashtags: false },
     );
 
     expect(
@@ -67,14 +68,91 @@ describe("a memo as the pool takes it", () => {
         ],
       }),
       bytes,
+      { hashtags: false },
     );
 
     expect(relaying).toMatchObject({ tags: [] });
     expect(relaying && "text" in relaying).toBe(false);
   });
 
+  it("takes a foot of tags off the prose where it was asked to", () => {
+    const relaying = relayedFrom(
+      memo({
+        content: "a thought\n\n#kind/quote #read/later",
+        tags: ["kind/quote", "read/later"],
+      }),
+      bytes,
+      { hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "a thought",
+      // Memos extracted both itself; the foot adds nothing here but its own
+      // absence from the prose.
+      tags: ["kind/quote", "read/later"],
+    });
+  });
+
+  it("adds a tag Memos did not extract, after the ones it did", () => {
+    const relaying = relayedFrom(
+      memo({
+        content: "a thought\n\n#kind/quote #topic/x",
+        tags: ["kind/quote"],
+      }),
+      bytes,
+      { hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "a thought",
+      tags: ["kind/quote", "topic/x"],
+    });
+  });
+
+  it("leaves the prose alone where the foot is the whole of the memo", () => {
+    const relaying = relayedFrom(
+      memo({ content: "#kind/quote", tags: ["kind/quote"] }),
+      bytes,
+      { hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "#kind/quote",
+      tags: ["kind/quote"],
+    });
+  });
+
+  it("versions a memo it read verbatim by the update time alone", () => {
+    for (const hashtags of [false, true]) {
+      expect(
+        relayedFrom(memo({ content: "a thought" }), bytes, { hashtags })
+          ?.version,
+      ).toBe("2026-09-05T08:00:00Z");
+    }
+  });
+
+  it("versions one whose words it changed by those words too, so two readings are two identities", () => {
+    const footed = memo({ content: "a thought\n\n#kind/quote" });
+    const verbatim = relayedFrom(footed, bytes, { hashtags: false })?.version;
+    const stripped = relayedFrom(footed, bytes, { hashtags: true })?.version;
+
+    // An edit is captured under an identity built from the version, and the
+    // pool refuses one identity carrying two payloads. One reading must not
+    // claim the other's.
+    expect(verbatim).toBe("2026-09-05T08:00:00Z");
+    expect(stripped).not.toBe(verbatim);
+    expect(stripped).toMatch(/^2026-09-05T08:00:00Z\/[0-9a-f]{16}$/);
+
+    // And the same every poll, or each one would manufacture a revision.
+    expect(relayedFrom(footed, bytes, { hashtags: true })?.version).toBe(
+      stripped,
+    );
+  });
+
   it("relays nothing for a memo holding neither prose nor an attachment", () => {
-    expect(relayedFrom(memo({ content: "   " }), bytes)).toBeUndefined();
+    expect(
+      relayedFrom(memo({ content: "   " }), bytes, { hashtags: false }),
+    ).toBeUndefined();
   });
 
   it("reads an attachment through the reader it was given, once asked", async () => {
@@ -89,6 +167,7 @@ describe("a memo as the pool takes it", () => {
         opened += 1;
         return bytes();
       },
+      { hashtags: false },
     );
 
     expect(opened).toBe(0);

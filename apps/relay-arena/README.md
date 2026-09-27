@@ -65,11 +65,11 @@ relay container's.
 | the block's numeric id        | `sourceItemId`                                   |
 | `connected_at`                | `capturedAt` — the moment it joined *this* channel, never the block's own `created_at` |
 | a digest of the block's prose and file | the identity an edit is captured under — never `updated_at`, which are.na moves whenever the block is connected into any channel |
-| a Text block's own prose      | `note` prose, verbatim                           |
+| a Text block's own prose      | `note` prose, verbatim — unless `hashtags` is set, which takes a trailing line of `#tags` off |
 | a Link block's title, caption and source URL | composed into `note` prose         |
 | an Embed block                | mapped like a Link — are.na never hosts the actual media, only a cached thumbnail, so no attachment is carried |
 | an Image block's stored image, an Attachment block's file | one asset, under a derived id |
-| the watched channel's configured `tags` | tags, attributed to the source, **at capture** |
+| the watched channel's configured `tags`, and a trailing `#tag` line where `hashtags` is set | tags, attributed to the source, **at capture** |
 | a Channel-class block         | not captured — a channel connected into a channel is not a note |
 
 A block with neither prose nor a file is not captured: core would take it, and
@@ -82,6 +82,17 @@ title into the prose; the title names the asset instead, since the file's own
 
 A block removed from the channel upstream is left alone. Notemap never loses
 an item, and there is nothing to do.
+
+**A trailing line of `#tags` can be classification rather than prose.** are.na
+has no tags on a block, so without `[arena] hashtags = true` the only tags a
+block arrives with are the ones its channel is configured with. With it, a
+block's last line of nothing but hashtags is read as tags — after the channel's
+own — and comes off the words captured, so a vault that writes tags as a `#tag`
+foot writes them once rather than twice. A `#tag` mid-sentence is a word
+somebody wrote and stays one. The block's version digests the prose the payload
+carries, foot already off, so a foot edited upstream alone is
+`already-captured`; turning the flag on, though, changes that payload, so the
+next poll amends or revises every item made from a block carrying one, once.
 
 **Tags travel once.** A capture whose payload is unchanged is `already-captured`
 whatever its tags say — the pool drops tags from that comparison so that an
@@ -129,13 +140,24 @@ does not count.
 
 ## What it says
 
-Failures go to its own log and nowhere else: notemap has nowhere to put
-another program's errors, and a relay that could not reach the pool has
-nothing to report to it by definition. A block that could not be relayed is
-logged and that channel's scan carries on. A channel are.na refused — most
-often one the token lost access to — ends that channel's scan and lets the
-next one run; a failure that was the pool's, or are.na's rate limit, ends the
-whole poll.
+One levelled line per event on stdout, the same shape the daemon writes —
+`HH:MM:SS.mmm LEVEL message key=value` — or one JSON object per line where
+`[log] format = "json"` asks for it. `level` chooses how much: `debug` is a line
+per block relayed, `info` is what each poll came to, `warn` is a block that could
+not be relayed or a channel that could not be read, `error` is a poll that could
+not be finished and the failure that ends the run. A block with nothing in it is
+counted `empty` and says nothing at any level.
+`NOTEMAP_RELAY_ARENA_LOG_LEVEL` in the environment turns the level up without
+editing the file.
+
+Failures go there and nowhere else: notemap has nowhere to put another program's
+errors, and a relay that could not reach the pool has nothing to report to it by
+definition.
+
+A block that could not be relayed is a `warn` and that channel's scan carries
+on. A channel are.na refused — most often one the token lost access to — ends
+that channel's scan and lets the next one run; a failure that was the pool's, or
+are.na's rate limit, ends the whole poll.
 
 Whether it is running at all is read from the other end —
 `GET /v1/sources`, drawn in notemap's settings, says when each source last

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { silentLogger, type Logger } from "../log";
+import { silentLogger, type Logger } from "@notemap/log";
 import { DEFAULT_CREDENTIALS_NAME } from "./config";
 import {
   MAX_PASSWORD_BYTE_LENGTH,

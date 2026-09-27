@@ -7,7 +7,7 @@ import {
   type WorkOutcome,
 } from "@notemap/core";
 
-import type { Logger } from "../log";
+import type { Logger } from "@notemap/log";
 import {
   startRunner,
   wrongSubject,

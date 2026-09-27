@@ -1,12 +1,13 @@
 import { notThisItem, type Relay } from "@notemap/relay";
+import { reasonOf, type Logger } from "@notemap/log";
 
 import { relayedFrom } from "./memos/relayed";
 import type { Memos } from "./memos/read";
 
-/** Where a poll says what it did, and what it could not do. */
-export type Log = {
-  note(line: string): void;
-  fault(line: string, cause?: unknown): void;
+export type Scan = {
+  /** Whether a foot of `#tags` on a memo is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
+  readonly signal?: AbortSignal;
 };
 
 /** What one scan of everything upstream came to. */
@@ -35,8 +36,8 @@ export type Tally = {
 export async function relayEverything(
   from: Memos,
   into: Relay,
-  log: Log,
-  signal?: AbortSignal,
+  log: Logger,
+  { hashtags, signal }: Scan,
 ): Promise<Tally> {
   const tally: Tally = {
     read: 0,
@@ -52,7 +53,7 @@ export async function relayEverything(
     tally.read += 1;
 
     try {
-      const relaying = relayedFrom(memo, from.open);
+      const relaying = relayedFrom(memo, from.open, { hashtags });
       if (relaying === undefined) {
         tally.empty += 1;
         continue;
@@ -63,16 +64,20 @@ export async function relayEverything(
       else if (landed.kind === "captured") tally.captured += 1;
       else if (landed.kind === "amended") tally.amended += 1;
       else tally.revised += 1;
+
+      log.debug(
+        { memo: memo.name, item: landed.item, landed: landed.kind },
+        "relayed a memo",
+      );
     } catch (cause) {
       if (notThisItem(cause)) throw cause;
       tally.failed += 1;
-      log.fault(`${memo.name} could not be relayed`, cause);
+      log.warn(
+        { memo: memo.name, because: reasonOf(cause) },
+        "could not relay a memo",
+      );
     }
   }
 
   return tally;
-}
-
-export function said(tally: Tally): string {
-  return `read ${String(tally.read)}, captured ${String(tally.captured)}, unchanged ${String(tally.unchanged)}, amended ${String(tally.amended)}, revised ${String(tally.revised)}, empty ${String(tally.empty)}, failed ${String(tally.failed)}`;
 }

@@ -42,14 +42,17 @@ type Relayed = {
   readonly relay: Relaying;
   /** The pool, read the way anything holding a token reads it. */
   read(path: string): Promise<Response>;
+  post(path: string, body?: unknown): Promise<Response>;
   items(): Promise<readonly Item[]>;
+  /** The same upstream and the same pool, read the other way. */
+  alsoReading(hashtags: boolean): Relaying;
 };
 
 /**
  * A Memos server, a notemap daemon with its door shut, and the relay between
  * them — three processes and two sockets, which is the whole of what this is.
  */
-async function relaying(): Promise<Relayed> {
+async function relaying(hashtags = false): Promise<Relayed> {
   const on = await shutWorld();
   const token = await mintToken(on, "relay-memos");
   const running = await daemon(on);
@@ -60,14 +63,29 @@ async function relaying(): Promise<Relayed> {
       headers: { authorization: `Bearer ${token}` },
     });
 
-  return {
-    memos,
-    relay: relayMemos({
+  const reading = (hashtags: boolean, name?: string) =>
+    relayMemos({
       directory: on.directory,
       pool: { url: running.url, token },
       memos: { url: memos.url, token: MEMOS_TOKEN },
-    }),
+      hashtags,
+      ...(name === undefined ? {} : { name }),
+    });
+
+  return {
+    memos,
+    relay: reading(hashtags),
+    alsoReading: (hashtags: boolean) => reading(hashtags, "relay-memos-also"),
     read,
+    post: (path: string, body?: unknown) =>
+      fetch(`${running.url}${path}`, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(body ?? {}),
+      }),
     async items() {
       const response = await read("/v1/feed");
       expect(response.status).toBe(200);
@@ -99,7 +117,7 @@ describe("the memos relay, over a real daemon", () => {
     const where = await relaying();
     where.memos.memos.push(memo("abc", { tags: ["kind/quote"] }));
 
-    expect(await polled(where)).toMatch(/captured 1/);
+    expect(await polled(where)).toMatch(/captured=1/);
 
     const [held] = await where.items();
     expect(held).toMatchObject({
@@ -109,6 +127,41 @@ describe("the memos relay, over a real daemon", () => {
       createdAt: WRITTEN,
       payload: { type: "note", content: { text: "written three days ago" } },
       tags: [{ name: "kind/quote", by: { kind: "source", source: SOURCE } }],
+    });
+  });
+
+  it("reads a foot of tags off a memo's prose where its config asks for it", async () => {
+    const where = await relaying(true);
+    // No `tags`: this Memos never extracted them, so the tag on the item is one
+    // the relay read off the prose itself.
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote #topic/x" }),
+    );
+
+    expect(await polled(where)).toMatch(/captured=1/);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { type: "note", content: { text: "a thought" } },
+      tags: [
+        { name: "kind/quote", by: { kind: "source", source: SOURCE } },
+        { name: "topic/x", by: { kind: "source", source: SOURCE } },
+      ],
+    });
+  });
+
+  it("leaves that foot in the prose, and untagged, where it does not", async () => {
+    const where = await relaying();
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote" }),
+    );
+
+    await polled(where);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      payload: { content: { text: "a thought\n\n#kind/quote" } },
+      tags: [],
     });
   });
 
@@ -126,7 +179,7 @@ describe("the memos relay, over a real daemon", () => {
     where.memos.memos.push(memo("abc"), memo("def"));
 
     await polled(where);
-    expect(await polled(where)).toMatch(/captured 0, unchanged 2/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=2/);
 
     expect(await where.items()).toHaveLength(2);
   });
@@ -206,7 +259,7 @@ describe("the memos relay, over a real daemon", () => {
       content: "rewritten since",
       updateTime: "2026-09-07T10:00:00.000Z",
     });
-    expect(await polled(where)).toMatch(/amended 1/);
+    expect(await polled(where)).toMatch(/amended=1/);
 
     const [after] = await where.items();
     expect(after?.id).toBe(before?.id);
@@ -214,8 +267,52 @@ describe("the memos relay, over a real daemon", () => {
 
     // An amended item now says what the memo says, so the poll after an edit
     // is an ordinary one: only a revision leaves the original disagreeing.
-    expect(await polled(where)).toMatch(/captured 0, unchanged 1, amended 0/);
+    expect(await polled(where)).toMatch(/captured=0 unchanged=1 amended=0/);
     expect(await where.items()).toHaveLength(1);
+  });
+
+  it("reads a memo the other way without refusing the revision the first reading made", async () => {
+    const where = await relaying();
+    where.memos.memos.push(
+      memo("abc", { content: "a thought\n\n#kind/quote" }),
+    );
+    await polled(where);
+
+    // Processed, so an edit makes a revision rather than amending in place —
+    // and a revision is what carries the identity an edit is captured under.
+    const [held] = await where.items();
+    const archived = await where.post(`/v1/items/${held?.id ?? ""}/archive`, {
+      reason: "read it, kept nothing",
+    });
+    expect(archived.status).toBe(200);
+
+    where.memos.memos[0] = memo("abc", {
+      content: "rewritten since\n\n#kind/quote",
+      updateTime: "2026-09-07T10:00:00.000Z",
+    });
+    expect(await polled(where)).toMatch(/revised=1/);
+
+    // The same memo, now read with `hashtags`. The words differ from the ones
+    // the first reading sent, and the pool must take that as another revision
+    // rather than as a conflicting resubmission of the one it already has.
+    const stripping = where.alsoReading(true);
+    const first = await stripping.poll();
+    expect(first.output).not.toMatch(/could not/);
+    expect(first.code).toBe(0);
+    expect(first.output).toMatch(/revised=1/);
+
+    // Three items: the archived original, the revision the first reading made,
+    // and the one this reading did.
+    const three = await where.items();
+    expect(three).toHaveLength(3);
+    expect(three.map((each) => each.payload.content["text"])).toContain(
+      "rewritten since",
+    );
+
+    // And stable: the poll after it is answered with the revision it just made.
+    const again = await stripping.poll();
+    expect(again.output).not.toMatch(/could not/);
+    expect(again.code).toBe(0);
   });
 
   it("captures nothing for a memo holding neither prose nor an attachment", async () => {
@@ -223,7 +320,7 @@ describe("the memos relay, over a real daemon", () => {
     where.memos.memos.push(memo("empty", { content: "  " }), memo("said"));
 
     expect(await polled(where)).toMatch(
-      /captured 1, unchanged 0, amended 0, revised 0, empty 1/,
+      /captured=1 unchanged=0 amended=0 revised=0 empty=1/,
     );
 
     expect((await where.items()).map((each) => each.sourceItemId)).toEqual([
@@ -259,7 +356,7 @@ describe("the memos relay, over a real daemon", () => {
 
     const { code, output } = await where.relay.poll();
 
-    expect(output).toMatch(/memos\/gone could not be relayed/);
+    expect(output).toMatch(/could not relay a memo memo=memos\/gone/);
     expect(code).toBe(1);
     expect(await where.items()).toEqual([]);
   });

@@ -14,7 +14,7 @@ export {
   type Secret,
   type WatchedChannel,
 } from "./config/load";
-export { relayedFrom, type Open } from "./arena/relayed";
+export { relayedFrom, type Open, type Reading } from "./arena/relayed";
 export type {
   ArenaAttachment,
   ArenaBlock,
@@ -28,10 +28,8 @@ export type {
 export { namespaceFor, relayInto, type PoolTarget } from "./relay";
 export {
   relayEverything,
-  said,
   type ChannelReport,
   type ChannelTarget,
-  type Log,
   type Scan,
   type Tally,
 } from "./run";

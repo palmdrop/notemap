@@ -54,9 +54,9 @@ relay container's.
 | ------------------------ | ------------------------------------------------ |
 | `memos/{uid}`            | `sourceItemId`                                   |
 | `createTime`             | `capturedAt` — never the time the poll ran       |
-| `updateTime`             | the identity an edit is captured under           |
-| `content`                | `note` prose, verbatim, `#tags` and all          |
-| `tags`                   | tags, attributed to the source, **at capture**   |
+| `updateTime`             | the identity an edit is captured under — with a digest of the prose beside it, where `hashtags` changed it |
+| `content`                | `note` prose, verbatim, `#tags` and all — unless `hashtags` is set, which takes the trailing line of them off |
+| `tags`                   | tags, attributed to the source, **at capture** — with what a trailing `#tag` line spells, where `hashtags` is set |
 | `attachments`            | assets, in order, under derived ids              |
 
 A memo with neither prose nor an attachment is not captured: core would take
@@ -64,6 +64,18 @@ it, and a relay guards its own input.
 
 A memo deleted upstream is left alone. Notemap never loses an item, and there
 is nothing to do.
+
+**A trailing line of `#tags` can be classification rather than prose.** Memos
+extracts a memo's `#tags` into `tags` of its own whatever this relay does, so
+the classification arrives either way; `[memos] hashtags = true` decides the
+*prose*, and with it a memo's last line of nothing but hashtags comes off the
+words captured — so a vault that writes tags as a `#tag` foot writes them once
+rather than twice. A `#tag` mid-sentence is a word somebody wrote and stays one.
+Turning it on changes the payload of every memo carrying such a line, so the
+next poll amends or revises each of those items once, and turning it off again
+undoes that the same way. The edit identity carries a digest of the words being
+sent wherever this relay changed them, so neither reading is ever refused as a
+conflicting resubmission of the other.
 
 **Tags travel once.** A capture whose payload is unchanged is `already-captured`
 whatever its tags say — the pool drops tags from that comparison so that an item
@@ -93,10 +105,20 @@ edited on every run. `packages/relay` does that half.
 
 ## What it says
 
-Failures go to its own log and nowhere else: notemap has nowhere to put another
-program's errors, and a relay that could not reach the pool has nothing to
-report to it by definition. A memo that could not be relayed is logged and the
-scan carries on.
+One levelled line per event on stdout, the same shape the daemon writes —
+`HH:MM:SS.mmm LEVEL message key=value` — or one JSON object per line where
+`[log] format = "json"` asks for it. `level` chooses how much: `debug` is a line
+per memo relayed, `info` is what each poll came to, `warn` is a memo that could
+not be relayed, `error` is a poll that could not be finished and the failure that
+ends the run. A memo with nothing in it is counted `empty` and says nothing at
+any level. `NOTEMAP_RELAY_MEMOS_LOG_LEVEL` in the environment turns the level up
+without editing the file.
+
+Failures go there and nowhere else: notemap has nowhere to put another program's
+errors, and a relay that could not reach the pool has nothing to report to it by
+definition.
+
+A memo that could not be relayed is a `warn` and the scan carries on.
 
 Whether it is running at all is read from the other end —
 `GET /v1/sources`, drawn in notemap's settings, says when each source last

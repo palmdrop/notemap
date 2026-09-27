@@ -17,6 +17,7 @@ import {
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
   DEFAULT_TRIGGER_WINDOW_MS,
+  LOG_LEVEL_VARIABLE,
   defaultZone,
 } from "../constants";
 import type { CookieOptions } from "../auth/sessions/config";
@@ -24,10 +25,9 @@ import {
   DEFAULT_LOG,
   LOG_FORMATS,
   LOG_LEVELS,
-  LOG_LEVEL_VARIABLE,
-  isLogLevel,
+  levelFrom,
   type LogConfig,
-} from "../log/config";
+} from "@notemap/log";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */
@@ -509,14 +509,8 @@ export function withEnvironment(
   loaded: LoadedConfig,
   env: NodeJS.ProcessEnv,
 ): LoadedConfig {
-  const level = env[LOG_LEVEL_VARIABLE];
-  if (level === undefined || level === "") return loaded;
-
-  if (!isLogLevel(level)) {
-    throw new Error(
-      `${LOG_LEVEL_VARIABLE} is "${level}", and a level is one of ${LOG_LEVELS.join(", ")}`,
-    );
-  }
+  const level = levelFrom(LOG_LEVEL_VARIABLE, env);
+  if (level === undefined) return loaded;
 
   return {
     ...loaded,

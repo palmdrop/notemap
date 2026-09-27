@@ -1,8 +1,17 @@
+import { createHash } from "node:crypto";
+
+import { classified } from "@notemap/relay";
 import type { Bytes, Relayed } from "@notemap/relay";
 
 import type { Memo, MemosAttachment } from "./types";
 
 const MEMO = "memos/";
+
+/** How this relay was asked to read a memo. */
+export type Reading = {
+  /** Whether a foot of `#tags` is read as tags and taken off the prose. */
+  readonly hashtags: boolean;
+};
 
 /** How the bytes of one attachment are reached, so the mapping needs no server. */
 export type Open = (
@@ -20,14 +29,42 @@ export function uidOf(name: string): string {
 }
 
 /**
+ * The memo's own update time, and — where this relay's reading changed the words
+ * — a digest of the words it is sending beside it. An edit is captured under an
+ * identity built from the version, and the pool matches a replayed edit on its
+ * payload: two readings of one memo claiming one identity means the second is
+ * refused as a conflicting resubmission, every poll, for as long as both exist.
+ * A memo whose words this relay did not touch keeps the bare update time, so
+ * nothing already in a pool moves.
+ */
+function versionOf(
+  updateTime: string,
+  content: string | undefined,
+  text: string | undefined,
+): string {
+  if (text === content) return updateTime;
+
+  const digest = createHash("sha256")
+    .update(text ?? "")
+    .digest("hex")
+    .slice(0, 16);
+  return `${updateTime}/${digest}`;
+}
+
+/**
  * One memo as the pool takes it, or nothing where there is nothing to take:
  * core lets an empty capture through, and each relay guards its own input.
  *
- * The content travels verbatim, `#tags` and all. Memos extracts those into
- * `tags` as well, and both are true of the memo — the prose is what was
- * written, and the classification is what it was written with.
+ * Memos extracts a memo's `#tags` into `tags` itself, so the classification
+ * arrives whether or not `hashtags` is set. What the flag decides is the
+ * *prose*: with it, a foot of tags is classification and comes off; without it,
+ * the content travels verbatim, `#tags` and all.
  */
-export function relayedFrom(memo: Memo, open: Open): Relayed | undefined {
+export function relayedFrom(
+  memo: Memo,
+  open: Open,
+  { hashtags }: Reading,
+): Relayed | undefined {
   const attachments = (memo.attachments ?? []).map((attachment) => ({
     id: attachment.name,
     filename: attachment.filename,
@@ -35,17 +72,19 @@ export function relayedFrom(memo: Memo, open: Open): Relayed | undefined {
     open: (signal?: AbortSignal) => open(attachment, signal),
   }));
 
-  const text = memo.content.trim() === "" ? undefined : memo.content;
-  if (text === undefined && attachments.length === 0) return undefined;
+  const content = memo.content.trim() === "" ? undefined : memo.content;
+  if (content === undefined && attachments.length === 0) return undefined;
+
+  const { text, tags } = classified(content, memo.tags ?? [], hashtags);
 
   return {
     sourceItemId: uidOf(memo.name),
-    version: memo.updateTime,
+    version: versionOf(memo.updateTime, content, text),
     // The memo's own creation time, so a memo written three days ago sits three
     // days back in the feed rather than at the top of the poll that found it.
     capturedAt: memo.createTime,
     ...(text === undefined ? {} : { text }),
-    tags: memo.tags ?? [],
+    tags,
     attachments,
   };
 }

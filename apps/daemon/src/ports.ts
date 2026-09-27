@@ -39,7 +39,7 @@ import {
 } from "@notemap/core";
 
 import { createAccounts, type AccountKinds, type Accounts } from "./accounts";
-import type { Logger } from "./log";
+import type { Logger } from "@notemap/log";
 import { logAction } from "./log/actions";
 import { destinationRenderers } from "./destinations/renderers";
 import { renderersFor } from "./mirror/renderers";

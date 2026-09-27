@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 
 import { JSON_MEDIA_TYPE } from "../constants";
-import type { Logger } from "../log";
+import type { Logger } from "@notemap/log";
 import type { AppEnv, ErrorBody } from "../types";
 
 /**
