@@ -1,6 +1,6 @@
 import type { Clock, Timestamp } from "@notemap/core";
 
-import { silentLogger, type Logger } from "../../log";
+import { silentLogger, type Logger } from "@notemap/log";
 import { TOKEN_PREFIX } from "../config";
 import { hasPassed, mintSecret, verifySecret } from "../secret";
 import type { AuthStore, TokenRecord } from "../store/types";

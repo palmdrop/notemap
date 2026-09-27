@@ -6,7 +6,7 @@ import type { Clock, Timestamp } from "@notemap/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createAuth } from ".";
-import { capturedLog } from "../log/testing";
+import { capturedLog } from "@notemap/log/testing";
 import { DEFAULT_CREDENTIALS_NAME } from "./config";
 import {
   passwordFromEnvironment,

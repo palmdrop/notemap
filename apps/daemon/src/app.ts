@@ -148,7 +148,7 @@ import {
   putAccountHandler,
   removeAccountHandler,
 } from "./routes/accounts";
-import type { Logger } from "./log";
+import type { Logger } from "@notemap/log";
 
 export type AppOptions = {
   readonly limits: UploadLimits;

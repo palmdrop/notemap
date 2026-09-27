@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Action, ActionId, ItemId, Timestamp } from "@notemap/core";
 
 import { actionLevel, logAction } from "./actions";
-import { capturedLog } from "./testing";
+import { capturedLog } from "@notemap/log/testing";
 
 const AT = "2026-09-20T15:10:50.068Z" as Timestamp;
 

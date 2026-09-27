@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { capturedLog, type CapturedLog } from "../log/testing";
+import { capturedLog, type CapturedLog } from "@notemap/log/testing";
 import type { AppEnv } from "../types";
 import { noticeOrigin } from "./origin";
 

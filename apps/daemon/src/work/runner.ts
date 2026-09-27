@@ -6,7 +6,7 @@ import type {
   WorkOutcome,
 } from "@notemap/core";
 
-import { silentLogger, type Logger } from "../log";
+import { silentLogger, type Logger } from "@notemap/log";
 
 export type RunnerConfig = {
   readonly pollIntervalMs: number;

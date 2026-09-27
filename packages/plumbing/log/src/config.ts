@@ -11,8 +11,6 @@ export type LogConfig = {
 
 export const DEFAULT_LOG: LogConfig = { level: "info", format: "text" };
 
-export const LOG_LEVEL_VARIABLE = "NOTEMAP_LOG_LEVEL";
-
 export function isLogLevel(value: string): value is LogLevel {
   return (LOG_LEVELS as readonly string[]).includes(value);
 }

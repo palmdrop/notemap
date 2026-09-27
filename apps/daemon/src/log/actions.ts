@@ -1,7 +1,6 @@
 import type { Action, ActionKind } from "@notemap/core";
 
-import type { Logger } from "./create";
-import type { LogLevel } from "./config";
+import type { LogLevel, Logger } from "@notemap/log";
 
 /** The kinds that say something went wrong; everything else says what happened. */
 const WARNINGS: ReadonlySet<ActionKind> = new Set<ActionKind>([

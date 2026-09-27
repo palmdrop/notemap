@@ -24,10 +24,12 @@ import {
   DEFAULT_LOG,
   LOG_FORMATS,
   LOG_LEVELS,
-  LOG_LEVEL_VARIABLE,
   isLogLevel,
   type LogConfig,
-} from "../log/config";
+} from "@notemap/log";
+
+/** Named here rather than in `@notemap/log`: the level is shared, the variable is this program's. */
+export const LOG_LEVEL_VARIABLE = "NOTEMAP_LOG_LEVEL";
 
 export type MirrorConfig = {
   /** The `pool-mirror` directory. */

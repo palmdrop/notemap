@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from "hono";
 
 import { reachedElsewhere } from "../config/load";
-import type { Logger } from "../log";
+import type { Logger } from "@notemap/log";
 import type { AppEnv } from "../types";
 
 /**

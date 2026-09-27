@@ -267,6 +267,9 @@ importers:
       '@notemap/destination-webdav':
         specifier: workspace:*
         version: link:../../packages/adapters/destination-webdav
+      '@notemap/log':
+        specifier: workspace:*
+        version: link:../../packages/plumbing/log
       '@notemap/mirror-fs':
         specifier: workspace:*
         version: link:../../packages/adapters/mirror-fs
@@ -288,9 +291,6 @@ importers:
       htmlparser2:
         specifier: ^12.0.0
         version: 12.0.0
-      pino:
-        specifier: ^10.3.1
-        version: 10.3.1
       smol-toml:
         specifier: ^1.7.1
         version: 1.7.1
@@ -630,6 +630,19 @@ importers:
       '@types/mdast':
         specifier: ^4.0.4
         version: 4.0.4
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@30.0.1)(vite@8.2.1(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.5)(yaml@2.9.0))
+
+  packages/plumbing/log:
+    dependencies:
+      pino:
+        specifier: ^10.3.1
+        version: 10.3.1
+    devDependencies:
       '@types/node':
         specifier: ^24.10.1
         version: 24.13.3

@@ -1,6 +1,6 @@
 import type { AssetId, Pool } from "@notemap/core";
 
-import { silentLogger, type Logger } from "../log";
+import { silentLogger, type Logger } from "@notemap/log";
 
 export type SweeperConfig = {
   readonly intervalMs: number;

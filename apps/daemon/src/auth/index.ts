@@ -1,6 +1,6 @@
 import type { Clock } from "@notemap/core";
 
-import { silentLogger, type Logger } from "../log";
+import { silentLogger, type Logger } from "@notemap/log";
 import { UnreadableHash } from "./passwords/errors";
 import { hashPassword, needsRehash, verifyPassword } from "./passwords";
 import { sameSecretly } from "./secret";
