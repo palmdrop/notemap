@@ -903,6 +903,10 @@ export const MIGRATIONS: readonly string[] = [
     ON jobs (abandoned_at, subject_kind, subject_id, kind)
     WHERE abandoned_at IS NOT NULL;
   `,
+  `
+  -- A filter looks an item's tags up by name.
+  CREATE INDEX item_tags_name ON item_tags (name, item_id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

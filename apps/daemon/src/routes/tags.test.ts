@@ -166,8 +166,8 @@ describe("the tags in use", () => {
 
     expect(await body(await app.request("/v1/tags"))).toEqual({
       values: [
-        { name: "kind/quote", items: 2 },
-        { name: "project/fiction-a", items: 1 },
+        { name: "kind/quote", items: 2, unprocessed: 2 },
+        { name: "project/fiction-a", items: 1, unprocessed: 1 },
       ],
     });
   });

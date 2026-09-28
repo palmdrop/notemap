@@ -50,6 +50,7 @@ import type {
   TagName,
 } from "../domain/ids";
 import type { EditOutcome, Item, TagUse } from "../domain/item";
+import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
 import type { PoolSetting } from "../domain/pool-setting";
@@ -124,15 +125,18 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: PageRequest): Promise<Slice<Item>>;
+  feed(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
-  queue(page: PageRequest): Promise<Slice<Item>>;
-  archived(page: PageRequest): Promise<Slice<Item>>;
+  queue(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
+  archived(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
 }
 
 export interface TagsApi {
-  /** Whole and unnarrowed: a caller completing a tag holds the set and filters it. */
-  inUse(): Promise<readonly TagUse[]>;
+  /**
+   * Whole and unpaginated: a caller completing a tag holds the set and matches
+   * it itself. Through a filter, only the tags carried beside the filter's.
+   */
+  inUse(filter?: TagFilter): Promise<readonly TagUse[]>;
 }
 
 export interface SourcesApi {

@@ -4,8 +4,10 @@ import type {
   ItemId,
   Page,
   Pool,
+  TagFilter,
   TagName,
 } from "@notemap/core";
+import { tagFilter } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { envelope, harness, itemRecord, tag, type Harness } from "./fixture";
@@ -309,6 +311,43 @@ describe("tagging", () => {
         by: { kind: "source", source: "scratchpad" },
         addedAt: "2026-08-06T09:00:00.000Z",
       },
+    ]);
+  });
+});
+
+describe("reading through a tag filter", () => {
+  function only(...tags: readonly string[]): TagFilter {
+    const filter = tagFilter(tags);
+    if (filter.kind === "refused") throw new Error("expected a filter");
+    return filter.value;
+  }
+
+  it("reads each surface through it, and the tags beside it", async () => {
+    const { pool: p } = pool();
+    const quoted = await captured(p);
+    const both = await captured(p, {
+      id: "item-1",
+      capturedAt: "2026-08-06T09:01:00.000Z",
+    });
+    await captured(p, { id: "item-2", capturedAt: "2026-08-06T09:02:00.000Z" });
+    await p.items.tag(quoted.id, KIND_QUOTE, PERSON);
+    await p.items.tag(both.id, KIND_QUOTE, PERSON);
+    await p.items.tag(both.id, tag("project/a"), PERSON);
+    await p.items.archive(quoted.id);
+
+    const ids = (items: readonly Item[]) => items.map((item) => item.id);
+    const filter = only(" kind/quote");
+
+    expect(ids((await p.views.feed(ALL, filter)).values)).toEqual([
+      both.id,
+      quoted.id,
+    ]);
+    expect(ids((await p.views.queue(ALL, filter)).values)).toEqual([both.id]);
+    expect(ids((await p.views.archived(ALL, filter)).values)).toEqual([
+      quoted.id,
+    ]);
+    expect(await p.tags.inUse(filter)).toEqual([
+      { name: "project/a", items: 1, unprocessed: 1 },
     ]);
   });
 });

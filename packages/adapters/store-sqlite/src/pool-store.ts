@@ -44,6 +44,7 @@ import type {
   SourceId,
   SourceUse,
   Tag,
+  TagFilter,
   TagName,
   TagUse,
   Timestamp,
@@ -171,6 +172,22 @@ const QUEUED = `
 `;
 
 const ARCHIVED = `item.archived_at IS NOT NULL`;
+
+/** One `EXISTS` per tag, so an item is read only where it carries every one. */
+function carrying(filter: TagFilter | undefined): {
+  readonly sql: readonly string[];
+  readonly params: Bindable[];
+} {
+  const tags = filter ?? [];
+  return {
+    sql: tags.map(
+      () =>
+        `EXISTS (SELECT 1 FROM item_tags AS carried
+                 WHERE carried.item_id = item.id AND carried.name = ?)`,
+    ),
+    params: [...tags],
+  };
+}
 
 /** The write lock serializes this process, so SQLITE_BUSY is only ever a second host. */
 const BUSY_TIMEOUT_MS = 5_000;
@@ -457,12 +474,29 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
-    const tagsInUse = source.query<TagUseRow, []>(`
-      SELECT name, COUNT(*) AS items
-      FROM item_tags
-      GROUP BY name
-      ORDER BY items DESC, name ASC
-    `);
+    /** Through a filter, the filter's own tags are left out: every item counted carries them. */
+    function tagsInUse(filter: TagFilter | undefined): readonly TagUseRow[] {
+      const tags = filter ?? [];
+      const within = carrying(filter);
+      const clauses = [
+        ...within.sql,
+        ...(tags.length === 0
+          ? []
+          : [`tag.name NOT IN (${tags.map(() => "?").join(", ")})`]),
+      ];
+
+      return source
+        .query<TagUseRow, Bindable[]>(
+          `SELECT tag.name AS name, COUNT(*) AS items,
+                  SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
+           FROM item_tags AS tag
+           JOIN items AS item ON item.id = tag.item_id
+           ${clauses.length === 0 ? "" : `WHERE ${clauses.join(" AND ")}`}
+           GROUP BY tag.name
+           ORDER BY items DESC, tag.name ASC`,
+        )
+        .all(...within.params, ...tags);
+    }
     /**
      * By capture time rather than by arrival: a relay posting a backlog would
      * otherwise put itself at the top for as long as the backlog reaches back.
@@ -616,8 +650,13 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    function byCaptureTime(page: OrderedPage, where?: string): Slice<Item> {
+    function byCaptureTime(
+      page: OrderedPage,
+      filter: TagFilter | undefined,
+      where?: string,
+    ): Slice<Item> {
       const way = direction(page.order);
+      const within = carrying(filter);
 
       const { rows, next } = keysetPage(page, (after, limit) => {
         const keyset =
@@ -626,9 +665,14 @@ export function createSqlitePoolStore(
             : keysetClause(CAPTURE_KEY, after, way.comparison);
         const clauses = [
           ...(where === undefined ? [] : [where]),
+          ...within.sql,
           ...(keyset === undefined ? [] : [keyset.sql]),
         ];
-        const params: Bindable[] = [...(keyset?.params ?? []), limit];
+        const params: Bindable[] = [
+          ...within.params,
+          ...(keyset?.params ?? []),
+          limit,
+        ];
 
         return source
           .query<ItemRow & { at: number }, Bindable[]>(
@@ -682,10 +726,11 @@ export function createSqlitePoolStore(
       // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
 
-      tagsInUse: async (): Promise<readonly TagUse[]> =>
-        tagsInUse.all().map((row) => ({
+      tagsInUse: async (filter?: TagFilter): Promise<readonly TagUse[]> =>
+        tagsInUse(filter).map((row) => ({
           name: row.name as TagName,
           items: row.items,
+          unprocessed: row.unprocessed,
         })),
 
       sourcesInUse: async (): Promise<readonly SourceUse[]> =>
@@ -783,14 +828,20 @@ export function createSqlitePoolStore(
       ): Promise<Item | undefined> =>
         one(itemBySource.get(sourceId, sourceItemId)),
 
-      feed: async (page: OrderedPage): Promise<Slice<Item>> =>
-        byCaptureTime(page),
+      feed: async (
+        page: OrderedPage,
+        filter?: TagFilter,
+      ): Promise<Slice<Item>> => byCaptureTime(page, filter),
 
-      queue: async (page: OrderedPage): Promise<Slice<Item>> =>
-        byCaptureTime(page, QUEUED),
+      queue: async (
+        page: OrderedPage,
+        filter?: TagFilter,
+      ): Promise<Slice<Item>> => byCaptureTime(page, filter, QUEUED),
 
-      archived: async (page: OrderedPage): Promise<Slice<Item>> =>
-        byCaptureTime(page, ARCHIVED),
+      archived: async (
+        page: OrderedPage,
+        filter?: TagFilter,
+      ): Promise<Slice<Item>> => byCaptureTime(page, filter, ARCHIVED),
 
       actions: async (
         query: ActionQuery,

@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-28
 **Shipped**:
 
 - 2026-09-24 — **A pool holds pool settings.** A value true of the pool rather than of any item,
@@ -533,6 +533,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   chain, where the same note counted once per link, and there is no chain any more. This is a
   reading of what classification has already produced, never a vocabulary: a tag no item carries
   does not exist, and nothing here constrains what may be written.
+- **Each tag in use also says how many of its items are unprocessed** (added 2026-09-28), so the
+  queue can say what it holds under a tag and the feed what the pool does, from one reading. **Read
+  through a filter** it answers the tags carried beside the filter's, both counts taken among the
+  items carrying every tag the filter names, and the filter's own tags left out, since every item
+  counted carries them.
 - **Any item that exists may be classified** (decided 2026-08-24), including a processed one.
   Classification is not content, so nothing that seals a capture reaches it, and re-filing a note
   after sending it is an ordinary thing to want. This reverses the 2026-08-17 refusal of both
@@ -590,12 +595,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 ### Archive and purge
 
 - **Archiving** hides an item from the queue without deleting it. The item stays in the feed and
-  remains fully processable from the archive; archiving is a filter, not a terminus.
+  remains fully processable from the archive; archiving hides, and ends nothing.
 - Archiving is always an explicit decision, and may carry a reason. **Unarchiving is likewise an
   explicit action** (decided 2026-08-03): an archived item returns to the queue, at its
   unchanged position, since archiving never moved it.
 - **The archive excludes nothing** (decided 2026-08-17): every archived item is in it, revised or
-  routed alike. It filters on one axis, which is the one archiving acts on. The queue's exclusions
+  routed alike. It holds one axis, which is the one archiving acts on. The queue's exclusions
   say what is not worth working on now; the archive is not a work list but the record of what was
   set aside, and an item dropped from it for having a revision would be reachable from the feed
   alone. So an archived item a revision was made from sits in the archive while that revision sits
@@ -700,7 +705,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   newest captures first, and refusing them buys the domain nothing. What makes it a queue is the
   **key**, and that the queue drains.
 - **The key is capture time** (decided 2026-08-24), the same one the feed uses, so the queue, the
-  feed and the archive are one ordering read through three filters. Nothing an item undergoes moves it: not
+  feed and the archive are one ordering read three ways. Nothing an item undergoes moves it: not
   classification, routing, archiving or enrichment, and not editing either. This replaces last
   touch, which existed so a revised item resurfaced where it would be met and is no longer needed
   for it, a revision now being a new capture that arrives at the newest end by its own time.
@@ -708,6 +713,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   rendering and by any surface that wants to say so, and orders nothing.
 - A third timestamp, `modified_at`, records the last change of any kind — content or state —
   and exists for sync delta reads only ([sync.md](sync.md)). It never affects ordering.
+- **The feed, the queue and the archive may each be read through a filter** (added 2026-09-28): a
+  set of tags, every one of which an item must carry to be read. It is a condition a reader adds
+  and not what makes the surface — the queue is still every unprocessed item, and a filter on it
+  answers the unprocessed items carrying the tags. Each tag is trimmed as tagging trims, the same
+  tag named twice is one, and a tag that trims to nothing is refused as `tag-invalid`; a tag no
+  item carries is an empty read rather than a refusal, a filter being a question and not a claim
+  that the tag exists. The key and the position are the surface's own, so a filtered read pages
+  on the same terms and a position continues from where it names whatever the filter.
 - An item is **processed** when it has been routed, archived or revised. Being **marked processed
   by hand** — the user carried its content onward themselves — is routing: it appends a routing
   record whose destination is the user, with an optional note of where it went. Passing over
@@ -1660,7 +1673,7 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - **[Feed and queue sort differently](../adr/0010-feed-and-queue-sort-differently.md)** — each
   surface gets the order its job requires. *Its key clause is superseded by
   [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)*: both surfaces now sort by
-  capture time, and the queue's job is done by its filter rather than by a second key.
+  capture time, and the queue's job is done by what it holds rather than by a second key.
 - **[In-place amendment of the head](../adr/0011-in-place-amendment-of-the-head.md)** — starting
   a new thought ends the previous one; no timer. *Superseded by
   [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)*: what seals a capture is a
@@ -1788,7 +1801,13 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   went; one that has been nowhere says nothing at all, and one whose last reservation was
   cancelled says nothing again.
 - The tags in use name every tag the pool carries, counting an archived item and a revised one
-  alike, and drop a tag the last item carrying it lost.
+  alike, and drop a tag the last item carrying it lost. Each also counts the unprocessed items
+  carrying it, which excludes an archived, a routed and a revised one.
+- Read through a filter of two tags, the feed, the queue and the archive each answer only the items
+  carrying both, paged from a position in either order; a tag nothing carries answers an empty
+  page, and a tag that trims to nothing is refused as `tag-invalid`.
+- The tags in use read through a filter answer the tags carried beside it, counted among the items
+  carrying it, and not the filter's own.
 - Tagging an item that has been routed and revised succeeds, and the tag does not appear on the
   revision.
 - Routing to a reachable destination answers a delivered record with a pointer, and enqueues no
