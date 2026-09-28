@@ -292,7 +292,6 @@ export interface PoolReads {
 
   /**
    * Ordered most used first, then by name, so a completion list needs no sort.
-   * Through a filter, the tags carried beside the filter's, counted within it.
    */
   tagsInUse(): Promise<readonly TagUse[]>;
 

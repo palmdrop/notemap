@@ -3495,7 +3495,6 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind",
                             "tag-invalid"
                           ]
                         }
@@ -3602,7 +3601,6 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind",
                             "tag-invalid"
                           ]
                         }
@@ -3709,7 +3707,6 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind",
                             "tag-invalid"
                           ]
                         }
@@ -7169,8 +7166,7 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind",
-                            "tag-invalid"
+                            "bad-kind"
                           ]
                         }
                       },

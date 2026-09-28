@@ -18,7 +18,9 @@ import {
   DESTINATION_STATUS,
   EDIT_STATUS,
   OUTPUT_STATUS,
+  KIND_FILTER_STATUS,
   PARAMETER_STATUS,
+  TAG_FILTER_STATUS,
   POOL_SETTING_STATUS,
   RETIRE_STATUS,
   ROUTING_STATUS,
@@ -400,6 +402,7 @@ export const feedRoute = createRoute({
       "A parameter was understood and refused.",
       422,
       PARAMETER_STATUS,
+      TAG_FILTER_STATUS,
     ),
   },
 });
@@ -420,6 +423,7 @@ export const queueRoute = createRoute({
       "A parameter was understood and refused.",
       422,
       PARAMETER_STATUS,
+      TAG_FILTER_STATUS,
     ),
   },
 });
@@ -440,6 +444,7 @@ export const archivedRoute = createRoute({
       "A parameter was understood and refused.",
       422,
       PARAMETER_STATUS,
+      TAG_FILTER_STATUS,
     ),
   },
 });
@@ -488,6 +493,7 @@ export const actionsRoute = createRoute({
       "A parameter was understood and refused.",
       422,
       PARAMETER_STATUS,
+      KIND_FILTER_STATUS,
     ),
   },
 });

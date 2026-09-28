@@ -904,7 +904,7 @@ export const MIGRATIONS: readonly string[] = [
     WHERE abandoned_at IS NOT NULL;
   `,
   `
-  -- A filter looks an item's tags up by name.
+  -- The tags in use are grouped by name; the key already serves a filter.
   CREATE INDEX item_tags_name ON item_tags (name, item_id);
   `,
 ];

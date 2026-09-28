@@ -190,6 +190,21 @@ describe("a tag filter on the surfaces", () => {
     expect(ids(await slice(app, `/v1/feed?${both}`))).toEqual([fourth, second]);
   });
 
+  it("carries every tag on the feed's next too", async () => {
+    const app = serving();
+    const [, second, , fourth] = await classified(app);
+
+    const page = await slice(
+      app,
+      "/v1/feed?tag=project%2Fa&tag=kind%2Fquote&limit=1",
+    );
+    expect(ids(page)).toEqual([fourth]);
+    expect(
+      new URL(page.next ?? "", "http://pool").searchParams.getAll("tag"),
+    ).toEqual(["project/a", "kind/quote"]);
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([second]);
+  });
+
   it("reads the archive through it too", async () => {
     const app = serving();
     const [first, second] = await classified(app);

@@ -134,7 +134,7 @@ export interface ViewsApi {
 export interface TagsApi {
   /**
    * Whole and unpaginated: a caller completing a tag holds the set and matches
-   * it itself. Through a filter, only the tags carried beside the filter's.
+   * it itself.
    */
   inUse(): Promise<readonly TagUse[]>;
 }
