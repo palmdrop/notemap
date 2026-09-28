@@ -7,9 +7,9 @@
 - 2026-09-28 — **The tags a surface holds, and a filter by them.** A `tags ▾` control beside the
   order, opened by `f`, lists every tag with how many items on that surface carry it, trigger tags
   apart beneath with the template they fire, and takes tags into and out of a filter of the queue
-  or the feed; a filter may hold several tags, all carried, and a row marks the ones it carries. The filter lives on the address and is never remembered,
-  back takes a tag off, the head says what the list is filtered by, `esc` with nothing selected
-  lifts the last tag, and an emptied filter never says the queue is drained. See
+  or the feed; a filter may hold several tags, all carried, and a row marks the ones it carries.
+  The filter lives on the address and is never remembered, back takes a tag off, `esc` with
+  nothing selected lifts the last tag, and an emptied filter never says the queue is drained. See
   [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
   rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
@@ -813,9 +813,9 @@ reader went. The whole surface is kept while a filter is on it
 ([client.md](client.md#a-filtered-surface)) and so is where it was scrolled to, so taking the
 filter off goes back to where the reader was; a filtered reading keeps its own place beside it.
 
-- **The head says what it is filtered by**, under the list head: `tagged` and each tag ruled round
-  with its `×` inside, as a carried tag is once pressed, the `×` taking that one off. Drawn only
-  while there is a filter.
+- **Nothing under the list head says what it is filtered by.** The control's count says a filter
+  is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken
+  out the same day, as noise above the rows.
 - **A row marks the tags it carries that the list is filtered by**, underlined, so the reason it is
   on the list can be found among its other tags.
 - **`esc` with nothing to let go of takes off the tag added last**, backing out a tag at a time as

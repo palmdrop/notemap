@@ -16,7 +16,6 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
-  import Filtered from "$components/tags/Filtered.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -262,7 +261,6 @@
     <Order />
   </span>
 </Head>
-<Filtered {filter} onlift={lift} />
 
 {#if view === "index" && !bare}
   {#if refused !== undefined}

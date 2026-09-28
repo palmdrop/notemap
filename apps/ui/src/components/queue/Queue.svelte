@@ -15,7 +15,6 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import Filtered from "$components/tags/Filtered.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -344,7 +343,6 @@
     <Order />
   </span>
 </Head>
-<Filtered {filter} onlift={lift} />
 
 {#if drained}
   <Drained

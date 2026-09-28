@@ -176,12 +176,10 @@ test("reads the queue through the filter on its address, and says what it is", a
     "project/a",
   ]);
 
-  const head = screen.getByLabelText("Filter");
-  expect(head.textContent).toContain("tagged");
-  await fireEvent.click(
-    screen.getByRole("button", { name: "Stop filtering by kind/quote" }),
-  );
-  expect(went.to).toEqual(["http://localhost/?tag=project%2Fa"]);
+  expect(
+    screen.getByRole("button", { name: "Filter by tag" }).textContent,
+  ).toContain("2");
+  expect(screen.queryByText("tagged")).toBeNull();
 });
 
 test("takes off the tag added last on escape, with nothing selected", async () => {
