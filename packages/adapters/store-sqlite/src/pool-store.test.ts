@@ -1660,22 +1660,6 @@ describe("a tag filter", () => {
 
     expect((await p.feed(ALL, only())).values).toHaveLength(4);
   });
-
-  it("counts the tags carried beside a filter's, within it, and not the filter's own", async () => {
-    const { pool: p } = pool();
-    await classified(p);
-    await p.transaction((tx) =>
-      tx.insertRoutingRecord(markedProcessed(tagged("item-3", [], 3))),
-    );
-
-    expect(await p.tagsInUse(only("kind/quote"))).toEqual([
-      { name: "project/a", items: 2, unprocessed: 1 },
-      { name: "lang/sv", items: 1, unprocessed: 0 },
-    ]);
-    expect(await p.tagsInUse(only("kind/quote", "project/a"))).toEqual([
-      { name: "lang/sv", items: 1, unprocessed: 0 },
-    ]);
-  });
 });
 
 describe("reservations", () => {

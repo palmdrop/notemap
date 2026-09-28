@@ -30,9 +30,8 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
   must be carried (AND). It is carried by `next`.
 - A value that trims to nothing is `422 tag-invalid`. Duplicates are absorbed, and there is no
   cap. A tag no item carries answers an empty page.
-- `GET /v1/tags` rows become `{ name, items, unprocessed }`. With `tag=` the route answers the
-  tags carried beside the filter's, both counts taken within it. This amends http-v1's "the tag
-  and its count are the whole of a row".
+- `GET /v1/tags` rows become `{ name, items, unprocessed }`. This amends http-v1's "the tag and its
+  count are the whole of a row". The route takes no filter *(amended the same day — see below)*.
 
 **The client**
 
@@ -48,24 +47,23 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
 - The watcher applies `tagged`/`untagged` actions (whose `detail` carries the tag) to cached
   items, so cached tags stop going stale and filtered pages follow other devices. An item the
   client does not hold waits for the next read, which is the rule unarchive already lives by.
-- The whole-pool tags list stays in `ClientState.tags`, and the chooser keeps reading it. A
-  filtered tags read is asked for when the tags view is drawn and is not held. Offline, it is
-  counted from the cache.
+- The whole-pool tags list stays in `ClientState.tags`; the chooser and the filter both read it.
 
 **The shell**
 
-- A third view, `timeline · index · tags`. It lists ordinary tags first, then a band of trigger
-  tags in trigger style, each naming its template.
-  - Counts are this surface's: `unprocessed` on the queue, `items` on the feed. A row counting
-    zero is not drawn, and a band with no rows is omitted.
-  - It is walked with `j k`. `⏎` adds the tag to the filter and returns to the view being read.
-- `view=tags` is on the URL only and never remembered. The remembered view stays timeline or
-  index, so a surface always opens on items.
+- A `tags ▾` dropdown beside the order *(amended the same day — see below)*, opened by `f`. A line
+  narrows it as it is typed into; ordinary tags first, then a band of trigger tags in trigger
+  style, each naming its template.
+  - Counts are this surface's: `unprocessed` on the queue, `items` on the feed. A tag counting
+    zero is not offered unless it is in the filter, and a band with no rows is omitted.
+  - A press or `⏎` takes a tag into the filter or out of it, and the panel stays open. Any set can
+    be taken, one no item carries all of included.
+- Rows underline the tags they carry that the surface is filtered by.
 - The filter is `tag=` on the URL only and never remembered, so a surface opened afresh is the
   whole of it. Changing the filter **pushes** a history entry; changing the view still
   **replaces** its entry.
-- The head reads `tagged kind/quote × · project/a ×`, and each `×` takes that tag off. `esc` with
-  no row selected takes off the tag added last.
+- The head reads `tagged` and each tag ruled round with its `×`, as a carried tag is once pressed;
+  each `×` takes that tag off. `esc` with no row selected takes off the tag added last.
 - An emptied filter never draws the drained queue's line. The queue says `nothing tagged … is
   waiting`, with `whole queue` beside it; the feed says `nothing is tagged …`.
 
@@ -161,8 +159,8 @@ Depends on: phase 3.
 - [x] Typecheck, tests, lint, `pnpm test:stack`; commit.
 
 **Verify**: in the running shell:
-1. Queue: open `tags`, take one tag, then a second from the filtered tags view. The rows and
-   counts agree and scrolling pages further.
+1. Queue: `f`, take one tag, then a second from the same panel. The rows and counts agree and
+   scrolling pages further.
 2. Back lifts one tag. `esc` lifts the other. The whole queue is where it was left.
 3. The same steps offline draw from the cache.
 
@@ -177,8 +175,14 @@ Depends on: phase 3.
 - **The feed holds a selected row too.** Nothing ever left the whole feed, so it had no hold; a
   filtered one loses a row whose tag is taken off, and now keeps it where it stood until the
   selection leaves it, as the queue does.
-- **The tags view says nothing when it is counted from the cache**, on the terms a cache-drawn
-  surface already does: the chrome's mark has said the pool is away.
+- **The tags view became a dropdown, and the reading beside a filter went with it** (decided by
+  the developer after the first PR round). A third view taken a tag at a time meant going back and
+  forth once per tag. The `tags ▾` panel beside the order takes several without leaving the list,
+  and lets any set be taken — a filter no item answers is informative, not an error. With that,
+  nothing asked for the tags carried beside a filter, so `tag=` on `GET /v1/tags`, the store's
+  co-occurrence query and the client's `tags.within` were removed. The panel reloads the whole list
+  as it opens, the held counts going stale as items are processed. Filter tags on a row are
+  underlined: the shell has no accent colour to mark them with.
 - **Not done by the agent:** the phase 4 walk-through in a running shell. Every step of it is
   covered by a component or client test, but none of them is a browser.
 

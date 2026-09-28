@@ -5,7 +5,7 @@ editing, destinations, routing to one, pool settings, unfurling and health are s
 **Last updated**: 2026-09-28
 **Shipped**:
 
-- 2026-09-28 — **`tag` filters the feed, the queue, the archive and the tags in use.** Repeated,
+- 2026-09-28 — **`tag` filters the feed, the queue and the archive.** Repeated,
   every one must be carried, and carried by `next`; a blank one is `422 tag-invalid`. A row of
   `GET /v1/tags` carries `unprocessed` beside `items`. See
   [filter-by-tag](../plans/filter-by-tag.md).
@@ -782,10 +782,6 @@ person to remember it.
 { "values": [ { "name": "kind/quote", "items": 12, "unprocessed": 3 } ] }
 ```
 
-| Parameter | Default | Meaning |
-|---|---|---|
-| `tag` | *(absent)* | Repeated; answers only the tags carried beside these, counted within them |
-
 - **Most used first, then by name**, which is the order a completion list wants and saves every
   client sorting the same way.
 - **Not paginated, and not narrowed by a prefix.** There is no `prefix` parameter: the set is small, a client
@@ -804,11 +800,8 @@ person to remember it.
 - **`unprocessed` counts the items among `items` that the queue holds**, so an archived, a routed
   and a revised one are in `items` and not in it. It may be `0`: a tag only processed items carry
   is still in use.
-- **Through a `tag` filter** (added 2026-09-28) the route answers the tags carried **beside** the
-  filter's, both counts taken among the items carrying every tag the filter names, and leaves the
-  filter's own tags out, since every item counted carries them. It is what a person picking a
-  second tag is offered: nothing that would read an empty surface. `tag` is read and refused
-  exactly as on the feed.
+- **It takes no `tag` filter.** A person may filter a surface by any set of tags, including one no
+  item carries all of, and an empty surface then says so; what they choose from is the whole set.
 - `items` counts every item carrying the tag (amended 2026-08-24), archived and revised alike.
   Tags carry over to a revision, so a tag is counted for the item it came from and again for the
   revision, which is two items both carrying it. The exclusion this replaces was for a revision
@@ -2047,8 +2040,7 @@ remains the interop surface; `/docs` is a convenience over it.
 - `tag` repeated on `GET /v1/feed`, `/v1/queue` or `/v1/archived` answers only the items carrying
   every tag named, and `next` carries each of them; a tag nothing carries answers an empty page,
   and one that trims to nothing is `422 tag-invalid`.
-- `GET /v1/tags` answers `items` and `unprocessed` for each tag; with `tag`, only the tags carried
-  beside the filter's, counted among the items carrying all of it.
+- `GET /v1/tags` answers `items` and `unprocessed` for each tag.
 - Archiving an item removes it from `GET /v1/queue` and adds it to `GET /v1/archived`;
   unarchiving returns it to the queue between the same two neighbours it had before.
 - Marking an item processed answers a routing record naming the user, removes it from the queue,

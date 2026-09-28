@@ -322,7 +322,7 @@ describe("reading through a tag filter", () => {
     return filter.value;
   }
 
-  it("reads each surface through it, and the tags beside it", async () => {
+  it("reads each surface through it", async () => {
     const { pool: p } = pool();
     const quoted = await captured(p);
     const both = await captured(p, {
@@ -345,9 +345,6 @@ describe("reading through a tag filter", () => {
     expect(ids((await p.views.queue(ALL, filter)).values)).toEqual([both.id]);
     expect(ids((await p.views.archived(ALL, filter)).values)).toEqual([
       quoted.id,
-    ]);
-    expect(await p.tags.inUse(filter)).toEqual([
-      { name: "project/a", items: 1, unprocessed: 1 },
     ]);
   });
 });

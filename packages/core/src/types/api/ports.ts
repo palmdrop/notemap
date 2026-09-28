@@ -294,7 +294,7 @@ export interface PoolReads {
    * Ordered most used first, then by name, so a completion list needs no sort.
    * Through a filter, the tags carried beside the filter's, counted within it.
    */
-  tagsInUse(filter?: TagFilter): Promise<readonly TagUse[]>;
+  tagsInUse(): Promise<readonly TagUse[]>;
 
   /** Every source the pool has an item from, most recently captured first. */
   sourcesInUse(): Promise<readonly SourceUse[]>;

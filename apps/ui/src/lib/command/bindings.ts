@@ -26,6 +26,9 @@ const BINDINGS: Record<string, string> = {
   select: "enter",
   deselect: "escape",
 
+  // The queue's and the feed's own: the tags they are read through.
+  filter: "f",
+
   // The process surface's own.
   back: "escape",
   previous: "[",

@@ -474,29 +474,14 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
-    /** Through a filter, the filter's own tags are left out: every item counted carries them. */
-    function tagsInUse(filter: TagFilter | undefined): readonly TagUseRow[] {
-      const tags = filter ?? [];
-      const within = carrying(filter);
-      const clauses = [
-        ...within.sql,
-        ...(tags.length === 0
-          ? []
-          : [`tag.name NOT IN (${tags.map(() => "?").join(", ")})`]),
-      ];
-
-      return source
-        .query<TagUseRow, Bindable[]>(
-          `SELECT tag.name AS name, COUNT(*) AS items,
-                  SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
-           FROM item_tags AS tag
-           JOIN items AS item ON item.id = tag.item_id
-           ${clauses.length === 0 ? "" : `WHERE ${clauses.join(" AND ")}`}
-           GROUP BY tag.name
-           ORDER BY items DESC, tag.name ASC`,
-        )
-        .all(...within.params, ...tags);
-    }
+    const tagsInUse = source.query<TagUseRow, []>(`
+      SELECT tag.name AS name, COUNT(*) AS items,
+             SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
+      FROM item_tags AS tag
+      JOIN items AS item ON item.id = tag.item_id
+      GROUP BY tag.name
+      ORDER BY items DESC, tag.name ASC
+    `);
     /**
      * By capture time rather than by arrival: a relay posting a backlog would
      * otherwise put itself at the top for as long as the backlog reaches back.
@@ -726,8 +711,8 @@ export function createSqlitePoolStore(
       // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],
 
-      tagsInUse: async (filter?: TagFilter): Promise<readonly TagUse[]> =>
-        tagsInUse(filter).map((row) => ({
+      tagsInUse: async (): Promise<readonly TagUse[]> =>
+        tagsInUse.all().map((row) => ({
           name: row.name as TagName,
           items: row.items,
           unprocessed: row.unprocessed,

@@ -449,19 +449,12 @@ export const tagsInUseRoute = createRoute({
   path: "/v1/tags",
   summary: "Read the tags the pool carries",
   description:
-    "Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`. Through `tag`, only the tags carried beside the filter's, counted among the items carrying every tag it names, and not the filter's own.",
-  request: { query: tagFilterQuery },
+    "Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`.",
   responses: {
     200: {
-      description:
-        "Every tag the pool carries, or those carried beside the filter.",
+      description: "Every tag the pool carries.",
       content: { [JSON_MEDIA_TYPE]: { schema: tagsInUseSchema } },
     },
-    422: errorResponse(
-      "A parameter was understood and refused.",
-      422,
-      PARAMETER_STATUS,
-    ),
   },
 });
 

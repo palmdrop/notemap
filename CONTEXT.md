@@ -185,8 +185,7 @@ _Avoid_: hashtag parsing, inline tags, tag line (for the whole rule)
 
 **Tags in use**:
 Every tag the pool carries, each with the number of items carrying it and how many of those are
-unprocessed. Read through a **filter**, it is the tags carried beside the filter's, counted
-within it. A reading of what classification has produced, never a vocabulary: it is what a person
+unprocessed. A reading of what classification has produced, never a vocabulary: it is what a person
 is offered while they type, and a tag no item carries simply is not in it. An item that was revised still counts: it is a real
 item still carrying its tags, and the revision that copied them is another one.
 _Avoid_: tag list, taxonomy, vocabulary, autocomplete

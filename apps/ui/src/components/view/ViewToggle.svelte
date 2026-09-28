@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { View } from "$lib/view";
 
-  /** The ways of reading one list, the current one bold. */
+  /** The two ways of reading one list, the current one bold. */
   let { view, onchoose }: { view: View; onchoose: (view: View) => void } =
     $props();
 
-  const VIEWS: readonly View[] = ["timeline", "index", "tags"];
+  const VIEWS: readonly View[] = ["timeline", "index"];
 </script>
 
 <nav class="flex gap-4" aria-label="View">

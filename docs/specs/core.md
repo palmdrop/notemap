@@ -6,8 +6,7 @@
 
 - 2026-09-28 — **The feed, the queue and the archive can be read through a tag filter.** Every
   tag it names must be carried; each is trimmed as tagging trims, and a blank one is refused. The
-  tags in use now count the unprocessed carriers of each tag as well, and through a filter answer
-  the tags carried beside it, counted within it. See [filter-by-tag](../plans/filter-by-tag.md).
+  tags in use now count the unprocessed carriers of each tag as well. See [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-24 — **A pool holds pool settings.** A value true of the pool rather than of any item,
   destination or template — read over `/v1`, changed by a person using notemap, written to the
   action log, mirrored, and read the same on every device. One exists: the unfurl opt-out,
@@ -538,10 +537,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   reading of what classification has already produced, never a vocabulary: a tag no item carries
   does not exist, and nothing here constrains what may be written.
 - **Each tag in use also says how many of its items are unprocessed** (added 2026-09-28), so the
-  queue can say what it holds under a tag and the feed what the pool does, from one reading. **Read
-  through a filter** it answers the tags carried beside the filter's, both counts taken among the
-  items carrying every tag the filter names, and the filter's own tags left out, since every item
-  counted carries them.
+  queue can say what it holds under a tag and the feed what the pool does, from one reading. It is
+  never read through a filter: a person may put any set of tags on a surface, including one no item
+  carries all of, so the whole set is what they choose from.
 - **Any item that exists may be classified** (decided 2026-08-24), including a processed one.
   Classification is not content, so nothing that seals a capture reaches it, and re-filing a note
   after sending it is an ordinary thing to want. This reverses the 2026-08-17 refusal of both
@@ -1810,8 +1808,6 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Read through a filter of two tags, the feed, the queue and the archive each answer only the items
   carrying both, paged from a position in either order; a tag nothing carries answers an empty
   page, and a tag that trims to nothing is refused as `tag-invalid`.
-- The tags in use read through a filter answer the tags carried beside it, counted among the items
-  carrying it, and not the filter's own.
 - Tagging an item that has been routed and revised succeeds, and the tag does not appear on the
   revision.
 - Routing to a reachable destination answers a delivered record with a pointer, and enqueues no

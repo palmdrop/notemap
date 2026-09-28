@@ -266,7 +266,6 @@ export function createClient(config: ClientConfig): Client {
     inUse: derived(state.changes, (current) => current.tags),
     cached: (held) =>
       after(() => state.update((current) => ({ ...current, tags: held }))),
-    held: () => state.get().items.values(),
   });
 
   let classified = false;

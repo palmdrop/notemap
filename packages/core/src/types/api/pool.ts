@@ -136,7 +136,7 @@ export interface TagsApi {
    * Whole and unpaginated: a caller completing a tag holds the set and matches
    * it itself. Through a filter, only the tags carried beside the filter's.
    */
-  inUse(filter?: TagFilter): Promise<readonly TagUse[]>;
+  inUse(): Promise<readonly TagUse[]>;
 }
 
 export interface SourcesApi {

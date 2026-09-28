@@ -1651,44 +1651,24 @@ export interface paths {
         };
         /**
          * Read the tags the pool carries
-         * @description Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`. Through `tag`, only the tags carried beside the filter's, counted among the items carrying every tag it names, and not the filter's own.
+         * @description Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`.
          */
         get: {
             parameters: {
-                query?: {
-                    /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
-                    tag?: string[];
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Every tag the pool carries, or those carried beside the filter. */
+                /** @description Every tag the pool carries. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": components["schemas"]["TagsInUse"];
-                    };
-                };
-                /** @description A parameter was understood and refused. */
-                422: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description The refusal's kind, with its facts beside it. */
-                            error: {
-                                /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind" | "tag-invalid";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        };
                     };
                 };
             };

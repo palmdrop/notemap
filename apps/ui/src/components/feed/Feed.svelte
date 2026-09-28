@@ -17,7 +17,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import Filtered from "$components/tags/Filtered.svelte";
-  import TagList from "$components/tags/TagList.svelte";
+  import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -35,13 +35,7 @@
   import { refusalIn } from "$lib/refusal";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
-  import {
-    remember,
-    remembered,
-    viewFor,
-    withView,
-    type View,
-  } from "$lib/view";
+  import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "feed";
 
@@ -60,7 +54,7 @@
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
-  let tagList = $state<TagList | undefined>(undefined);
+  let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -121,15 +115,13 @@
     );
   }
 
-  /** Adds a tag to the filter and goes back to reading items. */
-  function narrow(tag: string) {
-    leave(
-      () =>
-        void goto(
-          filtered(page.url, [...filter, tag], remembered(SURFACE)),
-          GOING,
-        ),
-    );
+  /** Takes a tag into the filter, or out of it where it already was. */
+  function toggle(tag: string) {
+    if (filter.includes(tag)) {
+      lift(tag);
+      return;
+    }
+    leave(() => void goto(filtered(page.url, [...filter, tag], view), GOING));
   }
 
   function select(id: string) {
@@ -238,47 +230,41 @@
 
   // The same two the queue publishes: a register walks the same way whatever
   // it holds, and a row offers what it draws as buttons.
-  publish(() =>
-    view === "tags"
-      ? listCommands({
-          ondown: () => tagList?.walk(1),
-          onup: () => tagList?.walk(-1),
-          onselect: () => tagList?.take(),
-          ondeselect: () => {
-            if (tagList?.holding() === true) tagList.unmark();
-            else if (filter.length > 0) lift(filter.at(-1) ?? "");
-          },
-        })
-      : [
-          ...listCommands({
-            ondown: () => leave(() => void walk(1)),
-            onup: () => leave(() => void walk(-1)),
-            onselect: () => {
-              if (current === undefined) void walk(1);
-              else if (drawn[current.id]?.isEditing() !== true)
-                process(current);
-            },
-            ondeselect: () =>
-              leave(() => {
-                if (selected === undefined && filter.length > 0) {
-                  lift(filter.at(-1) ?? "");
-                } else selected = undefined;
-              }),
-          }),
-          ...reached(),
-        ],
-  );
+  publish(() => [
+    ...listCommands({
+      ondown: () => leave(() => void walk(1)),
+      onup: () => leave(() => void walk(-1)),
+      onselect: () => {
+        if (current === undefined) void walk(1);
+        else if (drawn[current.id]?.isEditing() !== true) process(current);
+      },
+      ondeselect: () =>
+        leave(() => {
+          if (selected === undefined && filter.length > 0) {
+            lift(filter.at(-1) ?? "");
+          } else selected = undefined;
+        }),
+    }),
+    ...reached(),
+    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+  ]);
 </script>
 
 <Head>
   <ViewToggle {view} onchoose={read} />
-  <Order />
+  <span class="flex items-baseline gap-5">
+    <TagFilter
+      bind:this={tagFilter}
+      surface={SURFACE}
+      {filter}
+      ontoggle={toggle}
+    />
+    <Order />
+  </span>
 </Head>
 <Filtered {filter} onlift={lift} />
 
-{#if view === "tags"}
-  <TagList bind:this={tagList} surface={SURFACE} {filter} onchoose={narrow} />
-{:else if view === "index" && !bare}
+{#if view === "index" && !bare}
   {#if refused !== undefined}
     <Register><Refused surface="feed" {refused} /></Register>
   {/if}
@@ -332,6 +318,7 @@
         bind:this={drawn[item.id]}
         {item}
         surface="feed"
+        {filter}
         selected={selected === item.id}
         offline={!pool.yes}
         commands={selected === item.id ? commands : []}

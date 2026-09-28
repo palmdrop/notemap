@@ -232,20 +232,7 @@ export interface TagsApi {
   readonly inUse: Observable<readonly TagUse[]>;
   /** Fills the set `inUse` answers from, and answers the same list. */
   load(): Promise<readonly TagUse[]>;
-  /**
-   * The tags carried beside a filter's, counted among the items carrying all of
-   * it. Asked each time and never held; a pool that does not answer is counted
-   * from the items the client holds, and says so.
-   */
-  within(tags: readonly string[]): Promise<TagsWithin>;
 }
-
-export type TagsWithin = {
-  readonly values: readonly TagUse[];
-  /** Counted from what the client holds, the pool not having answered. */
-  readonly fromCache: boolean;
-  readonly failure?: ReadFailure;
-};
 
 /**
  * Not cached and not held: a settings screen reads this to notice a source that

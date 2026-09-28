@@ -16,7 +16,7 @@
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Filtered from "$components/tags/Filtered.svelte";
-  import TagList from "$components/tags/TagList.svelte";
+  import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -33,13 +33,7 @@
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
-  import {
-    remember,
-    remembered,
-    viewFor,
-    withView,
-    type View,
-  } from "$lib/view";
+  import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "queue";
 
@@ -72,7 +66,7 @@
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
-  let tagList = $state<TagList | undefined>(undefined);
+  let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -182,15 +176,13 @@
     );
   }
 
-  /** Adds a tag to the filter and goes back to reading items. */
-  function narrow(tag: string) {
-    leave(
-      () =>
-        void goto(
-          filtered(page.url, [...filter, tag], remembered(SURFACE)),
-          GOING,
-        ),
-    );
+  /** Takes a tag into the filter, or out of it where it already was. */
+  function toggle(tag: string) {
+    if (filter.includes(tag)) {
+      lift(tag);
+      return;
+    }
+    leave(() => void goto(filtered(page.url, [...filter, tag], view), GOING));
   }
 
   function select(id: string) {
@@ -306,47 +298,31 @@
       : commands;
   }
 
-  publish(() => (view === "tags" ? tagCommands() : rowCommands()));
-
-  /** The same keys over the tags instead of the rows. */
-  function tagCommands(): readonly Command[] {
-    return listCommands({
-      ondown: () => tagList?.walk(1),
-      onup: () => tagList?.walk(-1),
-      onselect: () => tagList?.take(),
-      ondeselect: () => {
-        if (tagList?.holding() === true) tagList.unmark();
-        else if (filter.length > 0) lift(filter.at(-1) ?? "");
+  publish(() => [
+    ...listCommands({
+      ondown: () => leave(() => void walk(1)),
+      onup: () => leave(() => void walk(-1)),
+      onselect: () => {
+        if (current !== undefined) {
+          if (drawn[current.id]?.isEditing() !== true) process(current);
+        } else if (atCapture) capture?.take();
+        else void walk(1);
       },
-    });
-  }
-
-  function rowCommands(): readonly Command[] {
-    return [
-      ...listCommands({
-        ondown: () => leave(() => void walk(1)),
-        onup: () => leave(() => void walk(-1)),
-        onselect: () => {
-          if (current !== undefined) {
-            if (drawn[current.id]?.isEditing() !== true) process(current);
-          } else if (atCapture) capture?.take();
-          else void walk(1);
-        },
-        // With nothing to let go of, `esc` backs out of the filter a tag at a
-        // time, as it backs out of everything else.
-        ondeselect: () =>
-          leave(() => {
-            if (selected === undefined && !atCapture && filter.length > 0) {
-              lift(filter.at(-1) ?? "");
-            } else deselect();
-          }),
-      }),
-      ...reached(),
-      ...(atCapture
-        ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
-        : []),
-    ];
-  }
+      // With nothing to let go of, `esc` backs out of the filter a tag at a
+      // time, as it backs out of everything else.
+      ondeselect: () =>
+        leave(() => {
+          if (selected === undefined && !atCapture && filter.length > 0) {
+            lift(filter.at(-1) ?? "");
+          } else deselect();
+        }),
+    }),
+    ...reached(),
+    ...(atCapture
+      ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
+      : []),
+    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+  ]);
 </script>
 
 <Capture
@@ -358,13 +334,19 @@
 
 <Head>
   <ViewToggle {view} onchoose={read} />
-  <Order />
+  <span class="flex items-baseline gap-5">
+    <TagFilter
+      bind:this={tagFilter}
+      surface={SURFACE}
+      {filter}
+      ontoggle={toggle}
+    />
+    <Order />
+  </span>
 </Head>
 <Filtered {filter} onlift={lift} />
 
-{#if view === "tags"}
-  <TagList bind:this={tagList} surface={SURFACE} {filter} onchoose={narrow} />
-{:else if drained}
+{#if drained}
   <Drained
     {filter}
     onwhole={() => leave(() => void goto(filtered(page.url, [], view), GOING))}
@@ -407,6 +389,7 @@
         bind:this={drawn[row.id]}
         item={row}
         surface="queue"
+        {filter}
         selected={selected === row.id}
         offline={!pool.yes}
         commands={selected === row.id ? commands : []}

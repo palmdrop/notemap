@@ -1,9 +1,8 @@
 /**
- * The ways a list is read: as a timeline of what was written, as an index of
- * one line per item, for scanning rather than reading, or as the tags its
- * items carry, which is the way to a filter rather than a reading of items.
+ * The two ways a list is read: as a timeline of what was written, or as an
+ * index of one line per item, for scanning rather than reading.
  */
-export type View = "timeline" | "index" | "tags";
+export type View = "timeline" | "index";
 
 /** The surfaces that have both. The log is a list of actions, not of items. */
 export type Surface = "queue" | "feed";
@@ -12,16 +11,10 @@ export const PARAM = "view";
 
 const KEY = "notemap:view";
 
-const VIEWS: readonly View[] = ["timeline", "index", "tags"];
+const VIEWS: readonly View[] = ["timeline", "index"];
 
-/** The views a surface opens on, and so the only ones remembered: a surface always opens on items. */
-const REMEMBERED: readonly View[] = ["timeline", "index"];
-
-function known(
-  said: string | null,
-  among: readonly View[] = VIEWS,
-): View | undefined {
-  return among.includes(said as View) ? (said as View) : undefined;
+function known(said: string | null): View | undefined {
+  return VIEWS.includes(said as View) ? (said as View) : undefined;
 }
 
 /**
@@ -30,19 +23,15 @@ function known(
  * until somebody asks for less of it.
  */
 export function viewFor(surface: Surface, url: URL): View {
-  return known(url.searchParams.get(PARAM)) ?? remembered(surface);
-}
-
-/** The view of items this surface was last read in, whatever the address says. */
-export function remembered(surface: Surface): View {
   return (
-    known(localStorage.getItem(`${KEY}:${surface}`), REMEMBERED) ?? "timeline"
+    known(url.searchParams.get(PARAM)) ??
+    known(localStorage.getItem(`${KEY}:${surface}`)) ??
+    "timeline"
   );
 }
 
 export function remember(surface: Surface, view: View): void {
-  if (REMEMBERED.includes(view))
-    localStorage.setItem(`${KEY}:${surface}`, view);
+  localStorage.setItem(`${KEY}:${surface}`, view);
 }
 
 /**

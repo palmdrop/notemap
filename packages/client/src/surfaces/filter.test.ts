@@ -166,36 +166,3 @@ describe("a surface read through a filter", () => {
     held.unsubscribe();
   });
 });
-
-describe("the tags beside a filter", () => {
-  it("asks the pool through the filter", async () => {
-    const { client, transport } = clientOver((request) =>
-      routeOf(request) === "GET /v1/tags"
-        ? json(200, {
-            values: [{ name: "project/a", items: 1, unprocessed: 1 }],
-          })
-        : json(200, { values: [] }),
-    );
-
-    const within = await client.tags.within(["kind/quote"]);
-
-    expect(within).toEqual({
-      values: [{ name: "project/a", items: 1, unprocessed: 1 }],
-      fromCache: false,
-    });
-    expect(tagsAsked(transport.sent, "GET /v1/tags")).toEqual([["kind/quote"]]);
-  });
-
-  it("counts them from the items held while the pool is away", async () => {
-    const { client, transport } = clientOver(pool());
-    await client.enter("feed");
-
-    transport.unreachable(true);
-    const within = await client.tags.within(["kind/quote"]);
-
-    expect(within.fromCache).toBe(true);
-    expect(within.values).toEqual([
-      { name: "project/a", items: 1, unprocessed: 1 },
-    ]);
-  });
-});

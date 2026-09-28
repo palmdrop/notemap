@@ -6,9 +6,7 @@
 
 - 2026-09-28 — **A surface can be read through a filter.** `enter` takes the tags; the whole page
   is kept beside the filtered one and returned to as it stood. One membership rule keeps every page,
-  the watcher applies tags added and taken off elsewhere to the items held, and `tags.within`
-  answers the tags beside a filter — counted from what the client holds while the pool is away.
-  See [filter-by-tag](../plans/filter-by-tag.md).
+  and the watcher applies tags added and taken off elsewhere to the items held. See [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-24 — **`client.unfurl(url)`.** What a link points at, read straight off `/v1` and held
   nowhere; it asks nothing unless the pool setting `unfurl` reads on as last read. See
   [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and
@@ -502,11 +500,9 @@ has walked, so a filtered reading made from them would be silently short of what
   same rule, and marked as drawn from the cache like any other.
 - **A read that lands after its filter was lifted or changed lands nowhere.** Its rows are cached,
   and its position belongs to a page nothing draws.
-- **The tags beside a filter are asked, not held** (`tags.within`): the pool's reading of the tags
-  carried beside the filter's, counted among the items carrying it, read each time a shell draws the
-  list. With the pool out of reach the client counts them itself over the items it holds, on the
-  pool's rule and in its order, and says the answer is its own. The whole list stays the read cache
-  it was ([the outbox](#the-outbox)), and is what completion offers.
+- **What a filter is chosen from is the whole list of tags in use**, the read cache it was
+  ([the outbox](#the-outbox)) and what completion offers. There is no reading of the tags beside a
+  filter: any set may be put on a surface, one no item carries all of included.
 
 ### The action log
 
@@ -1354,7 +1350,7 @@ that logic out of the one place it is meant to live.
 - Taking a filter's tag off a row — here, or on another device as the log reports it — takes the
   row off the filtered page and leaves it on the whole one; tagging an item the client holds into
   the filter places it there.
-- With the pool out of reach, a filtered surface and the tags beside a filter are both counted
-  from what the client holds, and say so.
+- With the pool out of reach, a filtered surface is drawn from what the client holds, and says
+  so.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state
   through the subscribe contract alone.

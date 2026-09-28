@@ -60,7 +60,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
         store.archived(ordered(page, "oldest-first"), filter),
     },
 
-    tags: { inUse: (filter) => store.tagsInUse(filter) },
+    tags: { inUse: () => store.tagsInUse() },
 
     sources: { inUse: () => store.sourcesInUse() },
 

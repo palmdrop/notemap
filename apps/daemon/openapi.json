@@ -4482,70 +4482,14 @@
     "/v1/tags": {
       "get": {
         "summary": "Read the tags the pool carries",
-        "description": "Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`. Through `tag`, only the tags carried beside the filter's, counted among the items carrying every tag it names, and not the filter's own.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
-              "example": [
-                "kind/quote"
-              ]
-            },
-            "required": false,
-            "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
-            "name": "tag",
-            "in": "query",
-            "style": "form",
-            "explode": true
-          }
-        ],
+        "description": "Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`.",
         "responses": {
           "200": {
-            "description": "Every tag the pool carries, or those carried beside the filter.",
+            "description": "Every tag the pool carries.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TagsInUse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "A parameter was understood and refused.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "enum": [
-                            "limit-too-large",
-                            "bad-limit",
-                            "bad-order",
-                            "bad-position",
-                            "bad-kind",
-                            "tag-invalid"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ],
-                      "additionalProperties": {},
-                      "description": "The refusal's kind, with its facts beside it."
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
                 }
               }
             }

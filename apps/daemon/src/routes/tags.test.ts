@@ -181,31 +181,3 @@ describe("the tags in use", () => {
     expect(await body(await app.request("/v1/tags"))).toEqual({ values: [] });
   });
 });
-
-describe("GET /v1/tags?tag=", () => {
-  it("answers the tags carried beside the filter's, counted within it", async () => {
-    const app = serving();
-    const [first, second, third] = await captureMany(app, 3);
-    await send(app, `/v1/items/${first}/tag`, { tag: "kind/quote" });
-    await send(app, `/v1/items/${first}/tag`, { tag: "project/a" });
-    await send(app, `/v1/items/${second}/tag`, { tag: "kind/quote" });
-    await send(app, `/v1/items/${second}/tag`, { tag: "project/a" });
-    await send(app, `/v1/items/${third}/tag`, { tag: "project/a" });
-    await send(app, `/v1/items/${second}/mark-processed`);
-
-    expect(await body(await app.request("/v1/tags?tag=kind%2Fquote"))).toEqual({
-      values: [{ name: "project/a", items: 2, unprocessed: 1 }],
-    });
-  });
-
-  it("refuses a tag that trims to nothing", async () => {
-    const app = serving();
-
-    const response = await app.request("/v1/tags?tag=%20");
-
-    expect(response.status).toBe(422);
-    expect(await body(response)).toEqual({
-      error: { code: "tag-invalid", tag: " " },
-    });
-  });
-});

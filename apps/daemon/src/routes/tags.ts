@@ -5,7 +5,6 @@ import type { Agent, ItemId, Pool, TagName } from "@notemap/core";
 import { errorBody, tagStatus } from "../errors/refusals";
 import { tagRequestSchema } from "../schemas/tags";
 import { readBody } from "../utils/body";
-import { readTagFilter } from "../utils/query";
 import { json, refuse } from "../utils/responses";
 
 export function tagHandler(pool: Pool, half: "tag" | "untag") {
@@ -31,10 +30,6 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
 }
 
 export function tagsInUseHandler(pool: Pool) {
-  return async (context: Context): Promise<Response> => {
-    const tags = readTagFilter(new URL(context.req.url));
-    if (!tags.ok) return refuse(tags.refusal);
-
-    return json({ values: await pool.tags.inUse(tags.filter) }, 200);
-  };
+  return async (): Promise<Response> =>
+    json({ values: await pool.tags.inUse() }, 200);
 }
