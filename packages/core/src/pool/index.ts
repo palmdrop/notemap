@@ -37,3 +37,6 @@ export { PAYLOAD_TYPES } from "./payload";
 
 // The same arrangement for the pool settings this code knows.
 export { POOL_SETTINGS } from "./settings";
+
+// A host reads a filter off its own request and hands core what this made of it.
+export { tagFilter } from "./filter";

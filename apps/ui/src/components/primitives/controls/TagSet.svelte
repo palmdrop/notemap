@@ -21,6 +21,7 @@
     offered = [],
     fires,
     held,
+    marked,
     addable = true,
     label = "Add a tag",
     onadd,
@@ -41,6 +42,8 @@
      * off is cancelling the routing rather than pressing the tag.
      */
     held?: (name: string) => boolean;
+    /** A carried tag this answers true for is underlined: the surface is filtered by it. */
+    marked?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
     /** What the `+` and the line are called, where two sets share a page. */
@@ -211,14 +214,21 @@
 {#each names as name (name)}
   {@const fired = fires?.(name)}
   {@const inert = held?.(name) === true}
-  <span class="whitespace-nowrap" transition:unfold={{ fade: true }}>
+  {@const filtered = marked?.(name) === true}
+  <span
+    class="whitespace-nowrap"
+    data-marked={filtered ? "" : undefined}
+    transition:unfold={{ fade: true }}
+  >
     {#if inert}
       <span
         title="filed the item — cancel the routing to take it off"
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}
-        class={fired === undefined ? "" : TRIGGER}
+        class="{fired === undefined ? '' : TRIGGER} {filtered
+          ? 'underline'
+          : ''}"
       >
         {fired === undefined ? name : trigger(name)}
       </span>
@@ -242,7 +252,7 @@
             : `${name}, routes to ${fired}`}
           class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
             ? ''
-            : TRIGGER}"
+            : TRIGGER} {filtered ? 'underline' : ''}"
         >
           {fired === undefined ? name : trigger(name)}
         </button>{#if chosen === name}<button

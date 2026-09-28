@@ -81,6 +81,16 @@ belongs to the ordering it names rather than to the surface that issued it.
 _Avoid_: cursor, offset, page number. Not "token" either, though the word is taken: an
 **access token** is a credential and nothing to do with a place in a list.
 
+**Filter**:
+A condition a reader puts on a surface, which an item or action must meet to be read there — on the
+queue and the feed, a set of tags every one of which an item must carry; on the log, a view of
+kinds or one item. Answered by the pool, so it reaches as far back as the pool does. A question of
+the moment rather than a preference: it lasts as long as the address that names it, and a surface
+opened afresh is always the whole of it. What makes a surface what it is — the queue holding the
+unprocessed, the archive the archived — is not a filter: it is the surface.
+_Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, search, facet,
+query
+
 **Revision**:
 An ordinary capture, made by editing a processed item, carrying its own capture time, source and
 id plus a link to what it was made from. The link is a trace, not a replacement: the item it came
@@ -174,9 +184,9 @@ relay does it before it captures, and the pool only ever sees tags.
 _Avoid_: hashtag parsing, inline tags, tag line (for the whole rule)
 
 **Tags in use**:
-Every tag the pool carries, each with the number of items carrying it. A reading of what
-classification has produced, never a vocabulary: it is what a person is offered while they type,
-and a tag no item carries simply is not in it. An item that was revised still counts: it is a real
+Every tag the pool carries, each with the number of items carrying it and how many of those are
+unprocessed. A reading of what classification has produced, never a vocabulary: it is what a person
+is offered while they type, and a tag no item carries simply is not in it. An item that was revised still counts: it is a real
 item still carrying its tags, and the revision that copied them is another one.
 _Avoid_: tag list, taxonomy, vocabulary, autocomplete
 
@@ -240,7 +250,7 @@ which agent, to what. Read by a human tracing something; pool state is never der
 _Avoid_: event, audit entry
 
 **History**:
-The action log narrowed to one item: everything that happened to it, in order. The shell's word
+The action log filtered to one item: everything that happened to it, in order. The shell's word
 for the way there from the item; the log itself is still the log, and one entry is still an
 action.
 _Avoid_: only this, timeline, activity

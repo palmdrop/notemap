@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -16,6 +16,7 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -23,14 +24,14 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { filtering } from "$lib/filtering.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
-  import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
-  import { keepPlace, restorePlace } from "$lib/scroll-mark";
+  import { restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -42,13 +43,29 @@
 
   /** One row is selected at a time, as on the queue: it is the same row. */
   let selected = $state<string | undefined>(undefined);
-  let view = $state<View>(viewFor(SURFACE, page.url));
+  /** Going back and forward moves through the views a filter was taken from. */
+  let view = $derived<View>(viewFor(SURFACE, page.url));
+
+  const reading = filtering(
+    SURFACE,
+    () => ({ view, order: $feed.order }),
+    () => (selected = undefined),
+  );
 
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
+  let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
+
+  /**
+   * Whether there is more is what the pool's first page answers, so rows drawn
+   * from the cache while it is read are offered nothing past them.
+   */
+  const footed = $derived(
+    $feed.more && !($feed.fromCache && $feed.loading && $feed.items.length > 0),
+  );
 
   const motion = moving(
     () => $feed.loading,
@@ -65,12 +82,9 @@
 
   onMount(() => {
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url));
-      await tick();
-      restorePlace(SURFACE);
+      await reading.arrive();
+      restorePlace(reading.place);
     })();
-
-    return keepPlace(SURFACE);
   });
 
   function select(id: string) {
@@ -79,7 +93,36 @@
     });
   }
 
-  const rows = $derived($feed.items);
+  /** Where the selected row last stood, for when it leaves. */
+  let stood = $state<number | undefined>(undefined);
+
+  /** The selected row's own copy, which outlives its place on a filtered feed. */
+  const heldRow = $derived(client.held(selected ?? ""));
+
+  /**
+   * Nothing leaves the whole feed, but a row whose filter tag is taken off
+   * leaves a filtered one, and is held where it stood until the selection
+   * leaves it, as a decision's row is on the queue.
+   */
+  const rows = $derived.by(() => {
+    const live = $feed.items;
+    const kept = $heldRow;
+    if (
+      selected === undefined ||
+      kept === undefined ||
+      live.some((row) => row.id === selected)
+    ) {
+      return live;
+    }
+    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    return [...live.slice(0, place), kept, ...live.slice(place)];
+  });
+
+  $effect(() => {
+    const at = rows.findIndex((row) => row.id === selected);
+    if (at !== -1) stood = at;
+  });
+
   const current = $derived(rows.find((row) => row.id === selected));
 
   function reveal(id: string) {
@@ -161,12 +204,22 @@
       ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),
+    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
   ]);
 </script>
 
 <Head>
   <ViewToggle {view} onchoose={read} />
-  <Order />
+  <span class="flex items-baseline gap-5">
+    <TagFilter
+      bind:this={tagFilter}
+      surface={SURFACE}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
+    />
+    <Order />
+  </span>
 </Head>
 
 {#if view === "index" && !bare}
@@ -183,7 +236,7 @@
     onprocess={(id) => void goto(processHref(id))}
   />
 
-  {#if $feed.more}
+  {#if footed}
     <More
       loading={$feed.loading}
       first={rows.length === 0}
@@ -201,7 +254,18 @@
     {#if bare}
       <Rail>feed</Rail>
       <Body>
-        <Prose text={NOTHING_CAPTURED} />
+        {#if $feed.filter.length === 0}
+          <Prose text={NOTHING_CAPTURED} />
+        {:else}
+          Nothing is tagged {$feed.filter.join(" · ")}.
+          <button
+            type="button"
+            class="ml-[1ch] hover:underline"
+            onclick={reading.clear}
+          >
+            whole feed
+          </button>
+        {/if}
       </Body>
     {/if}
 
@@ -211,6 +275,7 @@
         bind:this={drawn[item.id]}
         {item}
         surface="feed"
+        filter={$feed.filter}
         selected={selected === item.id}
         offline={!pool.yes}
         commands={selected === item.id ? commands : []}
@@ -220,7 +285,7 @@
       />
     {/each}
 
-    {#if $feed.more}
+    {#if footed}
       <More
         loading={$feed.loading}
         first={rows.length === 0}

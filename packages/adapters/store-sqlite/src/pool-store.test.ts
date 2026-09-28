@@ -14,9 +14,11 @@ import type {
   RoutingRecord,
   RoutingRecordId,
   SourceId,
+  TagFilter,
   TagName,
   Timestamp,
 } from "@notemap/core";
+import { tagFilter } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { SqlitePoolStore } from "./pool-store";
@@ -1472,8 +1474,8 @@ describe("the tags in use", () => {
     );
 
     expect(await p.tagsInUse()).toEqual([
-      { name: "kind/quote", items: 2 },
-      { name: "project/a", items: 1 },
+      { name: "kind/quote", items: 2, unprocessed: 2 },
+      { name: "project/a", items: 1, unprocessed: 1 },
     ]);
   });
 
@@ -1508,7 +1510,9 @@ describe("the tags in use", () => {
       tags: original.tags,
     });
 
-    expect(await p.tagsInUse()).toEqual([{ name: "kind/quote", items: 2 }]);
+    expect(await p.tagsInUse()).toEqual([
+      { name: "kind/quote", items: 2, unprocessed: 1 },
+    ]);
   });
 
   it("counts an archived item, which is still in the pool", async () => {
@@ -1523,7 +1527,26 @@ describe("the tags in use", () => {
       }),
     );
 
-    expect((await p.tagsInUse())[0]?.items).toBe(1);
+    expect(await p.tagsInUse()).toEqual([
+      { name: "kind/quote", items: 1, unprocessed: 0 },
+    ]);
+  });
+
+  it("counts a routed item as carrying the tag and not as unprocessed", async () => {
+    const { pool: p } = pool();
+    const routed = tagged("item-1", ["kind/quote"], "2026-08-03T09:00:00.000Z");
+    await appendCapture(p, routed);
+    await appendCapture(
+      p,
+      tagged("item-2", ["kind/quote"], "2026-08-03T09:00:00.000Z"),
+    );
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(markedProcessed(routed)),
+    );
+
+    expect(await p.tagsInUse()).toEqual([
+      { name: "kind/quote", items: 2, unprocessed: 1 },
+    ]);
   });
 
   it("forgets a tag the last item carrying it lost", async () => {
@@ -1537,6 +1560,105 @@ describe("the tags in use", () => {
     );
 
     expect(await p.tagsInUse()).toEqual([]);
+  });
+});
+
+describe("a tag filter", () => {
+  const PERSON: Agent = { kind: "person" };
+
+  function tagged(id: string, names: readonly string[], minute: number) {
+    const at = `2026-08-03T09:0${minute}:00.000Z`;
+    return capture({
+      id,
+      createdAt: at,
+      tags: names.map((name) => ({ name, by: PERSON, addedAt: at })),
+    });
+  }
+
+  function only(...names: readonly string[]): TagFilter {
+    const filter = tagFilter(names);
+    if (filter.kind === "refused") throw new Error("expected a filter");
+    return filter.value;
+  }
+
+  /** Four items, of which the ones carrying both tags are 1 and 3. */
+  async function classified(p: SqlitePoolStore): Promise<void> {
+    await appendCapture(p, tagged("item-0", ["kind/quote"], 0));
+    await appendCapture(p, tagged("item-1", ["kind/quote", "project/a"], 1));
+    await appendCapture(p, tagged("item-2", ["project/a"], 2));
+    await appendCapture(
+      p,
+      tagged("item-3", ["project/a", "kind/quote", "lang/sv"], 3),
+    );
+  }
+
+  it("reads the feed through every tag it names", async () => {
+    const { pool: p } = pool();
+    await classified(p);
+
+    expect(ids((await p.feed(ALL, only("kind/quote"))).values)).toEqual([
+      "item-3",
+      "item-1",
+      "item-0",
+    ]);
+    expect(
+      ids((await p.feed(ALL, only("kind/quote", "project/a"))).values),
+    ).toEqual(["item-3", "item-1"]);
+  });
+
+  it("reads the queue and the archive through it, on top of what each holds", async () => {
+    const { pool: p } = pool();
+    await classified(p);
+    await p.transaction((tx) =>
+      tx.setArchiveState("item-1" as ItemId, {
+        archivedAt: at("2026-08-03T12:00:00.000Z"),
+      }),
+    );
+
+    expect(ids((await p.queue(ALL_OLDEST, only("project/a"))).values)).toEqual([
+      "item-2",
+      "item-3",
+    ]);
+    expect(
+      ids((await p.archived(ALL_OLDEST, only("project/a"))).values),
+    ).toEqual(["item-1"]);
+  });
+
+  it("pages a filtered read from a position, in either order", async () => {
+    const { pool: p } = pool();
+    await classified(p);
+    const filter = only("kind/quote");
+
+    const newest = await p.feed({ ...ALL, limit: 2 }, filter);
+    expect(ids(newest.values)).toEqual(["item-3", "item-1"]);
+    const older = await p.feed(
+      nextPage(newest.next, { ...ALL, limit: 2 }),
+      filter,
+    );
+    expect(ids(older.values)).toEqual(["item-0"]);
+    expect(older.next).toBeUndefined();
+
+    const oldest = await p.queue({ ...ALL_OLDEST, limit: 1 }, filter);
+    expect(ids(oldest.values)).toEqual(["item-0"]);
+    const newer = await p.queue(
+      nextPage(oldest.next, { ...ALL_OLDEST, limit: 5 }),
+      filter,
+    );
+    expect(ids(newer.values)).toEqual(["item-1", "item-3"]);
+  });
+
+  it("answers an empty page for a tag nothing carries", async () => {
+    const { pool: p } = pool();
+    await classified(p);
+
+    expect((await p.feed(ALL, only("kind/nothing"))).values).toEqual([]);
+  });
+
+  it("reads an empty filter as the whole surface", async () => {
+    const { pool: p } = pool();
+    await classified(p);
+
+    expect((await p.feed(ALL, only())).values).toHaveLength(4);
   });
 });
 

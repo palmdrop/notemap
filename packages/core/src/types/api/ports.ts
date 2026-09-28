@@ -37,6 +37,7 @@ import type {
   Tag,
   TagUse,
 } from "../domain/item";
+import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { PoolSettingRecord } from "../domain/pool-setting";
 import type {
@@ -285,11 +286,13 @@ export interface PoolReads {
   ): Promise<Item | undefined>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
-  feed(page: OrderedPage): Promise<Slice<Item>>;
-  queue(page: OrderedPage): Promise<Slice<Item>>;
-  archived(page: OrderedPage): Promise<Slice<Item>>;
+  feed(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
+  queue(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
+  archived(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
 
-  /** Ordered most used first, then by name, so a completion list needs no sort. */
+  /**
+   * Ordered most used first, then by name, so a completion list needs no sort.
+   */
   tagsInUse(): Promise<readonly TagUse[]>;
 
   /** Every source the pool has an item from, most recently captured first. */

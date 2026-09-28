@@ -4,6 +4,7 @@ export * from "./asset";
 export * from "./capture";
 export * from "./destination";
 export * from "./enrichment";
+export * from "./filter";
 export * from "./ids";
 export * from "./item";
 export * from "./mirror";

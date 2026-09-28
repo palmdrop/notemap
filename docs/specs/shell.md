@@ -1,9 +1,16 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-27
+**Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **The tags a surface holds, and a filter by them.** A `tags ▾` control beside the
+  order, opened by `f`, lists every tag with how many items on that surface carry it, trigger tags
+  apart beneath with the template they fire, and takes tags into and out of a filter of the queue
+  or the feed; a filter may hold several tags, all carried, and a row marks the ones it carries.
+  The filter lives on the address and is never remembered, back takes a tag off, the panel clears
+  it whole, and an emptied filter never says the queue is drained. See
+  [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
   rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
   actions' place in the foot; no decision is reached meanwhile, and the tags stay live. Leaving an
@@ -747,7 +754,8 @@ body's words stay the browser's.
 register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
 bringing it into view — and off a held row, which then goes; `enter` selects the first row where
 none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
-one and deselects otherwise. The selected row adds every command its own actions draw
+one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)). The selected
+row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
 button reaches, on either surface, and a control that is not drawn has no key either. On the queue
@@ -766,6 +774,70 @@ breakpoint. **Where more than half a day passed** between two items the list ope
 fixed size, the same whether a day or a month passed: time passing is read from the space. The
 selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
 process. The feed has the same view.
+
+#### Tags, and a filter
+
+*Added 2026-09-28.* **The list head holds a `tags ▾` control beside the order**, the way to a
+**filter** ([CONTEXT.md](../../CONTEXT.md)) and what answers which tags exist at all, which nothing
+did before. It reads `tags 2 ▾` while two tags filter the list. A tags view — a third view beside
+`timeline` and `index`, taken a tag at a time — was built first and replaced the same day: a filter
+of several tags meant going back and forth between it and the list once per tag.
+
+- **It opens a panel with a line to find a tag in**, the caret on it, and every tag beneath with
+  how many items on this surface carry it: the queue counts the unprocessed ones, the feed every
+  one, as the pool counts them. Typing narrows the list as completion does. `f` opens it from
+  either surface.
+- **Pressing a tag, or `⏎` on the walked one, takes it into the filter or out of it**, and the
+  panel stays open for the next. `↑`/`↓` walk the lines, the walked one bold; a tag in the filter is
+  marked `▸`. `esc`, or leaving the panel, shuts it and changes nothing.
+- **`clear 2` beside the line takes the whole filter off** at once, one entry on the history, the
+  count saying how much it takes. Drawn only while there is a filter, and it has no key.
+- **Any set can be taken**, whether or not an item carries all of it: a filter no item answers says
+  so, and that is worth being told. So the panel offers the whole list
+  of tags in use and counts each on the whole surface, never beside the filter.
+- A tag this surface holds none of is not offered — the queue does not offer a tag only processed
+  items carry — unless it is already in the filter, where it stays so it can be taken off.
+- **Ordinary tags first; trigger tags apart beneath** a `templates` label, drawn in the trigger
+  style — the name after `route/`, in bold small caps — with the template they fire, `→ research`,
+  beside them. A trigger tag says where an item went rather than what it is, which is why it is not
+  read among the others; on the queue the band is nearly always absent, a tag that filed an item
+  having taken it off the queue. Taking one filters like any tag: on the feed, `research` read that
+  way is everything that template filed.
+- The panel reads the tags in use again as it opens, the counts having gone stale as items were
+  processed; with the pool out of reach it draws the list last held, and says nothing of it.
+
+**A filter is every tag it names, and lives on the address alone**: `tag=kind%2Fquote&tag=project%2Fa`,
+reloaded and shared as it is, and **never remembered** — a queue that reopened filtered would say
+three were waiting while forty were, which is the worst thing it could say. `queue` and `feed` in
+the bar go to the whole surface. Changing it **pushes** onto the browser's history, so back takes a
+tag off again; the order and the view still replace, being how a list is read rather than where a
+reader went. The whole surface is kept while a filter is on it
+([client.md](client.md#a-filtered-surface)) and so is where it was scrolled to, so taking the
+filter off goes back to where the reader was; a filtered reading keeps its own place beside it,
+and a new one opens at the top — the list shrinking under a filter scrolls the page, and that is
+not somewhere the reader went. A changed filter keeps the order the list is read in, whatever the
+address last said.
+
+- **Rows drawn from the cache while a new filter's first page is read are offered no `load
+  more`**: whether there is more is what that page answers, and a `load more` that goes as soon as
+  it lands is a flash of a claim nobody can act on.
+
+- **Nothing under the list head says what it is filtered by.** The control's count says a filter
+  is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken
+  out the same day, as noise above the rows.
+- **A row marks the tags it carries that the list is filtered by**, underlined, so the reason it is
+  on the list can be found among its other tags.
+- **No key takes a tag off.** `esc` is pressed too often, and without thinking, to be what
+  changes what a list holds; it deselects and does nothing more. Taking tags off is the panel's,
+  or back's.
+- **A row whose filter tag is taken off leaves the filtered list** on the terms a decision takes one
+  off the queue: held where it stood while it is selected, and sliding out when the selection
+  leaves it.
+- **An emptied filter says so and never says the queue is drained**: `Nothing tagged kind/quote is
+  waiting.` with `whole queue` beside it, and on the feed `Nothing is tagged kind/quote.` with
+  `whole feed`.
+- Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
+  `tags ▾` panel is the one way in.
 
 #### The process surface
 

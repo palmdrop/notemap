@@ -161,3 +161,74 @@ describe("GET /v1/archived", () => {
     expect(await slice(app, "/v1/archived")).toEqual({ values: [] });
   });
 });
+
+describe("a tag filter on the surfaces", () => {
+  async function classified(app: Hono<AppEnv>): Promise<string[]> {
+    const captured = await captureMany(app, 4);
+    const [first, second, third, fourth] = captured;
+    for (const id of [first, second, fourth]) {
+      await send(app, `/v1/items/${id}/tag`, { tag: "project/a" });
+    }
+    for (const id of [second, third, fourth]) {
+      await send(app, `/v1/items/${id}/tag`, { tag: "kind/quote" });
+    }
+    return captured;
+  }
+
+  it("reads only what carries every tag named, and carries them all on next", async () => {
+    const app = serving();
+    const [, second, , fourth] = await classified(app);
+    const both = "tag=project%2Fa&tag=kind%2Fquote";
+
+    const page = await slice(app, `/v1/queue?${both}&limit=1`);
+    expect(ids(page)).toEqual([second]);
+    expect(
+      new URL(page.next ?? "", "http://pool").searchParams.getAll("tag"),
+    ).toEqual(["project/a", "kind/quote"]);
+
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([fourth]);
+    expect(ids(await slice(app, `/v1/feed?${both}`))).toEqual([fourth, second]);
+  });
+
+  it("carries every tag on the feed's next too", async () => {
+    const app = serving();
+    const [, second, , fourth] = await classified(app);
+
+    const page = await slice(
+      app,
+      "/v1/feed?tag=project%2Fa&tag=kind%2Fquote&limit=1",
+    );
+    expect(ids(page)).toEqual([fourth]);
+    expect(
+      new URL(page.next ?? "", "http://pool").searchParams.getAll("tag"),
+    ).toEqual(["project/a", "kind/quote"]);
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([second]);
+  });
+
+  it("reads the archive through it too", async () => {
+    const app = serving();
+    const [first, second] = await classified(app);
+    await send(app, `/v1/items/${first}/archive`);
+    await send(app, `/v1/items/${second}/archive`);
+
+    expect(ids(await slice(app, "/v1/archived?tag=kind%2Fquote"))).toEqual([
+      second,
+    ]);
+  });
+
+  it("answers nothing for a tag nothing carries, and refuses a blank one", async () => {
+    const app = serving();
+    await classified(app);
+
+    expect(await slice(app, "/v1/feed?tag=kind%2Fnothing")).toEqual({
+      values: [],
+    });
+    for (const path of ["/v1/feed", "/v1/queue", "/v1/archived"]) {
+      const response = await app.request(`${path}?tag=kind%2Fquote&tag=`);
+      expect(response.status).toBe(422);
+      expect(await body(response)).toEqual({
+        error: { code: "tag-invalid", tag: "" },
+      });
+    }
+  });
+});

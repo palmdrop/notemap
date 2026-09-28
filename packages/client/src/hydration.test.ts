@@ -76,7 +76,7 @@ describe("hydration", () => {
 
   it("completes a tag it saw last session with no transport to ask", async () => {
     const store = createMemoryStore();
-    await store.writeTags([{ name: "reading", items: 3 }]);
+    await store.writeTags([{ name: "reading", items: 3, unprocessed: 1 }]);
 
     const { client, transport } = clientOver(store, unreachable);
     transport.unreachable(true);
@@ -84,6 +84,19 @@ describe("hydration", () => {
 
     expect(read(client.tags.inUse).map((use) => use.name)).toEqual(["reading"]);
     expect(asked(transport)).toEqual([]);
+  });
+
+  it("counts a tag held before unprocessed was counted as unprocessed throughout", async () => {
+    const store = createMemoryStore();
+    await store.writeTags([{ name: "reading", items: 3 } as never]);
+
+    const { client, transport } = clientOver(store, unreachable);
+    transport.unreachable(true);
+    await until(() => read(client.tags.inUse).length > 0);
+
+    expect(read(client.tags.inUse)).toEqual([
+      { name: "reading", items: 3, unprocessed: 3 },
+    ]);
   });
 
   it("drains a capture made in a previous session, exactly once, unprompted", async () => {
@@ -208,7 +221,7 @@ describe("hydration", () => {
 
   it("reports a store it cannot read, and keeps the collections it could", async () => {
     const store = createMemoryStore();
-    await store.writeTags([{ name: "reading", items: 3 }]);
+    await store.writeTags([{ name: "reading", items: 3, unprocessed: 1 }]);
     const broken: ClientStore = {
       ...store,
       readItems: () => Promise.reject(new Error("the database is gone")),

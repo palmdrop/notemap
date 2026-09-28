@@ -239,14 +239,19 @@ export function outputStatus(refusal: OutputRefusal): number {
   return OUTPUT_STATUS[refusal.kind];
 }
 
-/** Anything wrong with a query parameter. */
+/** Anything wrong with a paging parameter. */
 export const PARAMETER_STATUS = {
   "limit-too-large": 422,
   "bad-limit": 422,
   "bad-order": 422,
   "bad-position": 422,
-  "bad-kind": 422,
 } as const;
+
+/** The log's own parameter, which no surface takes. */
+export const KIND_FILTER_STATUS = { "bad-kind": 422 } as const;
+
+/** A surface's own parameter, which the log does not take. */
+export const TAG_FILTER_STATUS = { "tag-invalid": 422 } as const;
 
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
 
@@ -279,6 +284,8 @@ export const AUTH_STATUS = {
 const DAEMON_STATUS = {
   ...BODY_STATUS,
   ...PARAMETER_STATUS,
+  ...KIND_FILTER_STATUS,
+  ...TAG_FILTER_STATUS,
   ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
   ...CANDIDATES_REQUEST_STATUS,

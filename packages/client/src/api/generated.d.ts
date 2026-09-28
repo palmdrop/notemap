@@ -926,7 +926,7 @@ export interface paths {
         };
         /**
          * Read the feed
-         * @description Every item chronologically by capture time, including archived items and the items revisions were made from. Follow `next` until it is absent.
+         * @description Every item chronologically by capture time, including archived items and the items revisions were made from, or only those carrying every `tag` named. Follow `next` until it is absent; it carries the filter.
          */
         get: {
             parameters: {
@@ -937,6 +937,8 @@ export interface paths {
                     limit?: string;
                     /** @description The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point. */
                     after?: string;
+                    /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
+                    tag?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -963,7 +965,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -989,7 +991,7 @@ export interface paths {
         };
         /**
          * Read the queue
-         * @description Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read through three filters.
+         * @description Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named.
          */
         get: {
             parameters: {
@@ -1000,6 +1002,8 @@ export interface paths {
                     limit?: string;
                     /** @description The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point. */
                     after?: string;
+                    /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
+                    tag?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -1026,7 +1030,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1063,6 +1067,8 @@ export interface paths {
                     limit?: string;
                     /** @description The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point. */
                     after?: string;
+                    /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
+                    tag?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -1089,7 +1095,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1645,7 +1651,7 @@ export interface paths {
         };
         /**
          * Read the tags the pool carries
-         * @description Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. Every item carrying a tag is counted, archived and revised alike.
+         * @description Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`.
          */
         get: {
             parameters: {
@@ -4379,6 +4385,7 @@ export interface components {
         TagUse: {
             name: string;
             items: number;
+            unprocessed: number;
         };
         SourcesInUse: {
             values: components["schemas"]["SourceUse"][];

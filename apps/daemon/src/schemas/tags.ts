@@ -10,6 +10,8 @@ export const tagUseSchema = z
     name: z.string(),
     /** Items carrying it, archived and revised alike. */
     items: z.number().int().positive(),
+    /** Of those, the ones the queue holds. */
+    unprocessed: z.number().int().nonnegative(),
   })
   .openapi("TagUse");
 

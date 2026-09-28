@@ -9,6 +9,7 @@ function surface(state: Partial<ListState> = {}) {
   let held: ListState = {
     items: [],
     order: "newest-first",
+    filter: [],
     loading: false,
     more: true,
     fromCache: false,

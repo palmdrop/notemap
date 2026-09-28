@@ -23,14 +23,18 @@ export function formatPosition(position: Position): string {
     : `${position.at},${position.id}`;
 }
 
+/** A parameter given several values is repeated, once per value, in order. */
 export function pageUrl(
   path: string,
-  parameters: Readonly<Record<string, string>>,
+  parameters: Readonly<Record<string, string | readonly string[]>>,
   after: Position,
 ): string {
-  const query = new URLSearchParams({
-    ...parameters,
-    after: formatPosition(after),
-  });
+  const query = new URLSearchParams();
+  for (const [name, value] of Object.entries(parameters)) {
+    for (const each of typeof value === "string" ? [value] : value) {
+      query.append(name, each);
+    }
+  }
+  query.set("after", formatPosition(after));
   return `${path}?${query.toString()}`;
 }

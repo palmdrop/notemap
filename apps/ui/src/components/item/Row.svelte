@@ -29,6 +29,7 @@
     selected,
     offline,
     surface,
+    filter = [],
     commands,
     pending = false,
     motion,
@@ -39,6 +40,8 @@
     selected: boolean;
     offline: boolean;
     surface: "queue" | "feed";
+    /** The tags the surface is read through, marked where the row carries them. */
+    filter?: readonly string[];
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
@@ -125,7 +128,7 @@
       {/if}
 
       <div class="mt-0.5">
-        <Tags bind:this={tags} {item} addable={selected} />
+        <Tags bind:this={tags} {item} {filter} addable={selected} />
       </div>
 
       {#if finished}

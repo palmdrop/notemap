@@ -1,5 +1,6 @@
 import type {
   Action,
+  Agent,
   AssetId,
   Destination,
   DestinationId,
@@ -11,6 +12,7 @@ import type {
   RoutingSummary,
   RoutingTemplate,
   RoutingTemplateId,
+  Tag,
   TagUse,
 } from "#api/types";
 import type { PendingOperation } from "#outbox/operations";
@@ -20,8 +22,13 @@ type RoutedTo = RoutingSummary["to"][number];
 
 export type Surface = "feed" | "queue";
 
+/** Tags every item on a page carries. Empty is the whole surface. */
+export type Filter = readonly string[];
+
 export type ListPage = {
   readonly order: Order;
+  /** Absent on the whole surface. */
+  readonly filter?: Filter;
   readonly ids: readonly ItemId[];
   /** The position the next read continues from; absent once exhausted. */
   readonly after?: string;
@@ -40,6 +47,12 @@ export type ClientState = {
   readonly items: ReadonlyMap<ItemId, Item>;
   readonly feed: ListPage;
   readonly queue: ListPage;
+  /**
+   * The page a surface is read through while a filter is on it. The whole page
+   * is kept beside it rather than replaced, so lifting the filter goes back to
+   * where the reader was.
+   */
+  readonly filtered: { readonly [surface in Surface]?: ListPage };
   readonly outbox: readonly PendingOperation[];
   /** In the order the pool answered, for a screen to read once it is out of reach. */
   readonly destinations: readonly Destination[];
@@ -65,8 +78,53 @@ export type HeldBlob = {
   readonly url?: string;
 };
 
-export function emptyPage(order: Order): ListPage {
-  return { order, ids: [], exhausted: false, loading: false, answered: false };
+export function emptyPage(order: Order, filter: Filter = []): ListPage {
+  return {
+    order,
+    ...(filter.length === 0 ? {} : { filter }),
+    ids: [],
+    exhausted: false,
+    loading: false,
+    answered: false,
+  };
+}
+
+/** Trimmed as the pool trims, blanks dropped, one of each, in the order named. */
+export function filterOf(tags: readonly string[]): Filter {
+  const kept: string[] = [];
+  for (const tag of tags.map((each) => each.trim())) {
+    if (tag !== "" && !kept.includes(tag)) kept.push(tag);
+  }
+  return kept;
+}
+
+export function sameFilter(one: Filter = [], other: Filter = []): boolean {
+  return (
+    one.length === other.length && one.every((tag, at) => tag === other[at])
+  );
+}
+
+/** The page a surface is being read through: the filtered one where there is one. */
+export function reading(state: ClientState, surface: Surface): ListPage {
+  return state.filtered[surface] ?? state[surface];
+}
+
+/** Written to the whole page or the filtered one, by the filter the page carries. */
+export function withReading(
+  state: ClientState,
+  surface: Surface,
+  page: ListPage,
+): ClientState {
+  return (page.filter ?? []).length === 0
+    ? { ...state, [surface]: page }
+    : { ...state, filtered: { ...state.filtered, [surface]: page } };
+}
+
+/** The surface read whole again, its filtered page dropped. */
+export function unfiltered(state: ClientState, surface: Surface): ClientState {
+  if (state.filtered[surface] === undefined) return state;
+  const { [surface]: _dropped, ...rest } = state.filtered;
+  return { ...state, filtered: rest };
 }
 
 export function emptyState(): ClientState {
@@ -74,6 +132,7 @@ export function emptyState(): ClientState {
     items: new Map(),
     feed: emptyPage("newest-first"),
     queue: emptyPage("oldest-first"),
+    filtered: {},
     outbox: [],
     destinations: [],
     templates: [],
@@ -94,6 +153,18 @@ export function withHeld(
   return { ...state, held };
 }
 
+/** Each filtered page emptied, still read through its filter: the address still names it. */
+function startedOver(
+  filtered: ClientState["filtered"],
+): ClientState["filtered"] {
+  const kept: { [surface in Surface]?: ListPage } = {};
+  for (const surface of ["feed", "queue"] as const) {
+    const page = filtered[surface];
+    if (page !== undefined) kept[surface] = emptyPage(page.order, page.filter);
+  }
+  return kept;
+}
+
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
   const { poolSettings: _poolSettings, ...rest } = state;
   return {
@@ -102,6 +173,7 @@ export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
     items: new Map(),
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),
+    filtered: startedOver(state.filtered),
   };
 }
 
@@ -120,6 +192,7 @@ export function forgotten(state: ClientState): ClientState {
     items: new Map(),
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),
+    filtered: startedOver(state.filtered),
     destinations: [],
     templates: [],
     tags: [],
@@ -191,6 +264,74 @@ export function unprocessed(item: Item): boolean {
   );
 }
 
+function carries(item: Item, filter: Filter = []): boolean {
+  const tags = item.tags ?? [];
+  return filter.every((name) => tags.some((held) => held.name === name));
+}
+
+/**
+ * Whether an item is a page's to hold: the surface's own condition, and every
+ * tag the page is filtered by. The one rule every page is kept by.
+ */
+export function belongs(surface: Surface, page: ListPage, item: Item): boolean {
+  return (
+    (surface === "feed" || unprocessed(item)) && carries(item, page.filter)
+  );
+}
+
+/** Every page the state holds, whole and filtered, rewritten by one function. */
+function eachPage(
+  state: ClientState,
+  change: (surface: Surface, page: ListPage) => ListPage,
+): ClientState {
+  const filtered: { [surface in Surface]?: ListPage } = {};
+  for (const surface of ["feed", "queue"] as const) {
+    const page = state.filtered[surface];
+    if (page !== undefined) filtered[surface] = change(surface, page);
+  }
+
+  return {
+    ...state,
+    feed: change("feed", state.feed),
+    queue: change("queue", state.queue),
+    filtered,
+  };
+}
+
+/** The item off every page of one surface, or of both. */
+export function leaving(
+  state: ClientState,
+  id: ItemId,
+  only?: Surface,
+): ClientState {
+  return eachPage(state, (surface, page) =>
+    (only === undefined || surface === only) && page.ids.includes(id)
+      ? withIds(page, without(page.ids, id))
+      : page,
+  );
+}
+
+/**
+ * The held copy of an item put where it belongs: off every page it no longer
+ * belongs on, and onto every one it does where the page reaches. A page that
+ * already holds it keeps it where it was drawn.
+ */
+export function reconciled(state: ClientState, id: ItemId): ClientState {
+  const item = state.items.get(id);
+  if (item === undefined) return state;
+
+  return eachPage(state, (surface, page) => {
+    const held = page.ids.includes(id);
+    if (!belongs(surface, page, item)) {
+      return held ? withIds(page, without(page.ids, id)) : page;
+    }
+    if (held) return page;
+
+    const ids = intoPage(page, id, state.items);
+    return ids === page.ids ? page : withIds(page, ids);
+  });
+}
+
 /** Whether one rank sorts later than another in the order a page is being read. */
 function behind(order: Order, one: string, other: string): boolean {
   return order === "oldest-first" ? one > other : one < other;
@@ -210,9 +351,10 @@ export function drawnFrom(
   state: ClientState,
   surface: Surface,
 ): readonly Item[] {
-  const { order } = state[surface];
-  const held = [...state.items.values()].filter(
-    (item) => surface === "feed" || unprocessed(item),
+  const page = reading(state, surface);
+  const { order } = page;
+  const held = [...state.items.values()].filter((item) =>
+    belongs(surface, page, item),
   );
 
   return held.sort((one, other) =>
@@ -334,12 +476,7 @@ export function forget(state: ClientState, id: ItemId): ClientState {
   const items = new Map(state.items);
   items.delete(id);
 
-  return {
-    ...state,
-    items,
-    feed: withIds(state.feed, without(state.feed.ids, id)),
-    queue: withIds(state.queue, without(state.queue.ids, id)),
-  };
+  return leaving({ ...state, items }, id);
 }
 
 function wentTo(record: RoutingRecord): RoutedTo {
@@ -422,16 +559,19 @@ export function processed(
 ): ClientState {
   const held = state.items.get(id)?.routing;
 
-  return {
-    ...state,
-    items: withRouting(state, id, {
-      records: (held?.records ?? 0) + 1,
-      pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
-      to: targets(held?.to ?? [], [wentTo(record)]),
-      templates: applied(held?.templates ?? [], [record]),
-    }),
-    queue: withIds(state.queue, without(state.queue.ids, id)),
-  };
+  return leaving(
+    {
+      ...state,
+      items: withRouting(state, id, {
+        records: (held?.records ?? 0) + 1,
+        pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
+        to: targets(held?.to ?? [], [wentTo(record)]),
+        templates: applied(held?.templates ?? [], [record]),
+      }),
+    },
+    id,
+    "queue",
+  );
 }
 
 /**
@@ -445,31 +585,76 @@ const PROCESSING: ReadonlySet<string> = new Set([
   "purged",
 ]);
 
+/** A tag's agent is never notemap, which tags nothing. */
+function tagAgent(by: Agent): Tag["by"] | undefined {
+  return by.kind === "notemap" ? undefined : by;
+}
+
+/** Whether this client has a tag or an untag of this item and tag still to send. */
+function reclassifying(state: ClientState, id: string, tag: string): boolean {
+  return state.outbox.some(
+    ({ operation }) =>
+      (operation.kind === "tag" || operation.kind === "untag") &&
+      operation.item === id &&
+      operation.tag === tag,
+  );
+}
+
 /**
- * What the pool did while nobody was asking it, applied to the surfaces. Only
- * the queue can be wrong about this: the feed keeps everything and an item
- * processed elsewhere leaves the queue with nothing here to notice, until a
- * read says so.
+ * A tag an action added or took off, applied to the copy held of its item.
+ * Not where this client has its own change to the same tag still unsent: the
+ * copy already says what the person did last, and an older action would undo it.
+ */
+function reclassifiedBy(state: ClientState, action: Action): ClientState {
+  const id = action.subject;
+  const tag = action.detail["tag"];
+  const item = id === undefined ? undefined : state.items.get(id);
+  if (item === undefined || typeof tag !== "string") return state;
+  if (reclassifying(state, item.id, tag)) return state;
+
+  const held = item.tags ?? [];
+  const has = held.some((each) => each.name === tag);
+
+  let tags: readonly Tag[] | undefined;
+  if (action.kind === "untagged" && has) {
+    tags = held.filter((each) => each.name !== tag);
+  } else if (action.kind === "tagged" && !has) {
+    const by = tagAgent(action.by);
+    if (by !== undefined)
+      tags = [...held, { name: tag, by, addedAt: action.at }];
+  }
+  if (tags === undefined) return state;
+
+  return reconciled(
+    { ...state, items: cached(state, [{ ...item, tags: [...tags] }]) },
+    item.id,
+  );
+}
+
+/**
+ * What the pool did while nobody was asking it, applied to the surfaces. The
+ * queue can be wrong about what is processed — an item processed elsewhere
+ * leaves it with nothing here to notice, until a read says so — and a filtered
+ * page about what carries its tags, which is why a tag added or taken off is
+ * applied to the copy held as well.
  *
- * Nothing is put back. Giving up on a delivery returns an item to the queue,
- * and an action carries no item to place there — `withdrawn` is the path that
- * has one.
+ * Nothing is put back that the client does not hold. Giving up on a delivery
+ * returns an item to the queue, and an action carries no item to place there —
+ * `withdrawn` is the path that has one.
  */
 export function caughtUp(
   state: ClientState,
   actions: readonly Action[],
 ): ClientState {
-  const gone = new Set(
-    actions
-      .filter((action) => PROCESSING.has(action.kind))
-      .map((action) => action.subject)
-      .filter((id): id is ItemId => id !== undefined),
-  );
-
-  const kept = state.queue.ids.filter((id) => !gone.has(id));
-  if (kept.length === state.queue.ids.length) return state;
-
-  return { ...state, queue: withIds(state.queue, kept) };
+  let current = state;
+  for (const action of actions) {
+    if (action.kind === "tagged" || action.kind === "untagged") {
+      current = reclassifiedBy(current, action);
+    } else if (PROCESSING.has(action.kind) && action.subject !== undefined) {
+      current = leaving(current, action.subject, "queue");
+    }
+  }
+  return current;
 }
 
 /**
@@ -485,10 +670,7 @@ export function withdrawn(
   const held = { ...state, items: withRouting(state, id, summarise(records)) };
   if (records.length > 0) return held;
 
-  return {
-    ...held,
-    queue: withIds(held.queue, intoPage(held.queue, id, held.items)),
-  };
+  return reconciled(held, id);
 }
 
 /**
@@ -497,14 +679,7 @@ export function withdrawn(
  * the newest arrival is at the head of one and past the end of the other.
  */
 export function arrived(state: ClientState, item: Item): ClientState {
-  const items = cached(state, [item]);
-
-  return {
-    ...state,
-    items,
-    feed: withIds(state.feed, intoPage(state.feed, item.id, items)),
-    queue: withIds(state.queue, intoPage(state.queue, item.id, items)),
-  };
+  return reconciled({ ...state, items: cached(state, [item]) }, item.id);
 }
 
 /** The item it came from leaves the queue processed, not pointed at. */
@@ -517,32 +692,27 @@ export function revised(
   const held =
     from === undefined
       ? state
-      : {
-          ...state,
-          items: cached(state, [
-            { ...from, revisedInto: [...from.revisedInto, revision.id] },
-          ]),
-          queue: withIds(state.queue, without(state.queue.ids, revisionOf)),
-        };
+      : leaving(
+          {
+            ...state,
+            items: cached(state, [
+              { ...from, revisedInto: [...from.revisedInto, revision.id] },
+            ]),
+          },
+          revisionOf,
+          "queue",
+        );
 
   return arrived(held, revision);
 }
 
 /**
  * Replaces the optimistic copy with what the pool recorded, and puts the item
- * on the right side of the queue: the pool decides whether it is still work.
- * Nothing re-ranks it — the key is capture time, which no mutation moves — so
- * an item that is still the queue's keeps the place it was drawn in.
+ * on the right side of every page: the pool decides whether it is still work,
+ * and which tags it carries. Nothing re-ranks it — the key is capture time,
+ * which no mutation moves — so an item a page still holds keeps the place it
+ * was drawn in.
  */
 export function settle(state: ClientState, item: Item): ClientState {
-  const items = cached(state, [item]);
-  const held = state.queue.ids.includes(item.id);
-  const drained = withIds(state.queue, without(state.queue.ids, item.id));
-  const ids = !unprocessed(item)
-    ? drained.ids
-    : held
-      ? state.queue.ids
-      : intoPage(drained, item.id, items);
-
-  return { ...state, items, queue: withIds(state.queue, ids) };
+  return reconciled({ ...state, items: cached(state, [item]) }, item.id);
 }

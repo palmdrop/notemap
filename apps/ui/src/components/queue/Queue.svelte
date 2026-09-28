@@ -15,6 +15,7 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
+  import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -22,13 +23,13 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { filtering } from "$lib/filtering.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
-  import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { keepPlace, restorePlace } from "$lib/scroll-mark";
+  import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -54,13 +55,30 @@
   /** Back from processing with a row still selected: the keys are its, not the field's. */
   const arrived = page.url.searchParams.get(SELECTED);
 
-  let view = $state<View>(viewFor(SURFACE, page.url));
+  /** Going back and forward moves through the views a filter was taken from. */
+  let view = $derived<View>(viewFor(SURFACE, page.url));
+
+  const reading = filtering(
+    SURFACE,
+    () => ({ view, order: $queue.order }),
+    () => deselect(),
+  );
 
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
+  let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
+
+  /**
+   * Whether there is more is what the pool's first page answers, so rows drawn
+   * from the cache while it is read are offered nothing past them.
+   */
+  const footed = $derived(
+    $queue.more &&
+      !($queue.fromCache && $queue.loading && $queue.items.length > 0),
+  );
 
   const motion = moving(
     () => $queue.loading,
@@ -121,17 +139,14 @@
       replaceState(plain, {});
     }
 
+    // Scrolling past an item is a skip, and a skip changes nothing: the place
+    // kept is only where to put the view back on reload, and on the way back
+    // from reading one of these items.
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url));
-      await tick();
-      if (arrived === null) restorePlace(SURFACE);
+      await reading.arrive();
+      if (arrived === null) restorePlace(reading.place);
       else reveal(arrived);
     })();
-
-    // Scrolling past an item is a skip, and a skip changes nothing: this is
-    // only where to put the view back on reload, and on the way back from
-    // reading one of these items.
-    return keepPlace(SURFACE);
   });
 
   function select(id: string) {
@@ -263,6 +278,7 @@
     ...(atCapture
       ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
       : []),
+    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
   ]);
 </script>
 
@@ -275,11 +291,20 @@
 
 <Head>
   <ViewToggle {view} onchoose={read} />
-  <Order />
+  <span class="flex items-baseline gap-5">
+    <TagFilter
+      bind:this={tagFilter}
+      surface={SURFACE}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
+    />
+    <Order />
+  </span>
 </Head>
 
 {#if drained}
-  <Drained />
+  <Drained filter={$queue.filter} onwhole={reading.clear} />
 {:else if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
@@ -297,7 +322,7 @@
     }}
   />
 
-  {#if $queue.more}
+  {#if footed}
     <More
       loading={$queue.loading}
       first={rows.length === 0}
@@ -318,6 +343,7 @@
         bind:this={drawn[row.id]}
         item={row}
         surface="queue"
+        filter={$queue.filter}
         selected={selected === row.id}
         offline={!pool.yes}
         commands={selected === row.id ? commands : []}
@@ -327,7 +353,7 @@
       />
     {/each}
 
-    {#if $queue.more}
+    {#if footed}
       <More
         loading={$queue.loading}
         first={rows.length === 0}

@@ -17,7 +17,11 @@ function clientOver(handler: Handler) {
   return { client, transport };
 }
 
-const use = (name: string, items: number): TagUse => ({ name, items });
+const use = (name: string, items: number): TagUse => ({
+  name,
+  items,
+  unprocessed: items,
+});
 
 const inUse = (...values: readonly TagUse[]) => json(200, { values });
 

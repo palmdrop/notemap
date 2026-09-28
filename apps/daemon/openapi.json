@@ -785,11 +785,16 @@
           "items": {
             "type": "integer",
             "exclusiveMinimum": 0
+          },
+          "unprocessed": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
           "name",
-          "items"
+          "items",
+          "unprocessed"
         ]
       },
       "SourcesInUse": {
@@ -3408,7 +3413,7 @@
     "/v1/feed": {
       "get": {
         "summary": "Read the feed",
-        "description": "Every item chronologically by capture time, including archived items and the items revisions were made from. Follow `next` until it is absent.",
+        "description": "Every item chronologically by capture time, including archived items and the items revisions were made from, or only those carrying every `tag` named. Follow `next` until it is absent; it carries the filter.",
         "parameters": [
           {
             "schema": {
@@ -3442,6 +3447,24 @@
             "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
             "name": "after",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+              "example": [
+                "kind/quote"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+            "name": "tag",
+            "in": "query",
+            "style": "form",
+            "explode": true
           }
         ],
         "responses": {
@@ -3472,7 +3495,7 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind"
+                            "tag-invalid"
                           ]
                         }
                       },
@@ -3496,7 +3519,7 @@
     "/v1/queue": {
       "get": {
         "summary": "Read the queue",
-        "description": "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read through three filters.",
+        "description": "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named.",
         "parameters": [
           {
             "schema": {
@@ -3530,6 +3553,24 @@
             "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
             "name": "after",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+              "example": [
+                "kind/quote"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+            "name": "tag",
+            "in": "query",
+            "style": "form",
+            "explode": true
           }
         ],
         "responses": {
@@ -3560,7 +3601,7 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind"
+                            "tag-invalid"
                           ]
                         }
                       },
@@ -3618,6 +3659,24 @@
             "description": "The position to continue from: `<at>,<id>`, or a bare instant as a coarse entry point.",
             "name": "after",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+              "example": [
+                "kind/quote"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
+            "name": "tag",
+            "in": "query",
+            "style": "form",
+            "explode": true
           }
         ],
         "responses": {
@@ -3648,7 +3707,7 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "bad-kind"
+                            "tag-invalid"
                           ]
                         }
                       },
@@ -4420,7 +4479,7 @@
     "/v1/tags": {
       "get": {
         "summary": "Read the tags the pool carries",
-        "description": "Every tag in use, most used first, so a client completing one holds the whole set and filters it itself. Not paginated and not narrowed. Every item carrying a tag is counted, archived and revised alike.",
+        "description": "Every tag in use, most used first, so a client completing one holds the whole set and matches it itself. Not paginated. Every item carrying a tag is counted in `items`, archived and revised alike, and the unprocessed ones among them again in `unprocessed`.",
         "responses": {
           "200": {
             "description": "Every tag the pool carries.",

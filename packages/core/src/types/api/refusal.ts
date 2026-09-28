@@ -53,6 +53,12 @@ export type EditRefusal =
   /** The envelope's identity already names an item that is not a revision of this one. */
   | { readonly kind: "source-item-changed"; readonly existing: ItemId };
 
+/** A filter naming a tag that trims to nothing, which no item could carry. */
+export type TagFilterRefusal = {
+  readonly kind: "tag-invalid";
+  readonly tag: string;
+};
+
 export type TagRefusal =
   | SubjectRefusal
   | { readonly kind: "tag-invalid"; readonly tag: string }

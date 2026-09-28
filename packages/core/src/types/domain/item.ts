@@ -42,6 +42,8 @@ export type RoutingSummary = {
 export type TagUse = {
   readonly name: TagName;
   readonly items: number;
+  /** Of those, the ones the queue holds. */
+  readonly unprocessed: number;
 };
 
 /** What core submits to be written. Excludes every field the store owns or derives. */

@@ -17,6 +17,8 @@ export function retained(state: ClientState): ClientState {
   const drawn = new Set<ItemId>([
     ...state.feed.ids,
     ...state.queue.ids,
+    ...(state.filtered.feed?.ids ?? []),
+    ...(state.filtered.queue?.ids ?? []),
     ...state.outbox.map((held) => targetOf(held.operation)),
   ]);
 

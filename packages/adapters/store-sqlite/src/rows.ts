@@ -155,6 +155,7 @@ export type ItemRoutingRow = {
 export type TagUseRow = {
   readonly name: string;
   readonly items: number;
+  readonly unprocessed: number;
 };
 
 export type ActionRow = AgentColumns & {

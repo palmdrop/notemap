@@ -73,6 +73,8 @@ export type ReadFailure = {
 export type ListState = {
   readonly items: readonly Item[];
   readonly order: Order;
+  /** The tags every item carries; empty for the whole surface. */
+  readonly filter: readonly string[];
   readonly loading: boolean;
   readonly more: boolean;
   /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
@@ -378,8 +380,16 @@ export interface Client {
    * its membership having changed under a reader who was elsewhere; the feed
    * keeps what it walked, nothing ever leaving it. A surface nobody has read is
    * read for the first time either way.
+   *
+   * `tags` is the filter the surface is read through. Arriving through another
+   * starts a filtered page, keeping the whole one aside; arriving through none
+   * goes back to the whole page as it stood.
    */
-  enter(surface: Surface, order?: Order): Promise<void>;
+  enter(
+    surface: Surface,
+    order?: Order,
+    tags?: readonly string[],
+  ): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the
    * cache has never held is still somewhere a person can go. A pool that does
