@@ -1,6 +1,28 @@
 # Developer TODOs
 
+## Urgent
+
+- [ ] sometimes, trigger tag routing seem to successfully route but then, on a restart, or later return to notemap, the item is back in the queue. Trigger tag is there but routing record is gone
+
 ## Shell — layout and interaction
+
+- [ ] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
+- [ ] statusbar should show indicators of pending actions, loaders, etc...
+- [ ] statusbar with statistics, online/offline status, outbox count, queue count, errors, expandable notice list, etc... 
+
+- [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
+
+- [ ] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
+
+- [ ] Mobile view too cramped - show dates as heading lines, once for every day + month, sticky header, then just show time beside (or above?) the capture row
+
+- [ ] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
+
+- [ ] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
+
+- [ ] feed, filter on routed and non-routed
+
+- [ ] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
 
 - [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state
@@ -13,6 +35,7 @@
 
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
     - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
+
 - [ ] command palette
 
 - [ ] **Nothing bounds a surface that is being drawn.** The client's cache caps feed history at 500
@@ -33,11 +56,15 @@
 
 ## Composer and capture
 
+- [ ] Should it be possible to attach multiple attachments to the same capture   
+
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
     carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the
     routing for free and needs to decide nothing about delivery. What is left is the capture format
     itself — what a person picks at capture time and what it fills in — which is a shell question.
+
+- [ ] auto-route from relay to destination, for example, configure are.na inbox -> notemap -> template -> destination
 
 - [ ] picking folders in composer is strange and clunky, sometimes you have to click with mouse 
   - it is not clear how to go back or use the current folder
@@ -98,9 +125,12 @@
 - [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 
 ## Classification
+
 - [ ] Try JEV for typesafe AI classification/suggestions
 
 ## Routing — templates, rules, conversion
+
+- [ ] capture merging: related to batch processing, select multiple capture rows, and/or filter by tags, then process all these at once -> a collective routing record with the body being a merged version of all the items. One frontmatter, one foot of hashtags
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
@@ -164,7 +194,8 @@
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing inbox
-- [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESING?)
+- [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
+- [ ] in raycast, show undrained count, and/or view for outbox
 
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
@@ -193,6 +224,6 @@
   unrelated to who mints the id; found reviewing
   [client-minted assets](plans/client-minted-assets-and-health.md). Wants either a delete that
   re-checks the asset table under the write lock, or a grace on the blob as well as the asset.
-- [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.
+- [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.)
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.
