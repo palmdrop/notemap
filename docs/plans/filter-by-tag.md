@@ -88,8 +88,8 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
       `unprocessed` and answer through a filter, and the loose uses of *filter* are reworded.
 - [x] `PoolReads.feed/queue/archived` take an optional set of tags. The `Pool` API normalises
       each one as tagging does and refuses a blank one as `tag-invalid`.
-- [x] `TagUse` gains `unprocessed`. `tagsInUse` takes an optional filter and answers what
-      co-occurs with it, counted within it.
+- [x] `TagUse` gains `unprocessed`. ~~`tagsInUse` takes an optional filter and answers what
+      co-occurs with it, counted within it.~~ *(removed — see below)*
 - [x] Store: the filter as one `EXISTS` over `item_tags` per tag, and a migration adding an index on
       `item_tags (name, item_id)`.
 - [x] Tests beside the store and core:
@@ -97,7 +97,7 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
   - [x] a tag nothing carries
   - [x] duplicates absorbed
   - [x] `unprocessed` excluding archived, routed and revised items
-  - [x] co-occurring counts under a filter
+  - [x] ~~co-occurring counts under a filter~~ *(removed)*
 - [x] Typecheck, `pnpm -r --silent test`, lint; commit.
 
 **Verify**: store tests show a filtered queue page continuing from a feed position, and counts
@@ -122,20 +122,21 @@ Depends on: phase 1.
 - [x] Typecheck, tests, lint, `pnpm test:stack`; commit.
 
 **Verify**: `GET /v1/queue?tag=a&tag=b&limit=1` answers a `next` carrying both tags, and
-`GET /v1/tags?tag=a` answers only tags carried beside `a`.
+~~`GET /v1/tags?tag=a` answers only tags carried beside `a`.~~ *(removed)*
 
 ### Phase 3 — the client holds a filtered page
 
 Depends on: phase 2.
 
 - [x] client.md: the whole page and the filtered page, the membership rule, the watcher applying
-      tag actions, the offline filtered draw, and the filtered tags read.
+      tag actions, the offline filtered draw, and ~~the filtered tags read~~ *(removed)*.
 - [x] State: a filtered `ListPage` beside each surface's whole page. `reads` sends the filter.
 - [x] One membership rule replaces the bare `unprocessed` checks in `settle`, `arrived`,
       `caughtUp` and `drawnFrom`, and applies to both pages.
 - [x] `caughtUp` applies `tagged`/`untagged` to cached items.
 - [x] Retention: the filtered page's ids are exempt from the cap, like any drawn page.
-- [x] A client call for the filtered tags read; offline, it counts from the cache and says it did.
+- [x] ~~A client call for the filtered tags read; offline, it counts from the cache and says it did.~~
+      *(removed)*
 - [x] Tests beside `state`, `surfaces` and `actions`.
 - [x] Typecheck, tests, lint; commit.
 
@@ -148,13 +149,13 @@ Depends on: phase 2.
 
 Depends on: phase 3.
 
-- [x] shell.md: the tags view, the filtered head, the keyboard, history, the empty filter, and
-      `tag=` on the URL.
-- [x] `lib/`: `tag=` read and written, pushed, never persisted. `view=tags` read from the URL and
-      never remembered.
-- [x] The tags view: two bands, counts for this surface, zero rows hidden, walked and taken like
-      the index.
-- [x] The filtered head with its `×`s. `esc` with no row selected takes off the last tag added.
+- [x] shell.md: the `tags ▾` panel, the keyboard, history, the empty filter, and `tag=` on the
+      URL. *(First written for a tags view and a filtered head — see below.)*
+- [x] `lib/`: `tag=` read and written, pushed, never persisted.
+- [x] The `tags ▾` panel: two bands, counts for this surface, zero rows hidden, `clear`, `f`.
+      *(Replaced a tags view taken a tag at a time.)*
+- [x] Rows mark the tags they carry that the list is filtered by. *(Replaced a filtered head with
+      `×`s; `esc` lifting the last tag was removed.)*
 - [x] The empty-filter lines on the queue and the feed.
 - [x] Component tests on the queue and the feed.
 - [x] Typecheck, tests, lint, `pnpm test:stack`; commit.
@@ -162,7 +163,7 @@ Depends on: phase 3.
 **Verify**: in the running shell:
 1. Queue: `f`, take one tag, then a second from the same panel. The rows and counts agree and
    scrolling pages further.
-2. Back lifts one tag. `esc` lifts the other. The whole queue is where it was left.
+2. Back lifts one tag. `clear` lifts the other. The whole queue is where it was left.
 3. The same steps offline draw from the cache.
 
 ### Phase 5 — shipped entries
@@ -184,6 +185,12 @@ Depends on: phase 3.
   co-occurrence query and the client's `tags.within` were removed. The panel reloads the whole list
   as it opens, the held counts going stale as items are processed. Filter tags on a row are
   underlined: the shell has no accent colour to mark them with.
+- **After review:** a read of the whole surface landing while a filter was on had been dropped,
+  leaving the whole page loading for good; it now lands on the page it was asked for. The watcher
+  leaves a tag alone while this client's own change to it is unsent. A pool change keeps each
+  filter. Rows drawn from the cache while a new filter's first page is read offer no `load more`,
+  which had flashed on every change of filter. A new filter opens at the top rather than where the
+  list shrinking under it scrolled, and keeps the order the list was turned to.
 - **Not done by the agent:** the phase 4 walk-through in a running shell. Every step of it is
   covered by a component or client test, but none of them is a browser.
 

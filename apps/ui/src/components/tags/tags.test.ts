@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, within } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { client, pool, sentUrls } from "$testing/pool";
+import { address } from "$testing/address.svelte";
 import { keyboard } from "$testing/dom";
 import Feed from "$components/feed/Feed.svelte";
 import Queue from "$components/queue/Queue.svelte";
@@ -19,20 +21,12 @@ vi.mock("$app/navigation", () => ({
   replaceState: (url: string | URL) => replaced.urls.push(String(url)),
 }));
 
-const at = vi.hoisted(() => ({ path: "/" }));
-vi.mock("$app/state", () => ({
-  get page() {
-    return {
-      url: new URL(`http://localhost${at.path}`),
-      route: { id: at.path.startsWith("/feed") ? "/feed" : "/" },
-    };
-  },
-}));
+vi.mock("$app/state", () => import("$testing/address.svelte"));
 
 afterEach(() => {
   went.to = [];
   replaced.urls = [];
-  at.path = "/";
+  address.path = "/";
   localStorage.clear();
 });
 
@@ -79,7 +73,9 @@ test("offers the queue's tags from a dropdown, trigger tags apart, and takes one
   await client.templates.load();
 
   render(Queue);
-  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
   const quote = await screen.findByText("kind/quote");
 
   // Counted as the queue counts: what it holds, and nothing it holds none of.
@@ -93,8 +89,8 @@ test("offers the queue's tags from a dropdown, trigger tags apart, and takes one
   expect(went.to).toEqual(["http://localhost/?tag=kind%2Fquote"]);
 });
 
-test("opens on f, narrows as it is typed into, and takes a tag beside the filter on enter", async () => {
-  at.path = "/feed?tag=kind%2Fquote";
+test("opens on f, narrows as it is typed into, and takes a tag into the filter on enter", async () => {
+  address.path = "/feed?tag=kind%2Fquote";
   serving({
     tags: [
       { name: "kind/quote", items: 2, unprocessed: 0 },
@@ -121,11 +117,13 @@ test("opens on f, narrows as it is typed into, and takes a tag beside the filter
 });
 
 test("takes a tag already in the filter back out of it", async () => {
-  at.path = "/feed?tag=kind%2Fquote&tag=project%2Fa";
+  address.path = "/feed?tag=kind%2Fquote&tag=project%2Fa";
   serving({ tags: [{ name: "project/a", items: 2, unprocessed: 0 }] });
 
   render(Feed);
-  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
 
   // In the filter though nothing is counted for it: it can still be taken off.
   const listed = await screen.findByRole("listbox", { name: "Tags" });
@@ -135,11 +133,13 @@ test("takes a tag already in the filter back out of it", async () => {
 });
 
 test("shuts the dropdown on escape without touching the filter", async () => {
-  at.path = "/feed?tag=kind%2Fquote";
+  address.path = "/feed?tag=kind%2Fquote";
   serving();
 
   render(Feed);
-  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
   const line = await screen.findByRole("combobox", { name: "Find a tag" });
 
   await fireEvent.keyDown(line, { key: "Escape" });
@@ -149,7 +149,7 @@ test("shuts the dropdown on escape without touching the filter", async () => {
 });
 
 test("marks the tags a row carries that the surface is filtered by", async () => {
-  at.path = "/feed?tag=kind%2Fquote";
+  address.path = "/feed?tag=kind%2Fquote";
   serving({ queue: [quoted("one")] });
 
   render(Feed);
@@ -161,8 +161,8 @@ test("marks the tags a row carries that the surface is filtered by", async () =>
   expect(carried.some((mark) => mark !== null)).toBe(true);
 });
 
-test("reads the queue through the filter on its address, and says what it is", async () => {
-  at.path = "/?tag=kind%2Fquote&tag=project%2Fa";
+test("reads the queue through the filter on its address, and counts it on the control", async () => {
+  address.path = "/?tag=kind%2Fquote&tag=project%2Fa";
   serving({ queue: [quoted("one")] });
 
   render(Queue);
@@ -177,13 +177,12 @@ test("reads the queue through the filter on its address, and says what it is", a
   ]);
 
   expect(
-    screen.getByRole("button", { name: "Filter by tag" }).textContent,
+    screen.getByRole("button", { name: /^Filter by tags/ }).textContent,
   ).toContain("2");
-  expect(screen.queryByText("tagged")).toBeNull();
 });
 
 test("leaves the filter alone on escape", async () => {
-  at.path = "/feed?tag=kind%2Fquote&tag=project%2Fa";
+  address.path = "/feed?tag=kind%2Fquote&tag=project%2Fa";
   serving({ queue: [quoted("one")] });
 
   render(Feed);
@@ -196,11 +195,13 @@ test("leaves the filter alone on escape", async () => {
 });
 
 test("clears the whole filter from the panel at once", async () => {
-  at.path = "/?tag=kind%2Fquote&tag=project%2Fa";
+  address.path = "/?tag=kind%2Fquote&tag=project%2Fa";
   serving();
 
   render(Queue);
-  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
   await fireEvent.click(await screen.findByRole("button", { name: "clear 2" }));
 
   expect(went.to).toEqual(["http://localhost/"]);
@@ -210,14 +211,16 @@ test("offers no clearing without a filter", async () => {
   serving();
 
   render(Feed);
-  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
   await screen.findByRole("combobox", { name: "Find a tag" });
 
   expect(screen.queryByRole("button", { name: /^clear/ })).toBeNull();
 });
 
 test("says a filtered queue has nothing waiting, never that the queue is drained", async () => {
-  at.path = "/?tag=kind%2Fquote";
+  address.path = "/?tag=kind%2Fquote";
   serving();
 
   render(Queue);
@@ -232,7 +235,7 @@ test("says a filtered queue has nothing waiting, never that the queue is drained
 });
 
 test("says a filtered feed holds nothing tagged, rather than nothing captured", async () => {
-  at.path = "/feed?tag=kind%2Fquote";
+  address.path = "/feed?tag=kind%2Fquote";
   serving();
 
   render(Feed);
@@ -242,7 +245,7 @@ test("says a filtered feed holds nothing tagged, rather than nothing captured", 
 });
 
 test("holds a selected row whose filter tag is taken off until the selection leaves it", async () => {
-  at.path = "/feed?tag=kind%2Fquote";
+  address.path = "/feed?tag=kind%2Fquote";
   serving({ queue: [quoted("one"), quoted("two")] });
 
   render(Feed);
@@ -257,4 +260,132 @@ test("holds a selected row whose filter tag is taken off until the selection lea
 
   await vi.waitFor(() => expect(screen.queryByText("one")).toBeNull());
   expect(screen.getByText("two")).toBeTruthy();
+});
+
+test("reads the queue through a filter the address names while it is drawn", async () => {
+  const other = anItem("other");
+  pool((request) => {
+    const url = new URL(request.url);
+    if (routeOf(request) !== "GET /v1/queue") return json(200, { values: [] });
+    return json(200, {
+      values:
+        url.searchParams.getAll("tag").length === 0
+          ? [quoted("one"), other]
+          : [quoted("one")],
+    });
+  });
+
+  render(Queue);
+  await screen.findByText("other");
+
+  address.path = "/?tag=kind%2Fquote";
+
+  await vi.waitFor(() => expect(screen.queryByText("other")).toBeNull());
+  expect(screen.getByText("one")).toBeTruthy();
+  expect(
+    sentUrls()
+      .map((url) => new URL(url))
+      .filter((url) => url.pathname === "/v1/queue")
+      .map((url) => url.searchParams.getAll("tag")),
+  ).toEqual([[], ["kind/quote"]]);
+});
+
+test("offers nothing past cached rows while a new filter's first page is read", async () => {
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((done) => (release = done));
+  pool(async (request) => {
+    const url = new URL(request.url);
+    if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+    if (url.searchParams.getAll("tag").length > 0) await gate;
+    return json(200, { values: [quoted("one"), anItem("other")] });
+  });
+  address.path = "/feed";
+
+  render(Feed);
+  await screen.findByText("other");
+
+  address.path = "/feed?tag=kind%2Fquote";
+  await vi.waitFor(() => expect(screen.queryByText("other")).toBeNull());
+
+  expect(screen.getByText("one")).toBeTruthy();
+  expect(screen.queryByText(/load more/)).toBeNull();
+  release();
+});
+
+test("keeps the caret in the panel's line when the filter is cleared", async () => {
+  address.path = "/feed?tag=kind%2Fquote";
+  serving();
+
+  render(Feed);
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
+  const line = await screen.findByRole("combobox", { name: "Find a tag" });
+  await vi.waitFor(() => expect(document.activeElement).toBe(line));
+
+  await fireEvent.click(screen.getByRole("button", { name: "clear 1" }));
+
+  expect(document.activeElement).toBe(line);
+});
+
+test("shuts the panel when the focus leaves it", async () => {
+  serving();
+
+  render(Feed);
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
+  const line = await screen.findByRole("combobox", { name: "Find a tag" });
+
+  await fireEvent.focusOut(line, { relatedTarget: document.body });
+
+  expect(screen.queryByRole("combobox", { name: "Find a tag" })).toBeNull();
+});
+
+test("says which tags are in the filter as the listbox's selection", async () => {
+  address.path = "/feed?tag=kind%2Fquote";
+  serving({
+    tags: [
+      { name: "kind/quote", items: 2, unprocessed: 0 },
+      { name: "project/a", items: 2, unprocessed: 0 },
+    ],
+  });
+
+  render(Feed);
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^Filter by tags/ }),
+  );
+  const listed = await screen.findByRole("listbox", { name: "Tags" });
+  await within(listed).findByText("project/a");
+
+  expect(
+    within(listed)
+      .getAllByRole("option", { selected: true })
+      .map((option) => option.textContent?.trim()),
+  ).toEqual([expect.stringContaining("kind/quote")]);
+});
+
+test("opens a new filter at the top, not where the list shrinking under it scrolled", async () => {
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((done) => (release = done));
+  pool(async (request) => {
+    if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+    if (new URL(request.url).searchParams.getAll("tag").length > 0) await gate;
+    return json(200, { values: [quoted("one")] });
+  });
+  address.path = "/feed";
+
+  render(Feed);
+  await screen.findByText("one");
+
+  address.path = "/feed?tag=kind%2Fquote";
+  await tick();
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 500 });
+  await fireEvent.scroll(window);
+  vi.mocked(window.scrollTo).mockClear();
+  release();
+
+  await vi.waitFor(() =>
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 0 }),
+  );
 });

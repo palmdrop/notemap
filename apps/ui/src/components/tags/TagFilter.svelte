@@ -7,13 +7,9 @@
   import { triggeredBy } from "$lib/templates";
 
   /**
-   * The tags a surface's items carry, each with how many of them this surface
-   * holds, taken into the filter and out of it again from one panel. Any set of
-   * them can be taken, whether or not an item carries all of it: a filter that
-   * answers nothing says so. Ordinary tags first; the trigger tags a template
-   * declares apart beneath, since they say where an item went rather than what
-   * it is. A tag this surface holds none of is not offered, unless it is
-   * already in the filter.
+   * The tags a surface's items carry, counted for this surface, taken into the
+   * filter and out of it again from one panel. A tag this surface holds none
+   * of is not offered, unless it is already in the filter.
    */
   let {
     surface,
@@ -138,10 +134,11 @@
 {#snippet row(one: Line)}
   {@const index = walked.indexOf(one.name)}
   {@const taken = filter.includes(one.name)}
-  <div bind:this={rows[one.name]} data-tag={one.name}>
+  <div bind:this={rows[one.name]} data-tag={one.name} role="none">
     <Walked
       id={marked === one.name ? `${id}-tag-${index}` : undefined}
       on={marked === one.name}
+      selected={taken}
       onhover={() => (at = index)}
       ontake={() => ontoggle(one.name)}
     >
@@ -152,7 +149,6 @@
         <span class={one.template === undefined ? "" : TRIGGER}>
           {said(one)}
         </span>
-        {#if taken}<span class="sr-only">(filtering)</span>{/if}
         {#if one.template !== undefined}
           <span class="max-narrow:hidden">→ {one.template}</span>
         {/if}
@@ -174,20 +170,26 @@
   onkeydown={(event) => {
     if (event.key !== "Escape" || !open) return;
     // Shutting this is what the key did here, so nothing above it — a
-    // selection let go of, a filter backed out of — also acts on the one press.
+    // selection let go of — also acts on the one press.
     event.stopPropagation();
     event.preventDefault();
     shut();
   }}
 >
+  <!-- Not taken on `mousedown` while open: a browser that gives a pressed
+       button no focus would shut the panel as the line lost it, and the click
+       would open it again. -->
   <button
     type="button"
-    aria-label="Filter by tag"
     aria-expanded={open}
-    aria-controls="{id}-panel"
+    aria-controls={open ? `${id}-panel` : undefined}
+    onmousedown={(event) => {
+      if (open) event.preventDefault();
+    }}
     onclick={() => (open ? shut() : void show())}
     class="flex items-baseline gap-1 tabular-nums"
   >
+    <span class="sr-only">Filter by</span>
     <span>tags</span>
     {#if filter.length > 0}<span>{filter.length}</span>{/if}
     <span aria-hidden="true">▾</span>
@@ -222,13 +224,23 @@
           <button
             type="button"
             onmousedown={(event) => event.preventDefault()}
-            onclick={onclear}
+            onclick={() => {
+              // The control goes with the filter, and the focus is not left
+              // on nothing.
+              line?.focus();
+              onclear();
+            }}
             class="flex-none tabular-nums hover:underline"
           >
             clear {filter.length}
           </button>
         {/if}
       </div>
+      {#if walked.length === 0}
+        <div class="py-px">
+          {lines.length === 0 ? "No tags." : "No tag matches."}
+        </div>
+      {/if}
       <div
         id="{id}-tags"
         role="listbox"
@@ -236,11 +248,6 @@
         aria-multiselectable="true"
         class="max-h-72 overflow-y-auto"
       >
-        {#if walked.length === 0}
-          <div class="py-px">
-            {lines.length === 0 ? "No tags." : "No tag matches."}
-          </div>
-        {/if}
         {#each ordinary as one (one.name)}
           {@render row(one)}
         {/each}

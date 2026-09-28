@@ -23,14 +23,13 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { filtered, filterFor, GOING, placeKey } from "$lib/filter";
+  import { filtering } from "$lib/filtering.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
-  import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { keepPlace, restorePlace } from "$lib/scroll-mark";
+  import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -56,11 +55,14 @@
   /** Back from processing with a row still selected: the keys are its, not the field's. */
   const arrived = page.url.searchParams.get(SELECTED);
 
-  let view = $state<View>(viewFor(SURFACE, page.url));
+  /** Going back and forward moves through the views a filter was taken from. */
+  let view = $derived<View>(viewFor(SURFACE, page.url));
 
-  /** The tags the queue is read through, off its address. */
-  const filter = $derived(filterFor(page.url));
-  const place = $derived(placeKey(SURFACE, filter));
+  const reading = filtering(
+    SURFACE,
+    () => ({ view, order: $queue.order }),
+    () => deselect(),
+  );
 
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
@@ -68,6 +70,15 @@
   let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
+
+  /**
+   * Whether there is more is what the pool's first page answers, so rows drawn
+   * from the cache while it is read are offered nothing past them.
+   */
+  const footed = $derived(
+    $queue.more &&
+      !($queue.fromCache && $queue.loading && $queue.items.length > 0),
+  );
 
   const motion = moving(
     () => $queue.loading,
@@ -128,65 +139,15 @@
       replaceState(plain, {});
     }
 
+    // Scrolling past an item is a skip, and a skip changes nothing: the place
+    // kept is only where to put the view back on reload, and on the way back
+    // from reading one of these items.
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url), filter);
-      await tick();
-      if (arrived === null) restorePlace(place);
+      await reading.arrive();
+      if (arrived === null) restorePlace(reading.place);
       else reveal(arrived);
     })();
   });
-
-  // Scrolling past an item is a skip, and a skip changes nothing: this is only
-  // where to put the view back on reload, and on the way back from reading one
-  // of these items. A filtered reading keeps its own.
-  $effect(() => keepPlace(place));
-
-  // Going back and forward moves through filters, and through the views a
-  // filter was taken from, so both follow the address when it changes.
-  let entered = untrack(() => place);
-  $effect(() => {
-    const now = place;
-    const tags = filter;
-    view = viewFor(SURFACE, page.url);
-    if (now === entered) return;
-    entered = now;
-    untrack(() => {
-      deselect();
-      void (async () => {
-        await client.enter(SURFACE, orderFor(SURFACE, page.url), tags);
-        await tick();
-        restorePlace(now);
-      })();
-    });
-  });
-
-  /** Takes one tag off the filter. */
-  function lift(tag: string) {
-    leave(
-      () =>
-        void goto(
-          filtered(
-            page.url,
-            filter.filter((each) => each !== tag),
-            view,
-          ),
-          GOING,
-        ),
-    );
-  }
-
-  function clear() {
-    leave(() => void goto(filtered(page.url, [], view), GOING));
-  }
-
-  /** Takes a tag into the filter, or out of it where it already was. */
-  function toggle(tag: string) {
-    if (filter.includes(tag)) {
-      lift(tag);
-      return;
-    }
-    leave(() => void goto(filtered(page.url, [...filter, tag], view), GOING));
-  }
 
   function select(id: string) {
     leave(() => {
@@ -334,16 +295,16 @@
     <TagFilter
       bind:this={tagFilter}
       surface={SURFACE}
-      {filter}
-      ontoggle={toggle}
-      onclear={clear}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
     />
     <Order />
   </span>
 </Head>
 
 {#if drained}
-  <Drained {filter} onwhole={clear} />
+  <Drained filter={$queue.filter} onwhole={reading.clear} />
 {:else if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
@@ -361,7 +322,7 @@
     }}
   />
 
-  {#if $queue.more}
+  {#if footed}
     <More
       loading={$queue.loading}
       first={rows.length === 0}
@@ -382,7 +343,7 @@
         bind:this={drawn[row.id]}
         item={row}
         surface="queue"
-        {filter}
+        filter={$queue.filter}
         selected={selected === row.id}
         offline={!pool.yes}
         commands={selected === row.id ? commands : []}
@@ -392,7 +353,7 @@
       />
     {/each}
 
-    {#if $queue.more}
+    {#if footed}
       <More
         loading={$queue.loading}
         first={rows.length === 0}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { filterFor, placeKey, withFilter } from "./filter";
+import { filtered, filterFor, placeKey, withFilter } from "./filter";
 
 const at = (query: string) => new URL(`http://shell/feed${query}`);
 
@@ -25,5 +25,23 @@ describe("a filter on the address", () => {
     expect(placeKey("queue", [])).toBe("queue");
     expect(placeKey("queue", ["a"])).not.toBe(placeKey("queue", []));
     expect(placeKey("queue", ["a", "b"])).not.toBe(placeKey("queue", ["ab"]));
+  });
+
+  it("names the order and the view it is told, not the ones a stale address holds", () => {
+    const url = filtered(
+      at("?order=oldest-first&view=index"),
+      ["a"],
+      "timeline",
+      "newest-first",
+    );
+
+    expect(url.searchParams.get("order")).toBe("newest-first");
+    expect(url.searchParams.get("view")).toBeNull();
+  });
+
+  it("names no order where the address named none", () => {
+    expect(filtered(at(""), ["a"], "index", "oldest-first").search).toBe(
+      "?tag=a&view=index",
+    );
   });
 });

@@ -813,7 +813,14 @@ the bar go to the whole surface. Changing it **pushes** onto the browser's histo
 tag off again; the order and the view still replace, being how a list is read rather than where a
 reader went. The whole surface is kept while a filter is on it
 ([client.md](client.md#a-filtered-surface)) and so is where it was scrolled to, so taking the
-filter off goes back to where the reader was; a filtered reading keeps its own place beside it.
+filter off goes back to where the reader was; a filtered reading keeps its own place beside it,
+and a new one opens at the top — the list shrinking under a filter scrolls the page, and that is
+not somewhere the reader went. A changed filter keeps the order the list is read in, whatever the
+address last said.
+
+- **Rows drawn from the cache while a new filter's first page is read are offered no `load
+  more`**: whether there is more is what that page answers, and a `load more` that goes as soon as
+  it lands is a flash of a claim nobody can act on.
 
 - **Nothing under the list head says what it is filtered by.** The control's count says a filter
   is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken

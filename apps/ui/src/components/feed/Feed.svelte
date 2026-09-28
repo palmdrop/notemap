@@ -24,15 +24,14 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { filtered, filterFor, GOING, placeKey } from "$lib/filter";
+  import { filtering } from "$lib/filtering.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
-  import { orderFor } from "$lib/order";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
-  import { keepPlace, restorePlace } from "$lib/scroll-mark";
+  import { restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -44,11 +43,14 @@
 
   /** One row is selected at a time, as on the queue: it is the same row. */
   let selected = $state<string | undefined>(undefined);
-  let view = $state<View>(viewFor(SURFACE, page.url));
+  /** Going back and forward moves through the views a filter was taken from. */
+  let view = $derived<View>(viewFor(SURFACE, page.url));
 
-  /** The tags the feed is read through, off its address. */
-  const filter = $derived(filterFor(page.url));
-  const place = $derived(placeKey(SURFACE, filter));
+  const reading = filtering(
+    SURFACE,
+    () => ({ view, order: $feed.order }),
+    () => (selected = undefined),
+  );
 
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
@@ -56,6 +58,14 @@
   let tagFilter = $state<TagFilter | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
+
+  /**
+   * Whether there is more is what the pool's first page answers, so rows drawn
+   * from the cache while it is read are offered nothing past them.
+   */
+  const footed = $derived(
+    $feed.more && !($feed.fromCache && $feed.loading && $feed.items.length > 0),
+  );
 
   const motion = moving(
     () => $feed.loading,
@@ -72,60 +82,10 @@
 
   onMount(() => {
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url), filter);
-      await tick();
-      restorePlace(place);
+      await reading.arrive();
+      restorePlace(reading.place);
     })();
   });
-
-  $effect(() => keepPlace(place));
-
-  // Going back and forward moves through filters, and through the views a
-  // filter was taken from, so both follow the address when it changes.
-  let entered = untrack(() => place);
-  $effect(() => {
-    const now = place;
-    const tags = filter;
-    view = viewFor(SURFACE, page.url);
-    if (now === entered) return;
-    entered = now;
-    untrack(() => {
-      selected = undefined;
-      void (async () => {
-        await client.enter(SURFACE, orderFor(SURFACE, page.url), tags);
-        await tick();
-        restorePlace(now);
-      })();
-    });
-  });
-
-  /** Takes one tag off the filter. */
-  function lift(tag: string) {
-    leave(
-      () =>
-        void goto(
-          filtered(
-            page.url,
-            filter.filter((each) => each !== tag),
-            view,
-          ),
-          GOING,
-        ),
-    );
-  }
-
-  function clear() {
-    leave(() => void goto(filtered(page.url, [], view), GOING));
-  }
-
-  /** Takes a tag into the filter, or out of it where it already was. */
-  function toggle(tag: string) {
-    if (filter.includes(tag)) {
-      lift(tag);
-      return;
-    }
-    leave(() => void goto(filtered(page.url, [...filter, tag], view), GOING));
-  }
 
   function select(id: string) {
     leave(() => {
@@ -254,9 +214,9 @@
     <TagFilter
       bind:this={tagFilter}
       surface={SURFACE}
-      {filter}
-      ontoggle={toggle}
-      onclear={clear}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
     />
     <Order />
   </span>
@@ -276,7 +236,7 @@
     onprocess={(id) => void goto(processHref(id))}
   />
 
-  {#if $feed.more}
+  {#if footed}
     <More
       loading={$feed.loading}
       first={rows.length === 0}
@@ -294,14 +254,14 @@
     {#if bare}
       <Rail>feed</Rail>
       <Body>
-        {#if filter.length === 0}
+        {#if $feed.filter.length === 0}
           <Prose text={NOTHING_CAPTURED} />
         {:else}
-          Nothing is tagged {filter.join(" · ")}.
+          Nothing is tagged {$feed.filter.join(" · ")}.
           <button
             type="button"
             class="ml-[1ch] hover:underline"
-            onclick={clear}
+            onclick={reading.clear}
           >
             whole feed
           </button>
@@ -315,7 +275,7 @@
         bind:this={drawn[item.id]}
         {item}
         surface="feed"
-        {filter}
+        filter={$feed.filter}
         selected={selected === item.id}
         offline={!pool.yes}
         commands={selected === item.id ? commands : []}
@@ -325,7 +285,7 @@
       />
     {/each}
 
-    {#if $feed.more}
+    {#if footed}
       <More
         loading={$feed.loading}
         first={rows.length === 0}

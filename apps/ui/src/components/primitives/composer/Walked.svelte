@@ -20,6 +20,7 @@
     on = false,
     along = false,
     held = false,
+    selected,
     disabled = false,
     indent = 0,
     ontake,
@@ -32,6 +33,11 @@
     /** The trail the line names, bold independent of `on`. */
     along?: boolean;
     held?: boolean;
+    /**
+     * Where a list holds a selection of its own, several rows at once, apart
+     * from the one the walk is on. Absent, the walked row is the selected one.
+     */
+    selected?: boolean;
     disabled?: boolean;
     /** Depth in a hierarchy, in list steps. Flat lists leave it at zero. */
     indent?: number;
@@ -46,7 +52,7 @@
   {id}
   role="option"
   tabindex="-1"
-  aria-selected={on}
+  aria-selected={selected ?? on}
   aria-disabled={disabled ? "true" : undefined}
   style={indent === 0 ? undefined : `padding-left: ${indent * 1.1}rem`}
   class="cursor-default {on || along ? 'font-semibold' : ''} {held
