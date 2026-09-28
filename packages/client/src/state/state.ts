@@ -548,9 +548,8 @@ function withRouting(
 /**
  * The pool has recorded a routing decision, so the item is out of the queue —
  * core derives processed as holding no routing record. Folded into the held
- * copy rather than read back, which leaves one thing unobserved: a record that
- * answered pending and landed later still reads as pending until some surface
- * reads the item again.
+ * copy rather than read back: a record that answered pending and landed later
+ * still reads as pending until the item is read again.
  */
 export function processed(
   state: ClientState,
@@ -579,6 +578,7 @@ export function processed(
  * row off the queue.
  */
 const PROCESSING: ReadonlySet<string> = new Set([
+  "template-fired",
   "routed",
   "archived",
   "revised",
@@ -655,6 +655,36 @@ export function caughtUp(
     }
   }
   return current;
+}
+
+/**
+ * The kinds that change what an item's routing summary says. An action names
+ * no summary, and folding counts from one would count a record twice where the
+ * answer that made it was folded already, so the item is read again instead.
+ */
+const REROUTING: ReadonlySet<string> = new Set([
+  "template-fired",
+  "routed",
+  "delivery-cancelled",
+  "work-abandoned",
+]);
+
+/** The held items whose routing these actions changed, each once. */
+export function rerouted(
+  state: ClientState,
+  actions: readonly Action[],
+): readonly ItemId[] {
+  const ids = new Set<ItemId>();
+  for (const action of actions) {
+    const id = action.subject;
+    if (id === undefined || !state.items.has(id)) continue;
+    if (!REROUTING.has(action.kind)) continue;
+    // Abandoned enrichment names the item too, and leaves its routing alone.
+    if (action.kind === "work-abandoned" && !("record" in action.detail))
+      continue;
+    ids.add(id);
+  }
+  return [...ids];
 }
 
 /**

@@ -304,7 +304,7 @@ describe("routing an item from a template", () => {
  * fire when it arrives rather than needing anything to sweep for one.
  */
 describe("a trigger tag arriving over the wire", () => {
-  it("applies its template and answers the item carrying the tag", async () => {
+  it("applies its template and answers the item carrying the tag and the reservation", async () => {
     const host = serving();
     const destination = await vault(host);
     await created(host, destination, { triggerTag: "route/research" });
@@ -317,6 +317,7 @@ describe("a trigger tag arriving over the wire", () => {
     expect(response.status).toBe(200);
     expect(await body(response)).toMatchObject({
       tags: [{ name: "route/research" }],
+      routing: { records: 1, pending: 1 },
     });
 
     const records = (await body(
