@@ -19,10 +19,12 @@
     surface,
     filter,
     ontoggle,
+    onclear,
   }: {
     surface: "queue" | "feed";
     filter: readonly string[];
     ontoggle: (tag: string) => void;
+    onclear: () => void;
   } = $props();
 
   const id = $props.id();
@@ -196,23 +198,37 @@
       id="{id}-panel"
       class="absolute top-full right-0 z-30 mt-1 w-max max-w-[min(32rem,90vw)] min-w-56 border border-ink bg-ground px-2.5 py-1"
     >
-      <input
-        bind:this={line}
-        bind:value={draft}
-        {onkeydown}
-        spellcheck="false"
-        autocapitalize="off"
-        autocomplete="off"
-        aria-label="Find a tag"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded="true"
-        aria-controls="{id}-tags"
-        aria-activedescendant={marked === undefined
-          ? undefined
-          : `${id}-tag-${at}`}
-        class="mb-1 w-full border-b border-ink px-1 outline-none"
-      />
+      <div class="mb-1 flex items-baseline gap-3">
+        <input
+          bind:this={line}
+          bind:value={draft}
+          {onkeydown}
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          aria-label="Find a tag"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          aria-controls="{id}-tags"
+          aria-activedescendant={marked === undefined
+            ? undefined
+            : `${id}-tag-${at}`}
+          class="min-w-0 flex-1 border-b border-ink px-1 outline-none"
+        />
+        {#if filter.length > 0}
+          <!-- Taken on `mousedown` with the default prevented, so the caret stays
+             in the line and the panel open for what is taken next. -->
+          <button
+            type="button"
+            onmousedown={(event) => event.preventDefault()}
+            onclick={onclear}
+            class="flex-none tabular-nums hover:underline"
+          >
+            clear {filter.length}
+          </button>
+        {/if}
+      </div>
       <div
         id="{id}-tags"
         role="listbox"

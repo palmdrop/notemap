@@ -182,7 +182,7 @@ test("reads the queue through the filter on its address, and says what it is", a
   expect(screen.queryByText("tagged")).toBeNull();
 });
 
-test("takes off the tag added last on escape, with nothing selected", async () => {
+test("leaves the filter alone on escape", async () => {
   at.path = "/feed?tag=kind%2Fquote&tag=project%2Fa";
   serving({ queue: [quoted("one")] });
 
@@ -190,23 +190,30 @@ test("takes off the tag added last on escape, with nothing selected", async () =
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
 
-  expect(went.to).toEqual(["http://localhost/feed?tag=kind%2Fquote"]);
+  expect(went.to).toEqual([]);
 });
 
-test("lets go of the capture box before it takes a tag off the queue's filter", async () => {
-  at.path = "/?tag=kind%2Fquote";
-  serving({ queue: [quoted("one")] });
+test("clears the whole filter from the panel at once", async () => {
+  at.path = "/?tag=kind%2Fquote&tag=project%2Fa";
+  serving();
 
   render(Queue);
-  await screen.findByText("one");
-  (document.activeElement as HTMLElement | null)?.blur();
+  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "clear 2" }));
 
-  await fireEvent.keyDown(window, { key: "Escape" });
-  expect(went.to).toEqual([]);
-
-  await fireEvent.keyDown(window, { key: "Escape" });
   expect(went.to).toEqual(["http://localhost/"]);
+});
+
+test("offers no clearing without a filter", async () => {
+  serving();
+
+  render(Feed);
+  await fireEvent.click(screen.getByRole("button", { name: "Filter by tag" }));
+  await screen.findByRole("combobox", { name: "Find a tag" });
+
+  expect(screen.queryByRole("button", { name: /^clear/ })).toBeNull();
 });
 
 test("says a filtered queue has nothing waiting, never that the queue is drained", async () => {

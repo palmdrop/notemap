@@ -114,6 +114,10 @@
     );
   }
 
+  function clear() {
+    leave(() => void goto(filtered(page.url, [], view), GOING));
+  }
+
   /** Takes a tag into the filter, or out of it where it already was. */
   function toggle(tag: string) {
     if (filter.includes(tag)) {
@@ -237,12 +241,7 @@
         if (current === undefined) void walk(1);
         else if (drawn[current.id]?.isEditing() !== true) process(current);
       },
-      ondeselect: () =>
-        leave(() => {
-          if (selected === undefined && filter.length > 0) {
-            lift(filter.at(-1) ?? "");
-          } else selected = undefined;
-        }),
+      ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),
     { id: "filter", label: "filter", run: () => void tagFilter?.show() },
@@ -257,6 +256,7 @@
       surface={SURFACE}
       {filter}
       ontoggle={toggle}
+      onclear={clear}
     />
     <Order />
   </span>
@@ -301,8 +301,7 @@
           <button
             type="button"
             class="ml-[1ch] hover:underline"
-            onclick={() =>
-              leave(() => void goto(filtered(page.url, [], view), GOING))}
+            onclick={clear}
           >
             whole feed
           </button>

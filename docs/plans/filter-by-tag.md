@@ -63,7 +63,8 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
   whole of it. Changing the filter **pushes** a history entry; changing the view still
   **replaces** its entry.
 - No line under the list head names the filter *(amended the same day)*: the control's count and
-  the panel's marks say it. `esc` with no row selected takes off the tag added last.
+  the panel's marks say it. `clear` in the panel takes the whole filter off. No key takes a tag
+  off *(amended the same day: `esc` did, and is pressed too often for it)*.
 - An emptied filter never draws the drained queue's line. The queue says `nothing tagged … is
   waiting`, with `whole queue` beside it; the feed says `nothing is tagged …`.
 

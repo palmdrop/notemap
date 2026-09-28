@@ -8,8 +8,8 @@
   order, opened by `f`, lists every tag with how many items on that surface carry it, trigger tags
   apart beneath with the template they fire, and takes tags into and out of a filter of the queue
   or the feed; a filter may hold several tags, all carried, and a row marks the ones it carries.
-  The filter lives on the address and is never remembered, back takes a tag off, `esc` with
-  nothing selected lifts the last tag, and an emptied filter never says the queue is drained. See
+  The filter lives on the address and is never remembered, back takes a tag off, the panel clears
+  it whole, and an emptied filter never says the queue is drained. See
   [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
   rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
@@ -790,6 +790,8 @@ of several tags meant going back and forth between it and the list once per tag.
 - **Pressing a tag, or `⏎` on the walked one, takes it into the filter or out of it**, and the
   panel stays open for the next. `↑`/`↓` walk the lines, the walked one bold; a tag in the filter is
   marked `▸`. `esc`, or leaving the panel, shuts it and changes nothing.
+- **`clear 2` beside the line takes the whole filter off** at once, one entry on the history, the
+  count saying how much it takes. Drawn only while there is a filter, and it has no key.
 - **Any set can be taken**, whether or not an item carries all of it: a filter no item answers says
   so, and that is worth being told. So the panel offers the whole list
   of tags in use and counts each on the whole surface, never beside the filter.
@@ -818,8 +820,9 @@ filter off goes back to where the reader was; a filtered reading keeps its own p
   out the same day, as noise above the rows.
 - **A row marks the tags it carries that the list is filtered by**, underlined, so the reason it is
   on the list can be found among its other tags.
-- **`esc` with nothing to let go of takes off the tag added last**, backing out a tag at a time as
-  it backs out of everything else. On the queue that is after the row and after the capture box.
+- **No key takes a tag off.** `esc` is pressed too often, and without thinking, to be what
+  changes what a list holds; it deselects and does nothing more. Taking tags off is the panel's,
+  or back's.
 - **A row whose filter tag is taken off leaves the filtered list** on the terms a decision takes one
   off the queue: held where it stood while it is selected, and sliding out when the selection
   leaves it.

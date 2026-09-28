@@ -175,6 +175,10 @@
     );
   }
 
+  function clear() {
+    leave(() => void goto(filtered(page.url, [], view), GOING));
+  }
+
   /** Takes a tag into the filter, or out of it where it already was. */
   function toggle(tag: string) {
     if (filter.includes(tag)) {
@@ -307,14 +311,7 @@
         } else if (atCapture) capture?.take();
         else void walk(1);
       },
-      // With nothing to let go of, `esc` backs out of the filter a tag at a
-      // time, as it backs out of everything else.
-      ondeselect: () =>
-        leave(() => {
-          if (selected === undefined && !atCapture && filter.length > 0) {
-            lift(filter.at(-1) ?? "");
-          } else deselect();
-        }),
+      ondeselect: () => leave(deselect),
     }),
     ...reached(),
     ...(atCapture
@@ -339,16 +336,14 @@
       surface={SURFACE}
       {filter}
       ontoggle={toggle}
+      onclear={clear}
     />
     <Order />
   </span>
 </Head>
 
 {#if drained}
-  <Drained
-    {filter}
-    onwhole={() => leave(() => void goto(filtered(page.url, [], view), GOING))}
-  />
+  <Drained {filter} onwhole={clear} />
 {:else if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
