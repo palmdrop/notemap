@@ -1,7 +1,13 @@
 import { answered } from "#api/http";
 import type { Item, ItemId } from "#api/types";
 import { unchanged, type Applied } from "#state/applied";
-import { cached, withIds, without } from "#state/state";
+import {
+  cached,
+  leaving,
+  sameFilter,
+  withIds,
+  type ClientState,
+} from "#state/state";
 import { replacing, type Handler } from "../handler";
 
 function replaced(
@@ -32,21 +38,38 @@ export const archive: Handler<"archive"> = {
     // The index, not the rank: the pool breaks ties on a key of its own, so
     // re-ranking a rolled-back item would shuffle it past its neighbours.
     const was = state.queue.ids.indexOf(operation.item);
+    const filtered = state.filtered.queue;
+    const wasFiltered = filtered?.ids.indexOf(operation.item) ?? -1;
 
-    return {
-      state: {
-        ...state,
-        items: cached(state, [archived]),
-        queue: withIds(state.queue, without(state.queue.ids, operation.item)),
-      },
-      undo: (current) => ({
+    const restored = (current: ClientState): ClientState => {
+      const held = current.filtered.queue;
+      const back = {
         ...current,
         items: cached(current, [previous]),
         queue: withIds(
           current.queue,
           replaced(current.queue.ids, operation.item, was),
         ),
-      }),
+      };
+      if (held === undefined || !sameFilter(held.filter, filtered?.filter)) {
+        return back;
+      }
+      return {
+        ...back,
+        filtered: {
+          ...back.filtered,
+          queue: withIds(held, replaced(held.ids, operation.item, wasFiltered)),
+        },
+      };
+    };
+
+    return {
+      state: leaving(
+        { ...state, items: cached(state, [archived]) },
+        operation.item,
+        "queue",
+      ),
+      undo: restored,
     };
   },
 

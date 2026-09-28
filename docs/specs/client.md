@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-28
 **Shipped**:
 
 - 2026-09-24 — **`client.unfurl(url)`.** What a link points at, read straight off `/v1` and held
@@ -386,6 +386,10 @@ A client presents four surfaces, each a thin projection of core:
   [surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), and carries which it is.
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
+- **A filter** *(2026-09-28)* — a set of tags every item on the surface carries
+  ([CONTEXT.md](../../CONTEXT.md)). Named when a surface is arrived at, never stored, and carried
+  by the surface's state so a shell draws what it is filtered by from the same place it draws the
+  rows (see [a filtered surface](#a-filtered-surface)).
 - **An item** — its payload, tags, enrichment state, suggestions and routing records, and the
   actions that process it. Every item a surface holds also carries a **routing summary**
   ([core.md](core.md#routing)) — how many records, how many pending, where they went — so a row
@@ -462,6 +466,43 @@ processed — routed or archived — which the pool decides, not the scroll.
   belongs to the order that produced it, and two orders cannot be stitched into one list. The order
   a surface is in is part of what it reports, so a control can draw it.
 
+### A filtered surface
+
+*Added 2026-09-28.* The feed and the queue may each be read through a **filter**, which the pool
+answers ([http-v1.md](http-v1.md#the-feed)): the client holds a capped cache and only the pages it
+has walked, so a filtered reading made from them would be silently short of what the pool holds.
+
+- **The whole page is kept beside the filtered one.** A surface holds its whole page and, while a
+  filter is on it, one filtered page. Arriving through a filter the surface is not already read
+  through starts the filtered page afresh; arriving through none drops it, and the surface is its
+  whole page again **as it stood** — the reader's place in it was never given up, which is what
+  leaving the queue for a moment has been kept cheap for everywhere else. Arriving at the queue
+  still reads its head again, filtered or not ([the queue](#the-queue)).
+- **The filter is the client's to tidy.** Each tag is trimmed, a blank one is dropped and the same
+  tag named twice is one, so what the pool is asked and what the page is kept by are the same set.
+- **One rule keeps every page**: an item is on a page where the surface's own condition holds —
+  anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
+  by, judged against the copy the client holds. Every change that could move an item between pages
+  asks it: an arrival, a settlement, a decision, an archive and its undo, and a tag or an untag.
+  So taking a filter's tag off a row takes the row off the filtered page and leaves it on the whole
+  one, and tagging an item the client holds into a filter places it on the filtered page where the
+  page reaches, on the terms a returned item is placed ([the queue](#the-queue)).
+- **The watcher applies tags as well as processing** ([the action log](#the-action-log)): an
+  action saying a tag was added or taken off changes the copy held of its item, and the pages follow
+  by the rule above. An item the client does not hold is not placed — an action carries an id, not
+  the item — and is on the next read, the rule an unarchive already lives by.
+- **A filtered page is not persisted**, and neither are the whole pages; a reload arrives through
+  whatever filter the shell names and reads it again. With the pool out of reach it is **drawn from
+  the cache** ([surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), filtered by the
+  same rule, and marked as drawn from the cache like any other.
+- **A read that lands after its filter was lifted or changed lands nowhere.** Its rows are cached,
+  and its position belongs to a page nothing draws.
+- **The tags beside a filter are asked, not held** (`tags.within`): the pool's reading of the tags
+  carried beside the filter's, counted among the items carrying it, read each time a shell draws the
+  list. With the pool out of reach the client counts them itself over the items it holds, on the
+  pool's rule and in its order, and says the answer is its own. The whole list stays the read cache
+  it was ([the outbox](#the-outbox)), and is what completion offers.
+
 ### The action log
 
 **Everything the pool has done is read, and none of it is held.** A client reads
@@ -507,9 +548,12 @@ from its first read.
   before anything is told about it, so one read serves the corner and the surface both and a queue
   emptied from another device empties under the reader. It stays lazy: this happens on the watcher's
   own reports, and a client nobody watches has no watcher to make one.
-- **Nothing is put back this way.** Giving up on a delivery returns an item to the queue, and an
-  action names an id rather than carrying the item there would be to place. That is
-  `withdrawn`'s path, which has one.
+- **It applies a tag added or taken off** *(added 2026-09-28)* to the copy held of the item it
+  names, so a cached item's tags stop going stale while the pool is changed elsewhere and a
+  [filtered surface](#a-filtered-surface) follows another device.
+- **Nothing is put back this way that the client does not hold.** Giving up on a delivery returns
+  an item to the queue, and an action names an id rather than carrying the item there would be to
+  place. That is `withdrawn`'s path, which has one.
 
 ### The outbox
 
@@ -965,7 +1009,8 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
 - **The queue is what the client can see is unprocessed** — no routing records, not archived,
   nothing revised from it — which is the same three anti-joins the pool's own queue read makes,
   asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
-  time, in whichever order the surface is being read.
+  time, in whichever order the surface is being read, and a **filtered** one holds only what
+  carries every tag in its filter.
 - **A cache-drawn surface is marked as one.** A shell that drew it as the pool's reading would tell
   a person that three rows means they are nearly done, so the state carries the claim and what a
   shell draws from it is [shell.md](shell.md)'s. *(Amended 2026-08-26: it draws nothing above the
@@ -1297,6 +1342,14 @@ that logic out of the one place it is meant to live.
 - A daemon answering a different pool identity from the one the store holds leaves the client with
   no cached items, the outbox intact, and something reported.
 - Cached history past the cap is evicted oldest-touched-first, and an item that is unprocessed or
-  has an undrained operation is not evicted whatever the cap says.
+  has an undrained operation is not evicted whatever the cap says, nor one a filtered page holds.
+- A surface arrived at through a filter asks the pool for every tag in it and draws only what
+  carries them all; arriving through none draws the whole page as it stood, without reading the
+  feed again.
+- Taking a filter's tag off a row — here, or on another device as the log reports it — takes the
+  row off the filtered page and leaves it on the whole one; tagging an item the client holds into
+  the filter places it there.
+- With the pool out of reach, a filtered surface and the tags beside a filter are both counted
+  from what the client holds, and say so.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state
   through the subscribe contract alone.

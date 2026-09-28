@@ -32,7 +32,9 @@ import {
   forgotten,
   fromCache,
   processed,
+  reading,
   rebuilt,
+  sameFilter,
   settle,
   settledDestination,
   settledTemplate,
@@ -60,6 +62,7 @@ function sameList(one: ListState, other: ListState): boolean {
   return (
     one.loading === other.loading &&
     one.order === other.order &&
+    sameFilter(one.filter, other.filter) &&
     one.more === other.more &&
     one.fromCache === other.fromCache &&
     one.failure === other.failure &&
@@ -104,7 +107,7 @@ function sameIds(
 }
 
 function listOf(state: ClientState, surface: Surface): ListState {
-  const page = state[surface];
+  const page = reading(state, surface);
   const drawn = fromCache(page);
   const items = drawn
     ? drawnFrom(state, surface)
@@ -115,6 +118,7 @@ function listOf(state: ClientState, surface: Surface): ListState {
   return {
     items,
     order: page.order,
+    filter: page.filter ?? [],
     loading: page.loading,
     more: !page.exhausted,
     fromCache: drawn,
@@ -262,6 +266,7 @@ export function createClient(config: ClientConfig): Client {
     inUse: derived(state.changes, (current) => current.tags),
     cached: (held) =>
       after(() => state.update((current) => ({ ...current, tags: held }))),
+    held: () => state.get().items.values(),
   });
 
   let classified = false;
@@ -444,7 +449,8 @@ export function createClient(config: ClientConfig): Client {
 
     loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order) => after(() => enter(state, api, surface, order)),
+    enter: (surface, order, tags) =>
+      after(() => enter(state, api, surface, order, tags)),
 
     item: (id) =>
       after(async () => {

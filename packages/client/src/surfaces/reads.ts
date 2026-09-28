@@ -5,9 +5,14 @@ import type { Writable } from "../observable/observable";
 import {
   cached,
   emptyPage,
+  filterOf,
   fromCache,
+  reading,
   rejoined,
+  sameFilter,
+  unfiltered,
   unpositioned,
+  withReading,
   type ClientState,
   type ListPage,
   type Surface,
@@ -25,10 +30,12 @@ function positionIn(next: string): string | undefined {
 
 function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
   const after = page.after;
+  const tag = page.filter ?? [];
   const query = {
     order: page.order,
     limit: String(PAGE),
     ...(after === undefined ? {} : { after }),
+    ...(tag.length === 0 ? {} : { tag: [...tag] }),
   };
 
   return answered(
@@ -52,6 +59,7 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
 
   return {
     order: page.order,
+    ...(page.filter === undefined ? {} : { filter: page.filter }),
     ids: [...page.ids, ...arriving],
     exhausted: slice.next === undefined,
     loading: false,
@@ -83,6 +91,20 @@ function stillHeld(page: ListPage, held: ListPage): ListPage {
   return kept.length === page.ids.length ? page : { ...page, ids: kept };
 }
 
+/**
+ * The page a read answers for, where the surface is still read through the
+ * filter it was asked with. One asked through a filter since lifted or changed
+ * lands nowhere: its rows are cached and its position belongs to nothing drawn.
+ */
+function answering(
+  current: ClientState,
+  surface: Surface,
+  page: ListPage,
+): ListPage | undefined {
+  const held = reading(current, surface);
+  return sameFilter(held.filter, page.filter) ? held : undefined;
+}
+
 /** Reads one page into the surface, from whichever page it was told to start at. */
 async function walk(
   state: Writable<ClientState>,
@@ -92,41 +114,45 @@ async function walk(
   /** Whether the answer is a fresh head to join to the tail already walked. */
   rejoining = false,
 ): Promise<void> {
-  state.update((current) => ({
-    ...current,
-    [surface]: whileReading(page, current[surface]),
-  }));
+  state.update((current) =>
+    withReading(
+      current,
+      surface,
+      whileReading(page, answering(current, surface, page) ?? page),
+    ),
+  );
 
   try {
     const slice = await read(api, surface, page);
     state.update((current) => {
       const items = cached(current, slice.values);
-      const landed = extended(stillHeld(page, current[surface]), slice);
+      const held = answering(current, surface, page);
+      if (held === undefined) return { ...current, items };
 
-      return {
-        ...current,
-        items,
-        [surface]: rejoining
-          ? rejoined(landed, current[surface], items)
-          : landed,
-      };
+      const landed = extended(stillHeld(page, held), slice);
+
+      return withReading({ ...current, items }, surface, {
+        ...(rejoining ? rejoined(landed, held, items) : landed),
+      });
     });
   } catch (error) {
-    state.update((current) => ({
-      ...current,
-      [surface]: {
-        ...current[surface],
+    state.update((current) => {
+      const held = answering(current, surface, page);
+      if (held === undefined) return current;
+
+      return withReading(current, surface, {
+        ...held,
         loading: false,
         // No rows came from the pool, so the surface is the client's own again.
-        answered: current[surface].ids.length > 0,
+        answered: held.ids.length > 0,
         failure: {
           said: saidBy(error),
           // The same reading the probe makes: a refusal is still the pool
           // answering, and only silence is not.
           refused: !(error instanceof Unreachable),
         },
-      },
-    }));
+      });
+    });
   }
 }
 
@@ -141,7 +167,7 @@ export async function loadMore(
   surface: Surface,
   order?: Order,
 ): Promise<void> {
-  const held = state.get()[surface];
+  const held = reading(state.get(), surface);
 
   // A read in flight is answering for the page as it was; letting a second one
   // start would let the first land its rows and its position in whatever the
@@ -157,7 +183,7 @@ export async function loadMore(
   const page =
     order === undefined || order === held.order
       ? held
-      : { ...emptyPage(order), answered: held.answered };
+      : { ...emptyPage(order, held.filter), answered: held.answered };
   if (page.exhausted) return;
 
   await walk(state, api, surface, page);
@@ -176,21 +202,41 @@ export async function loadMore(
  * register, so arriving is what coming back from one capture looks like, and a
  * reader four pages into a drain session may not be charged those four pages
  * for having looked at a row.
+ *
+ * Arriving through a filter the surface is not already read through starts a
+ * filtered page afresh, the whole one kept beside it; arriving through none
+ * drops the filtered page and goes back to the whole one as it stood.
  */
 export async function enter(
   state: Writable<ClientState>,
   api: Api,
   surface: Surface,
   order?: Order,
+  tags: readonly string[] = [],
 ): Promise<void> {
-  const held = state.get()[surface];
+  const filter = filterOf(tags);
+  const before = reading(state.get(), surface);
+
+  if (!sameFilter(before.filter, filter)) {
+    state.update((current) =>
+      filter.length === 0
+        ? unfiltered(current, surface)
+        : withReading(
+            current,
+            surface,
+            emptyPage(order ?? before.order, filter),
+          ),
+    );
+  }
+
+  const held = reading(state.get(), surface);
   if (held.loading) return;
 
   const wanted = order ?? held.order;
   if (surface !== "queue" || unpositioned(held))
     return loadMore(state, api, surface, order);
 
-  await walk(state, api, surface, emptyPage(wanted), true);
+  await walk(state, api, surface, emptyPage(wanted, held.filter), true);
 }
 
 /** A failure the pool never made is over the moment the pool answers again. */
@@ -217,16 +263,18 @@ export async function readAfterReturn(
 ): Promise<void> {
   await Promise.all(
     SURFACES.map(async (surface) => {
-      const page = state.get()[surface];
+      const page = reading(state.get(), surface);
       if (unpositioned(page) && page.failure === undefined) return;
 
       if (fromCache(page))
-        await walk(state, api, surface, emptyPage(page.order));
+        await walk(state, api, surface, emptyPage(page.order, page.filter));
       else
-        state.update((current) => ({
-          ...current,
-          [surface]: settled(current[surface]),
-        }));
+        state.update((current) => {
+          const held = answering(current, surface, page);
+          return held === undefined
+            ? current
+            : withReading(current, surface, settled(held));
+        });
     }),
   );
 }

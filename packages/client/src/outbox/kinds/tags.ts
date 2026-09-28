@@ -1,7 +1,7 @@
 import { answered, type Api } from "#api/http";
 import type { Item, Tag } from "#api/types";
 import { unchanged, type Applied } from "#state/applied";
-import { cached, type ClientState } from "#state/state";
+import { cached, reconciled, type ClientState } from "#state/state";
 import { replacing, type Handler, type Settlement } from "../handler";
 import type { Operation } from "../operations";
 
@@ -9,7 +9,10 @@ function sameTag(one: { tag: string }, other: Operation): boolean {
   return "tag" in other && one.tag === other.tag;
 }
 
-/** Classification never moves an item, so neither half touches a list. */
+/**
+ * Classification never moves an item within a page, but it decides which
+ * filtered pages hold one.
+ */
 function reclassified(
   state: ClientState,
   item: string,
@@ -21,15 +24,18 @@ function reclassified(
   const changed: Item = { ...previous, tags: [...tags(previous.tags ?? [])] };
 
   return {
-    state: { ...state, items: cached(state, [changed]) },
+    state: reconciled({ ...state, items: cached(state, [changed]) }, item),
     undo: (current) => {
       const held = current.items.get(item);
       return held === undefined
         ? current
-        : {
-            ...current,
-            items: cached(current, [{ ...held, tags: previous.tags }]),
-          };
+        : reconciled(
+            {
+              ...current,
+              items: cached(current, [{ ...held, tags: previous.tags }]),
+            },
+            item,
+          );
     },
   };
 }

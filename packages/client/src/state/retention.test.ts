@@ -7,7 +7,8 @@ import type { PendingOperation } from "#outbox/operations";
 import { read, until } from "#testing/observing";
 import { anItem } from "#testing/pool";
 import { json, mockTransport } from "#testing/transport";
-import { HISTORY } from "./retention";
+import { HISTORY, retained } from "./retention";
+import { cached, emptyPage, emptyState } from "./state";
 
 /** Feed history: processed, so it is nobody's working set. */
 function history(id: string, at: string): Item {
@@ -66,5 +67,25 @@ describe("retention", () => {
     await until(() => read(client.feed).items.length > 0);
 
     expect(read(client.feed).items).toHaveLength(20);
+  });
+
+  it("spares what a filtered page holds, as it spares the whole page's rows", () => {
+    const empty = emptyState();
+    const old = [...Array(HISTORY + 1).keys()].map((at) =>
+      history(`old-${String(at)}`, anHourIn((at % 23) + 1)),
+    );
+    const drawn = history("drawn", anHourIn(0));
+    const state = {
+      ...empty,
+      items: cached(empty, [...old, drawn]),
+      filtered: {
+        feed: { ...emptyPage("newest-first", ["kind/quote"]), ids: ["drawn"] },
+      },
+    };
+
+    const kept = retained(state).items;
+
+    expect(kept.has("drawn")).toBe(true);
+    expect(kept.size).toBe(HISTORY + 1);
   });
 });
