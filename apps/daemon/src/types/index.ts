@@ -1,4 +1,10 @@
-import type { Position, ReadOrder, SchemaIssue } from "@notemap/core";
+import type {
+  Position,
+  ReadOrder,
+  SchemaIssue,
+  TagFilter,
+  TagFilterRefusal,
+} from "@notemap/core";
 
 import type { Identity } from "../auth/types";
 
@@ -32,6 +38,7 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | { readonly kind: "bad-position"; readonly after: string }
+  | TagFilterRefusal
   | {
       readonly kind: "bad-kind";
       readonly value: string;
@@ -70,6 +77,10 @@ export type PageQuery =
       readonly limit: number;
       readonly after?: Position;
     }
+  | { readonly ok: false; readonly refusal: DaemonRefusal };
+
+export type TagFilterQuery =
+  | { readonly ok: true; readonly filter: TagFilter }
   | { readonly ok: false; readonly refusal: DaemonRefusal };
 
 export type OrderedPageQuery =

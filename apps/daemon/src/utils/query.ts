@@ -1,7 +1,7 @@
-import type { ReadOrder } from "@notemap/core";
+import { tagFilter, type ReadOrder } from "@notemap/core";
 
 import { DEFAULT_LIMIT, MAX_LIMIT, READ_ORDERS } from "../constants";
-import type { OrderedPageQuery, PageQuery } from "../types";
+import type { OrderedPageQuery, PageQuery, TagFilterQuery } from "../types";
 import { parsePosition } from "./positions";
 
 export function readPage(url: URL): PageQuery {
@@ -53,4 +53,12 @@ export function readPageQuery(
 
   const page = readPage(url);
   return page.ok ? { ...page, order } : page;
+}
+
+/** Every `tag` the query repeats, all of which an item must carry. */
+export function readTagFilter(url: URL): TagFilterQuery {
+  const filter = tagFilter(url.searchParams.getAll("tag"));
+  return filter.kind === "refused"
+    ? { ok: false, refusal: filter.refusal }
+    : { ok: true, filter: filter.value };
 }

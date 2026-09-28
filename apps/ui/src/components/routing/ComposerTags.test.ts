@@ -26,7 +26,9 @@ async function serving(
   const transport = pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/tags") {
-      return json(200, { values: inUse.map((name) => ({ name, items: 1 })) });
+      return json(200, {
+        values: inUse.map((name) => ({ name, items: 1, unprocessed: 1 })),
+      });
     }
     if (route === "GET /v1/templates") return json(200, { values: templates });
     if (route === "GET /v1/items/one/routing") return json(200, { values: [] });

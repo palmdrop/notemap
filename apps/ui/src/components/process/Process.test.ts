@@ -1441,7 +1441,9 @@ test("a tag taken in the composer stays applied when the route fails", async () 
       return json(200, { values: [aDestination({ kind: "filesystem" })] });
     }
     if (route === "GET /v1/tags") {
-      return json(200, { values: [{ name: "seedling", items: 3 }] });
+      return json(200, {
+        values: [{ name: "seedling", items: 3, unprocessed: 3 }],
+      });
     }
     if (route.endsWith("/description")) {
       return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
@@ -2869,7 +2871,9 @@ test("offers a trigger tag that has never filed anything yet", async () => {
       return json(200, { values: [RESEARCH] });
     }
     if (route === "GET /v1/tags") {
-      return json(200, { values: [{ name: "seedling", items: 3 }] });
+      return json(200, {
+        values: [{ name: "seedling", items: 3, unprocessed: 3 }],
+      });
     }
     if (route.endsWith("/description")) {
       return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
@@ -2905,8 +2909,8 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
     if (route === "GET /v1/tags") {
       return json(200, {
         values: [
-          { name: "route/research", items: 2 },
-          { name: "seedling", items: 3 },
+          { name: "route/research", items: 2, unprocessed: 0 },
+          { name: "seedling", items: 3, unprocessed: 3 },
         ],
       });
     }

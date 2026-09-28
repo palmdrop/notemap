@@ -41,7 +41,7 @@ export function aFile(): File {
 }
 
 export function aTag(name: string, items = 1): TagUse {
-  return { name, items };
+  return { name, items, unprocessed: items };
 }
 
 export function aPoolSetting(name: string, value = true): PoolSetting {

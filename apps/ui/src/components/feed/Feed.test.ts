@@ -113,7 +113,7 @@ test("offers a tag added on one row in the field on another", async () => {
     }
     if (route === "GET /v1/tags") {
       return json(200, {
-        values: tagged ? [{ name: "reading", items: 1 }] : [],
+        values: tagged ? [{ name: "reading", items: 1, unprocessed: 1 }] : [],
       });
     }
     if (route === "POST /v1/items/one/tag") {

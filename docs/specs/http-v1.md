@@ -2,7 +2,7 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-28
 **Shipped**:
 
 - 2026-09-24 — **`GET /v1/unfurl`.** What an external link points at — its title, description,
@@ -597,6 +597,7 @@ archive, a capture outcome, an edit outcome:
 | `order` | `newest-first` | `newest-first` or `oldest-first` |
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
+| `tag` | *(absent)* | Repeated; an item is read only where it carries every one |
 
 - **`limit` above 500 is refused, never clamped** — `422 limit-too-large`, carrying `limit` and
   `max`. A page silently smaller than asked for is a bug a client finds late, in production,
@@ -608,6 +609,12 @@ archive, a capture outcome, an edit outcome:
   the read on `at` alone, strictly. It may skip rows sharing the boundary instant, which is
   what "coarse" means and why a continuation always carries the id.
 - A position that is not one of those two forms is `422 bad-position`.
+- **`tag` is a filter, and may be repeated** (added 2026-09-28): `tag=kind%2Fquote&tag=project%2Fa`
+  reads only the items carrying both ([core.md](core.md#the-queue)). Repeated rather than
+  comma-separated, as the log's `kind` is, because a tag is free text and may hold a comma. Each is
+  trimmed as tagging trims and the same tag named twice is one; a `tag` that trims to nothing is
+  `422 tag-invalid` carrying what was sent, the refusal tagging already answers for the same name.
+  A tag no item carries is an empty page rather than a refusal, a filter being a question.
 
 The response is a slice:
 
@@ -618,8 +625,8 @@ The response is a slice:
 }
 ```
 
-- `next` is a **ready-to-fetch relative URL** carrying the order, the limit and the next
-  position, so a client pages by following a link rather than by reassembling a query it has to
+- `next` is a **ready-to-fetch relative URL** carrying the order, the limit, every `tag` and the
+  next position, so a client pages by following a link rather than by reassembling a query it has to
   keep the parameters of.
 - `next` is **absent on the last page**. There is never a trailing empty page: the daemon knows
   a page is the last one because core's slice says so, not because the next one came back
@@ -632,7 +639,7 @@ The response is a slice:
 ### The queue and the archive
 
 `GET /v1/queue` — every item that is unprocessed, oldest first by default. Unprocessed is the
-whole of the filter: archived, routed and revised items are all processed.
+whole of what it holds: archived, routed and revised items are all processed.
 
 `GET /v1/archived` — every archived item, on the same key and the same default.
 
@@ -641,20 +648,21 @@ whole of the filter: archived, routed and revised items are all processed.
 | `order` | `oldest-first` | `oldest-first` or `newest-first` |
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
+| `tag` | *(absent)* | Repeated; an item is read only where it carries every one |
 
 - **Both take `order`, defaulting to oldest first** (decided 2026-08-17). Oldest first is what
   makes the queue a queue and stays the default, but which end a reader starts from is the
   reader's, as it is for the feed and the log — a person clearing a backlog may want the newest
   captures first, and core imposes no interface policy
   ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md), superseded in part).
-- `order`, `limit` and `after` mean what they mean on the feed and are refused in the same ways: an
+- `order`, `limit`, `after` and `tag` mean what they mean on the feed and are refused in the same ways: an
   `order` that is neither value is `422 bad-order` carrying the ones that are.
 - The response is a slice of items with a `next` URL, on the same terms as the feed's: ready to
   fetch, and absent on the last page.
 
 **The queue's position is a capture time** (amended 2026-08-24), spelled `<at>,<id>` exactly as
 the feed's is and meaning the same thing. The queue, the feed and the archive are now one ordering
-read through three filters, so a position taken from any of them continues any other from the same
+read three ways, so a position taken from any of them continues any other from the same
 place. It says less than it looks: an item is in exactly one of the queue and the archive, so a
 position carried across still lands where it belongs in the order and answers about a different
 set. A client pages by following `next`, which is issued by the surface it came from.
@@ -767,12 +775,16 @@ Both answer `200 OK` with the `Item` as it now stands.
 person to remember it.
 
 ```json
-{ "values": [ { "name": "kind/quote", "items": 12 } ] }
+{ "values": [ { "name": "kind/quote", "items": 12, "unprocessed": 3 } ] }
 ```
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `tag` | *(absent)* | Repeated; answers only the tags carried beside these, counted within them |
 
 - **Most used first, then by name**, which is the order a completion list wants and saves every
   client sorting the same way.
-- **Not paginated and not narrowed.** There is no `prefix` parameter: the set is small, a client
+- **Not paginated, and not narrowed by a prefix.** There is no `prefix` parameter: the set is small, a client
   holds the whole of it, and filtering it as somebody types is then instant and works once the pool
   goes out of reach. A `prefix` would be the opposite trade — a request per keystroke, and nothing
   to complete from offline.
@@ -780,9 +792,19 @@ person to remember it.
   thousands of distinct tags answers all of them on every read. Adding `prefix` later narrows this
   shape rather than replacing it, and a client that holds the whole set is the one that would then
   need changing — which is the trade being taken while a pool is one person's.
-- **The tag and its count are the whole of a row.** When it was last added is in the pool and is
-  not answered: nothing reads it, and a wire field no client consumes is one the next reader has to
-  work out the meaning of.
+- **The tag and its two counts are the whole of a row** (amended 2026-09-28; it had one). When it
+  was last added is in the pool and is not answered: nothing reads it, and a wire field no client
+  consumes is one the next reader has to work out the meaning of. `unprocessed` earns its place the
+  way `items` did — the queue says how many of its items carry a tag, the feed how many of the
+  pool's do, and one reading answers both rather than a second route per surface.
+- **`unprocessed` counts the items among `items` that the queue holds**, so an archived, a routed
+  and a revised one are in `items` and not in it. It may be `0`: a tag only processed items carry
+  is still in use.
+- **Through a `tag` filter** (added 2026-09-28) the route answers the tags carried **beside** the
+  filter's, both counts taken among the items carrying every tag the filter names, and leaves the
+  filter's own tags out, since every item counted carries them. It is what a person picking a
+  second tag is offered: nothing that would read an empty surface. `tag` is read and refused
+  exactly as on the feed.
 - `items` counts every item carrying the tag (amended 2026-08-24), archived and revised alike.
   Tags carry over to a revision, so a tag is counted for the item it came from and again for the
   revision, which is two items both carrying it. The exclusion this replaces was for a revision
@@ -899,7 +921,7 @@ optional:
   whose `Location` is absent says less than the record in the body already does.
 - Marking an item processed twice appends two records and is not refused. Nothing about the first
   says the second did not happen, which is the difference between this and archiving.
-- An archived item may still be marked processed: the archive is a filter, not a terminus.
+- An archived item may still be marked processed: archiving hides, and ends nothing.
 - An id no item has is `404 no-such-item`.
 
 ### Destinations
@@ -1287,7 +1309,7 @@ now.
 - `200` rather than `201`, on the same terms as marking an item processed: an item's routing
   records are read as one list, so there is no `Location` to name.
 - Routing one item twice appends two records and is not refused. It is a decision, not a replay.
-- An archived item may still be routed: the archive is a filter, not a terminus.
+- An archived item may still be routed: archiving hides, and ends nothing.
 - **A destination that failed during the attempt is a `200` carrying a pending record**, which is
   the whole point of ADR 17. Only a destination that could not be asked what it accepts refuses,
   and it refuses before anything is attempted.
@@ -1800,7 +1822,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
-| `422` | `tag-invalid` | `tag` | core |
+| `422` | `tag-invalid` | `tag` | core (tagging, and a `tag` filter) |
 | `422` | `trigger-refused` | `tag`, `template`, `detail` | core (tagging an item) |
 | `422` | `trigger-tag-invalid` | `tag` | core |
 | `422` | `trigger-tag-unreserved` | `tag` | core |
@@ -2018,6 +2040,11 @@ remains the interop surface; `/docs` is a convenience over it.
 - `GET /v1/queue` returns every unprocessed item oldest first — excluding the archived, the routed
   and those something was revised from — and following `next` until it is absent yields each
   exactly once with no trailing empty page.
+- `tag` repeated on `GET /v1/feed`, `/v1/queue` or `/v1/archived` answers only the items carrying
+  every tag named, and `next` carries each of them; a tag nothing carries answers an empty page,
+  and one that trims to nothing is `422 tag-invalid`.
+- `GET /v1/tags` answers `items` and `unprocessed` for each tag; with `tag`, only the tags carried
+  beside the filter's, counted among the items carrying all of it.
 - Archiving an item removes it from `GET /v1/queue` and adds it to `GET /v1/archived`;
   unarchiving returns it to the queue between the same two neighbours it had before.
 - Marking an item processed answers a routing record naming the user, removes it from the queue,

@@ -76,7 +76,7 @@ describe("hydration", () => {
 
   it("completes a tag it saw last session with no transport to ask", async () => {
     const store = createMemoryStore();
-    await store.writeTags([{ name: "reading", items: 3 }]);
+    await store.writeTags([{ name: "reading", items: 3, unprocessed: 1 }]);
 
     const { client, transport } = clientOver(store, unreachable);
     transport.unreachable(true);
@@ -208,7 +208,7 @@ describe("hydration", () => {
 
   it("reports a store it cannot read, and keeps the collections it could", async () => {
     const store = createMemoryStore();
-    await store.writeTags([{ name: "reading", items: 3 }]);
+    await store.writeTags([{ name: "reading", items: 3, unprocessed: 1 }]);
     const broken: ClientStore = {
       ...store,
       readItems: () => Promise.reject(new Error("the database is gone")),
