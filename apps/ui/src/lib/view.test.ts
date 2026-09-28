@@ -30,3 +30,11 @@ test("names the index on the URL and takes it off again for the timeline", () =>
 
   expect(withView(url, "timeline").searchParams.has("view")).toBe(false);
 });
+
+test("reads the tags view off the address and never remembers it", () => {
+  remember("feed", "index");
+  remember("feed", "tags");
+
+  expect(viewFor("feed", at("?view=tags"))).toBe("tags");
+  expect(viewFor("feed", at())).toBe("index");
+});

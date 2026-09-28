@@ -15,6 +15,8 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Register from "$components/primitives/register/Register.svelte";
+  import Filtered from "$components/tags/Filtered.svelte";
+  import TagList from "$components/tags/TagList.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -22,6 +24,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { filtered, filterFor, GOING, placeKey } from "$lib/filter";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
@@ -30,7 +33,13 @@
   import { reachable } from "$lib/reachable.svelte";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
-  import { remember, viewFor, withView, type View } from "$lib/view";
+  import {
+    remember,
+    remembered,
+    viewFor,
+    withView,
+    type View,
+  } from "$lib/view";
 
   const SURFACE = "queue";
 
@@ -56,9 +65,14 @@
 
   let view = $state<View>(viewFor(SURFACE, page.url));
 
+  /** The tags the queue is read through, off its address. */
+  const filter = $derived(filterFor(page.url));
+  const place = $derived(placeKey(SURFACE, filter));
+
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
+  let tagList = $state<TagList | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -122,17 +136,62 @@
     }
 
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url));
+      await client.enter(SURFACE, orderFor(SURFACE, page.url), filter);
       await tick();
-      if (arrived === null) restorePlace(SURFACE);
+      if (arrived === null) restorePlace(place);
       else reveal(arrived);
     })();
-
-    // Scrolling past an item is a skip, and a skip changes nothing: this is
-    // only where to put the view back on reload, and on the way back from
-    // reading one of these items.
-    return keepPlace(SURFACE);
   });
+
+  // Scrolling past an item is a skip, and a skip changes nothing: this is only
+  // where to put the view back on reload, and on the way back from reading one
+  // of these items. A filtered reading keeps its own.
+  $effect(() => keepPlace(place));
+
+  // Going back and forward moves through filters, and through the views a
+  // filter was taken from, so both follow the address when it changes.
+  let entered = untrack(() => place);
+  $effect(() => {
+    const now = place;
+    const tags = filter;
+    view = viewFor(SURFACE, page.url);
+    if (now === entered) return;
+    entered = now;
+    untrack(() => {
+      deselect();
+      void (async () => {
+        await client.enter(SURFACE, orderFor(SURFACE, page.url), tags);
+        await tick();
+        restorePlace(now);
+      })();
+    });
+  });
+
+  /** Takes one tag off the filter. */
+  function lift(tag: string) {
+    leave(
+      () =>
+        void goto(
+          filtered(
+            page.url,
+            filter.filter((each) => each !== tag),
+            view,
+          ),
+          GOING,
+        ),
+    );
+  }
+
+  /** Adds a tag to the filter and goes back to reading items. */
+  function narrow(tag: string) {
+    leave(
+      () =>
+        void goto(
+          filtered(page.url, [...filter, tag], remembered(SURFACE)),
+          GOING,
+        ),
+    );
+  }
 
   function select(id: string) {
     leave(() => {
@@ -247,23 +306,47 @@
       : commands;
   }
 
-  publish(() => [
-    ...listCommands({
-      ondown: () => leave(() => void walk(1)),
-      onup: () => leave(() => void walk(-1)),
-      onselect: () => {
-        if (current !== undefined) {
-          if (drawn[current.id]?.isEditing() !== true) process(current);
-        } else if (atCapture) capture?.take();
-        else void walk(1);
+  publish(() => (view === "tags" ? tagCommands() : rowCommands()));
+
+  /** The same keys over the tags instead of the rows. */
+  function tagCommands(): readonly Command[] {
+    return listCommands({
+      ondown: () => tagList?.walk(1),
+      onup: () => tagList?.walk(-1),
+      onselect: () => tagList?.take(),
+      ondeselect: () => {
+        if (tagList?.holding() === true) tagList.unmark();
+        else if (filter.length > 0) lift(filter.at(-1) ?? "");
       },
-      ondeselect: () => leave(deselect),
-    }),
-    ...reached(),
-    ...(atCapture
-      ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
-      : []),
-  ]);
+    });
+  }
+
+  function rowCommands(): readonly Command[] {
+    return [
+      ...listCommands({
+        ondown: () => leave(() => void walk(1)),
+        onup: () => leave(() => void walk(-1)),
+        onselect: () => {
+          if (current !== undefined) {
+            if (drawn[current.id]?.isEditing() !== true) process(current);
+          } else if (atCapture) capture?.take();
+          else void walk(1);
+        },
+        // With nothing to let go of, `esc` backs out of the filter a tag at a
+        // time, as it backs out of everything else.
+        ondeselect: () =>
+          leave(() => {
+            if (selected === undefined && !atCapture && filter.length > 0) {
+              lift(filter.at(-1) ?? "");
+            } else deselect();
+          }),
+      }),
+      ...reached(),
+      ...(atCapture
+        ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
+        : []),
+    ];
+  }
 </script>
 
 <Capture
@@ -277,9 +360,15 @@
   <ViewToggle {view} onchoose={read} />
   <Order />
 </Head>
+<Filtered {filter} onlift={lift} />
 
-{#if drained}
-  <Drained />
+{#if view === "tags"}
+  <TagList bind:this={tagList} surface={SURFACE} {filter} onchoose={narrow} />
+{:else if drained}
+  <Drained
+    {filter}
+    onwhole={() => leave(() => void goto(filtered(page.url, [], view), GOING))}
+  />
 {:else if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>

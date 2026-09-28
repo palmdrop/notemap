@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -16,6 +16,8 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import Filtered from "$components/tags/Filtered.svelte";
+  import TagList from "$components/tags/TagList.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -23,6 +25,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { filtered, filterFor, GOING, placeKey } from "$lib/filter";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { orderFor } from "$lib/order";
@@ -32,7 +35,13 @@
   import { refusalIn } from "$lib/refusal";
   import { keepPlace, restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
-  import { remember, viewFor, withView, type View } from "$lib/view";
+  import {
+    remember,
+    remembered,
+    viewFor,
+    withView,
+    type View,
+  } from "$lib/view";
 
   const SURFACE = "feed";
 
@@ -44,9 +53,14 @@
   let selected = $state<string | undefined>(undefined);
   let view = $state<View>(viewFor(SURFACE, page.url));
 
+  /** The tags the feed is read through, off its address. */
+  const filter = $derived(filterFor(page.url));
+  const place = $derived(placeKey(SURFACE, filter));
+
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
+  let tagList = $state<TagList | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -65,13 +79,58 @@
 
   onMount(() => {
     void (async () => {
-      await client.enter(SURFACE, orderFor(SURFACE, page.url));
+      await client.enter(SURFACE, orderFor(SURFACE, page.url), filter);
       await tick();
-      restorePlace(SURFACE);
+      restorePlace(place);
     })();
-
-    return keepPlace(SURFACE);
   });
+
+  $effect(() => keepPlace(place));
+
+  // Going back and forward moves through filters, and through the views a
+  // filter was taken from, so both follow the address when it changes.
+  let entered = untrack(() => place);
+  $effect(() => {
+    const now = place;
+    const tags = filter;
+    view = viewFor(SURFACE, page.url);
+    if (now === entered) return;
+    entered = now;
+    untrack(() => {
+      selected = undefined;
+      void (async () => {
+        await client.enter(SURFACE, orderFor(SURFACE, page.url), tags);
+        await tick();
+        restorePlace(now);
+      })();
+    });
+  });
+
+  /** Takes one tag off the filter. */
+  function lift(tag: string) {
+    leave(
+      () =>
+        void goto(
+          filtered(
+            page.url,
+            filter.filter((each) => each !== tag),
+            view,
+          ),
+          GOING,
+        ),
+    );
+  }
+
+  /** Adds a tag to the filter and goes back to reading items. */
+  function narrow(tag: string) {
+    leave(
+      () =>
+        void goto(
+          filtered(page.url, [...filter, tag], remembered(SURFACE)),
+          GOING,
+        ),
+    );
+  }
 
   function select(id: string) {
     leave(() => {
@@ -79,7 +138,36 @@
     });
   }
 
-  const rows = $derived($feed.items);
+  /** Where the selected row last stood, for when it leaves. */
+  let stood = $state<number | undefined>(undefined);
+
+  /** The selected row's own copy, which outlives its place on a filtered feed. */
+  const heldRow = $derived(client.held(selected ?? ""));
+
+  /**
+   * Nothing leaves the whole feed, but a row whose filter tag is taken off
+   * leaves a filtered one, and is held where it stood until the selection
+   * leaves it, as a decision's row is on the queue.
+   */
+  const rows = $derived.by(() => {
+    const live = $feed.items;
+    const kept = $heldRow;
+    if (
+      selected === undefined ||
+      kept === undefined ||
+      live.some((row) => row.id === selected)
+    ) {
+      return live;
+    }
+    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    return [...live.slice(0, place), kept, ...live.slice(place)];
+  });
+
+  $effect(() => {
+    const at = rows.findIndex((row) => row.id === selected);
+    if (at !== -1) stood = at;
+  });
+
   const current = $derived(rows.find((row) => row.id === selected));
 
   function reveal(id: string) {
@@ -150,26 +238,47 @@
 
   // The same two the queue publishes: a register walks the same way whatever
   // it holds, and a row offers what it draws as buttons.
-  publish(() => [
-    ...listCommands({
-      ondown: () => leave(() => void walk(1)),
-      onup: () => leave(() => void walk(-1)),
-      onselect: () => {
-        if (current === undefined) void walk(1);
-        else if (drawn[current.id]?.isEditing() !== true) process(current);
-      },
-      ondeselect: () => leave(() => (selected = undefined)),
-    }),
-    ...reached(),
-  ]);
+  publish(() =>
+    view === "tags"
+      ? listCommands({
+          ondown: () => tagList?.walk(1),
+          onup: () => tagList?.walk(-1),
+          onselect: () => tagList?.take(),
+          ondeselect: () => {
+            if (tagList?.holding() === true) tagList.unmark();
+            else if (filter.length > 0) lift(filter.at(-1) ?? "");
+          },
+        })
+      : [
+          ...listCommands({
+            ondown: () => leave(() => void walk(1)),
+            onup: () => leave(() => void walk(-1)),
+            onselect: () => {
+              if (current === undefined) void walk(1);
+              else if (drawn[current.id]?.isEditing() !== true)
+                process(current);
+            },
+            ondeselect: () =>
+              leave(() => {
+                if (selected === undefined && filter.length > 0) {
+                  lift(filter.at(-1) ?? "");
+                } else selected = undefined;
+              }),
+          }),
+          ...reached(),
+        ],
+  );
 </script>
 
 <Head>
   <ViewToggle {view} onchoose={read} />
   <Order />
 </Head>
+<Filtered {filter} onlift={lift} />
 
-{#if view === "index" && !bare}
+{#if view === "tags"}
+  <TagList bind:this={tagList} surface={SURFACE} {filter} onchoose={narrow} />
+{:else if view === "index" && !bare}
   {#if refused !== undefined}
     <Register><Refused surface="feed" {refused} /></Register>
   {/if}
@@ -201,7 +310,19 @@
     {#if bare}
       <Rail>feed</Rail>
       <Body>
-        <Prose text={NOTHING_CAPTURED} />
+        {#if filter.length === 0}
+          <Prose text={NOTHING_CAPTURED} />
+        {:else}
+          Nothing is tagged {filter.join(" · ")}.
+          <button
+            type="button"
+            class="ml-[1ch] hover:underline"
+            onclick={() =>
+              leave(() => void goto(filtered(page.url, [], view), GOING))}
+          >
+            whole feed
+          </button>
+        {/if}
       </Body>
     {/if}
 

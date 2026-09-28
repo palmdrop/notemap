@@ -1,7 +1,7 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-27
+**Last updated**: 2026-09-28
 **Shipped**:
 
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
@@ -766,6 +766,53 @@ breakpoint. **Where more than half a day passed** between two items the list ope
 fixed size, the same whether a day or a month passed: time passing is read from the space. The
 selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
 process. The feed has the same view.
+
+#### Tags, and a filter
+
+*Added 2026-09-28.* **The list head names a third view, `tags`**: `timeline · index · tags`. It
+is not a way of reading items but the way to a **filter** ([CONTEXT.md](../../CONTEXT.md)), and
+it is what answers which tags exist at all, which nothing did before.
+
+- **One line per tag, with how many items on this surface carry it**: the queue counts the
+  unprocessed ones, the feed every one, as the pool counts them. A tag this surface holds none of
+  is not drawn, since taking it would filter to nothing — so the queue does not offer a tag only
+  processed items carry, and a filtered list offers only what is carried beside the filter.
+- **Ordinary tags first; trigger tags apart beneath** a `templates` label, drawn in the trigger
+  style — the name after `route/`, in bold small caps — with the template they fire, `→ research`,
+  beside them. A trigger tag says where an item went rather than what it is, which is why it is not
+  read among the others; on the queue the band is nearly always absent, a tag that filed an item
+  having taken it off the queue. Taking one filters like any tag: on the feed, `research` read that
+  way is everything that template filed.
+- **Taking a tag adds it to the filter and goes back to the view items were last read in.** A
+  press on the line or `⏎` on the walked one takes it; `j`/`k` walk the lines, the walked one bold
+  as the index's is. `esc` lets go of the walked line first.
+- The view is **on the address, never remembered** (`view=tags`): a surface always opens on items,
+  and a remembered `tags` would open the queue on a list of words.
+- The list is **asked for each time it is drawn** and holds nothing; with the pool out of reach the
+  client counts it from what it holds, and — on the terms a cache-drawn surface is — nothing above
+  the lines says so, the chrome's mark having said it already.
+
+**A filter is every tag it names, and lives on the address alone**: `tag=kind%2Fquote&tag=project%2Fa`,
+reloaded and shared as it is, and **never remembered** — a queue that reopened filtered would say
+three were waiting while forty were, which is the worst thing it could say. `queue` and `feed` in
+the bar go to the whole surface. Changing it **pushes** onto the browser's history, so back takes a
+tag off again; the order and the view still replace, being how a list is read rather than where a
+reader went. The whole surface is kept while a filter is on it
+([client.md](client.md#a-filtered-surface)) and so is where it was scrolled to, so taking the
+filter off goes back to where the reader was; a filtered reading keeps its own place beside it.
+
+- **The head says what it is filtered by**, under the list head: `tagged kind/quote × · project/a ×`,
+  the tags bold, each `×` taking that one off. Drawn only while there is a filter.
+- **`esc` with nothing to let go of takes off the tag added last**, backing out a tag at a time as
+  it backs out of everything else. On the queue that is after the row and after the capture box.
+- **A row whose filter tag is taken off leaves the filtered list** on the terms a decision takes one
+  off the queue: held where it stood while it is selected, and sliding out when the selection
+  leaves it.
+- **An emptied filter says so and never says the queue is drained**: `Nothing tagged kind/quote is
+  waiting.` with `whole queue` beside it, and on the feed `Nothing is tagged kind/quote.` with
+  `whole feed`.
+- Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
+  tags view is the one way in.
 
 #### The process surface
 
