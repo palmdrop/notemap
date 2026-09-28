@@ -965,7 +965,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1030,7 +1030,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1095,7 +1095,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3694,7 +3694,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "bad-kind";
                             } & {
                                 [key: string]: unknown;
                             };

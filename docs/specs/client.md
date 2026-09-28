@@ -480,7 +480,9 @@ has walked, so a filtered reading made from them would be silently short of what
   through starts the filtered page afresh; arriving through none drops it, and the surface is its
   whole page again **as it stood** — the reader's place in it was never given up, which is what
   leaving the queue for a moment has been kept cheap for everywhere else. Arriving at the queue
-  still reads its head again, filtered or not ([the queue](#the-queue)).
+  still reads its head again, filtered or not ([the queue](#the-queue)); arriving back at the feed
+  reads nothing past where it stood. A signed-out or changed pool empties the filtered page with
+  the whole one, and keeps its filter: the shell still names it.
 - **The filter is the client's to tidy.** Each tag is trimmed, a blank one is dropped and the same
   tag named twice is one, so what the pool is asked and what the page is kept by are the same set.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
@@ -493,13 +495,17 @@ has walked, so a filtered reading made from them would be silently short of what
 - **The watcher applies tags as well as processing** ([the action log](#the-action-log)): an
   action saying a tag was added or taken off changes the copy held of its item, and the pages follow
   by the rule above. An item the client does not hold is not placed — an action carries an id, not
-  the item — and is on the next read, the rule an unarchive already lives by.
+  the item — and is on the next read, the rule an unarchive already lives by. Nor is a tag this
+  client has its own change to still unsent: the copy already says what the person did last, and
+  an older action from the log would undo it until the change settled.
 - **A filtered page is not persisted**, and neither are the whole pages; a reload arrives through
   whatever filter the shell names and reads it again. With the pool out of reach it is **drawn from
   the cache** ([surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), filtered by the
   same rule, and marked as drawn from the cache like any other.
-- **A read that lands after its filter was lifted or changed lands nowhere.** Its rows are cached,
-  and its position belongs to a page nothing draws.
+- **A read lands on the page it was asked for.** One of the whole surface lands on the whole page
+  even while a filter is on — the reader goes back to it — and one asked through a filter since
+  lifted or changed lands nowhere: its rows are cached, and its position belongs to a page nothing
+  draws.
 - **What a filter is chosen from is the whole list of tags in use**, the read cache it was
   ([the outbox](#the-outbox)) and what completion offers. There is no reading of the tags beside a
   filter: any set may be put on a surface, one no item carries all of included.
@@ -731,6 +737,9 @@ not a vocabulary: classification drains offline as it always did, and a tag nobo
 written by typing it. The list is read again once classification reaches the pool — a tag or an
 untag, since either changes what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
+A list held from before the pool counted unprocessed carriers is read back with each tag's items
+standing in for them, the most there can be, so the queue still offers the tag until the pool is
+asked again.
 
 **The sources in use are not cached at all** *(2026-09-07)*. `sources.inUse()` is a plain read of
 `GET /v1/sources` every time, answering nothing when the pool is out of reach. It is the one read

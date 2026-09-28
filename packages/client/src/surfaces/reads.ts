@@ -92,17 +92,22 @@ function stillHeld(page: ListPage, held: ListPage): ListPage {
 }
 
 /**
- * The page a read answers for, where the surface is still read through the
- * filter it was asked with. One asked through a filter since lifted or changed
- * lands nowhere: its rows are cached and its position belongs to nothing drawn.
+ * The page a read answers for: the whole one for a read through no filter,
+ * whether or not a filter is on the surface now, or the filtered one while it
+ * is still read through the filter the read was asked with. One asked through a
+ * filter since lifted or changed lands nowhere: its rows are cached and its
+ * position belongs to nothing drawn.
  */
 function answering(
   current: ClientState,
   surface: Surface,
   page: ListPage,
 ): ListPage | undefined {
-  const held = reading(current, surface);
-  return sameFilter(held.filter, page.filter) ? held : undefined;
+  if (filterOf(page.filter ?? []).length === 0) return current[surface];
+  const held = current.filtered[surface];
+  return held !== undefined && sameFilter(held.filter, page.filter)
+    ? held
+    : undefined;
 }
 
 /** Reads one page into the surface, from whichever page it was told to start at. */
@@ -216,6 +221,7 @@ export async function enter(
 ): Promise<void> {
   const filter = filterOf(tags);
   const before = reading(state.get(), surface);
+  const lifted = filter.length === 0 && (before.filter ?? []).length > 0;
 
   if (!sameFilter(before.filter, filter)) {
     state.update((current) =>
@@ -231,6 +237,9 @@ export async function enter(
 
   const held = reading(state.get(), surface);
   if (held.loading) return;
+
+  // Back to the feed as it stood: arriving is not a reason to read past it.
+  if (lifted && surface === "feed" && !unpositioned(held)) return;
 
   const wanted = order ?? held.order;
   if (surface !== "queue" || unpositioned(held))

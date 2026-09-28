@@ -165,4 +165,92 @@ describe("a surface read through a filter", () => {
     ]);
     held.unsubscribe();
   });
+
+  it("goes back to a feed of several pages as it stood, reading nothing past it", async () => {
+    const many = Array.from({ length: 30 }, (_, at) =>
+      anItem(`item-${String(at).padStart(2, "0")}`, {
+        createdAt: `2026-08-17T10:${String(at).padStart(2, "0")}:00.000Z`,
+        tags:
+          at % 2 === 0
+            ? [
+                {
+                  name: "kind/quote",
+                  by: PERSON,
+                  addedAt: "2026-08-17T10:00:00.000Z",
+                },
+              ]
+            : [],
+      }),
+    );
+    const { client, transport } = clientOver((request) => {
+      const url = new URL(request.url);
+      const filter = url.searchParams.getAll("tag");
+      const after = url.searchParams.get("after");
+      const kept = many.filter((item) =>
+        filter.every((name) => item.tags?.some((held) => held.name === name)),
+      );
+      const from =
+        after === null ? 0 : kept.findIndex((item) => item.id === after) + 1;
+      const values = kept.slice(from, from + 25);
+      const last = values.at(-1);
+      return json(200, {
+        values,
+        ...(from + 25 < kept.length && last !== undefined
+          ? { next: `/v1/feed?after=${last.createdAt},${last.id}` }
+          : {}),
+      });
+    });
+
+    await client.enter("feed");
+    await client.enter("feed", undefined, ["kind/quote"]);
+    await client.enter("feed");
+
+    expect(read(client.feed).items).toHaveLength(25);
+    expect(tagsAsked(transport.sent, "GET /v1/feed")).toEqual([
+      [],
+      ["kind/quote"],
+    ]);
+  });
+
+  it("lands a whole read that answers after a filter was put on, for when it comes off", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((done) => (release = done));
+    const answer = pool();
+    const { client } = clientOver(async (request) => {
+      if (new URL(request.url).searchParams.getAll("tag").length === 0)
+        await gate;
+      return answer(request);
+    });
+
+    const whole = client.enter("feed");
+    await client.enter("feed", undefined, ["kind/quote"]);
+    release();
+    await whole;
+    await client.enter("feed");
+
+    const list = read(client.feed);
+    expect(list.loading).toBe(false);
+    expect(ids(list)).toEqual(["one", "two", "three"]);
+  });
+
+  it("drops a filtered read that answers after its filter was changed", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((done) => (release = done));
+    const answer = pool();
+    const { client } = clientOver(async (request) => {
+      if (new URL(request.url).searchParams.getAll("tag")[0] === "kind/quote")
+        await gate;
+      return answer(request);
+    });
+
+    const first = client.enter("queue", undefined, ["kind/quote"]);
+    await client.enter("queue", undefined, ["project/a"]);
+    release();
+    await first;
+
+    const list = read(client.queue);
+    expect(list.filter).toEqual(["project/a"]);
+    expect(ids(list)).toEqual(["two", "three"]);
+    expect(list.loading).toBe(false);
+  });
 });

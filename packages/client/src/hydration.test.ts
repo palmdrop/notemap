@@ -86,6 +86,19 @@ describe("hydration", () => {
     expect(asked(transport)).toEqual([]);
   });
 
+  it("counts a tag held before unprocessed was counted as unprocessed throughout", async () => {
+    const store = createMemoryStore();
+    await store.writeTags([{ name: "reading", items: 3 } as never]);
+
+    const { client, transport } = clientOver(store, unreachable);
+    transport.unreachable(true);
+    await until(() => read(client.tags.inUse).length > 0);
+
+    expect(read(client.tags.inUse)).toEqual([
+      { name: "reading", items: 3, unprocessed: 3 },
+    ]);
+  });
+
   it("drains a capture made in a previous session, exactly once, unprompted", async () => {
     const store = createMemoryStore();
 

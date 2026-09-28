@@ -73,7 +73,12 @@ export async function hydrate(
     ),
     items: new Map<ItemId, Item>(items.map((item) => [item.id, item])),
     outbox,
-    tags,
+    // Held before the pool counted unprocessed carriers: the most there can be
+    // stands in, so a tag is still offered until the pool is asked again.
+    tags: tags.map((use) => ({
+      ...use,
+      unprocessed: use.unprocessed ?? use.items,
+    })),
     destinations,
     templates,
     ...(poolSettings === undefined ? {} : { poolSettings }),

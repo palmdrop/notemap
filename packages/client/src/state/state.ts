@@ -153,6 +153,18 @@ export function withHeld(
   return { ...state, held };
 }
 
+/** Each filtered page emptied, still read through its filter: the address still names it. */
+function startedOver(
+  filtered: ClientState["filtered"],
+): ClientState["filtered"] {
+  const kept: { [surface in Surface]?: ListPage } = {};
+  for (const surface of ["feed", "queue"] as const) {
+    const page = filtered[surface];
+    if (page !== undefined) kept[surface] = emptyPage(page.order, page.filter);
+  }
+  return kept;
+}
+
 export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
   const { poolSettings: _poolSettings, ...rest } = state;
   return {
@@ -161,7 +173,7 @@ export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
     items: new Map(),
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),
-    filtered: {},
+    filtered: startedOver(state.filtered),
   };
 }
 
@@ -180,7 +192,7 @@ export function forgotten(state: ClientState): ClientState {
     items: new Map(),
     feed: emptyPage(state.feed.order),
     queue: emptyPage(state.queue.order),
-    filtered: {},
+    filtered: startedOver(state.filtered),
     destinations: [],
     templates: [],
     tags: [],
@@ -578,12 +590,27 @@ function tagAgent(by: Agent): Tag["by"] | undefined {
   return by.kind === "notemap" ? undefined : by;
 }
 
-/** A tag an action added or took off, applied to the copy held of its item. */
+/** Whether this client has a tag or an untag of this item and tag still to send. */
+function reclassifying(state: ClientState, id: string, tag: string): boolean {
+  return state.outbox.some(
+    ({ operation }) =>
+      (operation.kind === "tag" || operation.kind === "untag") &&
+      operation.item === id &&
+      operation.tag === tag,
+  );
+}
+
+/**
+ * A tag an action added or took off, applied to the copy held of its item.
+ * Not where this client has its own change to the same tag still unsent: the
+ * copy already says what the person did last, and an older action would undo it.
+ */
 function reclassifiedBy(state: ClientState, action: Action): ClientState {
   const id = action.subject;
   const tag = action.detail["tag"];
   const item = id === undefined ? undefined : state.items.get(id);
   if (item === undefined || typeof tag !== "string") return state;
+  if (reclassifying(state, item.id, tag)) return state;
 
   const held = item.tags ?? [];
   const has = held.some((each) => each.name === tag);
