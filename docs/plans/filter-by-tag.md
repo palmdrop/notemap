@@ -1,9 +1,9 @@
 # Filter the queue and the feed by tag
 
 **Date**: 2026-09-28 *(decisions settled in a grilling session the same day)*
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-28 *(the running-shell walk-through in phase 4 is left to the developer)*
 
 ---
 
@@ -81,25 +81,25 @@ The terms are **Filter** and **Tags in use** in [CONTEXT.md](../../CONTEXT.md), 
 
 ### Phase 0 — branch
 
-- [ ] Branch `agent/filter-by-tag`.
+- [x] Branch `agent/filter-by-tag`. _(2026-09-28)_
 
 ### Phase 1 — the pool filters (core, store)
 
-- [ ] core.md: the three surface reads take an optional tag filter, tags in use carry
+- [x] core.md: the three surface reads take an optional tag filter, tags in use carry
       `unprocessed` and answer through a filter, and the loose uses of *filter* are reworded.
-- [ ] `PoolReads.feed/queue/archived` take an optional set of tags. The `Pool` API normalises
+- [x] `PoolReads.feed/queue/archived` take an optional set of tags. The `Pool` API normalises
       each one as tagging does and refuses a blank one as `tag-invalid`.
-- [ ] `TagUse` gains `unprocessed`. `tagsInUse` takes an optional filter and answers what
+- [x] `TagUse` gains `unprocessed`. `tagsInUse` takes an optional filter and answers what
       co-occurs with it, counted within it.
-- [ ] Store: the filter as one `EXISTS` over `item_tags` per tag, and a migration adding an index on
+- [x] Store: the filter as one `EXISTS` over `item_tags` per tag, and a migration adding an index on
       `item_tags (name, item_id)`.
-- [ ] Tests beside the store and core:
-  - [ ] two-tag AND under both orders and across a position
-  - [ ] a tag nothing carries
-  - [ ] duplicates absorbed
-  - [ ] `unprocessed` excluding archived, routed and revised items
-  - [ ] co-occurring counts under a filter
-- [ ] Typecheck, `pnpm -r --silent test`, lint; commit.
+- [x] Tests beside the store and core:
+  - [x] two-tag AND under both orders and across a position
+  - [x] a tag nothing carries
+  - [x] duplicates absorbed
+  - [x] `unprocessed` excluding archived, routed and revised items
+  - [x] co-occurring counts under a filter
+- [x] Typecheck, `pnpm -r --silent test`, lint; commit.
 
 **Verify**: store tests show a filtered queue page continuing from a feed position, and counts
 matching a hand-counted fixture.
@@ -108,19 +108,19 @@ matching a hand-counted fixture.
 
 Depends on: phase 1.
 
-- [ ] http-v1.md:
-  - [ ] `tag` on the three routes and on `/v1/tags`
-  - [ ] `next` carrying it
-  - [ ] the blank-value refusal
-  - [ ] `unprocessed` on the row, and the amended "whole of a row" paragraph
-  - [ ] the reworded loose *filter*s
-  - [ ] acceptance criteria
-- [ ] Route schemas, OpenAPI, and regenerated client types.
-- [ ] Route tests:
-  - [ ] repeated `tag` round-trips through `next`
-  - [ ] a blank `tag` is `422 tag-invalid`
-  - [ ] a tag containing `/` survives the query string
-- [ ] Typecheck, tests, lint, `pnpm test:stack`; commit.
+- [x] http-v1.md:
+  - [x] `tag` on the three routes and on `/v1/tags`
+  - [x] `next` carrying it
+  - [x] the blank-value refusal
+  - [x] `unprocessed` on the row, and the amended "whole of a row" paragraph
+  - [x] the reworded loose *filter*s
+  - [x] acceptance criteria
+- [x] Route schemas, OpenAPI, and regenerated client types.
+- [x] Route tests:
+  - [x] repeated `tag` round-trips through `next`
+  - [x] a blank `tag` is `422 tag-invalid`
+  - [x] a tag containing `/` survives the query string
+- [x] Typecheck, tests, lint, `pnpm test:stack`; commit.
 
 **Verify**: `GET /v1/queue?tag=a&tag=b&limit=1` answers a `next` carrying both tags, and
 `GET /v1/tags?tag=a` answers only tags carried beside `a`.
@@ -129,16 +129,16 @@ Depends on: phase 1.
 
 Depends on: phase 2.
 
-- [ ] client.md: the whole page and the filtered page, the membership rule, the watcher applying
+- [x] client.md: the whole page and the filtered page, the membership rule, the watcher applying
       tag actions, the offline filtered draw, and the filtered tags read.
-- [ ] State: a filtered `ListPage` beside each surface's whole page. `reads` sends the filter.
-- [ ] One membership rule replaces the bare `unprocessed` checks in `settle`, `arrived`,
+- [x] State: a filtered `ListPage` beside each surface's whole page. `reads` sends the filter.
+- [x] One membership rule replaces the bare `unprocessed` checks in `settle`, `arrived`,
       `caughtUp` and `drawnFrom`, and applies to both pages.
-- [ ] `caughtUp` applies `tagged`/`untagged` to cached items.
-- [ ] Retention: the filtered page's ids are exempt from the cap, like any drawn page.
-- [ ] A client call for the filtered tags read; offline, it counts from the cache and says it did.
-- [ ] Tests beside `state`, `surfaces` and `actions`.
-- [ ] Typecheck, tests, lint; commit.
+- [x] `caughtUp` applies `tagged`/`untagged` to cached items.
+- [x] Retention: the filtered page's ids are exempt from the cap, like any drawn page.
+- [x] A client call for the filtered tags read; offline, it counts from the cache and says it did.
+- [x] Tests beside `state`, `surfaces` and `actions`.
+- [x] Typecheck, tests, lint; commit.
 
 **Verify**: client tests where:
 - a filtered queue page drops a row untagged on another device, via the watcher
@@ -149,16 +149,16 @@ Depends on: phase 2.
 
 Depends on: phase 3.
 
-- [ ] shell.md: the tags view, the filtered head, the keyboard, history, the empty filter, and
+- [x] shell.md: the tags view, the filtered head, the keyboard, history, the empty filter, and
       `tag=` on the URL.
-- [ ] `lib/`: `tag=` read and written, pushed, never persisted. `view=tags` read from the URL and
+- [x] `lib/`: `tag=` read and written, pushed, never persisted. `view=tags` read from the URL and
       never remembered.
-- [ ] The tags view: two bands, counts for this surface, zero rows hidden, walked and taken like
+- [x] The tags view: two bands, counts for this surface, zero rows hidden, walked and taken like
       the index.
-- [ ] The filtered head with its `×`s. `esc` with no row selected takes off the last tag added.
-- [ ] The empty-filter lines on the queue and the feed.
-- [ ] Component tests on the queue and the feed.
-- [ ] Typecheck, tests, lint, `pnpm test:stack`; commit.
+- [x] The filtered head with its `×`s. `esc` with no row selected takes off the last tag added.
+- [x] The empty-filter lines on the queue and the feed.
+- [x] Component tests on the queue and the feed.
+- [x] Typecheck, tests, lint, `pnpm test:stack`; commit.
 
 **Verify**: in the running shell:
 1. Queue: open `tags`, take one tag, then a second from the filtered tags view. The rows and
@@ -168,9 +168,19 @@ Depends on: phase 3.
 
 ### Phase 5 — shipped entries
 
-- [ ] `Shipped:` entries in the four specs; set Status.
+- [x] `Shipped:` entries in the four specs; set Status.
 
 ---
+
+## What changed on the way
+
+- **The feed holds a selected row too.** Nothing ever left the whole feed, so it had no hold; a
+  filtered one loses a row whose tag is taken off, and now keeps it where it stood until the
+  selection leaves it, as the queue does.
+- **The tags view says nothing when it is counted from the cache**, on the terms a cache-drawn
+  surface already does: the chrome's mark has said the pool is away.
+- **Not done by the agent:** the phase 4 walk-through in a running shell. Every step of it is
+  covered by a component or client test, but none of them is a browser.
 
 ## Unknowns
 

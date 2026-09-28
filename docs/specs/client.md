@@ -4,6 +4,11 @@
 **Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **A surface can be read through a filter.** `enter` takes the tags; the whole page
+  is kept beside the filtered one and returned to as it stood. One membership rule keeps every page,
+  the watcher applies tags added and taken off elsewhere to the items held, and `tags.within`
+  answers the tags beside a filter — counted from what the client holds while the pool is away.
+  See [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-24 — **`client.unfurl(url)`.** What a link points at, read straight off `/v1` and held
   nowhere; it asks nothing unless the pool setting `unfurl` reads on as last read. See
   [ADR 51](../adr/0051-an-unfurl-is-the-daemons-and-is-not-enrichment.md) and

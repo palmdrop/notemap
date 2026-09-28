@@ -5,6 +5,10 @@ editing, destinations, routing to one, pool settings, unfurling and health are s
 **Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **`tag` filters the feed, the queue, the archive and the tags in use.** Repeated,
+  every one must be carried, and carried by `next`; a blank one is `422 tag-invalid`. A row of
+  `GET /v1/tags` carries `unprocessed` beside `items`. See
+  [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-24 — **`GET /v1/unfurl`.** What an external link points at — its title, description,
   image and site name, from Open Graph or the common tags pages use instead — read by the daemon behind a
   strict guard and held in memory, never pool state. A target that could not be read is an ordinary

@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **The feed, the queue and the archive can be read through a tag filter.** Every
+  tag it names must be carried; each is trimmed as tagging trims, and a blank one is refused. The
+  tags in use now count the unprocessed carriers of each tag as well, and through a filter answer
+  the tags carried beside it, counted within it. See [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-24 — **A pool holds pool settings.** A value true of the pool rather than of any item,
   destination or template — read over `/v1`, changed by a person using notemap, written to the
   action log, mirrored, and read the same on every device. One exists: the unfurl opt-out,

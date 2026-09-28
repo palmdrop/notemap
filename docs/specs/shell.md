@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **The tags a surface holds, and a filter by them.** The list head gains a third
+  view, `tags`: one line per tag with how many items on that surface carry it, trigger tags apart
+  beneath with the template they fire. Taking one filters the queue or the feed by it, and a filter
+  may hold several tags, all carried. The filter lives on the address and is never remembered,
+  back takes a tag off, the head says what the list is filtered by, `esc` with nothing selected
+  lifts the last tag, and an emptied filter never says the queue is drained. See
+  [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
   rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
   actions' place in the foot; no decision is reached meanwhile, and the tags stay live. Leaving an
