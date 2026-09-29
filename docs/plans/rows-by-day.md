@@ -1,9 +1,9 @@
 # Rows by day
 
 **Date**: 2026-09-29
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-29
 
 ---
 
@@ -99,15 +99,15 @@ Depends on 1 and 2.
 
 Depends on 3 and 4.
 
-- [ ] A new ADR: reading by day is a reader's choice, and the shell keeps two register layouts.
+- [x] A new ADR: reading by day is a reader's choice, and the shell keeps two register layouts.
       It amends ADR 46's "one layout", which it names, and states the cost plainly: every change
       to a row is now built and checked in both layouts. ADR 46 gets a superseding note pointing
       at it rather than an edit.
-- [ ] `shell.md`: the shape of the shell, the row, the index, and Appearance under settings
+- [x] `shell.md`: the shape of the shell, the row, the index, and Appearance under settings
       describe the choice and both layouts. Add a Shipped entry.
-- [ ] `docs/todo.md`: tick the mobile-layout item.
-- [ ] Typecheck, lint, `pnpm -r --silent test`.
-- [ ] Commit, and open a PR.
+- [x] `docs/todo.md`: tick the mobile-layout item.
+- [x] Typecheck, lint, `pnpm -r --silent test`.
+- [x] Commit, and open a PR. _(2026-09-29)_
 
 **Verify:** the checks are green, and the spec and the code agree.
 

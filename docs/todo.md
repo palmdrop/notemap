@@ -14,7 +14,7 @@
 
 - [x] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
 
-- [ ] Mobile view too cramped - show dates as heading lines, once for every day + month, sticky header, then just show time beside (or above?) the capture row
+- [x] Mobile view too cramped - show dates as heading lines, once for every day + month, sticky header, then just show time beside (or above?) the capture row
 
 - [x] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
 

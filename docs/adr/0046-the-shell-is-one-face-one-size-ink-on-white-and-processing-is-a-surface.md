@@ -36,6 +36,11 @@ So: what does the shell's visual system consist of, and where does processing ha
   template by its tag — must not leave the list. The slow case — a destination, a place, a
   rewrite, a preview — must have room.
 - **One layout**, 375px first, both columns.
+
+  > **Amended 2026-09-29 by
+  > [ADR 52](0052-reading-by-day-is-a-readers-choice.md).** The register has two layouts, the rail
+  > and by day, chosen per device in Appearance. By day is the default below `narrow`. The rest of
+  > this record stands.
 - **Offline-friendly.** Nothing the shell needs to look right may live on a network the daemon is
   not on.
 - **Tokens by role.** Whatever is decided has to reduce to one file of named values.
