@@ -2,14 +2,14 @@ import { scrypt } from "crypto";
 import { splitHash, joinHash, type Algorithm, type HashResult } from ".";
 import { UnreadableHash } from "./errors";
 
-type Params = {
+export type ScryptParams = {
   N: number;
   r: number;
   p: number;
   keylen: number;
 };
 
-type Result = HashResult<Params>;
+type Result = HashResult<ScryptParams>;
 
 /**
  * OWASP's floor for scrypt is `N=2^17, r=8, p=1`, and it lists `N=2^16, r=8,
@@ -17,7 +17,7 @@ type Result = HashResult<Params>;
  * having here: 128 MiB per call is 512 MiB in flight across libuv's threadpool,
  * which is a lot to ask of the small machines this is meant to run on.
  */
-const defaultParams: Params = {
+const defaultParams: ScryptParams = {
   N: 65536,
   r: 8,
   p: 2,
@@ -103,17 +103,28 @@ const handlers = {
   hash: async (
     password: string,
     salt: Buffer<ArrayBuffer>,
-    params?: Params,
+    params?: ScryptParams,
   ) => {
-    const result = await hash(password, salt, params as Params);
+    const result = await hash(password, salt, params as ScryptParams);
     return encodeHash(result);
   },
   decode: async (hash: string) => decodeHash(hash),
-  // Only ever upwards: a hash written under stronger parameters than the
-  // current ones is left alone rather than weakened to match them.
-  needsRehash: (params: Record<string, unknown>) => {
-    const { N, r, p } = params as Params;
-    return N < defaultParams.N || r < defaultParams.r || p < defaultParams.p;
+  // Only ever upwards: rewritten when the current parameters are at least as
+  // much work and memory and more of one, so neither ever goes down.
+  needsRehash: (
+    params: Record<string, unknown>,
+    current: ScryptParams = defaultParams,
+  ) => {
+    const stored = params as ScryptParams;
+    const work = ({ N, r, p }: ScryptParams) => N * r * p;
+    const memory = ({ N, r }: ScryptParams) => N * r;
+
+    const behind =
+      work(stored) <= work(current) && memory(stored) <= memory(current);
+    const same =
+      work(stored) === work(current) && memory(stored) === memory(current);
+
+    return behind && !same;
   },
 } as Algorithm;
 

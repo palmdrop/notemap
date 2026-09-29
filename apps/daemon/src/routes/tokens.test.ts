@@ -12,6 +12,7 @@ import type { AuthStore } from "../auth/store/types";
 import type { Auth } from "../auth/types";
 import { daemon, type Daemon } from "../testing/fixture";
 import type { AppEnv } from "../types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const NAME = "anton";
 const PASSWORD = "correct horse battery staple";
@@ -33,7 +34,10 @@ async function guarded(): Promise<{
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
   stores.push({ store, directory });
 
-  const auth = createAuth(store, { clock: systemClock });
+  const auth = createAuth(store, {
+    clock: systemClock,
+    hashing: CHEAP_HASHING,
+  });
   await auth.setPassword(NAME, PASSWORD);
 
   const host = daemon(undefined, { auth });

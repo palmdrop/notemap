@@ -6,13 +6,17 @@ import { createAuth } from "../auth";
 import { systemClock } from "../ports";
 import { setPassword } from "./password";
 import { cleanup, configured, piped, said } from "./testing";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const PASSWORD = "correct horse battery staple";
 
 /** What the daemon would see, opened after the command has closed its own. */
 const opened = async (file: string) => {
   const store = createSqliteAuthStore({ file });
-  return { auth: createAuth(store, { clock: systemClock }), store };
+  return {
+    auth: createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING }),
+    store,
+  };
 };
 
 afterEach(cleanup);

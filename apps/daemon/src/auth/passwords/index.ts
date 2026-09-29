@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "crypto";
 
-import scrypt from "./scrypt";
+import scrypt, { type ScryptParams } from "./scrypt";
 import { normalise, normalisePassword } from "./normalise";
 import { UnreadableHash } from "./errors";
 import { DEFAULT_ALGORITHM } from "./config";
@@ -27,7 +27,10 @@ export type Algorithm = {
   ) => Promise<string>;
   decode: (hash: string) => Promise<HashResult>;
   /** Whether a hash written under these parameters is behind the current ones. */
-  needsRehash: (params: Record<string, unknown>) => boolean;
+  needsRehash: (
+    params: Record<string, unknown>,
+    current?: Record<string, unknown>,
+  ) => boolean;
 };
 
 export type AlgorithmName = "scrypt";
@@ -96,12 +99,15 @@ export const verifyPassword = async (password: string, stored: string) => {
  * would write now — a different algorithm, or the same one turned down. The
  * answer is only useful where the password is at hand to rewrite it with.
  */
-export const needsRehash = async (stored: string): Promise<boolean> => {
+export const needsRehash = async (
+  stored: string,
+  current?: ScryptParams,
+): Promise<boolean> => {
   const parts = splitHash(stored);
   if (parts[0] !== DEFAULT_ALGORITHM) return true;
 
   const algorithm = resolveAlgorithm(parts[0]);
   const { params } = await algorithm.decode(stored);
 
-  return algorithm.needsRehash(params);
+  return algorithm.needsRehash(params, current);
 };

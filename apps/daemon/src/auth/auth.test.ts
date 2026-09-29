@@ -7,9 +7,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createAuth } from ".";
 import { hashPassword } from "./passwords";
+import type { ScryptParams } from "./passwords/scrypt";
 import { createSqliteAuthStore } from "./store";
 import type { AuthStore } from "./store/types";
 import type { Auth } from "./types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const START = "2026-08-30T09:00:00.000Z";
 const NAME = "anton";
@@ -27,12 +29,22 @@ function frozenClock(start = START): Clock & { set: (value: string) => void } {
 
 const opened: { store: AuthStore; directory: string }[] = [];
 
-function auth(clock: Clock = frozenClock()): { auth: Auth; store: AuthStore } {
+/** `hashing: null` is scrypt's own defaults, which only a test about them should pay for. */
+function auth(
+  clock: Clock = frozenClock(),
+  hashing: ScryptParams | null = CHEAP_HASHING,
+): { auth: Auth; store: AuthStore } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
 
   opened.push({ store, directory });
-  return { auth: createAuth(store, { clock }), store };
+  return {
+    auth: createAuth(store, {
+      clock,
+      ...(hashing === null ? {} : { hashing }),
+    }),
+    store,
+  };
 }
 
 /** Signed in, which is what most of this is about. */
@@ -158,7 +170,7 @@ describe("a stored credential nobody can read", () => {
 describe("a password stored under weaker parameters", () => {
   /** What an older build wrote, and what this one should stop leaving in place. */
   const asAnOlderBuild = () =>
-    hashPassword(PASSWORD, "scrypt", { N: 16384, r: 8, p: 1, keylen: 64 });
+    hashPassword(PASSWORD, "scrypt", { ...CHEAP_HASHING, N: 512 });
 
   it("is rewritten when the password next proves itself", async () => {
     const opened = auth();
@@ -168,7 +180,7 @@ describe("a password stored under weaker parameters", () => {
     expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
 
     const now = (await opened.store.getCredential())?.passwordHash ?? "";
-    expect(now.split("$")[2]).toBe("65536");
+    expect(now.split("$")[2]).toBe(String(CHEAP_HASHING.N));
   });
 
   it("keeps working while it is rewritten, and afterwards", async () => {
@@ -191,6 +203,56 @@ describe("a password stored under weaker parameters", () => {
     expect(
       await opened.auth.authenticate("session", opened.session.token),
     ).toBeDefined();
+  });
+});
+
+describe("a password stored under parameters no weaker than now", () => {
+  const storedHash = async (opened: { store: AuthStore }) =>
+    (await opened.store.getCredential())?.passwordHash;
+
+  it("is left alone when it is what is hashed with now", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    const before = await storedHash(opened);
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
+    expect(await storedHash(opened)).toBe(before);
+  });
+
+  it("is left alone rather than weakened when it is stronger", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    const stronger = await hashPassword(PASSWORD);
+    await opened.store.rehashCredential(stronger);
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
+    expect(await storedHash(opened)).toBe(stronger);
+  });
+});
+
+describe("what a password is hashed under", () => {
+  const storedN = async (opened: { store: AuthStore }) =>
+    (await opened.store.getCredential())?.passwordHash.split("$")[2];
+
+  it("is scrypt's defaults when nothing else is asked for", async () => {
+    const opened = auth(frozenClock(), null);
+    await opened.auth.setPassword(NAME, PASSWORD);
+
+    expect(await storedN(opened)).toBe("65536");
+  });
+
+  it("is brought up to scrypt's defaults when nothing else is asked for", async () => {
+    const opened = auth(frozenClock(), null);
+    await opened.auth.setPassword(NAME, PASSWORD);
+    await opened.store.rehashCredential(
+      await hashPassword(PASSWORD, "scrypt", CHEAP_HASHING),
+    );
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
+    expect(await storedN(opened)).toBe("65536");
   });
 });
 
