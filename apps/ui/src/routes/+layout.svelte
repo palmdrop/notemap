@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { untrack } from "svelte";
   import { beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
@@ -38,20 +38,16 @@
     { href: resolve("/settings"), label: "settings" },
   ];
 
-  // Swallowed because an unreachable pool is what the status glyph is for: a
-  // row then says "a destination" and completion offers less. A shut door is
-  // swallowed too: what it refuses is drawn by the login, not by a row.
-  onMount(() => {
-    void client.destinations.load().catch(() => undefined);
-    void client.templates.load().catch(() => undefined);
-    void client.tags.load().catch(() => undefined);
-  });
-
-  // A pool setting can stop this device reaching out on the pool's behalf, so
-  // a change made on another device has to arrive without anyone opening
-  // settings: read whenever the pool is in reach and the door is open.
+  // Read whenever the pool is in reach and the door is open: a read refused
+  // at start would otherwise leave completion offering nothing until a tag
+  // happened to drain, and a pool setting changed on another device has to
+  // arrive without anyone opening settings. A failure is swallowed, the status
+  // glyph and the login being what say so.
   $effect(() => {
     if (pool.yes && !who.shut) {
+      void client.destinations.load().catch(() => undefined);
+      void client.templates.load().catch(() => undefined);
+      void client.tags.load().catch(() => undefined);
       void client.settings.load().catch(() => undefined);
     }
   });

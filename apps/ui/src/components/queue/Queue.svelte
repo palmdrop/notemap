@@ -4,7 +4,7 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
+  import { rank, type Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
@@ -93,6 +93,18 @@
       $queue.items.length === 0,
   );
 
+  /**
+   * Where the queue's order puts a row it no longer holds. On the way back from
+   * processing it was never drawn here, so there is no place it stood.
+   */
+  function placeOf(live: readonly Item[], kept: Item): number {
+    const at = rank(kept);
+    const after = live.findIndex((row) =>
+      $queue.order === "oldest-first" ? rank(row) > at : rank(row) < at,
+    );
+    return after === -1 ? live.length : after;
+  }
+
   /** The selected row's own copy, which outlives its place on the queue. */
   const heldRow = $derived(client.held(selected ?? ""));
 
@@ -111,7 +123,10 @@
     ) {
       return live;
     }
-    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    const place = Math.min(
+      untrack(() => stood) ?? placeOf(live, kept),
+      live.length,
+    );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
@@ -121,7 +136,9 @@
   $effect(() => {
     const at = rows.findIndex((row) => row.id === selected);
     if (at !== -1) {
-      stood = at;
+      // Only the queue's own place for it: one this surface chose for a held
+      // row would outlive a read that has not landed yet.
+      if ($queue.items.some((row) => row.id === selected)) stood = at;
       return;
     }
     if (selected === undefined || rows.length === 0) return;
@@ -276,7 +293,11 @@
     }),
     ...reached(),
     ...(atCapture
-      ? [{ id: "tag", label: "tag", run: () => capture?.tag() }]
+      ? [
+          { id: "tag", label: "tag", run: () => capture?.tag() },
+          { id: "edit", label: "write", run: () => capture?.take() },
+          { id: "capture", label: "capture", run: () => capture?.commit() },
+        ]
       : []),
     { id: "filter", label: "filter", run: () => void tagFilter?.show() },
   ]);

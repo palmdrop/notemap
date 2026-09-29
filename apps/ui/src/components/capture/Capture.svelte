@@ -55,6 +55,11 @@
     chooser?.add();
   }
 
+  /** Commits what the box holds, for the chord that reaches it from outside the field. */
+  export function commit(): void {
+    void capture();
+  }
+
   /**
    * The bytes as the browser can draw them. A picture goes up with the capture
    * and cannot be taken back once it has, so it is looked at before it is sent

@@ -135,3 +135,37 @@ test("reads the pool settings again once the door opens", async () => {
     expect(client.settings.held).toEqual([{ name: "unfurl", value: true }]);
   });
 });
+
+test("reads the tags in use again once the door opens", async () => {
+  let signedIn = false;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "POST /v1/session") {
+      signedIn = true;
+      return open();
+    }
+    if (route === "GET /v1/session") return signedIn ? open() : shut();
+    if (route === "GET /v1/tags") {
+      return signedIn
+        ? json(200, {
+            values: [{ name: "quote", items: 2, unprocessed: 1 }],
+          })
+        : json(401, { error: { code: "unauthenticated" } });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Layout, { children });
+
+  await fireEvent.input(
+    await screen.findByLabelText("password", { exact: false }),
+    { target: { value: "correct horse battery staple" } },
+  );
+  await fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  let inUse: readonly { name: string }[] = [];
+  client.tags.inUse.subscribe((now) => (inUse = now));
+  await waitFor(() => {
+    expect(inUse.map((use) => use.name)).toEqual(["quote"]);
+  });
+});
