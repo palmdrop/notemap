@@ -14,6 +14,7 @@
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
+  import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
@@ -29,7 +30,9 @@
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
+  import { byDay, plain } from "$lib/days";
   import { reachable } from "$lib/reachable.svelte";
+  import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
@@ -124,6 +127,9 @@
   });
 
   const current = $derived(rows.find((row) => row.id === selected));
+
+  /** The rows as drawn: under a heading per day, where the reader reads by day. */
+  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
 
   function reveal(id: string) {
     drawn[id]?.reveal();
@@ -246,7 +252,7 @@
     />
   {/if}
 {:else}
-  <Register>
+  <Register slim={layout.slim}>
     {#if refused !== undefined}
       <Refused surface="feed" {refused} />
     {/if}
@@ -269,20 +275,28 @@
       </Body>
     {/if}
 
-    {#each rows as item (item.id)}
-      <Row
-        {motion}
-        bind:this={drawn[item.id]}
-        {item}
-        surface="feed"
-        filter={$feed.filter}
-        selected={selected === item.id}
-        offline={!pool.yes}
-        commands={selected === item.id ? commands : []}
-        pending={undrained.has(item.id)}
-        onselect={() => select(item.id)}
-        onprocess={() => void goto(processHref(item.id))}
-      />
+    {#each headed as one (one.key)}
+      {#if one.kind === "day"}
+        <Day at={one.at} {motion} />
+      {:else}
+        {@const item = one.row}
+        <Row
+          {motion}
+          bind:this={drawn[item.id]}
+          {item}
+          surface="feed"
+          filter={$feed.filter}
+          selected={selected === item.id}
+          offline={!pool.yes}
+          commands={selected === item.id ? commands : []}
+          pending={undrained.has(item.id)}
+          byDay={layout.byDay}
+          slim={layout.slim}
+          opens={one.opens}
+          onselect={() => select(item.id)}
+          onprocess={() => void goto(processHref(item.id))}
+        />
+      {/if}
     {/each}
 
     {#if footed}

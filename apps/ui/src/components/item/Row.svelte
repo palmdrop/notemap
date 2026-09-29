@@ -32,6 +32,9 @@
     filter = [],
     commands,
     pending = false,
+    byDay = false,
+    slim = false,
+    opens = false,
     motion,
     onselect,
     onprocess,
@@ -45,6 +48,12 @@
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
+    /** Under a heading that says the day, so the stamp says only the time. */
+    byDay?: boolean;
+    /** The rail holds the time alone, and everything else it held opens the body. */
+    slim?: boolean;
+    /** The first row under a heading, laying its top edge on the heading's rule. */
+    opens?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
     onselect: () => void;
@@ -107,6 +116,32 @@
   }
 </script>
 
+{#snippet facts()}
+  {#if word !== undefined}
+    <StateWord {word} />
+  {/if}
+
+  {#if pending}
+    <Pending since={undrainedSince(item.id)} />
+  {/if}
+
+  <div class={slim ? "" : "mt-0.5"}>
+    <Tags bind:this={tags} {item} {filter} addable={selected} stacked={!slim} />
+  </div>
+
+  {#if finished}
+    <Routing
+      summary={item.routing}
+      records={records.all}
+      onundone={() => records.reread()}
+    />
+  {/if}
+
+  {#if records.refused !== ""}
+    <div role="status" class="mt-2 text-alarm">{records.refused}</div>
+  {/if}
+{/snippet}
+
 <!-- One element on the register's own tracks, so the row has a height of its
      own and the columns stay in register with every other row: the outer box
      is what moves, the inner what its height follows. -->
@@ -115,36 +150,30 @@
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach following}
 >
-  <div class="col-span-full grid grid-cols-subgrid">
-    <Rail bind:this={rail} {selected} onpick={pick} onreach={reach}>
-      <Stamp at={item.createdAt} opened={selected} onopen={() => pick?.()} />
+  <div class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''}">
+    <Rail
+      bind:this={rail}
+      {selected}
+      headed={byDay}
+      onpick={pick}
+      onreach={reach}
+    >
+      <Stamp
+        at={item.createdAt}
+        dated={!byDay}
+        opened={selected}
+        onopen={() => pick?.()}
+      />
 
-      {#if word !== undefined}
-        <StateWord {word} />
-      {/if}
-
-      {#if pending}
-        <Pending since={undrainedSince(item.id)} />
-      {/if}
-
-      <div class="mt-0.5">
-        <Tags bind:this={tags} {item} {filter} addable={selected} />
-      </div>
-
-      {#if finished}
-        <Routing
-          summary={item.routing}
-          records={records.all}
-          onundone={() => records.reread()}
-        />
-      {/if}
-
-      {#if records.refused !== ""}
-        <div role="status" class="mt-2 text-alarm">{records.refused}</div>
+      {#if !slim}
+        {@render facts()}
       {/if}
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>
+      {#if slim}
+        <div class="mb-0.5">{@render facts()}</div>
+      {/if}
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}

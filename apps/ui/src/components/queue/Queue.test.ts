@@ -13,7 +13,8 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
-import { keyboard, online } from "$testing/dom";
+import { keyboard, online, viewport } from "$testing/dom";
+import { rows as layout } from "$lib/rows.svelte";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import Queue from "./Queue.svelte";
@@ -1294,4 +1295,119 @@ test("while a row is edited only its tags are reached", async () => {
   expect(
     await screen.findByRole("combobox", { name: "Add a tag" }),
   ).toBeDefined();
+});
+
+/** Local, so the day each capture falls on is the day the shell draws it under. */
+const on = (day: number, hour: number, minute = 0) =>
+  new Date(2026, 8, day, hour, minute).toISOString();
+
+function overDays() {
+  return holding(
+    anItem("one", { createdAt: on(12, 8, 14) }),
+    anItem("two", {
+      createdAt: on(12, 11, 40),
+      tags: [{ name: "design", at: on(12, 11, 40) }],
+    }),
+    anItem("three", { createdAt: on(13, 7, 2) }),
+  );
+}
+
+function holding(...items: ReturnType<typeof anItem>[]) {
+  return (request: Request) =>
+    routeOf(request) === "GET /v1/queue"
+      ? json(200, { values: items })
+      : json(200, { values: [] });
+}
+
+/** The row's own tracks, which the first row of a day lifts onto the heading's rule. */
+const rowOf = (words: string) =>
+  screen.getByText(words).closest(".col-span-full.grid")!;
+
+test("reads by day on a narrow screen: a heading per day, the time alone on the row", async () => {
+  viewport(390);
+  pool(overDays());
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+
+  const days = [...container.querySelectorAll("[data-day]")];
+  expect(
+    days.map((day) => day.textContent?.replace(/\s+/g, " ").trim()),
+  ).toEqual(["2026-09-12 saturday", "2026-09-13 sunday"]);
+  expect(screen.getByText("08:14")).toBeDefined();
+  expect(screen.queryByText("2026-09-12", { selector: "button *" })).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "2026-09-12 08:14" }),
+  ).toBeDefined();
+
+  expect(rowOf("one").className).toContain("-mt-px");
+  expect(rowOf("two").className).not.toContain("-mt-px");
+  expect(rowOf("three").className).toContain("-mt-px");
+
+  // A row walked to clears the heading held over it.
+  expect(screen.getByText("08:14").closest(".scroll-mt-12")).not.toBeNull();
+
+  // The rail holds the time alone; the tags open the body.
+  expect(screen.getByText("design").closest(".col-start-2")).not.toBeNull();
+});
+
+test("reads by day on a wide screen only when chosen, keeping the tags in the rail", async () => {
+  pool(overDays());
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+
+  layout.choose("by day");
+  await tick();
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
+  expect(screen.getByText("design").closest(".col-start-1")).not.toBeNull();
+});
+
+test("the rail, chosen, draws no headings on a narrow screen", async () => {
+  viewport(390);
+  layout.choose("rail");
+  pool(overDays());
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+  expect(screen.getAllByText("2026-09-12").length).toBeGreaterThan(0);
+});
+
+test("walks across a heading, and a day's heading leaves with its last row", async () => {
+  viewport(390);
+  let items = [
+    anItem("one", { createdAt: on(12, 8, 14) }),
+    anItem("three", { createdAt: on(13, 7, 2) }),
+  ];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: items });
+    if (route === "POST /v1/items/one/archive") {
+      const [one] = items;
+      items = items.filter((item) => item.id !== "one");
+      return json(200, { ...one, archived: { archivedAt: on(13, 9) } });
+    }
+    return json(200, { values: [] });
+  });
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(stamps(true)[0]?.getAttribute("aria-label")).toBe("2026-09-13 07:02");
+
+  await fireEvent.keyDown(window, { key: "k" });
+  await fireEvent.keyDown(window, { key: "D" });
+  await screen.findByText("discarded");
+  // Held where it stood, its heading with it, until the selection leaves.
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await vi.waitFor(() => {
+    expect(container.querySelectorAll("[data-day]")).toHaveLength(1);
+  });
 });

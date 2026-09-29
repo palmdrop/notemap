@@ -11,7 +11,14 @@
     item,
     filter = [],
     addable = false,
-  }: { item: Item; filter?: readonly string[]; addable?: boolean } = $props();
+    stacked = true,
+  }: {
+    item: Item;
+    filter?: readonly string[];
+    addable?: boolean;
+    /** One to a line on a narrow screen, as a rail holds them; a line of their own does not. */
+    stacked?: boolean;
+  } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
 
@@ -38,7 +45,9 @@
 </script>
 
 <div
-  class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] max-narrow:flex-col max-narrow:items-start"
+  class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] {stacked
+    ? 'max-narrow:flex-col max-narrow:items-start'
+    : ''}"
 >
   <TagSet
     bind:this={set}

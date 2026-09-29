@@ -8,6 +8,7 @@
     onpick,
     onreach,
     gap = false,
+    headed = false,
     children,
   }: {
     /** Draws the head and the left edge of the box a selected row is. */
@@ -17,6 +18,8 @@
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */
     gap?: boolean;
+    /** Under a sticky day heading, which a row brought into view has to clear. */
+    headed?: boolean;
     /** Absent where nothing is known yet to put in it: the rule still runs. */
     children?: Snippet;
   } = $props();
@@ -41,6 +44,7 @@
   data-selected={selected ? "" : undefined}
   class="col-start-1 -ml-3 min-w-0 border-t border-r border-l border-ink pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
+    {headed ? 'scroll-mt-12' : ''}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >

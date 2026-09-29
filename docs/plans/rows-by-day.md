@@ -63,21 +63,21 @@ Depends on nothing. Phases 3 and 4 depend on it.
 
 Depends on 1 and 2.
 
-- [ ] The register takes the slim rail's column when the rail is slim.
-- [ ] A row read by day draws its stamp as the time alone. When the rail is slim, everything else
+- [x] The register takes the slim rail's column when the rail is slim.
+- [x] A row read by day draws its stamp as the time alone. When the rail is slim, everything else
       the rail held (state word, `pending`, tags with their `+`, the routing line, a refusal) opens
       the body instead, above the capture, so the rail holds the time and nothing else.
-- [ ] The first row under a heading lays its top edge on the heading's rule, one pixel up. It does
+- [x] The first row under a heading lays its top edge on the heading's rule, one pixel up. It does
       this whether or not it is selected, so a selected first row draws one line, not two. No
       logic depends on which row is selected.
-- [ ] A row brought into view by `j`/`k` clears the sticky heading rather than landing beneath it.
-- [ ] The queue and the feed draw headings between their rows when read by day. A heading slides
+- [x] A row brought into view by `j`/`k` clears the sticky heading rather than landing beneath it.
+- [x] The queue and the feed draw headings between their rows when read by day. A heading slides
       in and out with the rows it heads, on the same terms rows move by.
-- [ ] Tests on the queue and the feed: headings drawn by day and not on the rail; a heading goes
+- [x] Tests on the queue and the feed: headings drawn by day and not on the rail; a heading goes
       when the last row of its day leaves; the first row under a heading is marked for the
       overlap; the slim row carries its tags in the body; `j`/`k` and the held row still work
       across a heading.
-- [ ] Commit.
+- [x] Commit. _(2026-09-29)_
 
 **Verify:** tests pass. In a browser at 390 and 1440, with each choice: headings hold while
 their day scrolls; a selected first row draws one rule; nothing in the row moves when it is

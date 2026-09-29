@@ -14,6 +14,7 @@
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
+  import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
@@ -28,7 +29,9 @@
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
+  import { byDay, plain } from "$lib/days";
   import { reachable } from "$lib/reachable.svelte";
+  import { rows as layout } from "$lib/rows.svelte";
   import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
@@ -216,6 +219,9 @@
 
   const current = $derived(rows.find((row) => row.id === selected));
 
+  /** The rows as drawn: under a heading per day, where the reader reads by day. */
+  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+
   function reveal(id: string) {
     drawn[id]?.reveal();
     index?.reveal(id);
@@ -353,25 +359,33 @@
     />
   {/if}
 {:else}
-  <Register>
+  <Register slim={layout.slim}>
     {#if refused !== undefined}
       <Refused surface="queue" {refused} />
     {/if}
 
-    {#each rows as row (row.id)}
-      <Row
-        {motion}
-        bind:this={drawn[row.id]}
-        item={row}
-        surface="queue"
-        filter={$queue.filter}
-        selected={selected === row.id}
-        offline={!pool.yes}
-        commands={selected === row.id ? commands : []}
-        pending={undrained.has(row.id)}
-        onselect={() => select(row.id)}
-        onprocess={() => process(row)}
-      />
+    {#each headed as one (one.key)}
+      {#if one.kind === "day"}
+        <Day at={one.at} {motion} />
+      {:else}
+        {@const row = one.row}
+        <Row
+          {motion}
+          bind:this={drawn[row.id]}
+          item={row}
+          surface="queue"
+          filter={$queue.filter}
+          selected={selected === row.id}
+          offline={!pool.yes}
+          commands={selected === row.id ? commands : []}
+          pending={undrained.has(row.id)}
+          byDay={layout.byDay}
+          slim={layout.slim}
+          opens={one.opens}
+          onselect={() => select(row.id)}
+          onprocess={() => process(row)}
+        />
+      {/if}
     {/each}
 
     {#if footed}
