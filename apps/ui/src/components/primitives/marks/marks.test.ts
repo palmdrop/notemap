@@ -14,6 +14,17 @@ test("writes an instant as a date over a time, and keeps it machine-readable", (
   expect(screen.getByText("09:31")).toBeDefined();
 });
 
+test("under a heading that says the day, draws the time alone and still names the whole instant", () => {
+  const at = new Date(2026, 8, 13, 7, 2).toISOString();
+  render(Stamp, { at, dated: false, onopen: () => {} });
+
+  expect(screen.queryByText("2026-09-13")).toBeNull();
+  expect(screen.getByText("07:02")).toHaveProperty("dateTime", at);
+  expect(
+    screen.getByRole("button", { name: "2026-09-13 07:02" }),
+  ).toBeDefined();
+});
+
 /**
  * jsdom applies no media query, so this pins the rule rather than its effect:
  * the day and the time are laid out to stack, not merely wrapped in a block —

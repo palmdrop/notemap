@@ -44,18 +44,18 @@ choice survives a reload.
 
 Depends on nothing. Phases 3 and 4 depend on it.
 
-- [ ] A pure function turning a list of items into the list a register draws: a day heading
+- [x] A pure function turning a list of items into the list a register draws: a day heading
       before the first item of each local day, in whatever order the list is read, with keys that
       stay stable while rows come and go.
-- [ ] `stamp.ts` names a weekday, local, lowercase: `sunday`.
-- [ ] A day heading primitive: spans the register, sticky at the top of the page, on the ground
+- [x] `stamp.ts` names a weekday, local, lowercase: `sunday`.
+- [x] A day heading primitive: spans the register, sticky at the top of the page, on the ground
       colour, ruled under, with the date bold and the weekday beside it. No month heading.
-- [ ] The stamp can draw its time alone. Doing so, it still says the whole date and time to
+- [x] The stamp can draw its time alone. Doing so, it still says the whole date and time to
       assistive technology, so a row selected by its stamp keeps a full name.
-- [ ] A token for the slim rail's width, which holds a time and nothing more.
-- [ ] Tests: grouping in both orders, across a day boundary and within one day, with a held row
+- [x] A token for the slim rail's width, which holds a time and nothing more.
+- [x] Tests: grouping in both orders, across a day boundary and within one day, with a held row
       inserted; the weekday; the time-only stamp's accessible name.
-- [ ] Commit.
+- [x] Commit. _(2026-09-29)_
 
 **Verify:** the unit tests pass, and `tokens.test.ts` stays green.
 
