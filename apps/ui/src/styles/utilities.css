@@ -10,6 +10,20 @@
   margin-inline: -0.375rem;
 }
 
+/*
+ * The rail's rule, painted down the right edge rather than drawn as a border:
+ * a border's corner is mitred against a transparent top edge beside it, and
+ * every cell the rule runs through paints it the same way, so the segments
+ * land on the same pixel at any width.
+ */
+@utility rule-right {
+  background-image: linear-gradient(var(--color-ink), var(--color-ink));
+  background-size: 1px 100%;
+  background-position: right;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+
 /**
  * A word that turns bold in place, as the current one of a row of them does:
  * its bold width is held from the start, so the words beside it never move.

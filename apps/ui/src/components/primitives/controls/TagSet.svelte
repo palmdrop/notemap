@@ -137,6 +137,23 @@
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
+  let line = $state<HTMLElement | null>(null);
+  let shift = $state(0);
+
+  // Opened near the end of a line, the offer would run past it and be cut off
+  // at the side of the screen: it is drawn back to end where the line does.
+  $effect(() => {
+    void rows;
+    const within = line?.parentElement?.getBoundingClientRect();
+    if (line === null || panel === null || within === undefined) {
+      shift = 0;
+      return;
+    }
+    const from = line.getBoundingClientRect().left;
+    const over = from + panel.offsetWidth - within.right;
+    shift = over > 0 ? -Math.min(over, from - within.left) : 0;
+  });
+
   const active = $derived(
     at !== undefined && rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
@@ -208,6 +225,15 @@
   }
 </script>
 
+<!-- A carried tag is marked `#`, which is how it reads as a tag beside prose
+     in the same face and size; the mark is not part of its name. Bold when
+     selected, holding its width so nothing beside it moves. -->
+{#snippet said(word: string)}
+  <span class="steady-weight" data-word={`#${word}`}
+    ><span><span aria-hidden="true">#</span><span>{word}</span></span></span
+  >
+{/snippet}
+
 <!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
      the style says which words file, and the namespace is not a decision. The
      offer below keeps the whole name, being what is typed against. -->
@@ -230,13 +256,10 @@
           ? 'underline'
           : ''}"
       >
-        {fired === undefined ? name : trigger(name)}
+        {@render said(fired === undefined ? name : trigger(name))}
       </span>
     {:else}
-      <span
-        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 outline-transparent transition-[outline-color] duration-(--duration-short) ease-fade data-chosen:outline-ink"
-        data-chosen={chosen === name ? "" : undefined}
-      >
+      <span data-chosen={chosen === name ? "" : undefined}>
         <button
           type="button"
           aria-pressed="true"
@@ -250,11 +273,13 @@
           aria-label={fired === undefined
             ? undefined
             : `${name}, routes to ${fired}`}
-          class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
-            ? ''
-            : TRIGGER} {filtered ? 'underline' : ''}"
+          class="{chosen === name
+            ? 'font-semibold'
+            : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
+            ? 'underline'
+            : ''}"
         >
-          {fired === undefined ? name : trigger(name)}
+          {@render said(fired === undefined ? name : trigger(name))}
         </button>{#if chosen === name}<button
             type="button"
             aria-label={`remove ${name}`}
@@ -274,6 +299,7 @@
 
 {#if adding}
   <div
+    bind:this={line}
     class="relative h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
     transition:widen={{ magnitude: "short" }}
   >
@@ -298,7 +324,8 @@
       <!-- Rows taken on `mousedown` with the default prevented, so taking one
            never blurs the line out from under the click. -->
       <div
-        class="absolute top-full left-0 z-30 mt-1"
+        class="absolute top-full z-30 mt-1"
+        style:left="{shift}px"
         transition:slide|global={{ magnitude: "short" }}
       >
         <div

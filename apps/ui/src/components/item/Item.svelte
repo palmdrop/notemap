@@ -1,18 +1,12 @@
 <script lang="ts">
   import type { ItemState } from "@notemap/client";
 
-  import Actions from "$components/item/Actions.svelte";
-  import Edit from "$components/item/Edit.svelte";
-  import EditFoot from "$components/item/EditFoot.svelte";
-  import { Editing } from "$components/item/editing.svelte";
-  import Payload from "$components/item/Payload.svelte";
-  import Tags from "$components/item/Tags.svelte";
+  import Row from "$components/item/Row.svelte";
   import Body from "$components/primitives/register/Body.svelte";
+  import Day from "$components/primitives/register/Day.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
-  import Cached from "$components/primitives/marks/Cached.svelte";
-  import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
@@ -23,17 +17,17 @@
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { became, editable } from "$lib/lineage";
+  import { byDay, plain } from "$lib/days";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
+  import { rows as layout } from "$lib/rows.svelte";
   import {
     NO_ITEM_OFFLINE,
     NO_RECORDS_OFFLINE,
     NO_SUCH_ITEM,
     NO_SUCH_RECORD,
   } from "$lib/said";
-  import { undrainedSince } from "$lib/undrained-since";
 
   /**
    * The item as a register: the capture is the first row, then a rule, then
@@ -47,8 +41,7 @@
   const undrained = pending();
 
   let read = $state<ItemState | undefined>(undefined);
-  let editing = $state<Editing | undefined>(undefined);
-  let tags = $state<Tags | undefined>(undefined);
+  let row = $state<Row | undefined>(undefined);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
@@ -68,19 +61,11 @@
   $effect(() => {
     const wanted = id;
     read = undefined;
-    editing = undefined;
 
     void (async () => {
       const answer = await client.item(wanted);
       if (wanted === id) read = answer;
     })();
-  });
-
-  const word = $derived(item === undefined ? undefined : became(item));
-
-  // Processed while it was open, an edit has nowhere left to go.
-  $effect(() => {
-    if (item === undefined || !editable(item)) editing = undefined;
   });
 
   // One subject and no selection: the page is the item, so what it offers is
@@ -92,18 +77,14 @@
       : commandsFor(item, {
           offline: !pool.yes,
           onprocess: () => void goto(processHref(id)),
-          onedit: () => {
-            const current = item;
-            if (current === undefined) return;
-            if (editing === undefined) {
-              editing = new Editing(current, () => (editing = undefined));
-            }
-          },
-          tag: () => tags?.add(),
+          onedit: () => row?.edit(),
+          tag: () => row?.tag(),
         }),
   );
 
-  publish(() => (editing === undefined ? commands : whileEditing(commands)));
+  publish(() =>
+    row?.isEditing() === true ? whileEditing(commands) : commands,
+  );
 
   const refused = $derived(
     read?.failure?.refused === true ? read.failure.said : undefined,
@@ -114,6 +95,16 @@
       ? records.all
       : records.all.filter((record) => record.id === only),
   );
+
+  /** The records as drawn: under a heading per day, where the reader reads by day. */
+  const headed = $derived.by(() => {
+    const dated = drawn.map((record) => ({
+      id: record.id,
+      createdAt: record.at,
+      record,
+    }));
+    return layout.byDay ? byDay(dated) : plain(dated);
+  });
 
   /** What the record rows say instead of records, where they have none to say. */
   const aboutRecords = $derived.by(() => {
@@ -128,66 +119,59 @@
   });
 </script>
 
-<Register>
+<Register slim={layout.slim}>
   {#if item !== undefined}
-    <Rail>
-      <Stamp at={item.createdAt} />
-
-      {#if word !== undefined}
-        <StateWord {word} />
-      {/if}
-
-      {#if undrained.has(item.id)}
-        <Pending since={undrainedSince(item.id)} />
-      {/if}
-
-      <!-- An item view is where a person looks to find out what happened, so
-           it is the worst place to imply the pool has answered for it. -->
-      {#if read?.fromCache === true}
-        <Cached />
-      {/if}
-
-      <div class="mt-0.5">
-        <Tags bind:this={tags} {item} addable />
-      </div>
-    </Rail>
-
-    <Body>
-      {#if editing !== undefined}
-        <Edit {editing} />
-      {:else}
-        <Payload {item} />
-      {/if}
-
-      <div class="mt-3.5">
-        {#if editing !== undefined}
-          <EditFoot {editing} />
-        {:else}
-          <Actions {commands} />
-        {/if}
-      </div>
-    </Body>
-
-    {#if drawn.length > 0 || aboutRecords !== undefined}
-      <!-- The one rule between regions: the capture above, what became of it below. -->
-      <div class="col-span-full border-t border-ink"></div>
+    {#if layout.byDay}
+      <Day at={item.createdAt} />
     {/if}
 
-    {#each drawn as record (record.id)}
-      <Rail>
-        <!-- The record's own address, where this is not already it. -->
-        {#if only === undefined}
-          <a href={recordHref(record.item, record.id)} class="block w-max">
-            <Stamp at={record.at} />
-          </a>
-        {:else}
-          <Stamp at={record.at} />
-        {/if}
-        <StateWord word={record.state} />
-      </Rail>
-      <Body>
-        <Block {record} held={item} onundone={() => records.reread()} />
-      </Body>
+    <!-- The capture as a selected row is drawn, box and foot, the page being
+         the one item there is. An item view is where a person looks to find
+         out what happened, so it says when it was drawn from the cache. -->
+    <Row
+      bind:this={row}
+      {item}
+      surface="item"
+      selected
+      offline={!pool.yes}
+      {commands}
+      pending={undrained.has(item.id)}
+      layout={layout.drawn}
+      opens={layout.byDay}
+      cached={read?.fromCache === true}
+    />
+
+    {#if (drawn.length > 0 && !layout.byDay) || (drawn.length === 0 && aboutRecords !== undefined)}
+      <!-- The one rule between regions: the capture above, what became of it
+           below. By day, the records' own heading draws it. -->
+      <div data-rule class="col-span-full border-t border-ink"></div>
+    {/if}
+
+    {#each headed as one (one.key)}
+      {#if one.kind === "day"}
+        <Day at={one.at} />
+      {:else}
+        {@const record = one.row.record}
+        <Rail headed={layout.byDay}>
+          <!-- The record's own address, where this is not already it. -->
+          {#if only === undefined}
+            <a href={recordHref(record.item, record.id)} class="block w-max">
+              <Stamp at={record.at} dated={!layout.byDay} />
+            </a>
+          {:else}
+            <Stamp at={record.at} dated={!layout.byDay} />
+          {/if}
+          {#if !layout.slim}
+            <StateWord word={record.state} />
+          {/if}
+        </Rail>
+        <Body>
+          <Block {record} held={item} onundone={() => records.reread()} />
+          {#if layout.slim}
+            <StateWord word={record.state} />
+          {/if}
+        </Body>
+      {/if}
     {/each}
 
     {#if aboutRecords !== undefined}

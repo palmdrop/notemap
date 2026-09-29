@@ -1,11 +1,19 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
 import Appearance from "./Appearance.svelte";
 
-const option = (name: string) => screen.getByRole("button", { name });
-const chosen = () =>
-  screen
+const group = (name: string) => within(screen.getByRole("group", { name }));
+const option = (name: string, among = "Theme") =>
+  group(among).getByRole("button", { name });
+const chosen = (among = "Theme") =>
+  group(among)
     .getAllByRole("button")
     .find((one) => one.getAttribute("aria-pressed") === "true")
     ?.textContent?.trim();
@@ -38,4 +46,17 @@ test("remembers the choice, so a reload does not undo it", async () => {
   cleanup();
   render(Appearance);
   expect(chosen()).toBe("light");
+});
+
+test("offers the three ways of drawing rows, auto until one is chosen, and remembers it", async () => {
+  render(Appearance);
+  expect(chosen("Rows")).toBe("auto");
+
+  await fireEvent.click(option("by day", "Rows"));
+  expect(chosen("Rows")).toBe("by day");
+  expect(localStorage.getItem("notemap:rows")).toBe("by day");
+
+  cleanup();
+  render(Appearance);
+  expect(chosen("Rows")).toBe("by day");
 });

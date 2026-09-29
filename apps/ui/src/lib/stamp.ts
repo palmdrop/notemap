@@ -14,6 +14,20 @@ export function timeOf(at: string): string {
   return `${pad(when.getHours())}:${pad(when.getMinutes())}`;
 }
 
+const WEEKDAYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+] as const;
+
+export function weekdayOf(at: string): string {
+  return WEEKDAYS[new Date(at).getDay()] ?? "";
+}
+
 /** Inside a line of prose, where the year is already implied by the row. */
 export function briefly(at: string): string {
   const when = new Date(at);

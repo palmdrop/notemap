@@ -11,7 +11,7 @@
 
 <!-- The deep foot leaves the last row reachable above a corner refusal. -->
 <div
-  class="px-8 max-narrow:px-3.5 {fills
+  class="overflow-x-clip px-8 max-narrow:px-3.5 {fills
     ? 'flex h-dvh flex-col'
     : 'min-h-screen pb-32'}"
 >

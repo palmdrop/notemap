@@ -4,6 +4,17 @@
 **Last updated**: 2026-09-29
 **Shipped**:
 
+- 2026-09-29 — **Rows by day.** Appearance offers `rows: auto · by day · rail`, held on the
+  device. By day, the queue and the feed, in the timeline and the index, head each day with its
+  date and weekday, sticky while its rows scroll, and a row keeps only its time. Below `narrow`
+  the rail holds the time alone and the rest follows the capture; above it, the rail keeps its
+  width. A heading held at the top spans the screen, so a selected row's box scrolls under it
+  cleanly. The rail's rule no longer notches where two rows meet, in either layout.
+  `auto`, the default, is by day below `narrow` and the rail above it. The register now has two
+  layouts. A carried tag is marked `#`, and a selected tag is bold. The item's own
+  surface draws its capture as the queue's selected row, box and foot, in either layout. See [ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md) and
+  [rows-by-day](../plans/rows-by-day.md).
+
 - 2026-09-29 — **The capture box answers from outside its field, and the way back keeps its place.**
   With the box selected and the caret out of the field, `mod+⏎` commits it and `e` goes back into
   the field beside `enter`. A row come back from processing is held where the queue's order puts
@@ -556,7 +567,10 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 Two columns, designed at 375px and given air on a wider screen. There is no second layout: no
 two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second column is the metadata
-rail, and it survives a phone rather than collapsing into the first.
+rail, and it survives a phone rather than collapsing into the first. *Amended 2026-09-29
+([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md))*: the register has a second
+layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
+`narrow`. The two columns stay; by day, below `narrow`, the rail narrows to the width of a time.
 
 Navigation names **four** surfaces — `queue · feed · log · settings` — as four equals at the
 bar's left, the current one bold, each holding its bold width so the one beside it does not move
@@ -780,7 +794,44 @@ the first words cut at a word with `…`, the tags at the right, dropped below t
 breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
 fixed size, the same whether a day or a month passed: time passing is read from the space. The
 selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
-process. The feed has the same view.
+process. The feed has the same view. By day, the index takes the same headings as the timeline,
+each line keeping its time alone, and opens no gap: the heading already says that a day passed.
+
+#### Rows by day
+
+*Added 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)).* **A register
+can be read by day**, the reader's choice under Appearance as `rows: auto · by day · rail`, held
+on the device like the palette. `rail` is everything above. `by day` is below. `auto`, the
+default, is by day below `narrow` and the rail above it, since the rail's width is what a phone
+cannot spare.
+
+**By day, each day is headed once.** A heading goes before the first row of each local day, in
+whichever order the list is read: the date bold, the weekday beside it (`2026-09-13 sunday`),
+ruled under. There is no month heading. It spans both columns and holds at the top of the page
+while its day's rows scroll beneath it, and the next day's heading slides over it. A row walked
+to by `j`/`k` stops clear of it. A heading comes and goes with the rows it heads: the last row of
+a day leaving takes the heading with it. **Held at the top, a heading spans the screen**, its
+ground and its rule reaching both edges, since a selected row's box reaches past the columns and
+its edges would otherwise show beside the heading as the row scrolls under it. It spans the screen
+from the moment it reaches the top's band, so the next day's heading covers the last one edge to
+edge as it slides over it, and at no other time. **The heading is a line tall with even room
+above and below the date**, and the room between one day and the next is margin outside it: held
+at the top, the date sits as far from the top of the screen as from the rule under it.
+
+**The row keeps only its time**, the heading having said the day. The stamp still names the whole
+instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
+wide as a time, and everything else it held **follows the capture** in the body: the state word,
+`pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
+line, and nothing above the text reads as its title. The tag line is held on every row, as it is
+in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
+only space. The tags are told from the capture by their `#` ([Tagging](#tagging)), not by a rule
+between the two: a short one was tried the same day and taken out. **Above `narrow`, the rail
+keeps its width** and holds the time and the tags.
+
+**The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
+edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one
+rule's width higher and its top edge falls on the heading's rule. A selected first row draws one
+line where the heading's rule and its box meet, not two, and nothing asks which row is selected.
 
 #### Tags, and a filter
 
@@ -1329,8 +1380,11 @@ the three conditions are for.
 
 **The item is a register of what became of it** *(2026-09-14, after
 [shell-redesign](../plans/shell-redesign.md) phase 5; until then the records were lines in the
-rail and a record was a page of facts)*. The capture is the first row — stamp, state word and tags
-in the rail, the payload and the actions in the body. Then one rule across both columns, the one
+rail and a record was a page of facts)*. The capture is the first row, **drawn as the queue's
+selected row is** *(amended 2026-09-29; the actions sat in the body, unboxed)*: the box, its
+actions as the foot, the tags where the reader's rows put them, and by day under a heading of its
+own ([Rows by day](#rows-by-day)) — the same row, offering the item's own actions, `history` where
+the row has `open`. It says no routing line, its records being the rows beneath it. Then one rule across both columns, the one
 rule the surface has, and under it **one row per routing record**: the record's own stamp and its
 state in the rail, and the record itself, as a block, in the body. The state is said on every
 record row, `delivered` included: the rule that a state is said only where it is not that was a
@@ -1501,6 +1555,11 @@ away, and not a mark on every line of a list meant to read as a timeline. Where 
 *the collapsed row's chooser*, read *the selected row's*; where it says *the composer*, read *the
 process surface*, whose `tags` section is the same chooser.
 
+**A carried tag is marked `#`** *(added 2026-09-29)*: in one face at one size, beside prose, a
+bare word did not read as a tag. The mark is drawn, not part of the name — a tag is still named,
+filtered and read without it. A trigger tag keeps its small caps after the mark. A trigger tag is
+already bold, so selecting one shows only its `×`.
+
 The known names are the **tags in use**, read from `GET /v1/tags` whenever the pool comes into
 reach with the door open — on start, on signing in, on coming back — and again whenever
 classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
@@ -1510,10 +1569,9 @@ sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
-select it — **ruled round**, one line tall, the shell's mark for what is selected as a selected
-row's box is *(amended 2026-09-25; it was drawn inverted, ink behind it, which filled the capture
-box's foot; before 2026-09-18 a selected tag looked like every other)* — and taken off on the `×`
-that then slides in inside the rule, the tag growing to hold it *(amended 2026-09-15; a single
+select it — **bold**, holding its width so nothing beside it moves *(amended 2026-09-29; it was
+ruled round from 2026-09-25, and drawn inverted, ink behind it, before that; before 2026-09-18 a
+selected tag looked like every other)* — and taken off on the `×` that then slides in beside it *(amended 2026-09-15; a single
 press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
 losing its selection clears the selection without taking anything off. `+` opens a line **where
 the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width
@@ -1521,7 +1579,10 @@ and a little taller, and wrapped under the tags)*, and an **absolute panel** ben
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
-line narrows to once it is typed into, minus what the item carries either way.
+line narrows to once it is typed into, minus what the item carries either way. **Opened near the
+end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
+`narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
+end ran off the side of the screen)*.
 
 **The first match is marked as soon as the line is typed into, and stays marked as it narrows**
 *(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed
@@ -1996,7 +2057,8 @@ unchanged: one row per source, how many it captured and how long ago, read fresh
 comes back into reach and held nowhere.
 
 **Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
-under a section of its own rather than a row of buttons alone.
+under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS auto · by
+day · rail` under it, the same control ([Rows by day](#rows-by-day)).
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts

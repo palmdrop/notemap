@@ -5,7 +5,7 @@ import { tick } from "svelte";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
-import { keyboard, online } from "$testing/dom";
+import { keyboard, online, viewport } from "$testing/dom";
 import { remember } from "$lib/order";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
@@ -586,4 +586,28 @@ test("t opens the tag chooser on the selected row", async () => {
   await fireEvent.keyDown(window, { key: "t" });
 
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
+});
+
+test("reads by day on a narrow screen, as the queue does", async () => {
+  viewport(390);
+  const on = (day: number, hour: number) =>
+    new Date(2026, 8, day, hour).toISOString();
+  pool(
+    held(
+      anItem("later", { createdAt: on(13, 9) }),
+      anItem("earlier", { createdAt: on(12, 9) }),
+    ),
+  );
+
+  const { container } = render(Feed);
+  await screen.findByText("earlier");
+
+  expect(
+    [...container.querySelectorAll("[data-day]")].map((day) =>
+      day.getAttribute("data-day"),
+    ),
+  ).toEqual(["2026-09-13", "2026-09-12"]);
+  expect(
+    stamps(false).map((stamp) => stamp.querySelector("time")?.textContent),
+  ).toEqual(["09:00", "09:00"]);
 });

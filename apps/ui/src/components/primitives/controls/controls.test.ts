@@ -348,6 +348,13 @@ test("escape and leaving the line put it away and take nothing", async () => {
   expect(added).not.toHaveBeenCalled();
 });
 
+test("a carried tag is marked #, and the mark is no part of its name", () => {
+  tagSet({ names: ["design"] });
+
+  const word = screen.getByRole("button", { name: "design" });
+  expect(word.textContent?.trim()).toBe("#design");
+});
+
 test("a tag the item carries is removed by pressing it, then its ×", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 
@@ -357,8 +364,8 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
 
   await fireEvent.click(word);
   expect(removed).not.toHaveBeenCalled();
-  // Selected is ruled round, the × inside the rule, so the × has a word it
-  // visibly belongs to.
+  // Selected is bold, the × beside it, so the × has a word it visibly
+  // belongs to.
   const remove = screen.getByRole("button", { name: "remove notemap" });
   expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
   expect(word.parentElement!.contains(remove)).toBe(true);
@@ -407,7 +414,7 @@ test("a trigger tag that filed the item is inert, not a control", async () => {
 
   const tag = screen.getByText("research");
   expect(tag.tagName).toBe("SPAN");
-  expect(tag.getAttribute("title")).toBe(
+  expect(tag.closest("[title]")?.getAttribute("title")).toBe(
     "filed the item — cancel the routing to take it off",
   );
   expect(screen.queryByRole("button", { name: /research/ })).toBeNull();
@@ -493,4 +500,23 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
   } finally {
     document.documentElement.style.removeProperty("--duration-short");
   }
+});
+
+test("the offer, opened near the end of a line, is drawn back to end where the line does", async () => {
+  tagSet({ offered: ["reading", "research", "design"] });
+  const line = await opened();
+  const list = screen.getByRole("listbox", { name: "Tags in use" });
+
+  const at = (left: number, right: number) => () =>
+    ({ left, right }) as DOMRect;
+  line.parentElement!.getBoundingClientRect = at(340, 376);
+  line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
+  Object.defineProperty(list, "offsetWidth", { get: () => 144 });
+
+  await typed(line, "re");
+  expect(list.parentElement!.style.left).toBe("-108px");
+
+  line.parentElement!.getBoundingClientRect = at(60, 376);
+  await typed(line, "rea");
+  expect(list.parentElement!.style.left).toBe("0px");
 });

@@ -13,6 +13,7 @@
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
+  import Day from "$components/primitives/register/Day.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
@@ -24,12 +25,15 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { byDay, plain } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
+  import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
+  import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
   import { NOTHING_CAPTURED } from "$lib/said";
@@ -114,16 +118,26 @@
     ) {
       return live;
     }
-    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    const place = Math.min(
+      untrack(() => stood) ?? placeOf(live, kept, $feed.order),
+      live.length,
+    );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
   $effect(() => {
     const at = rows.findIndex((row) => row.id === selected);
-    if (at !== -1) stood = at;
+    // Only the feed's own place for it: one this surface chose for a held
+    // row would outlive a read that has not landed yet.
+    if (at !== -1 && $feed.items.some((row) => row.id === selected)) {
+      stood = at;
+    }
   });
 
   const current = $derived(rows.find((row) => row.id === selected));
+
+  /** The rows as drawn: under a heading per day, where the reader reads by day. */
+  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
 
   function reveal(id: string) {
     drawn[id]?.reveal();
@@ -230,6 +244,7 @@
   <Index
     {motion}
     bind:this={index}
+    byDay={layout.byDay}
     items={rows}
     {selected}
     onselect={select}
@@ -246,7 +261,7 @@
     />
   {/if}
 {:else}
-  <Register>
+  <Register slim={layout.slim}>
     {#if refused !== undefined}
       <Refused surface="feed" {refused} />
     {/if}
@@ -269,20 +284,27 @@
       </Body>
     {/if}
 
-    {#each rows as item (item.id)}
-      <Row
-        {motion}
-        bind:this={drawn[item.id]}
-        {item}
-        surface="feed"
-        filter={$feed.filter}
-        selected={selected === item.id}
-        offline={!pool.yes}
-        commands={selected === item.id ? commands : []}
-        pending={undrained.has(item.id)}
-        onselect={() => select(item.id)}
-        onprocess={() => void goto(processHref(item.id))}
-      />
+    {#each headed as one (one.key)}
+      {#if one.kind === "day"}
+        <Day at={one.at} {motion} />
+      {:else}
+        {@const item = one.row}
+        <Row
+          {motion}
+          bind:this={drawn[item.id]}
+          {item}
+          surface="feed"
+          filter={$feed.filter}
+          selected={selected === item.id}
+          offline={!pool.yes}
+          commands={selected === item.id ? commands : []}
+          pending={undrained.has(item.id)}
+          layout={layout.drawn}
+          opens={one.opens}
+          onselect={() => select(item.id)}
+          onprocess={() => void goto(processHref(item.id))}
+        />
+      {/if}
     {/each}
 
     {#if footed}

@@ -4,7 +4,7 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { rank, type Item } from "@notemap/client";
+  import type { Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
@@ -14,6 +14,7 @@
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
+  import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewToggle from "$components/view/ViewToggle.svelte";
@@ -23,12 +24,15 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { byDay, plain } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
+  import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
+  import { rows as layout } from "$lib/rows.svelte";
   import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
@@ -93,18 +97,6 @@
       $queue.items.length === 0,
   );
 
-  /**
-   * Where the queue's order puts a row it no longer holds. On the way back from
-   * processing it was never drawn here, so there is no place it stood.
-   */
-  function placeOf(live: readonly Item[], kept: Item): number {
-    const at = rank(kept);
-    const after = live.findIndex((row) =>
-      $queue.order === "oldest-first" ? rank(row) > at : rank(row) < at,
-    );
-    return after === -1 ? live.length : after;
-  }
-
   /** The selected row's own copy, which outlives its place on the queue. */
   const heldRow = $derived(client.held(selected ?? ""));
 
@@ -124,7 +116,7 @@
       return live;
     }
     const place = Math.min(
-      untrack(() => stood) ?? placeOf(live, kept),
+      untrack(() => stood) ?? placeOf(live, kept, $queue.order),
       live.length,
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
@@ -215,6 +207,9 @@
   }
 
   const current = $derived(rows.find((row) => row.id === selected));
+
+  /** The rows as drawn: under a heading per day, where the reader reads by day. */
+  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
 
   function reveal(id: string) {
     drawn[id]?.reveal();
@@ -334,6 +329,7 @@
   <Index
     {motion}
     bind:this={index}
+    byDay={layout.byDay}
     items={rows}
     {selected}
     onselect={select}
@@ -353,25 +349,32 @@
     />
   {/if}
 {:else}
-  <Register>
+  <Register slim={layout.slim}>
     {#if refused !== undefined}
       <Refused surface="queue" {refused} />
     {/if}
 
-    {#each rows as row (row.id)}
-      <Row
-        {motion}
-        bind:this={drawn[row.id]}
-        item={row}
-        surface="queue"
-        filter={$queue.filter}
-        selected={selected === row.id}
-        offline={!pool.yes}
-        commands={selected === row.id ? commands : []}
-        pending={undrained.has(row.id)}
-        onselect={() => select(row.id)}
-        onprocess={() => process(row)}
-      />
+    {#each headed as one (one.key)}
+      {#if one.kind === "day"}
+        <Day at={one.at} {motion} />
+      {:else}
+        {@const row = one.row}
+        <Row
+          {motion}
+          bind:this={drawn[row.id]}
+          item={row}
+          surface="queue"
+          filter={$queue.filter}
+          selected={selected === row.id}
+          offline={!pool.yes}
+          commands={selected === row.id ? commands : []}
+          pending={undrained.has(row.id)}
+          layout={layout.drawn}
+          opens={one.opens}
+          onselect={() => select(row.id)}
+          onprocess={() => process(row)}
+        />
+      {/if}
     {/each}
 
     {#if footed}
