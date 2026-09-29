@@ -173,7 +173,8 @@ test("the foot keeps its width while it loads", () => {
 function laidAt(top: number) {
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
     top,
-    bottom: top + 48,
+    bottom: top + 36,
+    height: 36,
   } as DOMRect);
 }
 
@@ -199,7 +200,7 @@ test("a day's heading spans the screen once it reaches the top, and not before",
     expect(heading().hasAttribute("data-stuck")).toBe(true);
   });
 
-  laidAt(49);
+  laidAt(37);
   await fireEvent.scroll(window);
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);

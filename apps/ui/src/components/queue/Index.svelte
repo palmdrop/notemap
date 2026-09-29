@@ -97,7 +97,7 @@
         <span
           bind:this={stamps[line.item.id]}
           class="{line.gap ? 'pt-[var(--spacing-gap-time)]' : ''} {byDay
-            ? 'scroll-mt-12'
+            ? 'scroll-mt-day-head'
             : ''} whitespace-nowrap"
         >
           <Stamp

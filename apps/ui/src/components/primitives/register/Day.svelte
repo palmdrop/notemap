@@ -1,9 +1,6 @@
 <script lang="ts" module>
   import { on } from "svelte/events";
 
-  /** The heading's own height, `h-12`, which a row walked to clears by `scroll-mt-12`. */
-  const BAND = 48;
-
   type Watched = {
     readonly node: HTMLElement;
     readonly tell: (stuck: boolean) => void;
@@ -21,7 +18,7 @@
     queued = false;
     for (const { node, tell } of watched) {
       const at = node.getBoundingClientRect();
-      tell(at.top < BAND && at.bottom > 0);
+      tell(at.top < at.height && at.bottom > 0);
     }
   }
 
@@ -86,7 +83,7 @@
 <div
   data-day={dayOf(at)}
   data-stuck={stuck ? "" : undefined}
-  class="sticky top-0 z-10 col-span-full flex h-12 items-baseline gap-x-[2ch] border-b border-ink bg-ground pt-5 tabular-nums"
+  class="sticky top-0 z-10 col-span-full mt-3.5 flex h-day-head items-center gap-x-[2ch] border-b border-ink bg-ground tabular-nums"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach stick}
 >

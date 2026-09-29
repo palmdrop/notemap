@@ -124,6 +124,10 @@ Raised on the PR, 2026-09-29.
       transparent top edge and notched the rule where two rows met, in both layouts.
 - [x] The feed's held row takes the placement fix #84 gave the queue: its place is latched only
       from the feed's own list, falling back to where the order puts it.
+- [x] Below `narrow`, a short rule sets the facts off from the capture, drawn only where the
+      facts say something. The held tag line and its `+` alone draw none.
+- [x] A heading is a line tall with even room above and below the date; the room between days
+      is margin outside it, so a stuck heading has as much above the date as below.
 - [x] Commit.
 
 ---

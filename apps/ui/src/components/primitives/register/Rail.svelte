@@ -47,7 +47,7 @@
   data-selected={selected ? "" : undefined}
   class="col-start-1 -ml-3 min-w-0 border-t border-l border-ink bg-linear-to-b from-ink to-ink bg-size-[1px_100%] bg-right bg-no-repeat bg-origin-border pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {headed ? 'scroll-mt-12' : ''}
+    {headed ? 'scroll-mt-day-head' : ''}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >

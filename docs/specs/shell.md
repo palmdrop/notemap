@@ -813,7 +813,9 @@ a day leaving takes the heading with it. **Held at the top, a heading spans the 
 ground and its rule reaching both edges, since a selected row's box reaches past the columns and
 its edges would otherwise show beside the heading as the row scrolls under it. It spans the screen
 from the moment it reaches the top's band, so the next day's heading covers the last one edge to
-edge as it slides over it, and at no other time.
+edge as it slides over it, and at no other time. **The heading is a line tall with even room
+above and below the date**, and the room between one day and the next is margin outside it: held
+at the top, the date sits as far from the top of the screen as from the rule under it.
 
 **The row keeps only its time**, the heading having said the day. The stamp still names the whole
 instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
@@ -821,7 +823,10 @@ wide as a time, and everything else it held **follows the capture** in the body:
 `pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
 line, and nothing above the text reads as its title. The tag line is held on every row, as it is
 in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
-only space. **Above `narrow`, the rail keeps its width** and holds the time and the tags.
+only space. **A short rule sets the facts off from the capture**, a hairline two words wide, since
+the two are the same face at the same size. It is drawn only where the facts say something (a
+tag, a state word, `pending`, a routing line, a refusal) and never for the held line or its `+`
+alone, so selecting a row never draws it. **Above `narrow`, the rail keeps its width** and holds the time and the tags.
 
 **The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
 edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one

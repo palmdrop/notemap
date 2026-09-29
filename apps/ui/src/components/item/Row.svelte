@@ -81,6 +81,15 @@
       item.revisedInto.length > 0,
   );
   const word = $derived(finished ? became(item) : undefined);
+
+  /** Whether the facts say anything, the held tag line and its `+` aside. */
+  const told = $derived(
+    word !== undefined ||
+      pending ||
+      (item.tags ?? []).length > 0 ||
+      (finished && item.routing !== undefined) ||
+      records.refused !== "",
+  );
   const mayEdit = $derived(editable(item));
 
   // The box's foot is where `close` and `save` are, so a row that loses the
@@ -177,7 +186,12 @@
         <Payload {item} />
       {/if}
       {#if slim}
-        <div class="mt-1">{@render facts()}</div>
+        <div class="mt-1">
+          {#if told}
+            <div class="mt-2 mb-1.5 w-8 border-t border-ink"></div>
+          {/if}
+          {@render facts()}
+        </div>
       {/if}
     </Body>
 
