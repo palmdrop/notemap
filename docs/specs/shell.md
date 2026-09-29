@@ -7,7 +7,9 @@
 - 2026-09-29 — **Rows by day.** Appearance offers `rows: auto · by day · rail`, held on the
   device. By day, the queue and the feed, in the timeline and the index, head each day with its
   date and weekday, sticky while its rows scroll, and a row keeps only its time. Below `narrow`
-  the rail holds the time alone and the rest opens the body; above it, the rail keeps its width.
+  the rail holds the time alone and the rest follows the capture; above it, the rail keeps its
+  width. A heading held at the top spans the screen, so a selected row's box scrolls under it
+  cleanly. The rail's rule no longer notches where two rows meet, in either layout.
   `auto`, the default, is by day below `narrow` and the rail above it. The register now has two
   layouts. See [ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md) and
   [rows-by-day](../plans/rows-by-day.md).
@@ -807,14 +809,19 @@ whichever order the list is read: the date bold, the weekday beside it (`2026-09
 ruled under. There is no month heading. It spans both columns and holds at the top of the page
 while its day's rows scroll beneath it, and the next day's heading slides over it. A row walked
 to by `j`/`k` stops clear of it. A heading comes and goes with the rows it heads: the last row of
-a day leaving takes the heading with it.
+a day leaving takes the heading with it. **Held at the top, a heading spans the screen**, its
+ground and its rule reaching both edges, since a selected row's box reaches past the columns and
+its edges would otherwise show beside the heading as the row scrolls under it. It spans the screen
+from the moment it reaches the top's band, so the next day's heading covers the last one edge to
+edge as it slides over it, and at no other time.
 
 **The row keeps only its time**, the heading having said the day. The stamp still names the whole
 instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
-wide as a time, and everything else it held opens the body, above the capture: the state word,
-`pending`, the tags with their `+`, the routing line. The tag line is held there on every row, as
-it is in the rail, so selecting a row moves nothing, and an untagged row has an empty line above
-its text. **Above `narrow`, the rail keeps its width** and holds the time and the tags.
+wide as a time, and everything else it held **follows the capture** in the body: the state word,
+`pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
+line, and nothing above the text reads as its title. The tag line is held on every row, as it is
+in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
+only space. **Above `narrow`, the rail keeps its width** and holds the time and the tags.
 
 **The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
 edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one

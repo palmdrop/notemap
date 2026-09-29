@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { NO_MORE_OFFLINE } from "$lib/said";
 
+import Day from "./Day.svelte";
 import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
 
@@ -166,4 +167,41 @@ test("the foot keeps its width while it loads", () => {
   // The label and the mark share one cell, so the wider of them sets the width.
   expect(button.textContent).toContain("load more");
   expect(button.querySelector("[data-asking]")).not.toBeNull();
+});
+
+/** Where the heading would be drawn, as the browser would lay it out. */
+function laidAt(top: number) {
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+    top,
+    bottom: top + 48,
+  } as DOMRect);
+}
+
+test("a day's heading spans the screen once it reaches the top, and not before", async () => {
+  laidAt(300);
+  const { container } = render(Day, { at: "2026-09-13T07:02:00.000Z" });
+  const heading = () => container.querySelector("[data-day]")!;
+
+  await vi.waitFor(() => {
+    expect(heading().hasAttribute("data-stuck")).toBe(false);
+  });
+
+  laidAt(0);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(heading().hasAttribute("data-stuck")).toBe(true);
+  });
+
+  // Arriving under the one held there is reaching the top too.
+  laidAt(30);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(heading().hasAttribute("data-stuck")).toBe(true);
+  });
+
+  laidAt(49);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(heading().hasAttribute("data-stuck")).toBe(false);
+  });
 });

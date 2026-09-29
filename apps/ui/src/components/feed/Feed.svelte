@@ -13,8 +13,8 @@
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
-  import Rail from "$components/primitives/register/Rail.svelte";
   import Day from "$components/primitives/register/Day.svelte";
+  import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
@@ -25,12 +25,13 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { byDay, plain } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
+  import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
-  import { byDay, plain } from "$lib/days";
   import { reachable } from "$lib/reachable.svelte";
   import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
@@ -117,13 +118,20 @@
     ) {
       return live;
     }
-    const place = Math.min(untrack(() => stood) ?? live.length, live.length);
+    const place = Math.min(
+      untrack(() => stood) ?? placeOf(live, kept, $feed.order),
+      live.length,
+    );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
   $effect(() => {
     const at = rows.findIndex((row) => row.id === selected);
-    if (at !== -1) stood = at;
+    // Only the feed's own place for it: one this surface chose for a held
+    // row would outlive a read that has not landed yet.
+    if (at !== -1 && $feed.items.some((row) => row.id === selected)) {
+      stood = at;
+    }
   });
 
   const current = $derived(rows.find((row) => row.id === selected));

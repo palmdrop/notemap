@@ -171,13 +171,13 @@
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>
-      {#if slim}
-        <div class="mb-0.5">{@render facts()}</div>
-      {/if}
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}
         <Payload {item} />
+      {/if}
+      {#if slim}
+        <div class="mt-1">{@render facts()}</div>
       {/if}
     </Body>
 

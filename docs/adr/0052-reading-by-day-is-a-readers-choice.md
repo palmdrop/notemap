@@ -49,7 +49,7 @@ both drawn, and accepted it.
 **By day**, a register draws a heading before the first row of each local day: the date bold,
 the weekday beside it, ruled under, sticky at the top while its rows scroll. There is no month
 heading. The row keeps only its time. Below `narrow` the rail is slim, as wide as a time and
-holding nothing else, and everything else it held opens the body: state word, `pending`, the
+holding nothing else, and everything else it held follows the capture in the body: state word, `pending`, the
 tags and their `+`, the routing line. Above `narrow` the rail keeps its width and holds the time
 and the tags. The first row under a heading lays its top edge on the heading's rule, so a
 selected first row draws one line rather than two, whichever row is selected. The index reads by
@@ -65,9 +65,11 @@ The choice is held in the browser, per device, and `auto` is the default.
 - **Good**: a reader who prefers the rail on a phone, or days on a laptop, has it.
 - **Bad**: two register layouts. Every change to a row, the box, the foot, motion or the keyboard
   has to be built and checked in both. This is the cost the developer accepted.
-- **Bad**: in the slim layout the tag line opens the body, and like every row it is held even
-  when empty, so selecting a row moves nothing. An untagged row therefore has a blank line above
-  its text.
+- **Neutral**: in the slim layout the facts follow the capture rather than precede it, so the time
+  stands beside the capture's first line and nothing above the text reads as a title. The tag
+  line is still held on an untagged row, so selecting it moves nothing, as empty space under the
+  text. _Settled in review, 2026-09-29: the first build put the facts above the capture, where an
+  untagged row's held line read as a blank title._
 - **Neutral**: the place kept for a reload is a scroll offset, so it lands elsewhere after the
   choice changes. The choice changes rarely.
 

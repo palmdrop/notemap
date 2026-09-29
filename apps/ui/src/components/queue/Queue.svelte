@@ -4,7 +4,7 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { rank, type Item } from "@notemap/client";
+  import type { Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
@@ -24,12 +24,13 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
+  import { byDay, plain } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
+  import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
-  import { byDay, plain } from "$lib/days";
   import { reachable } from "$lib/reachable.svelte";
   import { rows as layout } from "$lib/rows.svelte";
   import { restorePlace } from "$lib/scroll-mark";
@@ -96,18 +97,6 @@
       $queue.items.length === 0,
   );
 
-  /**
-   * Where the queue's order puts a row it no longer holds. On the way back from
-   * processing it was never drawn here, so there is no place it stood.
-   */
-  function placeOf(live: readonly Item[], kept: Item): number {
-    const at = rank(kept);
-    const after = live.findIndex((row) =>
-      $queue.order === "oldest-first" ? rank(row) > at : rank(row) < at,
-    );
-    return after === -1 ? live.length : after;
-  }
-
   /** The selected row's own copy, which outlives its place on the queue. */
   const heldRow = $derived(client.held(selected ?? ""));
 
@@ -127,7 +116,7 @@
       return live;
     }
     const place = Math.min(
-      untrack(() => stood) ?? placeOf(live, kept),
+      untrack(() => stood) ?? placeOf(live, kept, $queue.order),
       live.length,
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];

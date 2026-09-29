@@ -111,6 +111,21 @@ Depends on 3 and 4.
 
 **Verify:** the checks are green, and the spec and the code agree.
 
+### Review follow-ups
+
+Raised on the PR, 2026-09-29.
+
+- [x] Below `narrow`, everything the slim rail sheds follows the capture instead of preceding it,
+      so an untagged row's held tag line is no longer a blank line that reads as a title.
+- [x] A heading held at the top spans the screen, ground and rule, so a selected row's box does not
+      show its edges beside it while scrolling under. It spans the screen from the moment it
+      reaches the top's band, and at no other time.
+- [x] The rail's rule is painted rather than a border. A border's corner was mitred against the
+      transparent top edge and notched the rule where two rows met, in both layouts.
+- [x] The feed's held row takes the placement fix #84 gave the queue: its place is latched only
+      from the feed's own list, falling back to where the order puts it.
+- [x] Commit.
+
 ---
 
 ## Unknowns

@@ -1349,8 +1349,13 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
   // A row walked to clears the heading held over it.
   expect(screen.getByText("08:14").closest(".scroll-mt-12")).not.toBeNull();
 
-  // The rail holds the time alone; the tags open the body.
-  expect(screen.getByText("design").closest(".col-start-2")).not.toBeNull();
+  // The rail holds the time alone; the tags follow the capture in the body.
+  const tag = screen.getByText("design");
+  expect(tag.closest(".col-start-2")).not.toBeNull();
+  expect(
+    screen.getByText("two").compareDocumentPosition(tag) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("reads by day on a wide screen only when chosen, keeping the tags in the rail", async () => {
