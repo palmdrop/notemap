@@ -87,11 +87,11 @@ selected.
 
 Depends on 1 and 2.
 
-- [ ] The index draws the same headings when read by day, each line keeping only its time. The
+- [x] The index draws the same headings when read by day, each line keeping only its time. The
       half-day gap is not drawn by day: the heading already says that a day passed.
-- [ ] A line brought into view clears the sticky heading.
-- [ ] Tests: headings and time-only stamps by day; the gap by the rail and no gap by day.
-- [ ] Commit.
+- [x] A line brought into view clears the sticky heading.
+- [x] Tests: headings and time-only stamps by day; the gap by the rail and no gap by day.
+- [x] Commit. _(2026-09-29)_
 
 **Verify:** tests pass. In a browser, the index at 390 and 1440 reads by day.
 
@@ -120,9 +120,9 @@ Depends on 3 and 4.
   rather than pushing it out. The design draws the same thing and it reads fine. Fallback: wrap
   each day in a block of its own. That breaks the subgrid that keeps the columns in register, so
   it is taken only if the overlap reads wrong.
-- **`matchMedia` in tests.** jsdom has none. The width reading has to tolerate its absence and
-  fall back to wide, so every existing test keeps drawing today's rail; tests that need narrow
-  stub it.
+- **`matchMedia` in tests.** jsdom has none. _Answered 2026-09-29: the width is read from
+  `innerWidth` on `resize`, as `breakpoint.ts` already does, so the test harness's `viewport()`
+  drives it and nothing needs stubbing._
 - **Motion around headings.** Rows slide in and out under `moving`. A heading entering or leaving
   with them might jump where a row slides. Fallback: headings fade instead of sliding.
 - **Scroll restoration.** The place kept for a reload is a scroll offset. Headings change the

@@ -340,6 +340,7 @@
   <Index
     {motion}
     bind:this={index}
+    byDay={layout.byDay}
     items={rows}
     {selected}
     onselect={select}

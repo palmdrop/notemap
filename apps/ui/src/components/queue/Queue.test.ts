@@ -1306,7 +1306,9 @@ function overDays() {
     anItem("one", { createdAt: on(12, 8, 14) }),
     anItem("two", {
       createdAt: on(12, 11, 40),
-      tags: [{ name: "design", at: on(12, 11, 40) }],
+      tags: [
+        { name: "design", by: { kind: "person" }, addedAt: on(12, 11, 40) },
+      ],
     }),
     anItem("three", { createdAt: on(13, 7, 2) }),
   );
@@ -1410,4 +1412,26 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
   await vi.waitFor(() => {
     expect(container.querySelectorAll("[data-day]")).toHaveLength(1);
   });
+});
+
+test("the index reads by day too: headings, the time alone, and no gap", async () => {
+  viewport(390);
+  rememberView("queue", "index");
+  pool(overDays());
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
+  expect(container.querySelectorAll("[data-gap]")).toHaveLength(0);
+  expect(
+    screen
+      .getByRole("button", { name: "2026-09-13 07:02" })
+      .textContent?.trim(),
+  ).toBe("07:02");
+
+  layout.choose("rail");
+  await tick();
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+  expect(container.querySelectorAll("[data-gap]")).toHaveLength(1);
 });
