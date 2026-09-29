@@ -131,22 +131,20 @@
     <Row
       bind:this={row}
       {item}
-      surface="feed"
+      surface="item"
       selected
       offline={!pool.yes}
       {commands}
       pending={undrained.has(item.id)}
-      byDay={layout.byDay}
-      slim={layout.slim}
+      layout={layout.drawn}
       opens={layout.byDay}
-      routed={false}
       cached={read?.fromCache === true}
     />
 
     {#if (drawn.length > 0 && !layout.byDay) || (drawn.length === 0 && aboutRecords !== undefined)}
       <!-- The one rule between regions: the capture above, what became of it
            below. By day, the records' own heading draws it. -->
-      <div class="col-span-full border-t border-ink"></div>
+      <div data-rule class="col-span-full border-t border-ink"></div>
     {/if}
 
     {#each headed as one (one.key)}

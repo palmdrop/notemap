@@ -628,8 +628,9 @@ test("draws the capture as the queue's selected row does: a box with its actions
 
   // The rail and the body both draw the box's edges, as a selected row's do.
   expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
-  const foot = screen.getByRole("button", { name: "discard" }).closest(".h-9");
-  expect(foot?.className).toContain("border");
+  expect(
+    screen.getByRole("button", { name: "discard" }).closest("[data-foot]"),
+  ).not.toBeNull();
 });
 
 test("reads by day on a narrow screen, as the queue does: headings, the time alone, tags under the capture", async () => {
@@ -667,13 +668,14 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
   ).toEqual(["2026-08-19", "2026-08-20"]);
   expect(screen.getByText("09:30")).toBeDefined();
   expect(screen.getByText("08:05")).toBeDefined();
+  expect(screen.getByRole("link", { name: "2026-08-20 08:05" })).toBeDefined();
 
   const tag = screen.getByText("design");
-  expect(tag.closest(".col-start-2")).not.toBeNull();
+  expect(tag.closest("[data-body]")).not.toBeNull();
   expect(
     screen.getByText("routed").compareDocumentPosition(tag) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   // The records' heading is the rule between the two regions.
-  expect(container.querySelectorAll(".border-t.col-span-full")).toHaveLength(0);
+  expect(container.querySelector("[data-rule]")).toBeNull();
 });

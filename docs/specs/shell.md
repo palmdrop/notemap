@@ -1579,7 +1579,10 @@ and a little taller, and wrapped under the tags)*, and an **absolute panel** ben
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
-line narrows to once it is typed into, minus what the item carries either way.
+line narrows to once it is typed into, minus what the item carries either way. **Opened near the
+end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
+`narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
+end ran off the side of the screen)*.
 
 **The first match is marked as soon as the line is typed into, and stays marked as it narrows**
 *(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed

@@ -137,6 +137,23 @@
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
+  let line = $state<HTMLElement | null>(null);
+  let shift = $state(0);
+
+  // Opened near the end of a line, the offer would run past it and be cut off
+  // at the side of the screen: it is drawn back to end where the line does.
+  $effect(() => {
+    void rows;
+    const within = line?.parentElement?.getBoundingClientRect();
+    if (line === null || panel === null || within === undefined) {
+      shift = 0;
+      return;
+    }
+    const from = line.getBoundingClientRect().left;
+    const over = from + panel.offsetWidth - within.right;
+    shift = over > 0 ? -Math.min(over, from - within.left) : 0;
+  });
+
   const active = $derived(
     at !== undefined && rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
   );
@@ -282,6 +299,7 @@
 
 {#if adding}
   <div
+    bind:this={line}
     class="relative h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
     transition:widen={{ magnitude: "short" }}
   >
@@ -306,7 +324,8 @@
       <!-- Rows taken on `mousedown` with the default prevented, so taking one
            never blurs the line out from under the click. -->
       <div
-        class="absolute top-full left-0 z-30 mt-1"
+        class="absolute top-full z-30 mt-1"
+        style:left="{shift}px"
         transition:slide|global={{ magnitude: "short" }}
       >
         <div

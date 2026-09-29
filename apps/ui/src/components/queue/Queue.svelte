@@ -369,8 +369,7 @@
           offline={!pool.yes}
           commands={selected === row.id ? commands : []}
           pending={undrained.has(row.id)}
-          byDay={layout.byDay}
-          slim={layout.slim}
+          layout={layout.drawn}
           opens={one.opens}
           onselect={() => select(row.id)}
           onprocess={() => process(row)}

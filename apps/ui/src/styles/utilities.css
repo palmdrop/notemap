@@ -10,12 +10,6 @@
   margin-inline: -0.375rem;
 }
 
-/**
- * A word that turns bold in place, as the current one of a row of them does:
- * its bold width is held from the start, so the words beside it never move.
- * The word is repeated in `data-word`, where only its width is drawn and
- * nothing is read aloud.
- */
 /*
  * The rail's rule, painted down the right edge rather than drawn as a border:
  * a border's corner is mitred against a transparent top edge beside it, and
@@ -30,6 +24,12 @@
   background-origin: border-box;
 }
 
+/**
+ * A word that turns bold in place, as the current one of a row of them does:
+ * its bold width is held from the start, so the words beside it never move.
+ * The word is repeated in `data-word`, where only its width is drawn and
+ * nothing is read aloud.
+ */
 @utility steady-weight {
   display: inline-flex;
   flex-direction: column;

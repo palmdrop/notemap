@@ -299,8 +299,7 @@
           offline={!pool.yes}
           commands={selected === item.id ? commands : []}
           pending={undrained.has(item.id)}
-          byDay={layout.byDay}
-          slim={layout.slim}
+          layout={layout.drawn}
           opens={one.opens}
           onselect={() => select(item.id)}
           onprocess={() => void goto(processHref(item.id))}

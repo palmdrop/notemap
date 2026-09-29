@@ -16,9 +16,6 @@
     dated?: boolean;
     onopen?: () => void;
   } = $props();
-
-  /** What the stamp is called where it draws only the time, so it still names the row. */
-  const whole = $derived(dated ? undefined : `${dayOf(at)} ${timeOf(at)}`);
 </script>
 
 {#snippet written()}
@@ -41,6 +38,9 @@
       >
     </span>
   {:else}
+    <!-- The heading draws the day; the stamp still says it, so a stamp read
+         alone, or a link or button named by it, names the whole instant. -->
+    <span class="sr-only">{dayOf(at)}</span>
     <time
       datetime={at}
       data-word={timeOf(at)}
@@ -55,7 +55,6 @@
   <button
     type="button"
     onclick={onopen}
-    aria-label={whole}
     aria-expanded={opened === true}
     class="block text-left hover:underline"
   >

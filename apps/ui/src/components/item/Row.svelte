@@ -15,6 +15,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
+  import type { Layout } from "$lib/rows.svelte";
   import { became, editable } from "$lib/lineage";
   import { fade, following, slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
@@ -33,10 +34,8 @@
     filter = [],
     commands,
     pending = false,
-    byDay = false,
-    slim = false,
+    layout = "rail",
     opens = false,
-    routed = true,
     cached = false,
     motion,
     onselect,
@@ -45,20 +44,17 @@
     item: Item;
     selected: boolean;
     offline: boolean;
-    surface: "queue" | "feed";
+    /** On the item's own surface, its records are drawn beneath the row rather than said in it. */
+    surface: "queue" | "feed" | "item";
     /** The tags the surface is read through, marked where the row carries them. */
     filter?: readonly string[];
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
-    /** Under a heading that says the day, so the stamp says only the time. */
-    byDay?: boolean;
-    /** The rail holds the time alone, and everything else it held opens the body. */
-    slim?: boolean;
+    /** By day, the stamp says only the time; slim, the rail holds nothing else. */
+    layout?: Layout;
     /** The first row under a heading, laying its top edge on the heading's rule. */
     opens?: boolean;
-    /** Whether the row says where the item went: not where its records are drawn beneath it. */
-    routed?: boolean;
     /** Drawn from what this client holds rather than from the pool's answer. */
     cached?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
@@ -67,6 +63,10 @@
     onselect?: () => void;
     onprocess?: () => void;
   } = $props();
+
+  const byDay = $derived(layout !== "rail");
+  const slim = $derived(layout === "slim");
+  const routed = $derived(surface !== "item");
 
   let editing = $state<Editing | undefined>(undefined);
   let rail = $state<Rail | undefined>(undefined);
@@ -83,7 +83,7 @@
   // nothing; one held from an earlier read that the pool no longer counts as
   // work still wears what became of it.
   const finished = $derived(
-    surface === "feed" ||
+    surface !== "queue" ||
       item.archived !== undefined ||
       item.routing !== undefined ||
       item.revisedInto.length > 0,
@@ -162,7 +162,11 @@
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach following}
 >
-  <div class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''}">
+  <div
+    data-row
+    data-opens={opens ? "" : undefined}
+    class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''}"
+  >
     <Rail
       bind:this={rail}
       {selected}
@@ -200,6 +204,7 @@
          nothing above or below it; unselected, the rail's rule runs through it. -->
     {#if selected}
       <div
+        data-foot
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
         transition:fade
       >

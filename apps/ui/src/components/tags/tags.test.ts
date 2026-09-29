@@ -262,6 +262,42 @@ test("holds a selected row whose filter tag is taken off until the selection lea
   expect(screen.getByText("two")).toBeTruthy();
 });
 
+test("holds a selected row where it stood while the rows around it come and go", async () => {
+  address.path = "/feed?tag=kind%2Fquote";
+  const at = (hour: number) => ({
+    createdAt: `2026-09-12T${String(hour).padStart(2, "0")}:00:00.000Z`,
+  });
+  serving({
+    queue: [
+      { ...quoted("three"), ...at(10) },
+      { ...quoted("two"), ...at(9) },
+      { ...quoted("one"), ...at(8) },
+    ],
+  });
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await client.untag("one", "kind/quote");
+  await client.untag("three", "kind/quote");
+  await vi.waitFor(() => expect(screen.queryByText("three")).toBeNull());
+  await client.tag("three", "kind/quote");
+
+  await vi.waitFor(() => expect(screen.getByText("three")).toBeTruthy());
+  const [three, two, one] = ["three", "two", "one"].map((id) =>
+    screen.getByText(id),
+  );
+  expect(
+    three!.compareDocumentPosition(two!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    two!.compareDocumentPosition(one!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
 test("reads the queue through a filter the address names while it is drawn", async () => {
   const other = anItem("other");
   pool((request) => {

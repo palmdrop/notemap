@@ -1322,8 +1322,7 @@ function holding(...items: ReturnType<typeof anItem>[]) {
 }
 
 /** The row's own tracks, which the first row of a day lifts onto the heading's rule. */
-const rowOf = (words: string) =>
-  screen.getByText(words).closest(".col-span-full.grid")!;
+const rowOf = (words: string) => screen.getByText(words).closest("[data-row]")!;
 
 test("reads by day on a narrow screen: a heading per day, the time alone on the row", async () => {
   viewport(390);
@@ -1337,23 +1336,23 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
     days.map((day) => day.textContent?.replace(/\s+/g, " ").trim()),
   ).toEqual(["2026-09-12 saturday", "2026-09-13 sunday"]);
   expect(screen.getByText("08:14")).toBeDefined();
-  expect(screen.queryByText("2026-09-12", { selector: "button *" })).toBeNull();
+  expect(
+    screen.queryByText("2026-09-12", { selector: "button *:not(.sr-only)" }),
+  ).toBeNull();
   expect(
     screen.getByRole("button", { name: "2026-09-12 08:14" }),
   ).toBeDefined();
 
-  expect(rowOf("one").className).toContain("-mt-px");
-  expect(rowOf("two").className).not.toContain("-mt-px");
-  expect(rowOf("three").className).toContain("-mt-px");
+  expect(rowOf("one").hasAttribute("data-opens")).toBe(true);
+  expect(rowOf("two").hasAttribute("data-opens")).toBe(false);
+  expect(rowOf("three").hasAttribute("data-opens")).toBe(true);
 
   // A row walked to clears the heading held over it.
-  expect(
-    screen.getByText("08:14").closest(".scroll-mt-day-head"),
-  ).not.toBeNull();
+  expect(screen.getByText("08:14").closest("[data-headed]")).not.toBeNull();
 
   // The rail holds the time alone; the tags follow the capture in the body.
   const tag = screen.getByText("design");
-  expect(tag.closest(".col-start-2")).not.toBeNull();
+  expect(tag.closest("[data-body]")).not.toBeNull();
   expect(
     screen.getByText("two").compareDocumentPosition(tag) &
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -1370,7 +1369,7 @@ test("reads by day on a wide screen only when chosen, keeping the tags in the ra
   layout.choose("by day");
   await tick();
   expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
-  expect(screen.getByText("design").closest(".col-start-1")).not.toBeNull();
+  expect(screen.getByText("design").closest("[data-rail]")).not.toBeNull();
 });
 
 test("the rail, chosen, draws no headings on a narrow screen", async () => {
@@ -1383,6 +1382,22 @@ test("the rail, chosen, draws no headings on a narrow screen", async () => {
 
   expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
   expect(screen.getAllByText("2026-09-12").length).toBeGreaterThan(0);
+});
+
+test("auto follows the window as it crosses narrow", async () => {
+  pool(overDays());
+
+  const { container } = render(Queue);
+  await screen.findByText("three");
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+
+  viewport(390);
+  await tick();
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
+
+  viewport(1024);
+  await tick();
+  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
 });
 
 test("walks across a heading, and a day's heading leaves with its last row", async () => {
@@ -1407,7 +1422,9 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
 
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "j" });
-  expect(stamps(true)[0]?.getAttribute("aria-label")).toBe("2026-09-13 07:02");
+  expect(
+    screen.getByRole("button", { name: "2026-09-13 07:02", expanded: true }),
+  ).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "D" });
@@ -1434,7 +1451,7 @@ test("the index reads by day too: headings, the time alone, and no gap", async (
   expect(
     screen
       .getByRole("button", { name: "2026-09-13 07:02" })
-      .textContent?.trim(),
+      .querySelector("time")?.textContent,
   ).toBe("07:02");
 
   layout.choose("rail");

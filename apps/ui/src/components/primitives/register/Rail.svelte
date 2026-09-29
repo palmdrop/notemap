@@ -41,7 +41,9 @@
   bind:this={cell}
   onclick={onpick === undefined ? undefined : pickable(onpick)}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
+  data-rail
   data-selected={selected ? "" : undefined}
+  data-headed={headed ? "" : undefined}
   class="col-start-1 -ml-3 min-w-0 border-t border-l border-ink rule-right pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
     {headed ? 'scroll-mt-day-head' : ''}

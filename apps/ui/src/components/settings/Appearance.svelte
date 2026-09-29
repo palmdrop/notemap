@@ -42,6 +42,8 @@
         </button>
       {/each}
     </span>
-    <span class="block">by day on a narrow screen, the rail on a wide one</span>
+    <span class="block"
+      >auto is by day on a narrow screen, the rail on a wide one</span
+    >
   </Fact>
 </Section>

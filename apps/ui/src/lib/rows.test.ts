@@ -1,13 +1,20 @@
 import { expect, test } from "vitest";
 
 import { viewport } from "$testing/dom";
-import { rows } from "./rows.svelte";
+import { forgetRows, rows } from "./rows.svelte";
 
 test("is auto until something is chosen, and auto again for a value it does not know", () => {
   expect(rows.choice).toBe("auto");
 
   localStorage.setItem("notemap:rows", "sideways");
+  forgetRows();
   expect(rows.choice).toBe("auto");
+});
+
+test("reads a choice back from storage, as a reload does", () => {
+  localStorage.setItem("notemap:rows", "by day");
+  forgetRows();
+  expect(rows.choice).toBe("by day");
 });
 
 test("auto reads by day on a narrow screen, with the rail slim, and the rail on a wide one", () => {

@@ -607,8 +607,7 @@ test("reads by day on a narrow screen, as the queue does", async () => {
       day.getAttribute("data-day"),
     ),
   ).toEqual(["2026-09-13", "2026-09-12"]);
-  expect(stamps(false).map((stamp) => stamp.textContent?.trim())).toEqual([
-    "09:00",
-    "09:00",
-  ]);
+  expect(
+    stamps(false).map((stamp) => stamp.querySelector("time")?.textContent),
+  ).toEqual(["09:00", "09:00"]);
 });

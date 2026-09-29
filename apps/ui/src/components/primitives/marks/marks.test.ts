@@ -18,11 +18,21 @@ test("under a heading that says the day, draws the time alone and still names th
   const at = new Date(2026, 8, 13, 7, 2).toISOString();
   render(Stamp, { at, dated: false, onopen: () => {} });
 
-  expect(screen.queryByText("2026-09-13")).toBeNull();
+  expect(screen.getByText("2026-09-13").className).toContain("sr-only");
   expect(screen.getByText("07:02")).toHaveProperty("dateTime", at);
   expect(
     screen.getByRole("button", { name: "2026-09-13 07:02" }),
   ).toBeDefined();
+});
+
+test("says the whole instant with the time alone drawn, where it is not a button", () => {
+  const at = new Date(2026, 8, 13, 7, 2).toISOString();
+  const { container } = render(Stamp, { at, dated: false });
+
+  expect(screen.getByText("2026-09-13").className).toContain("sr-only");
+  expect(container.textContent?.replace(/\s+/g, " ").trim()).toBe(
+    "2026-09-13 07:02",
+  );
 });
 
 /**

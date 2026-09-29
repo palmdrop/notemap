@@ -12,6 +12,12 @@ export type Rows = "auto" | "by day" | "rail";
 
 export const ROWS: readonly Rows[] = ["auto", "by day", "rail"];
 
+/**
+ * The choice settled against the width. `slim` is by day on a narrow screen,
+ * where the rail holds the time and nothing else.
+ */
+export type Layout = "rail" | "by day" | "slim";
+
 const KEY = "notemap:rows";
 
 function held(): Rows {
@@ -19,35 +25,49 @@ function held(): Rows {
   return ROWS.includes(said as Rows) ? (said as Rows) : "auto";
 }
 
-/** Storage holds the choice; this only tells a reader that it changed. */
-let chosen = $state(0);
+let choice = $state<Rows>(held());
 
-const resized = createSubscriber((update) => on(window, "resize", update));
+const crossed = createSubscriber((update) => {
+  let was = narrow();
+  return on(window, "resize", () => {
+    if (narrow() === was) return;
+    was = !was;
+    update();
+  });
+});
 
 function isNarrow(): boolean {
-  resized();
+  crossed();
   return narrow();
 }
 
 export const rows = {
   get choice(): Rows {
-    void chosen;
-    return held();
+    return choice;
   },
 
   choose(wanted: Rows): void {
+    choice = wanted;
     localStorage.setItem(KEY, wanted);
-    chosen += 1;
+  },
+
+  get drawn(): Layout {
+    if (choice === "rail") return "rail";
+    if (isNarrow()) return "slim";
+    return choice === "by day" ? "by day" : "rail";
   },
 
   /** Whether a register heads each day and keeps only the time on the row. */
   get byDay(): boolean {
-    const choice = this.choice;
-    return choice === "by day" || (choice === "auto" && isNarrow());
+    return this.drawn !== "rail";
   },
 
-  /** By day on a narrow screen, the rail holds the time and nothing else. */
   get slim(): boolean {
-    return this.byDay && isNarrow();
+    return this.drawn === "slim";
   },
 };
+
+/** For tests, which would otherwise carry one case's choice into the next. */
+export function forgetRows(): void {
+  choice = held();
+}

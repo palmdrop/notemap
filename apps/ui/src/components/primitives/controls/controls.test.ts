@@ -367,11 +367,13 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
   // Selected is bold, the × beside it, so the × has a word it visibly
   // belongs to.
   const remove = screen.getByRole("button", { name: "remove notemap" });
-  expect(word.className).toContain("font-semibold");
+  expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
   expect(word.parentElement!.contains(remove)).toBe(true);
   expect(
-    screen.getByRole("button", { name: "design" }).className,
-  ).not.toContain("font-semibold");
+    screen
+      .getByRole("button", { name: "design" })
+      .parentElement!.hasAttribute("data-chosen"),
+  ).toBe(false);
 
   await fireEvent.click(remove);
   expect(removed).toHaveBeenCalledWith("notemap");
@@ -498,4 +500,23 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
   } finally {
     document.documentElement.style.removeProperty("--duration-short");
   }
+});
+
+test("the offer, opened near the end of a line, is drawn back to end where the line does", async () => {
+  tagSet({ offered: ["reading", "research", "design"] });
+  const line = await opened();
+  const list = screen.getByRole("listbox", { name: "Tags in use" });
+
+  const at = (left: number, right: number) => () =>
+    ({ left, right }) as DOMRect;
+  line.parentElement!.getBoundingClientRect = at(340, 376);
+  line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
+  Object.defineProperty(list, "offsetWidth", { get: () => 144 });
+
+  await typed(line, "re");
+  expect(list.parentElement!.style.left).toBe("-108px");
+
+  line.parentElement!.getBoundingClientRect = at(60, 376);
+  await typed(line, "rea");
+  expect(list.parentElement!.style.left).toBe("0px");
 });
