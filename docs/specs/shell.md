@@ -11,7 +11,8 @@
   width. A heading held at the top spans the screen, so a selected row's box scrolls under it
   cleanly. The rail's rule no longer notches where two rows meet, in either layout.
   `auto`, the default, is by day below `narrow` and the rail above it. The register now has two
-  layouts. See [ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md) and
+  layouts. A carried tag is marked `#`, and a selected tag is bold. The item's own
+  surface draws its capture as the queue's selected row, box and foot, in either layout. See [ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md) and
   [rows-by-day](../plans/rows-by-day.md).
 
 - 2026-09-29 — **The capture box answers from outside its field, and the way back keeps its place.**
@@ -823,10 +824,9 @@ wide as a time, and everything else it held **follows the capture** in the body:
 `pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
 line, and nothing above the text reads as its title. The tag line is held on every row, as it is
 in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
-only space. **A short rule sets the facts off from the capture**, a hairline two words wide, since
-the two are the same face at the same size. It is drawn only where the facts say something (a
-tag, a state word, `pending`, a routing line, a refusal) and never for the held line or its `+`
-alone, so selecting a row never draws it. **Above `narrow`, the rail keeps its width** and holds the time and the tags.
+only space. The tags are told from the capture by their `#` ([Tagging](#tagging)), not by a rule
+between the two: a short one was tried the same day and taken out. **Above `narrow`, the rail
+keeps its width** and holds the time and the tags.
 
 **The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
 edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one
@@ -1380,8 +1380,11 @@ the three conditions are for.
 
 **The item is a register of what became of it** *(2026-09-14, after
 [shell-redesign](../plans/shell-redesign.md) phase 5; until then the records were lines in the
-rail and a record was a page of facts)*. The capture is the first row — stamp, state word and tags
-in the rail, the payload and the actions in the body. Then one rule across both columns, the one
+rail and a record was a page of facts)*. The capture is the first row, **drawn as the queue's
+selected row is** *(amended 2026-09-29; the actions sat in the body, unboxed)*: the box, its
+actions as the foot, the tags where the reader's rows put them, and by day under a heading of its
+own ([Rows by day](#rows-by-day)) — the same row, offering the item's own actions, `history` where
+the row has `open`. It says no routing line, its records being the rows beneath it. Then one rule across both columns, the one
 rule the surface has, and under it **one row per routing record**: the record's own stamp and its
 state in the rail, and the record itself, as a block, in the body. The state is said on every
 record row, `delivered` included: the rule that a state is said only where it is not that was a
@@ -1552,6 +1555,11 @@ away, and not a mark on every line of a list meant to read as a timeline. Where 
 *the collapsed row's chooser*, read *the selected row's*; where it says *the composer*, read *the
 process surface*, whose `tags` section is the same chooser.
 
+**A carried tag is marked `#`** *(added 2026-09-29)*: in one face at one size, beside prose, a
+bare word did not read as a tag. The mark is drawn, not part of the name — a tag is still named,
+filtered and read without it. A trigger tag keeps its small caps after the mark. A trigger tag is
+already bold, so selecting one shows only its `×`.
+
 The known names are the **tags in use**, read from `GET /v1/tags` whenever the pool comes into
 reach with the door open — on start, on signing in, on coming back — and again whenever
 classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
@@ -1561,10 +1569,9 @@ sits on the collapsed row.
 
 **The chooser is one control, wherever it is drawn** *(added 2026-09-11)*. What the item carries
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
-select it — **ruled round**, one line tall, the shell's mark for what is selected as a selected
-row's box is *(amended 2026-09-25; it was drawn inverted, ink behind it, which filled the capture
-box's foot; before 2026-09-18 a selected tag looked like every other)* — and taken off on the `×`
-that then slides in inside the rule, the tag growing to hold it *(amended 2026-09-15; a single
+select it — **bold**, holding its width so nothing beside it moves *(amended 2026-09-29; it was
+ruled round from 2026-09-25, and drawn inverted, ink behind it, before that; before 2026-09-18 a
+selected tag looked like every other)* — and taken off on the `×` that then slides in beside it *(amended 2026-09-15; a single
 press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
 losing its selection clears the selection without taking anything off. `+` opens a line **where
 the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width

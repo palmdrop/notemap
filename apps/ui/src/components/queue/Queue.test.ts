@@ -1351,10 +1351,6 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
     screen.getByText("08:14").closest(".scroll-mt-day-head"),
   ).not.toBeNull();
 
-  // A rule sets the facts off from the capture, where there are any.
-  expect(rowOf("two").querySelector(".w-8.border-t")).not.toBeNull();
-  expect(rowOf("one").querySelector(".w-8.border-t")).toBeNull();
-
   // The rail holds the time alone; the tags follow the capture in the body.
   const tag = screen.getByText("design");
   expect(tag.closest(".col-start-2")).not.toBeNull();

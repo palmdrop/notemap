@@ -16,6 +16,20 @@
  * The word is repeated in `data-word`, where only its width is drawn and
  * nothing is read aloud.
  */
+/*
+ * The rail's rule, painted down the right edge rather than drawn as a border:
+ * a border's corner is mitred against a transparent top edge beside it, and
+ * every cell the rule runs through paints it the same way, so the segments
+ * land on the same pixel at any width.
+ */
+@utility rule-right {
+  background-image: linear-gradient(var(--color-ink), var(--color-ink));
+  background-size: 1px 100%;
+  background-position: right;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+
 @utility steady-weight {
   display: inline-flex;
   flex-direction: column;

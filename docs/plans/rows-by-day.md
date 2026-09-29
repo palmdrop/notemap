@@ -124,8 +124,13 @@ Raised on the PR, 2026-09-29.
       transparent top edge and notched the rule where two rows met, in both layouts.
 - [x] The feed's held row takes the placement fix #84 gave the queue: its place is latched only
       from the feed's own list, falling back to where the order puts it.
-- [x] Below `narrow`, a short rule sets the facts off from the capture, drawn only where the
-      facts say something. The held tag line and its `+` alone draw none.
+- [-] Below `narrow`, a short rule sets the facts off from the capture. _(dropped the same day —
+      the `#` on a tag does the work)_
+- [x] A carried tag is marked `#`, and a selected tag is bold rather than ruled round.
+- [x] The item surface draws its capture as the queue's selected row, box and foot, following
+      the reader's rows: by day, under a heading, with its records grouped by day beneath it.
+- [x] Every segment of the rail's rule is painted the same way, so the segments land on the same
+      device pixel at fractional pixel ratios; a border beside a painted line did not.
 - [x] A heading is a line tall with even room above and below the date; the room between days
       is margin outside it, so a stuck heading has as much above the date as below.
 - [x] Commit.

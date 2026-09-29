@@ -2969,7 +2969,7 @@ test("draws a trigger tag that filed the item as inert, not a control", async ()
     .getAllByText("research")
     .find((each) => each.tagName === "SPAN" && each.closest("button") === null);
   expect(tag).toBeDefined();
-  expect(tag?.getAttribute("title")).toBe(
+  expect(tag?.closest("[title]")?.getAttribute("title")).toBe(
     "filed the item — cancel the routing to take it off",
   );
   expect(

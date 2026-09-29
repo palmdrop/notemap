@@ -6,7 +6,7 @@ import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
 import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
-import { keyboard } from "$testing/dom";
+import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
 import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
@@ -618,4 +618,62 @@ test("stands the asking mark under the rule while the records are read", async (
   answer(json(200, { values: [RECORD] }));
   await screen.findByText("delivered");
   expect(container.querySelector("[data-asking]")).toBeNull();
+});
+
+test("draws the capture as the queue's selected row does: a box with its actions as the foot", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  const { container } = render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  // The rail and the body both draw the box's edges, as a selected row's do.
+  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
+  const foot = screen.getByRole("button", { name: "discard" }).closest(".h-9");
+  expect(foot?.className).toContain("border");
+});
+
+test("reads by day on a narrow screen, as the queue does: headings, the time alone, tags under the capture", async () => {
+  viewport(390);
+  const at = new Date(2026, 7, 19, 9, 30).toISOString();
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/routed":
+        return json(
+          200,
+          anItem("routed", {
+            ...ROUTED,
+            createdAt: at,
+            tags: [{ name: "design", by: { kind: "person" }, addedAt: at }],
+          }),
+        );
+      case "GET /v1/items/routed/routing":
+        return json(200, {
+          values: [
+            { ...RECORD, at: new Date(2026, 7, 20, 8, 5).toISOString() },
+          ],
+        });
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  const { container } = render(Item, { id: "routed" });
+  await screen.findByText("drafts");
+
+  expect(
+    [...container.querySelectorAll("[data-day]")].map((day) =>
+      day.getAttribute("data-day"),
+    ),
+  ).toEqual(["2026-08-19", "2026-08-20"]);
+  expect(screen.getByText("09:30")).toBeDefined();
+  expect(screen.getByText("08:05")).toBeDefined();
+
+  const tag = screen.getByText("design");
+  expect(tag.closest(".col-start-2")).not.toBeNull();
+  expect(
+    screen.getByText("routed").compareDocumentPosition(tag) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  // The records' heading is the rule between the two regions.
+  expect(container.querySelectorAll(".border-t.col-span-full")).toHaveLength(0);
 });

@@ -208,6 +208,15 @@
   }
 </script>
 
+<!-- A carried tag is marked `#`, which is how it reads as a tag beside prose
+     in the same face and size; the mark is not part of its name. Bold when
+     selected, holding its width so nothing beside it moves. -->
+{#snippet said(word: string)}
+  <span class="steady-weight" data-word={`#${word}`}
+    ><span><span aria-hidden="true">#</span><span>{word}</span></span></span
+  >
+{/snippet}
+
 <!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
      the style says which words file, and the namespace is not a decision. The
      offer below keeps the whole name, being what is typed against. -->
@@ -230,13 +239,10 @@
           ? 'underline'
           : ''}"
       >
-        {fired === undefined ? name : trigger(name)}
+        {@render said(fired === undefined ? name : trigger(name))}
       </span>
     {:else}
-      <span
-        class="-mx-0.75 inline-block px-0.75 leading-(--text-shell--line-height) outline-1 outline-transparent transition-[outline-color] duration-(--duration-short) ease-fade data-chosen:outline-ink"
-        data-chosen={chosen === name ? "" : undefined}
-      >
+      <span data-chosen={chosen === name ? "" : undefined}>
         <button
           type="button"
           aria-pressed="true"
@@ -250,11 +256,13 @@
           aria-label={fired === undefined
             ? undefined
             : `${name}, routes to ${fired}`}
-          class="{chosen === name ? '' : 'hover:underline'} {fired === undefined
-            ? ''
-            : TRIGGER} {filtered ? 'underline' : ''}"
+          class="{chosen === name
+            ? 'font-semibold'
+            : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
+            ? 'underline'
+            : ''}"
         >
-          {fired === undefined ? name : trigger(name)}
+          {@render said(fired === undefined ? name : trigger(name))}
         </button>{#if chosen === name}<button
             type="button"
             aria-label={`remove ${name}`}

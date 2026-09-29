@@ -10,6 +10,7 @@
   import Tags from "$components/item/Tags.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
+  import Cached from "$components/primitives/marks/Cached.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
@@ -35,6 +36,8 @@
     byDay = false,
     slim = false,
     opens = false,
+    routed = true,
+    cached = false,
     motion,
     onselect,
     onprocess,
@@ -54,10 +57,15 @@
     slim?: boolean;
     /** The first row under a heading, laying its top edge on the heading's rule. */
     opens?: boolean;
+    /** Whether the row says where the item went: not where its records are drawn beneath it. */
+    routed?: boolean;
+    /** Drawn from what this client holds rather than from the pool's answer. */
+    cached?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
-    onselect: () => void;
-    onprocess: () => void;
+    /** Absent where the row is the whole surface, and there is nothing to select it from. */
+    onselect?: () => void;
+    onprocess?: () => void;
   } = $props();
 
   let editing = $state<Editing | undefined>(undefined);
@@ -68,7 +76,7 @@
   // summary says there is something to read: a request per triage at the most.
   const records = recordsOf(
     () => (item.routing === undefined ? undefined : item.id),
-    () => selected && !offline,
+    () => routed && selected && !offline,
   );
 
   // Every row on the queue is unrouted, and a word saying so on each says
@@ -81,15 +89,6 @@
       item.revisedInto.length > 0,
   );
   const word = $derived(finished ? became(item) : undefined);
-
-  /** Whether the facts say anything, the held tag line and its `+` aside. */
-  const told = $derived(
-    word !== undefined ||
-      pending ||
-      (item.tags ?? []).length > 0 ||
-      (finished && item.routing !== undefined) ||
-      records.refused !== "",
-  );
   const mayEdit = $derived(editable(item));
 
   // The box's foot is where `close` and `save` are, so a row that loses the
@@ -134,11 +133,15 @@
     <Pending since={undrainedSince(item.id)} />
   {/if}
 
+  {#if cached}
+    <Cached />
+  {/if}
+
   <div class={slim ? "" : "mt-0.5"}>
     <Tags bind:this={tags} {item} {filter} addable={selected} stacked={!slim} />
   </div>
 
-  {#if finished}
+  {#if finished && routed}
     <Routing
       summary={item.routing}
       records={records.all}
@@ -171,7 +174,7 @@
         at={item.createdAt}
         dated={!byDay}
         opened={selected}
-        onopen={() => pick?.()}
+        onopen={onselect === undefined ? undefined : () => pick?.()}
       />
 
       {#if !slim}
@@ -187,9 +190,6 @@
       {/if}
       {#if slim}
         <div class="mt-1">
-          {#if told}
-            <div class="mt-2 mb-1.5 w-8 border-t border-ink"></div>
-          {/if}
           {@render facts()}
         </div>
       {/if}
@@ -210,10 +210,7 @@
         {/if}
       </div>
     {:else}
-      <div
-        class="col-start-1 row-start-2 h-9 border-r border-ink"
-        transition:fade
-      ></div>
+      <div class="col-start-1 row-start-2 h-9 rule-right" transition:fade></div>
       <div class="col-start-2 row-start-2 h-9"></div>
     {/if}
   </div>
