@@ -2,7 +2,7 @@
 
 ## Urgent
 
-- [ ] sometimes, trigger tag routing seem to successfully route but then, on a restart, or later return to notemap, the item is back in the queue. Trigger tag is there but routing record is gone
+- [x] sometimes, trigger tag routing seem to successfully route but then, on a restart, or later return to notemap, the item is back in the queue. Trigger tag is there but routing record is gone
 
 ## Shell — layout and interaction
 
