@@ -15,6 +15,10 @@ import { CHEAP_HASHING } from "../../testing/hashing";
 
 const PASSWORD = "correct horse battery staple";
 
+/** For tests about anything but what a hash costs, which is most of them. */
+const cheaply = (password: string) =>
+  hashPassword(password, "scrypt", CHEAP_HASHING);
+
 // A hash written down once, never regenerated. The encoded string is a stored
 // format: reordering its fields, changing the separator or switching to hex
 // leaves every other test in this file passing and every saved password
@@ -67,12 +71,12 @@ describe("what a hashed password looks like", () => {
   });
 
   it("never contains the password", async () => {
-    expect(await hashPassword(PASSWORD)).not.toContain(PASSWORD);
+    expect(await cheaply(PASSWORD)).not.toContain(PASSWORD);
   });
 
   it("differs between two hashes of the same password", async () => {
     // A fresh salt per hash, so equal passwords must not give equal hashes.
-    expect(await hashPassword(PASSWORD)).not.toBe(await hashPassword(PASSWORD));
+    expect(await cheaply(PASSWORD)).not.toBe(await cheaply(PASSWORD));
   });
 
   it("carries the parameters it was given rather than the defaults", async () => {
@@ -91,13 +95,11 @@ describe("what a hashed password looks like", () => {
 
 describe("verifying a password against a stored hash", () => {
   it("accepts the password it was hashed from", async () => {
-    expect(await verifyPassword(PASSWORD, await hashPassword(PASSWORD))).toBe(
-      true,
-    );
+    expect(await verifyPassword(PASSWORD, await cheaply(PASSWORD))).toBe(true);
   });
 
   it("refuses any other password", async () => {
-    const stored = await hashPassword(PASSWORD);
+    const stored = await cheaply(PASSWORD);
 
     for (const wrong of [
       "correct horse battery stapl",
@@ -156,10 +158,10 @@ describe("how a password is spelled before it is hashed", () => {
   const decomposed = "cafe\u0301 au lait";
 
   it("takes two spellings of the same accent as the same password", async () => {
-    expect(await verifyPassword(decomposed, await hashPassword(composed))).toBe(
+    expect(await verifyPassword(decomposed, await cheaply(composed))).toBe(
       true,
     );
-    expect(await verifyPassword(composed, await hashPassword(decomposed))).toBe(
+    expect(await verifyPassword(composed, await cheaply(decomposed))).toBe(
       true,
     );
   });
@@ -176,17 +178,17 @@ describe("how a password is spelled before it is hashed", () => {
       ["2", "\u00b2"],
     ]) {
       expect(
-        await verifyPassword(enough(b!), await hashPassword(enough(a!))),
+        await verifyPassword(enough(b!), await cheaply(enough(a!))),
         b,
       ).toBe(false);
     }
   });
 
   it("measures the length limit in bytes, not characters", async () => {
-    await expect(hashPassword("a".repeat(4096))).resolves.toBeDefined();
-    await expect(hashPassword("\u00e9".repeat(2048))).resolves.toBeDefined();
+    await expect(cheaply("a".repeat(4096))).resolves.toBeDefined();
+    await expect(cheaply("\u00e9".repeat(2048))).resolves.toBeDefined();
 
-    await expect(hashPassword("\u00e9".repeat(2049))).rejects.toThrow(
+    await expect(cheaply("\u00e9".repeat(2049))).rejects.toThrow(
       "password-too-long",
     );
   });
@@ -203,7 +205,7 @@ describe("a password that cannot be stored", () => {
 
   it("is refused when hashing, naming what was wrong with it", async () => {
     for (const [password, refusal] of unstorable) {
-      const error = await hashPassword(password).catch((thrown) => thrown);
+      const error = await cheaply(password).catch((thrown) => thrown);
 
       expect(error, refusal).toBeInstanceOf(UnusablePassword);
       expect(error.refusal).toBe(refusal);
@@ -213,7 +215,7 @@ describe("a password that cannot be stored", () => {
   it("is a failed login rather than an error when verifying", async () => {
     // A sign-in form can produce every one of these, and none of them can be
     // behind a stored hash.
-    const stored = await hashPassword(PASSWORD);
+    const stored = await cheaply(PASSWORD);
 
     for (const [password, refusal] of unstorable) {
       expect(await verifyPassword(password, stored), refusal).toBe(false);
@@ -223,17 +225,17 @@ describe("a password that cannot be stored", () => {
 
 describe("a password shorter than the minimum", () => {
   it("cannot be chosen", async () => {
-    const error = await hashPassword("elevenchars").catch((thrown) => thrown);
+    const error = await cheaply("elevenchars").catch((thrown) => thrown);
 
     expect(error).toBeInstanceOf(UnusablePassword);
     expect(error.refusal).toBe("password-too-short");
   });
 
   it("counts characters rather than the bytes they take", async () => {
-    await expect(hashPassword("\u00e9".repeat(11))).rejects.toThrow(
+    await expect(cheaply("\u00e9".repeat(11))).rejects.toThrow(
       "password-too-short",
     );
-    await expect(hashPassword("\u00e9".repeat(12))).resolves.toBeDefined();
+    await expect(cheaply("\u00e9".repeat(12))).resolves.toBeDefined();
   });
 
   /**
@@ -305,16 +307,36 @@ describe("whether a stored hash is behind this build", () => {
   });
 
   it("says yes to one turned down below what is written now", async () => {
-    const stored = await hashPassword(PASSWORD);
+    const stored = await cheaply(PASSWORD);
 
     expect(await needsRehash(weakened(stored, "16384$8$1"))).toBe(true);
   });
 
   /** Rehashing to match would weaken it, so a stronger hash is left alone. */
   it("says no to one written stronger than this build writes", async () => {
-    const stored = await hashPassword(PASSWORD);
+    const stored = await cheaply(PASSWORD);
 
     expect(await needsRehash(weakened(stored, "131072$8$4"))).toBe(false);
+  });
+
+  /** OWASP's floor, which is the same work as what is written now in more memory. */
+  it("says no to one of the same work in more memory", async () => {
+    const stored = await cheaply(PASSWORD);
+
+    expect(await needsRehash(weakened(stored, "131072$8$1"))).toBe(false);
+  });
+
+  /** Rewriting it would buy work with memory, and neither is to go down. */
+  it("says no to one of less work in more memory", async () => {
+    const stored = await cheaply(PASSWORD);
+
+    expect(await needsRehash(weakened(stored, "65536$12$1"))).toBe(false);
+  });
+
+  it("says yes to one of the same work in less memory", async () => {
+    const stored = await cheaply(PASSWORD);
+
+    expect(await needsRehash(weakened(stored, "32768$8$4"))).toBe(true);
   });
 
   it("measures against the parameters it is given, where it is given some", async () => {

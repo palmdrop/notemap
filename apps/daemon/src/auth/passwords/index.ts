@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "crypto";
 
-import scrypt from "./scrypt";
+import scrypt, { type ScryptParams } from "./scrypt";
 import { normalise, normalisePassword } from "./normalise";
 import { UnreadableHash } from "./errors";
 import { DEFAULT_ALGORITHM } from "./config";
@@ -101,7 +101,7 @@ export const verifyPassword = async (password: string, stored: string) => {
  */
 export const needsRehash = async (
   stored: string,
-  current?: Record<string, unknown>,
+  current?: ScryptParams,
 ): Promise<boolean> => {
   const parts = splitHash(stored);
   if (parts[0] !== DEFAULT_ALGORITHM) return true;

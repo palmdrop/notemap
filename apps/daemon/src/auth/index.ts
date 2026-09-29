@@ -4,6 +4,7 @@ import { silentLogger, type Logger } from "@notemap/log";
 import { UnreadableHash } from "./passwords/errors";
 import { hashPassword, needsRehash, verifyPassword } from "./passwords";
 import { DEFAULT_ALGORITHM } from "./passwords/config";
+import type { ScryptParams } from "./passwords/scrypt";
 import { sameSecretly } from "./secret";
 import { createSessions } from "./sessions";
 import type { AuthStore } from "./store/types";
@@ -14,7 +15,7 @@ type AuthParams = {
   clock: Clock;
   log?: Logger;
   /** What a password is hashed under. The algorithm's own defaults when absent. */
-  hashing?: Record<string, unknown>;
+  hashing?: ScryptParams;
 };
 
 export const createAuth = (
