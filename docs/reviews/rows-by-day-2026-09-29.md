@@ -95,7 +95,7 @@ Fix: when `dated` is false, give the `<time>` a visually hidden date, or an `ari
 5. **Fixed.** `rule-right` moved above `steady-weight`'s comment.
 6. **Fixed.** `tags.test.ts` holds a selected row where it stood while the filtered feed shrinks and
    regrows around it. The test fails without the fix.
-7. **Fixed.** The line reads "auto is by day on a narrow screen, the rail on a wide one".
+7. **Removed.** The line is gone at the developer's request, who will write a new one.
 8. **Fixed.** The offer is drawn back to end where its line does when it would run past it.
    `shell.md` says so. Not checked in a browser.
 9. **Fixed.** This branch's tests query `data-row`, `data-opens`, `data-foot`, `data-rail`,

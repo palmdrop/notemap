@@ -2058,8 +2058,7 @@ comes back into reach and held nowhere.
 
 **Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS auto · by
-day · rail` under it, the same control, with a line saying what `auto` is: by day on a narrow
-screen, the rail on a wide one ([Rows by day](#rows-by-day)).
+day · rail` under it, the same control ([Rows by day](#rows-by-day)).
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts
