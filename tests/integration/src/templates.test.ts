@@ -470,6 +470,17 @@ describe("a trigger tag applying its template", () => {
     expect(await queued(pool)).toEqual([]);
   });
 
+  it("answers the item holding the reservation, so a client's copy is not unprocessed", async () => {
+    const { result, template } = await tagged();
+
+    expect(result.kind === "ok" && result.value.routing).toEqual({
+      records: 1,
+      pending: 1,
+      to: [{ kind: "destination", destination: VAULT }],
+      templates: [template.id],
+    });
+  });
+
   it("waits the window out before the delivery is claimable", async () => {
     const { clock, deliver, destination } = await tagged();
 

@@ -4,6 +4,11 @@
 **Last updated**: 2026-09-28
 **Shipped**:
 
+- 2026-09-28 — **A trigger tag's reservation reaches the cache.** The pool's answer to the tag now
+  carries the pending record it made, so the drain settles a copy that is no longer work. The
+  watcher takes a row off the queue when a template fires, not only once it lands, and reads again
+  a held item whose routing an action changed — fired, routed, cancelled or abandoned — so a copy
+  persisted across a restart stops saying an item is unprocessed after the pool has filed it.
 - 2026-09-28 — **A surface can be read through a filter.** `enter` takes the tags; the whole page
   is kept beside the filtered one and returned to as it stood. One membership rule keeps every page,
   and the watcher applies tags added and taken off elsewhere to the items held. See [filter-by-tag](../plans/filter-by-tag.md).
@@ -551,13 +556,20 @@ from its first read.
 - **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
 - **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
 - **It maintains the surfaces as well as reporting them** *(added 2026-09-08)*. An action that
-  says an item was processed — routed, archived, revised, purged — takes that row off the queue
-  before anything is told about it, so one read serves the corner and the surface both and a queue
-  emptied from another device empties under the reader. It stays lazy: this happens on the watcher's
+  says an item was processed — a template fired, routed, archived, revised, purged — takes that row
+  off the queue before anything is told about it, so one read serves the corner and the surface both
+  and a queue emptied from another device empties under the reader. It stays lazy: this happens on the watcher's
   own reports, and a client nobody watches has no watcher to make one.
 - **It applies a tag added or taken off** *(added 2026-09-28)* to the copy held of the item it
   names, so a cached item's tags stop going stale while the pool is changed elsewhere and a
   [filtered surface](#a-filtered-surface) follows another device.
+- **It reads a held item again where an action changed its routing** *(added 2026-09-28)* — a
+  template fired, a delivery routed, cancelled or abandoned. An action names an item and no
+  summary, and folding counts from it would count twice a record whose answer was already folded,
+  so the item is read rather than guessed. Not while an operation on that item is still to send:
+  that operation's own answer settles it, and a read now would overwrite the optimistic copy. A
+  cached copy that said an item was work after the pool had filed it was persisted, and outlived
+  the session that drew it.
 - **Nothing is put back this way that the client does not hold.** Giving up on a delivery returns
   an item to the queue, and an action names an id rather than carrying the item there would be to
   place. That is `withdrawn`'s path, which has one.
@@ -689,8 +701,9 @@ is what makes an offline tag fire: the operation that drains is a tag, so the da
 template as it arrives and nothing has to look afterwards for tags that ought to have routed. Two
 consequences fall out and are accepted. A tag made offline **applies optimistically and may be
 refused on drain**, where the template turns out to be stale, which is a refusal the outbox already
-holds for a person; and the reservation it makes is not in the cache until some surface reads that
-item again, on **arrival is not observed**'s own terms below.
+holds for a person; and the reservation it makes reaches the cache with the pool's answer to the tag,
+which carries it *(amended 2026-09-28)*. Until the drain the optimistic copy is still work, as it
+would be for any tag.
 
 **`untag` is where a trigger tag is not ordinary** *(added 2026-09-07)*. A tag that filed the item
 cannot be removed while what it filed still stands, so `untag` may come back refused where no other
@@ -724,11 +737,12 @@ and the template it was made from added on the same terms.
 Without it the item stays in the feed drawn as though it had been nowhere until something happened
 to re-read it, which is exactly the row a person just acted on.
 
-**Arrival is not observed.** A record that answered pending and lands later leaves the pool's
-summary at `pending: 0` and the client's saying otherwise, until some surface reads that item again.
-The client neither polls nor is told: delivery is the host's work and nothing on the wire announces
-it. So a row can say a delivery is outstanding after it has arrived, and no row ever claims an
-arrival that did not happen — which is the direction to be wrong in.
+**Arrival is observed only while the client is watched** *(amended 2026-09-28)*. A record that
+answered pending and lands later leaves the pool's summary at `pending: 0` and the client's saying
+otherwise, until the item is read again. The client does not poll, but the action log does announce
+it: a watched client reads the item again on `routed` ([the action log](#the-action-log)). An
+unwatched one does not, so a row can still say a delivery is outstanding after it has arrived, and
+no row ever claims an arrival that did not happen — which is the direction to be wrong in.
 
 **The tags in use are a read cache, on the destinations' terms.** A client holds what
 `GET /v1/tags` last answered and completes from it, so completion costs nothing per keystroke and
@@ -1334,6 +1348,11 @@ that logic out of the one place it is meant to live.
   destination is.
 - A trigger tag added with the daemon down applies its template when the outbox drains, and one
   whose template has gone stale comes back as a refused operation the person is shown.
+- The copy held once that drain settles is not work: it carries the pending record, and a queue
+  drawn from the cache after a restart does not hold it.
+- A watched client takes a row off the queue when the log says a template fired, and reads again a
+  held item the log says was routed, cancelled or abandoned — except one with an operation still to
+  send.
 - Removing a trigger tag whose routing still stands comes back refused in the same way, saying that
   cancelling the routing is what takes the tag back.
 - An item routed from a surface says where it went on that surface's own row, without a further

@@ -34,6 +34,7 @@ import {
   processed,
   reading,
   rebuilt,
+  rerouted,
   sameFilter,
   settle,
   settledDestination,
@@ -189,6 +190,14 @@ export function createClient(config: ClientConfig): Client {
     api,
     applied: (since) => {
       state.update((current) => caughtUp(current, since));
+
+      // An operation still to send settles its item on its own answer, and a
+      // read now would overwrite the optimistic copy under it.
+      const current = state.get();
+      const unsent = undrained(current.outbox);
+      for (const id of rerouted(current, since)) {
+        if (!unsent.has(id)) void reread(id).catch(() => undefined);
+      }
     },
   });
 

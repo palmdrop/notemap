@@ -67,6 +67,7 @@ export async function tag(
     // A decision this template already made stands, so the tag is classification
     // and nothing more: it was spent on the copy that is already there, and
     // firing again would file a second one.
+    let answer = tagged;
     if (
       trigger?.firing.kind === "fires" &&
       (await alreadyApplied(tx, id, trigger.template.id)) === undefined
@@ -79,6 +80,8 @@ export async function tag(
         tag,
         trigger.template,
       );
+      // Read again, so the answer carries the reservation `addTag` came back without.
+      answer = (await tx.item(id)) ?? tagged;
     }
 
     await enqueueMirrorWrite(ports, tx, { kind: "item", item: id }, at);
@@ -90,7 +93,7 @@ export async function tag(
       detail: { tag },
     });
 
-    return ok(tagged);
+    return ok(answer);
   });
 }
 
