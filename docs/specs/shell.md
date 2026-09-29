@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-28
+**Last updated**: 2026-09-29
 **Shipped**:
+
+- 2026-09-29 — **The capture box answers from outside its field, and the way back keeps its place.**
+  With the box selected and the caret out of the field, `mod+⏎` commits it and `e` goes back into
+  the field beside `enter`. A row come back from processing is held where the queue's order puts
+  it, where it used to be drawn at the foot. Destinations, templates, pool settings and the tags in
+  use are read whenever the pool comes into reach with the door open, rather than once on start,
+  so a read refused before signing in no longer leaves the tag chooser offering nothing.
 
 - 2026-09-28 — **The tags a surface holds, and a filter by them.** A `tags ▾` control beside the
   order, opened by `f`, lists every tag with how many items on that surface carry it, trigger tags
@@ -588,12 +595,12 @@ keys are that row's then, and a caret in the field would swallow them.
 is selected at a time, the box or a row: anything in the box taking the focus selects it and lets
 go of the selected row, which slides out if it was held. **Nothing marks it selected**: the caret in
 the field says where the keys go, and a heavier rule said it twice. `esc` in the field leaves the field and keeps the box selected, so the keys
-reach it: `t` opens its tag chooser, `enter` goes back into the field, `j` goes down to the first
-row, and `esc` again lets go of it. `k` on the first row comes back up into the field. So the box
+reach it: `t` opens its tag chooser, `enter` or `e` goes back into the field, `mod+⏎` commits it,
+`j` goes down to the first row, and `esc` again lets go of it. `k` on the first row comes back up into the field. So the box
 is walked as the row above the first, and `esc` backs out of it as it backs out of everything else
 rather than going down into the list.
 
-**`mod+⏎` commits it**, from inside the field it is written in — the same chord that routes on the
+**`mod+⏎` commits it**, from inside the field it is written in or with the box selected — the same chord that routes on the
 process surface, and the one most editors commit on. `⏎` there is a new line, which prose wants,
 and so is `⇧⏎` *(amended 2026-09-18; `⇧⏎` used to commit, which is a line break nearly everywhere
 else)*.
@@ -970,7 +977,7 @@ more decision away, and `next →` is what moves on. The corner says what happen
 with the way to the capture it was about. **`esc` returns to the queue with the item still
 selected** — `?selected=<id>` on the queue's address, read once on arrival and taken off again —
 and a processed item comes back held on the queue until the selection leaves it
-([the row](#the-row)). From a field, the first `esc` leaves the field.
+([the row](#the-row)), where the queue's order puts it. From a field, the first `esc` leaves the field.
 
 **The keyboard on the surface**: `e` edit, `esc` back, `⌘/ctrl+⏎` route, `[` and `]` previous and
 next. Only `⌘/ctrl+⏎` fires while a field has the caret, the decision being finished there and
@@ -1494,8 +1501,9 @@ away, and not a mark on every line of a list meant to read as a timeline. Where 
 *the collapsed row's chooser*, read *the selected row's*; where it says *the composer*, read *the
 process surface*, whose `tags` section is the same chooser.
 
-The known names are the **tags in use**, read from `GET /v1/tags` when the shell starts and again
-whenever classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
+The known names are the **tags in use**, read from `GET /v1/tags` whenever the pool comes into
+reach with the door open — on start, on signing in, on coming back — and again whenever
+classification drains ([client.md](client.md#the-outbox)), and filtered locally as the
 person types. They are an offer and never a limit: a name that is on no list is written by typing
 it, and the chooser stays useful once the pool goes out of reach, which is the whole reason tagging
 sits on the collapsed row.
@@ -1999,8 +2007,8 @@ the pool holds: the heading is what makes the two-word term carry itself, so a p
 setting** exactly where they meet the control. Unavailable rather than guessing while the pool is
 out of reach, on Destinations' own terms: read but not changed while offline, drawn as unavailable
 where a cold client has nothing cached to show. A cold client draws a setting as unread rather than
-as on, never guessing from its own default. The shell reads pool settings when it starts, beside
-destinations and templates, and the section reads them again whenever it opens or the pool comes
+as on, never guessing from its own default. The shell reads pool settings, beside destinations,
+templates and the tags in use, whenever the pool comes into reach with the door open, and the section reads them again whenever it opens or the pool comes
 back into reach, so what it draws is the pool's current answer rather than whatever this device
 last heard. Choosing the option already chosen sends nothing.
 

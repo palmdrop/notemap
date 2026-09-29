@@ -12,17 +12,17 @@
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 
-- [ ] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
+- [x] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
 
 - [ ] Mobile view too cramped - show dates as heading lines, once for every day + month, sticky header, then just show time beside (or above?) the capture row
 
-- [ ] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
+- [x] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
 
 - [ ] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
 
 - [ ] feed, filter on routed and non-routed
 
-- [ ] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
+- [x] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
 
 - [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
 - [ ] stale and premature UI state

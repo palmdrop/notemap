@@ -805,6 +805,37 @@ test("arrives with the row named on its address selected, and takes the name off
   });
 });
 
+test("back from processing, a row the queue no longer holds is drawn where its order puts it", async () => {
+  const one = anItem("one", { createdAt: "2026-09-12T08:00:00.000Z" });
+  const two = anItem("two", {
+    createdAt: "2026-09-12T09:00:00.000Z",
+    routing: { records: 1, pending: 0, to: [], templates: [] },
+  });
+  const three = anItem("three", { createdAt: "2026-09-12T10:00:00.000Z" });
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: [one, three] });
+    if (route === "GET /v1/items/two") return json(200, two);
+    return json(200, { values: [] });
+  });
+  await client.item("two");
+  at.path = "/?selected=two";
+
+  render(Queue);
+  await screen.findByText("two");
+  await screen.findByText("three");
+
+  const [first, second, third] = ["one", "two", "three"].map((id) =>
+    screen.getByText(id),
+  );
+  expect(
+    first!.compareDocumentPosition(second!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    second!.compareDocumentPosition(third!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+});
+
 test("gives the capture field the caret when the queue is simply arrived at", async () => {
   pool(queued("one"));
 
@@ -969,6 +1000,35 @@ test("the capture box is walked as the row above the first", async () => {
   await fireEvent.keyDown(box, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "Enter" });
   expect(document.activeElement).toBe(box);
+});
+
+test("with the capture box selected, e goes back into the field and mod-enter commits it", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: [anItem("one")] });
+    }
+    if (route === "POST /v1/items") return json(201, anItem("fresh"));
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  const box = screen.getByLabelText("What to capture") as HTMLTextAreaElement;
+  box.focus();
+  await fireEvent.input(box, { target: { value: "a thought" } });
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  expect(document.activeElement).not.toBe(box);
+
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(document.activeElement).toBe(box);
+
+  await fireEvent.keyDown(box, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Enter", metaKey: true });
+  await vi.waitFor(() => {
+    expect(box.value).toBe("");
+  });
 });
 
 /** The editable shape publishes its own `close`, so `esc` leaves it before it leaves the selection. */
