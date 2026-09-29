@@ -6,6 +6,8 @@
 
 ## Shell — layout and interaction
 
+- [ ] "pending" should be a loading icon. Same goes for a lot of status words, they could be simple icons or loading indicators. Investigate.
+
 - [ ] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
 - [ ] statusbar should show indicators of pending actions, loaders, etc...
 - [ ] statusbar with statistics, online/offline status, outbox count, queue count, errors, expandable notice list, etc... 
