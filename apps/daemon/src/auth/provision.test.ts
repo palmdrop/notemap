@@ -17,6 +17,7 @@ import {
 import { createSqliteAuthStore } from "./store";
 import type { AuthStore } from "./store/types";
 import type { Auth } from "./types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const GIVEN = "correct horse battery staple";
 
@@ -32,7 +33,7 @@ function auth(): Auth {
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
 
   opened.push({ store, directory });
-  return createAuth(store, { clock: systemClock });
+  return createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING });
 }
 
 /** A file holding a secret, the way a mounted one arrives. */

@@ -19,6 +19,7 @@ import {
   UNFURL_TIMEOUT_MS,
 } from "../unfurl/limits";
 import type { Address, Fetched, PinnedFetch } from "../unfurl/types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const PUBLIC: Address = { address: "93.184.215.14", family: 4 };
 
@@ -447,7 +448,10 @@ describe("GET /v1/unfurl", () => {
     directories.push(directory);
     const auth = createAuth(
       createSqliteAuthStore({ file: join(directory, "auth.db") }),
-      { clock: { now: () => new Date().toISOString() as Timestamp } },
+      {
+        clock: { now: () => new Date().toISOString() as Timestamp },
+        hashing: CHEAP_HASHING,
+      },
     );
     await auth.setPassword("anton", "correct horse battery staple");
     const { unfurler, resolve } = web({ "example.org": [PUBLIC] }, {});

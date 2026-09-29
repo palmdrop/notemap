@@ -111,9 +111,13 @@ const handlers = {
   decode: async (hash: string) => decodeHash(hash),
   // Only ever upwards: a hash written under stronger parameters than the
   // current ones is left alone rather than weakened to match them.
-  needsRehash: (params: Record<string, unknown>) => {
+  needsRehash: (
+    params: Record<string, unknown>,
+    current: Record<string, unknown> = defaultParams,
+  ) => {
     const { N, r, p } = params as Params;
-    return N < defaultParams.N || r < defaultParams.r || p < defaultParams.p;
+    const wanted = current as Params;
+    return N < wanted.N || r < wanted.r || p < wanted.p;
   },
 } as Algorithm;
 

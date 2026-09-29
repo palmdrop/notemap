@@ -12,6 +12,7 @@ import type { Account } from "../config/load";
 import { openAccounts, systemClock } from "../ports";
 import { daemon, type Daemon } from "../testing/fixture";
 import type { AppEnv } from "../types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const NAME = "anton";
 const PASSWORD = "correct horse battery staple";
@@ -39,7 +40,10 @@ async function guarded(config: readonly Account[] = []): Promise<{
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
   stores.push({ store, directory });
 
-  const auth = createAuth(store, { clock: systemClock });
+  const auth = createAuth(store, {
+    clock: systemClock,
+    hashing: CHEAP_HASHING,
+  });
   await auth.setPassword(NAME, PASSWORD);
   const minted = await auth.mintToken("laptop");
 

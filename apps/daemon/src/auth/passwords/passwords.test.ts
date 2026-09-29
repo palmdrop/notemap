@@ -11,10 +11,9 @@ import {
 } from ".";
 import { UnreadableHash, UnusablePassword } from "./errors";
 import scrypt from "./scrypt";
+import { CHEAP_HASHING } from "../../testing/hashing";
 
 const PASSWORD = "correct horse battery staple";
-
-const CHEAP = { N: 1024, r: 8, p: 1, keylen: 32 };
 
 // A hash written down once, never regenerated. The encoded string is a stored
 // format: reordering its fields, changing the separator or switching to hex
@@ -78,7 +77,7 @@ describe("what a hashed password looks like", () => {
 
   it("carries the parameters it was given rather than the defaults", async () => {
     const [, keylen, N, r, p] = splitHash(
-      await hashPassword(PASSWORD, "scrypt", CHEAP),
+      await hashPassword(PASSWORD, "scrypt", CHEAP_HASHING),
     );
 
     expect({ keylen, N, r, p }).toEqual({
@@ -113,7 +112,7 @@ describe("verifying a password against a stored hash", () => {
   it("reads the parameters off the hash instead of using the current ones", async () => {
     // What keeps hashes written under older parameters verifiable after the
     // defaults are tuned.
-    const stored = await hashPassword(PASSWORD, "scrypt", CHEAP);
+    const stored = await hashPassword(PASSWORD, "scrypt", CHEAP_HASHING);
 
     expect(await verifyPassword(PASSWORD, stored)).toBe(true);
     expect(await verifyPassword("wrong", stored)).toBe(false);
@@ -243,7 +242,11 @@ describe("a password shorter than the minimum", () => {
    * its owner out with nothing said.
    */
   it("still opens the door where one is already stored", async () => {
-    const stored = await scrypt.hash("elevenchars", randomBytes(16), CHEAP);
+    const stored = await scrypt.hash(
+      "elevenchars",
+      randomBytes(16),
+      CHEAP_HASHING,
+    );
 
     expect(await verifyPassword("elevenchars", stored)).toBe(true);
     expect(await verifyPassword("elevenchar", stored)).toBe(false);
@@ -312,6 +315,15 @@ describe("whether a stored hash is behind this build", () => {
     const stored = await hashPassword(PASSWORD);
 
     expect(await needsRehash(weakened(stored, "131072$8$4"))).toBe(false);
+  });
+
+  it("measures against the parameters it is given, where it is given some", async () => {
+    const stored = await hashPassword(PASSWORD, "scrypt", CHEAP_HASHING);
+
+    expect(await needsRehash(stored, CHEAP_HASHING)).toBe(false);
+    expect(await needsRehash(weakened(stored, "512$8$1"), CHEAP_HASHING)).toBe(
+      true,
+    );
   });
 
   it("says yes to an algorithm this build no longer writes", async () => {

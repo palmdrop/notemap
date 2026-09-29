@@ -10,6 +10,7 @@ import { hashPassword } from "./passwords";
 import { createSqliteAuthStore } from "./store";
 import type { AuthStore } from "./store/types";
 import type { Auth } from "./types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const START = "2026-08-30T09:00:00.000Z";
 const NAME = "anton";
@@ -32,7 +33,7 @@ function auth(clock: Clock = frozenClock()): { auth: Auth; store: AuthStore } {
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
 
   opened.push({ store, directory });
-  return { auth: createAuth(store, { clock }), store };
+  return { auth: createAuth(store, { clock, hashing: CHEAP_HASHING }), store };
 }
 
 /** Signed in, which is what most of this is about. */
@@ -158,7 +159,7 @@ describe("a stored credential nobody can read", () => {
 describe("a password stored under weaker parameters", () => {
   /** What an older build wrote, and what this one should stop leaving in place. */
   const asAnOlderBuild = () =>
-    hashPassword(PASSWORD, "scrypt", { N: 16384, r: 8, p: 1, keylen: 64 });
+    hashPassword(PASSWORD, "scrypt", { ...CHEAP_HASHING, N: 512 });
 
   it("is rewritten when the password next proves itself", async () => {
     const opened = auth();
@@ -168,7 +169,17 @@ describe("a password stored under weaker parameters", () => {
     expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
 
     const now = (await opened.store.getCredential())?.passwordHash ?? "";
-    expect(now.split("$")[2]).toBe("65536");
+    expect(now.split("$")[2]).toBe(String(CHEAP_HASHING.N));
+  });
+
+  it("is left alone when it was written under what is hashed with now", async () => {
+    const opened = auth();
+    await opened.auth.setPassword(NAME, PASSWORD);
+    const before = (await opened.store.getCredential())?.passwordHash;
+
+    expect(await opened.auth.login(NAME, PASSWORD)).toBeDefined();
+
+    expect((await opened.store.getCredential())?.passwordHash).toBe(before);
   });
 
   it("keeps working while it is rewritten, and afterwards", async () => {
@@ -191,6 +202,22 @@ describe("a password stored under weaker parameters", () => {
     expect(
       await opened.auth.authenticate("session", opened.session.token),
     ).toBeDefined();
+  });
+});
+
+describe("what a password is hashed under", () => {
+  it("is scrypt's defaults when nothing else is asked for", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
+    const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+    opened.push({ store, directory });
+
+    await createAuth(store, { clock: frozenClock() }).setPassword(
+      NAME,
+      PASSWORD,
+    );
+
+    const stored = (await store.getCredential())?.passwordHash ?? "";
+    expect(stored.split("$")[2]).toBe("65536");
   });
 });
 

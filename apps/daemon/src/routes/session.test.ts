@@ -14,6 +14,7 @@ import type { CookieOptions } from "../auth/sessions/config";
 import type { Auth } from "../auth/types";
 import { daemon, type Daemon } from "../testing/fixture";
 import type { AppEnv } from "../types";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const NAME = "anton";
 const PASSWORD = "correct horse battery staple";
@@ -30,7 +31,7 @@ function authOver(): Auth {
   const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
 
   stores.push({ store, directory });
-  return createAuth(store, { clock: systemClock });
+  return createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING });
 }
 
 /** A daemon with a password set, which is the only state where the door is shut. */

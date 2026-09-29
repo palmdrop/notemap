@@ -3,6 +3,7 @@ import type { Clock } from "@notemap/core";
 import { silentLogger, type Logger } from "@notemap/log";
 import { UnreadableHash } from "./passwords/errors";
 import { hashPassword, needsRehash, verifyPassword } from "./passwords";
+import { DEFAULT_ALGORITHM } from "./passwords/config";
 import { sameSecretly } from "./secret";
 import { createSessions } from "./sessions";
 import type { AuthStore } from "./store/types";
@@ -12,14 +13,18 @@ import type { Auth } from "./types";
 type AuthParams = {
   clock: Clock;
   log?: Logger;
+  /** What a password is hashed under. The algorithm's own defaults when absent. */
+  hashing?: Record<string, unknown>;
 };
 
 export const createAuth = (
   store: AuthStore,
-  { clock, log = silentLogger() }: AuthParams,
+  { clock, log = silentLogger(), hashing }: AuthParams,
 ): Auth => {
   const sessions = createSessions(store, { clock });
   const tokens = createTokens(store, { clock, log });
+  const hash = (password: string) =>
+    hashPassword(password, DEFAULT_ALGORITHM, hashing);
 
   return {
     requiresCredentials: async () => {
@@ -49,7 +54,7 @@ export const createAuth = (
       };
     },
     setPassword: async (name, password) => {
-      const passwordHash = await hashPassword(password);
+      const passwordHash = await hash(password);
 
       await store.setCredential({
         name,
@@ -92,8 +97,8 @@ export const createAuth = (
 
       // The password is in hand exactly here, which is the only moment a hash
       // written under weaker parameters can be brought up to the current ones.
-      if (await needsRehash(credential.passwordHash)) {
-        await store.rehashCredential(await hashPassword(password));
+      if (await needsRehash(credential.passwordHash, hashing)) {
+        await store.rehashCredential(await hash(password));
       }
 
       const minted = await sessions.mint();

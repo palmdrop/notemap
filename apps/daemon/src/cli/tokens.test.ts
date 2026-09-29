@@ -5,10 +5,14 @@ import { createSqliteAuthStore } from "../auth/store";
 import { systemClock } from "../ports";
 import { listTokens, mintToken, revokeToken } from "./tokens";
 import { cleanup, configured, said } from "./testing";
+import { CHEAP_HASHING } from "../testing/hashing";
 
 const opened = async (file: string) => {
   const store = createSqliteAuthStore({ file });
-  return { auth: createAuth(store, { clock: systemClock }), store };
+  return {
+    auth: createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING }),
+    store,
+  };
 };
 
 /** Everything but the announcement, which goes to stderr so a pipe gets the token alone. */
