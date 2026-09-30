@@ -13,7 +13,7 @@
   import { notices } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
   import { reachable } from "$lib/reachable.svelte";
-  import { heldName, nameOf as templateOf } from "$lib/templates";
+  import { heldName } from "$lib/templates";
 
   import Counts from "./Counts.svelte";
   import FiringSegment from "./Firing.svelte";
@@ -115,7 +115,7 @@
 
       const raised = noticeOf(action, {
         nameOf,
-        templateOf,
+        templateOf: heldName,
         about: itemHref,
       });
       if (raised === undefined) continue;

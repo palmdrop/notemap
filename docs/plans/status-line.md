@@ -74,7 +74,7 @@ there. Stacked on `agent/abandoned-notice-keeps-its-reason` (#87).
 
 ### Phase 6 — verify and open
 
-- [ ] Typecheck, lint, `pnpm -r --silent test`, and `pnpm test:stack` (a new route and a client
+- [x] Typecheck, lint, `pnpm -r --silent test`, and `pnpm test:stack` (a new route and a client
       read).
 - [ ] PR against the fix branch.
 

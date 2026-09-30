@@ -341,3 +341,18 @@ test("an entry about no record touches no firing", () => {
     firingOf(anAction("work-failed", { work: "mirror-write" }), reading),
   ).toBeUndefined();
 });
+
+/** A template made on another device, or since this shell read them, is not held yet. */
+test("a landing from a template this shell does not hold names the destination", () => {
+  const said = noticeOf(
+    anAction("routed", {
+      record: "r1",
+      template: "t9",
+      firedByTag: true,
+      destination: "vault",
+    }),
+    { ...reading, templateOf: () => undefined },
+  );
+
+  expect(said?.what).toBe("routed · Vault");
+});

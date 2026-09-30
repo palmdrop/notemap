@@ -112,8 +112,8 @@ export function noticeOf(
   action: Action,
   said: {
     nameOf: (destination: string) => string;
-    /** A template's name, for the entries a fired one produces. */
-    templateOf?: (template: string) => string;
+    /** A template's name where it is known, for the entries a fired one produces. */
+    templateOf?: (template: string) => string | undefined;
     /** Where the whole of it can be read. */
     about: (item: string) => string;
   },
