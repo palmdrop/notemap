@@ -15,6 +15,12 @@ export type Sending = {
 /** `revert` is for an outcome that took a different shape from the one drawn. */
 export type Settlement = (state: ClientState, revert: Undo) => ClientState;
 
+/** A settlement, and what may be sent only once this operation has landed. */
+export type Landed = {
+  readonly settle: Settlement;
+  readonly next: readonly Operation[];
+};
+
 export function replacing(item: Item): Settlement {
   return (state) => settle(state, item);
 }
@@ -39,5 +45,8 @@ export type Handler<K extends OperationKind> = {
     operation: Of<K>,
     at: string,
   ) => Applied;
-  readonly send?: (sending: Sending, operation: Of<K>) => Promise<Settlement>;
+  readonly send?: (
+    sending: Sending,
+    operation: Of<K>,
+  ) => Promise<Settlement | Landed>;
 };

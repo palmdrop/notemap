@@ -414,8 +414,17 @@ export interface Client {
    * Changes what an item says. Whether that lands as an amendment or a revision
    * is the pool's call, and the client reconciles to whichever it recorded — so
    * this answers when the operation is applied, not when the shape is known.
+   *
+   * `tags` are drawn at once and sent only once the edit has landed, to the
+   * item or the revision that then says these words: a trigger tag sent beside
+   * the edit could file the words it replaces. A refused edit takes them with it.
    */
-  edit(item: ItemId, payload: Payload, source: string): Promise<void>;
+  edit(
+    item: ItemId,
+    payload: Payload,
+    source: string,
+    tags?: readonly string[],
+  ): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;
   /** The payload with this picture in the shell's one slot, or with that slot emptied. */

@@ -13,6 +13,7 @@
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { client } from "$lib/client";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
   import {
     effectiveOf,
     fieldsOf,
@@ -37,7 +38,6 @@
   } = $props();
 
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
-  const NAMESPACE = "route/";
 
   const FOLDERS = [
     { name: "create", note: "make it if missing" },
@@ -48,7 +48,7 @@
   // Where the form starts, not what it holds: nothing changes under a typist.
   let name = $state(untrack(() => editing?.name ?? ""));
   let tag = $state(
-    untrack(() => editing?.triggerTag?.slice(NAMESPACE.length) ?? ""),
+    untrack(() => editing?.triggerTag?.slice(TRIGGER_NAMESPACE.length) ?? ""),
   );
   let destination = $state(
     untrack(() => editing?.destination ?? destinations[0]?.id ?? ""),
@@ -161,7 +161,8 @@
       // A capability with no folders has nothing to establish, and a mode left
       // over from the one chosen before would be refused as an argument.
       folder: folders ? folder : ("create" as const),
-      triggerTag: tag.trim() === "" ? undefined : `${NAMESPACE}${tag.trim()}`,
+      triggerTag:
+        tag.trim() === "" ? undefined : `${TRIGGER_NAMESPACE}${tag.trim()}`,
     };
 
     try {
@@ -208,7 +209,7 @@
 
   <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
   <div class="flex items-baseline border-b border-ink">
-    <span aria-hidden="true">{NAMESPACE}</span>
+    <span aria-hidden="true">{TRIGGER_NAMESPACE}</span>
     <input
       bind:value={tag}
       aria-label="trigger tag"

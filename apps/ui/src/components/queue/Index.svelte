@@ -9,6 +9,7 @@
   import { doubled, pickable } from "$lib/pick";
   import { slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * One line per item, for scanning rather than reading: the stamp, the first
@@ -42,8 +43,6 @@
   export function reveal(id: string): void {
     stamps[id]?.scrollIntoView({ block: "nearest" });
   }
-
-  const NAMESPACE = "route/";
 
   const lines = $derived(
     (byDay ? headed(items) : plain(items)).map((one, at, all) => {
@@ -123,8 +122,8 @@
           <span class="inline-flex gap-x-[1ch]">
             {#each line.tags as tag (tag.name)}
               {@const said =
-                tag.fires && tag.name.startsWith(NAMESPACE)
-                  ? tag.name.slice(NAMESPACE.length)
+                tag.fires && tag.name.startsWith(TRIGGER_NAMESPACE)
+                  ? tag.name.slice(TRIGGER_NAMESPACE.length)
                   : tag.name}
               <span
                 data-word={said}

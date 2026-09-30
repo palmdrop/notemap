@@ -5,6 +5,7 @@
   import { client } from "$lib/client";
   import { tagged } from "$lib/firing";
   import { offerable, triggeredBy } from "$lib/templates";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   import type { Editing } from "./editing.svelte";
 
@@ -26,8 +27,6 @@
   } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
-
-  const NAMESPACE = "route/";
 
   const carried = $derived((item.tags ?? []).map((tag) => tag.name));
   const waiting = $derived(editing?.waiting ?? []);
@@ -51,7 +50,7 @@
 
   /** A trigger tag files the item, so one taken mid-edit files what the save says. */
   function take(name: string): void {
-    if (editing !== undefined && name.startsWith(NAMESPACE)) {
+    if (editing !== undefined && name.startsWith(TRIGGER_NAMESPACE)) {
       editing.wait(name);
     } else {
       void tagged(item.id, name);

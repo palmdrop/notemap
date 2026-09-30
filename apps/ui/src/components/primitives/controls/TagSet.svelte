@@ -4,6 +4,7 @@
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { completed, narrowed } from "$lib/candidate-list";
   import { grow, slide, unfold, widen } from "$lib/motion";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
@@ -165,10 +166,12 @@
   const TRIGGER =
     "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
 
-  const NAMESPACE = "route/";
+  const WAITING = "files the item once the edit is saved";
 
   function trigger(name: string): string {
-    return name.startsWith(NAMESPACE) ? name.slice(NAMESPACE.length) : name;
+    return name.startsWith(TRIGGER_NAMESPACE)
+      ? name.slice(TRIGGER_NAMESPACE.length)
+      : name;
   }
 
   function take(name: string): void {
@@ -274,10 +277,16 @@
               chosen = undefined;
             }
           }}
-          aria-label={fired === undefined
+          aria-label={fired === undefined && !pending
             ? undefined
-            : `${name}, routes to ${fired}`}
-          title={pending ? "files the item once the edit is saved" : undefined}
+            : [
+                name,
+                fired === undefined ? undefined : `routes to ${fired}`,
+                pending ? WAITING : undefined,
+              ]
+                .filter((part) => part !== undefined)
+                .join(", ")}
+          title={pending ? WAITING : undefined}
           class="{chosen === name
             ? 'font-semibold'
             : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered

@@ -1320,8 +1320,15 @@ async function editing(text: string) {
 }
 
 /** Sent at once, a trigger tag would file the words from before the edit. */
+/** The queue holding `one`, answering its edit as the pool amending it. */
+function amending(request: Request) {
+  return routeOf(request) === "POST /v1/items/one/edit"
+    ? json(200, { kind: "amended", item: anItem("one") })
+    : queued("one")(request);
+}
+
 test("a trigger tag taken while a row is edited waits, and goes after the save", async () => {
-  pool(queued("one"));
+  pool(amending);
 
   render(Queue);
   await screen.findByText("one");
@@ -1366,9 +1373,73 @@ test("an edit let go takes a waiting trigger tag with it, and not an ordinary on
   await tick();
 
   expect(waitingTag()).toBeNull();
+  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
   expect(
     asked().filter((request) => request === "POST /v1/items/one/tag"),
   ).toHaveLength(1);
+});
+
+/** Opens the first row's edit and leaves the field as it was. */
+async function editingUnchanged() {
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  (await screen.findByLabelText("What it says")).blur();
+}
+
+test("a waiting trigger tag alone asks before the edit is left, and saving it sends no edit", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await editingUnchanged();
+  await tagWith("route/research");
+  await tick();
+
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await tick();
+  expect(dialog()).not.toBeNull();
+
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "save" }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(asked()).not.toContain("POST /v1/items/one/edit");
+});
+
+test("a waiting trigger tag comes off unsent, and the edit's own revert takes the rest", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await editingUnchanged();
+  await tagWith("route/one");
+  await tagWith("route/two");
+  await tick();
+  expect(
+    screen.getAllByTitle("files the item once the edit is saved"),
+  ).toHaveLength(2);
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^route\/one, files the item/ }),
+  );
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove route/one" }),
+  );
+  await tick();
+  expect(
+    screen.getAllByTitle("files the item once the edit is saved"),
+  ).toHaveLength(1);
+
+  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  await tick();
+  expect(waitingTag()).toBeNull();
+  expect(screen.queryByLabelText("What it says")).not.toBeNull();
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
 });
 
 /** Local, so the day each capture falls on is the day the shell draws it under. */

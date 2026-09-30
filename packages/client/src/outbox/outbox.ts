@@ -4,7 +4,7 @@ import type { Writable } from "../observable/observable";
 import type { ClientStore } from "#ports/store";
 import type { Undo } from "#state/applied";
 import type { ClientState } from "#state/state";
-import type { Settlement } from "./handler";
+import type { Landed } from "./handler";
 import {
   attemptable,
   type Operation,
@@ -25,7 +25,7 @@ export type Outbox = {
 export type OutboxDeps = {
   readonly state: Writable<ClientState>;
   readonly store: ClientStore;
-  readonly send: (operation: Operation) => Promise<Settlement>;
+  readonly send: (operation: Operation) => Promise<Landed>;
   /**
    * What a refusal is reported with where the operation came out of the store
    * and has no reversal to run.
@@ -223,13 +223,15 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     hold(leased);
 
     try {
-      const settlement = await deps.send(entry.operation);
+      const landed = await deps.send(entry.operation);
       const revert = undos.get(entry.id) ?? ((state: ClientState) => state);
 
       // Dropped before the settlement, so the emission that draws the pool's
       // answer is the one that stops drawing bytes released with it.
       await drop(entry.id);
-      deps.state.update((state) => settlement(state, revert));
+      deps.state.update((state) => landed.settle(state, revert));
+      // After the settlement, so what they draw lands on the copy it left.
+      for (const next of landed.next) await enqueue(next);
     } catch (error) {
       // A door that is shut parks the entry exactly as silence does. Marking it
       // refused would be terminal, and a session that lapsed while the shell was

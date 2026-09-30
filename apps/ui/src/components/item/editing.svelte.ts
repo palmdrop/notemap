@@ -2,7 +2,7 @@ import type { Item } from "@notemap/client";
 
 import { PICTURE, TYPED } from "$lib/channels";
 import { client } from "$lib/client";
-import { tagged } from "$lib/firing";
+import { sayItFired } from "$lib/firing";
 import { leave } from "$lib/leaving.svelte";
 
 type Held = {
@@ -18,8 +18,9 @@ type Held = {
  * in place of its actions. Nothing it holds outlives it; closing it with
  * changes asks first.
  *
- * A trigger tag taken meanwhile waits here and is sent after the save: sent at
- * once, it would file the words from before the edit.
+ * A trigger tag taken meanwhile waits here and goes with the save, which sends
+ * it only once the edit has landed: sent at once, it would file the words from
+ * before the edit.
  */
 export class Editing {
   text = $state("");
@@ -45,11 +46,12 @@ export class Editing {
 
   /** Whether it holds anything the item does not say, a picture on its way included. */
   get changed(): boolean {
+    return this.busy || this.waiting.length > 0 || this.#rewritten;
+  }
+
+  get #rewritten(): boolean {
     return (
-      this.busy ||
-      this.waiting.length > 0 ||
-      this.text !== this.#says ||
-      this.picture?.asset !== this.#carries?.asset
+      this.text !== this.#says || this.picture?.asset !== this.#carries?.asset
     );
   }
 
@@ -117,11 +119,12 @@ export class Editing {
     const channel = this.picture === null ? TYPED : PICTURE;
     const id = this.item.id;
     const waiting = this.waiting;
+    const rewritten = this.#rewritten;
     this.#close();
-    // Enqueued behind the edit, so the pool has the new words before anything files them.
-    void client
-      .edit(id, payload, channel)
-      .then(() => Promise.all(waiting.map((tag) => tagged(id, tag))));
+
+    if (rewritten) await client.edit(id, payload, channel, waiting);
+    else for (const tag of waiting) await client.tag(id, tag);
+    for (const tag of waiting) void sayItFired(id, tag);
   }
 }
 
