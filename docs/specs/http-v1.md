@@ -855,10 +855,13 @@ when it last captured. It is how a **relay** left running is seen to still be ru
 - **The client does not say which it wants, and the pool decides** — an in-place **amendment**
   while the item is unprocessed, an appended **revision** once it is routed, archived or revised
   ([core.md](core.md#editing),
-  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A client can usually predict
-  which it will get, everything the seal derives from riding on the item it already holds, but
-  another client may have routed that item since its last read. So the request carries no intent to
-  honour, and the outcome is read off the answer — which is what
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A routed item whose only
+  records are reservations nothing has tried yet, such as a trigger tag's inside its window, is
+  still amended *(amended 2026-09-30,
+  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))*. A client
+  cannot always tell which it will get from the item it holds: another client may have routed it
+  since its last read, and whether a reservation has been tried is the delivery's state rather
+  than the item's. So the request carries no intent to honour, and the outcome is read off the answer — which is what
   [client.md](client.md#editing-and-the-hand-over-seal) already told a client to do, and which
   keeps an edit made against a stale view a quiet revision rather than a refusal a person has to
   clear.
@@ -2067,6 +2070,8 @@ remains the interop surface; `/docs` is a convenience over it.
 - `POST /v1/items/{id}/tag` with a trigger tag answers the item carrying it and leaves the item
   holding one pending record, with nothing yet handed to the destination. The answer's `routing`
   already counts that record as pending.
+- `POST /v1/captures` carrying a trigger tag answers `201` with an item whose `routing` already
+  counts the record the tag made as pending.
 - The same call where the template cannot route is `422 trigger-refused`, and afterwards the item
   carries neither the tag nor a record. `POST /v1/items/{id}/untag` can never answer that code.
 - `POST /v1/items/{id}/untag` naming a trigger tag whose record still stands is

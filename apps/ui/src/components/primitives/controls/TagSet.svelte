@@ -4,6 +4,7 @@
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { completed, narrowed } from "$lib/candidate-list";
   import { grow, slide, unfold, widen } from "$lib/motion";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
@@ -21,6 +22,7 @@
     offered = [],
     fires,
     held,
+    waiting,
     marked,
     addable = true,
     label = "Add a tag",
@@ -42,6 +44,8 @@
      * off is cancelling the routing rather than pressing the tag.
      */
     held?: (name: string) => boolean;
+    /** A tag this answers true for is not on the item yet, and is drawn grey until it is. */
+    waiting?: (name: string) => boolean;
     /** A carried tag this answers true for is underlined: the surface is filtered by it. */
     marked?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
@@ -162,10 +166,12 @@
   const TRIGGER =
     "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
 
-  const NAMESPACE = "route/";
+  const WAITING = "files the item once the edit is saved";
 
   function trigger(name: string): string {
-    return name.startsWith(NAMESPACE) ? name.slice(NAMESPACE.length) : name;
+    return name.startsWith(TRIGGER_NAMESPACE)
+      ? name.slice(TRIGGER_NAMESPACE.length)
+      : name;
   }
 
   function take(name: string): void {
@@ -241,6 +247,7 @@
   {@const fired = fires?.(name)}
   {@const inert = held?.(name) === true}
   {@const filtered = marked?.(name) === true}
+  {@const pending = waiting?.(name) === true}
   <span
     class="whitespace-nowrap"
     data-marked={filtered ? "" : undefined}
@@ -270,14 +277,21 @@
               chosen = undefined;
             }
           }}
-          aria-label={fired === undefined
+          aria-label={fired === undefined && !pending
             ? undefined
-            : `${name}, routes to ${fired}`}
+            : [
+                name,
+                fired === undefined ? undefined : `routes to ${fired}`,
+                pending ? WAITING : undefined,
+              ]
+                .filter((part) => part !== undefined)
+                .join(", ")}
+          title={pending ? WAITING : undefined}
           class="{chosen === name
             ? 'font-semibold'
             : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
             ? 'underline'
-            : ''}"
+            : ''} {pending ? 'text-inert' : ''}"
         >
           {@render said(fired === undefined ? name : trigger(name))}
         </button>{#if chosen === name}<button

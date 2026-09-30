@@ -408,6 +408,12 @@ export interface PoolTx extends PoolReads {
   deleteDestination(id: DestinationId): Promise<void>;
 
   withdrawWork(subject: JobSubject): Promise<WorkWithdrawal>;
+  /**
+   * Whether a reservation's delivery is still waiting for its first attempt:
+   * never claimed, never tried. Read under the transaction's write lock, so a
+   * claim cannot land between the answer and what the caller writes on it.
+   */
+  deliveryUntried(record: RoutingRecordId): Promise<boolean>;
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;
@@ -471,6 +477,7 @@ export interface WorkQueue {
     lease: LeaseId,
     until: Timestamp,
   ): Promise<Result<Lease, LeaseRefusal>>;
+  /** Leaves the job as though never claimed, which `deliveryUntried` reads. */
   releaseLease(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
   abandonedWork(
     page: Page<AbandonedPosition>,

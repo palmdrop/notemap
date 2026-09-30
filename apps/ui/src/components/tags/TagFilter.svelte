@@ -5,6 +5,7 @@
   import { client } from "$lib/client";
   import { narrowed } from "$lib/candidate-list";
   import { triggeredBy } from "$lib/templates";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * The tags a surface's items carry, counted for this surface, taken into the
@@ -24,7 +25,6 @@
   } = $props();
 
   const id = $props.id();
-  const NAMESPACE = "route/";
   const TRIGGER =
     "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
 
@@ -125,8 +125,8 @@
   }
 
   function said(one: Line): string {
-    return one.template !== undefined && one.name.startsWith(NAMESPACE)
-      ? one.name.slice(NAMESPACE.length)
+    return one.template !== undefined && one.name.startsWith(TRIGGER_NAMESPACE)
+      ? one.name.slice(TRIGGER_NAMESPACE.length)
       : one.name;
   }
 </script>

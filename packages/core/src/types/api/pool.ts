@@ -376,6 +376,12 @@ export interface WorkApi {
     outcome: WorkOutcome,
   ): Promise<Result<void, CompletionRefusal>>;
   extend(lease: LeaseId, by: Duration): Promise<Result<Lease, LeaseRefusal>>;
+  /**
+   * Hands the job back as though never claimed. A delivery's lease is released
+   * only where nothing was asked for under it: a delivery nobody has tried
+   * leaves its item amendable, so releasing one that was read would let an
+   * edit change words already on their way.
+   */
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 
   /** Everything core has stopped retrying, of every kind, in one list. */

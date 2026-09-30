@@ -1,7 +1,8 @@
 # 21. An item is editable until it is processed
 
 **Date**: 2026-08-24
-**Status**: Accepted
+**Status**: Accepted, sealing clause amended by
+[ADR 53](0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)
 **Deciders**: palmdrop
 
 ---

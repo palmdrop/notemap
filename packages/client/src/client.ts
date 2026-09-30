@@ -323,12 +323,12 @@ export function createClient(config: ClientConfig): Client {
     released: release,
     report,
     send: async (operation) => {
-      const settlement = await sendOperation(
+      const landed = await sendOperation(
         { api, bytes: (asset) => store.readBlob(asset) },
         operation,
       );
       classified ||= operation.kind === "tag" || operation.kind === "untag";
-      return settlement;
+      return landed;
     },
     now,
     mint: uuidv7,
@@ -508,13 +508,14 @@ export function createClient(config: ClientConfig): Client {
     tag: (item, tag) => mutate({ kind: "tag", item, tag }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
 
-    edit: (item, payload, source) =>
+    edit: (item, payload, source, tags = []) =>
       mutate({
         kind: "edit",
         item,
         // Minted here and carried on the operation, so every retry of this edit
         // claims the same identity and the pool answers one revision.
         envelope: { source, sourceItemId: uuidv7(), payload },
+        ...(tags.length === 0 ? {} : { tags }),
       }),
 
     /** What an edit starts from: the payload as it stands, with new words in it. */

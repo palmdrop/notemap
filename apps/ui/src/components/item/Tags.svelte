@@ -3,8 +3,11 @@
 
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
-  import { sayItFired } from "$lib/firing";
+  import { tagged } from "$lib/firing";
   import { offerable, triggeredBy } from "$lib/templates";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
+
+  import type { Editing } from "./editing.svelte";
 
   /** `addable` is the selected row's: a `+` on every row is a `+` nobody reads. */
   let {
@@ -12,17 +15,25 @@
     filter = [],
     addable = false,
     stacked = true,
+    editing,
   }: {
     item: Item;
     filter?: readonly string[];
     addable?: boolean;
     /** One to a line on a narrow screen, as a rail holds them; a line of their own does not. */
     stacked?: boolean;
+    /** Open where the capture is being edited, which holds a trigger tag until the save. */
+    editing?: Editing;
   } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
 
-  const names = $derived((item.tags ?? []).map((tag) => tag.name));
+  const carried = $derived((item.tags ?? []).map((tag) => tag.name));
+  const waiting = $derived(editing?.waiting ?? []);
+  const names = $derived([
+    ...carried,
+    ...waiting.filter((name) => !carried.includes(name)),
+  ]);
 
   const inUse = client.tags.inUse;
   const templates = client.templates.all;
@@ -37,10 +48,18 @@
     set?.add();
   }
 
-  /** A trigger tag files the item, so what it did is said as soon as it is known. */
-  async function tagged(id: string, name: string): Promise<void> {
-    await client.tag(id, name);
-    await sayItFired(id, name);
+  /** A trigger tag files the item, so one taken mid-edit files what the save says. */
+  function take(name: string): void {
+    if (editing !== undefined && name.startsWith(TRIGGER_NAMESPACE)) {
+      editing.wait(name);
+    } else {
+      void tagged(item.id, name);
+    }
+  }
+
+  function drop(name: string): void {
+    if (waiting.includes(name)) editing?.unwait(name);
+    else void client.untag(item.id, name);
   }
 </script>
 
@@ -63,7 +82,8 @@
         (item.routing?.templates ?? []).includes(template.id)
       );
     }}
-    onadd={(name) => void tagged(item.id, name)}
-    onremove={(name) => void client.untag(item.id, name)}
+    waiting={(name) => waiting.includes(name)}
+    onadd={take}
+    onremove={drop}
   />
 </div>

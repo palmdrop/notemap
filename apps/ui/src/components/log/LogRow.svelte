@@ -11,6 +11,7 @@
   import { kindWord } from "$lib/kinds";
   import { following, slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
+  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   import Detail from "./Detail.svelte";
   import Says from "./Says.svelte";
@@ -49,12 +50,10 @@
   const fact = $derived(factOf(action.kind, action.detail, naming));
   const pairs = $derived(known(action.kind) ? [] : flattened(action.detail));
 
-  const NAMESPACE = "route/";
-
   /** A trigger tag reads as the trigger it is, as it does on a row. */
   const trigger = $derived(
-    fact?.trigger === true && fact.said.startsWith(NAMESPACE)
-      ? fact.said.slice(NAMESPACE.length)
+    fact?.trigger === true && fact.said.startsWith(TRIGGER_NAMESPACE)
+      ? fact.said.slice(TRIGGER_NAMESPACE.length)
       : undefined,
   );
 

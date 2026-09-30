@@ -39,7 +39,7 @@ _Avoid_: note, memo, entry, card
 **Capture**:
 The original payload of an item exactly as it entered, plus the act of it entering. Editable in
 place while its item is unprocessed, and fixed once it is: what left the pool is what the pool
-keeps.
+keeps. It is fixed when its item is **sealed**, which is nearly always the same moment.
 _Avoid_: original, raw note
 
 **Draft**:
@@ -92,7 +92,7 @@ _Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into
 query
 
 **Revision**:
-An ordinary capture, made by editing a processed item, carrying its own capture time, source and
+An ordinary capture, made by editing a sealed item, carrying its own capture time, source and
 id plus a link to what it was made from. The link is a trace, not a replacement: the item it came
 from was delivered or archived and stays exactly as it was. One item may be revised more than once,
 and the revisions are independent of each other.
@@ -288,11 +288,20 @@ Said of an item that has been routed, archived or revised. It is the *decision* 
 item, so a routing record still pending delivery counts, and an item whose delivery is abandoned
 resurfaces in the queue. Marking an item processed by hand is routing whose destination is the
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
-nothing. Processed is also what fixes a capture: an unprocessed item is edited in place, a processed
-one is revised.
+nothing. Every **sealed** item is processed, and nearly every processed one is sealed.
 _Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
 it is what the button that ends the `manual` step says, a verb beside `route` rather than a word for
 what an item now is.
+
+**Sealed**:
+Said of an item whose capture can no longer be edited in place, so an edit of it makes a
+**revision**. An item is sealed when it is archived, revised, or holds a routing record other than
+an **untried reservation**: one still pending whose delivery has never been claimed or attempted,
+which in practice is a trigger tag's inside its window. So an item whose only routing is untried
+reservations is processed and not sealed, and an edit of it is what its delivery will carry. The
+client's **hand-over seal** is a different and earlier thing: a capture the client has sent and not
+heard back about, which it may no longer change as a draft.
+_Avoid_: frozen, locked, immutable as a name for the state
 
 ### Leaving
 

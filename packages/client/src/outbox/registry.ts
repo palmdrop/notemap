@@ -2,7 +2,7 @@ import type { ItemId } from "#api/types";
 import { Unencodable } from "../errors";
 import type { Applied } from "#state/applied";
 import type { ClientState } from "#state/state";
-import type { Handler, Sending, Settlement } from "./handler";
+import type { Handler, Landed, Sending } from "./handler";
 import { archive } from "./kinds/archive";
 import { capture } from "./kinds/capture";
 import { acceptSuggestion, rejectSuggestion } from "./kinds/deferred";
@@ -61,14 +61,15 @@ export function applyOperation(
 
 /**
  * Sends one operation and answers how the pool's reply replaces the guess the
- * client drew.
+ * client drew, and what it leaves to be sent next.
  */
 export async function sendOperation(
   sending: Sending,
   operation: Operation,
-): Promise<Settlement> {
+): Promise<Landed> {
   const send = handlerFor(operation).send;
   if (send === undefined) throw new Unencodable(operation.kind);
 
-  return send(sending, operation);
+  const sent = await send(sending, operation);
+  return typeof sent === "function" ? { settle: sent, next: [] } : sent;
 }

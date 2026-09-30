@@ -12,7 +12,7 @@ import { writable, type Writable } from "../observable/observable";
 import { cached, emptyState, withIds, type ClientState } from "#state/state";
 import { until } from "#testing/observing";
 import { anItem, stoppedClock } from "#testing/pool";
-import { replacing, type Settlement } from "./handler";
+import { replacing, type Landed, type Settlement } from "./handler";
 import type { ClientStore } from "#ports/store";
 import type { Operation } from "./operations";
 import { createOutbox } from "./outbox";
@@ -75,10 +75,10 @@ function engineOver(
     report: () => undefined,
     send: (operation) => {
       sent.push(operation);
-      return new Promise<Settlement>((resolve, reject) => {
+      return new Promise<Landed>((resolve, reject) => {
         waiting.push((outcome) =>
           outcome.error === undefined
-            ? resolve(answering(outcome))
+            ? resolve({ settle: answering(outcome), next: [] })
             : reject(outcome.error),
         );
       });

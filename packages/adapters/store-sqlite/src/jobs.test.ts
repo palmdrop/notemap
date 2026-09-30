@@ -501,6 +501,50 @@ describe("work about a routing record", () => {
     );
     expect(await claim(p, { kinds: ["delivery"] })).toEqual([]);
   });
+
+  it("is untried until somebody claims it, and after a lease let go unattempted", async () => {
+    const { pool: p, reservation } = await reservedAndOwed();
+    const untried = () =>
+      p.transaction((tx) => tx.deliveryUntried(reservation.id));
+
+    expect(await untried()).toBe(true);
+
+    const [lease] = await claim(p, { kinds: ["delivery"] });
+    expect(await untried()).toBe(false);
+
+    await p.releaseLease(lease?.id ?? ("none" as LeaseId));
+    expect(await untried()).toBe(true);
+  });
+
+  it("is tried for good once an attempt has been resolved", async () => {
+    const { pool: p, reservation } = await reservedAndOwed();
+    const [lease] = await claim(p, { kinds: ["delivery"] });
+    if (lease === undefined) throw new Error("expected a lease");
+
+    await p.transaction((tx) =>
+      tx.resolveJob(lease.id, {
+        kind: "retry",
+        attempt: 1,
+        nextAttemptAt: at("2026-08-03T10:01:00.000Z"),
+        failure: { code: "unreachable", detail: "ECONNREFUSED" },
+      }),
+    );
+
+    expect(
+      await p.transaction((tx) => tx.deliveryUntried(reservation.id)),
+    ).toBe(false);
+  });
+
+  it("is not untried where no work is left for it at all", async () => {
+    const { pool: p, reservation } = await reservedAndOwed();
+    await p.transaction((tx) =>
+      tx.withdrawWork({ kind: "routing-record", record: reservation.id }),
+    );
+
+    expect(
+      await p.transaction((tx) => tx.deliveryUntried(reservation.id)),
+    ).toBe(false);
+  });
 });
 
 describe("backoff and abandonment", () => {

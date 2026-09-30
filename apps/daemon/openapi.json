@@ -4515,7 +4515,7 @@
     "/v1/items/{id}/edit": {
       "post": {
         "summary": "Edit an item's content",
-        "description": "Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is unprocessed, an appended **revision** once it has been routed, archived or revised. The client does not say which it wants and may hold a stale view of the item, so the outcome is read off the answer. The body is an envelope, and a revision is matched for replay on its `(source, sourceItemId)` exactly as a capture is.",
+        "description": "Changes what the capture says. The pool decides the shape: an in-place **amendment** while the item is unprocessed, or while all that routed it is a reservation whose delivery nothing has tried yet; an appended **revision** once it has been archived or revised, or holds any other routing record. The client does not say which it wants and cannot always tell from the item, so the outcome is read off the answer. The body is an envelope, and a revision is matched for replay on its `(source, sourceItemId)` exactly as a capture is.",
         "parameters": [
           {
             "schema": {

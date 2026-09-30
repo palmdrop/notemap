@@ -20,6 +20,8 @@ export type Operation =
       readonly item: ItemId;
       /** Minted once with the operation: reusing it is what makes a retry one revision. */
       readonly envelope: EditEnvelope;
+      /** Sent only once the edit has landed, to whichever item then says its words. */
+      readonly tags?: readonly string[];
     }
   | { readonly kind: "tag"; readonly item: ItemId; readonly tag: string }
   | { readonly kind: "untag"; readonly item: ItemId; readonly tag: string }

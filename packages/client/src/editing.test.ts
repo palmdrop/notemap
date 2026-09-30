@@ -299,6 +299,102 @@ describe("amend versus revise", () => {
   });
 });
 
+describe("tags that wait for the edit", () => {
+  const tagged = (id: string) => ({
+    ...anItem(id),
+    payload: payload("edited"),
+    tags: [
+      {
+        name: "route/research",
+        by: { kind: "person" },
+        addedAt: "2026-08-17T12:00:00.000Z",
+      },
+    ],
+  });
+  const names = (list: ListState) =>
+    list.items.map((item) => (item.tags ?? []).map((tag) => tag.name));
+
+  it("draws them at once and sends them only once the edit has landed", async () => {
+    const { client, transport } = await overOne((request) =>
+      routeOf(request) === "POST /v1/items/one/edit"
+        ? json(200, {
+            kind: "amended",
+            item: { ...anItem("one"), payload: payload("edited") },
+          })
+        : json(200, tagged("one")),
+    );
+
+    await client.edit("one", payload("edited"), TYPED, ["route/research"]);
+    expect(names(read(client.queue))).toEqual([["route/research"]]);
+
+    await client.drain();
+
+    const sent = transport.sent.map(routeOf);
+    expect(sent.indexOf("POST /v1/items/one/edit")).toBeGreaterThan(-1);
+    expect(sent.indexOf("POST /v1/items/one/tag")).toBeGreaterThan(
+      sent.indexOf("POST /v1/items/one/edit"),
+    );
+    expect(read(client.outbox)).toEqual([]);
+  });
+
+  it("sends them to the revision where the pool made one, which is what says the words", async () => {
+    const revision: Item = {
+      ...anItem("two"),
+      payload: payload("edited"),
+      revisionOf: "one",
+    };
+    const { client, transport } = await overOne((request) =>
+      routeOf(request) === "POST /v1/items/one/edit"
+        ? json(200, { kind: "revised", revision, revisionOf: "one" })
+        : routeOf(request) === "POST /v1/items/two/tag"
+          ? json(200, { ...tagged("two"), revisionOf: "one" })
+          : json(200, { ...anItem("one"), revisedInto: ["two"] }),
+    );
+
+    await client.edit("one", payload("edited"), TYPED, ["route/research"]);
+    await client.drain();
+
+    const sent = transport.sent.map(routeOf);
+    expect(sent).toContain("POST /v1/items/two/tag");
+    expect(sent).not.toContain("POST /v1/items/one/tag");
+    const { item: original } = await client.item("one");
+    expect(original?.tags ?? []).toEqual([]);
+  });
+
+  it("goes with a refused edit, and is never sent", async () => {
+    const { client, transport } = await overOne(() =>
+      refusal(422, "payload-type-changed", { from: "text" }),
+    );
+
+    await client.edit("one", payload("edited"), TYPED, ["route/research"]);
+    await client.drain();
+
+    expect(transport.sent.map(routeOf)).not.toContain("POST /v1/items/one/tag");
+    expect(names(read(client.queue))).toEqual([[]]);
+  });
+
+  it("waits behind an edit the pool could not be reached for", async () => {
+    const { client, transport } = await overOne((request) =>
+      routeOf(request) === "POST /v1/items/one/edit"
+        ? json(200, {
+            kind: "amended",
+            item: { ...anItem("one"), payload: payload("edited") },
+          })
+        : json(200, tagged("one")),
+    );
+
+    transport.unreachable(true);
+    await client.edit("one", payload("edited"), TYPED, ["route/research"]);
+    await client.drain();
+    expect(transport.sent.map(routeOf)).not.toContain("POST /v1/items/one/tag");
+    expect(names(read(client.queue))).toEqual([["route/research"]]);
+
+    transport.unreachable(false);
+    await client.drain();
+    expect(transport.sent.map(routeOf)).toContain("POST /v1/items/one/tag");
+  });
+});
+
 describe("classification", () => {
   it("shows a tag at once and leaves the item in the queue", async () => {
     const tagged: Item = {

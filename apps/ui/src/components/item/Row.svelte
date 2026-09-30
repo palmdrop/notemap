@@ -138,7 +138,14 @@
   {/if}
 
   <div class={slim ? "" : "mt-0.5"}>
-    <Tags bind:this={tags} {item} {filter} addable={selected} stacked={!slim} />
+    <Tags
+      bind:this={tags}
+      {item}
+      {filter}
+      {editing}
+      addable={selected}
+      stacked={!slim}
+    />
   </div>
 
   {#if finished && routed}

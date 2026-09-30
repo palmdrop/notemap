@@ -1,9 +1,15 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-28
+**Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **An edit can carry tags that wait for it.** `edit` takes `tags`, drawn at once and
+  sent as ordinary tag operations only once the edit has landed, to whichever item then says its
+  words. What the shell uses to hold a trigger tag taken during an edit.
+- 2026-09-30 — **A capture's trigger tag reaches the cache too.** The pool's answer to a capture
+  arriving with a trigger tag carries the pending record, which the tag's answer already did, so a
+  capture tagged in the capture box no longer settles as work that can still be edited.
 - 2026-09-28 — **A trigger tag's reservation reaches the cache.** The pool's answer to the tag now
   carries the pending record it made, so the drain settles a copy that is no longer work. The
   watcher takes a row off the queue when a template fires, not only once it lands, and reads again
@@ -693,7 +699,9 @@ somebody else's state.
 **A capture may carry tags** *(added 2026-09-18)*. `capture` takes `tags` beside `text` and
 `asset`, carries them on the envelope, and draws them on the optimistic item as the source's own —
 so the item is born classified and a trigger tag among them fires on arrival, on the pool's terms
-rather than as a `tag` drained behind the capture.
+rather than as a `tag` drained behind the capture. The pool's answer carries the reservation the
+tag made *(amended 2026-09-30)*, so the capture settles as a copy that is no longer work, exactly as
+a drained `tag` does.
 
 **A trigger tag is an ordinary tag to this client.** `tag` is unchanged — one outbox operation, the
 same optimistic application, the same drain — and what it does at the far end is the pool's. This
@@ -863,11 +871,20 @@ A capture is the client's own until it reaches the pool, and immutable once it d
 - **After the seal, an edit is a domain edit.** The client sends an `edit` and lets the pool
   decide its shape: an in-place amendment while the item is unprocessed, a revision once it is
   routed, archived or revised
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). *Amended 2026-08-24*: the
-  client can now usually predict which it will get, since `archived`, `routing` and `revisedInto`
-  all ride on the item it holds, but another client may have routed that item since the last read.
-  So it still treats amend-versus-revise as the pool's call and reconciles to whatever the ack
-  recorded. The optimistic view may show an amendment and settle into a revision; the client shows
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an amendment still
+  where all that routed it is a reservation nothing has tried
+  ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). *Amended
+  2026-08-24, and again 2026-09-30*: `archived`, `routing` and `revisedInto` ride on the item it
+  holds, but another client may have routed that item since the last read, and whether a
+  reservation has been tried is the delivery's state, which the item does not carry. So the client
+  cannot predict the outcome, treats amend-versus-revise as the pool's call, and reconciles to
+  whatever the ack recorded.
+- **An edit may carry tags that wait for it** *(added 2026-09-30)*. `edit` takes an optional
+  `tags`, drawn on the item at once and sent only once the edit has landed, each as an ordinary
+  `tag` operation, to the item the pool amended or to the revision it made instead: whichever now
+  says the new words. The outbox sends one item's operations in order but moves past one that
+  fails, so a trigger tag queued beside an edit could fire on the words it replaced. A refused
+  edit takes its tags with it, never sent; a parked one keeps them waiting behind it. The optimistic view may show an amendment and settle into a revision; the client shows
   the reconciled result, not its guess.
 - **An edit carries a source identity**, as a capture does, and the same one on every retry of
   that edit. This is what makes a retried edit idempotent: the pool matches a revision for replay
@@ -1350,6 +1367,11 @@ that logic out of the one place it is meant to live.
   whose template has gone stale comes back as a refused operation the person is shown.
 - The copy held once that drain settles is not work: it carries the pending record, and a queue
   drawn from the cache after a restart does not hold it.
+- A capture carrying a trigger tag settles the same way: once it drains, the copy held carries the
+  pending record and the queue does not hold it.
+- Tags an edit carries are drawn at once and sent after the edit lands: to the item where it was
+  amended, to the revision where one was made. A refused edit takes them away unsent; one that
+  could not reach the pool keeps them waiting until it does.
 - A watched client takes a row off the queue when the log says a template fired, and reads again a
   held item the log says was routed, cancelled or abandoned — except one with an operation still to
   send.

@@ -73,7 +73,9 @@ this spec is unwritten.
   ([ADR 4](../adr/0004-purge-leaves-a-minimal-tombstone.md)).
 - An in-place amendment arriving from a client that could not know whether the item had been
   processed since is re-evaluated on arrival and recorded as a revision if it has been
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). Being revised moves the
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), unless all that processed
+  it is a reservation nothing has tried yet
+  ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). Being revised moves the
   `modified_at` of the item it was made from as well, which is what keeps a delta reader from
   showing work that has left the queue.
 - **A rebuilt pool carries a new identity, and that identity is readable** (decided 2026-08-11,
