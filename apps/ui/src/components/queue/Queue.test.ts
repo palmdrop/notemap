@@ -1297,6 +1297,80 @@ test("while a row is edited only its tags are reached", async () => {
   ).toBeDefined();
 });
 
+const waitingTag = () =>
+  screen.queryByTitle("files the item once the edit is saved");
+
+/** Takes a tag through the chooser, the way a person types one. */
+async function tagWith(name: string) {
+  await fireEvent.keyDown(window, { key: "t" });
+  const line = await screen.findByRole("combobox", { name: "Add a tag" });
+  await fireEvent.input(line, { target: { value: name } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+}
+
+/** Opens the first row's edit, rewrites it, and leaves the field for the row's keys. */
+async function editing(text: string) {
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: "e" });
+  const field = await screen.findByLabelText("What it says");
+  await fireEvent.input(field, { target: { value: text } });
+  field.blur();
+  return field;
+}
+
+/** Sent at once, a trigger tag would file the words from before the edit. */
+test("a trigger tag taken while a row is edited waits, and goes after the save", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  const field = await editing("as I meant it");
+  await tagWith("route/research");
+  await tick();
+
+  expect(waitingTag()).not.toBeNull();
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
+
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  const sent = asked();
+  expect(sent.indexOf("POST /v1/items/one/edit")).toBeLessThan(
+    sent.indexOf("POST /v1/items/one/tag"),
+  );
+});
+
+test("an edit let go takes a waiting trigger tag with it, and not an ordinary one", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await editing("never mind");
+  await tagWith("reading");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  await tagWith("route/research");
+  await tick();
+  expect(waitingTag()).not.toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await tick();
+  await fireEvent.click(
+    within(dialog()!).getByRole("button", { name: "revert" }),
+  );
+  await tick();
+
+  expect(waitingTag()).toBeNull();
+  expect(
+    asked().filter((request) => request === "POST /v1/items/one/tag"),
+  ).toHaveLength(1);
+});
+
 /** Local, so the day each capture falls on is the day the shell draws it under. */
 const on = (day: number, hour: number, minute = 0) =>
   new Date(2026, 8, day, hour, minute).toISOString();

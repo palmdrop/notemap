@@ -21,6 +21,7 @@
     offered = [],
     fires,
     held,
+    waiting,
     marked,
     addable = true,
     label = "Add a tag",
@@ -42,6 +43,8 @@
      * off is cancelling the routing rather than pressing the tag.
      */
     held?: (name: string) => boolean;
+    /** A tag this answers true for is not on the item yet, and is drawn grey until it is. */
+    waiting?: (name: string) => boolean;
     /** A carried tag this answers true for is underlined: the surface is filtered by it. */
     marked?: (name: string) => boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
@@ -241,6 +244,7 @@
   {@const fired = fires?.(name)}
   {@const inert = held?.(name) === true}
   {@const filtered = marked?.(name) === true}
+  {@const pending = waiting?.(name) === true}
   <span
     class="whitespace-nowrap"
     data-marked={filtered ? "" : undefined}
@@ -273,11 +277,12 @@
           aria-label={fired === undefined
             ? undefined
             : `${name}, routes to ${fired}`}
+          title={pending ? "files the item once the edit is saved" : undefined}
           class="{chosen === name
             ? 'font-semibold'
             : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
             ? 'underline'
-            : ''}"
+            : ''} {pending ? 'text-inert' : ''}"
         >
           {@render said(fired === undefined ? name : trigger(name))}
         </button>{#if chosen === name}<button

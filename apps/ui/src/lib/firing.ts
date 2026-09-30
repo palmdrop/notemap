@@ -19,6 +19,12 @@ export function cancelRouting(record: string, item: string): void {
   });
 }
 
+/** Tags an item, and says what the tag filed where it filed something. */
+export async function tagged(item: string, tag: string): Promise<void> {
+  await client.tag(item, tag);
+  await sayItFired(item, tag);
+}
+
 /**
  * How long to keep looking for what the tag fired. The tag goes through the
  * outbox, so what the pool holds is a moment behind the gesture — but only a

@@ -1,9 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-29
+**Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **A trigger tag taken during an edit waits for the save.** It is drawn in the grey
+  until then and sent after the edit, so it files the saved words; letting the edit go takes it
+  away unsent. Ordinary tags are sent at once, as before.
+  ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))
 - 2026-09-29 — **Rows by day.** Appearance offers `rows: auto · by day · rail`, held on the
   device. By day, the queue and the feed, in the timeline and the index, head each day with its
   date and weekday, sticky while its rows scroll, and a row keeps only its time. Below `narrow`
@@ -693,11 +697,18 @@ for `close · revert · attach` on the left and a bold `save` on the right**, `r
 while the field holds something the item does not say, sliding in beside `close` as it appears. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
 the tags are: `+`, `×` and `t` work as
-on any selected row, a tag being an outbox operation of its own and not part of the edit.
+on any selected row, a tag being an outbox operation of its own and not part of the edit. **A
+trigger tag is the exception** *(2026-09-30)*: taken while the edit is open it is drawn on the row
+in the grey, titled `files the item once the edit is saved`, and sent only after `save` has sent
+the edit, so what it files is the saved words. Sent at once, it would reach the pool first and file
+the words from before the edit. `×` takes a waiting one off without sending anything, and an edit
+that is let go — `revert`, or `revert` in the question — takes every waiting trigger tag with it. An
+ordinary tag taken meanwhile is sent at once and stays, being classification rather than a
+decision.
 
 **Leaving an edit with changes asks first** *(2026-09-27)*. However it is left — `close` or `esc`,
 `j`/`k`, another row, the capture box, another page — an edit whose field holds something the item
-does not say stops, and a **dialog** asks: `unsaved changes to <stamp · first words>`, with
+does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp · first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
 through history, a link out of the app. `save` waits for a picture still being attached, and a
@@ -2589,6 +2600,9 @@ view is how a reader sees more at once.
 - Leaving an edit with changes by any way at all asks in a dialog naming the capture; `save` and
   `revert` answer and go on the way the leaving was asked, `esc` goes back into the field with the
   caret in it, and an unchanged edit closes silently.
+- A trigger tag taken while a row is edited sends nothing until `save`, and then goes after the
+  edit; an edit let go by `revert` takes it away unsent, while an ordinary tag taken meanwhile was
+  sent at once and stays.
 - An edit whose capture is processed while it is open closes without asking and without a notice.
 - A selected row changing height keeps its box's edges drawn throughout.
 - On the queue, the capture box is selected whenever its field has the caret and never together

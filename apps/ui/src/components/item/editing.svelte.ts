@@ -2,6 +2,7 @@ import type { Item } from "@notemap/client";
 
 import { PICTURE, TYPED } from "$lib/channels";
 import { client } from "$lib/client";
+import { tagged } from "$lib/firing";
 import { leave } from "$lib/leaving.svelte";
 
 type Held = {
@@ -16,11 +17,15 @@ type Held = {
  * draws, and the `close`, `revert`, `attach` and `save` the row's foot draws
  * in place of its actions. Nothing it holds outlives it; closing it with
  * changes asks first.
+ *
+ * A trigger tag taken meanwhile waits here and is sent after the save: sent at
+ * once, it would file the words from before the edit.
  */
 export class Editing {
   text = $state("");
   picture = $state<Held>(null);
   busy = $state(false);
+  waiting = $state<readonly string[]>([]);
 
   readonly item: Item;
   readonly #close: () => void;
@@ -42,9 +47,18 @@ export class Editing {
   get changed(): boolean {
     return (
       this.busy ||
+      this.waiting.length > 0 ||
       this.text !== this.#says ||
       this.picture?.asset !== this.#carries?.asset
     );
+  }
+
+  wait(tag: string): void {
+    if (!this.waiting.includes(tag)) this.waiting = [...this.waiting, tag];
+  }
+
+  unwait(tag: string): void {
+    this.waiting = this.waiting.filter((held) => held !== tag);
   }
 
   pick(file: File): Promise<void> {
@@ -75,6 +89,7 @@ export class Editing {
   revert(): void {
     this.text = this.#says;
     this.picture = this.#carries;
+    this.waiting = [];
   }
 
   /** Asks first where there are changes to lose. */
@@ -100,8 +115,13 @@ export class Editing {
       this.picture?.asset,
     );
     const channel = this.picture === null ? TYPED : PICTURE;
+    const id = this.item.id;
+    const waiting = this.waiting;
     this.#close();
-    void client.edit(this.item.id, payload, channel);
+    // Enqueued behind the edit, so the pool has the new words before anything files them.
+    void client
+      .edit(id, payload, channel)
+      .then(() => Promise.all(waiting.map((tag) => tagged(id, tag))));
   }
 }
 
