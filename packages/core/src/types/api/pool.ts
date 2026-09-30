@@ -49,7 +49,7 @@ import type {
   SyncCursor,
   TagName,
 } from "../domain/ids";
-import type { EditOutcome, Item, TagUse } from "../domain/item";
+import type { Counts, EditOutcome, Item, TagUse } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
@@ -129,6 +129,7 @@ export interface ViewsApi {
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
   queue(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
   archived(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
+  counts(): Promise<Counts>;
 }
 
 export interface TagsApi {

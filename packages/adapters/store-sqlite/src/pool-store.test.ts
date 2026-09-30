@@ -1145,6 +1145,19 @@ describe("the queue and the archive", () => {
     expect(ids((await p.archived(OLDEST_FIRST)).values)).toEqual(["item-0"]);
   });
 
+  /** Counted by the queue's own rule, so the count and the pages cannot disagree. */
+  it("counts what the queue holds, and nothing it does not", async () => {
+    const { pool: p } = pool();
+    expect(await p.counts()).toEqual({ queue: 0 });
+
+    await minutelyItems(p, 4);
+    await markProcessed(p, markedProcessed(capture({ id: "item-1" })));
+    await setArchived(p, "item-2", { archivedAt: "2026-08-03T12:00:00.000Z" });
+
+    expect(await p.counts()).toEqual({ queue: 2 });
+    expect((await p.queue(OLDEST_FIRST)).values).toHaveLength(2);
+  });
+
   it("shows an item something was revised from on neither surface", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });

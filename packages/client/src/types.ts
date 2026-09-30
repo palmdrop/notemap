@@ -8,6 +8,7 @@ import type {
   ActionKind,
   AssetId,
   CandidatesRequest,
+  Counts,
   CreateDestinationRequest,
   Destination,
   DestinationCandidates,
@@ -235,6 +236,17 @@ export interface TagsApi {
 }
 
 /**
+ * How much the pool holds, as it last answered. The client reads it again on
+ * its own whenever something it can see may have changed it: its own work
+ * draining, the log showing the pool did something, the pool coming back.
+ */
+export interface CountsApi {
+  /** The items the queue holds. Absent until the pool has answered once. */
+  readonly queue: Observable<number | undefined>;
+  load(): Promise<Counts>;
+}
+
+/**
  * Not cached and not held: a settings screen reads this to notice a source that
  * has stopped capturing, and the answer to *has it stopped* is about now.
  */
@@ -457,6 +469,7 @@ export interface Client {
   unfurl(url: string): Promise<Unfurl | undefined>;
 
   readonly tags: TagsApi;
+  readonly counts: CountsApi;
   readonly sources: SourcesApi;
   readonly actions: ActionsApi;
 

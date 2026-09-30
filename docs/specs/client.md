@@ -4,6 +4,10 @@
 **Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **`client.counts` says how much the queue holds.** Read from `GET /v1/counts`, held
+  in memory and never persisted, and read again on the client's own events: a drain that sent
+  something, the watcher seeing the pool act, the pool coming back, and a route, mark or cancel. See
+  [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md) and [the queue](#the-queue).
 - 2026-09-30 — **An edit can carry tags that wait for it.** `edit` takes `tags`, drawn at once and
   sent as ordinary tag operations only once the edit has landed, to whichever item then says its
   words. What the shell uses to hold a trigger tag taken during an edit.
@@ -479,6 +483,17 @@ processed — routed or archived — which the pool decides, not the scroll.
   the surface is not already in **turns it around and reads it again from the start**: a position
   belongs to the order that produced it, and two orders cannot be stitched into one list. The order
   a surface is in is part of what it reports, so a control can draw it.
+- **How many items the queue holds is a count, not a page** *(added 2026-09-30)*. A surface that
+  has read two pages knows two pages, so the client reads the pool's own count from
+  `GET /v1/counts` rather than counting what it walked. It is `undefined` until the pool has
+  answered once, keeps its last answer when the pool is out of reach, and is **not persisted**: a
+  count is about now, and yesterday's read back from the store would claim what the pool no longer
+  holds. It is read again whenever something the client can see may have moved it — a drain that
+  sent anything, the watcher seeing the pool act, the pool coming back, and a route, a mark or a
+  cancel this client made — and asked for again while a read is out, it reads once more rather
+  than once per ask. The read after a drain happens **inside** the drain, as the tag read does: an
+  answer is evidence of reach, and a return it causes rides the drain rather than starting one.
+  What this client has not sent is not counted, being the outbox's to say.
 
 ### A filtered surface
 

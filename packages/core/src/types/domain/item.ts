@@ -46,6 +46,12 @@ export type TagUse = {
   readonly unprocessed: number;
 };
 
+/** How much the pool holds, counted rather than paged. */
+export type Counts = {
+  /** Every item the queue holds. */
+  readonly queue: number;
+};
+
 /** What core submits to be written. Excludes every field the store owns or derives. */
 export type ItemRecord = {
   readonly id: ItemId;
