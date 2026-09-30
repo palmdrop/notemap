@@ -65,6 +65,7 @@ export type JobQueue = {
   leasedJob(lease: LeaseId): Lease | undefined;
   resolveJob(lease: LeaseId, resolution: JobResolution): void;
   withdrawWork(subject: JobSubject): WorkWithdrawal;
+  untried(subject: JobSubject): boolean;
 };
 
 export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
@@ -105,6 +106,11 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
     { id: string; lease_id: string | null },
     [string, string]
   >(`SELECT id, lease_id FROM jobs WHERE subject_kind = ? AND subject_id = ?`);
+
+  const tried = write.query<{ id: string }, [string, string]>(
+    `SELECT id FROM jobs WHERE subject_kind = ? AND subject_id = ?
+       AND (attempt > 0 OR lease_id IS NOT NULL OR abandoned_at IS NOT NULL)`,
+  );
 
   const byLease = write.query<JobRow, [string]>(
     `SELECT ${JOB_COLUMNS} FROM jobs WHERE lease_id = ?`,
@@ -336,6 +342,15 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
 
       for (const row of rows) deleteJob.run(row.id);
       return "withdrawn";
+    },
+
+    /** No work at all is not untried: there is nothing left waiting to be. */
+    untried: (subject) => {
+      const columns = subjectColumns(subject);
+      return (
+        outstanding.all(...columns).length > 0 &&
+        tried.get(...columns) === undefined
+      );
     },
   };
 }

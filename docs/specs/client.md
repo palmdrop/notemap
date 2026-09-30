@@ -868,7 +868,9 @@ A capture is the client's own until it reaches the pool, and immutable once it d
 - **After the seal, an edit is a domain edit.** The client sends an `edit` and lets the pool
   decide its shape: an in-place amendment while the item is unprocessed, a revision once it is
   routed, archived or revised
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). *Amended 2026-08-24*: the
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an amendment still
+  where all that routed it is a reservation nothing has tried
+  ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). *Amended 2026-08-24*: the
   client can now usually predict which it will get, since `archived`, `routing` and `revisedInto`
   all ride on the item it holds, but another client may have routed that item since the last read.
   So it still treats amend-versus-revise as the pool's call and reconciles to whatever the ack

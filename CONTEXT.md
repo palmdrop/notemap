@@ -39,7 +39,8 @@ _Avoid_: note, memo, entry, card
 **Capture**:
 The original payload of an item exactly as it entered, plus the act of it entering. Editable in
 place while its item is unprocessed, and fixed once it is: what left the pool is what the pool
-keeps.
+keeps. The one processed item still editable in place is one nothing could yet have left, whose
+only routing is a reservation nothing has tried.
 _Avoid_: original, raw note
 
 **Draft**:
@@ -289,7 +290,8 @@ item, so a routing record still pending delivery counts, and an item whose deliv
 resurfaces in the queue. Marking an item processed by hand is routing whose destination is the
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
 nothing. Processed is also what fixes a capture: an unprocessed item is edited in place, a processed
-one is revised.
+one is revised — except where its only routing is a reservation whose delivery has never been
+claimed or attempted, such as a trigger tag's inside its window, which is still edited in place.
 _Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
 it is what the button that ends the `manual` step says, a verb beside `route` rather than a word for
 what an item now is.

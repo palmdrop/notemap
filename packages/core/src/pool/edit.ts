@@ -57,12 +57,20 @@ async function validate(
   return checkAssets(tx, payload);
 }
 
-/** Processed: something left, or the person declared themselves done with it. */
+/**
+ * Something could have left, or the person declared themselves done with it.
+ * A reservation nothing has tried yet has sent nothing, so what it delivers is
+ * whatever the item says when it is first tried.
+ */
 async function sealed(tx: PoolTx, item: Item): Promise<boolean> {
   if (item.archived !== undefined) return true;
   if (item.revisedInto.length > 0) return true;
 
-  return (await tx.routingRecords(item.id)).length > 0;
+  for (const record of await tx.routingRecords(item.id)) {
+    if (record.state !== "pending") return true;
+    if (!(await tx.deliveryUntried(record.id))) return true;
+  }
+  return false;
 }
 
 async function amend(

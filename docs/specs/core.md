@@ -1,8 +1,14 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-28
+**Last updated**: 2026-09-30
 **Shipped**:
+
+- 2026-09-30 — **A reservation nothing has tried does not seal a capture.** An edit reaching an
+  item whose only records are reservations still waiting for their first attempt — in practice a
+  trigger tag's, inside its window — amends it in place, and the delivery carries what it now
+  says. A capture arriving with a trigger tag now answers carrying the reservation it made.
+  ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))
 
 - 2026-09-28 — **The feed, the queue and the archive can be read through a tag filter.** Every
   tag it names must be carried; each is trimmed as tagging trims, and a blank one is refused. The
@@ -437,15 +443,25 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 ### Editing
 
-- **An item is editable in place while it is unprocessed, and revised once it is processed.**
-  Processed means routed, archived or revised, so editability and queue membership are one
-  predicate read two ways: everything in the queue is a person's to change, and nothing else is.
+- **An item is editable in place while it is unprocessed, and revised once it is sealed.**
+  Processed means routed, archived or revised, and every processed item is sealed but one: an item
+  whose only routing records are **reservations nothing has tried**, pending with a delivery never
+  claimed or attempted, is still amended in place (amended 2026-09-30,
+  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). In practice
+  that is a trigger tag's reservation inside its window, since a composer route attempts once
+  before it answers and a mark by hand is born delivered. So everything in the queue is a person's
+  to change, and outside it only an item nothing has yet been sent from.
+- **An edit to an untried reservation's item is what the delivery carries.** The delivery reads the
+  item when it is tried, and a reservation's arguments expand from nothing an edit changes, so it
+  stays valid. Whether a reservation is untried is read in the edit's own transaction, against its
+  delivery's work: a claim that commits first makes the edit a revision, and an edit that commits
+  first is what the claimed delivery reads.
 - **A revision is about content, and only content.** Editing the capture's content, its text or an
   attached file, is what this section describes. Classification, archiving, routing and accepting
   a suggestion change an item's state in place and never produce a revision.
 - **Only a decision about the item seals it.** Capturing something else does not, and neither does
-  time passing. What fixes a capture is that a copy of it went somewhere notemap does not own, or
-  that the person declared themselves done with it by archiving it or by rewriting it into
+  time passing. What fixes a capture is that a copy of it could have gone somewhere notemap does not
+  own, or that the person declared themselves done with it by archiving it or by rewriting it into
   something new.
 - **A revision is an ordinary capture carrying a link.** It mints its own id, its own capture time
   of now, and its own source identity from whoever made it. The link, `revisionOf`, is a trace,
@@ -1720,7 +1736,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   the copy that left, so nothing but routing, archiving or being revised fixes a capture. A
   revision stops being a version of an item and becomes an ordinary capture holding a trace, which
   removes the feed tie, the revision chain and the head rule together. Supersedes ADR 11 and ADR
-  10's key clause.
+  10's key clause. *Its sealing clause is amended by
+  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)*: a reservation
+  nothing has tried seals nothing, since nothing could have left.
 
 ---
 
@@ -1792,6 +1810,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Editing a processed item appends a revision: an item with its own id, its own capture time of
   now and its own source identity, appearing at the newest end of the feed and in the queue, while
   the item it came from stays readable and unchanged where it was.
+- Editing an item a trigger tag has reserved, while the window is still open, changes it in place:
+  it stays out of the queue, and the delivery carries the edited words. The same edit once the
+  delivery has been claimed, or after a first attempt failed, appends a revision.
 - Editing that same processed item a second time appends a second revision. Both name it, it names
   both, and neither is treated as the current one.
 - An edit resent after a lost response answers with the revision it already made, and the pool

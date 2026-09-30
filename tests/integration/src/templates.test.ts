@@ -1,6 +1,7 @@
 import type {
   Action,
   CapabilityName,
+  Duration,
   JsonSchema,
   DestinationId,
   Item,
@@ -514,7 +515,9 @@ describe("a trigger tag applying its template", () => {
   });
 
   it("fires nothing for a revision that carries it over", async () => {
-    const { pool, item } = await tagged();
+    const { pool, item, clock, deliver } = await tagged();
+    clock.set(AFTER);
+    await deliver();
 
     const outcome = succeeded(
       await pool.items.edit(
@@ -567,6 +570,80 @@ describe("a trigger tag applying its template", () => {
       to: [{ kind: "destination", destination: VAULT }],
       templates: [template.id],
     });
+  });
+});
+
+/**
+ * A reservation nothing has tried has sent nothing, so an edit reaching it is
+ * what the person wants filed rather than a second capture.
+ */
+describe("an edit reaching a trigger tag's reservation", () => {
+  async function tagged() {
+    const opened = await pooled();
+    succeeded(
+      await opened.pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    succeeded(await opened.pool.items.tag(item.id, RESEARCH, PERSON));
+    return { ...opened, item };
+  }
+
+  const edited = (item: Item, text: string) => ({
+    source: item.source,
+    sourceItemId: "edit-1",
+    payload: { ...item.payload, content: { text } },
+  });
+
+  it("amends it in place while the window is open, and files what it now says", async () => {
+    const { pool, clock, deliver, destination, item } = await tagged();
+    clock.set(INSIDE);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "as I meant it"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("amended");
+    expect(await queued(pool)).toEqual([]);
+
+    clock.set(AFTER);
+    await deliver();
+
+    expect(
+      destination.received.map((each) => each.delivery.payload.content["text"]),
+    ).toEqual(["as I meant it"]);
+  });
+
+  it("revises it once the delivery has been claimed, which may already be under way", async () => {
+    const { pool, clock, item } = await tagged();
+    clock.set(AFTER);
+    const leases = await pool.work.claim({
+      kinds: ["delivery"],
+      limit: 1,
+      leaseFor: 60_000 as Duration,
+    });
+    expect(leases).toHaveLength(1);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "too late"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
+  });
+
+  it("revises it once a first attempt has failed, since that attempt read the item", async () => {
+    const { pool, clock, deliver, destination, item } = await tagged();
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+    clock.set(AFTER);
+    await deliver();
+    expect(await pool.routing.recordsFor(item.id)).toMatchObject([
+      { state: "pending" },
+    ]);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "too late"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
   });
 });
 

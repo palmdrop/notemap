@@ -1125,6 +1125,11 @@ export function createSqlitePoolStore(
           jobs.withdrawWork(subject),
       ),
 
+      deliveryUntried: guard(
+        async (record: RoutingRecordId): Promise<boolean> =>
+          jobs.untried({ kind: "routing-record", record }),
+      ),
+
       appendAction: guard(async (action: Action): Promise<void> => {
         insertAction.run(
           action.id,

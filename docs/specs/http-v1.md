@@ -855,7 +855,10 @@ when it last captured. It is how a **relay** left running is seen to still be ru
 - **The client does not say which it wants, and the pool decides** — an in-place **amendment**
   while the item is unprocessed, an appended **revision** once it is routed, archived or revised
   ([core.md](core.md#editing),
-  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A client can usually predict
+  [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A routed item whose only
+  records are reservations nothing has tried yet, such as a trigger tag's inside its window, is
+  still amended *(amended 2026-09-30,
+  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))*. A client can usually predict
   which it will get, everything the seal derives from riding on the item it already holds, but
   another client may have routed that item since its last read. So the request carries no intent to
   honour, and the outcome is read off the answer — which is what
