@@ -24,53 +24,53 @@ there. Stacked on `agent/abandoned-notice-keeps-its-reason` (#87).
 ### Phase 1 — the pool counts its queue
 
 - [x] Branch `agent/status-line`, from the fix branch.
-- [ ] Core: `Counts = { queue: number }`, `PoolReads.counts()`, `ViewsApi.counts()`.
-- [ ] SQLite: one `COUNT(*)` over the queue's own predicate.
-- [ ] Daemon: `GET /v1/counts`, schema, OpenAPI definition. Regenerate `openapi.json` and the
+- [x] Core: `Counts = { queue: number }`, `PoolReads.counts()`, `ViewsApi.counts()`.
+- [x] SQLite: one `COUNT(*)` over the queue's own predicate.
+- [x] Daemon: `GET /v1/counts`, schema, OpenAPI definition. Regenerate `openapi.json` and the
       client's `generated.d.ts`.
-- [ ] Client: `client.counts` with `queue: Observable<number | undefined>` and `load()`. Read
+- [x] Client: `client.counts` with `queue: Observable<number | undefined>` and `load()`. Read
       again after a drain that sent something, after the log shows the pool did something, after
       the pool returns, and after a route, a mark or a cancel.
-- [ ] Tests: the store count, the route, the client's reads and refreshes.
-- [ ] Specs: http-v1 `### Counts`, client.md.
+- [x] Tests: the store count, the route, the client's reads and refreshes.
+- [x] Specs: http-v1 `### Counts`, client.md.
 
 ### Phase 2 — a fired template says when its window closes
 
-- [ ] Core: `template-fired` detail carries `until`, the job's `notBefore`.
-- [ ] Shell: a store of open firings, keyed by record: the name, the item, `until`. Opened by the
+- [x] Core: `template-fired` detail carries `until`, the job's `notBefore`.
+- [x] Shell: a store of open firings, keyed by record: the name, the item, `until`. Opened by the
       tag's quick path and by the log's `template-fired`. Closed by `routed`, `delivery-failed`,
       `work-abandoned` and `delivery-cancelled` for the record, and by a successful cancel.
-- [ ] The quick path reads `until` from the item's log once it has found the record.
-- [ ] `noticeOf` no longer raises `template-fired`, and nothing names `only: FIRED`: a run of
+- [x] The quick path reads `until` from the item's log once it has found the record.
+- [x] `noticeOf` no longer raises `template-fired`, and nothing names `only: FIRED`: a run of
       attempts at a record is one notice by record, fired or not.
-- [ ] Tests: opening and closing from each entry, the countdown's arithmetic, the quick path.
+- [x] Tests: opening and closing from each entry, the countdown's arithmetic, the quick path.
 
 ### Phase 3 — notices keep a history
 
-- [ ] `notices`: `shown` is every live notice with no cap, `latest` is the message line's, and
+- [x] `notices`: `shown` is every live notice with no cap, `latest` is the message line's, and
       `history` holds this session's notices (capped at 100), each marked live or gone. Trimming
       goes. Hold and release stay.
-- [ ] Tests: history across linger and dismiss, offers only while live, `only` replacement, hold.
+- [x] Tests: history across linger and dismiss, offers only while live, `only` replacement, hold.
 
 ### Phase 4 — the status line
 
-- [ ] `StatusLine`: fixed bottom, ruled, in the column, safe-area padded. It holds the message,
+- [x] `StatusLine`: fixed bottom, ruled, in the column, safe-area padded. It holds the message,
       the counts and the toggle, and the log watcher moves here from `Corner`.
-- [ ] `Panel`: notices oldest first, then firings, pending operations and refusals. Closes on
+- [x] `Panel`: notices oldest first, then firings, pending operations and refusals. Closes on
       `esc` and on a press outside. `n` toggles it.
-- [ ] Below `narrow`: numbers and marks, no words. The panel is full width.
-- [ ] Remove `Corner`, `Alarm` and the bar's `Status`. `Refusals` moves into the panel.
-- [ ] `Sheet`: the page's foot clears the line, and the process surface fills the viewport less
-      the line. The list's foot no longer says `offline`.
-- [ ] Tests: the line, the panel, the counts, the countdown, dismissal, hold, and the layout.
+- [x] Below `narrow`: numbers and marks, no words. The panel is full width.
+- [x] Remove `Corner`, `Alarm` and the bar's `Status`. `Refusals` moves into the panel.
+- [x] `Sheet`: the page's foot clears the line, and the process surface fills the viewport less
+      the line. The list's foot keeps saying what offline costs it, which the line cannot.
+- [x] Tests: the line, the panel, the counts, the countdown, dismissal, hold, and the layout.
 
 ### Phase 5 — docs
 
-- [ ] shell.md: `### The status line` replaces the corner. Amend the shape of the shell, the
+- [x] shell.md: `### The status line` replaces the corner. Amend the shape of the shell, the
       chrome, reachable/pending/refused, the foot, the fired-template paragraphs, and the log's
       "what happened while nobody was asking". Add a changelog line.
-- [ ] CONTEXT.md: **Status line**, and **Notice** says where it is said.
-- [ ] todo.md: tick the three status-bar items and "no good way to see pending operations".
+- [x] CONTEXT.md: **Status line**, and **Notice** says where it is said.
+- [x] todo.md: tick the three status-bar items and "no good way to see pending operations".
 
 ### Phase 6 — verify and open
 

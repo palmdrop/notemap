@@ -6,11 +6,11 @@ const LINGERS = 4_000;
 /** Long enough to reach for what it offers; the way back is elsewhere too. */
 const OFFERED = 10_000;
 
-/** How many the corner draws at once before it counts the rest instead. */
-const SHOWN = 4;
-
 /** Enough keys to stop a poll repeating itself, and no memory of the session. */
 const REMEMBERED = 200;
+
+/** What the panel can read back. The log is where the rest of it is. */
+const KEPT = 100;
 
 /** Something to do about it, here, rather than somewhere to go and look. */
 export type Offer = {
@@ -28,9 +28,8 @@ export type Notice = {
   readonly standing?: boolean;
   /**
    * Whether it is drawn as an alarm. A standing notice is one by default —
-   * standing is usually what a failure does — but the two are different facts:
-   * a fired template stands because its cancel may not vanish, and nothing has
-   * gone wrong.
+   * standing is usually what a failure does — but the two are different facts,
+   * and a notice may stand without anything having gone wrong.
    */
   readonly alarm?: boolean;
   /** Where to go and look. */
@@ -42,19 +41,24 @@ export type Notice = {
    */
   readonly key?: string;
   /**
-   * At most one notice bears a given name, the newest. An offer nobody can
-   * make twice is the case for it: a corner stacking four of them while a
-   * queue is worked is not the quiet thing it is meant to be.
+   * At most one live notice bears a given name, the newest: the last word on
+   * one thing takes the place of the words before it.
    */
   readonly only?: string;
+  /** When it was said, for the panel to say when. */
+  readonly at: number;
 };
 
-export type Raised = Omit<Notice, "id">;
+export type Raised = Omit<Notice, "id" | "at">;
+
+/** A notice as the panel reads it back: still live, or already gone. */
+export type Said = Notice & { readonly live: boolean };
 
 let held = $state<Notice[]>([]);
+let past = $state<Notice[]>([]);
 let minted = 0;
 
-/** Somebody is at the corner, so nothing in it leaves or is trimmed away. */
+/** Somebody is at the status line, so nothing in it leaves. */
 let holding = $state(false);
 
 const spoken = new SvelteSet<string>();
@@ -83,30 +87,6 @@ function drop(id: string): void {
   held = held.filter((notice) => notice.id !== id);
 }
 
-/**
- * The oldest confirmations go where the corner has run out of room. Two are
- * never among them: a standing notice, which is there because nothing but a
- * person will resolve it, and the one just raised — a corner full of failures
- * would otherwise swallow the confirmation of what somebody has this second
- * done, which is the one they are waiting for. What there is still no room for
- * is counted rather than dropped.
- */
-function trimmed(notices: Notice[]): Notice[] {
-  const kept = [...notices];
-
-  while (kept.length > SHOWN) {
-    const at = kept
-      .slice(0, -1)
-      .findIndex((notice) => notice.standing !== true);
-    if (at === -1) return kept;
-
-    const [gone] = kept.splice(at, 1);
-    if (gone !== undefined) forget(gone.id);
-  }
-
-  return kept;
-}
-
 function remember(key: string): void {
   spoken.add(key);
   if (spoken.size <= REMEMBERED) return;
@@ -116,19 +96,33 @@ function remember(key: string): void {
 }
 
 /**
- * What the shell says in its own voice, in the corner it already speaks from.
- * The store is the shell's: nothing here is the pool's record of the same
- * event, which is the action log and outlives whoever was looking.
+ * What the shell says in its own voice, from the status line. The store is the
+ * shell's: nothing here is the pool's record of the same event, which is the
+ * action log and outlives whoever was looking.
  */
 export const notices = {
-  /** Oldest first, so the newest sits nearest the corner it is drawn in. */
+  /** Every notice still live, oldest first. */
   get shown(): readonly Notice[] {
-    return holding ? held : held.slice(-SHOWN);
+    return held;
   },
 
-  /** Standing notices there was no room for. They are counted, not lost. */
-  get folded(): number {
-    return holding ? 0 : Math.max(held.length - SHOWN, 0);
+  /** The one the message line says: the newest still live. */
+  get latest(): Notice | undefined {
+    return held.at(-1);
+  },
+
+  /** What stands until a person clears it. */
+  get standing(): readonly Notice[] {
+    return held.filter((notice) => notice.standing === true);
+  },
+
+  /** This session's notices, oldest first, live or gone. */
+  get history(): readonly Said[] {
+    const live = held.map((notice) => notice.id);
+    return past.map((notice) => ({
+      ...notice,
+      live: live.includes(notice.id),
+    }));
   },
 
   /** The id it was given, or nothing where this had already been said. */
@@ -147,13 +141,17 @@ export const notices = {
     }
 
     minted += 1;
-    const id = `notice-${String(minted)}`;
-    const raised = { ...notice, id };
-    held = holding ? [...kept, raised] : trimmed([...kept, raised]);
+    const raised: Notice = {
+      ...notice,
+      id: `notice-${String(minted)}`,
+      at: Date.now(),
+    };
+    held = [...kept, raised];
+    past = [...past, raised].slice(-KEPT);
 
     if (notice.standing !== true && !holding) wait(raised);
 
-    return id;
+    return raised.id;
   },
 
   /** Whether this has been said before, without saying it. */
@@ -166,7 +164,10 @@ export const notices = {
     remember(key);
   },
 
-  /** Taking what a notice offered resolves it: the thing it was standing for is done. */
+  /**
+   * Taking what a notice offered resolves it: the thing it was standing for is
+   * done. Only a live notice offers anything.
+   */
   take(id: string): void {
     const notice = held.find((one) => one.id === id);
     if (notice?.offer === undefined) return;
@@ -178,17 +179,22 @@ export const notices = {
     drop(id);
   },
 
-  /** Under somebody's pointer or focus, nothing in the corner leaves. */
+  /** What has gone is let go of; what is live stays. */
+  clearHistory(): void {
+    const live = held.map((notice) => notice.id);
+    past = past.filter((notice) => live.includes(notice.id));
+  },
+
+  /** Under somebody's pointer or focus, nothing leaves. */
   hold(): void {
     holding = true;
     for (const id of [...timers.keys()]) forget(id);
   },
 
-  /** Let go, the corner is trimmed and everything lingers again from the start. */
+  /** Let go, everything lingers again from the start. */
   release(): void {
     if (!holding) return;
     holding = false;
-    held = trimmed(held);
     for (const notice of held) {
       if (notice.standing !== true) wait(notice);
     }
@@ -198,6 +204,7 @@ export const notices = {
   clear(): void {
     for (const notice of held) forget(notice.id);
     held = [];
+    past = [];
     holding = false;
     spoken.clear();
   },

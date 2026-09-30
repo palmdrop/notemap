@@ -10,7 +10,7 @@ import { keyFor } from "./routing";
 
 /**
  * The two decisions that need no destination and no second step, taken from
- * wherever an item is drawn. Each acts at once and says so in the corner with
+ * wherever an item is drawn. Each acts at once and says so in the status line with
  * the way back beside it while it lingers. The item keeps a way back of its
  * own: `unarchive` on the row, `undo` on the record.
  */

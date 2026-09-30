@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Action } from "@notemap/client";
 
-import { noticeOf } from "./action-log";
+import { firingOf, noticeOf } from "./action-log";
 
 const reading = {
   nameOf: (id: string) => (id === "vault" ? "Vault" : "a destination"),
@@ -151,38 +151,17 @@ const fired = {
   tag: "route/research",
 };
 
-test("a fired template stands without being drawn as an alarm", () => {
-  const said = noticeOf(anAction("template-fired", fired), {
-    ...reading,
-    templateOf: () => "Research links",
-    cancel: () => undefined,
-  });
-
-  expect(said?.what).toBe("routing · Research links");
-  expect(said?.standing).toBe(true);
-  // Nothing has gone wrong: it stands so its cancel does not time out.
-  expect(said?.alarm).toBe(false);
-  expect(said?.offer?.label).toBe("cancel");
-  // Said once, whether the shell got there first or the log did.
-  expect(said?.key).toBe("fired:r1");
-});
-
-test("a landing from a tag takes the place of the notice it resolves", () => {
+test("a landing from a tag names the template the tag applied", () => {
   const said = noticeOf(anAction("routed", { ...fired, firedByTag: true }), {
     ...reading,
     templateOf: () => "Research links",
   });
 
   expect(said?.what).toBe("routed · Research links");
-  expect(said?.only).toBe("fired");
   expect(said?.standing).toBeUndefined();
 });
 
-/**
- * Two notices, one saying it is on its way and one saying it failed, is the
- * corner contradicting itself — and the first offers a cancel that would refuse.
- */
-test("a fired delivery that failed takes that notice's place too", () => {
+test("a fired delivery that failed is one run with its record, as any other", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       ...fired,
@@ -193,27 +172,11 @@ test("a fired delivery that failed takes that notice's place too", () => {
     reading,
   );
 
-  expect(said?.only).toBe("fired");
+  expect(said?.only).toBe("delivery:r1");
   expect(said?.standing).toBe(true);
 });
 
-test("a fired delivery given up on takes it too", () => {
-  const said = noticeOf(
-    anAction("work-abandoned", {
-      work: "deliver",
-      record: "r1",
-      template: "t1",
-      firedByTag: true,
-      attempt: 5,
-      failure: { code: "rejected", detail: "research/ is missing" },
-    }),
-    reading,
-  );
-
-  expect(said?.only).toBe("fired");
-});
-
-test("a hand-made delivery that failed leaves a firing alone", () => {
+test("a hand-made delivery that failed is one run with its record", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       record: "r1",
@@ -227,7 +190,7 @@ test("a hand-made delivery that failed leaves a firing alone", () => {
   expect(said?.only).toBe("delivery:r1");
 });
 
-test("a cancellation ends the firing it called off", () => {
+test("a cancellation says what it gave back", () => {
   const said = noticeOf(
     anAction("delivery-cancelled", {
       record: "r1",
@@ -240,7 +203,6 @@ test("a cancellation ends the firing it called off", () => {
 
   expect(said?.what).toBe("routing cancelled");
   expect(said?.why).toBe("route/research taken back");
-  expect(said?.only).toBe("fired");
   // A confirmation rather than something to act on: it goes on its own.
   expect(said?.standing).toBeUndefined();
 });
@@ -291,40 +253,9 @@ test("work about nothing in particular leads nowhere in particular", () => {
 const withTemplates = {
   ...reading,
   templateOf: (id: string) => (id === "t1" ? "Research" : "a template"),
-  cancel: (record: string, item: string) => {
-    cancelled.push([record, item]);
-  },
 };
 
-const cancelled: [string, string][] = [];
-
-test("a fired template stands while its window is open, and offers the way out", () => {
-  const said = noticeOf(
-    anAction("template-fired", {
-      record: "r1",
-      template: "t1",
-      name: "Research links",
-      destination: "vault",
-      tag: "route/research",
-    }),
-    withTemplates,
-  );
-
-  // The template's name, never the destination's: `route/research` is what was
-  // pressed, and the notice may not claim anything has been written yet.
-  expect(said?.what).toBe("routing · Research");
-  expect(said?.standing).toBe(true);
-  expect(said?.offer?.label).toBe("cancel");
-
-  said?.offer?.take();
-  expect(cancelled).toEqual([["r1", "one"]]);
-});
-
-test("one fired template stands at a time, and the landing takes its place", () => {
-  const routing = noticeOf(
-    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
-    withTemplates,
-  );
+test("a landing from a tag names the template rather than the destination", () => {
   const landed = noticeOf(
     anAction("routed", {
       record: "r1",
@@ -335,7 +266,6 @@ test("one fired template stands at a time, and the landing takes its place", () 
     withTemplates,
   );
 
-  expect(routing?.only).toBe(landed?.only);
   expect(landed?.what).toBe("routed · Research");
   // Nothing is left to call off, so it lingers like any confirmation.
   expect(landed?.standing).toBeUndefined();
@@ -358,13 +288,56 @@ test("a template a person took themselves lands as an ordinary route", () => {
   expect(said?.only).toBeUndefined();
 });
 
-/** Nothing here can cancel, so nothing is offered that would do nothing. */
-test("a fired template offers no way out where the reader has none", () => {
-  const said = noticeOf(
-    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
-    reading,
+/** A firing has not happened yet, so it is work in flight and not a notice. */
+test("a fired template is not a notice", () => {
+  expect(
+    noticeOf(anAction("template-fired", fired), withTemplates),
+  ).toBeUndefined();
+});
+
+test("a fired template opens a firing, named for the template, with its window", () => {
+  const said = firingOf(
+    anAction("template-fired", {
+      ...fired,
+      until: "2026-09-03T10:00:15.000Z",
+    }),
+    withTemplates,
   );
 
-  expect(said?.what).toBe("routing · R");
-  expect(said?.offer).toBeUndefined();
+  expect(said).toEqual({
+    opened: {
+      record: "r1",
+      item: "one",
+      name: "Research",
+      href: "/log?item=one",
+      until: Date.parse("2026-09-03T10:00:15.000Z"),
+    },
+  });
+});
+
+test("a firing the shell has no template for is named by the entry", () => {
+  const said = firingOf(anAction("template-fired", fired), reading);
+
+  expect(said).toMatchObject({ opened: { name: "Research links" } });
+  expect(said).not.toHaveProperty("opened.until");
+});
+
+test("every way a route ends closes its firing", () => {
+  for (const kind of [
+    "routed",
+    "delivery-failed",
+    "work-abandoned",
+    "delivery-cancelled",
+  ]) {
+    expect(firingOf(anAction(kind, { record: "r1" }), reading)).toEqual({
+      closed: "r1",
+    });
+  }
+});
+
+test("an entry about no record touches no firing", () => {
+  expect(firingOf(anAction("captured", {}), reading)).toBeUndefined();
+  expect(
+    firingOf(anAction("work-failed", { work: "mirror-write" }), reading),
+  ).toBeUndefined();
 });

@@ -4,9 +4,9 @@
 **Status**: Accepted. Amends [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
 on the chrome ("the bar is `queue · feed · log · settings` and one status glyph") and
 [ADR 37](0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md) on the
-window's visibility ("no countdown, no bar"). Supersedes the corner of
-[shell.md](../specs/shell.md#the-corner-says-what-happened) as settled on 2026-09-03 and amended
-since. Everything else in both ADRs stands.
+window's visibility ("no countdown, no bar"). Supersedes the corner, which shell.md settled on
+2026-09-03 and amended since; [shell.md](../specs/shell.md#the-status-line) now describes the
+status line in its place. Everything else in both ADRs stands.
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -77,7 +77,7 @@ at the shell's one size.
 - **The left is the message line.** It holds the newest notice still live: a confirmation for as
   long as it would have lingered in the corner, and a standing notice until it is dismissed. It
   says the notice's first line and its reason on one line, cut to fit, and whatever the notice
-  offers (`undo`, `look`) beside it. An alarm is in the accent. Nothing leaves while the pointer or
+  offers (`undo`) beside it; `look` is in the panel. An alarm is in the accent. Nothing leaves while the pointer or
   focus is on the line or its panel, as in the corner.
 - **The right is the counts**, each drawn only while it is true, in a fixed order: firings still
   open (`routing · research 12s` with `cancel`), work this device holds (`3 pending`), what stands
@@ -123,8 +123,10 @@ own work drains, when the log shows the pool did something, and when the pool co
   "a notice is more than a word", and it is taken because the panel is one press away.
 - **Neutral**: the history is the session's and in memory. A reload empties it, and the log is the
   durable account.
-- **Neutral**: the list's foot no longer says the pool is out of reach, because the status line
-  says `offline` on every surface.
+- **Neutral**: the list's foot still says, where `load more` would be, that more comes when the
+  daemon answers. The status line says the pool is offline; the foot says what that costs the list
+  in front of the reader, which the line cannot. Endless scroll is unchanged: the page's foot is
+  padded clear of the line, so the foot the observer watches is also one the reader can see.
 
 ---
 

@@ -29,7 +29,7 @@ export type Surroundings = {
 /**
  * The one action whose result is nowhere on the screen: everything else here
  * either changes the row or takes you somewhere. So every outcome speaks in
- * the corner, naming what it took rather than saying *copied* into the air.
+ * the status line, naming what it took rather than saying *copied* into the air.
  */
 async function copy(item: Item): Promise<void> {
   const about = aboutItem(item);
@@ -44,7 +44,7 @@ async function copy(item: Item): Promise<void> {
 /**
  * Not processing: this puts the item back rather than sending it away. The
  * row updating is what says it worked, so only the failure has to speak, and
- * has to speak in the corner — a key that took it may leave no row on screen.
+ * has to speak in the status line — a key that took it may leave no row on screen.
  */
 function undiscard(item: Item): void {
   void client.unarchive(item.id).catch((error: unknown) => {
@@ -111,7 +111,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   // Offered only where the browser has a clipboard to give, and only where
   // there is something for it to take: a picture with no caption says
   // nothing, and copying it would put an empty string on the clipboard and
-  // then claim in the corner to have taken something.
+  // then claim in the status line to have taken something.
   if (copyable() && holds !== "") {
     commands.push({
       id: "copy",

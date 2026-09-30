@@ -23,9 +23,12 @@ export function placeOf(template: RoutingTemplate, called?: Namer): string {
  * one that was never loaded is unnamed rather than shown.
  */
 export function nameOf(id: string): string {
-  return (
-    client.templates.held.find((one) => one.id === id)?.name ?? "a template"
-  );
+  return heldName(id) ?? "a template";
+}
+
+/** A template's name where this shell holds the template, and nothing where it does not. */
+export function heldName(id: string): string | undefined {
+  return client.templates.held.find((one) => one.id === id)?.name;
 }
 
 /** The templates whose trigger tag is this tag, if any: what marks one in a chooser. */

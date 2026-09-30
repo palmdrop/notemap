@@ -4,6 +4,13 @@
 **Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **The status line.** One ruled line at the foot of every surface replaces the corner
+  and the bar's glyph: the newest live notice on the left, with its `undo` or `dismiss`; on the
+  right a route a trigger tag made counting down its window with `cancel`, `N pending`, `N to clear`,
+  `N in queue` and reachability. A panel opens above it on a press or `n` with this session's
+  notices and everything in flight. A fired template is in flight rather than a notice.
+  ([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md),
+  [plan](../plans/status-line.md))
 - 2026-09-30 — **A trigger tag taken during an edit waits for the save.** It is drawn in the grey
   until then and sent once the edit has landed, so it files the saved words; letting the edit go
   takes it away unsent. Ordinary tags are sent at once, as before.
@@ -536,8 +543,8 @@ fills in. It does not name a colour or a font; those come out of the design sess
 - **An item at an address**, and one of its **routing records** at an address under it: what an
   item is and what became of it, and what one decision was — where it went, what it was given, and
   where it landed.
-- **The chrome**: navigation over three surfaces, the reachability indicator, and where a refused
-  operation goes.
+- **The chrome**: navigation over the surfaces, and **the status line** at the foot of every one —
+  the shell's notices, what is in flight, the counts and reachability.
 - The **token roles** — colour, type, spacing, named by role — that every component is written
   against, and the rule that no component names a colour directly.
 - Rendering a note as CommonMark, and drawing a payload type this shell does not know.
@@ -570,7 +577,10 @@ fills in. It does not name a colour or a font; those come out of the design sess
 ### The shape of the shell
 
 Two columns, designed at 375px and given air on a wider screen. There is no second layout: no
-two-pane desktop, no bottom bar, no sheet. *Amended 2026-08-24*: the second column is the metadata
+two-pane desktop, no bottom bar, no sheet. *Amended 2026-09-30
+([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md))*: there is one bar at the bottom,
+the **status line** ([below](#the-status-line)), fixed under every surface; a page's foot is padded
+clear of it, and the process surface fills the viewport less its height. *Amended 2026-08-24*: the second column is the metadata
 rail, and it survives a phone rather than collapsing into the first. *Amended 2026-09-29
 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md))*: the register has a second
 layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
@@ -583,11 +593,11 @@ wordmark, the theme toggle, the order control and the waiting count left. Captur
 surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
 where the surfaces would be.
 
-The chrome carries what is true of the shell rather than of any item, and says it in **one glyph**
-at the bar's right: `●` the pool answers, `○` it does not, `◐` this device holds work the pool has
-not seen — with the count and the word in its title. The order control is a reading preference
-and sits in the head of each list that has one; the palette is a preference and sits in
-settings. A refusal goes to the corner.
+The chrome carries what is true of the shell rather than of any item. *Amended 2026-09-30*: it says
+it in the **status line** rather than in one glyph at the bar's right, which said `●`, `○` or `◐`
+with the count only in its title; the bar is navigation alone. The order control is a reading
+preference and sits in the head of each list that has one; the palette is a preference and sits in
+settings. A refusal goes to the status line.
 
 ### Capture is the head of the queue
 
@@ -627,7 +637,7 @@ else)*.
 the row and the process surface draw ([Tagging](#tagging)), labelled `Tag the capture` so a page
 holding both has two names for two controls. The tags chosen go **on the envelope** rather than as
 operations after it: the item arrives carrying them, so a trigger tag among them fires its template
-as the capture lands, exactly as one arriving from any other source would, and the corner says so
+as the capture lands, exactly as one arriving from any other source would, and the status line says so
 with the same `cancel` the row's chooser earns. Committing clears them with the text.
 
 **What is typed is not lost before the button** *(added 2026-09-22)*. The box keeps a **draft**
@@ -767,7 +777,7 @@ to its last segment** *(amended 2026-09-15)*, prefixed `…/` where more than th
 a long path does not wrap the line into several — the full place is still in the element's own
 `title`, a hover away. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
-says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the corner's to
+says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the status line's to
 say, not the feed's. Where it went is read off the records the row asks for when it is selected,
 on whichever surface it is. Tags stay editable on every row in the feed, including a discarded
 one, which also offers `unarchive` among a selected row's actions. Nothing is muted: there is no
@@ -801,7 +811,7 @@ the first row goes into its field, and `j` from the box is the first row.
 
 **Discard is the one deed shift guards.** `D`, not `d`: it is the only key here that sends an item
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is
-guarded, the corner's `undo` being what makes the rest cheap to take back.
+guarded, the status line's `undo` being what makes the rest cheap to take back.
 
 **The index is a second view of the same list**, toggled in the list head beside the order
 control — `timeline · index`, the current one bold — and carried on the URL as `view=index`,
@@ -968,7 +978,7 @@ does backspacing past the head of an empty place line. A destination is describe
 taken, describing being I/O that may hang.
 
 **`manual` and `discard` in the `otherwise` band act at once**, as they do on the row: no note, no
-second step, the corner saying `marked manual` or `discarded` with `undo`, and the surface moving
+second step, the status line saying `marked manual` or `discarded` with `undo`, and the surface moving
 on. `manual` is drawn unavailable while the pool is out of reach or where the item is already
 marked, `discard` where it is already discarded — each saying why and staying in its band, since a
 list that changes shape according to what has happened to the item is one a person cannot learn.
@@ -1040,7 +1050,7 @@ where the item was the last row held the next page is read before the queue is d
 and an item that was never on the queue — reached from the feed — goes on from its top. **A route
 does not advance** *(amended 2026-09-15; it did, and an item bound for two places lost its surface
 under the first)*: the decision is cleared and the surface stays, so a second destination is one
-more decision away, and `next →` is what moves on. The corner says what happened as it always did,
+more decision away, and `next →` is what moves on. The status line says what happened as it always did,
 with the way to the capture it was about. **`esc` returns to the queue with the item still
 selected** — `?selected=<id>` on the queue's address, read once on arrival and taken off again —
 and a processed item comes back held on the queue until the selection leaves it
@@ -1449,7 +1459,7 @@ than `directory` — and by their own keys where it cannot, with anything the re
 the schema does not name drawn all the same; it is offered only where there are any. `open ↗`
 follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
 record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
-a decision made by hand, which is the same call; both say so in the corner and the surface reads
+a decision made by hand, which is the same call; both say so in the status line and the surface reads
 its records again. In the log alone the foot also offers `item`, the way to the capture; on the
 item's own surfaces the capture is the row above.
 
@@ -1464,11 +1474,11 @@ groups, and are not six of a kind.
 
 **The quick tier is on the left**: every decision that needs no destination. `process`, bold, is
 the door to the one that does. `manual` calls the pool at once, with no note — the note is
-offered on the process surface, not here — and the corner says `marked manual` with `undo`, which
-cancels the record the mark made. `discard` calls the pool at once too, and the corner says
+offered on the process surface, not here — and the status line says `marked manual` with `undo`, which
+cancels the record the mark made. `discard` calls the pool at once too, and the status line says
 `discarded` with `undo`, which unarchives. **Neither notice is an alarm, and neither stands**
 *(amended 2026-09-24)*: both linger as a confirmation that offers something does
-([below](#the-corner-says-what-happened)), held while somebody is at them, since the way back is
+([below](#the-status-line)), held while somebody is at them, since the way back is
 also on the row and on the item surface. Standing made a corner nobody could empty without
 clicking. Both leave the row held in place as routing does, so the
 decision can be looked at after it is made. `manual` is disabled while the pool is out of reach or
@@ -1484,13 +1494,13 @@ and is last, so the gesture that selects a row in place is never the one that le
 
 **`copy` is the one action that has to say so.** It takes the capture's text, and everything else
 here either changes the row or takes you somewhere — this puts nothing on the screen at all. So it
-speaks in the corner, naming what it took rather than saying *copied* into the air. It uses
+speaks in the status line, naming what it took rather than saying *copied* into the air. It uses
 `navigator.clipboard` and nothing else, which needs a secure context: HTTPS, or `localhost`.
 **Where that is missing the action is not drawn**: reached over plain HTTP at a LAN address — a
 plausible way to reach a self-hosted daemon from a phone — the browser hands over no clipboard at
 all, and a control that can only fail is worse than an absent one. **Nor is it drawn where there is
 nothing to take**: a note captured with a picture and no prose says nothing, and copying it would
-put an empty string on the clipboard and then claim in the corner to have taken something.
+put an empty string on the clipboard and then claim in the status line to have taken something.
 
 #### A command is what a key and a button both reach
 
@@ -1532,7 +1542,7 @@ is the way from writing to working. The same rule covers a control reached by ta
 committed on `⏎`, or a button the browser is about to click, has answered for the press, and a
 command taking it too would act twice on one of them.
 
-**What a command could not do is said in the corner**, never under the row. A deed a key took may
+**What a command could not do is said in the status line**, never under the row. A deed a key took may
 have no row on screen to draw a failure beneath — which is already why discarding and marking
 manual speak there, and is now why a failed `copy` and a failed `undiscard` do too.
 
@@ -1634,7 +1644,7 @@ templates whose records still stand, so a carried tag whose template is among th
 `<span>` rather than a button — the trigger style, and a `title` saying the routing has to be
 cancelled to take it off. It is read from what the item's own summary says, so it costs no ask per
 tag. Pressing it does nothing; the way back is still cancelling the routing, which gives the tag
-with it, and the refusal that used to explain this reaches the corner only where something is asked
+with it, and the refusal that used to explain this reaches the status line only where something is asked
 of the pool anyway — cancelling a routing it has already refused, say.
 
 The two drain apart. A tag taken in the composer is the same outbox operation the row makes, and
@@ -1673,15 +1683,17 @@ than a flattened destination×capability list being offered up front.
 Three conditions, and each of them is drawn as itself. *(Amended 2026-08-26: it used to paint two
 of them the same colour.)*
 
-- **Unreachable** is stated **once**, in the chrome, as a small persistent mark. It is not repeated
+- **Unreachable** is stated **once**, in the status line, as a small persistent mark *(moved there
+  from the bar 2026-09-30)*. It is not repeated
   on every row, and no surface repeats it either: a read that never reached the pool draws no
   failure, and the only other place it is said at all is the foot of a surface with more to read,
   which is where a page would have been offered (below). Actions that need the daemon
   are visibly unavailable and read as unavailable, not as broken. Capture, tagging, editing and
   archiving stay live, because they replay from the outbox.
 - **Pending** is quiet, and it is two marks answering two questions *(amended 2026-08-26)*. The
-  bar's `N waiting` answers whether anything at all is outstanding, including for rows nobody is
-  looking at, and says nothing while there is nothing. A row's own `pending` mark answers whether
+  status line's `N pending` *(2026-09-30; the bar's `N waiting` before it, and the glyph's `◐`
+  between)* answers whether anything at all is outstanding, including for rows nobody is looking
+  at, lists it in the panel, and says nothing while there is nothing. A row's own `pending` mark answers whether
   *this* row is, and sits in the metadata rail — muted, and deliberately not in the inverted idiom
   `routed`, `archived` and `revised` use: those say what became of the item in the pool, this says
   what this client has not sent, and an archived row that has not drained carries both without
@@ -1691,9 +1703,10 @@ of them the same colour.)*
   answers — is never marked, since the line it takes would come and go and move the row twice.
   The wait is the work's, not the row's: work that has already waited that long is marked at once
   whenever its row is drawn again, rather than growing the row a line on every visit.
-- **Refused** is loud. It gets a fixed place in the bottom-left corner carrying what was refused,
-  why, and a way to dismiss it — the left corner because the right is where a composer lives, because it is the only one of the three that will not resolve without a person. It is not
-  drawn in the same shape as pending work.
+- **Refused** is loud, because it is the only one of the three that will not resolve without a
+  person. It is said on the status line, in the accent, carrying what was refused and a way to
+  dismiss it, is counted in `to clear`, and is listed with why in the panel
+  ([below](#the-status-line)). It is not drawn in the same shape as pending work.
 
 **Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
 pool and holds no answer to — a read, a description, a preview, a route, a save — is drawn as
@@ -1720,7 +1733,7 @@ not marked while it is asked again, being what the last answer said and exactly 
 
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
-that this was what the client holds. That entry is gone. Between the chrome's `offline` mark and a
+that this was what the client holds. That entry is gone. Between the status line's `offline` and a
 row's `pending` mark the condition is already stated twice, and a third sentence above the rows was
 the loudest of the three about the quietest thing. What replaces it is the **foot**: a surface with
 more to read says, where `load more` would be, that the pool is out of reach and that nothing more
@@ -1733,49 +1746,72 @@ the end says nothing either: there is no next page to be denied.
 and has no count to mislead ([above](#an-item-has-an-address)).
 
 A read the pool **refused** keeps the register entry, in the accent, being the one read failure that
-will not resolve without a person; it does not go to the corner, which belongs to the outbox — an
+will not resolve without a person; it does not go to the status line, whose refusals belong to the outbox — an
 operation, with an id, that a person dismisses — and a failed read has neither. A read the pool
 never answered still draws no failure at all.
 
-### The corner says what happened
+### The status line
 
-*(2026-09-03.)* The corner a refusal has always had is where the shell says anything at all in its
-own voice, and a refusal is one of the things it says rather than the whole of it. A **notice** is
-work that has already happened, reported to somebody who did not ask: an item routed and where it
-went, a delivery that failed, a delivery given up on. **One place, with gradations** — a second
-corner would be a reader learning where to look to learn nothing more.
+*(2026-09-30, [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md). It replaces the corner,
+which said what happened from 2026-09-03, and the bar's glyph.)* The shell says anything in its own
+voice from **one ruled line fixed to the bottom of every surface**, in the page's column, at the
+shell's one size. **One place, with gradations** — a second place would be a reader learning where
+to look to learn nothing more. A **notice** is work that has already happened, reported to somebody
+who did not ask: an item routed and where it went, a delivery that failed, a delivery given up on.
+Beside the notices the line says what is true of the shell rather than of any item: what is in
+flight, what stands, how much is left, and whether the pool answers.
+
+**The left is the message line.** It says the **newest notice still live**, its first line and its
+reason on one line, cut to fit rather than wrapped, and beside it whatever the notice offers
+(`undo`) and, for one that stands, `dismiss`. Where no notice is live it says the newest refusal,
+with `dismiss`; where nothing is live at all and something has been said this session, it offers
+`notices`; otherwise it is empty. A notice rises into the line as it arrives: the line is read at
+the edge of the eye, and motion is what tells that edge something was said.
 
 **A confirmation goes on its own and a failure holds.** Anything a person may have to act on stays
-until they clear it, which is the rule the refusal already followed; a success is a glance and
-leaves after a few seconds. The accent is spent on the second kind and on nothing else, as it is in
-the log. **A notice rises into the corner and fades out of it** *(2026-09-25)*, and the ones beside
-it close the gap it leaves rather than jumping into it: the corner is read at the edge of the eye,
-and motion is what tells that edge something was said.
+until they clear it; a success is a glance and leaves after four seconds, ten where it offers
+something, which is long enough to reach for an `undo`. It still goes on its own, because the way
+back is not only here: a discarded row offers `unarchive`, and a manual mark's record offers `undo`
+on the item surface. The accent is spent on what stands and on nothing else, as it is in the log.
+**Nothing leaves while the pointer is over the line or focus is inside it**, its panel included, so
+nothing vanishes under somebody's hand; let go, everything lingers again from the start.
 
-**A confirmation that offers something lingers longer** *(amended 2026-09-24)* — ten seconds rather
-than four — which is long enough to reach for an `undo`. It still goes on its own, because the way
-back is not only in the corner: a discarded row offers `unarchive`, and a manual mark's record
-offers `undo` on the item surface. **Nothing leaves the corner while the pointer is over it or
-focus is inside it** — not by lingering out, and not by being trimmed for room, which waits too — so
-nothing vanishes under somebody's hand, including a notice that arrived while they were there. Let
-go, everything in it lingers again from the start.
-**Every notice can be dismissed**, a confirmation as well as what stands. **A notice is never wider
-than the screen allows** *(2026-09-27)*: the corner is capped at its measure or the viewport less
-its margins, whichever is narrower, and a path or an address with no break in it wraps anywhere
-rather than pushing the notice past its edge.
+**The right is the counts**, each drawn only while it is true, in a fixed order:
 
-**The refusals sit at the bottom of the stack**, being the ones that will not clear themselves, and
-the bottom of the corner is its reachable end. Above them the newest notice sits nearest, and the
-corner holds four: past that the oldest confirmations go, and standing notices never do. Neither
-does the one just raised — a corner full of failures that swallowed the confirmation of what
-somebody has this second done would be hiding the one thing they are waiting for. What there is
-still no room for is counted, with a way through to the log.
+- **A route in flight** — `routing · research 12s`, with `cancel` (below).
+- **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
+  refusal. It says nothing while there is nothing, since pending is ordinary and heals itself.
+- **What stands to be cleared** — `2 to clear`, in the accent: standing notices drawn as alarms,
+  and refusals.
+- **How much is left** — `14 in queue`, the pool's own count of what the queue holds, read from
+  `GET /v1/counts` and leading to the queue. It is the pool's number: what this device has not sent
+  is the pending count's. It keeps its last answer while the pool is out of reach.
+- **Reachability**, always, last — `●` where the pool answers, `○ offline` where it does not.
+
+A press on any count but the queue's opens the panel. **Below `narrow`** the words go: a route in
+flight is `routing 12s cancel`, pending `◐ 3`, what stands `! 2`, the queue's count is not drawn, and
+reachability is the glyph alone. The message keeps its first line and drops its reason.
+
+**The panel** opens above the line from a press on the message or a count, or `n` anywhere, and
+closes on `esc`, on its own `close`, or on a press anywhere outside the line. It is the one place a
+notice that has gone can be read again: this session's notices, **oldest first so the newest sits
+nearest the line**, each with its time, what and why, the capture it was about, and `look`. A notice
+still live keeps its offer and its `dismiss`; one that has gone keeps neither, since what it offered
+may no longer be true. `clear` lets go of what has gone. Under the notices, **in flight**: each
+route in flight with its countdown, `look` and `cancel`; each operation this device has not sent,
+with its time and `look`; and each refusal, in the accent, with `dismiss`. The panel's head leads
+to the log, which is where the whole of it is. It holds the last hundred notices and is the
+session's: a reload empties it, and the log is the durable account. While it is open, `esc` is its
+own before any surface's.
+
+**A notice is never wider than the screen allows**: the line cuts its message to fit, and the panel
+wraps a path or an address with no break in it anywhere rather than pushing past its edge.
 
 **A gesture speaks when its subject leaves the screen.** Routing, marking done and archiving take
 the row away and therefore say where it went; tagging and editing leave it in front of you and say
 nothing, because the row is its own evidence and a notice per tag is noise. A failure at a control
 that is still on screen is said **at the control** — the composer keeps its modal open on a refusal,
-a row keeps its own line — and the corner is for what has nowhere else to be said.
+a row keeps its own line — and the status line is for what has nowhere else to be said.
 
 The rule is about the subject rather than the gesture, so **the same gesture is silent on the item
 surface** *(2026-09-04)*: `/items/{id}` keeps what it is about, and the decision is drawn there in
@@ -1787,70 +1823,62 @@ does not report it back minutes later as news.
 where it landed; one it recorded and has not carried out reads as **retrying**, and claims no
 landing. The difference is not a nicety: a pending record is one whose delivery was attempted and
 did not go, and the shell saying `routed` there would be inventing the one fact only the delivery
-can establish. What it landed as is said later, by the corner, when the pool writes it.
+can establish. What it landed as is said later, when the pool writes it.
 
-**A notice names the capture, not only the place** *(2026-09-03)*. Three lines: what happened and
-where, the path a copy went to, and — muted under both — the stamp the row was read by and the
-capture's own first words. A place and a path say where something went; only the excerpt says
-*what* went, and by the time a notice is read the row it names has left the register. Where the
-notice came from the log rather than from a gesture, the item is read for it, because the log names
-an id and nobody recognises a note by its id.
+**A notice names the capture, not only the place** *(2026-09-03)*: what happened and where, the
+path a copy went to, and the stamp the row was read by with the capture's own first words. The line
+has room for the first two; the panel says all three. A place and a path say where something went;
+only the excerpt says *what* went, and by the time a notice is read the row it names has left the
+register. Where the notice came from the log rather than from a gesture, the item is read for it,
+because the log names an id and nobody recognises a note by its id.
 
-This is the one place the shell's **copy is more than a word or a mark**. Everything else it says
-sits beside the thing it is about, and a notice does not: it is read on its own, about a row that
-has gone, possibly minutes later. `retrying · Vault` over `not delivered yet · notes/daily.md` is
-three facts a person can act on; `deferred` was one word nobody could act on, which is what the
-brevity cost here *(amended 2026-09-03, after reading it in use)*.
+**One run of attempts at one record is one notice** *(2026-09-30)*. A delivery that failed, and the
+giving up that follows it, take one another's place; giving up says **why** as well as that the item
+is back in the queue — `given up · Vault` over `rejected · notes/a.md already exists · back in the
+queue` — because it is the last word, and the reason would otherwise be gone with the notice it
+replaced.
 
-**A fired template is the corner's one notice about something that has not happened yet** *(added
-2026-09-07)*. Putting a trigger tag on an item reserves a delivery and waits a configured window
-before attempting it, precisely so there is something to call off
+**A route a trigger tag made is in flight, not a notice** *(2026-09-30, amending 2026-09-07)*.
+Putting a trigger tag on an item reserves a delivery and waits a configured window before
+attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
-So the corner reads **`routing · research`** while the window is open and carries **`cancel`**;
-when the record resolves it reads **`routed · research`**, which lingers as any confirmation does
-*(amended 2026-09-24)*: there is nothing left to call off.
-Both name the **template**, not the destination, because the template's name is what the person
-pressed.
+Nothing has happened yet, so the line draws it with the counts rather than as a notice: **`routing
+· research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
+destination, because the template's name is what the person pressed. **The countdown is measured**:
+the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
+delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
+window closes the count gives way to the asking mark — the delivery is being attempted — and
+`cancel` stays, since a pending record can be called off until it resolves. It is never drawn in the
+accent: nothing has gone wrong. **More than one is counted** — `routing 2 · 4s`, the soonest window
+— and each is read and cancelled in the panel.
 
-**That is the whole of the window's visibility**: no countdown and no bar. A notice claiming a
-progress it is not measuring would be inventing one, and the only fact worth drawing is whether
-there is still something to cancel.
+**Everything that ends it takes it away**: the landing, a delivery that failed, one given up on, and
+a cancellation. What it ended as is then a notice like any other — `routed · research` naming the
+template, a failure naming its reason — and one decision reads as one thing from beginning to end
+rather than a route still on its way beside the news that it failed.
 
-While the window is open it **stands** rather than lingering, the `cancel` being nowhere else, and
-there is **one at a time**, the newer replacing the older —
-the rule `discard` already follows, and for the same reason: a tag files an item in one keystroke,
-so a corner stacking four of them while a queue is worked is not the quiet thing it is meant to be.
-
-**Everything that ends the firing takes its place** *(added 2026-09-07)*: the landing, a delivery
-that failed, one given up on, and a cancellation. One decision reads as one notice from beginning
-to end, and the alternative is a corner contradicting itself — `routing · research` still saying
-the item is on its way, beside `given up`, offering a cancel that would now refuse.
-
-**It stands without being an alarm** *(added 2026-09-07)*. Standing and alarming are one thing
-almost everywhere in the corner, because what stands is usually what went wrong; this is the
-exception, and it may not be drawn in the accent. It is there because its cancel must not time out
-under somebody's hands, and nothing has gone wrong at all — a notice that shouts at somebody for
-filing an item where they said to file it is the shell disagreeing with them.
-
-**The log says it, and the shell says it first** *(amended 2026-09-07)*. Both notices are written
-from the log ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)), which is
-how a firing on another device, or one drained from an outbox on a daemon nobody is watching, still
-reaches the corner. But the log is polled on the reachability probe's own tempo, which is **longer
-than the window a fired template waits out** — so a corner that only ever waited for it would offer
-the cancel with most of the window already spent, and sometimes after it had closed. So the shell
-that did the tagging raises the same notice as soon as it can name the record, which it asks the
-pool for; the log's own entry arrives under the same name and adds nothing. This is the shell
-speaking about what it just did, which is what the corner is for; it is not the shell deciding
-what happened, and nothing here writes.
+**The log says it, and the shell says it first** *(amended 2026-09-07)*. Both are read from the log
+([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)), which is how a firing on
+another device, or one drained from an outbox on a daemon nobody is watching, still reaches the
+line. But the log is polled on the reachability probe's own tempo, which is **longer than the window
+a fired template waits out** — so a line that only ever waited for it would offer the cancel with
+most of the window already spent. So the shell that did the tagging draws the route as soon as it
+can name the record, which it asks the pool for, and reads the item's log once for when its window
+closes; the log's own entry then opens the same route and adds nothing, and one that has already
+ended stays ended. This is the shell drawing what it just did; it is not the shell deciding what
+happened, and nothing here writes.
 
 **A tag that fired nothing says nothing**, and a tag whose template could not route is a **refusal**
-rather than a notice: nothing happened, the tag is not on the item, and a refusal is what the corner
+rather than a notice: nothing happened, the tag is not on the item, and a refusal is what the line
 already holds for a person to act on. It reads as what it is — that tag files somewhere, and its
 template cannot — which is a thing to go and fix in settings.
 
-**Signing out leaves nothing standing.** The corner is emptied with the rest of what the door
-shuts on: a failure about a delivery nobody can now look up would outlive the session that raised
-it.
+**Signing out leaves nothing standing.** Notices and routes in flight are emptied with the rest of
+what the door shuts on: a failure about a delivery nobody can now look up would outlive the session
+that raised it. The line stays, saying only what this device holds and whether the pool answers,
+because unsent work is the person's and its loss would otherwise be silent.
+
+#### The row a gesture leaves
 
 **The row is held rather than vanishing** *(rewritten 2026-09-08)*. Processing leaves the row
 **open**, back at its own rank in the register, wearing the word for what became of it and keeping
@@ -1887,7 +1915,9 @@ decision reaches the person who made it without anybody opening `/log`.
 **Four kinds are said out loud and no others**: `routed`, `delivery-failed`, `work-failed`,
 `work-abandoned` — the three the log already spends the accent on, and the landing. Everything else
 the log holds stays in the log, which is what it is for. That set and the log's accent set are the
-same set, deliberately, and are stated together so they cannot drift.
+same set, deliberately, and are stated together so they cannot drift. *Amended 2026-09-30*:
+`template-fired` is read too, but opens a route in flight on the status line rather than saying
+anything, and the four that end a route close it ([above](#the-status-line)).
 
 **Nothing is said twice.** A notice is keyed by the **routing record** rather than by the log entry:
 a delivery retried four times is one thing that went wrong, and a landing this shell already
@@ -2109,7 +2139,7 @@ space — `DELIVERY FAILED` — and the archive is called what the UI calls it e
 `archived` reads `discarded`, `unarchived` reads `undiscarded`; the pool's own kinds are untouched.
 *(Until 2026-09-14 the kind was inverted, ground on ink, as the body's heading.)* **The alarm is
 spent on `delivery-failed`, `work-failed` and `work-abandoned`**, which are the same three the
-corner says out loud — the kind is in alarm there, and so is the refusal's code beside the words —
+status line says out loud — the kind is in alarm there, and so is the refusal's code beside the words —
 not on `purged`, `destination-deleted` or `actions-cleared`, which are facts rather than warnings.
 A log where half the rows are red says nothing.
 
@@ -2169,7 +2199,7 @@ a shell sifting the page after the read would page over rows it then threw away.
 the head is held to the same kinds. A view composes with a subject.
 
 **What has happened since goes to the head of the page** *(added 2026-09-09)*. The shell already
-reads the action log on its own tempo for the corner to speak from, and the log was the one surface
+reads the action log on its own tempo for the status line to speak from, and the log was the one surface
 that did not listen to it: a page read on arriving stayed the photograph it was taken as, and
 seeing anything new meant reloading. It listens now, and what arrives is put above what is drawn.
 **Newest-first only** — read oldest-first the walk starts at the oldest entry and what just happened
@@ -2337,7 +2367,7 @@ width, the prose stops early, as prose is set. Paragraphs are set apart by a bla
 indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
-slides in and out of a list; a notice rises into the corner and fades out of it; a section, a
+slides in and out of a list; a notice rises into the status line; a section, a
 settings row and `more` slide open and shut over `short`; the capture box's picture comes and goes
 as a row does, sliding and fading over `long`, being a thing arriving rather than a disclosure; an
 open section of the
@@ -2433,7 +2463,7 @@ view is how a reader sees more at once.
   first step, which already asks exactly that question.
   What it cost, and what was accepted in exchange:
   - **A gesture.** Discarding noise was one press and is now two. It is paid for by `discard`
-    acting when it is taken, and by an `undo` in the corner for the accident that buys.
+    acting when it is taken, and by an `undo` in the status line for the accident that buys.
   - **An invariant.** The composer had to start opening with the pool out of reach, or the queue
     would have had no way to drain offline — archiving being the gesture that survived. The
     reasoning that the composer's tag chooser "exists exactly when routing does" went with it.
@@ -2580,8 +2610,14 @@ view is how a reader sees more at once.
   why, and offers it again once the pool answers.
 - Scrolling the feed, the queue or the log to within a screen of its foot reads the next page
   without a press, and a failed read is not retried until somebody asks.
-- Nothing leaves the corner while the pointer is over it or focus is inside it, and every notice
-  offers `dismiss`.
+- Nothing leaves the status line while the pointer is over it or focus is inside it, its panel
+  included, and every notice that stands offers `dismiss` on the line and in the panel.
+- The status line is on every surface: it says the newest live notice, `N pending` while this device
+  holds unsent work, `N to clear` in the accent while anything stands, the queue's count once the
+  pool has answered, and whether the pool answers. Below `narrow` its counts are numbers and marks.
+- The panel opens on a press or `n`, closes on `esc` or a press outside, lists this session's
+  notices oldest first with the newest nearest the line, and lists what is in flight; a notice that
+  has gone offers nothing.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture
@@ -2593,8 +2629,8 @@ view is how a reader sees more at once.
   no argument fields, and the modal says which capture it is about.
 - Every way an item leaves the queue is behind one control, and `copy`, `edit`, `open` and
   `unarchive` are not behind it; all of them are drawn on one line.
-- Discarding a queued item costs two gestures, says so in the corner, and is put back by one press
-  on what the corner says — and the corner holds one such offer however many rows were discarded.
+- Discarding a queued item costs two gestures, says so in the status line, and is put back by one
+  press on what the line says — and the line holds one such offer however many rows were discarded.
 - `manual` is offered once: an item whose routing summary names the person still draws the entry,
   with the reason it cannot be taken, on every surface that draws a row.
 - The composer is dismissable and every entry in `where` is reachable from the keyboard alone,
@@ -2621,13 +2657,13 @@ view is how a reader sees more at once.
 - The process surface says where an item has gone already on one line under its stamp, and the
   tags section's `+` is there without pressing anything.
 - A change to a settled decision marks the preview as awaited before the next preview is asked.
-- A notice carrying a path with no break in it stays inside the corner, and the corner inside a
-  320px screen.
+- A notice carrying a path with no break in it stays inside the panel, the line cuts it to fit, and
+  both stay inside a 320px screen.
 - A tag a template declared is drawn with the template's name beside it wherever tags are offered,
   and a tag under `route/` that no template claims is drawn like any other.
-- Putting a trigger tag on an item leaves the corner reading `routing · <template>` with a working
-  `cancel`, and reading `routed · <template>` once the delivery lands — one such notice at a time,
-  standing until it is dismissed.
+- Putting a trigger tag on an item leaves the status line reading `routing · <template>` with the
+  seconds left in its window and a working `cancel`, the asking mark once the window closes, and a
+  `routed · <template>` notice once the delivery lands, the route in flight gone with it.
 - A trigger tag whose template cannot route reaches the person as a refusal, and the item is left
   carrying neither the tag nor a pending record.
 - The Templates section draws from pool state at once, each row asking its own report; a template

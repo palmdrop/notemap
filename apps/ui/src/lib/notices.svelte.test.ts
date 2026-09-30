@@ -30,27 +30,6 @@ test("a standing notice holds until it is dismissed", () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("the corner drops the oldest confirmation and never a standing one", () => {
-  notices.raise({ what: "one, standing", standing: true });
-  for (const what of ["two", "three", "four", "five", "six"]) {
-    notices.raise({ what });
-  }
-
-  const said = notices.shown.map((notice) => notice.what);
-  expect(said).not.toContain("two");
-  expect(said).toContain("one, standing");
-  expect(said).toContain("six");
-});
-
-test("standing notices past the corner's room are counted, not lost", () => {
-  for (let at = 0; at < 6; at += 1) {
-    notices.raise({ what: `failure ${String(at)}`, standing: true });
-  }
-
-  expect(notices.shown).toHaveLength(4);
-  expect(notices.folded).toBe(2);
-});
-
 test("a key is said once, however often it is raised", () => {
   expect(notices.raise({ what: "routed", key: "record-1" })).toBeDefined();
   expect(notices.raise({ what: "routed", key: "record-1" })).toBeUndefined();
@@ -71,34 +50,6 @@ test("a key outlives the notice it was said with", () => {
 
   expect(notices.shown).toHaveLength(0);
   expect(notices.raise({ what: "routed", key: "record-3" })).toBeUndefined();
-});
-
-test("a confirmation into a corner full of failures is the one thing not dropped", () => {
-  for (let at = 0; at < 4; at += 1) {
-    notices.raise({ what: `failure ${String(at)}`, standing: true });
-  }
-
-  notices.raise({ what: "routed · obsidian" });
-
-  const said = notices.shown.map((notice) => notice.what);
-  expect(said).toContain("routed · obsidian");
-  expect(said).not.toContain("failure 0");
-  expect(notices.folded).toBe(1);
-});
-
-test("that confirmation still goes on its own, leaving the failures behind", () => {
-  for (let at = 0; at < 4; at += 1) {
-    notices.raise({ what: `failure ${String(at)}`, standing: true });
-  }
-  notices.raise({ what: "routed · obsidian" });
-
-  vi.advanceTimersByTime(10_000);
-
-  expect(notices.shown.map((notice) => notice.what)).not.toContain(
-    "routed · obsidian",
-  );
-  expect(notices.shown).toHaveLength(4);
-  expect(notices.folded).toBe(0);
 });
 
 test("taking what a notice offered invokes it once and resolves the notice", () => {
@@ -127,7 +78,6 @@ test("only the newest of a named notice stands", () => {
   }
 
   expect(notices.shown.map((notice) => notice.what)).toEqual(["discarded · c"]);
-  expect(notices.folded).toBe(0);
 });
 
 test("a name supersedes nothing that does not bear it", () => {
@@ -141,20 +91,6 @@ test("a name supersedes nothing that does not bear it", () => {
   ]);
 });
 
-test("a standing notice carrying an offer survives a full corner", () => {
-  notices.raise({
-    what: "discarded · a",
-    standing: true,
-    only: "discard",
-    offer: { label: "undo", take: vi.fn() },
-  });
-  for (const what of ["one", "two", "three", "four", "five"]) {
-    notices.raise({ what });
-  }
-
-  expect(notices.shown.map((notice) => notice.what)).toContain("discarded · a");
-});
-
 test("a notice offering something lingers long enough to reach for it", () => {
   notices.raise({ what: "discarded", offer: { label: "undo", take: vi.fn() } });
 
@@ -165,7 +101,7 @@ test("a notice offering something lingers long enough to reach for it", () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a held corner lets nothing leave, and lingers again once let go", () => {
+test("a held status line lets nothing leave, and lingers again once let go", () => {
   notices.raise({ what: "copied" });
 
   notices.hold();
@@ -179,10 +115,10 @@ test("a held corner lets nothing leave, and lingers again once let go", () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a notice raised into a held corner waits to be let go", () => {
+test("a notice raised into a held status line waits to be let go", () => {
   notices.hold();
-  notices.raise({ what: "routing · research", standing: true, only: "fired" });
-  notices.raise({ what: "routed · research", only: "fired" });
+  notices.raise({ what: "delivery failed", standing: true, only: "record" });
+  notices.raise({ what: "routed · research", only: "record" });
   vi.advanceTimersByTime(60_000);
 
   expect(notices.shown.map((notice) => notice.what)).toEqual([
@@ -194,21 +130,7 @@ test("a notice raised into a held corner waits to be let go", () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a held corner trims nothing, and trims once let go", () => {
-  notices.hold();
-  for (const what of ["one", "two", "three", "four", "five"]) {
-    notices.raise({ what });
-  }
-
-  expect(notices.shown).toHaveLength(5);
-  expect(notices.folded).toBe(0);
-
-  notices.release();
-  expect(notices.shown.map((notice) => notice.what)).not.toContain("one");
-  expect(notices.shown).toHaveLength(4);
-});
-
-test("letting go of the corner does not start a standing notice leaving", () => {
+test("letting go of the status line does not start a standing notice leaving", () => {
   notices.raise({ what: "delivery failed", standing: true });
 
   notices.hold();
@@ -216,4 +138,84 @@ test("letting go of the corner does not start a standing notice leaving", () => 
   vi.advanceTimersByTime(60_000);
 
   expect(notices.shown).toHaveLength(1);
+});
+
+test("the message line says the newest live notice", () => {
+  notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "copied" });
+  expect(notices.latest?.what).toBe("copied");
+
+  vi.advanceTimersByTime(4_000);
+  expect(notices.latest?.what).toBe("delivery failed");
+});
+
+test("what stands is counted apart from what lingers", () => {
+  notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "given up", standing: true });
+  notices.raise({ what: "copied" });
+
+  expect(notices.standing.map((notice) => notice.what)).toEqual([
+    "delivery failed",
+    "given up",
+  ]);
+});
+
+/** The panel reads back what the line has already let go of. */
+test("the history keeps what has gone, and says which is still live", () => {
+  const failed = notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "copied" });
+  vi.advanceTimersByTime(4_000);
+  notices.dismiss(failed as string);
+  notices.raise({ what: "routed · vault", standing: true });
+
+  expect(notices.history.map((notice) => [notice.what, notice.live])).toEqual([
+    ["delivery failed", false],
+    ["copied", false],
+    ["routed · vault", true],
+  ]);
+});
+
+test("the history keeps both sides of a notice that took another's place", () => {
+  notices.raise({ what: "delivery failed", standing: true, only: "record" });
+  notices.raise({ what: "given up", standing: true, only: "record" });
+
+  expect(notices.shown.map((notice) => notice.what)).toEqual(["given up"]);
+  expect(notices.history.map((notice) => notice.what)).toEqual([
+    "delivery failed",
+    "given up",
+  ]);
+});
+
+test("a notice that has gone offers nothing", () => {
+  const put = vi.fn();
+  const id = notices.raise({
+    what: "discarded",
+    offer: { label: "undo", take: put },
+  });
+  vi.advanceTimersByTime(10_000);
+
+  notices.take(id as string);
+
+  expect(put).not.toHaveBeenCalled();
+});
+
+test("clearing the history keeps what is live", () => {
+  notices.raise({ what: "copied" });
+  vi.advanceTimersByTime(4_000);
+  notices.raise({ what: "delivery failed", standing: true });
+
+  notices.clearHistory();
+
+  expect(notices.history.map((notice) => notice.what)).toEqual([
+    "delivery failed",
+  ]);
+});
+
+test("the history holds the last hundred", () => {
+  for (let at = 0; at < 105; at += 1) {
+    notices.raise({ what: `said ${String(at)}` });
+  }
+
+  expect(notices.history).toHaveLength(100);
+  expect(notices.history[0]?.what).toBe("said 5");
 });

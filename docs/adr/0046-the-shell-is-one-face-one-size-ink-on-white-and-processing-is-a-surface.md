@@ -87,7 +87,9 @@ unprocessed item**, which is what single-capture mode was going to be. The modal
 
 **Chrome.** The bar is `queue · feed · log · settings` and one status glyph. The wordmark, the
 theme toggle and the order control leave it; the theme goes to settings and the order to the head
-of each list. A collapsed queue row is stamp, tags and text — no state word, since the surface
+of each list. *Amended 2026-09-30 by
+[ADR 54](0054-the-shell-speaks-from-a-status-line.md)*: the glyph leaves the bar for a status line
+fixed to the foot of every surface, which also takes the corner's notices. A collapsed queue row is stamp, tags and text — no state word, since the surface
 already says it. *Amended 2026-09-14, once built and looked at*: the feed drops its routing words
 too — `routed`, `manual`, `retrying` — since the line saying where an item went already says
 them; `discarded` stays, no line saying it. And the page is 56rem rather than the drawings' 72:

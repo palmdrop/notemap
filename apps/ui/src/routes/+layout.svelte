@@ -4,29 +4,27 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
-  import Corner from "$components/notices/Corner.svelte";
   import SignIn from "$components/session/SignIn.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
   import Nav from "$components/primitives/frame/Nav.svelte";
   import Sheet from "$components/primitives/frame/Sheet.svelte";
-  import Status from "$components/primitives/frame/Status.svelte";
+  import StatusLine from "$components/status/StatusLine.svelte";
   import { client } from "$lib/client";
   import { chordFor } from "$lib/command/bindings";
   import { dispatch } from "$lib/command/dispatch";
+  import { firings } from "$lib/firings.svelte";
   import { published } from "$lib/command/stack.svelte";
   import { leave, unsaved } from "$lib/leaving.svelte";
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
-  import { waiting } from "$lib/waiting.svelte";
 
   import "./layout.css";
 
   let { children } = $props();
 
   const pool = reachable();
-  const held = waiting();
   const who = session();
 
   watched();
@@ -42,13 +40,14 @@
   // at start would otherwise leave completion offering nothing until a tag
   // happened to drain, and a pool setting changed on another device has to
   // arrive without anyone opening settings. A failure is swallowed, the status
-  // glyph and the login being what say so.
+  // line and the login being what say so.
   $effect(() => {
     if (pool.yes && !who.shut) {
       void client.destinations.load().catch(() => undefined);
       void client.templates.load().catch(() => undefined);
       void client.tags.load().catch(() => undefined);
       void client.settings.load().catch(() => undefined);
+      void client.counts.load().catch(() => undefined);
     }
   });
 
@@ -65,7 +64,10 @@
   // delivery nobody can now look up would outlive the session that raised it.
   $effect(() => {
     if (!shut) return;
-    untrack(() => notices.clear());
+    untrack(() => {
+      notices.clear();
+      firings.clear();
+    });
   });
 
   // An edit with changes is asked about before the page goes: in the shell's
@@ -107,7 +109,6 @@
       {:else}
         <Nav surfaces={SURFACES} current={page.url.pathname} />
       {/if}
-      <Status reachable={pool.yes} waiting={held.count} />
     </Bar>
 
     {#if shut}
@@ -118,6 +119,4 @@
   </Column>
 </Sheet>
 
-{#if !shut}
-  <Corner />
-{/if}
+<StatusLine {shut} />

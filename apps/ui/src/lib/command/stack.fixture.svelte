@@ -1,7 +1,11 @@
 <script lang="ts">
   import { publish } from "./stack.svelte";
 
-  let { id }: { id: string } = $props();
+  import { untrack } from "svelte";
 
-  publish(() => [{ id, label: id, run: () => undefined }]);
+  let { id, atop = false }: { id: string; atop?: boolean } = $props();
+
+  publish(() => [{ id, label: id, run: () => undefined }], {
+    atop: untrack(() => atop),
+  });
 </script>

@@ -1,7 +1,8 @@
 import type { Action } from "@notemap/client";
 
+import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
-import { firedKey, keyFor } from "./routing";
+import { keyFor } from "./routing";
 
 /**
  * The kinds worth saying to somebody who did not ask. Everything else the log
@@ -9,26 +10,19 @@ import { firedKey, keyFor } from "./routing";
  */
 const SAID: ReadonlySet<string> = new Set([
   "routed",
-  "template-fired",
   "delivery-cancelled",
   "delivery-failed",
   "work-failed",
   "work-abandoned",
 ]);
 
-/**
- * One at a time, and it stands. A tag files an item in one keystroke, so a
- * corner stacking four of these while a queue is worked is not the quiet thing
- * it is meant to be — and the cancel is the only thing between a mistyped tag
- * and somebody's vault, so it may not linger away while nobody is looking.
- *
- * Everything that **ends** a firing carries the same name, so it takes the
- * notice's place rather than standing beside it: a delivery that landed, one
- * that failed, one given up on, and a cancellation. A `routing · research` left
- * up after the route is over says something untrue and offers a cancel that
- * would refuse.
- */
-export const FIRED = "fired";
+/** Everything that ends a firing: it landed, failed, was given up on, or called off. */
+const ENDS: ReadonlySet<string> = new Set([
+  "routed",
+  "delivery-cancelled",
+  "delivery-failed",
+  "work-abandoned",
+]);
 
 function stringAt(
   detail: Record<string, unknown>,
@@ -67,16 +61,49 @@ function firedByTag(detail: Record<string, unknown>): boolean {
  * One run of attempts at one record reads as one notice, the last word taking
  * the place of the ones before it.
  */
-function runOf(
-  detail: Record<string, unknown>,
-  record: string | undefined,
-): { only?: string } {
-  if (firedByTag(detail)) return { only: FIRED };
+function runOf(record: string | undefined): { only?: string } {
   return record === undefined ? {} : { only: `delivery:${record}` };
 }
 
 /**
- * What an entry in the log is worth saying in the corner, or nothing. The key
+ * What an entry in the log does to the routes a trigger tag has in flight: a
+ * `template-fired` opens one, and an entry that ends it closes it.
+ */
+export function firingOf(
+  action: Action,
+  said: {
+    /** A template's name where it is known, falling back to the one the entry carries. */
+    templateOf?: (template: string) => string | undefined;
+    about: (item: string) => string;
+  },
+): { readonly opened: Firing } | { readonly closed: string } | undefined {
+  const detail = action.detail as Record<string, unknown>;
+  const record = stringAt(detail, "record");
+  if (record === undefined) return undefined;
+
+  if (ENDS.has(action.kind)) return { closed: record };
+  if (action.kind !== "template-fired" || action.subject === undefined) {
+    return undefined;
+  }
+
+  const template = stringAt(detail, "template");
+  const until = stringAt(detail, "until");
+  return {
+    opened: {
+      record,
+      item: action.subject,
+      name:
+        (template === undefined ? undefined : said.templateOf?.(template)) ??
+        stringAt(detail, "name") ??
+        "a template",
+      href: said.about(action.subject),
+      ...(until === undefined ? {} : { until: Date.parse(until) }),
+    },
+  };
+}
+
+/**
+ * What an entry in the log is worth saying in the status line, or nothing. The key
  * is the record rather than the entry: a delivery retried four times is one
  * thing that went wrong, and a landing this shell already reported is the same
  * fact arriving twice.
@@ -85,12 +112,10 @@ export function noticeOf(
   action: Action,
   said: {
     nameOf: (destination: string) => string;
-    /** A template's name, for the two entries a fired one produces. */
+    /** A template's name, for the entries a fired one produces. */
     templateOf?: (template: string) => string;
     /** Where the whole of it can be read. */
     about: (item: string) => string;
-    /** Called off within the window. Absent where nothing here can cancel. */
-    cancel?: (record: string, item: string) => void;
   },
 ): Raised | undefined {
   if (!SAID.has(action.kind)) return undefined;
@@ -106,38 +131,7 @@ export function noticeOf(
   const called =
     template === undefined ? undefined : (said.templateOf?.(template) ?? named);
 
-  /**
-   * The window a fired template waits out, and the whole of its visibility: no
-   * countdown and no bar, because the notice may not claim the item was filed
-   * anywhere before anything has been written.
-   */
-  if (action.kind === "template-fired") {
-    const subject = action.subject;
-    const cancel = said.cancel;
-    const offered =
-      record === undefined || subject === undefined || cancel === undefined
-        ? {}
-        : { offer: { label: "cancel", take: () => cancel(record, subject) } };
-
-    return {
-      what: `routing · ${called ?? stringAt(detail, "name") ?? "a template"}`,
-      ...where,
-      standing: true,
-      // Nothing has gone wrong: it stands so the cancel does not time out.
-      alarm: false,
-      only: FIRED,
-      // The shell says this itself the moment it tags, so the log arriving with
-      // the same news says nothing.
-      ...(record === undefined ? {} : { key: firedKey(record) }),
-      ...offered,
-    };
-  }
-
-  /**
-   * A route called off. Said briefly and under the firing's own name, so the
-   * notice it ends goes with it — including when the cancel came from somewhere
-   * other than that notice.
-   */
+  /** A route called off, said briefly: the firing it ends is closed beside it. */
   if (action.kind === "delivery-cancelled") {
     const gave = stringAt(detail, "tag");
 
@@ -149,7 +143,6 @@ export function noticeOf(
       ...(gave === undefined ? {} : { why: `${gave} taken back` }),
       ...where,
       alarm: false,
-      ...(template === undefined ? {} : { only: FIRED }),
       ...(record === undefined ? {} : { key: `cancelled:${record}` }),
     };
   }
@@ -165,8 +158,6 @@ export function noticeOf(
           : `routed · ${fired ? (called ?? named) : named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
-      // It replaces the `routing` notice it resolves: there is one at a time.
-      ...(fired ? { only: FIRED } : {}),
       ...(record === undefined ? {} : { key: keyFor(record) }),
     };
   }
@@ -179,10 +170,7 @@ export function noticeOf(
       ...(why === undefined ? {} : { why }),
       ...where,
       standing: true,
-      // It ends the firing it was the attempt of, so it takes that notice's
-      // place: two notices, one saying it is on its way and one saying it
-      // failed, is the corner contradicting itself.
-      ...runOf(detail, record),
+      ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
   }
@@ -205,7 +193,7 @@ export function noticeOf(
       ...(why.length === 0 ? {} : { why: why.join(" · ") }),
       ...where,
       standing: true,
-      ...runOf(detail, record),
+      ...runOf(record),
       key: `abandoned:${record ?? action.id}`,
     };
   }

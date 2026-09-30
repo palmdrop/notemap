@@ -41,3 +41,14 @@ test("puts a nested surface above the one it is drawn inside", () => {
   render(Nested, { id: "outer", inside: "inner" });
   expect(ids()).toEqual(["outer", "inner"]);
 });
+
+/** A panel over the page answers first, whichever mounted first and however deep the page nests. */
+test("a layer published atop outranks one mounted after it", () => {
+  const over = render(Fixture, { id: "over", atop: true });
+  const page = render(Fixture, { id: "page" });
+
+  expect(ids()).toEqual(["page", "over"]);
+
+  over.unmount();
+  page.unmount();
+});

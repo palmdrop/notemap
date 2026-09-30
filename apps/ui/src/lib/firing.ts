@@ -2,10 +2,9 @@ import type { RoutingRecord, RoutingTemplate } from "@notemap/client";
 
 import { itemHref } from "$components/item/href";
 
-import { FIRED } from "./action-log";
 import { client } from "./client";
+import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
-import { firedKey } from "./routing";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
@@ -14,9 +13,12 @@ import { nameOf, triggeredBy } from "./templates";
  * queue able to be filed by that tag again.
  */
 export function cancelRouting(record: string, item: string): void {
-  void client.routing.cancel(record, item).catch(() => {
-    notices.raise({ what: "could not cancel", standing: true });
-  });
+  void client.routing
+    .cancel(record, item)
+    .then(() => firings.closed(record))
+    .catch(() => {
+      notices.raise({ what: "could not cancel", standing: true });
+    });
 }
 
 /** Tags an item, and says what the tag filed where it filed something. */
@@ -33,19 +35,15 @@ export async function tagged(item: string, tag: string): Promise<void> {
 const LOOKS = [0, 500, 1500] as const;
 
 /**
- * What a trigger tag just did, said by the shell that did it rather than waited
- * for from the log. The window a fired template waits out is shorter than the
- * log is polled, so a corner that learns this the slow way offers a cancel with
- * most of the window already spent — and a cancel nobody can see in time is not
- * the guarantee ADR 37 bought.
+ * What a trigger tag just did, drawn by the shell that did it rather than
+ * waited for from the log. The window a fired template waits out is shorter
+ * than the log is polled, so a status line that learned this the slow way would
+ * offer a cancel with most of the window already spent.
  *
- * The record is looked up rather than assumed, because the offer is only real
- * with one. It is said under the log's own name for the same firing, so the
- * entry arriving later adds nothing.
- *
- * Quiet where anything is missing — offline, or a tag that fired nothing. This
- * is the shell being quick, never what establishes that it happened: nothing
- * here writes, and the log says it all again regardless.
+ * The record is looked up rather than assumed, because the cancel is only real
+ * with one, and the log is read for when the window closes. Quiet where
+ * anything is missing — offline, or a tag that fired nothing. Nothing here
+ * writes, and the log opens the same firing again regardless.
  */
 export async function sayItFired(item: string, tag: string): Promise<void> {
   const template = triggeredBy(tag);
@@ -54,15 +52,38 @@ export async function sayItFired(item: string, tag: string): Promise<void> {
   const fired = await firingOn(item, template);
   if (fired === undefined) return;
 
-  notices.raise({
-    what: `routing · ${nameOf(template.id)}`,
+  const until = await windowOf(item, fired.id);
+  firings.opened({
+    record: fired.id,
+    item,
+    name: nameOf(template.id),
     href: itemHref(item),
-    standing: true,
-    alarm: false,
-    only: FIRED,
-    key: firedKey(fired.id),
-    offer: { label: "cancel", take: () => cancelRouting(fired.id, item) },
+    ...(until === undefined ? {} : { until }),
   });
+}
+
+/** When the window the pool gave this firing closes, as the log says. */
+async function windowOf(
+  item: string,
+  record: string,
+): Promise<number | undefined> {
+  try {
+    const page = await client.actions.read({
+      item,
+      kinds: ["template-fired"],
+      order: "newest-first",
+    });
+    const entry = page.values.find(
+      (action) =>
+        (action.detail as Record<string, unknown>)["record"] === record,
+    );
+    const until = (entry?.detail as Record<string, unknown> | undefined)?.[
+      "until"
+    ];
+    return typeof until === "string" ? Date.parse(until) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 async function firingOn(
