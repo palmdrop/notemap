@@ -107,10 +107,19 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
     [string, string]
   >(`SELECT id, lease_id FROM jobs WHERE subject_kind = ? AND subject_id = ?`);
 
-  const tried = write.query<{ id: string }, [string, string]>(
-    `SELECT id FROM jobs WHERE subject_kind = ? AND subject_id = ?
-       AND (attempt > 0 OR lease_id IS NOT NULL OR abandoned_at IS NOT NULL)`,
-  );
+  /** No work at all is not untried: there is nothing left waiting to be. */
+  const untried = write.query<
+    { untried: number },
+    [string, string, string, string]
+  >(`
+    SELECT EXISTS (
+             SELECT 1 FROM jobs WHERE subject_kind = ? AND subject_id = ?
+           )
+       AND NOT EXISTS (
+             SELECT 1 FROM jobs WHERE subject_kind = ? AND subject_id = ?
+               AND (attempt > 0 OR lease_id IS NOT NULL OR abandoned_at IS NOT NULL)
+           ) AS untried
+  `);
 
   const byLease = write.query<JobRow, [string]>(
     `SELECT ${JOB_COLUMNS} FROM jobs WHERE lease_id = ?`,
@@ -344,13 +353,9 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
       return "withdrawn";
     },
 
-    /** No work at all is not untried: there is nothing left waiting to be. */
     untried: (subject) => {
       const columns = subjectColumns(subject);
-      return (
-        outstanding.all(...columns).length > 0 &&
-        tried.get(...columns) === undefined
-      );
+      return untried.get(...columns, ...columns)?.untried === 1;
     },
   };
 }

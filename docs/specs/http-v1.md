@@ -858,10 +858,10 @@ when it last captured. It is how a **relay** left running is seen to still be ru
   [ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)). A routed item whose only
   records are reservations nothing has tried yet, such as a trigger tag's inside its window, is
   still amended *(amended 2026-09-30,
-  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))*. A client can usually predict
-  which it will get, everything the seal derives from riding on the item it already holds, but
-  another client may have routed that item since its last read. So the request carries no intent to
-  honour, and the outcome is read off the answer — which is what
+  [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))*. A client
+  cannot always tell which it will get from the item it holds: another client may have routed it
+  since its last read, and whether a reservation has been tried is the delivery's state rather
+  than the item's. So the request carries no intent to honour, and the outcome is read off the answer — which is what
   [client.md](client.md#editing-and-the-hand-over-seal) already told a client to do, and which
   keeps an edit made against a stale view a quiet revision rather than a refusal a person has to
   clear.

@@ -604,6 +604,9 @@ describe("an edit reaching a trigger tag's reservation", () => {
 
     expect(outcome.kind).toBe("amended");
     expect(await queued(pool)).toEqual([]);
+    expect((await logFor(pool, item.id)).map((one) => one.kind)).toContain(
+      "amended",
+    );
 
     clock.set(AFTER);
     await deliver();
@@ -622,6 +625,50 @@ describe("an edit reaching a trigger tag's reservation", () => {
       leaseFor: 60_000 as Duration,
     });
     expect(leases).toHaveLength(1);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "too late"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
+  });
+
+  it("revises it where a record beside the reservation has already landed", async () => {
+    const { pool, clock, item } = await tagged();
+    succeeded(await pool.routing.markProcessed(item.id, "pasted it"));
+    clock.set(INSIDE);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "too late"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
+  });
+
+  it("revises it where a record beside the reservation has already been tried", async () => {
+    const { pool, clock, destination, item } = await tagged();
+    const other = succeeded(
+      await pool.templates.create(
+        draft({ name: "Notes", arguments: { path: "notes/{{item}}.md" } }),
+      ),
+    );
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+    expect(
+      succeeded(await pool.templates.route(item.id, other.id)),
+    ).toMatchObject({ state: "pending" });
+    clock.set(INSIDE);
+
+    const outcome = succeeded(
+      await pool.items.edit(item.id, edited(item, "too late"), PERSON),
+    );
+
+    expect(outcome.kind).toBe("revised");
+  });
+
+  it("revises it where the item has been archived as well", async () => {
+    const { pool, clock, item } = await tagged();
+    succeeded(await pool.items.archive(item.id));
+    clock.set(INSIDE);
 
     const outcome = succeeded(
       await pool.items.edit(item.id, edited(item, "too late"), PERSON),

@@ -477,6 +477,7 @@ export interface WorkQueue {
     lease: LeaseId,
     until: Timestamp,
   ): Promise<Result<Lease, LeaseRefusal>>;
+  /** Leaves the job as though never claimed, which `deliveryUntried` reads. */
   releaseLease(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
   abandonedWork(
     page: Page<AbandonedPosition>,

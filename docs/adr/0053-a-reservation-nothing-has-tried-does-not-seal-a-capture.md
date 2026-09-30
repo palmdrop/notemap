@@ -74,8 +74,8 @@ window would leave a gap between the window closing and the claim, so the job is
 - **Bad**: editability and queue membership are no longer one predicate. An item inside its window
   is out of the queue and still amendable. The shell offers editing only on unprocessed items, so
   the pool's wider rule is reached only by an edit already on its way when the tag fired. The
-  shell holds a trigger tag added during an edit until the edit is saved, so its own edits do not
-  race the tag in the first place.
+  shell holds a trigger tag added during an edit and sends it only once the edit has landed, so
+  its own edits do not race the tag in the first place.
 - **Bad**: the store port grows a read, whether a reservation's delivery is still untried.
 - **Neutral**: a person who decided to file one version, and then edits it inside the window,
   files the edited one. ADR 21 counted this as a cost of freezing on delivery. Inside the window
@@ -94,13 +94,18 @@ window would leave a gap between the window closing and the claim, so the job is
 ### Option 2: freeze on delivery
 
 - **Good**: the strictest reading of what immutability is owed to.
-- **Bad**: ADR 21's objection stands. A retrying delivery has already read the item and may have
-  reached the destination without the pool hearing back, so a later edit would make what landed
-  and what the item says disagree.
+- **Bad**: ADR 21 rejected it because "the bytes that land are not the ones the person decided to
+  send". Option 3 accepts that too, inside the window, and answers it there: the window exists so
+  the decision can still be taken back, and an edit made inside it is part of the decision. Past
+  the window the objection holds in full, and is worse than ADR 21 said. A retrying delivery has
+  already read the item and may have reached the destination without the pool hearing back, so an
+  edit would make what landed and what the item says disagree.
 
 ### Option 3: freeze once something could have left
 
-- **Good**: it keeps ADR 21's objection answered: nothing is amended after any attempt has read it.
+- **Good**: nothing is amended after a queued delivery has read the item. The one path that reads
+  an item before any record exists, the inline attempt, is a gap this option does not close and
+  did not open (see below).
 - **Good**: it covers exactly the window that exists to be changed.
 - **Bad**: the second predicate and the store read above.
 
@@ -110,6 +115,16 @@ window would leave a gap between the window closing and the claim, so the job is
 
 Specified in [core.md](../specs/core.md#editing), with the shell's side in
 [shell.md](../specs/shell.md).
+
+Two things this rests on, stated in core.md beside the delivery rules:
+
+- **A delivery's lease is released only unused.** A released lease reads as untried, so a host
+  that released one after asking for the delivery under it would let an edit change words already
+  on their way.
+- **An edit arriving during an inline attempt still amends.** A composer route reads the item
+  before any record exists, so an edit landing meanwhile finds an unprocessed item, and the
+  record that follows names a delivery of the words it replaced. This predates ADR 21 and is the
+  same window as a host dying mid-attempt.
 
 Revisit if a reservation other than a trigger tag's ever waits before its first attempt, such as
 a scheduled delivery. This rule would then quietly cover it, which may or may not be wanted. Also

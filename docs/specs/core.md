@@ -964,6 +964,16 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   retrying. A lease that expired with no outcome reported is **no evidence at all**, and is
   abandoned rather than retried: a delivery is not idempotent, the domain cannot tell a retry from a
   genuine second delivery, and the cost of guessing wrong is a duplicate nobody can detect.
+- **A delivery's lease is released only unused** (added 2026-09-30). Releasing hands the job back
+  as though nobody had claimed it, and a delivery nobody has tried leaves its item amendable in
+  place ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). So a
+  host releases a delivery lease only where it has not asked for the delivery under it; one it has
+  asked for is completed with an outcome, `unreachable` where it cannot say more.
+- **An edit arriving during an inline attempt amends, and this is a known limit** (added
+  2026-09-30). The attempt reads the item before any record exists, so the item is still unprocessed
+  to an edit landing meanwhile, and the record that follows names a delivery of the words the edit
+  replaced. It is the same window as a host dying mid-attempt, and closing it wants the same
+  reshaping.
 - **Delivery retries are bounded**, unlike mirror work. Mirroring retries forever because giving up
   does not change the fact that material is unmirrored. Giving up on a delivery does change
   something: it hands the decision back, so the person can repair their configuration or route
@@ -1852,7 +1862,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   routed from there.
 - An item marked processed by hand leaves the queue, stays in the feed unarchived, and carries
   a routing record naming the user as destination.
-- Editing a routed item produces a revision that carries its tags with their attribution, carries
+- Editing a routed item whose delivery has been tried, or that was marked processed by hand,
+  produces a revision that carries its tags with their attribution, carries
   none of its routing records or archive state, and appears in the queue; the item it came from
   keeps its routing records and stays out of the queue.
 - Cancelling the only delivery of an item that has not been revised returns it to the queue and
