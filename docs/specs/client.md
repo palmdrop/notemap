@@ -1,9 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-28
+**Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **A capture's trigger tag reaches the cache too.** The pool's answer to a capture
+  arriving with a trigger tag carries the pending record, which the tag's answer already did, so a
+  capture tagged in the capture box no longer settles as work that can still be edited.
 - 2026-09-28 — **A trigger tag's reservation reaches the cache.** The pool's answer to the tag now
   carries the pending record it made, so the drain settles a copy that is no longer work. The
   watcher takes a row off the queue when a template fires, not only once it lands, and reads again
@@ -693,7 +696,9 @@ somebody else's state.
 **A capture may carry tags** *(added 2026-09-18)*. `capture` takes `tags` beside `text` and
 `asset`, carries them on the envelope, and draws them on the optimistic item as the source's own —
 so the item is born classified and a trigger tag among them fires on arrival, on the pool's terms
-rather than as a `tag` drained behind the capture.
+rather than as a `tag` drained behind the capture. The pool's answer carries the reservation the
+tag made *(amended 2026-09-30)*, so the capture settles as a copy that is no longer work, exactly as
+a drained `tag` does.
 
 **A trigger tag is an ordinary tag to this client.** `tag` is unchanged — one outbox operation, the
 same optimistic application, the same drain — and what it does at the far end is the pool's. This
@@ -1350,6 +1355,8 @@ that logic out of the one place it is meant to live.
   whose template has gone stale comes back as a refused operation the person is shown.
 - The copy held once that drain settles is not work: it carries the pending record, and a queue
   drawn from the cache after a restart does not hold it.
+- A capture carrying a trigger tag settles the same way: once it drains, the copy held carries the
+  pending record and the queue does not hold it.
 - A watched client takes a row off the queue when the log says a template fired, and reads again a
   held item the log says was routed, cancelled or abandoned — except one with an operation still to
   send.

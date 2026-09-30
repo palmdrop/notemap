@@ -548,6 +548,26 @@ describe("a trigger tag applying its template", () => {
     ]);
     expect(destination.received).toEqual([]);
   });
+
+  it("answers the capture holding the reservation, so a client's copy is not unprocessed", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(
+      await pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+
+    const item = captured(
+      await pool.capture(
+        envelope({ capturedAt: CAPTURED_AT, tags: ["route/research"] }),
+      ),
+    );
+
+    expect(item.routing).toEqual({
+      records: 1,
+      pending: 1,
+      to: [{ kind: "destination", destination: VAULT }],
+      templates: [template.id],
+    });
+  });
 });
 
 /**

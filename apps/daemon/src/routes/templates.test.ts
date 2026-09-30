@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { captureMany, daemon, send, type Daemon } from "../testing/fixture";
+import {
+  captureMany,
+  daemon,
+  envelope,
+  post,
+  send,
+  type Daemon,
+} from "../testing/fixture";
 
 const open: Daemon[] = [];
 
@@ -326,6 +333,25 @@ describe("a trigger tag arriving over the wire", () => {
     expect(records.values).toMatchObject([
       { state: "pending", applied: { firedByTag: true } },
     ]);
+  });
+
+  it("answers a capture arriving with it carrying the reservation", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, { triggerTag: "route/research" });
+
+    const response = await post(
+      host.app,
+      envelope({ tags: ["route/research"] }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(await body(response)).toMatchObject({
+      item: {
+        tags: [{ name: "route/research" }],
+        routing: { records: 1, pending: 1 },
+      },
+    });
   });
 
   it("is declined where the template cannot route, and the tag does not land", async () => {

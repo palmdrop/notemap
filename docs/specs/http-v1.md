@@ -2067,6 +2067,8 @@ remains the interop surface; `/docs` is a convenience over it.
 - `POST /v1/items/{id}/tag` with a trigger tag answers the item carrying it and leaves the item
   holding one pending record, with nothing yet handed to the destination. The answer's `routing`
   already counts that record as pending.
+- `POST /v1/captures` carrying a trigger tag answers `201` with an item whose `routing` already
+  counts the record the tag made as pending.
 - The same call where the template cannot route is `422 trigger-refused`, and afterwards the item
   carries neither the tag nor a record. `POST /v1/items/{id}/untag` can never answer that code.
 - `POST /v1/items/{id}/untag` naming a trigger tag whose record still stands is

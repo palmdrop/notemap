@@ -194,7 +194,11 @@ async function append(
     await fire(config, ports, tx, firing.record, firing.tag, firing.template);
   }
 
-  return ok({ kind: "captured", item });
+  // Read again, so the answer carries the reservations `insertItem` came back without.
+  const answer =
+    firings.length === 0 ? item : ((await tx.item(item.id)) ?? item);
+
+  return ok({ kind: "captured", item: answer });
 }
 
 /**
