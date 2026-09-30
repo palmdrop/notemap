@@ -989,7 +989,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   one or a job's, numbered in one sequence. A person reading an item's history is reading one run of
   attempts on one destination; splitting it by which side of the queue it happened on would be
   recording an implementation detail as though it were a fact about the item. Giving up appends
-  `work-abandoned` beside the last of them, which is what every kind of work lands on.
+  `work-abandoned` beside the last of them, which is what every kind of work lands on, naming the
+  destination and template as they do *(2026-09-30)*.
 - **An abandoned or cancelled reservation is removed, and the item resurfaces in the queue** at its
   unchanged content time. This is not a second exception to the append-only rule: the routing log
   is append-only, and a reservation is not in it yet. A record joins the log when its delivery

@@ -18,7 +18,7 @@
 
 - [ ] "revised" mark on revised items looks almost like a tag and provides little value. Replace with an icon or some other way to indicate that an item is edited.
 
-- [ ] when a routing fails, for example, when the item already exists, we get a notice saying "given up / back in the queue", saying nothing about WHY this happened. The event for "Work abandoned" is shown, but not the related "Delivery failed", which describes that the entry is already in the destination (revealed by the /log)
+- [x] when a routing fails, for example, when the item already exists, we get a notice saying "given up / back in the queue", saying nothing about WHY this happened. The event for "Work abandoned" is shown, but not the related "Delivery failed", which describes that the entry is already in the destination (revealed by the /log)
 
 - [ ] log menu should be a filter dropdown similar to the tag filter, not a menu button
 

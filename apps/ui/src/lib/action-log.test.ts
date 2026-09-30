@@ -74,8 +74,72 @@ test("a delivery given up on says the item is back in the queue", () => {
   );
 
   expect(said?.what).toBe("given up");
-  expect(said?.why).toBe("back in the queue");
+  expect(said?.why).toBe("unreachable · still not mounted · back in the queue");
   expect(said?.standing).toBe(true);
+});
+
+/**
+ * The failure it ends is the one notice that said why, so giving up takes its
+ * place and keeps its reason rather than leaving it behind or losing it.
+ */
+test("a delivery given up on names where it was going and takes the failure's place", () => {
+  const failed = noticeOf(
+    anAction("delivery-failed", {
+      record: "r1",
+      destination: "vault",
+      attempt: 5,
+      failure: { code: "rejected", detail: "notes/a.md already exists" },
+    }),
+    reading,
+  );
+  const abandoned = noticeOf(
+    anAction("work-abandoned", {
+      work: "delivery",
+      record: "r1",
+      destination: "vault",
+      attempt: 5,
+      failure: { code: "rejected", detail: "notes/a.md already exists" },
+    }),
+    reading,
+  );
+
+  expect(abandoned?.what).toBe("given up · Vault");
+  expect(abandoned?.why).toBe(
+    "rejected · notes/a.md already exists · back in the queue",
+  );
+  expect(abandoned?.only).toBe(failed?.only);
+  expect(abandoned?.only).toBe("delivery:r1");
+});
+
+test("a fired delivery given up on names the template the tag applied", () => {
+  const said = noticeOf(
+    anAction("work-abandoned", {
+      work: "delivery",
+      record: "r1",
+      destination: "vault",
+      template: "t1",
+      firedByTag: true,
+      failure: { code: "rejected", detail: "research/ is missing" },
+    }),
+    { ...reading, templateOf: () => "Research links" },
+  );
+
+  expect(said?.what).toBe("given up · Research links");
+  expect(said?.why).toBe("rejected · research/ is missing · back in the queue");
+});
+
+test("work given up on that was about no record says only why", () => {
+  const said = noticeOf(
+    anAction("work-abandoned", {
+      work: "mirror-write",
+      failure: { code: "io", detail: "disk full" },
+    }),
+    reading,
+  );
+
+  expect(said?.what).toBe("given up");
+  expect(said?.why).toBe("io · disk full");
+  expect(said?.only).toBeUndefined();
 });
 
 const fired = {
@@ -149,7 +213,7 @@ test("a fired delivery given up on takes it too", () => {
   expect(said?.only).toBe("fired");
 });
 
-test("a hand-made delivery that failed stands on its own", () => {
+test("a hand-made delivery that failed leaves a firing alone", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       record: "r1",
@@ -160,7 +224,7 @@ test("a hand-made delivery that failed stands on its own", () => {
     reading,
   );
 
-  expect(said?.only).toBeUndefined();
+  expect(said?.only).toBe("delivery:r1");
 });
 
 test("a cancellation ends the firing it called off", () => {
