@@ -8,9 +8,11 @@
   import { slide } from "$lib/motion";
   import type { Said } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
+  import type { RefusedCapture } from "$lib/refused";
   import { timeOf } from "$lib/stamp";
 
   import Entry from "./Entry.svelte";
+  import Refused from "./Refused.svelte";
   import { PANEL } from "./panel";
 
   /**
@@ -23,20 +25,29 @@
     firings,
     now,
     unsent,
+    refused = [],
     onclose,
     ontake,
     oncancel,
     onforget,
+    oncopy,
+    onedit,
+    ondelete,
   }: {
     history: readonly Said[];
     firings: readonly Firing[];
     now: number;
     unsent: readonly PendingOperation[];
+    /** Captures the pool refused, held until somebody decides what becomes of them. */
+    refused?: readonly RefusedCapture[];
     onclose: () => void;
     ontake: (id: string) => void;
     oncancel: (firing: Firing) => void;
     /** Lets go of what has gone. */
     onforget: () => void;
+    oncopy?: (held: RefusedCapture) => void;
+    onedit?: (held: RefusedCapture) => void;
+    ondelete?: (held: RefusedCapture) => void;
   } = $props();
 
   publish(() => [{ id: "close", label: "close", run: onclose }], {
@@ -79,7 +90,7 @@
       </span>
     </header>
 
-    {#if history.length === 0 && !flying}
+    {#if history.length === 0 && !flying && refused.length === 0}
       <p class="px-3 py-2">Nothing has been said yet.</p>
     {/if}
 
@@ -96,6 +107,24 @@
             offer={said.live && said.offer !== undefined
               ? { label: said.offer.label, take: () => ontake(said.id) }
               : undefined}
+          />
+        {/each}
+      </ol>
+    {/if}
+
+    {#if refused.length > 0}
+      <h2
+        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
+      >
+        refused
+      </h2>
+      <ol aria-label="refused">
+        {#each refused as held (held.id)}
+          <Refused
+            {held}
+            oncopy={() => oncopy?.(held)}
+            onedit={() => onedit?.(held)}
+            ondelete={() => ondelete?.(held)}
           />
         {/each}
       </ol>

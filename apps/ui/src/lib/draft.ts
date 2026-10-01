@@ -64,3 +64,40 @@ export function clearDraft(): void {
   writeDraft(EMPTY);
   picture = undefined;
 }
+
+/** Where the box puts a capture back, of the ways it can fail to. */
+export type Restored = "restored" | "picture-held" | "unwritable";
+
+const listeners = new Set<() => void>();
+
+/** Tells a box already drawn that its draft was added to from elsewhere. */
+export function onRestored(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+/**
+ * Puts a capture back into the box after whatever the box already holds: its
+ * words after the box's, its tags beside the box's. The box has room for one
+ * picture, so two cannot be put together. Read back before it answers, since
+ * a store that refused the write would leave the words nowhere.
+ */
+export function restoreDraft(draft: Draft, file?: File): Restored {
+  if (file !== undefined && picture !== undefined) return "picture-held";
+
+  const current = readDraft();
+  const text =
+    current.text.trim() === ""
+      ? draft.text
+      : draft.text.trim() === ""
+        ? current.text
+        : `${current.text}\n\n${draft.text}`;
+  const tags = [...new Set([...current.tags, ...draft.tags])];
+
+  writeDraft({ text, tags });
+  if (text.trim() !== "" && readDraft().text !== text) return "unwritable";
+
+  if (file !== undefined) picture = file;
+  for (const listener of listeners) listener();
+  return "restored";
+}

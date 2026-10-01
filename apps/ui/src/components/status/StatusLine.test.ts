@@ -6,10 +6,12 @@ import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 import { client, pool } from "$testing/pool";
 import { published } from "$lib/command/stack.svelte";
 import { firings } from "$lib/firings.svelte";
+import { clearDraft, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
 import StatusLine from "./StatusLine.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
 function firstValueOf<T>(source: {
   subscribe(next: (value: T) => void): { unsubscribe(): void };
@@ -229,29 +231,91 @@ test("the panel opens and closes by command, and closes on a press outside", asy
 });
 
 /** Said once, kept in the panel, and the client lets go of what the pool never took. */
+async function refusedOf() {
+  return (await firstValueOf(client.outbox)).filter(
+    (held) => held.state === "refused",
+  );
+}
+
 test("a refusal is said as a notice, and the outbox lets it go", async () => {
   pool((request) =>
-    routeOf(request) === "POST /v1/captures"
-      ? refusal(400, "payload-invalid")
+    routeOf(request) === "POST /v1/items/one/archive"
+      ? refusal(404, "item-not-found")
       : quiet(),
   );
   render(StatusLine);
 
-  await client.capture({ channel: "web-manual", text: "a thought" });
+  await client.archive("one");
+  await client.drain();
+
+  const said = await screen.findByRole("alert");
+  expect(said.textContent).toContain("discard refused");
+  await vi.waitFor(async () => {
+    expect(await refusedOf()).toHaveLength(0);
+  });
+
+  const panel = await opened();
+  expect(panel.textContent).toContain("discard refused");
+});
+
+/** Its outbox entry is the only copy of what was written. */
+test("a refused capture is held, whole, and counted until somebody decides", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? refusal(422, "payload-invalid")
+      : quiet(),
+  );
+  render(StatusLine);
+
+  await client.capture({ channel: "web-manual", text: "a thought\nand more" });
   await client.drain();
 
   const said = await screen.findByRole("alert");
   expect(said.textContent).toContain("capture refused");
-  await vi.waitFor(async () => {
-    expect(
-      (await firstValueOf(client.outbox)).filter(
-        (held) => held.state === "refused",
-      ),
-    ).toHaveLength(0);
-  });
+  expect(await refusedOf()).toHaveLength(1);
 
   const panel = await opened();
-  expect(panel.textContent).toContain("capture · a thought");
+  const held = within(panel).getByRole("list", { name: "refused" });
+  expect(held.textContent).toContain("a thought\nand more");
+  // Opening the panel is not deciding.
+  expect(
+    screen.getByRole("button", { name: "notices, 1 gone wrong" }),
+  ).toBeDefined();
+
+  await fireEvent.click(within(held).getByRole("button", { name: "delete" }));
+  expect(await refusedOf()).toHaveLength(1);
+  await fireEvent.click(within(held).getByRole("button", { name: "delete" }));
+
+  await vi.waitFor(async () => {
+    expect(await refusedOf()).toHaveLength(0);
+  });
+  expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
+});
+
+test("a refused capture edited goes back to the capture box, and is let go", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? refusal(422, "payload-invalid")
+      : quiet(),
+  );
+  render(StatusLine);
+
+  await client.capture({
+    channel: "web-manual",
+    text: "a thought",
+    tags: ["idea"],
+  });
+  await client.drain();
+  await screen.findByRole("alert");
+
+  const panel = await opened();
+  await fireEvent.click(within(panel).getByRole("button", { name: "edit" }));
+
+  await vi.waitFor(async () => {
+    expect(await refusedOf()).toHaveLength(0);
+  });
+  expect(readDraft()).toEqual({ text: "a thought", tags: ["idea"] });
+  clearDraft();
 });
 
 test("counts the work this device holds, and lists it in the panel", async () => {

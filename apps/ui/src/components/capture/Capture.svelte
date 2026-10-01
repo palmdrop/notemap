@@ -9,6 +9,7 @@
     clearDraft,
     heldPicture,
     holdPicture,
+    onRestored,
     readDraft,
     writeDraft,
   } from "$lib/draft";
@@ -90,6 +91,16 @@
   $effect(() => {
     holdPicture(chosen);
   });
+
+  // A refused capture put back while the box is drawn.
+  $effect(() =>
+    onRestored(() => {
+      const back = readDraft();
+      text = back.text;
+      tags = [...back.tags];
+      chosen = heldPicture();
+    }),
+  );
 
   const inUse = client.tags.inUse;
   const templates = client.templates.all;

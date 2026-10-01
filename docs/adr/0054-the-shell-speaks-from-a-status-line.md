@@ -121,6 +121,18 @@ own work drains, when the log shows the pool did something, and when the pool co
 > Later the same day: reachability says nothing while the pool answers and `offline` while it does
 > not, the count reads `notices (1) ▴`, the line is ruled down both ends with the panel's edge on
 > its own, and an `undo` taken back elsewhere leaves the line.
+>
+> Reviewed again the same day: **a refused capture is held.** Letting go of a refusal deletes its
+> outbox entry, and for a capture that entry is the only copy of what was written — its words and
+> its picture, the optimistic row having been undone at the refusal. Said once and let go, a
+> capture the pool declined was gone ten seconds later, and from the session that never saw it on
+> the next start. Every other refusal is still said once and let go. A refused capture stays in
+> the outbox, is listed in the panel under `refused` with its words whole, and is counted on
+> `notices` until somebody decides: `edit` puts it back in the capture box after whatever the box
+> holds and lets it go, `delete` asks and then lets it go, and `copy` takes its words. Sending it
+> unchanged was rejected: the refusals a capture meets — the identity taken with other content,
+> the envelope declined — would refuse it again. The pool coming back into reach is the shell's
+> to read the counts on, beside destinations and tags; the client reads them on its own events.
 
 ### Consequences
 

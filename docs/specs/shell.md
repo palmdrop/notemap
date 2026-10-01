@@ -1713,7 +1713,8 @@ of them the same colour.)*
   whenever its row is drawn again, rather than growing the row a line on every visit.
 - **Refused** is loud, because it is the only one of the three that waiting will not resolve. It is
   said once on the status line, in the accent, and kept in the panel; the client then lets go of
-  it, nothing being left to retry ([below](#the-status-line)). It is not drawn in the same shape as
+  it, nothing being left to retry — except a capture, which is held until somebody edits or deletes
+  it, being the only copy of what was written ([below](#the-status-line)). It is not drawn in the same shape as
   pending work.
 
 **Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
@@ -1876,9 +1877,20 @@ item, on another device, read from the log — the notice that offered it keeps 
 the `undo`, which would now refuse.
 
 **A refusal is said once and let go** *(2026-10-01)*. An operation the pool refused is said as a
-notice in the accent — `capture refused: payload-invalid`, the operation in the panel — and the
+notice in the accent — `discard refused: item-not-found`, the operation in the panel — and the
 client is then told to let go of it: it is in the panel for the rest of the session, and holding it
 in the outbox would be asking somebody to clear it.
+
+**A refused capture is held** *(2026-10-01, the same day)*. Letting go of an operation deletes it,
+and a capture's operation is the only copy of what was written, so a capture the pool refused is
+said as a notice and then **kept**: in the outbox, across a reload, and in the panel under
+`refused` with its words whole, until somebody decides. It is counted on `notices` for as long as
+it is held, opening the panel not being a decision. **`edit`** puts it back in the capture box —
+its words after whatever the box holds, its tags beside the box's, and its picture where the box
+holds none — and lets it go; sending it from there is a new capture. It is not let go where it
+could not be put back: the box already holding a picture, or a store that refused the words.
+**`delete`** asks, and then lets it go. **`copy`** takes its words where the browser offers a
+clipboard. It is never resent as it was, since what refused it would refuse it again.
 
 **A route a trigger tag made is in flight, not a notice** *(2026-09-30, amending 2026-09-07)*.
 Putting a trigger tag on an item reserves a delivery and waits a configured window before

@@ -15,6 +15,12 @@
   import { firings, type Firing } from "$lib/firings.svelte";
   import { notices } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
+  import {
+    copyRefused,
+    deleteRefused,
+    editRefused,
+    isCapture,
+  } from "$lib/refused";
   import { reachable } from "$lib/reachable.svelte";
   import { discardedKey, keyFor } from "$lib/routing";
   import { heldName } from "$lib/templates";
@@ -36,6 +42,7 @@
 
   const refused = $derived($outbox.filter((held) => held.state === "refused"));
   const unsent = $derived($outbox.filter((held) => held.state !== "refused"));
+  const kept = $derived(refused.filter(isCapture));
 
   /**
    * Work is counted once it has waited as long as the asking mark does, as a
@@ -76,19 +83,23 @@
   /**
    * A refusal is said once, as a notice, and then the client lets go of it:
    * the panel is where it is read again, and holding it in the outbox would
-   * ask somebody to clear it.
+   * ask somebody to clear it. A capture is the exception, its entry being
+   * the only copy of what was written: it is held, and counted, until
+   * somebody edits or deletes it.
    */
   function said(held: PendingOperation): void {
     const deed = outgoing(held.operation).what;
+    const capture = isCapture(held);
     notices.raise({
       what: `${deed.split(" · ")[0] ?? deed} refused${
         held.failure === undefined ? "" : `: ${held.failure}`
       }`,
       why: deed,
       alarm: true,
+      ...(capture ? { counted: false } : {}),
       key: `refused:${held.id}`,
     });
-    void client.dismiss(held.id);
+    if (!capture) void client.dismiss(held.id);
   }
 
   $effect(() => {
@@ -232,10 +243,17 @@
       firings={firings.open}
       now={firings.now}
       unsent={waited}
+      refused={kept}
       onclose={() => (open = false)}
       ontake={(id) => notices.take(id)}
       oncancel={cancel}
       onforget={() => notices.clearHistory()}
+      oncopy={(held) => void copyRefused(held)}
+      onedit={(held) => {
+        open = false;
+        void editRefused(held);
+      }}
+      ondelete={(held) => void deleteRefused(held)}
     />
   {/if}
 
@@ -245,7 +263,7 @@
     {:else}
       <Message
         notice={notices.latest}
-        unseen={notices.unseen}
+        unseen={notices.unseen + kept.length}
         expanded={open}
         ontoggle={toggle}
         ontake={(id) => notices.take(id)}

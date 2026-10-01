@@ -29,6 +29,8 @@ export type Notice = {
   readonly about?: string;
   /** Something went wrong: drawn in the accent, and counted until the panel is opened. */
   readonly alarm?: boolean;
+  /** False where what went wrong is counted where it is held, rather than here. */
+  readonly counted?: boolean;
   /** Where to go and look. */
   readonly href?: string;
   readonly offer?: Offer;
@@ -176,7 +178,9 @@ export const notices = {
       -KEPT,
     );
 
-    if (notice.alarm === true && !restated) unseen += 1;
+    if (notice.alarm === true && notice.counted !== false && !restated) {
+      unseen += 1;
+    }
     if (!holding) wait(raised);
 
     return raised.id;

@@ -546,7 +546,7 @@ Something the shell says in its own voice, on the **status line**, about work th
 happened, to somebody who did not ask. Every notice goes on its own and none is dismissed: the
 session's notices are read back in the status line's panel. Not an **action**, which is the pool's
 durable record of the same event and is what a notice is derived from. A **refusal** is said as one,
-once, and then let go of.
+once, and then let go of — a refused capture being held until somebody edits or deletes it.
 _Avoid_: toast, notification, alert, banner, message
 
 **Status line**:
@@ -559,7 +559,8 @@ _Avoid_: status bar, footer, corner, toast area
 **Refused**:
 Said of an outbox operation the pool answered no to. Terminal: waiting will not drain it, and the
 client's cache is left holding something the pool never accepted, so a shell says it as a
-**notice** and dismisses it rather than retrying it.
+**notice** and dismisses it rather than retrying it. A refused capture is the exception: its
+operation is the only copy of what was written, so it is held until somebody edits or deletes it.
 _Avoid_: failed, error, rejected (reserved for suggestions)
 
 ### Reaching out

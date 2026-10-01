@@ -17,6 +17,7 @@
     alarm = false,
     offer,
     mark,
+    actions,
   }: {
     /** A time, or nothing for work still in flight. */
     when?: string;
@@ -28,6 +29,8 @@
     offer?: { label: string; take: () => void };
     /** Drawn after `what`: a countdown, or the asking mark. */
     mark?: Snippet;
+    /** More than one thing to do about it, drawn after the offer. */
+    actions?: Snippet;
   } = $props();
 </script>
 
@@ -46,14 +49,14 @@
     </span>
 
     {#if why !== undefined}
-      <span class="wrap-anywhere">{why}</span>
+      <span class="whitespace-pre-line wrap-anywhere">{why}</span>
     {/if}
 
     {#if about !== undefined}
       <span class="wrap-anywhere">{about}</span>
     {/if}
 
-    {#if href !== undefined || offer !== undefined}
+    {#if href !== undefined || offer !== undefined || actions !== undefined}
       <span class="flex justify-end gap-4">
         {#if href !== undefined}
           <a {href} class="underline">look</a>
@@ -64,6 +67,8 @@
             {offer.label}
           </button>
         {/if}
+
+        {@render actions?.()}
       </span>
     {/if}
   </span>
