@@ -60,7 +60,7 @@
   /** The one surface that is a frame rather than a page. */
   const fills = $derived(page.route.id === "/items/[id]/process");
 
-  // Signing out is the pool's work leaving with it. A standing failure about a
+  // Signing out is the pool's work leaving with it. A failure about a
   // delivery nobody can now look up would outlive the session that raised it.
   $effect(() => {
     if (!shut) return;

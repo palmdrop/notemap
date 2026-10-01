@@ -1,5 +1,7 @@
 <script lang="ts">
-  import type { Action } from "@notemap/client";
+  import { untrack } from "svelte";
+
+  import type { Action, PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
@@ -32,20 +34,38 @@
 
   const refused = $derived($outbox.filter((held) => held.state === "refused"));
   const unsent = $derived($outbox.filter((held) => held.state !== "refused"));
-  const newestRefusal = $derived.by(() => {
-    const held = refused.at(-1);
-    return held === undefined
-      ? undefined
-      : { id: held.id, what: `refused — ${outgoing(held.operation).what}` };
-  });
-  const clear = $derived(
-    notices.standing.filter((notice) => notice.alarm !== false).length +
-      refused.length,
-  );
 
   function toggle(): void {
     open = !open;
   }
+
+  // Opening the panel is seeing what went wrong: nothing else has to clear it.
+  $effect(() => {
+    if (open) untrack(() => notices.seen());
+  });
+
+  /**
+   * A refusal is said once, as a notice, and then the client lets go of it:
+   * the panel is where it is read again, and holding it in the outbox would
+   * ask somebody to clear it.
+   */
+  function said(held: PendingOperation): void {
+    const deed = outgoing(held.operation).what;
+    notices.raise({
+      what: `${deed.split(" · ")[0] ?? deed} refused${
+        held.failure === undefined ? "" : `: ${held.failure}`
+      }`,
+      why: deed,
+      alarm: true,
+      key: `refused:${held.id}`,
+    });
+    void client.dismiss(held.id);
+  }
+
+  $effect(() => {
+    if (shut) return;
+    for (const held of refused) untrack(() => said(held));
+  });
 
   function cancel(firing: Firing): void {
     cancelRouting(firing.record, firing.item);
@@ -84,21 +104,19 @@
     }
   }
 
-  /** The one standing mark that a catch-up was too long to read out. */
-  let missed = $state<string | undefined>(undefined);
-
   /**
    * A read that could not reach back to the mark is a person who has been away,
-   * and a page of failures nobody may dismiss is not a report of it. They are
-   * counted and left in the log, which is where a day's worth belongs.
+   * and a page of failures is not a report of it. They are counted and left in
+   * the log, which is where a day's worth belongs, and the newest count takes
+   * the place of the last.
    */
   function tooMuch(since: number) {
-    if (missed !== undefined) notices.dismiss(missed);
-    missed = notices.raise({
+    notices.raise({
       what: `${String(since)} or more things happened`,
       why: "while this was away",
       href: "/log",
-      standing: true,
+      alarm: true,
+      only: "missed",
     });
   }
 
@@ -154,13 +172,10 @@
       firings={firings.open}
       now={firings.now}
       {unsent}
-      {refused}
       onclose={() => (open = false)}
       ontake={(id) => notices.take(id)}
-      ondismiss={(id) => notices.dismiss(id)}
       oncancel={cancel}
       onforget={() => notices.clearHistory()}
-      onrelease={(operation) => void client.dismiss(operation)}
     />
   {/if}
 
@@ -170,12 +185,10 @@
     {:else}
       <Message
         notice={notices.latest}
-        refused={newestRefusal}
+        unseen={notices.unseen}
         expanded={open}
         ontoggle={toggle}
         ontake={(id) => notices.take(id)}
-        ondismiss={(id) => notices.dismiss(id)}
-        onrelease={(operation) => void client.dismiss(operation)}
       />
 
       <FiringSegment
@@ -189,7 +202,6 @@
 
     <Counts
       pending={unsent.length}
-      clear={shut ? 0 : clear}
       queue={shut ? undefined : $queue}
       reachable={pool.yes}
       expanded={open}

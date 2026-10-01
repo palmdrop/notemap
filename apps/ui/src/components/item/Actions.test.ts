@@ -107,7 +107,7 @@ test("marks manual at once, with no note, and offers the way back in the corner"
   // Keyed to the record, so the log's own entry for it adds nothing.
   expect(said?.key).toBe("record:rec");
   // Filing where the person said to file is not a failure: it lingers.
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
 });
 
 test("discards at once and offers the way back in the corner", async () => {
@@ -123,7 +123,7 @@ test("discards at once and offers the way back in the corner", async () => {
   });
   expect(notices.shown.at(-1)?.what).toBe("discarded");
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
-  expect(notices.shown.at(-1)?.standing).toBeUndefined();
+  expect(notices.shown.at(-1)?.alarm).toBeUndefined();
 });
 
 /** The one grey: a decision that cannot be taken says why, and stays in place. */

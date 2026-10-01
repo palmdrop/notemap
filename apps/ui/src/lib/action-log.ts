@@ -32,16 +32,42 @@ function stringAt(
   return typeof held === "string" ? held : undefined;
 }
 
-function failureIn(detail: Record<string, unknown>): string | undefined {
+/** A failure's code, and the destination's own words for it where it gave any. */
+function failureIn(detail: Record<string, unknown>): {
+  readonly code?: string;
+  readonly said?: string;
+} {
   const failure = detail["failure"];
-  if (typeof failure !== "object" || failure === null) return undefined;
+  if (typeof failure !== "object" || failure === null) return {};
 
   const held = failure as Record<string, unknown>;
   const code = stringAt(held, "code");
   const said = stringAt(held, "detail");
+  return {
+    ...(code === undefined ? {} : { code }),
+    ...(said === undefined ? {} : { said }),
+  };
+}
 
-  if (code === undefined) return said;
-  return said === undefined ? code : `${code} · ${said}`;
+/** The pool tries a destination it could not reach again; every other failure ends the route. */
+const RETRIED = "unreachable";
+
+/**
+ * The status line's few words: what happened, then why in the destination's
+ * own words, or failing those, where. The code and the rest are the panel's.
+ */
+function headline(
+  lead: string,
+  said: string | undefined,
+  at: string | undefined,
+): string {
+  if (said !== undefined) return `${lead}: ${said}`;
+  return at === undefined ? lead : `${lead} · ${at}`;
+}
+
+function joined(parts: readonly (string | undefined)[]): { why?: string } {
+  const kept = parts.filter((part) => part !== undefined);
+  return kept.length === 0 ? {} : { why: kept.join(" · ") };
 }
 
 function place(
@@ -142,7 +168,6 @@ export function noticeOf(
           : "routing cancelled",
       ...(gave === undefined ? {} : { why: `${gave} taken back` }),
       ...where,
-      alarm: false,
       ...(record === undefined ? {} : { key: `cancelled:${record}` }),
     };
   }
@@ -162,14 +187,25 @@ export function noticeOf(
     };
   }
 
+  const at = firedByTag(detail) ? (called ?? named) : named;
+  const { code, said: told } = failureIn(detail);
+
+  /**
+   * A failure the pool will try again is not over, so it is not said as one:
+   * `retrying`, and no accent. Any other ends the route, and the reservation
+   * with it, so the item is back in the queue.
+   */
   if (action.kind === "delivery-failed") {
-    const why = failureIn(detail);
+    const retried = code === RETRIED;
     return {
-      what:
-        named === undefined ? "delivery failed" : `delivery failed · ${named}`,
-      ...(why === undefined ? {} : { why }),
+      what: headline(retried ? "retrying" : "routing failed", told, at),
+      ...joined([
+        at,
+        code,
+        retried || record === undefined ? undefined : "back in the queue",
+      ]),
       ...where,
-      standing: true,
+      ...(retried ? {} : { alarm: true }),
       ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
@@ -182,28 +218,34 @@ export function noticeOf(
    * failure it ends, so it carries that failure's reason as well.
    */
   if (action.kind === "work-abandoned") {
-    const at = firedByTag(detail) ? (called ?? named) : named;
-    const why = [
-      failureIn(detail),
-      record === undefined ? undefined : "back in the queue",
-    ].filter((part) => part !== undefined);
-
+    const work = stringAt(detail, "work") ?? "work";
     return {
-      what: at === undefined ? "given up" : `given up · ${at}`,
-      ...(why.length === 0 ? {} : { why: why.join(" · ") }),
+      what: headline(
+        record === undefined ? `${work} failed` : "routing failed",
+        told,
+        at,
+      ),
+      ...joined([
+        at,
+        code,
+        record === undefined ? undefined : "back in the queue",
+      ]),
       ...where,
-      standing: true,
+      alarm: true,
       ...runOf(record),
       key: `abandoned:${record ?? action.id}`,
     };
   }
 
-  const why = failureIn(detail);
   return {
-    what: "work failed",
-    ...(why === undefined ? {} : { why }),
+    what: headline(
+      `${stringAt(detail, "work") ?? "work"} failed`,
+      told,
+      undefined,
+    ),
+    ...joined([code]),
     ...where,
-    standing: true,
+    alarm: true,
     key: `work:${action.id}`,
   };
 }

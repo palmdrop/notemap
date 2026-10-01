@@ -17,7 +17,7 @@ export function cancelRouting(record: string, item: string): void {
     .cancel(record, item)
     .then(() => firings.closed(record))
     .catch(() => {
-      notices.raise({ what: "could not cancel", standing: true });
+      notices.raise({ what: "could not cancel", alarm: true });
     });
 }
 

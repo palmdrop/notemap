@@ -14,7 +14,6 @@
     href,
     alarm = false,
     offer,
-    ondismiss,
     mark,
   }: {
     /** A time, or nothing for work still in flight. */
@@ -25,7 +24,6 @@
     href?: string;
     alarm?: boolean;
     offer?: { label: string; take: () => void };
-    ondismiss?: () => void;
     /** Drawn after `what`: a countdown, or the asking mark. */
     mark?: Snippet;
   } = $props();
@@ -52,7 +50,7 @@
       <span class="wrap-anywhere">{about}</span>
     {/if}
 
-    {#if href !== undefined || offer !== undefined || ondismiss !== undefined}
+    {#if href !== undefined || offer !== undefined}
       <span class="flex justify-end gap-4">
         {#if href !== undefined}
           <a {href} class="underline">look</a>
@@ -61,12 +59,6 @@
         {#if offer !== undefined}
           <button type="button" onclick={offer.take} class="underline">
             {offer.label}
-          </button>
-        {/if}
-
-        {#if ondismiss !== undefined}
-          <button type="button" onclick={ondismiss} class="underline">
-            dismiss
           </button>
         {/if}
       </span>

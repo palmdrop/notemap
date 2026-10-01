@@ -23,27 +23,20 @@
     firings,
     now,
     unsent,
-    refused,
     onclose,
     ontake,
-    ondismiss,
     oncancel,
     onforget,
-    onrelease,
   }: {
     history: readonly Said[];
     firings: readonly Firing[];
     now: number;
     unsent: readonly PendingOperation[];
-    refused: readonly PendingOperation[];
     onclose: () => void;
     ontake: (id: string) => void;
-    ondismiss: (id: string) => void;
     oncancel: (firing: Firing) => void;
     /** Lets go of what has gone. */
     onforget: () => void;
-    /** Lets go of a refusal: the client stops holding what the pool never took. */
-    onrelease: (operation: string) => void;
   } = $props();
 
   publish(() => [{ id: "close", label: "close", run: onclose }], {
@@ -57,7 +50,7 @@
     if (scroller !== undefined) scroller.scrollTop = scroller.scrollHeight;
   });
 
-  const flying = $derived(firings.length + unsent.length + refused.length > 0);
+  const flying = $derived(firings.length + unsent.length > 0);
   const gone = $derived(history.some((said) => !said.live));
 
   function at(ms: number): string {
@@ -103,11 +96,10 @@
           why={said.why}
           about={said.about}
           href={said.href}
-          alarm={said.live && (said.alarm ?? said.standing === true)}
+          alarm={said.alarm === true}
           offer={said.live && said.offer !== undefined
             ? { label: said.offer.label, take: () => ontake(said.id) }
             : undefined}
-          ondismiss={said.live ? () => ondismiss(said.id) : undefined}
         />
       {/each}
     </ol>
@@ -146,17 +138,6 @@
             ? "pending · the pool is out of reach"
             : "pending"}
           href={itemHref(said.item)}
-        />
-      {/each}
-
-      {#each refused as held (held.id)}
-        {@const said = outgoing(held.operation)}
-        <Entry
-          when={timeOf(held.at)}
-          what={`refused — ${said.what}`}
-          why={held.failure ?? "no reason given"}
-          alarm
-          ondismiss={() => onrelease(held.id)}
         />
       {/each}
     </ol>

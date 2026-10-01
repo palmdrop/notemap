@@ -5,20 +5,18 @@
 
   /**
    * The right of the status line, each drawn only while it is true: what this
-   * device holds, what stands to be cleared, and how much the queue holds.
+   * device holds, and how much the queue holds.
    * Reachability is always said, last. Below `narrow` the words go and a
    * number and a mark stay.
    */
   let {
     pending,
-    clear,
     queue,
     reachable,
     expanded,
     ontoggle,
   }: {
     pending: number;
-    clear: number;
     queue?: number;
     reachable: boolean;
     expanded: boolean;
@@ -41,20 +39,6 @@
     <span class="narrow:hidden"
       ><span class="text-glyph">◐</span> {pending}</span
     >
-  </button>
-{/if}
-
-{#if clear > 0}
-  <button
-    type="button"
-    class="flex-none whitespace-nowrap text-alarm tabular-nums"
-    aria-label={`${String(clear)} to clear`}
-    aria-expanded={expanded}
-    aria-controls={PANEL}
-    onclick={ontoggle}
-  >
-    <span class="max-narrow:hidden">{clear} to clear</span>
-    <span class="narrow:hidden">! {clear}</span>
   </button>
 {/if}
 

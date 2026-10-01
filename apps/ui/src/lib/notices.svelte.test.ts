@@ -15,19 +15,35 @@ test("a confirmation goes on its own", () => {
   notices.raise({ what: "routed · obsidian" });
   expect(notices.shown).toHaveLength(1);
 
-  vi.advanceTimersByTime(10_000);
+  vi.advanceTimersByTime(4_000);
   expect(notices.shown).toHaveLength(0);
 });
 
-test("a standing notice holds until it is dismissed", () => {
-  const id = notices.raise({ what: "delivery failed", standing: true });
-  expect(id).toBeDefined();
+/** Nothing has to be cleared: the panel is where it is read again. */
+test("what went wrong lingers long enough to read, and goes on its own too", () => {
+  notices.raise({
+    what: "routing failed: taken.md is already there",
+    alarm: true,
+  });
 
-  vi.advanceTimersByTime(60_000);
+  vi.advanceTimersByTime(5_000);
   expect(notices.shown).toHaveLength(1);
 
-  notices.dismiss(id as string);
+  vi.advanceTimersByTime(5_000);
   expect(notices.shown).toHaveLength(0);
+  expect(notices.history).toHaveLength(1);
+});
+
+test("what went wrong is counted until the panel is opened", () => {
+  notices.raise({ what: "routing failed", alarm: true });
+  notices.raise({ what: "copied" });
+  notices.raise({ what: "edit refused", alarm: true });
+  vi.advanceTimersByTime(60_000);
+
+  expect(notices.unseen).toBe(2);
+
+  notices.seen();
+  expect(notices.unseen).toBe(0);
 });
 
 test("a key is said once, however often it is raised", () => {
@@ -56,7 +72,6 @@ test("taking what a notice offered invokes it once and resolves the notice", () 
   const put = vi.fn();
   const id = notices.raise({
     what: "discarded",
-    standing: true,
     offer: { label: "undo", take: put },
   });
 
@@ -67,11 +82,10 @@ test("taking what a notice offered invokes it once and resolves the notice", () 
   expect(notices.shown).toHaveLength(0);
 });
 
-test("only the newest of a named notice stands", () => {
+test("only the newest of a named notice is live", () => {
   for (const what of ["discarded · a", "discarded · b", "discarded · c"]) {
     notices.raise({
       what,
-      standing: true,
       only: "discard",
       offer: { label: "undo", take: vi.fn() },
     });
@@ -81,12 +95,12 @@ test("only the newest of a named notice stands", () => {
 });
 
 test("a name supersedes nothing that does not bear it", () => {
-  notices.raise({ what: "delivery failed", standing: true });
-  notices.raise({ what: "discarded · a", standing: true, only: "discard" });
-  notices.raise({ what: "discarded · b", standing: true, only: "discard" });
+  notices.raise({ what: "routing failed", alarm: true });
+  notices.raise({ what: "discarded · a", only: "discard" });
+  notices.raise({ what: "discarded · b", only: "discard" });
 
   expect(notices.shown.map((notice) => notice.what)).toEqual([
-    "delivery failed",
+    "routing failed",
     "discarded · b",
   ]);
 });
@@ -117,7 +131,7 @@ test("a held status line lets nothing leave, and lingers again once let go", () 
 
 test("a notice raised into a held status line waits to be let go", () => {
   notices.hold();
-  notices.raise({ what: "delivery failed", standing: true, only: "record" });
+  notices.raise({ what: "retrying", only: "record" });
   notices.raise({ what: "routed · research", only: "record" });
   vi.advanceTimersByTime(60_000);
 
@@ -130,59 +144,37 @@ test("a notice raised into a held status line waits to be let go", () => {
   expect(notices.shown).toHaveLength(0);
 });
 
-test("letting go of the status line does not start a standing notice leaving", () => {
-  notices.raise({ what: "delivery failed", standing: true });
-
-  notices.hold();
-  notices.release();
-  vi.advanceTimersByTime(60_000);
-
-  expect(notices.shown).toHaveLength(1);
-});
-
 test("the message line says the newest live notice", () => {
-  notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "routing failed", alarm: true });
   notices.raise({ what: "copied" });
   expect(notices.latest?.what).toBe("copied");
 
   vi.advanceTimersByTime(4_000);
-  expect(notices.latest?.what).toBe("delivery failed");
-});
-
-test("what stands is counted apart from what lingers", () => {
-  notices.raise({ what: "delivery failed", standing: true });
-  notices.raise({ what: "given up", standing: true });
-  notices.raise({ what: "copied" });
-
-  expect(notices.standing.map((notice) => notice.what)).toEqual([
-    "delivery failed",
-    "given up",
-  ]);
+  expect(notices.latest?.what).toBe("routing failed");
 });
 
 /** The panel reads back what the line has already let go of. */
 test("the history keeps what has gone, and says which is still live", () => {
-  const failed = notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "routing failed", alarm: true });
   notices.raise({ what: "copied" });
   vi.advanceTimersByTime(4_000);
-  notices.dismiss(failed as string);
-  notices.raise({ what: "routed · vault", standing: true });
 
   expect(notices.history.map((notice) => [notice.what, notice.live])).toEqual([
-    ["delivery failed", false],
+    ["routing failed", true],
     ["copied", false],
-    ["routed · vault", true],
   ]);
 });
 
 test("the history keeps both sides of a notice that took another's place", () => {
-  notices.raise({ what: "delivery failed", standing: true, only: "record" });
-  notices.raise({ what: "given up", standing: true, only: "record" });
+  notices.raise({ what: "retrying", only: "record" });
+  notices.raise({ what: "routing failed", alarm: true, only: "record" });
 
-  expect(notices.shown.map((notice) => notice.what)).toEqual(["given up"]);
+  expect(notices.shown.map((notice) => notice.what)).toEqual([
+    "routing failed",
+  ]);
   expect(notices.history.map((notice) => notice.what)).toEqual([
-    "delivery failed",
-    "given up",
+    "retrying",
+    "routing failed",
   ]);
 });
 
@@ -202,12 +194,12 @@ test("a notice that has gone offers nothing", () => {
 test("clearing the history keeps what is live", () => {
   notices.raise({ what: "copied" });
   vi.advanceTimersByTime(4_000);
-  notices.raise({ what: "delivery failed", standing: true });
+  notices.raise({ what: "routing failed", alarm: true });
 
   notices.clearHistory();
 
   expect(notices.history.map((notice) => notice.what)).toEqual([
-    "delivery failed",
+    "routing failed",
   ]);
 });
 

@@ -20,7 +20,7 @@ export function discard(item: Item): void {
   const about = aboutItem(item);
 
   void client.archive(id).catch((error: unknown) => {
-    notices.raise({ what: saidBy(error), about, standing: true });
+    notices.raise({ what: saidBy(error), about, alarm: true });
   });
 
   notices.raise({
@@ -32,7 +32,7 @@ export function discard(item: Item): void {
       label: "undo",
       take: () => {
         void client.unarchive(id).catch(() => {
-          notices.raise({ what: "could not undo", about, standing: true });
+          notices.raise({ what: "could not undo", about, alarm: true });
         });
       },
     },
@@ -60,12 +60,12 @@ export async function manual(item: Item): Promise<void> {
         label: "undo",
         take: () => {
           void client.routing.cancel(record.id, id).catch(() => {
-            notices.raise({ what: "could not undo", about, standing: true });
+            notices.raise({ what: "could not undo", about, alarm: true });
           });
         },
       },
     });
   } catch (error) {
-    notices.raise({ what: saidBy(error), about, standing: true });
+    notices.raise({ what: saidBy(error), about, alarm: true });
   }
 }

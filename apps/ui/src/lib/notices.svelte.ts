@@ -3,7 +3,10 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 /** How long a confirmation holds before it goes. A glance, not a read. */
 const LINGERS = 4_000;
 
-/** Long enough to reach for what it offers; the way back is elsewhere too. */
+/**
+ * Long enough to reach for what it offers, or to read what went wrong. Nothing
+ * stays longer: the panel is where it is read again.
+ */
 const OFFERED = 10_000;
 
 /** Enough keys to stop a poll repeating itself, and no memory of the session. */
@@ -24,13 +27,7 @@ export type Notice = {
   readonly why?: string;
   /** Which capture it was about: its stamp and its own first words. */
   readonly about?: string;
-  /** Held until a person clears it: anything they may have to act on. */
-  readonly standing?: boolean;
-  /**
-   * Whether it is drawn as an alarm. A standing notice is one by default —
-   * standing is usually what a failure does — but the two are different facts,
-   * and a notice may stand without anything having gone wrong.
-   */
+  /** Something went wrong: drawn in the accent, and counted until the panel is opened. */
   readonly alarm?: boolean;
   /** Where to go and look. */
   readonly href?: string;
@@ -61,6 +58,9 @@ let minted = 0;
 /** Somebody is at the status line, so nothing in it leaves. */
 let holding = $state(false);
 
+/** Alarms raised since the panel was last opened. */
+let unseen = $state(0);
+
 const spoken = new SvelteSet<string>();
 const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
 
@@ -71,7 +71,9 @@ function forget(id: string): void {
 }
 
 function lingers(notice: Notice): number {
-  return notice.offer === undefined ? LINGERS : OFFERED;
+  return notice.offer === undefined && notice.alarm !== true
+    ? LINGERS
+    : OFFERED;
 }
 
 function wait(notice: Notice): void {
@@ -111,9 +113,17 @@ export const notices = {
     return held.at(-1);
   },
 
-  /** What stands until a person clears it. */
-  get standing(): readonly Notice[] {
-    return held.filter((notice) => notice.standing === true);
+  /**
+   * Alarms nobody has looked at yet. Nothing has to be cleared, but a failure
+   * that lingered and went while nobody was looking is still counted.
+   */
+  get unseen(): number {
+    return unseen;
+  },
+
+  /** The panel was opened: whatever went wrong has been seen. */
+  seen(): void {
+    unseen = 0;
   },
 
   /** This session's notices, oldest first, live or gone. */
@@ -149,7 +159,8 @@ export const notices = {
     held = [...kept, raised];
     past = [...past, raised].slice(-KEPT);
 
-    if (notice.standing !== true && !holding) wait(raised);
+    if (notice.alarm === true) unseen += 1;
+    if (!holding) wait(raised);
 
     return raised.id;
   },
@@ -165,17 +176,13 @@ export const notices = {
   },
 
   /**
-   * Taking what a notice offered resolves it: the thing it was standing for is
-   * done. Only a live notice offers anything.
+   * Taking what a notice offered resolves it: what it offered is done. Only a
+   * live notice offers anything.
    */
   take(id: string): void {
     const notice = held.find((one) => one.id === id);
     if (notice?.offer === undefined) return;
     notice.offer.take();
-    drop(id);
-  },
-
-  dismiss(id: string): void {
     drop(id);
   },
 
@@ -195,17 +202,16 @@ export const notices = {
   release(): void {
     if (!holding) return;
     holding = false;
-    for (const notice of held) {
-      if (notice.standing !== true) wait(notice);
-    }
+    for (const notice of held) wait(notice);
   },
 
-  /** Everything, said and remembered: a shut door leaves none of it standing. */
+  /** Everything, said and remembered: a shut door leaves none of it behind. */
   clear(): void {
     for (const notice of held) forget(notice.id);
     held = [];
     past = [];
     holding = false;
+    unseen = 0;
     spoken.clear();
   },
 };

@@ -11,6 +11,17 @@ import StatusLine from "./StatusLine.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+function firstValueOf<T>(source: {
+  subscribe(next: (value: T) => void): { unsubscribe(): void };
+}): Promise<T> {
+  return new Promise((resolve) => {
+    const held = source.subscribe((value) => {
+      resolve(value);
+      queueMicrotask(() => held.unsubscribe());
+    });
+  });
+}
+
 afterEach(() => {
   notices.clear();
   firings.clear();
@@ -41,7 +52,9 @@ function command(id: string) {
 }
 
 async function opened() {
-  await fireEvent.click(await screen.findByRole("button", { name: "notices" }));
+  await fireEvent.click(
+    await screen.findByRole("button", { name: /^notices/ }),
+  );
   return screen.getByRole("region", { name: "notices" });
 }
 
@@ -52,37 +65,23 @@ test("says the newest live notice on the line", async () => {
   notices.raise({ what: "routed · obsidian", why: "notes/inbox/picker.md" });
   const said = await screen.findByRole("status");
   expect(said.textContent).toContain("routed · obsidian");
-  expect(said.textContent).toContain("notes/inbox/picker.md");
 
-  notices.raise({ what: "delivery failed · vault", standing: true });
-  const stands = await screen.findByRole("alert");
-  expect(stands.textContent).toContain("delivery failed · vault");
+  notices.raise({ what: "routing failed: taken.md", alarm: true });
+  const wrong = await screen.findByRole("alert");
+  expect(wrong.textContent).toContain("routing failed: taken.md");
 });
 
-test("a standing notice that is not an alarm reads as status", async () => {
+/** The line has room for a few words; the rest of a notice is the panel's. */
+test("the line says what happened, and leaves why to the panel", async () => {
   pool(quiet);
   render(StatusLine);
 
-  notices.raise({ what: "3 or so", standing: true, alarm: false });
+  notices.raise({ what: "routed · vault", why: "notes/inbox/picker.md" });
 
   const said = await screen.findByRole("status");
-  expect(said.textContent).toContain("3 or so");
-  expect(screen.queryByRole("alert")).toBeNull();
-  expect(screen.queryByRole("button", { name: "0 to clear" })).toBeNull();
-});
-
-test("what stands is counted, in the accent, until it is dismissed", async () => {
-  pool(quiet);
-  render(StatusLine);
-
-  const id = notices.raise({ what: "given up", standing: true });
-  const count = await screen.findByRole("button", { name: "1 to clear" });
-  expect(count.className).toContain("text-alarm");
-
-  notices.dismiss(id!);
-  await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "1 to clear" })).toBeNull();
-  });
+  expect(said.textContent).not.toContain("notes/inbox/picker.md");
+  const panel = await opened();
+  expect(panel.textContent).toContain("notes/inbox/picker.md");
 });
 
 test("what a notice offers is taken from the line", async () => {
@@ -157,33 +156,28 @@ test("the panel reads back what the line has let go of", async () => {
   expect(
     within(said).getByRole("link", { name: "look" }).getAttribute("href"),
   ).toBe("/items/one");
-  // Gone, so there is nothing left to dismiss.
+  // Nothing is ever dismissed: a notice goes on its own and is read here.
   expect(within(said).queryByRole("button", { name: "dismiss" })).toBeNull();
 });
 
-test("a standing notice is dismissed from the line", async () => {
-  pool(quiet);
-  render(StatusLine);
-
-  notices.raise({ what: "given up", standing: true });
-  await fireEvent.click(await screen.findByRole("button", { name: "dismiss" }));
-
-  expect(notices.standing).toHaveLength(0);
-});
-
-test("a standing notice is dismissed from the panel", async () => {
-  pool(quiet);
-  render(StatusLine);
-
-  notices.raise({ what: "given up", standing: true });
-  const panel = await opened();
-
-  await fireEvent.click(within(panel).getByRole("button", { name: "dismiss" }));
-
-  expect(notices.standing).toHaveLength(0);
-});
-
 /** The panel is where notices are read back, so it is there to open before anything is said. */
+/** Nothing has to be cleared, but what went wrong while nobody looked is not lost. */
+test("what went wrong is counted on notices until the panel is opened", async () => {
+  pool(quiet);
+  render(StatusLine);
+  vi.useFakeTimers();
+
+  notices.raise({ what: "routing failed", alarm: true });
+  notices.raise({ what: "copied" });
+  await vi.advanceTimersByTimeAsync(60_000);
+
+  const toggle = screen.getByRole("button", { name: "notices, 1 gone wrong" });
+  expect(toggle.textContent).toContain("1");
+
+  await fireEvent.click(toggle);
+  expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
+});
+
 test("notices opens the panel when nothing has been said", async () => {
   pool(quiet);
   render(StatusLine);
@@ -220,7 +214,8 @@ test("the panel opens and closes by command, and closes on a press outside", asy
   });
 });
 
-test("a refusal is said on the line, counted, and dismissed from the panel", async () => {
+/** Said once, kept in the panel, and the client lets go of what the pool never took. */
+test("a refusal is said as a notice, and the outbox lets it go", async () => {
   pool((request) =>
     routeOf(request) === "POST /v1/captures"
       ? refusal(400, "payload-invalid")
@@ -232,15 +227,17 @@ test("a refusal is said on the line, counted, and dismissed from the panel", asy
   await client.drain();
 
   const said = await screen.findByRole("alert");
-  expect(said.textContent).toContain("refused — capture · a thought");
-  expect(screen.getByRole("button", { name: "1 to clear" })).toBeDefined();
+  expect(said.textContent).toContain("capture refused");
+  await vi.waitFor(async () => {
+    expect(
+      (await firstValueOf(client.outbox)).filter(
+        (held) => held.state === "refused",
+      ),
+    ).toHaveLength(0);
+  });
 
   const panel = await opened();
-  await fireEvent.click(within(panel).getByRole("button", { name: "dismiss" }));
-
-  await vi.waitFor(() => {
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
+  expect(panel.textContent).toContain("capture · a thought");
 });
 
 test("counts the work this device holds, and lists it in the panel", async () => {
@@ -309,8 +306,11 @@ test("says what logged while nobody was asking", async () => {
   logged = [
     anAction("2", "delivery-failed", {
       record: "r1",
-      attempt: 3,
-      failure: { code: "unreachable", detail: "the vault is not mounted" },
+      attempt: 1,
+      failure: {
+        code: "rejected-by-destination",
+        detail: "taken.md is already there",
+      },
     }),
     ...logged,
   ];
@@ -318,8 +318,9 @@ test("says what logged while nobody was asking", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
 
   const said = await screen.findByRole("alert");
-  expect(said.textContent).toContain("delivery failed");
-  expect(said.textContent).toContain("the vault is not mounted");
+  expect(said.textContent).toContain(
+    "routing failed: taken.md is already there",
+  );
 
   // Which capture it was about, read in the panel: the log names an id.
   command("notices").run();
@@ -358,7 +359,7 @@ test("does not repeat a landing this shell has already reported", async () => {
 
 /**
  * A read that could not reach back to its mark is somebody who has been away.
- * A page of failures nobody may dismiss is not a report of what they missed.
+ * A page of failures is not a report of what they missed.
  */
 test("a catch-up too long to read out is counted, not enumerated", async () => {
   vi.useFakeTimers();
@@ -386,7 +387,7 @@ test("a catch-up too long to read out is counted, not enumerated", async () => {
 
   const said = await screen.findByRole("alert");
   expect(said.textContent).toContain("3 or more things happened");
-  expect(notices.standing).toHaveLength(1);
+  expect(notices.shown).toHaveLength(1);
 });
 
 test("a second long absence replaces the mark left by the first", async () => {
@@ -411,9 +412,11 @@ test("a second long absence replaces the mark left by the first", async () => {
   await screen.findByRole("alert");
 
   logged = [anAction("99", "delivery-failed", { record: "r99", failure: {} })];
-  await vi.advanceTimersByTimeAsync(10_000);
+  await vi.advanceTimersByTimeAsync(5_000);
 
-  expect(notices.standing).toHaveLength(1);
+  expect(
+    notices.shown.filter((notice) => notice.what.includes("things happened")),
+  ).toHaveLength(1);
 });
 
 /**

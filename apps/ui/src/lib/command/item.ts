@@ -37,7 +37,7 @@ async function copy(item: Item): Promise<void> {
     await navigator.clipboard.writeText(client.says(item));
     notices.raise({ what: "copied", about });
   } catch (error) {
-    notices.raise({ what: saidBy(error), about, standing: true });
+    notices.raise({ what: saidBy(error), about, alarm: true });
   }
 }
 
@@ -51,7 +51,7 @@ function undiscard(item: Item): void {
     notices.raise({
       what: saidBy(error),
       about: aboutItem(item),
-      standing: true,
+      alarm: true,
     });
   });
 }

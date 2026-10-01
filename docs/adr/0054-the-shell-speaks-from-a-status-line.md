@@ -108,6 +108,16 @@ the queue holds. It is a separate route rather than a field on each page because
 needs it on every surface, not only where the queue is read. The client reads it again when its
 own work drains, when the log shows the pool did something, and when the pool comes back.
 
+> **Amended in review, 2026-10-01.** Nothing stands and nothing is dismissed. Every notice goes on
+> its own, what went wrong after ten seconds, and `to clear` is gone: `notices` counts, in the
+> accent, what went wrong since the panel was last opened, and opening it is the whole of
+> acknowledging it. A refusal is said once as a notice and the client is told to let go of it. The
+> line says a failure in a few words — `retrying: <reason>` where the pool will try again, and
+> `routing failed: <reason>` where the route ended — and leaves the place, the code and the capture
+> to the panel. The panel hangs from an always-present `notices` at the line's left, at most 28rem
+> wide, slides open, and stands clear of the line's rule. The developer's reasoning: once a notice
+> can be read again in the panel, asking somebody to clear it costs a gesture and buys nothing.
+
 ### Consequences
 
 - **Good**: work in flight, what stands, and how much is left are all stated in words on every
