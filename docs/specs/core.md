@@ -1,9 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-01
 **Shipped**:
 
+- 2026-10-01 — **A host can wake for work that is waiting on a time.** `work.nextDue(kinds)`
+  answers when the earliest unleased job of those kinds that is not yet claimable becomes so — a
+  fired template's window, a retry's backoff — and nothing where none is waiting. The daemon's
+  runner asks after every pass and, where that falls before its next poll, claims at that moment
+  rather than on the poll after it. A trigger tag's delivery no longer waits up to a poll past its
+  window: the window is longer than the poll, so the runner always sees the job before it is due.
 - 2026-09-30 — **A reservation nothing has tried does not seal a capture.** An edit reaching an
   item whose only records are reservations still waiting for their first attempt — in practice a
   trigger tag's, inside its window — amends it in place, and the delivery carries what it now

@@ -37,6 +37,7 @@ import type {
   Page,
   Payload,
   PoolIdentity,
+  JobKind,
   PoolStore,
   PoolTx,
   Position,
@@ -72,7 +73,7 @@ import {
   toTimestamp,
 } from "./mapping";
 import { poolIdentity } from "./identity";
-import { abandonedWork, jobQueue } from "./jobs";
+import { abandonedWork, jobQueue, nextDue } from "./jobs";
 import { LAST_MODIFIED_AT, MIGRATIONS } from "./migrations";
 import type {
   ActionRow,
@@ -711,6 +712,9 @@ export function createSqlitePoolStore(
 
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
+
+      nextDue: async (kinds: readonly JobKind[], now: Timestamp) =>
+        nextDue(source, kinds, now),
 
       // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],

@@ -63,6 +63,7 @@ import type {
   AbandonedWork,
   ClaimRequest,
   Job,
+  JobKind,
   JobResolution,
   JobSubject,
   Lease,
@@ -484,4 +485,12 @@ export interface WorkQueue {
   abandonedWork(
     page: Page<AbandonedPosition>,
   ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
+  /**
+   * When the earliest unleased job of these kinds waiting on a time becomes
+   * claimable, where one is still ahead of `now`.
+   */
+  nextDue(
+    kinds: readonly JobKind[],
+    now: Timestamp,
+  ): Promise<Timestamp | undefined>;
 }
