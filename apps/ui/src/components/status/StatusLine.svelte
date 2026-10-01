@@ -5,6 +5,7 @@
 
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
+  import { SHOWN_AFTER } from "$components/primitives/marks/Asking.svelte";
   import { firingOf, noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
@@ -35,6 +36,28 @@
 
   const refused = $derived($outbox.filter((held) => held.state === "refused"));
   const unsent = $derived($outbox.filter((held) => held.state !== "refused"));
+
+  /**
+   * Work is counted once it has waited as long as the asking mark does, as a
+   * row's own mark is: most of it drains before then, and a count that came
+   * and went would say nothing but move the line.
+   */
+  let clock = $state(Date.now());
+  const waited = $derived(
+    unsent.filter((held) => clock - Date.parse(held.at) >= SHOWN_AFTER),
+  );
+
+  $effect(() => {
+    const due = unsent
+      .map((held) => Date.parse(held.at) + SHOWN_AFTER)
+      .filter((at) => at > clock);
+    if (due.length === 0) return;
+    const timer = setTimeout(
+      () => (clock = Date.now()),
+      Math.min(...due) - Date.now(),
+    );
+    return () => clearTimeout(timer);
+  });
 
   function toggle(): void {
     open = !open;
@@ -188,7 +211,7 @@
       history={notices.history}
       firings={firings.open}
       now={firings.now}
-      {unsent}
+      unsent={waited}
       onclose={() => (open = false)}
       ontake={(id) => notices.take(id)}
       oncancel={cancel}
@@ -218,7 +241,7 @@
     {/if}
 
     <Counts
-      pending={unsent.length}
+      pending={waited.length}
       queue={shut ? undefined : $queue}
       reachable={pool.yes}
       expanded={open}

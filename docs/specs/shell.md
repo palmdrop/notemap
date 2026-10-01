@@ -1795,7 +1795,10 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 
 - **A route in flight** — `routing · research 12s`, with `cancel` (below).
 - **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
-  refusal. It says nothing while there is nothing, since pending is ordinary and heals itself.
+  refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
+  **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
+  row's own mark does: a tag drains within a moment, and `1 pending` that came and went would say
+  nothing but move the line. Work restored from an earlier session has waited already.
 - **How much is left** — `14 in queue`, the pool's own count of what the queue holds, read from
   `GET /v1/counts` and leading to the queue. It is the pool's number: what this device has not sent
   is the pending count's. It keeps its last answer while the pool is out of reach.

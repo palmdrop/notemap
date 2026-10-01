@@ -611,3 +611,19 @@ test("an undo taken elsewhere leaves the panel too", async () => {
     expect(within(panel).queryByRole("button", { name: "undo" })).toBeNull();
   });
 });
+
+/** Most work drains at once, and a count that came and went would only move the line. */
+test("work that drains at once is never counted", async () => {
+  vi.useFakeTimers();
+  const transport = pool(quiet);
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(0);
+
+  transport.unreachable(true);
+  await client.tag("one", "kind/quote");
+  await vi.advanceTimersByTimeAsync(100);
+  expect(screen.queryByRole("button", { name: "1 pending" })).toBeNull();
+
+  await vi.advanceTimersByTimeAsync(200);
+  expect(screen.getByRole("button", { name: "1 pending" })).toBeDefined();
+});
