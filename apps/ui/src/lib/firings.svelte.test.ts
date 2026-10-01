@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { firings, left, type Firing } from "./firings.svelte";
+import { firings, left, LOOKS_AFTER, type Firing } from "./firings.svelte";
 
 const research: Firing = {
   record: "r1",
@@ -16,6 +16,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  firings.asks(undefined);
   firings.clear();
   vi.useRealTimers();
 });
@@ -69,4 +70,37 @@ test("its clock ticks while anything is open, and stops when nothing is", () => 
   const stopped = firings.now;
   vi.advanceTimersByTime(3_000);
   expect(firings.now).toBe(stopped);
+});
+
+/**
+ * The delivery is attempted as the window closes, and the watcher's tempo is
+ * far longer than the window: the corner would say `routing` for seconds after
+ * the note was filed.
+ */
+test("asks the pool how it went just after the window closes, a few times and no more", async () => {
+  const ask = vi.fn();
+  firings.asks(ask);
+  firings.opened({ ...research, until: Date.now() + 15_000 });
+
+  await vi.advanceTimersByTimeAsync(15_000);
+  expect(ask).not.toHaveBeenCalled();
+
+  await vi.advanceTimersByTimeAsync(LOOKS_AFTER.at(-1) ?? 0);
+  expect(ask).toHaveBeenCalledTimes(LOOKS_AFTER.length);
+
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(ask).toHaveBeenCalledTimes(LOOKS_AFTER.length);
+});
+
+test("stops asking once the pool has said how it ended", async () => {
+  const ask = vi.fn();
+  firings.asks(ask);
+  firings.opened({ ...research, until: Date.now() + 1_000 });
+
+  await vi.advanceTimersByTimeAsync(1_000 + (LOOKS_AFTER[0] ?? 0) + 1_000);
+  expect(ask).toHaveBeenCalledTimes(1);
+
+  firings.closed("r1");
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(ask).toHaveBeenCalledTimes(1);
 });

@@ -1,6 +1,11 @@
-import type { RoutingRecord, RoutingSummary } from "@notemap/client";
+import type {
+  Capability,
+  RoutingRecord,
+  RoutingSummary,
+} from "@notemap/client";
 
 import { OWN_ARGUMENTS } from "./arguments";
+import { fieldsOf } from "./schema-form";
 import type { Raised } from "./notices.svelte";
 
 /**
@@ -14,44 +19,76 @@ export function placeShort(place: string): string {
 }
 
 /**
+ * How a capability's arguments read, from its schema. An inheriting field is a
+ * destination setting taken for one delivery — how a note is written rather
+ * than where it went — so it is never part of the place. A capability with a
+ * path field hands back a pointer that is a path too; any other pointer is a
+ * handle the destination minted, and the place its decision named says more.
+ */
+export type Reading = {
+  readonly settings: readonly string[];
+  readonly pathed: boolean;
+};
+
+export function readingOf(
+  capability: Capability | undefined,
+): Reading | undefined {
+  if (capability === undefined) return undefined;
+  const fields = fieldsOf(capability.argumentsSchema);
+  return {
+    settings: fields
+      .filter((field) => field.inherits)
+      .map((field) => field.name),
+    pathed: fields.some((field) => field.path),
+  };
+}
+
+/**
  * What one record says on a row: where it went, and the place it landed, cut
  * to its last segment so the line never wraps a long path. The capability is
  * the adapter's vocabulary rather than a person's, and a record that is not
- * saying otherwise was delivered — so the words those two spent are the words
- * the place needed. Marking processed is routing whose destination is the
- * person, so it reads as one.
+ * pending was delivered — so the words those two spent are the words the place
+ * needed. Marking processed is routing whose destination is the person, so it
+ * reads as one.
  */
+export type Went = {
+  readonly name: string;
+  readonly place?: string;
+  /** The whole place, where `place` is cut. */
+  readonly title?: string;
+  readonly pending?: true;
+  /** What the person wrote about a decision made by hand. */
+  readonly note?: string;
+};
+
 export function wentTo(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
   called?: Namer,
-): { readonly said: string; readonly aside?: string; readonly title?: string } {
+  reading?: Reading,
+): Went {
   if (record.target.kind !== "destination") {
     const note = record.target.note;
-    return { said: "manual", ...(note === undefined ? {} : { aside: note }) };
+    return { name: "manual", ...(note === undefined ? {} : { note }) };
   }
 
-  const name = nameOf(record.target.destination);
-  const place = placeIn(record, called);
+  const place = placeIn(record, called, reading);
 
   return {
-    said: place === undefined ? name : `${name} · ${placeShort(place)}`,
-    ...(place === undefined ? {} : { title: place }),
-    ...(record.state === "delivered" ? {} : { aside: record.state }),
+    name: nameOf(record.target.destination),
+    ...(place === undefined ? {} : { place: placeShort(place), title: place }),
+    ...(record.state === "pending" ? { pending: true } : {}),
   };
 }
 
-export function whereItWent(
+/** The names of where a summary says an item went, in order. */
+export function wentWhere(
   summary: RoutingSummary,
   nameOf: (destination: string) => string,
-): string {
-  const places = summary.to.map((went) =>
+): readonly string[] {
+  return summary.to.map((went) =>
     went.kind === "destination" ? nameOf(went.destination) : "manual",
   );
-
-  return summary.pending === 0
-    ? places.join(", ")
-    : `${places.join(", ")} · ${summary.pending} pending`;
 }
 
 /**
@@ -60,23 +97,26 @@ export function whereItWent(
  * a mailbox or a capability nobody has written yet reads as well as a path
  * does, which is what keeps this from being a table of field names.
  *
- * Notemap's own arguments are left out. A folder mode is a condition about
- * getting somewhere rather than the somewhere, and `research/2026.md · require`
- * reads as though the note went to two places.
+ * Notemap's own arguments are left out, and so are the `settings` a schema
+ * marks as inheriting: a folder mode or a frontmatter mode is about how a note
+ * gets somewhere rather than the somewhere, and `research/2026.md, none` reads
+ * as though the note went to two places.
  */
 export function placeNamed(
   args: Readonly<Record<string, unknown>>,
   called?: Namer,
+  settings: readonly string[] = [],
 ): string | undefined {
   const said = Object.entries(args)
     .filter(([name]) => !OWN_ARGUMENTS.includes(name))
+    .filter(([name]) => !settings.includes(name))
     .filter(
       (entry): entry is [string, string] =>
         typeof entry[1] === "string" && entry[1] !== "",
     )
     .map(([name, value]) => called?.(name, value) ?? value);
 
-  return said.length === 0 ? undefined : said.join(" · ");
+  return said.length === 0 ? undefined : said.join(", ");
 }
 
 /**
@@ -90,14 +130,20 @@ export type Namer = (field: string, value: string) => string | undefined;
 
 /**
  * Where a delivery put a copy, in the words a person could go and look with:
- * the pointer the destination handed back, or failing that the place the
- * decision named.
+ * the pointer the destination handed back where it is a path, or else the
+ * place the decision named. Until the capability has been read, the pointer
+ * wins, as it did before anything could tell a path from a handle.
  */
-function placeIn(record: RoutingRecord, called?: Namer): string | undefined {
-  if (record.pointer !== undefined) return record.pointer;
+export function placeIn(
+  record: RoutingRecord,
+  called?: Namer,
+  reading?: Reading,
+): string | undefined {
   if (record.target.kind !== "destination") return undefined;
 
-  return placeNamed(record.target.arguments, called);
+  const named = placeNamed(record.target.arguments, called, reading?.settings);
+  if (reading === undefined || reading.pathed) return record.pointer ?? named;
+  return named ?? record.pointer;
 }
 
 /**
@@ -128,7 +174,11 @@ export function discardedKey(item: string): string {
 export function saidOf(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
-  which: { readonly about?: string; readonly href?: string } = {},
+  which: {
+    readonly about?: string;
+    readonly href?: string;
+    readonly reading?: Reading;
+  } = {},
 ): Raised {
   const where = {
     ...(which.about === undefined ? {} : { about: which.about }),
@@ -140,7 +190,7 @@ export function saidOf(
   }
 
   const name = nameOf(record.target.destination);
-  const place = placeIn(record);
+  const place = placeIn(record, undefined, which.reading);
 
   return record.state === "delivered"
     ? {

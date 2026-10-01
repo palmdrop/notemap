@@ -1,6 +1,7 @@
 import type { Capability } from "@notemap/client";
 
 import { client } from "./client";
+import { described } from "./described.svelte";
 import { learn, nameFor, type Named } from "./names.svelte";
 import { fieldsOf } from "./schema-form";
 
@@ -40,15 +41,11 @@ export async function resolve(
   );
   if (missing.length === 0) return;
 
-  const described = await client.destinations
-    .describe(destination)
-    .catch(() => undefined);
-  if (described?.kind !== "described") return;
+  const capabilities = await described(destination);
+  if (capabilities === undefined) return;
 
   const asking = missing.filter((each) => {
-    const capability = described.capabilities.find(
-      (one) => one.name === each.capability,
-    );
+    const capability = capabilities.find((one) => one.name === each.capability);
     return (
       capability !== undefined && nameable(capability).includes(each.field)
     );

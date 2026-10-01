@@ -81,11 +81,14 @@ test("lists accounts by kind, saying where each came from and whether a secret i
 
   render(Accounts);
 
-  await screen.findByText(/secret set · stored 2026-09-23/);
+  // The fields lead, in bold, and what is true of them follows in plain.
+  await screen.findByText("secret set, stored 2026-09-23");
   expect(
-    screen.getByText(/no secret · config — ignored, a stored one replaces it/),
+    screen.getByText("no secret, config — ignored, a stored one replaces it"),
   ).toBeDefined();
-  expect(screen.getByText("secret set · config")).toBeDefined();
+  // An account with no fields leads with its secret.
+  expect(screen.getByText("secret set").className).toContain("font-semibold");
+  expect(screen.getByText("config")).toBeDefined();
   // Only the stored one can be removed here; a shadowed one cannot be edited.
   expect(screen.getAllByRole("button", { name: "remove" })).toHaveLength(1);
   expect(screen.getAllByRole("button", { name: "edit" })).toHaveLength(2);

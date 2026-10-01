@@ -8,19 +8,19 @@
 
 ## Shell — layout and interaction
 
-- [ ] the small dots as separators is ugly, especially when describing destinations and settings, or when followed by "none" or "full", indicating frontmatter settings 
-- [ ] remove frontmatter setting indicator from routing record entry on capture items
+- [x] the small dots as separators is ugly, especially when describing destinations and settings, or when followed by "none" or "full", indicating frontmatter settings 
+- [x] remove frontmatter setting indicator from routing record entry on capture items
 
-- [ ] "pending" should be a loading icon. Same goes for a lot of status words, they could be simple icons or loading indicators. Investigate.
+- [x] "pending" should be a loading icon. Same goes for a lot of status words, they could be simple icons or loading indicators. Investigate.
     - especially on pending routing records on capture rows. A small spinner might be better. Movement clearly communicates that something is happening.
 
-- [ ] routing by trigger tag stays pending for too long 
+- [x] routing by trigger tag stays pending for too long 
 
-- [ ] "revised" mark on revised items looks almost like a tag and provides little value. Replace with an icon or some other way to indicate that an item is edited.
+- [x] "revised" mark on revised items looks almost like a tag and provides little value. Replace with an icon or some other way to indicate that an item is edited.
 
 - [x] when a routing fails, for example, when the item already exists, we get a notice saying "given up / back in the queue", saying nothing about WHY this happened. The event for "Work abandoned" is shown, but not the related "Delivery failed", which describes that the entry is already in the destination (revealed by the /log)
 
-- [ ] log menu should be a filter dropdown similar to the tag filter, not a menu button
+- [x] log menu should be a filter dropdown similar to the tag filter, not a menu button
 
 - [x] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
 - [x] statusbar should show indicators of pending actions, loaders, etc...
@@ -28,9 +28,9 @@
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 
-- [ ] link unfurl/preview that contain nothing should not provide a preview at all. Instead, we get a preview with a message saying something about the link not responding or that it states nothing about itself. Hide preview if it is not meaningful
+- [x] link unfurl/preview that contain nothing should not provide a preview at all. Instead, we get a preview with a message saying something about the link not responding or that it states nothing about itself. Hide preview if it is not meaningful
 
-- [ ] when a delivery has no text content, just an asset, we get this in the preview: "a block carries neither its tags; what fitted went into the block's own metadata". I do not like that, needs to be an image preview instead, to show that the asset itself is included. That text, "a block carries..." does not make sense to a user.
+- [x] when a delivery has no text content, just an asset, we get this in the preview: "a block carries neither its tags; what fitted went into the block's own metadata". I do not like that, needs to be an image preview instead, to show that the asset itself is included. That text, "a block carries..." does not make sense to a user.
 
 - [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
 

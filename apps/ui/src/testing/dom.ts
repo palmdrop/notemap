@@ -165,6 +165,7 @@ beforeEach(async () => {
   // this process already read out of it.
   forgetEverything();
   forgetEveryName();
+  (await import("$lib/described.svelte")).forgetDescriptions();
   forgetOutputs();
   clearDraft();
   delete document.documentElement.dataset["theme"];

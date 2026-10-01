@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
@@ -381,7 +381,7 @@ test("narrows to a view's kinds, asking the pool rather than sifting the page", 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
 });
 
-test("offers the views as links and says which one is being read", async () => {
+test("offers the views in a panel and says which are being read", async () => {
   pool(held([anAction("one", { kind: "routed" })]));
   render(Log);
   log.reading("newest-first", undefined, [
@@ -392,16 +392,21 @@ test("offers the views as links and says which one is being read", async () => {
   ]);
   await screen.findByText("routed");
 
-  const narrow = screen.getByRole("navigation", { name: "Narrow the log to" });
-  expect(narrow.textContent).toContain("routing");
-  expect(screen.queryByRole("link", { name: "routing" })).toBeNull();
-  expect(screen.getByRole("link", { name: "everything" })).toHaveProperty(
-    "search",
-    "?order=newest-first",
+  await fireEvent.click(
+    screen.getByRole("button", { name: /narrow the log to/i }),
   );
-  expect(
-    screen.getByRole("link", { name: "captures" }).getAttribute("href"),
-  ).toContain("kind=captured");
+
+  const views = screen.getByRole("listbox", { name: "Views" });
+  const options = within(views).getAllByRole("option");
+  expect(options.map((one) => one.textContent?.trim())).toEqual([
+    "▸ routing",
+    "captures",
+    "classification",
+    "pool",
+  ]);
+  expect(options[0]?.getAttribute("aria-selected")).toBe("true");
+  expect(options[1]?.getAttribute("aria-selected")).toBe("false");
+  expect(screen.getByRole("button", { name: "everything" })).toBeDefined();
 });
 
 /**

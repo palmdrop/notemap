@@ -86,15 +86,28 @@ export function kindsIn(url: URL): readonly ActionKind[] | undefined {
   return said.split(",") as ActionKind[];
 }
 
-function same(a: readonly ActionKind[], b: readonly ActionKind[]): boolean {
-  return a.length === b.length && a.every((kind) => b.includes(kind));
+/** The views a set of kinds holds whole: what a filter draws as taken. */
+export function viewsIn(
+  kinds: readonly ActionKind[] | undefined,
+): readonly View[] {
+  return kinds === undefined
+    ? []
+    : VIEWS.filter((view) => view.kinds.every((kind) => kinds.includes(kind)));
 }
 
-/** Which view a set of kinds is, where it is one of them exactly. */
-export function viewOf(
+/**
+ * The kinds read once one view is taken into the reading or out of it. What a
+ * reading holds is the union of its views, so a kind a hand-written link named
+ * outside every view it holds whole goes with the first change. None taken is
+ * the whole log.
+ */
+export function toggled(
   kinds: readonly ActionKind[] | undefined,
-): View | undefined {
-  return kinds === undefined
-    ? undefined
-    : VIEWS.find((view) => same(view.kinds, kinds));
+  view: View,
+): readonly ActionKind[] | undefined {
+  const held = viewsIn(kinds);
+  const taken = held.includes(view)
+    ? held.filter((one) => one !== view)
+    : [...held, view];
+  return taken.length === 0 ? undefined : taken.flatMap((one) => one.kinds);
 }

@@ -4,6 +4,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import { client } from "$lib/client";
   import { copyable } from "$lib/clipboard";
   import { log } from "$lib/log.svelte";
@@ -57,10 +58,13 @@
   const day = (instant?: string) =>
     instant === undefined ? undefined : instant.slice(0, 10);
 
-  const why = (token: Token) =>
-    token.lastUsedAt === undefined
-      ? `made ${day(token.createdAt) ?? ""} · never used`
-      : `made ${day(token.createdAt) ?? ""} · last used ${day(token.lastUsedAt) ?? ""}`;
+  const why = (token: Token) => ({
+    lead: `made ${day(token.createdAt) ?? ""}`,
+    rest:
+      token.lastUsedAt === undefined
+        ? "never used"
+        : `last used ${day(token.lastUsedAt) ?? ""}`,
+  });
 
   async function attempt(what: () => Promise<unknown>) {
     said = "";
@@ -155,7 +159,7 @@
           <span
             class="flex flex-wrap items-baseline justify-between gap-x-[2ch]"
           >
-            <span>{why(token)}</span>
+            <span><Lead {...why(token)} /></span>
             <Action
               disabled={going}
               working={revoking === token.id}

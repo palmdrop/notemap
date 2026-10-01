@@ -106,18 +106,18 @@ describe("the pending mark", () => {
 
   test("is not drawn for work that drains before the asking mark would show", async () => {
     render(Pending, { since: Date.now() });
-    expect(screen.queryByText("pending")).toBeNull();
+    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
 
     await vi.advanceTimersByTimeAsync(SHOWN_AFTER - 1);
-    expect(screen.queryByText("pending")).toBeNull();
+    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(screen.getByText("pending")).toBeDefined();
+    expect(screen.getByRole("img", { name: "pending" })).toBeDefined();
   });
 
   /** Drawn again on every visit, it would grow its row a line each time. */
   test("is drawn at once for work that has already waited that long", () => {
     render(Pending, { since: Date.now() - SHOWN_AFTER });
-    expect(screen.getByText("pending")).toBeDefined();
+    expect(screen.getByRole("img", { name: "pending" })).toBeDefined();
   });
 });

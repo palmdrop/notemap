@@ -62,7 +62,13 @@ test("draws what a link points at", async () => {
   expect(image?.getAttribute("referrerpolicy")).toBe("no-referrer");
 });
 
-test("says so where the page says nothing about itself", async () => {
+const folded = () =>
+  vi.waitFor(() => {
+    expect(document.querySelector("[data-unfurl]")).toBeNull();
+  });
+
+/** The link is still in the capture above; a block saying nothing about it is four lines of nothing. */
+test("folds away where the page says nothing about itself", async () => {
   await serving(true, {
     "https://a.example/": () =>
       json(200, { url: "https://a.example/", reached: true }),
@@ -70,34 +76,36 @@ test("says so where the page says nothing about itself", async () => {
 
   render(Unfurls, { text: "https://a.example/" });
 
-  await screen.findByText("says nothing about itself");
-  expect(screen.getByText("a.example")).toBeDefined();
+  await vi.waitFor(() => expect(unfurls()).toHaveLength(1));
+  await folded();
 });
 
-test("says so where the page could not be reached", async () => {
+test("folds away where the page could not be reached", async () => {
   await serving(true);
 
   render(Unfurls, { text: "https://down.example/" });
 
-  await screen.findByText("out of reach");
+  await vi.waitFor(() => expect(unfurls()).toHaveLength(1));
+  await folded();
 });
 
-test("says so where the daemon would not read it, and asks once however often it is drawn", async () => {
+test("folds away where the daemon would not read it, and asks once however often it is drawn", async () => {
   await serving(true, {
     "http://10.0.0.1/": () =>
       refusal(422, "address-refused", { url: "http://10.0.0.1/" }),
   });
 
   const first = render(Unfurls, { text: "http://10.0.0.1/" });
-  await screen.findByText("not read");
+  await vi.waitFor(() => expect(unfurls()).toHaveLength(1));
+  await folded();
   first.unmount();
   render(Unfurls, { text: "http://10.0.0.1/" });
 
-  await screen.findByText("not read");
+  await folded();
   expect(unfurls()).toHaveLength(1);
 });
 
-test("says out of reach, not refused, while the daemon cannot be reached, and asks again after", async () => {
+test("folds away while the daemon cannot be reached, and asks again after", async () => {
   const transport = await serving(true, {
     "https://a.example/": () =>
       json(200, { url: "https://a.example/", reached: true, title: "Back" }),
@@ -105,8 +113,7 @@ test("says out of reach, not refused, while the daemon cannot be reached, and as
   transport.unreachable(true);
 
   const first = render(Unfurls, { text: "https://a.example/" });
-  await screen.findByText("out of reach");
-  expect(screen.queryByText("not read")).toBeNull();
+  await folded();
   first.unmount();
 
   transport.unreachable(false);

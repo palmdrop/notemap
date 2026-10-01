@@ -5,12 +5,16 @@
   import type { RoutingTemplateReport } from "@notemap/client";
 
   import Fact from "$components/settings/Fact.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { argumentsOf } from "$lib/arguments";
+  import { capabilityHeld, described } from "$lib/described.svelte";
   import { slide } from "$lib/motion";
   import { pickable } from "$lib/pick";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
+  import { readingOf } from "$lib/routing";
   import { placeOf } from "$lib/templates";
 
   let {
@@ -91,6 +95,7 @@
    */
   $effect(() => {
     const asking = one;
+    void described(asking.destination);
     void resolve(
       asking.destination,
       Object.keys(asking.arguments).map((field) => ({
@@ -106,14 +111,29 @@
     onopen();
   }
 
-  const place = $derived(
-    placeOf(one, (field, value) =>
-      nameFor({
-        destination: one.destination,
-        capability: one.capability,
-        field,
-        value,
-      }),
+  const capability = $derived(capabilityHeld(one.destination, one.capability));
+  const settings = $derived(readingOf(capability)?.settings ?? []);
+
+  const called = $derived((field: string, value: string) =>
+    nameFor({
+      destination: one.destination,
+      capability: one.capability,
+      field,
+      value,
+    }),
+  );
+
+  const place = $derived(placeOf(one, called, settings));
+
+  /** The settings this template takes for its deliveries, each its own fact. */
+  const taken = $derived(
+    argumentsOf(
+      Object.fromEntries(
+        Object.entries(one.arguments).filter(([name]) =>
+          settings.includes(name),
+        ),
+      ),
+      capability?.argumentsSchema,
     ),
   );
 </script>
@@ -168,25 +188,38 @@
         {one.triggerTag ?? "none — taken in the composer"}
       </Fact>
       <Fact name="destination">
-        {destination?.name ?? `${one.destination} · deleted`}
+        {#if destination === undefined}
+          <Lead lead={one.destination} rest="deleted" />
+        {:else}
+          {destination.name}
+        {/if}
       </Fact>
       <Fact name="action">{one.capability}</Fact>
       <Fact name="place">{place}</Fact>
+      {#each taken as setting (setting.name)}
+        <Fact name={setting.name}>{setting.said}</Fact>
+      {/each}
       <Fact name="folder">
-        {one.folder}{one.folder === "establish"
-          ? one.establishedAt === undefined
-            ? " · not established yet"
-            : ` · established ${one.establishedAt.slice(0, 10)}`
-          : ""}
+        <Lead
+          lead={one.folder}
+          rest={one.folder === "establish"
+            ? one.establishedAt === undefined
+              ? "not established yet"
+              : `established ${one.establishedAt.slice(0, 10)}`
+            : undefined}
+        />
       </Fact>
       <Fact name="used">
-        {one.fired.records === 0
-          ? "nothing yet"
-          : `${String(one.fired.records)} times${
-              one.fired.lastAt === undefined
-                ? ""
-                : ` · last ${one.fired.lastAt.slice(0, 10)}`
-            }`}
+        {#if one.fired.records === 0}
+          nothing yet
+        {:else}
+          <Lead
+            lead={`${String(one.fired.records)} times`}
+            rest={one.fired.lastAt === undefined
+              ? undefined
+              : `last ${one.fired.lastAt.slice(0, 10)}`}
+          />
+        {/if}
       </Fact>
 
       {#if report?.kind === "folder-missing"}

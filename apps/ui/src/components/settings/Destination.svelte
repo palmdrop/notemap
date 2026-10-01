@@ -10,6 +10,7 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { slide } from "$lib/motion";
   import { pickable } from "$lib/pick";
@@ -191,7 +192,10 @@
         {#if status.asking === true}
           <Asking />
         {:else}
-          {status.said}{since_ === undefined ? "" : ` · checked ${since_}`}
+          <Lead
+            lead={status.said}
+            rest={since_ === undefined ? undefined : `checked ${since_}`}
+          />
         {/if}
       </Fact>
       {#each Object.entries(one.settings ?? {}) as [key, value] (key)}

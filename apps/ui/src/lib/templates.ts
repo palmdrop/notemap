@@ -13,8 +13,12 @@ import { placeNamed, type Namer } from "./routing";
  * no destination what its fields mean, and a destination that files to
  * something other than a path has a place worth drawing too.
  */
-export function placeOf(template: RoutingTemplate, called?: Namer): string {
-  return placeNamed(template.arguments, called) ?? "—";
+export function placeOf(
+  template: RoutingTemplate,
+  called?: Namer,
+  settings: readonly string[] = [],
+): string {
+  return placeNamed(template.arguments, called, settings) ?? "—";
 }
 
 /**

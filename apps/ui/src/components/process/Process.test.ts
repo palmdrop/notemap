@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -3565,7 +3571,10 @@ test("says where the item has gone already, on one line under its stamp", async 
     }),
   );
 
-  const line = await screen.findByText(/Vault · …\/2026-09-13\.md/);
-  expect(line.className).toContain("truncate");
+  const place = await screen.findByText("…/2026-09-13.md");
+  const line = place.closest<HTMLElement>(".truncate");
+  if (line === null) throw new Error("the place is not on the routing line");
+  // The destination is told from the place by weight, not by a mark between them.
+  expect(within(line).getByText("Vault").className).toContain("font-semibold");
   expect(line.getAttribute("title")).toBe("journal/deep/2026-09-13.md");
 });

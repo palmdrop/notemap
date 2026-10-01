@@ -210,7 +210,8 @@
       {/if}
       {#if disabled > 0}
         <Action onclick={() => (showDisabled = !showDisabled)}>
-          {disabled} disabled · {showDisabled ? "hide" : "show"}
+          {showDisabled ? "hide" : "show"}
+          {disabled} disabled
         </Action>
       {/if}
     </div>

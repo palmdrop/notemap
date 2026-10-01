@@ -104,7 +104,9 @@
   <p class="pt-5">
     <span class="font-semibold tracking-caps uppercase">history</span>
     <Says id={log.item} href={itemHref(log.item)} />
-    · <a href={logHref(log.order, undefined, log.kinds)}>all of the log</a>
+    <a href={logHref(log.order, undefined, log.kinds)} class="ml-[2ch]"
+      >all of the log</a
+    >
   </p>
 {/if}
 

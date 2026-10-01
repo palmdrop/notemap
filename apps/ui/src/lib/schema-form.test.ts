@@ -39,6 +39,7 @@ describe("the fields a schema asks for", () => {
         askable: true,
         offeredOnly: false,
         inherits: false,
+        path: false,
       },
       {
         name: "tags",
@@ -47,6 +48,7 @@ describe("the fields a schema asks for", () => {
         askable: false,
         offeredOnly: false,
         inherits: false,
+        path: false,
       },
     ]);
   });

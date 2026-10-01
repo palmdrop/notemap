@@ -244,7 +244,10 @@ test("says where a routed row went, without asking for its records", async () =>
 
   // One of the two records has not been carried out: the line says so, and
   // no word over it repeats what the line says.
-  expect(await screen.findByText("Fiction, manual · 1 pending")).toBeDefined();
+  const waiting = await screen.findByRole("img", { name: "1 pending" });
+  expect(waiting.parentElement?.textContent?.replace(/\s+/g, " ")).toContain(
+    "Fiction, manual",
+  );
   expect(screen.queryByText("retrying")).toBeNull();
   expect(screen.queryByText("routed")).toBeNull();
   expect(asked()).not.toContain("GET /v1/items/sent/routing");
@@ -307,7 +310,7 @@ test("says an archived row is discarded and still pending", async () => {
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
 
-  expect(await screen.findByText("pending")).toBeDefined();
+  expect(await screen.findByRole("img", { name: "pending" })).toBeDefined();
   expect(screen.getByText("discarded")).toBeDefined();
 });
 

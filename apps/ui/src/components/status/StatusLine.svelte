@@ -227,8 +227,12 @@
 
       void hear(since.actions);
     });
+    firings.asks(() => client.actions.ask());
 
-    return () => held.unsubscribe();
+    return () => {
+      firings.asks(undefined);
+      held.unsubscribe();
+    };
   });
 </script>
 

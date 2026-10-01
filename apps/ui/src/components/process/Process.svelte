@@ -50,7 +50,7 @@
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { placeNamed, saidOf } from "$lib/routing";
+  import { placeNamed, readingOf, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
     effectiveOf,
@@ -184,11 +184,11 @@
     $destinations.find((one) => one.id === chosen)?.settings ?? {},
   );
 
-  const declared = $derived(
-    fieldsOf(
-      capabilities.find((one) => one.name === capability)?.argumentsSchema,
-    ),
+  const chosenCapability = $derived(
+    capabilities.find((one) => one.name === capability),
   );
+  const declared = $derived(fieldsOf(chosenCapability?.argumentsSchema));
+  const reading = $derived(readingOf(chosenCapability));
 
   /**
    * Only the fields that mean something given the others: a switch about the
@@ -302,7 +302,7 @@
 
     const path = lined
       ? placeFor(args[LINE_FIELD] ?? "")
-      : placeNamed(valuesFrom(fields, args));
+      : placeNamed(valuesFrom(fields, args), undefined, reading?.settings);
 
     return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
   });
@@ -311,7 +311,8 @@
   const settled = $derived(
     lined
       ? (args[LINE_FIELD] ?? "")
-      : (placeNamed(valuesFrom(fields, args)) ?? ""),
+      : (placeNamed(valuesFrom(fields, args), undefined, reading?.settings) ??
+          ""),
   );
 
   function placeFor(value: string): string {
@@ -757,6 +758,7 @@
         saidOf(record, nameOf, {
           about: aboutItem(item),
           href: itemHref(item.id),
+          ...(reading === undefined ? {} : { reading }),
         }),
       );
       // The surface stays, cleared: an item may go to more than one place,
@@ -1138,6 +1140,7 @@
         <Preview
           {shown}
           place={previewPlace}
+          images={pictures}
           asking={pending}
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />

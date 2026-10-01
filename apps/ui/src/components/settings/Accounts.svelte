@@ -6,6 +6,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { slide } from "$lib/motion";
@@ -71,7 +72,7 @@
     });
   };
 
-  function describe(one: Account): string {
+  function describe(one: Account): { lead: string; rest: string } {
     const fields = Object.values(one.fields).map((value) => String(value));
     const secret = one.secretSet ? "secret set" : "no secret";
     const origin =
@@ -81,7 +82,9 @@
           ? "config — ignored, a stored one replaces it"
           : "config";
 
-    return [...fields, secret, origin].join(" · ");
+    return fields.length === 0
+      ? { lead: secret, rest: origin }
+      : { lead: fields.join(", "), rest: `${secret}, ${origin}` };
   }
 </script>
 
@@ -99,7 +102,7 @@
               ? 'opacity-60'
               : ''}"
           >
-            <span>{describe(one)}</span>
+            <span><Lead {...describe(one)} /></span>
             {#if !one.shadowed}
               <span class="flex gap-x-[2ch]">
                 <Action

@@ -20,16 +20,20 @@
    * the block says both where and what. It is five lines tall before there is
    * anything to draw in it, so an answer landing moves nothing under it;
    * while `asking`, the mark stands on the first of them, or beside the path
-   * over an answer that is about to be replaced.
+   * over an answer that is about to be replaced. The capture's own `images`
+   * stand above what would be written, as they do on a delivered record: a
+   * block that is the picture writes no words about it.
    */
   let {
     shown,
     place,
+    images = [],
     asking = false,
     subject,
   }: {
     shown?: RoutingPreview;
     place?: string;
+    images?: readonly string[];
     asking?: boolean;
     /** What is being asked, named once it is slow to answer. */
     subject?: string;
@@ -55,6 +59,7 @@
   const lines = $derived(text?.split("\n") ?? []);
   const cut = $derived(!whole && lines.length > LINES);
   const drawn = $derived(cut ? lines.slice(0, LINES).join("\n") : text);
+  const blank = $derived(drawn?.trim() === "");
 
   const said = $derived.by(() => {
     switch (shown?.kind) {
@@ -91,9 +96,19 @@
         <Asking {subject} />
       {/if}
     {:else if drawn !== undefined}
-      <pre
-        bind:this={written}
-        class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
+      {#each images as image (image)}
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          class="mb-2 block max-h-48 max-w-full object-contain object-left"
+        />
+      {/each}
+      {#if !blank}
+        <pre
+          bind:this={written}
+          class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
+      {/if}
       {#if shown.kind === "previewed" && shown.note !== undefined}
         <div class="mt-2 break-words">{shown.note}</div>
       {/if}
