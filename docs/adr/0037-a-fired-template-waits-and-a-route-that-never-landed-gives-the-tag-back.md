@@ -114,6 +114,11 @@ The rule is one-directional, and it is about a reservation that never became a r
 dismiss it. That is the whole of the window's visibility — no countdown, no bar — and it keeps the
 notice from claiming an item was filed somewhere before anything was written.
 
+> **Amended 2026-09-30 by [ADR 54](0054-the-shell-speaks-from-a-status-line.md).** The window is
+> drawn on the status line as a route in flight rather than a notice, with the seconds left: the
+> `template-fired` entry now carries `until`, so the countdown is the pool's fact rather than a
+> progress the shell invents. It still claims nothing was filed before anything was written.
+
 **Why not option 1.** It makes the corner's cancel a coin flip on destination kind: real against a
 sleeping WebDAV vault, never against the local one. A control that works depending on what somebody
 configured is worse than no control.

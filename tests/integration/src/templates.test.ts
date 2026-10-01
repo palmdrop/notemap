@@ -502,7 +502,12 @@ describe("a trigger tag applying its template", () => {
         (one) => one.kind === "template-fired",
       ),
     ).toMatchObject({
-      detail: { template: template.id, name: "Research links", tag: RESEARCH },
+      detail: {
+        template: template.id,
+        name: "Research links",
+        tag: RESEARCH,
+        until: "2026-08-06T09:00:15.000Z",
+      },
     });
   });
 

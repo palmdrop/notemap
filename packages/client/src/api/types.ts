@@ -21,6 +21,8 @@ export type RefusalCode = CodeOf<
 
 export type Item = components["schemas"]["Item"];
 export type ItemSlice = components["schemas"]["ItemSlice"];
+/** How much the pool holds, counted rather than paged. */
+export type Counts = components["schemas"]["Counts"];
 export type Payload = Item["payload"];
 export type Tag = NonNullable<Item["tags"]>[number];
 

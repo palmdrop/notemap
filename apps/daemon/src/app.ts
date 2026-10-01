@@ -61,6 +61,7 @@ import {
   markProcessedRoute,
   poolSettingsRoute,
   queueRoute,
+  countsRoute,
   retireDestinationRoute,
   previewRouteRoute,
   routeItemRoute,
@@ -106,6 +107,7 @@ import {
 } from "./routes/settings";
 import { unfurlHandler } from "./routes/unfurl";
 import type { Unfurler } from "./unfurl";
+import { countsHandler } from "./routes/counts";
 import { sourcesInUseHandler } from "./routes/sources";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
@@ -225,6 +227,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(feedRoute.path), feedHandler(pool));
   app.get(honoPath(queueRoute.path), itemViewHandler(pool, "queue"));
   app.get(honoPath(archivedRoute.path), itemViewHandler(pool, "archived"));
+  app.get(honoPath(countsRoute.path), countsHandler(pool));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
   app.post(honoPath(archiveRoute.path), archiveHandler(pool));
   app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));

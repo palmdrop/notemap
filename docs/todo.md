@@ -22,9 +22,9 @@
 
 - [ ] log menu should be a filter dropdown similar to the tag filter, not a menu button
 
-- [ ] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
-- [ ] statusbar should show indicators of pending actions, loaders, etc...
-- [ ] statusbar with statistics, online/offline status, outbox count, queue count, errors, expandable notice list, etc... 
+- [x] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
+- [x] statusbar should show indicators of pending actions, loaders, etc...
+- [x] statusbar with statistics, online/offline status, outbox count, queue count, errors, expandable notice list, etc... 
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 
@@ -47,7 +47,7 @@
 - [x] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
 
 - [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
-- [ ] stale and premature UI state
+- [x] stale and premature UI state
   - No good way to see pending operations. A held row says `retrying` while it is
     looked at and the corner speaks when the delivery resolves, but nothing shows everything in
     flight at once. Belongs with the routing-record and log readability items below.

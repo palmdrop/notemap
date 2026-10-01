@@ -6,11 +6,11 @@ import { client } from "./client";
 import { aboutItem } from "./excerpt";
 import { notices } from "./notices.svelte";
 import { DISCARD, MANUAL } from "./processing";
-import { keyFor } from "./routing";
+import { cancelledKey, discardedKey, keyFor } from "./routing";
 
 /**
  * The two decisions that need no destination and no second step, taken from
- * wherever an item is drawn. Each acts at once and says so in the corner with
+ * wherever an item is drawn. Each acts at once and says so in the status line with
  * the way back beside it while it lingers. The item keeps a way back of its
  * own: `unarchive` on the row, `undo` on the record.
  */
@@ -20,7 +20,7 @@ export function discard(item: Item): void {
   const about = aboutItem(item);
 
   void client.archive(id).catch((error: unknown) => {
-    notices.raise({ what: saidBy(error), about, standing: true });
+    notices.raise({ what: saidBy(error), about, alarm: true });
   });
 
   notices.raise({
@@ -28,12 +28,16 @@ export function discard(item: Item): void {
     about,
     href: itemHref(id),
     only: DISCARD,
+    settles: discardedKey(id),
     offer: {
       label: "undo",
       take: () => {
-        void client.unarchive(id).catch(() => {
-          notices.raise({ what: "could not undo", about, standing: true });
-        });
+        void client
+          .unarchive(id)
+          .then(() => notices.raise({ what: "undiscarded", about }))
+          .catch(() => {
+            notices.raise({ what: "could not undo", about, alarm: true });
+          });
       },
     },
   });
@@ -56,16 +60,26 @@ export async function manual(item: Item): Promise<void> {
       href: itemHref(id),
       only: MANUAL,
       key: keyFor(record.id),
+      settles: keyFor(record.id),
       offer: {
         label: "undo",
         take: () => {
-          void client.routing.cancel(record.id, id).catch(() => {
-            notices.raise({ what: "could not undo", about, standing: true });
-          });
+          void client.routing
+            .cancel(record.id, id)
+            .then(() =>
+              notices.raise({
+                what: "manual mark undone",
+                about,
+                key: cancelledKey(record.id),
+              }),
+            )
+            .catch(() => {
+              notices.raise({ what: "could not undo", about, alarm: true });
+            });
         },
       },
     });
   } catch (error) {
-    notices.raise({ what: saidBy(error), about, standing: true });
+    notices.raise({ what: saidBy(error), about, alarm: true });
   }
 }

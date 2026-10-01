@@ -1112,6 +1112,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Count what the pool holds
+         * @description How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The counts. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Counts"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items/{id}": {
         parameters: {
             query?: never;
@@ -4371,6 +4410,9 @@ export interface components {
              * @example /v1/feed?order=newest-first&limit=50&after=...
              */
             next?: string;
+        };
+        Counts: {
+            queue: number;
         };
         ArchiveRequest: {
             reason?: string;

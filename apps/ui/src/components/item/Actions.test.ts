@@ -107,7 +107,40 @@ test("marks manual at once, with no note, and offers the way back in the corner"
   // Keyed to the record, so the log's own entry for it adds nothing.
   expect(said?.key).toBe("record:rec");
   // Filing where the person said to file is not a failure: it lingers.
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
+});
+
+/** The log says it again a poll later, and that copy adds nothing. */
+test("taking a manual mark back from the status line says so at once", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "POST /v1/items/one/mark-processed") {
+      return json(200, {
+        id: "rec",
+        item: "one",
+        at: "2026-09-03T10:00:00.000Z",
+        state: "delivered",
+        target: { kind: "user" },
+      });
+    }
+    if (route === "POST /v1/routing/rec/cancel") return json(200, {});
+    return json(200, { values: [] });
+  });
+  render(Actions, drawing(anItem("one")));
+
+  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  const marked = await vi.waitFor(() => {
+    const raised = notices.shown.at(-1);
+    expect(raised?.what).toBe("marked manual");
+    return raised!;
+  });
+
+  notices.take(marked.id);
+
+  await vi.waitFor(() => {
+    expect(notices.shown.at(-1)?.what).toBe("manual mark undone");
+  });
+  expect(notices.said("cancelled:rec")).toBe(true);
 });
 
 test("discards at once and offers the way back in the corner", async () => {
@@ -123,7 +156,7 @@ test("discards at once and offers the way back in the corner", async () => {
   });
   expect(notices.shown.at(-1)?.what).toBe("discarded");
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
-  expect(notices.shown.at(-1)?.standing).toBeUndefined();
+  expect(notices.shown.at(-1)?.alarm).toBeUndefined();
 });
 
 /** The one grey: a decision that cannot be taken says why, and stays in place. */

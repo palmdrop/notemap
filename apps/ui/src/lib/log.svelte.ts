@@ -181,7 +181,7 @@ export const log = {
 
   /**
    * What the pool has done since, put at the head of what is drawn. The watcher
-   * asks on its own tempo for the corner to speak from, and this is the same
+   * asks on its own tempo for the status line to speak from, and this is the same
    * news read as a page — so a log left open stops being a photograph of the
    * moment it was opened.
    *

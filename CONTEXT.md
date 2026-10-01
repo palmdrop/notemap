@@ -542,17 +542,25 @@ asked costs nothing while nobody is reading it.
 _Avoid_: visible, focused, active, foreground
 
 **Notice**:
-Something the shell says in its own voice, in the corner, about work that has already happened, to
-somebody who did not ask. A confirmation goes on its own; anything a person may have to act on holds
-until they clear it. Not an **action**, which is the pool's durable record of the same event and is
-what a notice is derived from; not a **refusal**, which is the one notice a person must clear before
-the client stops holding something the pool never took.
+Something the shell says in its own voice, on the **status line**, about work that has already
+happened, to somebody who did not ask. Every notice goes on its own and none is dismissed: the
+session's notices are read back in the status line's panel. Not an **action**, which is the pool's
+durable record of the same event and is what a notice is derived from. A **refusal** is said as one,
+once, and then let go of — a refused capture being held until somebody edits or deletes it.
 _Avoid_: toast, notification, alert, banner, message
 
+**Status line**:
+The one ruled line a shell keeps at the foot of every surface, and the only place it speaks in its
+own voice: the newest live **notice**, what is in flight — a route a trigger tag made, counting down
+its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
+flight. A route in flight is drawn there and is not a notice, nothing having happened yet.
+_Avoid_: status bar, footer, corner, toast area
+
 **Refused**:
-Said of an outbox operation the pool answered no to. Terminal without a person: waiting will not
-drain it, and the client's cache is left holding something the pool never accepted, so it is shown
-and dismissed rather than retried.
+Said of an outbox operation the pool answered no to. Terminal: waiting will not drain it, and the
+client's cache is left holding something the pool never accepted, so a shell says it as a
+**notice** and dismisses it rather than retrying it. A refused capture is the exception: its
+operation is the only copy of what was written, so it is held until somebody edits or deletes it.
 _Avoid_: failed, error, rejected (reserved for suggestions)
 
 ### Reaching out

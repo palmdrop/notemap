@@ -32,6 +32,7 @@ import type {
 } from "../domain/destination";
 import type {
   ArchiveState,
+  Counts,
   Item,
   ItemRecord,
   Tag,
@@ -289,6 +290,7 @@ export interface PoolReads {
   feed(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
   queue(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
   archived(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
+  counts(): Promise<Counts>;
 
   /**
    * Ordered most used first, then by name, so a completion list needs no sort.

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Action } from "@notemap/client";
 
-import { noticeOf } from "./action-log";
+import { firingOf, noticeOf } from "./action-log";
 
 const reading = {
   nameOf: (id: string) => (id === "vault" ? "Vault" : "a destination"),
@@ -33,7 +33,7 @@ test("a landing says where it went", () => {
 
   expect(said?.what).toBe("routed · Vault");
   expect(said?.why).toBe("notes/daily.md");
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
 });
 
 /** The same fact the shell already reported when the gesture was made. */
@@ -43,7 +43,8 @@ test("a landing is keyed by its record, so it is said once", () => {
   expect(said?.key).toBe("record:r1");
 });
 
-test("a failed delivery stands, and says what went wrong", () => {
+/** The pool will try again, so it is not over and is not said as a failure. */
+test("a delivery the pool will try again says it is retrying, without the accent", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       record: "r1",
@@ -54,41 +55,57 @@ test("a failed delivery stands, and says what went wrong", () => {
     reading,
   );
 
-  expect(said?.what).toBe("delivery failed · Vault");
-  expect(said?.why).toBe("unreachable · the vault is not mounted");
-  expect(said?.standing).toBe(true);
+  expect(said?.what).toBe("retrying: the vault is not mounted");
+  expect(said?.why).toBe("Vault · unreachable");
+  expect(said?.alarm).toBeUndefined();
   // One thing went wrong, however many attempts the pool wrote for it.
   expect(said?.key).toBe("failed:r1");
 });
 
-/** The reservation is gone, so the item is work again — and nothing else says so. */
-test("a delivery given up on says the item is back in the queue", () => {
+/** The line has room for a few words: what happened, in the destination's own words. */
+test("a delivery refused says why on the line, and the rest in the panel", () => {
   const said = noticeOf(
-    anAction("work-abandoned", {
-      work: "deliver",
+    anAction("delivery-failed", {
       record: "r1",
-      attempt: 5,
-      failure: { code: "unreachable", detail: "still not mounted" },
+      destination: "vault",
+      attempt: 1,
+      failure: {
+        code: "rejected-by-destination",
+        detail: "taken.md is already there",
+      },
     }),
     reading,
   );
 
-  expect(said?.what).toBe("given up");
-  expect(said?.why).toBe("unreachable · still not mounted · back in the queue");
-  expect(said?.standing).toBe(true);
+  expect(said?.what).toBe("routing failed: taken.md is already there");
+  expect(said?.why).toBe("Vault · rejected-by-destination · back in the queue");
+  expect(said?.alarm).toBe(true);
+});
+
+test("a failure the destination gave no words for names where it was going", () => {
+  const said = noticeOf(
+    anAction("delivery-failed", {
+      record: "r1",
+      destination: "vault",
+      failure: { code: "delivery-outcome-unknown" },
+    }),
+    reading,
+  );
+
+  expect(said?.what).toBe("routing failed · Vault");
 });
 
 /**
  * The failure it ends is the one notice that said why, so giving up takes its
  * place and keeps its reason rather than leaving it behind or losing it.
  */
-test("a delivery given up on names where it was going and takes the failure's place", () => {
+test("a delivery given up on keeps its reason and takes the failure's place", () => {
   const failed = noticeOf(
     anAction("delivery-failed", {
       record: "r1",
       destination: "vault",
       attempt: 5,
-      failure: { code: "rejected", detail: "notes/a.md already exists" },
+      failure: { code: "unreachable", detail: "still not mounted" },
     }),
     reading,
   );
@@ -98,15 +115,14 @@ test("a delivery given up on names where it was going and takes the failure's pl
       record: "r1",
       destination: "vault",
       attempt: 5,
-      failure: { code: "rejected", detail: "notes/a.md already exists" },
+      failure: { code: "unreachable", detail: "still not mounted" },
     }),
     reading,
   );
 
-  expect(abandoned?.what).toBe("given up · Vault");
-  expect(abandoned?.why).toBe(
-    "rejected · notes/a.md already exists · back in the queue",
-  );
+  expect(abandoned?.what).toBe("routing failed: still not mounted");
+  expect(abandoned?.why).toBe("Vault · unreachable · back in the queue");
+  expect(abandoned?.alarm).toBe(true);
   expect(abandoned?.only).toBe(failed?.only);
   expect(abandoned?.only).toBe("delivery:r1");
 });
@@ -119,16 +135,16 @@ test("a fired delivery given up on names the template the tag applied", () => {
       destination: "vault",
       template: "t1",
       firedByTag: true,
-      failure: { code: "rejected", detail: "research/ is missing" },
+      failure: { code: "rejected" },
     }),
     { ...reading, templateOf: () => "Research links" },
   );
 
-  expect(said?.what).toBe("given up · Research links");
-  expect(said?.why).toBe("rejected · research/ is missing · back in the queue");
+  expect(said?.what).toBe("routing failed · Research links");
+  expect(said?.why).toBe("Research links · rejected · back in the queue");
 });
 
-test("work given up on that was about no record says only why", () => {
+test("work given up on that was about no record says what work and why", () => {
   const said = noticeOf(
     anAction("work-abandoned", {
       work: "mirror-write",
@@ -137,8 +153,8 @@ test("work given up on that was about no record says only why", () => {
     reading,
   );
 
-  expect(said?.what).toBe("given up");
-  expect(said?.why).toBe("io · disk full");
+  expect(said?.what).toBe("mirror-write failed: disk full");
+  expect(said?.why).toBe("io");
   expect(said?.only).toBeUndefined();
 });
 
@@ -151,38 +167,17 @@ const fired = {
   tag: "route/research",
 };
 
-test("a fired template stands without being drawn as an alarm", () => {
-  const said = noticeOf(anAction("template-fired", fired), {
-    ...reading,
-    templateOf: () => "Research links",
-    cancel: () => undefined,
-  });
-
-  expect(said?.what).toBe("routing · Research links");
-  expect(said?.standing).toBe(true);
-  // Nothing has gone wrong: it stands so its cancel does not time out.
-  expect(said?.alarm).toBe(false);
-  expect(said?.offer?.label).toBe("cancel");
-  // Said once, whether the shell got there first or the log did.
-  expect(said?.key).toBe("fired:r1");
-});
-
-test("a landing from a tag takes the place of the notice it resolves", () => {
+test("a landing from a tag names the template the tag applied", () => {
   const said = noticeOf(anAction("routed", { ...fired, firedByTag: true }), {
     ...reading,
     templateOf: () => "Research links",
   });
 
   expect(said?.what).toBe("routed · Research links");
-  expect(said?.only).toBe("fired");
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
 });
 
-/**
- * Two notices, one saying it is on its way and one saying it failed, is the
- * corner contradicting itself — and the first offers a cancel that would refuse.
- */
-test("a fired delivery that failed takes that notice's place too", () => {
+test("a fired delivery that failed is one run with its record, as any other", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       ...fired,
@@ -193,27 +188,11 @@ test("a fired delivery that failed takes that notice's place too", () => {
     reading,
   );
 
-  expect(said?.only).toBe("fired");
-  expect(said?.standing).toBe(true);
+  expect(said?.only).toBe("delivery:r1");
+  expect(said?.alarm).toBe(true);
 });
 
-test("a fired delivery given up on takes it too", () => {
-  const said = noticeOf(
-    anAction("work-abandoned", {
-      work: "deliver",
-      record: "r1",
-      template: "t1",
-      firedByTag: true,
-      attempt: 5,
-      failure: { code: "rejected", detail: "research/ is missing" },
-    }),
-    reading,
-  );
-
-  expect(said?.only).toBe("fired");
-});
-
-test("a hand-made delivery that failed leaves a firing alone", () => {
+test("a hand-made delivery that failed is one run with its record", () => {
   const said = noticeOf(
     anAction("delivery-failed", {
       record: "r1",
@@ -227,7 +206,7 @@ test("a hand-made delivery that failed leaves a firing alone", () => {
   expect(said?.only).toBe("delivery:r1");
 });
 
-test("a cancellation ends the firing it called off", () => {
+test("a cancellation says what it gave back", () => {
   const said = noticeOf(
     anAction("delivery-cancelled", {
       record: "r1",
@@ -240,9 +219,8 @@ test("a cancellation ends the firing it called off", () => {
 
   expect(said?.what).toBe("routing cancelled");
   expect(said?.why).toBe("route/research taken back");
-  expect(said?.only).toBe("fired");
   // A confirmation rather than something to act on: it goes on its own.
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
 });
 
 test("a mark made by hand and taken back is said as undone, not as a routing cancelled", () => {
@@ -291,40 +269,9 @@ test("work about nothing in particular leads nowhere in particular", () => {
 const withTemplates = {
   ...reading,
   templateOf: (id: string) => (id === "t1" ? "Research" : "a template"),
-  cancel: (record: string, item: string) => {
-    cancelled.push([record, item]);
-  },
 };
 
-const cancelled: [string, string][] = [];
-
-test("a fired template stands while its window is open, and offers the way out", () => {
-  const said = noticeOf(
-    anAction("template-fired", {
-      record: "r1",
-      template: "t1",
-      name: "Research links",
-      destination: "vault",
-      tag: "route/research",
-    }),
-    withTemplates,
-  );
-
-  // The template's name, never the destination's: `route/research` is what was
-  // pressed, and the notice may not claim anything has been written yet.
-  expect(said?.what).toBe("routing · Research");
-  expect(said?.standing).toBe(true);
-  expect(said?.offer?.label).toBe("cancel");
-
-  said?.offer?.take();
-  expect(cancelled).toEqual([["r1", "one"]]);
-});
-
-test("one fired template stands at a time, and the landing takes its place", () => {
-  const routing = noticeOf(
-    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
-    withTemplates,
-  );
+test("a landing from a tag names the template rather than the destination", () => {
   const landed = noticeOf(
     anAction("routed", {
       record: "r1",
@@ -335,10 +282,9 @@ test("one fired template stands at a time, and the landing takes its place", () 
     withTemplates,
   );
 
-  expect(routing?.only).toBe(landed?.only);
   expect(landed?.what).toBe("routed · Research");
   // Nothing is left to call off, so it lingers like any confirmation.
-  expect(landed?.standing).toBeUndefined();
+  expect(landed?.alarm).toBeUndefined();
   expect(landed?.offer).toBeUndefined();
 });
 
@@ -354,17 +300,88 @@ test("a template a person took themselves lands as an ordinary route", () => {
   );
 
   expect(said?.what).toBe("routed · Vault");
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
   expect(said?.only).toBeUndefined();
 });
 
-/** Nothing here can cancel, so nothing is offered that would do nothing. */
-test("a fired template offers no way out where the reader has none", () => {
-  const said = noticeOf(
-    anAction("template-fired", { record: "r1", template: "t1", name: "R" }),
-    reading,
+/** A firing has not happened yet, so it is work in flight and not a notice. */
+test("a fired template is not a notice", () => {
+  expect(
+    noticeOf(anAction("template-fired", fired), withTemplates),
+  ).toBeUndefined();
+});
+
+test("a fired template opens a firing, named for the template, with its window", () => {
+  const said = firingOf(
+    anAction("template-fired", {
+      ...fired,
+      until: "2026-09-03T10:00:15.000Z",
+    }),
+    withTemplates,
   );
 
-  expect(said?.what).toBe("routing · R");
-  expect(said?.offer).toBeUndefined();
+  expect(said).toEqual({
+    opened: {
+      record: "r1",
+      item: "one",
+      name: "Research",
+      href: "/log?item=one",
+      until: Date.parse("2026-09-03T10:00:15.000Z"),
+    },
+  });
+});
+
+test("a firing the shell has no template for is named by the entry", () => {
+  const said = firingOf(anAction("template-fired", fired), reading);
+
+  expect(said).toMatchObject({ opened: { name: "Research links" } });
+  expect(said).not.toHaveProperty("opened.until");
+});
+
+test("every way a route ends closes its firing", () => {
+  for (const kind of [
+    "routed",
+    "delivery-failed",
+    "work-abandoned",
+    "delivery-cancelled",
+  ]) {
+    expect(firingOf(anAction(kind, { record: "r1" }), reading)).toEqual({
+      closed: "r1",
+    });
+  }
+});
+
+/** Still pending, so its cancel is still real. */
+test("a delivery the pool will try again leaves its firing open", () => {
+  expect(
+    firingOf(
+      anAction("delivery-failed", {
+        record: "r1",
+        failure: { code: "unreachable", detail: "the vault is not mounted" },
+      }),
+      reading,
+    ),
+  ).toBeUndefined();
+});
+
+test("an entry about no record touches no firing", () => {
+  expect(firingOf(anAction("captured", {}), reading)).toBeUndefined();
+  expect(
+    firingOf(anAction("work-failed", { work: "mirror-write" }), reading),
+  ).toBeUndefined();
+});
+
+/** A template made on another device, or since this shell read them, is not held yet. */
+test("a landing from a template this shell does not hold names the destination", () => {
+  const said = noticeOf(
+    anAction("routed", {
+      record: "r1",
+      template: "t9",
+      firedByTag: true,
+      destination: "vault",
+    }),
+    { ...reading, templateOf: () => undefined },
+  );
+
+  expect(said?.what).toBe("routed · Vault");
 });

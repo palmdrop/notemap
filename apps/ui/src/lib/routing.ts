@@ -108,14 +108,14 @@ export function keyFor(record: string): string {
   return `record:${record}`;
 }
 
-/**
- * One firing, said once. The shell raises this the moment it tags, because the
- * window a fired template waits out is shorter than the log is polled and a
- * cancel nobody can see yet is no cancel at all; the log's own entry then
- * arrives under the same name and adds nothing.
- */
-export function firedKey(record: string): string {
-  return `fired:${record}`;
+/** A decision taken back, said once whichever of the shell or the log says it first. */
+export function cancelledKey(record: string): string {
+  return `cancelled:${record}`;
+}
+
+/** An item discarded, which an `undo` would put back. */
+export function discardedKey(item: string): string {
+  return `discarded:${item}`;
 }
 
 /**

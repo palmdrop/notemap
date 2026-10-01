@@ -78,6 +78,8 @@ export async function fire(
   tag: TagName,
   template: RoutingTemplate,
 ): Promise<void> {
+  const until = later(record.at, config.triggerWindow);
+
   await tx.insertRoutingRecord(record);
   await tx.enqueue([
     {
@@ -87,7 +89,7 @@ export async function fire(
       // Nothing was attempted, so the job's first attempt is the first.
       attempt: 0,
       enqueuedAt: record.at,
-      notBefore: later(record.at, config.triggerWindow),
+      notBefore: until,
     },
   ]);
 
@@ -104,6 +106,8 @@ export async function fire(
       destination: template.destination,
       capability: template.capability,
       tag,
+      // When the window closes, so a shell can say how long is left to cancel.
+      until,
     },
   });
 }

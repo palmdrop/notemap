@@ -4,11 +4,13 @@
   let {
     onhold,
     onrelease,
+    line = $bindable(),
     children,
   }: {
-    /** Somebody is at the corner: the pointer is over it, or focus is inside it. */
+    /** Somebody is at the line: the pointer is over it, or focus is inside it. */
     onhold?: () => void;
     onrelease?: () => void;
+    line?: HTMLElement;
     children: Snippet;
   } = $props();
 
@@ -32,14 +34,20 @@
   }
 </script>
 
-<!-- The left corner, because the right is where a composer lives. -->
-<div
-  role="presentation"
-  class="fixed bottom-4 left-4 z-10 flex max-w-[min(21rem,calc(100vw-2rem))] flex-col [&>*+*]:mt-3"
-  onpointerenter={() => held(true, focused)}
-  onpointerleave={() => held(false, focused)}
-  onfocusin={() => held(hovered, true)}
-  onfocusout={left}
->
-  {@render children()}
+<!--
+  Fixed to the bottom of every surface, in the page's column. The ground runs
+  the width of the window so nothing scrolls through beside it.
+-->
+<div class="fixed inset-x-0 bottom-0 z-10 bg-ground px-8 max-narrow:px-3.5">
+  <div
+    bind:this={line}
+    role="presentation"
+    class="relative mx-auto w-full max-w-measure border-x border-t border-ink"
+    onpointerenter={() => held(true, focused)}
+    onpointerleave={() => held(false, focused)}
+    onfocusin={() => held(hovered, true)}
+    onfocusout={left}
+  >
+    {@render children()}
+  </div>
 </div>

@@ -380,6 +380,33 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
   expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
 });
 
+/** Its room is held either side whether or not it is selected, so nothing beside it moves. */
+test("a selected tag's × takes no room of its own", async () => {
+  tagSet({ names: ["design", "notemap"] });
+  const word = screen.getByRole("button", { name: "design" });
+  const box = word.parentElement!;
+  expect(box.classList.contains("px-tag")).toBe(true);
+
+  await fireEvent.click(word);
+
+  const remove = screen.getByRole("button", { name: "remove design" });
+  expect(remove.parentElement).toBe(box);
+  expect(remove.classList.contains("absolute")).toBe(true);
+  expect(box.classList.contains("px-tag")).toBe(true);
+});
+
+/** The `+` wraps where the line would, so opening the line moves nothing. */
+test("the + holds the place the line opens into", async () => {
+  tagSet({ names: ["design"] });
+  const plus = screen.getByRole("button", { name: "Add a tag" });
+  const place = plus.parentElement!.parentElement!;
+  expect(place.classList.contains("min-w-tag-line")).toBe(true);
+
+  await fireEvent.click(plus);
+
+  expect(place.contains(screen.getByRole("combobox"))).toBe(true);
+});
+
 test("pressing it again, esc, or pressing another tag deselects it", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 
@@ -502,21 +529,31 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
   }
 });
 
-test("the offer, opened near the end of a line, is drawn back to end where the line does", async () => {
+/**
+ * The browser keeps the offer under the line as the line moves, so nothing
+ * here measures it: the line's place is named, and the offer is placed
+ * against it. The place outlives the line, which is gone the moment it
+ * closes while the offer is still sliding shut beneath it.
+ */
+test("the offer hangs from the line's place, which outlives the line", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();
-  const list = screen.getByRole("listbox", { name: "Tags in use" });
-
-  const at = (left: number, right: number) => () =>
-    ({ left, right }) as DOMRect;
-  line.parentElement!.getBoundingClientRect = at(340, 376);
-  line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
-  Object.defineProperty(list, "offsetWidth", { get: () => 144 });
-
   await typed(line, "re");
-  expect(list.parentElement!.style.left).toBe("-108px");
 
-  line.parentElement!.getBoundingClientRect = at(60, 376);
-  await typed(line, "rea");
-  expect(list.parentElement!.style.left).toBe("0px");
+  const offer = screen.getByRole("listbox", {
+    name: "Tags in use",
+  }).parentElement!;
+  const place = line.parentElement!;
+  const named = /anchor-name:\s*(--[\w-]+)/.exec(
+    place.getAttribute("style") ?? "",
+  )?.[1];
+
+  expect(named).toBeDefined();
+  expect(offer.getAttribute("style")).toContain(`position-anchor: ${named}`);
+  expect(offer.classList.contains("offer")).toBe(true);
+
+  await fireEvent.keyDown(line, { key: "Escape" });
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(place.isConnected).toBe(true);
+  expect(place.getAttribute("style")).toContain(`anchor-name: ${named}`);
 });

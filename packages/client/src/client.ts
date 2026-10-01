@@ -2,6 +2,7 @@ import { distinctUntilChanged, filter, map, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createActions } from "./actions/actions";
+import { createCounts } from "./counts/counts";
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { releasedBy } from "./assets/assets";
@@ -190,6 +191,7 @@ export function createClient(config: ClientConfig): Client {
     api,
     applied: (since) => {
       state.update((current) => caughtUp(current, since));
+      if (since.length > 0) counts.stale();
 
       // An operation still to send settles its item on its own answer, and a
       // read now would overwrite the optimistic copy under it.
@@ -279,6 +281,11 @@ export function createClient(config: ClientConfig): Client {
 
   let classified = false;
 
+  /** Whether a drain sent anything, which is whether what the pool counts may have moved. */
+  let sent = false;
+
+  const counts = createCounts({ api });
+
   async function fetched(id: ItemId): Promise<Item | undefined> {
     try {
       return await answered(
@@ -328,6 +335,7 @@ export function createClient(config: ClientConfig): Client {
         operation,
       );
       classified ||= operation.kind === "tag" || operation.kind === "untag";
+      sent = true;
       return landed;
     },
     now,
@@ -354,6 +362,12 @@ export function createClient(config: ClientConfig): Client {
     try {
       const leased = await outbox.drain();
       if (leased !== undefined) drainWhenLapsed(leased);
+      // Inside the drain, as the tags are: a read answered is proof of reach,
+      // and a return it caused rides this drain rather than starting another.
+      if (sent) {
+        sent = false;
+        await counts.load().catch(() => undefined);
+      }
       if (!classified) return;
 
       classified = false;
@@ -565,13 +579,15 @@ export function createClient(config: ClientConfig): Client {
     routing: createRouting({
       api,
       processed: (item, record) =>
-        after(() =>
-          state.update((current) => processed(current, item, record)),
-        ),
+        after(() => {
+          state.update((current) => processed(current, item, record));
+          counts.stale();
+        }),
       withdrawn: (item, records) =>
-        after(() =>
-          state.update((current) => withdrawn(current, item, records)),
-        ),
+        after(() => {
+          state.update((current) => withdrawn(current, item, records));
+          counts.stale();
+        }),
       reread: async (item) => {
         const held = await fetched(item).catch(() => undefined);
         if (held === undefined) return;
@@ -623,6 +639,8 @@ export function createClient(config: ClientConfig): Client {
     }),
 
     tags,
+
+    counts: { queue: counts.queue, load: counts.load },
 
     actions,
 

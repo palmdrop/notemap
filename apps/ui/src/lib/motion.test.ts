@@ -5,15 +5,16 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   bezier,
+  drawOut,
   duration,
   fade,
   following,
   grow,
+  pinned,
   revealed,
   rise,
   slide,
   unfold,
-  widen,
 } from "./motion";
 
 const root = document.documentElement;
@@ -196,18 +197,16 @@ describe("unfold", () => {
   });
 });
 
-test("widening caps the width at the share of it the moment has reached", () => {
+test("drawing out clips what is not yet drawn, and never the box's size", () => {
   root.style.setProperty("--duration-short", "150ms");
   const node = document.createElement("div");
-  node.getBoundingClientRect = () => ({ width: 200 }) as DOMRect;
 
-  const opening = widen(node);
+  const opening = drawOut(node);
 
   expect(opening.duration).toBe(150);
-  const cap = (css: string | undefined) =>
-    Number(/max-width:\s*([\d.]+)px/.exec(css ?? "")?.[1]);
-  expect(cap(opening.css?.(0.5, 0.5))).toBe(100);
-  expect(cap(opening.css?.(1, 0))).toBe(200);
+  expect(opening.css?.(0.25, 0.75)).toBe("clip-path: inset(0 75% 0 0)");
+  expect(opening.css?.(1, 0)).toBe("clip-path: inset(0 0% 0 0)");
+  expect(opening.css?.(0.5, 0.5)).not.toMatch(/width/);
 });
 
 describe("revealed", () => {
@@ -309,4 +308,32 @@ describe("following", () => {
     resize({ height: 180, width: 300 });
     expect(animate).not.toHaveBeenCalled();
   });
+});
+
+/** Going away, it stays where it stood however the thing it hung from moves. */
+test("a pinned element is held at the place it stood when it started to go", () => {
+  const node = document.createElement("div");
+  Object.defineProperty(node, "offsetTop", { value: 24 });
+  Object.defineProperty(node, "offsetLeft", { value: 180 });
+  node.style.marginTop = "4px";
+
+  pinned(node);
+
+  expect(node.style.top).toBe("24px");
+  expect(node.style.left).toBe("180px");
+  expect(node.style.margin).toBe("0px");
+});
+
+test("a pinned element is held to the fraction of a pixel it stood at", () => {
+  const parent = document.createElement("div");
+  const node = document.createElement("div");
+  parent.append(node);
+  Object.defineProperty(node, "offsetParent", { value: parent });
+  parent.getBoundingClientRect = () => ({ top: 10, left: 20.25 }) as DOMRect;
+  node.getBoundingClientRect = () => ({ top: 34.5, left: 200.75 }) as DOMRect;
+
+  pinned(node);
+
+  expect(node.style.top).toBe("24.5px");
+  expect(node.style.left).toBe("180.5px");
 });

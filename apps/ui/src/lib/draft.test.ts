@@ -6,7 +6,9 @@ import {
   clearDraft,
   heldPicture,
   holdPicture,
+  onRestored,
   readDraft,
+  restoreDraft,
   writeDraft,
 } from "./draft";
 
@@ -80,5 +82,45 @@ describe("the capture draft", () => {
 
     expect(() => writeDraft({ text: "a thought", tags: [] })).not.toThrow();
     expect(readDraft()).toEqual({ text: "", tags: [] });
+  });
+
+  it("puts a capture back after what the box holds, and tells the box", () => {
+    writeDraft({ text: "mine", tags: ["idea"] });
+    const told = vi.fn();
+    const stop = onRestored(told);
+
+    expect(restoreDraft({ text: "refused", tags: ["idea", "later"] })).toBe(
+      "restored",
+    );
+    stop();
+
+    expect(readDraft()).toEqual({
+      text: "mine\n\nrefused",
+      tags: ["idea", "later"],
+    });
+    expect(told).toHaveBeenCalledOnce();
+  });
+
+  it("puts back a picture only where the box holds none", () => {
+    const shot = new File(["bytes"], "shot.png", { type: "image/png" });
+    const other = new File(["other"], "other.png", { type: "image/png" });
+
+    expect(restoreDraft({ text: "", tags: [] }, shot)).toBe("restored");
+    expect(heldPicture()).toBe(shot);
+
+    expect(restoreDraft({ text: "words", tags: [] }, other)).toBe(
+      "picture-held",
+    );
+    expect(heldPicture()).toBe(shot);
+    expect(readDraft().text).toBe("");
+    clearDraft();
+  });
+
+  it("says so where the store refused the words", () => {
+    vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+
+    expect(restoreDraft({ text: "refused", tags: [] })).toBe("unwritable");
   });
 });

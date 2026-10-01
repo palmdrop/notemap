@@ -6,6 +6,7 @@ import type {
   ActionQuery,
   ArchiveState,
   Artifact,
+  Counts,
   Asset,
   AssetId,
   BlobHash,
@@ -474,6 +475,9 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
+    const queueCount = source.query<{ count: number }, []>(
+      `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
+    );
     const tagsInUse = source.query<TagUseRow, []>(`
       SELECT tag.name AS name, COUNT(*) AS items,
              SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
@@ -828,6 +832,10 @@ export function createSqlitePoolStore(
         filter?: TagFilter,
       ): Promise<Slice<Item>> => byCaptureTime(page, filter, ARCHIVED),
 
+      counts: async (): Promise<Counts> => ({
+        queue: queueCount.get()?.count ?? 0,
+      }),
+
       actions: async (
         query: ActionQuery,
         page: OrderedPage,
@@ -936,6 +944,7 @@ export function createSqlitePoolStore(
       feed: guard(uncommitted.feed),
       queue: guard(uncommitted.queue),
       archived: guard(uncommitted.archived),
+      counts: guard(uncommitted.counts),
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),

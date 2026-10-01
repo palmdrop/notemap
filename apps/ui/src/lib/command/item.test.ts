@@ -151,5 +151,5 @@ test("says in the corner what copy could not take", async () => {
     return last;
   });
   expect(said.what).toBe("no clipboard");
-  expect(said.standing).toBe(true);
+  expect(said.alarm).toBe(true);
 });

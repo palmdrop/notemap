@@ -33,6 +33,10 @@ const BINDINGS: Record<string, string> = {
   // the caret: the field commits the same chord itself.
   capture: "mod+enter",
 
+  // The status line's own, on every surface: the panel of what it has said
+  // and what is in flight.
+  notices: "n",
+
   // The process surface's own.
   back: "escape",
   previous: "[",

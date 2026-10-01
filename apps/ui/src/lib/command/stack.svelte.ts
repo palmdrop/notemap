@@ -18,8 +18,11 @@ let layers = $state<Layer[]>([]);
  * the outgoing and the incoming page mounted at once, and a single slot would
  * be clobbered by whichever effect runs last.
  */
-export function publish(get: Getter): void {
-  const depth = (getContext<number | undefined>(DEPTH) ?? 0) + 1;
+export function publish(get: Getter, { atop = false } = {}): void {
+  const nested = (getContext<number | undefined>(DEPTH) ?? 0) + 1;
+  // Over every surface however deeply it nests: a panel drawn over the page
+  // takes the press first while it is open, whatever is under it.
+  const depth = atop ? Number.POSITIVE_INFINITY : nested;
   setContext(DEPTH, depth);
 
   onMount(() => {

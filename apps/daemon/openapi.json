@@ -735,6 +735,18 @@
           "values"
         ]
       },
+      "Counts": {
+        "type": "object",
+        "properties": {
+          "queue": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "queue"
+        ]
+      },
       "ArchiveRequest": {
         "type": "object",
         "properties": {
@@ -3721,6 +3733,24 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/counts": {
+      "get": {
+        "summary": "Count what the pool holds",
+        "description": "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.",
+        "responses": {
+          "200": {
+            "description": "The counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Counts"
                 }
               }
             }

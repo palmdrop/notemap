@@ -9,6 +9,7 @@
     clearDraft,
     heldPicture,
     holdPicture,
+    onRestored,
     readDraft,
     writeDraft,
   } from "$lib/draft";
@@ -90,6 +91,16 @@
   $effect(() => {
     holdPicture(chosen);
   });
+
+  // A refused capture put back while the box is drawn.
+  $effect(() =>
+    onRestored(() => {
+      const back = readDraft();
+      text = back.text;
+      tags = [...back.tags];
+      chosen = heldPicture();
+    }),
+  );
 
   const inUse = client.tags.inUse;
   const templates = client.templates.all;
@@ -202,7 +213,7 @@
       </span>
 
       <span class="flex items-baseline gap-x-4 px-3 leading-8">
-        <span class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
+        <span class="relative -ml-tag flex min-w-0 flex-wrap items-baseline">
           <TagSet
             bind:this={chooser}
             names={tags}

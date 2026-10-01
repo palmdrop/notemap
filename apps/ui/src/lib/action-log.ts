@@ -1,7 +1,8 @@
 import type { Action } from "@notemap/client";
 
+import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
-import { firedKey, keyFor } from "./routing";
+import { cancelledKey, keyFor } from "./routing";
 
 /**
  * The kinds worth saying to somebody who did not ask. Everything else the log
@@ -9,7 +10,6 @@ import { firedKey, keyFor } from "./routing";
  */
 const SAID: ReadonlySet<string> = new Set([
   "routed",
-  "template-fired",
   "delivery-cancelled",
   "delivery-failed",
   "work-failed",
@@ -17,18 +17,15 @@ const SAID: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * One at a time, and it stands. A tag files an item in one keystroke, so a
- * corner stacking four of these while a queue is worked is not the quiet thing
- * it is meant to be — and the cancel is the only thing between a mistyped tag
- * and somebody's vault, so it may not linger away while nobody is looking.
- *
- * Everything that **ends** a firing carries the same name, so it takes the
- * notice's place rather than standing beside it: a delivery that landed, one
- * that failed, one given up on, and a cancellation. A `routing · research` left
- * up after the route is over says something untrue and offers a cancel that
- * would refuse.
+ * Everything that ends a firing: it landed, failed for good, was given up on,
+ * or was called off.
  */
-export const FIRED = "fired";
+const ENDS: ReadonlySet<string> = new Set([
+  "routed",
+  "delivery-cancelled",
+  "delivery-failed",
+  "work-abandoned",
+]);
 
 function stringAt(
   detail: Record<string, unknown>,
@@ -38,16 +35,42 @@ function stringAt(
   return typeof held === "string" ? held : undefined;
 }
 
-function failureIn(detail: Record<string, unknown>): string | undefined {
+/** A failure's code, and the destination's own words for it where it gave any. */
+function failureIn(detail: Record<string, unknown>): {
+  readonly code?: string;
+  readonly said?: string;
+} {
   const failure = detail["failure"];
-  if (typeof failure !== "object" || failure === null) return undefined;
+  if (typeof failure !== "object" || failure === null) return {};
 
   const held = failure as Record<string, unknown>;
   const code = stringAt(held, "code");
   const said = stringAt(held, "detail");
+  return {
+    ...(code === undefined ? {} : { code }),
+    ...(said === undefined ? {} : { said }),
+  };
+}
 
-  if (code === undefined) return said;
-  return said === undefined ? code : `${code} · ${said}`;
+/** The pool tries a destination it could not reach again; every other failure ends the route. */
+const RETRIED = "unreachable";
+
+/**
+ * The status line's few words: what happened, then why in the destination's
+ * own words, or failing those, where. The code and the rest are the panel's.
+ */
+function headline(
+  lead: string,
+  said: string | undefined,
+  at: string | undefined,
+): string {
+  if (said !== undefined) return `${lead}: ${said}`;
+  return at === undefined ? lead : `${lead} · ${at}`;
+}
+
+function joined(parts: readonly (string | undefined)[]): { why?: string } {
+  const kept = parts.filter((part) => part !== undefined);
+  return kept.length === 0 ? {} : { why: kept.join(" · ") };
 }
 
 function place(
@@ -56,6 +79,11 @@ function place(
 ): string | undefined {
   const destination = stringAt(detail, "destination");
   return destination === undefined ? undefined : nameOf(destination);
+}
+
+/** A delivery the pool will attempt again is still pending, and can still be called off. */
+function retried(kind: string, detail: Record<string, unknown>): boolean {
+  return kind === "delivery-failed" && failureIn(detail).code === RETRIED;
 }
 
 /** Whether the tag filed this, rather than a person taking the template themselves. */
@@ -67,16 +95,51 @@ function firedByTag(detail: Record<string, unknown>): boolean {
  * One run of attempts at one record reads as one notice, the last word taking
  * the place of the ones before it.
  */
-function runOf(
-  detail: Record<string, unknown>,
-  record: string | undefined,
-): { only?: string } {
-  if (firedByTag(detail)) return { only: FIRED };
+function runOf(record: string | undefined): { only?: string } {
   return record === undefined ? {} : { only: `delivery:${record}` };
 }
 
 /**
- * What an entry in the log is worth saying in the corner, or nothing. The key
+ * What an entry in the log does to the routes a trigger tag has in flight: a
+ * `template-fired` opens one, and an entry that ends it closes it.
+ */
+export function firingOf(
+  action: Action,
+  said: {
+    /** A template's name where it is known, falling back to the one the entry carries. */
+    templateOf?: (template: string) => string | undefined;
+    about: (item: string) => string;
+  },
+): { readonly opened: Firing } | { readonly closed: string } | undefined {
+  const detail = action.detail as Record<string, unknown>;
+  const record = stringAt(detail, "record");
+  if (record === undefined) return undefined;
+
+  if (ENDS.has(action.kind) && !retried(action.kind, detail)) {
+    return { closed: record };
+  }
+  if (action.kind !== "template-fired" || action.subject === undefined) {
+    return undefined;
+  }
+
+  const template = stringAt(detail, "template");
+  const until = stringAt(detail, "until");
+  return {
+    opened: {
+      record,
+      item: action.subject,
+      name:
+        (template === undefined ? undefined : said.templateOf?.(template)) ??
+        stringAt(detail, "name") ??
+        "a template",
+      href: said.about(action.subject),
+      ...(until === undefined ? {} : { until: Date.parse(until) }),
+    },
+  };
+}
+
+/**
+ * What an entry in the log is worth saying in the status line, or nothing. The key
  * is the record rather than the entry: a delivery retried four times is one
  * thing that went wrong, and a landing this shell already reported is the same
  * fact arriving twice.
@@ -85,12 +148,10 @@ export function noticeOf(
   action: Action,
   said: {
     nameOf: (destination: string) => string;
-    /** A template's name, for the two entries a fired one produces. */
-    templateOf?: (template: string) => string;
+    /** A template's name where it is known, for the entries a fired one produces. */
+    templateOf?: (template: string) => string | undefined;
     /** Where the whole of it can be read. */
     about: (item: string) => string;
-    /** Called off within the window. Absent where nothing here can cancel. */
-    cancel?: (record: string, item: string) => void;
   },
 ): Raised | undefined {
   if (!SAID.has(action.kind)) return undefined;
@@ -106,38 +167,7 @@ export function noticeOf(
   const called =
     template === undefined ? undefined : (said.templateOf?.(template) ?? named);
 
-  /**
-   * The window a fired template waits out, and the whole of its visibility: no
-   * countdown and no bar, because the notice may not claim the item was filed
-   * anywhere before anything has been written.
-   */
-  if (action.kind === "template-fired") {
-    const subject = action.subject;
-    const cancel = said.cancel;
-    const offered =
-      record === undefined || subject === undefined || cancel === undefined
-        ? {}
-        : { offer: { label: "cancel", take: () => cancel(record, subject) } };
-
-    return {
-      what: `routing · ${called ?? stringAt(detail, "name") ?? "a template"}`,
-      ...where,
-      standing: true,
-      // Nothing has gone wrong: it stands so the cancel does not time out.
-      alarm: false,
-      only: FIRED,
-      // The shell says this itself the moment it tags, so the log arriving with
-      // the same news says nothing.
-      ...(record === undefined ? {} : { key: firedKey(record) }),
-      ...offered,
-    };
-  }
-
-  /**
-   * A route called off. Said briefly and under the firing's own name, so the
-   * notice it ends goes with it — including when the cancel came from somewhere
-   * other than that notice.
-   */
+  /** A route called off, said briefly: the firing it ends is closed beside it. */
   if (action.kind === "delivery-cancelled") {
     const gave = stringAt(detail, "tag");
 
@@ -148,9 +178,7 @@ export function noticeOf(
           : "routing cancelled",
       ...(gave === undefined ? {} : { why: `${gave} taken back` }),
       ...where,
-      alarm: false,
-      ...(template === undefined ? {} : { only: FIRED }),
-      ...(record === undefined ? {} : { key: `cancelled:${record}` }),
+      ...(record === undefined ? {} : { key: cancelledKey(record) }),
     };
   }
 
@@ -165,24 +193,30 @@ export function noticeOf(
           : `routed · ${fired ? (called ?? named) : named}`,
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
-      // It replaces the `routing` notice it resolves: there is one at a time.
-      ...(fired ? { only: FIRED } : {}),
       ...(record === undefined ? {} : { key: keyFor(record) }),
     };
   }
 
+  const at = firedByTag(detail) ? (called ?? named) : named;
+  const { code, said: told } = failureIn(detail);
+
+  /**
+   * A failure the pool will try again is not over, so it is not said as one:
+   * `retrying`, and no accent. Any other ends the route, and the reservation
+   * with it, so the item is back in the queue.
+   */
   if (action.kind === "delivery-failed") {
-    const why = failureIn(detail);
+    const again = retried(action.kind, detail);
     return {
-      what:
-        named === undefined ? "delivery failed" : `delivery failed · ${named}`,
-      ...(why === undefined ? {} : { why }),
+      what: headline(again ? "retrying" : "routing failed", told, at),
+      ...joined([
+        at,
+        code,
+        again || record === undefined ? undefined : "back in the queue",
+      ]),
       ...where,
-      standing: true,
-      // It ends the firing it was the attempt of, so it takes that notice's
-      // place: two notices, one saying it is on its way and one saying it
-      // failed, is the corner contradicting itself.
-      ...runOf(detail, record),
+      ...(again ? {} : { alarm: true }),
+      ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
   }
@@ -194,28 +228,34 @@ export function noticeOf(
    * failure it ends, so it carries that failure's reason as well.
    */
   if (action.kind === "work-abandoned") {
-    const at = firedByTag(detail) ? (called ?? named) : named;
-    const why = [
-      failureIn(detail),
-      record === undefined ? undefined : "back in the queue",
-    ].filter((part) => part !== undefined);
-
+    const work = stringAt(detail, "work") ?? "work";
     return {
-      what: at === undefined ? "given up" : `given up · ${at}`,
-      ...(why.length === 0 ? {} : { why: why.join(" · ") }),
+      what: headline(
+        record === undefined ? `${work} failed` : "routing failed",
+        told,
+        at,
+      ),
+      ...joined([
+        at,
+        code,
+        record === undefined ? undefined : "back in the queue",
+      ]),
       ...where,
-      standing: true,
-      ...runOf(detail, record),
+      alarm: true,
+      ...runOf(record),
       key: `abandoned:${record ?? action.id}`,
     };
   }
 
-  const why = failureIn(detail);
   return {
-    what: "work failed",
-    ...(why === undefined ? {} : { why }),
+    what: headline(
+      `${stringAt(detail, "work") ?? "work"} failed`,
+      told,
+      undefined,
+    ),
+    ...joined([code]),
     ...where,
-    standing: true,
+    alarm: true,
     key: `work:${action.id}`,
   };
 }

@@ -83,7 +83,7 @@
     if (pool.yes) untrack(() => log.again());
   });
 
-  // The watcher is already asking on the shell's own tempo for the corner to
+  // The watcher is already asking on the shell's own tempo for the status line to
   // speak from. A log that did not listen to it was the one surface where
   // reading meant reloading.
   onMount(() => {

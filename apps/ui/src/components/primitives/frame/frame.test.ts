@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
 import Nav from "./Nav.svelte";
-import Status from "./Status.svelte";
 
 const SURFACES = [
   { href: "/", label: "queue" },
@@ -30,21 +29,4 @@ test("marks a surface read at an address under its own", () => {
 
   expect(link("settings").getAttribute("aria-current")).toBe("page");
   expect(link("queue").getAttribute("aria-current")).toBeNull();
-});
-
-/** Pending is ordinary and heals itself, so an idle outbox is not a state of its own. */
-test("one glyph says whether the pool is within reach and whether work waits", () => {
-  const { rerender } = render(Status, { reachable: true, waiting: 0 });
-  const glyph = () => screen.getByRole("status");
-
-  expect(glyph().textContent?.trim()).toBe("●");
-  expect(glyph().title).toBe("reachable");
-
-  void rerender({ reachable: false, waiting: 0 });
-  expect(glyph().textContent?.trim()).toBe("○");
-  expect(glyph().title).toBe("unreachable");
-
-  void rerender({ reachable: false, waiting: 4 });
-  expect(glyph().textContent?.trim()).toBe("◐");
-  expect(glyph().title).toBe("4 waiting, unreachable");
 });

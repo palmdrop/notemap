@@ -2,9 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-09-28
+**Last updated**: 2026-09-30
 **Shipped**:
 
+- 2026-09-30 — **`GET /v1/counts`.** How much the pool holds, counted rather than paged:
+  `queue`, every item `GET /v1/queue` would answer. See
+  [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md).
 - 2026-09-28 — **`tag` filters the feed, the queue and the archive.** Repeated,
   every one must be carried, and carried by `next`; a blank one is `422 tag-invalid`. A row of
   `GET /v1/tags` carries `unprocessed` beside `items`. See
@@ -687,6 +690,24 @@ second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editabl
   puts an item back at the position it left with, which may be behind a reader who has already
   paged past it; that reader's remaining pages will not carry it, and a fresh read will
   ([core.md](core.md#the-queue)).
+
+### Counts
+
+`GET /v1/counts` — how much the pool holds, counted rather than paged.
+
+```json
+{ "queue": 14 }
+```
+
+- **`queue` is every item `GET /v1/queue` would answer**, counted by the same rule, so the count and
+  the pages cannot disagree about what is unprocessed.
+- **A route of its own, not a field on a page** *(decided 2026-09-30)*. A shell says it on every
+  surface, including ones that never read the queue, and a count on each page would be a second
+  query on every page for the one reader that wants it.
+- **It takes no `tag`.** What a filtered surface holds is the surface's to say; this answers the
+  pool as a whole.
+- **Only what a client reads is here.** A field is added when something draws it — a count of
+  deliveries still pending is the likely next one — rather than guessed at.
 
 ### Archiving
 
@@ -2044,6 +2065,8 @@ remains the interop surface; `/docs` is a convenience over it.
   every tag named, and `next` carries each of them; a tag nothing carries answers an empty page,
   and one that trims to nothing is `422 tag-invalid`.
 - `GET /v1/tags` answers `items` and `unprocessed` for each tag.
+- `GET /v1/counts` answers `queue`, the number of items `GET /v1/queue` would answer, and it falls
+  as items are archived or marked processed.
 - Archiving an item removes it from `GET /v1/queue` and adds it to `GET /v1/archived`;
   unarchiving returns it to the queue between the same two neighbours it had before.
 - Marking an item processed answers a routing record naming the user, removes it from the queue,

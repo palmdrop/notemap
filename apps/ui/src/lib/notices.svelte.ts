@@ -3,14 +3,17 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 /** How long a confirmation holds before it goes. A glance, not a read. */
 const LINGERS = 4_000;
 
-/** Long enough to reach for what it offers; the way back is elsewhere too. */
+/**
+ * Long enough to reach for what it offers, or to read what went wrong. Nothing
+ * stays longer: the panel is where it is read again.
+ */
 const OFFERED = 10_000;
-
-/** How many the corner draws at once before it counts the rest instead. */
-const SHOWN = 4;
 
 /** Enough keys to stop a poll repeating itself, and no memory of the session. */
 const REMEMBERED = 200;
+
+/** What the panel can read back. The log is where the rest of it is. */
+const KEPT = 100;
 
 /** Something to do about it, here, rather than somewhere to go and look. */
 export type Offer = {
@@ -24,38 +27,46 @@ export type Notice = {
   readonly why?: string;
   /** Which capture it was about: its stamp and its own first words. */
   readonly about?: string;
-  /** Held until a person clears it: anything they may have to act on. */
-  readonly standing?: boolean;
-  /**
-   * Whether it is drawn as an alarm. A standing notice is one by default —
-   * standing is usually what a failure does — but the two are different facts:
-   * a fired template stands because its cancel may not vanish, and nothing has
-   * gone wrong.
-   */
+  /** Something went wrong: drawn in the accent, and counted until the panel is opened. */
   readonly alarm?: boolean;
+  /** False where what went wrong is counted where it is held, rather than here. */
+  readonly counted?: boolean;
   /** Where to go and look. */
   readonly href?: string;
   readonly offer?: Offer;
+  /**
+   * What the offer would take back. Taken back some other way — on the row,
+   * on the item, on another device — the offer goes, because it would refuse.
+   */
+  readonly settles?: string;
   /**
    * Said once, however many times it is raised. The pool writes an action for
    * work this shell already reported, and the two arrive as one fact.
    */
   readonly key?: string;
   /**
-   * At most one notice bears a given name, the newest. An offer nobody can
-   * make twice is the case for it: a corner stacking four of them while a
-   * queue is worked is not the quiet thing it is meant to be.
+   * At most one live notice bears a given name, the newest: the last word on
+   * one thing takes the place of the words before it.
    */
   readonly only?: string;
+  /** When it was said, for the panel to say when. */
+  readonly at: number;
 };
 
-export type Raised = Omit<Notice, "id">;
+export type Raised = Omit<Notice, "id" | "at">;
+
+/** A notice as the panel reads it back: still live, or already gone. */
+export type Said = Notice & { readonly live: boolean };
 
 let held = $state<Notice[]>([]);
+let past = $state<Notice[]>([]);
 let minted = 0;
 
-/** Somebody is at the corner, so nothing in it leaves or is trimmed away. */
+/** Somebody is at the status line, so nothing in it leaves. */
 let holding = $state(false);
+
+/** Alarms raised since the panel was last opened. */
+let unseen = $state(0);
 
 const spoken = new SvelteSet<string>();
 const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
@@ -67,7 +78,9 @@ function forget(id: string): void {
 }
 
 function lingers(notice: Notice): number {
-  return notice.offer === undefined ? LINGERS : OFFERED;
+  return notice.offer === undefined && notice.alarm !== true
+    ? LINGERS
+    : OFFERED;
 }
 
 function wait(notice: Notice): void {
@@ -83,30 +96,6 @@ function drop(id: string): void {
   held = held.filter((notice) => notice.id !== id);
 }
 
-/**
- * The oldest confirmations go where the corner has run out of room. Two are
- * never among them: a standing notice, which is there because nothing but a
- * person will resolve it, and the one just raised — a corner full of failures
- * would otherwise swallow the confirmation of what somebody has this second
- * done, which is the one they are waiting for. What there is still no room for
- * is counted rather than dropped.
- */
-function trimmed(notices: Notice[]): Notice[] {
-  const kept = [...notices];
-
-  while (kept.length > SHOWN) {
-    const at = kept
-      .slice(0, -1)
-      .findIndex((notice) => notice.standing !== true);
-    if (at === -1) return kept;
-
-    const [gone] = kept.splice(at, 1);
-    if (gone !== undefined) forget(gone.id);
-  }
-
-  return kept;
-}
-
 function remember(key: string): void {
   spoken.add(key);
   if (spoken.size <= REMEMBERED) return;
@@ -116,19 +105,41 @@ function remember(key: string): void {
 }
 
 /**
- * What the shell says in its own voice, in the corner it already speaks from.
- * The store is the shell's: nothing here is the pool's record of the same
- * event, which is the action log and outlives whoever was looking.
+ * What the shell says in its own voice, from the status line. The store is the
+ * shell's: nothing here is the pool's record of the same event, which is the
+ * action log and outlives whoever was looking.
  */
 export const notices = {
-  /** Oldest first, so the newest sits nearest the corner it is drawn in. */
+  /** Every notice still live, oldest first. */
   get shown(): readonly Notice[] {
-    return holding ? held : held.slice(-SHOWN);
+    return held;
   },
 
-  /** Standing notices there was no room for. They are counted, not lost. */
-  get folded(): number {
-    return holding ? 0 : Math.max(held.length - SHOWN, 0);
+  /** The one the message line says: the newest still live. */
+  get latest(): Notice | undefined {
+    return held.at(-1);
+  },
+
+  /**
+   * Alarms nobody has looked at yet. Nothing has to be cleared, but a failure
+   * that lingered and went while nobody was looking is still counted.
+   */
+  get unseen(): number {
+    return unseen;
+  },
+
+  /** The panel was opened: whatever went wrong has been seen. */
+  seen(): void {
+    unseen = 0;
+  },
+
+  /** This session's notices, oldest first, live or gone. */
+  get history(): readonly Said[] {
+    const live = held.map((notice) => notice.id);
+    return past.map((notice) => ({
+      ...notice,
+      live: live.includes(notice.id),
+    }));
   },
 
   /** The id it was given, or nothing where this had already been said. */
@@ -139,21 +150,39 @@ export const notices = {
     }
 
     let kept = held;
+    let replaced: readonly Notice[] = [];
     if (notice.only !== undefined) {
-      for (const gone of held) {
-        if (gone.only === notice.only) forget(gone.id);
-      }
+      replaced = held.filter((one) => one.only === notice.only);
+      for (const gone of replaced) forget(gone.id);
       kept = held.filter((one) => one.only !== notice.only);
     }
 
     minted += 1;
-    const id = `notice-${String(minted)}`;
-    const raised = { ...notice, id };
-    held = holding ? [...kept, raised] : trimmed([...kept, raised]);
+    const raised: Notice = {
+      ...notice,
+      id: `notice-${String(minted)}`,
+      at: Date.now(),
+    };
+    held = [...kept, raised];
 
-    if (notice.standing !== true && !holding) wait(raised);
+    // A failure taking the place of a failure is the same thing gone wrong,
+    // said again with the last word: read back once, and counted once.
+    const restated =
+      notice.alarm === true && replaced.some((one) => one.alarm === true);
+    const superseded = restated
+      ? replaced.filter((one) => one.alarm === true).map((one) => one.id)
+      : [];
+    past = [
+      ...past.filter((one) => !superseded.includes(one.id)),
+      raised,
+    ].slice(-KEPT);
 
-    return id;
+    if (notice.alarm === true && notice.counted !== false && !restated) {
+      unseen += 1;
+    }
+    if (!holding) wait(raised);
+
+    return raised.id;
   },
 
   /** Whether this has been said before, without saying it. */
@@ -166,7 +195,10 @@ export const notices = {
     remember(key);
   },
 
-  /** Taking what a notice offered resolves it: the thing it was standing for is done. */
+  /**
+   * Taking what a notice offered resolves it: what it offered is done. Only a
+   * live notice offers anything.
+   */
   take(id: string): void {
     const notice = held.find((one) => one.id === id);
     if (notice?.offer === undefined) return;
@@ -174,31 +206,43 @@ export const notices = {
     drop(id);
   },
 
-  dismiss(id: string): void {
-    drop(id);
+  /** Taken back elsewhere: whatever offered to take it back offers nothing now. */
+  settled(what: string): void {
+    const spent = (notice: Notice): Notice => {
+      if (notice.settles !== what || notice.offer === undefined) return notice;
+      const { offer: _gone, ...rest } = notice;
+      return rest;
+    };
+    held = held.map(spent);
+    past = past.map(spent);
   },
 
-  /** Under somebody's pointer or focus, nothing in the corner leaves. */
+  /** What has gone is let go of; what is live stays. */
+  clearHistory(): void {
+    const live = held.map((notice) => notice.id);
+    past = past.filter((notice) => live.includes(notice.id));
+  },
+
+  /** Under somebody's pointer or focus, nothing leaves. */
   hold(): void {
     holding = true;
     for (const id of [...timers.keys()]) forget(id);
   },
 
-  /** Let go, the corner is trimmed and everything lingers again from the start. */
+  /** Let go, everything lingers again from the start. */
   release(): void {
     if (!holding) return;
     holding = false;
-    held = trimmed(held);
-    for (const notice of held) {
-      if (notice.standing !== true) wait(notice);
-    }
+    for (const notice of held) wait(notice);
   },
 
-  /** Everything, said and remembered: a shut door leaves none of it standing. */
+  /** Everything, said and remembered: a shut door leaves none of it behind. */
   clear(): void {
     for (const notice of held) forget(notice.id);
     held = [];
+    past = [];
     holding = false;
+    unseen = 0;
     spoken.clear();
   },
 };

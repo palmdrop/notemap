@@ -512,7 +512,7 @@ test("discarding says so, and offers the row back", async () => {
     expect(notices.shown.map((notice) => notice.what)).toContain("discarded");
   });
   const said = notices.shown.at(-1);
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
   expect(said?.offer?.label).toBe("undo");
   // The row it was made on is one look away from being gone.
   expect(said?.href).toBe("/items/one");

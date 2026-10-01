@@ -92,6 +92,7 @@ import {
   updatePoolSettingsRequestSchema,
 } from "../schemas/settings";
 import { unfurlQuery, unfurlSchema } from "../schemas/unfurl";
+import { countsSchema } from "../schemas/counts";
 import { sourcesInUseSchema } from "../schemas/sources";
 import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
 import type { StatusMap } from "../errors/refusals";
@@ -446,6 +447,20 @@ export const archivedRoute = createRoute({
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
     ),
+  },
+});
+
+export const countsRoute = createRoute({
+  method: "get",
+  path: "/v1/counts",
+  summary: "Count what the pool holds",
+  description:
+    "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.",
+  responses: {
+    200: {
+      description: "The counts.",
+      content: { [JSON_MEDIA_TYPE]: { schema: countsSchema } },
+    },
   },
 });
 
@@ -1628,6 +1643,7 @@ export const ROUTES = [
   feedRoute,
   queueRoute,
   archivedRoute,
+  countsRoute,
   itemRoute,
   archiveRoute,
   unarchiveRoute,

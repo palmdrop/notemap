@@ -2673,7 +2673,7 @@ test("taking discard archives the item, closes, and offers it back", async () =>
 
   const said = notices.shown.at(-1);
   expect(said?.what).toBe("discarded");
-  expect(said?.standing).toBeUndefined();
+  expect(said?.alarm).toBeUndefined();
   expect(said?.offer?.label).toBe("undo");
 });
 

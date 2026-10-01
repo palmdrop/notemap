@@ -9,11 +9,11 @@
     $props();
 </script>
 
-<!-- The deep foot leaves the last row reachable above a corner refusal. -->
+<!-- The foot clears the status line, so the last row is never under it. -->
 <div
   class="overflow-x-clip px-8 max-narrow:px-3.5 {fills
-    ? 'flex h-dvh flex-col'
-    : 'min-h-screen pb-32'}"
+    ? 'flex h-[calc(100dvh-var(--spacing-status))] flex-col'
+    : 'min-h-screen pb-24'}"
 >
   {@render children()}
 </div>

@@ -9,7 +9,8 @@
   import { client } from "$lib/client";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
-  import { whereItWent, wentTo } from "$lib/routing";
+  import { notices } from "$lib/notices.svelte";
+  import { cancelledKey, keyFor, whereItWent, wentTo } from "$lib/routing";
 
   /** The records say more than the summary, and only a surface that read them has them. */
   let {
@@ -93,6 +94,9 @@
     said = "";
     try {
       await client.routing.cancel(record.id, record.item);
+      // The row says it is undone; the log saying so again later is not news.
+      notices.settled(keyFor(record.id));
+      notices.mark(cancelledKey(record.id));
       onundone?.();
     } catch (error) {
       said = saidBy(error);

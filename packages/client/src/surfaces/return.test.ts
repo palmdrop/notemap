@@ -31,11 +31,13 @@ function clientOver(handler: Handler, store = createMemoryStore()) {
   return { client, transport };
 }
 
-/** Every route but the probe, which every client asks on its own schedule. */
+/** Every route but the probe and the counts, which the client asks on its own. */
 function asked(transport: { readonly sent: readonly Request[] }): string[] {
   return transport.sent
     .map(routeOf)
-    .filter((route) => route !== "GET /v1/health");
+    .filter(
+      (route) => route !== "GET /v1/health" && route !== "GET /v1/counts",
+    );
 }
 
 /** Waits out the backoff the probe is on, then lets the return settle. */
