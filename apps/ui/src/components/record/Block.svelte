@@ -20,7 +20,7 @@
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
   import { keepOutput, outputOf } from "$lib/outputs";
-  import { placeNamed } from "$lib/routing";
+  import { cancelledKey, keyFor, placeNamed } from "$lib/routing";
   import {
     BY_HAND,
     NOT_YET_DELIVERED,
@@ -227,8 +227,10 @@
     failed = "";
     try {
       await client.routing.cancel(record.id, record.item);
+      notices.settled(keyFor(record.id));
       notices.raise({
         what,
+        key: cancelledKey(record.id),
         ...(held === undefined ? {} : { about: aboutItem(held) }),
       });
       onundone?.();

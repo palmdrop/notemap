@@ -172,7 +172,7 @@ test("what went wrong is counted on notices until the panel is opened", async ()
   await vi.advanceTimersByTimeAsync(60_000);
 
   const toggle = screen.getByRole("button", { name: "notices, 1 gone wrong" });
-  expect(toggle.textContent).toContain("1");
+  expect(toggle.textContent?.replace(/\s+/g, " ").trim()).toBe("notices (1) ▴");
 
   await fireEvent.click(toggle);
   expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
@@ -248,7 +248,7 @@ test("counts the work this device holds, and lists it in the panel", async () =>
   await client.tag("one", "kind/quote");
 
   await screen.findByRole("button", { name: "1 pending" });
-  expect(screen.getByRole("img", { name: "unreachable" })).toBeDefined();
+  expect(screen.getByText("offline")).toBeDefined();
 
   command("notices").run();
   const flying = await screen.findByRole("list", { name: "in flight" });
@@ -268,7 +268,8 @@ test("says how many items the queue holds, once the pool has counted", async () 
   expect((await screen.findByText("14 in queue")).getAttribute("href")).toBe(
     "/",
   );
-  expect(screen.getByRole("img", { name: "reachable" })).toBeDefined();
+  // A pool that answers is the ordinary state, and says nothing.
+  expect(screen.queryByText("offline")).toBeNull();
 });
 
 /** The log is the only place this is written, and nobody was reading it. */
@@ -535,5 +536,55 @@ test("signed out, it says only the work this device holds and whether the pool a
   notices.raise({ what: "routed · vault" });
 
   expect(screen.queryByText("routed · vault")).toBeNull();
-  expect(screen.getByRole("img", { name: "reachable" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: /^notices/ })).toBeNull();
+});
+
+/** Taken back on the row, the line's own `undo` would refuse, so it goes. */
+test("an undo taken elsewhere takes the line's undo away", async () => {
+  pool(quiet);
+  render(StatusLine);
+
+  notices.raise({
+    what: "marked manual",
+    settles: "record:r1",
+    offer: { label: "undo", take: vi.fn() },
+  });
+  await screen.findByRole("button", { name: "undo" });
+
+  notices.settled("record:r1");
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  });
+  expect(screen.getByText("marked manual")).toBeDefined();
+});
+
+test("a decision taken back on another device takes the line's undo away", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "captured", {})];
+
+  pool((request) =>
+    routeOf(request).startsWith("GET /v1/actions")
+      ? json(200, { values: logged })
+      : quiet(),
+  );
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  notices.hold();
+  notices.raise({
+    what: "marked manual",
+    settles: "record:r1",
+    offer: { label: "undo", take: vi.fn() },
+  });
+
+  logged = [
+    anAction("2", "delivery-cancelled", { record: "r1", target: "user" }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  expect(
+    notices.shown.find((notice) => notice.what === "marked manual")?.offer,
+  ).toBeUndefined();
 });

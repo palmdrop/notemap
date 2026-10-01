@@ -5,6 +5,7 @@ import { itemHref } from "$components/item/href";
 import { client } from "./client";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
+import { keyFor } from "./routing";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
@@ -15,7 +16,10 @@ import { nameOf, triggeredBy } from "./templates";
 export function cancelRouting(record: string, item: string): void {
   void client.routing
     .cancel(record, item)
-    .then(() => firings.closed(record))
+    .then(() => {
+      firings.closed(record);
+      notices.settled(keyFor(record));
+    })
     .catch(() => {
       notices.raise({ what: "could not cancel", alarm: true });
     });

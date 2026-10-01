@@ -117,6 +117,10 @@ own work drains, when the log shows the pool did something, and when the pool co
 > to the panel. The panel hangs from an always-present `notices` at the line's left, at most 28rem
 > wide, slides open, and stands clear of the line's rule. The developer's reasoning: once a notice
 > can be read again in the panel, asking somebody to clear it costs a gesture and buys nothing.
+>
+> Later the same day: reachability says nothing while the pool answers and `offline` while it does
+> not, the count reads `notices (1) ▴`, the line is ruled down both ends with the panel's edge on
+> its own, and an `undo` taken back elsewhere leaves the line.
 
 ### Consequences
 

@@ -1686,8 +1686,8 @@ than a flattened destination×capability list being offered up front.
 Three conditions, and each of them is drawn as itself. *(Amended 2026-08-26: it used to paint two
 of them the same colour.)*
 
-- **Unreachable** is stated **once**, in the status line, as a small persistent mark *(moved there
-  from the bar 2026-09-30)*. It is not repeated
+- **Unreachable** is stated **once**, in the status line, as the word `offline` *(moved there from
+  the bar 2026-09-30, a word since 2026-10-01)*. It is not repeated
   on every row, and no surface repeats it either: a read that never reached the pool draws no
   failure, and the only other place it is said at all is the foot of a surface with more to read,
   which is where a page would have been offered (below). Actions that need the daemon
@@ -1758,7 +1758,7 @@ never answered still draws no failure at all.
 *(2026-09-30, [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md). It replaces the corner,
 which said what happened from 2026-09-03, and the bar's glyph.)* The shell says anything in its own
 voice from **one ruled line fixed to the bottom of every surface**, in the page's column, at the
-shell's one size. **One place, with gradations** — a second place would be a reader learning where
+shell's one size, ruled along its top and down both its ends *(2026-10-01)*. **One place, with gradations** — a second place would be a reader learning where
 to look to learn nothing more. A **notice** is work that has already happened, reported to somebody
 who did not ask: an item routed and where it went, a delivery that failed, a delivery given up on.
 Beside the notices the line says what is true of the shell rather than of any item: what is in
@@ -1766,8 +1766,8 @@ flight, how much is left, and whether the pool answers.
 
 **The left is the message line.** It begins with **`notices ▴`**, always there, which opens the
 panel and is what the panel hangs from — a button that came and went with what had been said would
-be one nobody could find when they wanted it. It counts, in the accent, **what went wrong since the
-panel was last opened** (below). After it, the **newest notice still live**, in its few words and
+be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
+accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
 cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`). **The line is
 short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
 `routing failed: taken.md is already there` — and never the code, the place, or the capture, which
@@ -1794,18 +1794,21 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 - **How much is left** — `14 in queue`, the pool's own count of what the queue holds, read from
   `GET /v1/counts` and leading to the queue. It is the pool's number: what this device has not sent
   is the pending count's. It keeps its last answer while the pool is out of reach.
-- **Reachability**, always, last — `●` where the pool answers, `○ offline` where it does not.
+- **`offline`**, last, while the pool does not answer *(2026-10-01; a glyph said both states
+  until then)*. A pool that answers is the ordinary state and says nothing, as pending work says
+  nothing while there is none.
 
 A press on any count but the queue's opens the panel. **Below `narrow`** the words go: a route in
-flight is `routing 12s cancel`, pending `◐ 3`, the queue's count is not drawn, and reachability is
-the glyph alone.
+flight is `routing 12s cancel`, pending `◐ 3`, the queue's count is not drawn, and `offline` stays
+a word.
 
 **The panel** opens above the line from `notices`, a press on the message or a count, or `n`
 anywhere, and closes on `esc`, on its own `close`, or on a press anywhere outside the line. It
-**hangs from `notices`** at the line's left, at most `28rem` wide so it reads as the notices' own
-rather than as a sheet over the page, and spans the line below `narrow`. It **slides open and
-shut** as a section does, and stands clear of the line's rule, which stays drawn under it so the
-two never read as one box. Opened before anything has been said, it says so. It is the one place a
+**hangs from `notices`** at the line's left, its left edge on the line's own, at most `28rem` wide
+so it reads as the notices' own rather than as a sheet over the page, and spans the line below
+`narrow`. It **slides open and shut** as a section does, and stands clear of the line's rule,
+which stays drawn under it so the two never read as one box. **It is read from the bottom**: it
+opens on the newest, and a notice arriving while it is open slides in there and stays in view. Opened before anything has been said, it says so. It is the one place a
 notice that has gone can be read again: this session's notices, **oldest first so the newest sits
 nearest the line**, each with its time, what and why, the capture it was about, and `look`. A notice
 still live keeps its offer; one that has gone does not, since what it offered may no longer be true.
@@ -1855,6 +1858,12 @@ it is not over and may heal. Any other ends the route and takes the reservation 
 the code, and that the item is back in the queue. Where the destination gave no words, the line
 names the place instead: `routing failed · Vault`. The pool's own names for this — `work abandoned`,
 `delivery failed` — are the log's, not the line's.
+
+**An `undo` is only offered while it would work** *(2026-10-01)*. Taking it from the line says what
+it did at once — `manual mark undone`, `undiscarded` — under the name the log's own entry will
+arrive with, so the log adds nothing a poll later. Taken back any other way — on the row, on the
+item, on another device, read from the log — the notice that offered it keeps its words and loses
+the `undo`, which would now refuse.
 
 **A refusal is said once and let go** *(2026-10-01)*. An operation the pool refused is said as a
 notice in the accent — `capture refused: payload-invalid`, the operation in the panel — and the
@@ -2652,6 +2661,11 @@ view is how a reader sees more at once.
   destinations and `manual` read as unavailable rather than as broken.
 - A refused operation is distinguishable from a pending one without reading either, is said once
   as a notice, and leaves the outbox.
+- With the pool answering the status line says nothing about reachability; out of reach it says
+  `offline`.
+- An `undo` taken from the status line says what it did at once, and the log's copy a poll later
+  adds nothing; one taken back on the row, the item or another device leaves no `undo` on the line.
+- A notice raised while the panel is open slides into it at the bottom and is in view.
 - Routing a queued item is reachable in two choices from the opened row when the capability needs
   no argument fields, and the modal says which capture it is about.
 - Every way an item leaves the queue is behind one control, and `copy`, `edit`, `open` and

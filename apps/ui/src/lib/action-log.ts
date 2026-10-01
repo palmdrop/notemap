@@ -2,7 +2,7 @@ import type { Action } from "@notemap/client";
 
 import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
-import { keyFor } from "./routing";
+import { cancelledKey, keyFor } from "./routing";
 
 /**
  * The kinds worth saying to somebody who did not ask. Everything else the log
@@ -168,7 +168,7 @@ export function noticeOf(
           : "routing cancelled",
       ...(gave === undefined ? {} : { why: `${gave} taken back` }),
       ...where,
-      ...(record === undefined ? {} : { key: `cancelled:${record}` }),
+      ...(record === undefined ? {} : { key: cancelledKey(record) }),
     };
   }
 

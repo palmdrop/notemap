@@ -43,13 +43,6 @@
     atop: true,
   });
 
-  let scroller = $state<HTMLElement | undefined>(undefined);
-
-  // The newest is at the bottom, nearest the line, and that is where it opens.
-  $effect(() => {
-    if (scroller !== undefined) scroller.scrollTop = scroller.scrollHeight;
-  });
-
   const flying = $derived(firings.length + unsent.length > 0);
   const gone = $derived(history.some((said) => !said.live));
 
@@ -59,87 +52,91 @@
 </script>
 
 <!--
-  Hung from `notices` at the line's left, and clear of the line's rule so the
-  two never read as one box. A phone has no room to spare, so there it spans.
+  Hung from `notices` at the line's left, its edge on the line's own, and clear
+  of the line's rule so the two never read as one box. A phone has no room to
+  spare, so there it spans. Reversed so it scrolls from the bottom: it opens on
+  the newest, and what arrives while it is read there stays in view.
 -->
 <section
-  bind:this={scroller}
   transition:slide
   id={PANEL}
   aria-label="notices"
-  class="absolute bottom-[calc(100%+1px)] left-0 max-h-[60dvh] w-full max-w-panel overflow-y-auto border-x border-t border-ink bg-ground max-narrow:max-w-none"
+  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-ground max-narrow:max-w-none"
 >
-  <header
-    class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-ground px-3 py-1.5"
-  >
-    <span class="font-semibold">notices</span>
-    <span class="flex gap-4">
-      {#if gone}
-        <button type="button" class="underline" onclick={onforget}>clear</button
-        >
-      {/if}
-      <a href="/log" class="underline">log</a>
-      <button type="button" class="underline" onclick={onclose}>close</button>
-    </span>
-  </header>
-
-  {#if history.length === 0 && !flying}
-    <p class="px-3 py-2">Nothing has been said yet.</p>
-  {/if}
-
-  {#if history.length > 0}
-    <ol aria-label="said">
-      {#each history as said (said.id)}
-        <Entry
-          when={at(said.at)}
-          what={said.what}
-          why={said.why}
-          about={said.about}
-          href={said.href}
-          alarm={said.alarm === true}
-          offer={said.live && said.offer !== undefined
-            ? { label: said.offer.label, take: () => ontake(said.id) }
-            : undefined}
-        />
-      {/each}
-    </ol>
-  {/if}
-
-  {#if flying}
-    <h2
-      class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
+  <div>
+    <header
+      class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-ground px-3 py-1.5"
     >
-      in flight
-    </h2>
-    <ol aria-label="in flight">
-      {#each firings as firing (firing.record)}
-        {@const seconds = left(firing, now)}
-        <Entry
-          what={`routing · ${firing.name}`}
-          href={firing.href}
-          offer={{ label: "cancel", take: () => oncancel(firing) }}
-        >
-          {#snippet mark()}
-            {#if seconds !== undefined}
-              <span class="tabular-nums">{seconds}s</span>
-            {:else}
-              <Asking />
-            {/if}
-          {/snippet}
-        </Entry>
-      {/each}
+      <span class="font-semibold">notices</span>
+      <span class="flex gap-4">
+        {#if gone}
+          <button type="button" class="underline" onclick={onforget}
+            >clear</button
+          >
+        {/if}
+        <a href="/log" class="underline">log</a>
+        <button type="button" class="underline" onclick={onclose}>close</button>
+      </span>
+    </header>
 
-      {#each unsent as held (held.id)}
-        {@const said = outgoing(held.operation)}
-        <Entry
-          when={timeOf(held.at)}
-          what={said.what}
-          why={held.state === "unreachable"
-            ? "pending · the pool is out of reach"
-            : "pending"}
-          href={itemHref(said.item)}
-        />
-      {/each}
-    </ol>
-  {/if}
+    {#if history.length === 0 && !flying}
+      <p class="px-3 py-2">Nothing has been said yet.</p>
+    {/if}
+
+    {#if history.length > 0}
+      <ol aria-label="said">
+        {#each history as said (said.id)}
+          <Entry
+            when={at(said.at)}
+            what={said.what}
+            why={said.why}
+            about={said.about}
+            href={said.href}
+            alarm={said.alarm === true}
+            offer={said.live && said.offer !== undefined
+              ? { label: said.offer.label, take: () => ontake(said.id) }
+              : undefined}
+          />
+        {/each}
+      </ol>
+    {/if}
+
+    {#if flying}
+      <h2
+        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
+      >
+        in flight
+      </h2>
+      <ol aria-label="in flight">
+        {#each firings as firing (firing.record)}
+          {@const seconds = left(firing, now)}
+          <Entry
+            what={`routing · ${firing.name}`}
+            href={firing.href}
+            offer={{ label: "cancel", take: () => oncancel(firing) }}
+          >
+            {#snippet mark()}
+              {#if seconds !== undefined}
+                <span class="tabular-nums">{seconds}s</span>
+              {:else}
+                <Asking />
+              {/if}
+            {/snippet}
+          </Entry>
+        {/each}
+
+        {#each unsent as held (held.id)}
+          {@const said = outgoing(held.operation)}
+          <Entry
+            when={timeOf(held.at)}
+            what={said.what}
+            why={held.state === "unreachable"
+              ? "pending · the pool is out of reach"
+              : "pending"}
+            href={itemHref(said.item)}
+          />
+        {/each}
+      </ol>
+    {/if}
+  </div>
 </section>

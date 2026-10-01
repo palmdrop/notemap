@@ -33,6 +33,11 @@ export type Notice = {
   readonly href?: string;
   readonly offer?: Offer;
   /**
+   * What the offer would take back. Taken back some other way — on the row,
+   * on the item, on another device — the offer goes, because it would refuse.
+   */
+  readonly settles?: string;
+  /**
    * Said once, however many times it is raised. The pool writes an action for
    * work this shell already reported, and the two arrive as one fact.
    */
@@ -184,6 +189,15 @@ export const notices = {
     if (notice?.offer === undefined) return;
     notice.offer.take();
     drop(id);
+  },
+
+  /** Taken back elsewhere: whatever offered to take it back offers nothing now. */
+  settled(what: string): void {
+    held = held.map((notice) => {
+      if (notice.settles !== what || notice.offer === undefined) return notice;
+      const { offer: _gone, ...rest } = notice;
+      return rest;
+    });
   },
 
   /** What has gone is let go of; what is live stays. */

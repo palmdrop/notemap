@@ -5,9 +5,8 @@
 
   /**
    * The right of the status line, each drawn only while it is true: what this
-   * device holds, and how much the queue holds.
-   * Reachability is always said, last. Below `narrow` the words go and a
-   * number and a mark stay.
+   * device holds, how much the queue holds, and `offline` while the pool does
+   * not answer. Below `narrow` the words go and a number and a mark stay.
    */
   let {
     pending,
@@ -22,8 +21,6 @@
     expanded: boolean;
     ontoggle: () => void;
   } = $props();
-
-  const reach = $derived(reachable ? "reachable" : "unreachable");
 </script>
 
 {#if pending > 0}
@@ -51,14 +48,7 @@
   </a>
 {/if}
 
-<span
-  role="img"
-  aria-label={reach}
-  title={reach}
-  class="flex flex-none items-baseline gap-2 whitespace-nowrap"
->
-  <span class="text-glyph">{reachable ? "●" : "○"}</span>
-  {#if !reachable}
-    <span class="max-narrow:hidden">offline</span>
-  {/if}
-</span>
+<!-- Nothing while the pool answers, which is the ordinary state and says nothing. -->
+{#if !reachable}
+  <span role="status" class="flex-none whitespace-nowrap">offline</span>
+{/if}

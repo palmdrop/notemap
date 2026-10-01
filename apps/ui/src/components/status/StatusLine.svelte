@@ -15,6 +15,7 @@
   import { notices } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
   import { reachable } from "$lib/reachable.svelte";
+  import { discardedKey, keyFor } from "$lib/routing";
   import { heldName } from "$lib/templates";
 
   import Counts from "./Counts.svelte";
@@ -120,8 +121,24 @@
     });
   }
 
+  /**
+   * Taken back on another device, or here before the log said so: an `undo`
+   * still on the line would refuse, so it goes.
+   */
+  function settle(action: Action): void {
+    const record = (action.detail as Record<string, unknown>)["record"];
+    if (action.kind === "delivery-cancelled" && typeof record === "string") {
+      notices.settled(keyFor(record));
+    }
+    if (action.kind === "unarchived" && action.subject !== undefined) {
+      notices.settled(discardedKey(action.subject));
+    }
+  }
+
   async function hear(actions: readonly Action[]) {
     for (const action of actions) {
+      settle(action);
+
       const firing = firingOf(action, {
         templateOf: heldName,
         about: itemHref,
@@ -179,7 +196,7 @@
     />
   {/if}
 
-  <div class="flex h-status items-center gap-x-5 max-narrow:gap-x-3">
+  <div class="flex h-status items-center gap-x-5 px-3 max-narrow:gap-x-3">
     {#if shut}
       <span class="flex-1"></span>
     {:else}

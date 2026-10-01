@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { slide } from "$lib/motion";
+
   /**
    * One line of the panel: when, what and why, the capture it was about, and
    * what can be done about it here. The ways out are drawn only while there is
@@ -30,6 +32,7 @@
 </script>
 
 <li
+  in:slide={{ fade: true }}
   class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-narrow:grid-cols-1 {alarm
     ? 'text-alarm'
     : ''}"

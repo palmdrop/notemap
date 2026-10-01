@@ -44,7 +44,7 @@
   <div
     bind:this={line}
     role="presentation"
-    class="relative mx-auto w-full max-w-measure border-t border-ink"
+    class="relative mx-auto w-full max-w-measure border-x border-t border-ink"
     onpointerenter={() => held(true, focused)}
     onpointerleave={() => held(false, focused)}
     onfocusin={() => held(hovered, true)}

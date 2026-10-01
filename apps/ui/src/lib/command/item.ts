@@ -9,6 +9,7 @@ import { editable } from "../lineage";
 import { notices } from "../notices.svelte";
 import { DISCARD, MANUAL, refusalFor } from "../processing";
 import { discard, manual } from "../quick";
+import { discardedKey } from "../routing";
 
 import { DECIDE, WORK, type Command } from "./command";
 
@@ -47,13 +48,16 @@ async function copy(item: Item): Promise<void> {
  * has to speak in the status line — a key that took it may leave no row on screen.
  */
 function undiscard(item: Item): void {
-  void client.unarchive(item.id).catch((error: unknown) => {
-    notices.raise({
-      what: saidBy(error),
-      about: aboutItem(item),
-      alarm: true,
+  void client
+    .unarchive(item.id)
+    .then(() => notices.settled(discardedKey(item.id)))
+    .catch((error: unknown) => {
+      notices.raise({
+        what: saidBy(error),
+        about: aboutItem(item),
+        alarm: true,
+      });
     });
-  });
 }
 
 /**

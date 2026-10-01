@@ -40,10 +40,10 @@
     class:font-semibold={expanded}
   >
     <span class="max-narrow:hidden">notices</span>
-    {expanded ? "▾" : "▴"}
     {#if unseen > 0}
-      <span class="text-alarm tabular-nums">{unseen}</span>
+      <span class="text-alarm tabular-nums">({unseen})</span>
     {/if}
+    {expanded ? "▾" : "▴"}
   </button>
 
   {#if notice !== undefined}

@@ -108,6 +108,16 @@ export function keyFor(record: string): string {
   return `record:${record}`;
 }
 
+/** A decision taken back, said once whichever of the shell or the log says it first. */
+export function cancelledKey(record: string): string {
+  return `cancelled:${record}`;
+}
+
+/** An item discarded, which an `undo` would put back. */
+export function discardedKey(item: string): string {
+  return `discarded:${item}`;
+}
+
 /**
  * What a decision just made says about itself. A record the pool answered as
  * `pending` was attempted and did not go, so it reads as **retrying** — saying

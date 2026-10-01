@@ -6,7 +6,7 @@ import { client } from "./client";
 import { aboutItem } from "./excerpt";
 import { notices } from "./notices.svelte";
 import { DISCARD, MANUAL } from "./processing";
-import { keyFor } from "./routing";
+import { cancelledKey, discardedKey, keyFor } from "./routing";
 
 /**
  * The two decisions that need no destination and no second step, taken from
@@ -28,12 +28,16 @@ export function discard(item: Item): void {
     about,
     href: itemHref(id),
     only: DISCARD,
+    settles: discardedKey(id),
     offer: {
       label: "undo",
       take: () => {
-        void client.unarchive(id).catch(() => {
-          notices.raise({ what: "could not undo", about, alarm: true });
-        });
+        void client
+          .unarchive(id)
+          .then(() => notices.raise({ what: "undiscarded", about }))
+          .catch(() => {
+            notices.raise({ what: "could not undo", about, alarm: true });
+          });
       },
     },
   });
@@ -56,12 +60,22 @@ export async function manual(item: Item): Promise<void> {
       href: itemHref(id),
       only: MANUAL,
       key: keyFor(record.id),
+      settles: keyFor(record.id),
       offer: {
         label: "undo",
         take: () => {
-          void client.routing.cancel(record.id, id).catch(() => {
-            notices.raise({ what: "could not undo", about, alarm: true });
-          });
+          void client.routing
+            .cancel(record.id, id)
+            .then(() =>
+              notices.raise({
+                what: "manual mark undone",
+                about,
+                key: cancelledKey(record.id),
+              }),
+            )
+            .catch(() => {
+              notices.raise({ what: "could not undo", about, alarm: true });
+            });
         },
       },
     });

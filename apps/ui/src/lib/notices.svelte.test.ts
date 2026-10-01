@@ -211,3 +211,23 @@ test("the history holds the last hundred", () => {
   expect(notices.history).toHaveLength(100);
   expect(notices.history[0]?.what).toBe("said 5");
 });
+
+test("a settled offer is taken off whatever notice made it, and the notice stays", () => {
+  notices.raise({
+    what: "discarded",
+    settles: "discarded:one",
+    offer: { label: "undo", take: vi.fn() },
+  });
+  notices.raise({
+    what: "discarded",
+    settles: "discarded:two",
+    offer: { label: "undo", take: vi.fn() },
+  });
+
+  notices.settled("discarded:one");
+
+  expect(notices.shown.map((notice) => notice.offer?.label)).toEqual([
+    undefined,
+    "undo",
+  ]);
+});
