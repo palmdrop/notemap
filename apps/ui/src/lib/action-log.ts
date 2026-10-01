@@ -64,6 +64,18 @@ function firedByTag(detail: Record<string, unknown>): boolean {
 }
 
 /**
+ * One run of attempts at one record reads as one notice, the last word taking
+ * the place of the ones before it.
+ */
+function runOf(
+  detail: Record<string, unknown>,
+  record: string | undefined,
+): { only?: string } {
+  if (firedByTag(detail)) return { only: FIRED };
+  return record === undefined ? {} : { only: `delivery:${record}` };
+}
+
+/**
  * What an entry in the log is worth saying in the corner, or nothing. The key
  * is the record rather than the entry: a delivery retried four times is one
  * thing that went wrong, and a landing this shell already reported is the same
@@ -170,7 +182,7 @@ export function noticeOf(
       // It ends the firing it was the attempt of, so it takes that notice's
       // place: two notices, one saying it is on its way and one saying it
       // failed, is the corner contradicting itself.
-      ...(firedByTag(detail) ? { only: FIRED } : {}),
+      ...runOf(detail, record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
   }
@@ -178,15 +190,22 @@ export function noticeOf(
   /**
    * Giving up on a delivery removes its reservation, so the item is work again.
    * That is the half of this a person cannot see anywhere else: the row came
-   * back on its own and nothing else would say why.
+   * back on its own and nothing else would say why. It takes the place of the
+   * failure it ends, so it carries that failure's reason as well.
    */
   if (action.kind === "work-abandoned") {
+    const at = firedByTag(detail) ? (called ?? named) : named;
+    const why = [
+      failureIn(detail),
+      record === undefined ? undefined : "back in the queue",
+    ].filter((part) => part !== undefined);
+
     return {
-      what: "given up",
-      why: record === undefined ? failureIn(detail) : "back in the queue",
+      what: at === undefined ? "given up" : `given up · ${at}`,
+      ...(why.length === 0 ? {} : { why: why.join(" · ") }),
       ...where,
       standing: true,
-      ...(firedByTag(detail) ? { only: FIRED } : {}),
+      ...runOf(detail, record),
       key: `abandoned:${record ?? action.id}`,
     };
   }

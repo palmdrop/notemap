@@ -232,7 +232,11 @@ describe("a destination that never comes back", () => {
       logged.values.find((action) => action.kind === "work-abandoned"),
     ).toMatchObject({
       by: { kind: "notemap" },
-      detail: { work: "delivery", record: opened.record.id },
+      detail: {
+        work: "delivery",
+        record: opened.record.id,
+        destination: VAULT,
+      },
     });
   });
 

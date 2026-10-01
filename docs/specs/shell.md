@@ -1895,7 +1895,11 @@ reported when the decision was made is the same fact arriving a second time.
 
 **A delivery given up on says the item is back in the queue**, because it is — giving up removes the
 reservation, and the row returns on its own. That is the one condition nothing else in the shell
-could ever explain, and it is why this exists.
+could ever explain, and it is why this exists. *Amended 2026-09-30*: it also says **why** and
+**where** — `given up · Vault` over `rejected · notes/a.md already exists · back in the queue` — and
+it takes the place of the failure notice it ends, so one run of attempts at one record reads as one
+notice. It used to say only `back in the queue`, and for a route a tag fired it replaced the one
+notice that carried the reason, leaving nothing on screen to say what went wrong.
 
 **A notice leads to where the whole of it can be read**: the item it happened to, or the log plain
 where the work was about no item. The item surface is the better address for the question a notice

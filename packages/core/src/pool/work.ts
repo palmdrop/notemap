@@ -272,7 +272,9 @@ async function concluded(
     at: ended.at,
     detail: {
       ...workDetail(job, ended),
-      ...(record === undefined ? {} : templateDetail(record)),
+      ...(record === undefined
+        ? {}
+        : { ...destinationDetail(record), ...templateDetail(record) }),
     },
   });
 }
