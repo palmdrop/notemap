@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { doubled, pickable } from "./pick";
+import { doubled, pickable, spendPress } from "./pick";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -40,6 +40,17 @@ test("leaves a click on a control to the control", () => {
   expect(open).not.toHaveBeenCalled();
 });
 
+/** A chooser's offer takes on `mousedown`, and the click after it is still its own. */
+test("leaves a click on an offered option to the chooser", () => {
+  const open = vi.fn();
+  const option = document.createElement("div");
+  option.setAttribute("role", "option");
+
+  pickable(open)(click(1, option));
+
+  expect(open).not.toHaveBeenCalled();
+});
+
 test("goes on a double the browser spent on nothing", () => {
   selected(true);
   const go = vi.fn();
@@ -60,4 +71,28 @@ test("stays where a double click selected a word", () => {
   doubled(go)(click(2));
 
   expect(go).not.toHaveBeenCalled();
+});
+
+/** A press already spent on a take ends in a click that reaches nothing, and only that one. */
+test("swallows the click a spent press ends in, and no later one", async () => {
+  const heard = vi.fn();
+  document.body.addEventListener("click", heard);
+
+  spendPress();
+  document.body.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  expect(heard).not.toHaveBeenCalled();
+
+  await new Promise((done) => setTimeout(done));
+  document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  expect(heard).toHaveBeenCalledTimes(1);
+
+  // Let go outside the page, the press sends no release; the next press forgets it.
+  spendPress();
+  document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+  document.body.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  expect(heard).toHaveBeenCalledTimes(2);
+
+  document.body.removeEventListener("click", heard);
 });

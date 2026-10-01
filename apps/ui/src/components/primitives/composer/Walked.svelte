@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { spendPress } from "$lib/pick";
+
   /**
    * One row of a list a **line** walks, as opposed to one a pointer clicks.
    *
@@ -60,7 +62,9 @@
     : ''}"
   onmousedown={(event) => {
     event.preventDefault();
-    if (!disabled) ontake();
+    if (disabled) return;
+    spendPress();
+    ontake();
   }}
   onmouseenter={onhover}
 >

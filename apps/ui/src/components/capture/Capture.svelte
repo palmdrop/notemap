@@ -155,7 +155,8 @@
 
 <!-- The one thing at the head of the queue that is boxed. No placeholder and no
      stamp: the box is the invitation, and the capture is stamped when it is
-     sent. -->
+     sent. Lifted while its tag offer is open, which hangs over the list head
+     beneath it, and not otherwise, so the notices panel still covers it. -->
 <form
   onsubmit={(event) => {
     event.preventDefault();
@@ -163,7 +164,7 @@
   }}
   onfocusin={() => onfocus?.()}
   data-selected={selected ? "" : undefined}
-  class="mt-6 border border-ink"
+  class="mt-6 border border-ink has-[.offer]:relative has-[.offer]:z-50"
 >
   {#if chosen !== undefined}
     <div

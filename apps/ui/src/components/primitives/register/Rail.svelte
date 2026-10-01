@@ -18,7 +18,7 @@
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */
     gap?: boolean;
-    /** Under a sticky day heading, which a row brought into view has to clear. */
+    /** Under a sticky day heading or list head, which a row brought into view has to clear. */
     headed?: boolean;
     /** Absent where nothing is known yet to put in it: the rule still runs. */
     children?: Snippet;

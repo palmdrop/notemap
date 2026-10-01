@@ -177,7 +177,7 @@
     <Rail
       bind:this={rail}
       {selected}
-      headed={byDay}
+      headed={byDay || surface !== "item"}
       onpick={pick}
       onreach={reach}
     >

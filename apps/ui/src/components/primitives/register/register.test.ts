@@ -6,6 +6,7 @@ import { NO_MORE_OFFLINE } from "$lib/said";
 import Day from "./Day.svelte";
 import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
+import HeadFixture from "./Head.fixture.svelte";
 
 /**
  * The box is the selection: the rail takes the head and the left edge, the
@@ -205,4 +206,35 @@ test("a day's heading spans the screen once it reaches the top, and not before",
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);
   });
+});
+
+test("the list head covers what scrolls under it once it reaches the top", async () => {
+  laidAt(300);
+  const { container } = render(HeadFixture);
+  const head = () => container.querySelector("[data-head]")!;
+
+  await vi.waitFor(() => {
+    expect(head().hasAttribute("data-covers")).toBe(false);
+  });
+
+  laidAt(0);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(head().hasAttribute("data-covers")).toBe(true);
+  });
+});
+
+/** By day the heading in the band is the date beside the head's controls. */
+test("the list head lets a day heading in the band show through", async () => {
+  laidAt(0);
+  const { container } = render(HeadFixture, { dated: true });
+
+  await vi.waitFor(() => {
+    expect(
+      container.querySelector("[data-day]")?.hasAttribute("data-stuck"),
+    ).toBe(true);
+  });
+  expect(
+    container.querySelector("[data-head]")?.hasAttribute("data-covers"),
+  ).toBe(false);
 });

@@ -96,21 +96,38 @@
   );
 
   const matched = $derived(narrowed(entries, draft));
-  const shown = $derived(
-    draft.trim() === "" ? matched.slice(0, SHOWN) : matched,
-  );
 
-  type Row = { readonly label: string; readonly fresh?: boolean };
+  type Row = {
+    readonly label: string;
+    readonly fresh?: boolean;
+    /** The first trigger tag of an empty line's offer, ruled off from the rest. */
+    readonly apart?: boolean;
+  };
 
   /**
-   * `shown`, plus a last row for a name no offer holds — how a fresh tag is
-   * created. It is the only row, and so the one marked, exactly where nothing
-   * matched at all.
+   * While the line is empty, a handful of the most used, then every trigger
+   * tag apart beneath them; typed into, every match in the order it matched,
+   * plus a last row for a name no offer holds — how a fresh tag is created. It
+   * is the only row, and so the one marked, exactly where nothing matched at
+   * all.
    */
   const rows = $derived.by((): readonly Row[] => {
     const typed = draft.trim();
-    const base: Row[] = shown.map((entry) => ({ label: entry.label }));
-    if (typed === "") return base;
+    if (typed === "") {
+      const firing = (entry: CandidateEntry) =>
+        fires?.(entry.label) !== undefined;
+      const ordinary = matched.filter((entry) => !firing(entry));
+      const triggers = matched.filter(firing);
+      return [
+        ...ordinary.slice(0, SHOWN).map((entry) => ({ label: entry.label })),
+        ...triggers.map((entry, at) => ({
+          label: entry.label,
+          apart: at === 0 && ordinary.length > 0,
+        })),
+      ];
+    }
+
+    const base: Row[] = matched.map((entry) => ({ label: entry.label }));
 
     const known = [...entries.map((entry) => entry.label), ...names].some(
       (name) => name.toLowerCase() === typed.toLowerCase(),
@@ -371,6 +388,12 @@
       {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
         {@const on = at === index}
         {@const fired = row.fresh ? undefined : fires?.(row.label)}
+        {#if row.apart}
+          <div
+            aria-hidden="true"
+            class="-mx-2.5 my-1 border-t border-ink"
+          ></div>
+        {/if}
         <Walked
           id={on ? `${id}-tag-${index}` : undefined}
           {on}

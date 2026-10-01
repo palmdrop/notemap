@@ -23,6 +23,27 @@ keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
+const slid = vi.hoisted(() => ({
+  calls: [] as { node: Element; still: boolean | undefined }[],
+}));
+vi.mock("$lib/motion", async (actual) => {
+  const motion = await actual<typeof import("$lib/motion")>();
+  return {
+    ...motion,
+    slide: (node: Element, params?: Parameters<typeof motion.slide>[1]) => {
+      slid.calls.push({ node, still: params?.still });
+      return motion.slide(node, params);
+    },
+  };
+});
+
+/** Whether a row holding these words slid, rather than being drawn still. */
+const moved = (said: string) =>
+  slid.calls.some(
+    (call) => call.still === false && call.node.textContent?.includes(said),
+  );
+
 /** Leaving the surface needs a router, and there is none outside the app. */
 const went = vi.hoisted(() => ({ to: [] as string[] }));
 
@@ -41,6 +62,7 @@ vi.mock("$app/state", () => ({
 }));
 
 afterEach(() => {
+  slid.calls = [];
   notices.clear();
   went.to = [];
   replaced.urls = [];
@@ -174,12 +196,11 @@ test("reads the drained queue as the thing it was working toward", async () => {
 
   const { container } = render(Queue);
 
-  // One line where the rows were, and no register drawn under it.
+  // One line where the rows were, and no row drawn beside it: the register
+  // stays, empty, for the first capture to slide into.
   expect(await screen.findByText("Nothing left to process.")).toBeDefined();
   expect(screen.queryByText("zero")).toBeNull();
-  expect(
-    container.querySelector(".grid-cols-\\[var\\(--spacing-rail\\)_1fr\\]"),
-  ).toBeNull();
+  expect(container.querySelector("[data-row]")).toBeNull();
 });
 
 test("offers the edit on an unprocessed row and not on a processed one", async () => {
@@ -255,6 +276,79 @@ async function capture(said: string) {
   await fireEvent.input(written, { target: { value: said } });
   return fireEvent.click(screen.getByRole("button", { name: "capture" }));
 }
+
+/** A row comes and goes by sliding, by day or not: a read is what draws still. */
+test.each(["rail", "by day"] as const)(
+  "a captured row slides in and a released one slides out, read %s",
+  async (reading) => {
+    layout.choose(reading);
+    let queued = [anItem("one")];
+    pool((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue") return json(200, { values: queued });
+      if (route === "POST /v1/items/one/archive") {
+        queued = [];
+        return json(204, undefined);
+      }
+      if (route === "POST /v1/captures") return taken(request);
+      return json(200, { values: [] });
+    });
+
+    render(Queue);
+    await screen.findByText("one");
+    expect(moved("one")).toBe(false);
+
+    await capture("just written");
+    await screen.findByText("just written");
+    expect(moved("just written")).toBe(true);
+
+    const row = screen.getByText("one").closest<HTMLElement>("[data-row]")!;
+    await fireEvent.click(
+      within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ }),
+    );
+    await discard();
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await vi.waitFor(() => {
+      expect(screen.queryByText("one")).toBeNull();
+    });
+    expect(moved("one")).toBe(true);
+  },
+);
+
+/** A drained queue is still a list: the first row into it and the last out of it move. */
+test.each(["timeline", "index"] as const)(
+  "the first row into a drained queue slides in, and the last one out slides out, in the %s",
+  async (view) => {
+    rememberView("queue", view);
+    pool((request) =>
+      routeOf(request) === "POST /v1/captures"
+        ? taken(request)
+        : json(200, { values: [] }),
+    );
+
+    render(Queue);
+    await screen.findByText("Nothing left to process.");
+
+    await capture("into the empty queue");
+    await screen.findByText("into the empty queue");
+    expect(screen.queryByText("Nothing left to process.")).toBeNull();
+    expect(moved("into the empty queue")).toBe(true);
+
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await fireEvent.keyDown(window, { key: "j" });
+    await fireEvent.keyDown(window, { key: "D" });
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await screen.findByText("Nothing left to process.");
+    // Once in, once out.
+    expect(
+      slid.calls.filter(
+        (call) =>
+          call.still === false &&
+          call.node.textContent?.includes("into the empty queue"),
+      ),
+    ).toHaveLength(2);
+  },
+);
 
 test("says a capture is pending until the pool has taken it", async () => {
   const transport = pool((request) =>
@@ -557,6 +651,31 @@ test("tagging says nothing in the corner", async () => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
   expect(notices.shown).toHaveLength(0);
+});
+
+/** The offer's rows are the chooser's, and a click on one is not a click on the row. */
+test("a tag taken from the offer with the mouse leaves the row selected", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.input(screen.getByLabelText("Add a tag"), {
+    target: { value: "research" },
+  });
+  // Gone with the take, as it is under reduced motion or a long press, so the
+  // click the press ends in lands on the row beneath.
+  await fireEvent.mouseDown(screen.getByRole("option", { name: /research/ }));
+  const beneath = container.querySelector("[data-body]")!;
+  await fireEvent.mouseUp(beneath);
+  await fireEvent.click(beneath, { detail: 1 });
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
 });
 
 /** A processed item is seen on the feed; the corner holds the way back. */
@@ -863,6 +982,7 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const { container } = render(Queue);
   await screen.findByText("one");
 
+  await fireEvent.click(screen.getByRole("button", { name: "View" }));
   await fireEvent.click(screen.getByRole("button", { name: "index" }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
@@ -872,8 +992,8 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const gapped = [...container.querySelectorAll("[data-gap]")];
   expect(gapped).toHaveLength(1);
   expect(gapped[0]?.textContent).toContain("three");
-  expect(screen.getByRole("button", { name: "index" }).className).toContain(
-    "font-semibold",
+  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
+    "index",
   );
 
   cleanup();
@@ -881,9 +1001,25 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   render(Queue);
   await screen.findByText("one");
   expect(container.querySelector("[data-gap]")).toBeDefined();
-  expect(screen.getByRole("button", { name: "index" }).className).toContain(
-    "font-semibold",
+  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
+    "index",
   );
+});
+
+test("v turns the list to the other view, and back", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  await fireEvent.keyDown(window, { key: "v" });
+  expect(replaced.urls.at(-1)).toBe("http://localhost/?view=index");
+  expect(container.querySelector("[data-rail]")).toBeNull();
+
+  await fireEvent.keyDown(window, { key: "v" });
+  expect(replaced.urls.at(-1)).toBe("http://localhost/");
+  expect(container.querySelector("[data-rail]")).not.toBeNull();
 });
 
 /** The stamp is a button of its own, and a click on it must not reach the line as a second one. */

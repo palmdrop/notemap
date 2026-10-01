@@ -187,8 +187,11 @@ const typed = (line: HTMLElement, value: string) =>
 const pressed = (line: HTMLElement, key: string) =>
   fireEvent.keyDown(line, { key });
 
+/** A row's words as read, its template beside it after a space that does not break. */
 const options = () =>
-  screen.queryAllByRole("option").map((one) => one.textContent?.trim());
+  screen
+    .queryAllByRole("option")
+    .map((one) => one.textContent?.replace(/\s+/g, " ").trim());
 
 test("a tag typed is taken on enter, trimmed, and an empty line takes nothing", async () => {
   const { added } = tagSet();
@@ -231,6 +234,41 @@ test("offers a handful while the line is empty, and the whole narrowed list once
   await typed(screen.getByRole("combobox"), "tag-1");
   // "tag-1", "tag-10" and "tag-11" all match, and none is held back.
   expect(options()).toHaveLength(3);
+});
+
+/** A tag that files the item is not read among the others. */
+test("an empty line offers trigger tags apart beneath the rest, and typing mixes them back by match", async () => {
+  const many = Array.from({ length: 10 }, (_, at) => `tag-${String(at)}`);
+  const { container } = render(TagSet, {
+    names: [],
+    offered: ["route/research", ...many, "route/journal"],
+    fires: (name: string) =>
+      name.startsWith("route/") ? name.slice("route/".length) : undefined,
+    onadd: vi.fn(),
+    onremove: vi.fn(),
+  });
+
+  const line = await opened();
+  const rule = () =>
+    container.querySelector("[role='listbox'] > [aria-hidden='true']");
+  expect(options()).toEqual([
+    ...many.slice(0, 8),
+    "route/research · research",
+    "route/journal · journal",
+  ]);
+  expect(rule()?.nextElementSibling?.getAttribute("role")).toBe("option");
+  expect(rule()?.previousElementSibling?.textContent).toContain("tag-7");
+
+  await typed(line, "r");
+  expect(rule()).toBeNull();
+  expect(options()[0]).toBe("route/research · research");
+
+  // The walk passes the rule as though it were not there.
+  await typed(line, "");
+  for (let step = 0; step < 9; step++) await pressed(line, "ArrowDown");
+  expect(screen.getByRole("option", { selected: true }).textContent).toContain(
+    "route/research",
+  );
 });
 
 test("an offered tag is taken by pressing its row, and the line never blurs first", async () => {

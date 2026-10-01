@@ -18,14 +18,14 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
-  import ViewToggle from "$components/view/ViewToggle.svelte";
+  import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain } from "$lib/days";
+  import { byDay, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -219,22 +219,48 @@
     }),
     ...reached(),
     { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+    {
+      id: "view",
+      label: "view",
+      run: () => read(view === "timeline" ? "index" : "timeline"),
+    },
   ]);
 </script>
 
 <Head>
-  <ViewToggle {view} onchoose={read} />
-  <span class="flex items-baseline gap-5">
-    <TagFilter
-      bind:this={tagFilter}
-      surface={SURFACE}
-      filter={reading.filter}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-    <Order />
-  </span>
+  <ViewChooser {view} onchoose={read} />
+  <TagFilter
+    bind:this={tagFilter}
+    surface={SURFACE}
+    filter={reading.filter}
+    ontoggle={reading.toggle}
+    onclear={reading.clear}
+  />
+  <Order />
 </Head>
+
+{#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
+  <Day at={one.at} {motion} />
+{/snippet}
+
+{#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
+  {@const item = one.row}
+  <Row
+    {motion}
+    bind:this={drawn[item.id]}
+    {item}
+    surface="feed"
+    filter={$feed.filter}
+    selected={selected === item.id}
+    offline={!pool.yes}
+    commands={selected === item.id ? commands : []}
+    pending={undrained.has(item.id)}
+    layout={layout.drawn}
+    opens={one.opens}
+    onselect={() => select(item.id)}
+    onprocess={() => void goto(processHref(item.id))}
+  />
+{/snippet}
 
 {#if view === "index" && !bare}
   {#if refused !== undefined}
@@ -285,26 +311,10 @@
     {/if}
 
     {#each headed as one (one.key)}
-      {#if one.kind === "day"}
-        <Day at={one.at} {motion} />
-      {:else}
-        {@const item = one.row}
-        <Row
-          {motion}
-          bind:this={drawn[item.id]}
-          {item}
-          surface="feed"
-          filter={$feed.filter}
-          selected={selected === item.id}
-          offline={!pool.yes}
-          commands={selected === item.id ? commands : []}
-          pending={undrained.has(item.id)}
-          layout={layout.drawn}
-          opens={one.opens}
-          onselect={() => select(item.id)}
-          onprocess={() => void goto(processHref(item.id))}
-        />
-      {/if}
+      <!-- Not an `{#if}`: that would be the block the transitions belong to,
+           and they would play only when it turned, never as a row comes or
+           goes. A render is transparent to them. -->
+      {@render (one.kind === "day" ? heading : entry)(one as never)}
     {/each}
 
     {#if footed}
