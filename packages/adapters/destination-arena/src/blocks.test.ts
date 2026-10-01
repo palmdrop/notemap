@@ -125,8 +125,10 @@ describe("what a block could not carry", () => {
     expect(droppedBy(delivery())).toBeUndefined();
   });
 
-  it("names the tags where there were any", () => {
-    expect(droppedBy(delivery({ tags: ["kind/quote"] }))).toContain("its tags");
+  it("says where the tags went, where there were any", () => {
+    expect(droppedBy(delivery({ tags: ["kind/quote"] }))).toBe(
+      "tags are added as metadata",
+    );
   });
 });
 
