@@ -71,7 +71,7 @@ Depends on phase 3 only in that both touch `Day.svelte`.
 - [x] `ViewToggle` becomes a `Chooser` (`timeline ▾` / `index ▾`), as `OrderSelector` is
 - [x] The head lays all three controls on the right, in the order `view ▾  tags ▾  order ▾`, with the left side empty
 - [x] The head is sticky at the top, as tall as a day heading, with ground behind its controls only. Spanning the screen when stuck is the same treatment as a day heading's
-- [x] By day, a day heading sticks into the head's left, with a short vertical separator between the date and the controls, and the next day's heading still slides over the last under them
+- [x] By day, a day heading sticks into the head's left, and the next day's heading still slides over the last under the controls _(the vertical separator between date and controls was tried and dropped, 2026-10-01)_
 - [x] Below `narrow`, the heading drops the weekday
 - [x] Whatever clears a stuck heading clears the head too: a row walked to by `j`/`k`, `Day`'s stuck measure, and the panels of `tags ▾`, the order and the view drawn above day headings
 - [x] `v` toggles the view on the queue and the feed (`lib/command/bindings.ts`, published beside `filter`)

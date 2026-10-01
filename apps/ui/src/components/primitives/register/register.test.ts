@@ -222,17 +222,19 @@ test("the list head covers what scrolls under it once it reaches the top", async
   await vi.waitFor(() => {
     expect(head().hasAttribute("data-covers")).toBe(true);
   });
-  expect(head().querySelector("[aria-hidden='true']")).toBeNull();
 });
 
-/** By day the heading in the band is the date beside the head's controls, ruled off from them. */
-test("the list head lets a day heading in the band show through, ruled off from its controls", async () => {
+/** By day the heading in the band is the date beside the head's controls. */
+test("the list head lets a day heading in the band show through", async () => {
   laidAt(0);
   const { container } = render(HeadFixture, { dated: true });
-  const head = () => container.querySelector("[data-head]")!;
 
   await vi.waitFor(() => {
-    expect(head().querySelector("[aria-hidden='true']")).not.toBeNull();
+    expect(
+      container.querySelector("[data-day]")?.hasAttribute("data-stuck"),
+    ).toBe(true);
   });
-  expect(head().hasAttribute("data-covers")).toBe(false);
+  expect(
+    container.querySelector("[data-head]")?.hasAttribute("data-covers"),
+  ).toBe(false);
 });

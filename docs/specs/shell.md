@@ -845,9 +845,8 @@ each line keeping its time alone, and opens no gap: the heading already says tha
 top of the page while the rows scroll beneath it, as a day's heading does, at a day heading's
 height. Held there, it covers what scrolls under it, spanning the screen with its rule beneath, as
 a heading does and for the same reason. **By day, the two share the line**: the heading held at the
-top shows through the head's left, and the head draws nothing over it but its controls, with a
-short upright rule between the date and them; the next day's heading still slides over the last,
-under the controls. Nothing at the head moves as a heading comes and goes: the controls stand at
+top shows through the head's left, and the head draws nothing over it but its controls; the next
+day's heading still slides over the last, under the controls. Nothing at the head moves as a heading comes and goes: the controls stand at
 the right whether or not a date is beside them. A row walked to by `j`/`k` stops clear of the line,
 by day or not.
 

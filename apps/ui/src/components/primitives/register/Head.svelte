@@ -2,8 +2,6 @@
   import type { Snippet } from "svelte";
   import type { Attachment } from "svelte/attachments";
 
-  import { fade } from "$lib/motion";
-
   import { band, watch } from "./stuck.svelte";
 
   /**
@@ -29,13 +27,6 @@
   {@attach stick}
 >
   <div class="flex items-baseline gap-x-5 bg-ground pl-[1ch]">
-    {#if band.dated}
-      <span
-        aria-hidden="true"
-        class="h-[1em] self-center border-l border-ink"
-        transition:fade
-      ></span>
-    {/if}
     {@render children()}
   </div>
 </div>
