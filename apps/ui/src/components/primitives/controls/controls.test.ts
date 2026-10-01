@@ -399,7 +399,7 @@ test("a selected tag's × takes no room of its own", async () => {
 test("the + holds the place the line opens into", async () => {
   tagSet({ names: ["design"] });
   const plus = screen.getByRole("button", { name: "Add a tag" });
-  const place = plus.parentElement!;
+  const place = plus.parentElement!.parentElement!;
   expect(place.classList.contains("min-w-tag-line")).toBe(true);
 
   await fireEvent.click(plus);
@@ -531,9 +531,11 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
 
 /**
  * The browser keeps the offer under the line as the line moves, so nothing
- * here measures it: the line is named, and the offer is placed against it.
+ * here measures it: the line's place is named, and the offer is placed
+ * against it. The place outlives the line, which is gone the moment it
+ * closes while the offer is still sliding shut beneath it.
  */
-test("the offer hangs from the line it was opened from", async () => {
+test("the offer hangs from the line's place, which outlives the line", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();
   await typed(line, "re");
@@ -541,11 +543,17 @@ test("the offer hangs from the line it was opened from", async () => {
   const offer = screen.getByRole("listbox", {
     name: "Tags in use",
   }).parentElement!;
+  const place = line.parentElement!;
   const named = /anchor-name:\s*(--[\w-]+)/.exec(
-    line.getAttribute("style") ?? "",
+    place.getAttribute("style") ?? "",
   )?.[1];
 
   expect(named).toBeDefined();
   expect(offer.getAttribute("style")).toContain(`position-anchor: ${named}`);
   expect(offer.classList.contains("offer")).toBe(true);
+
+  await fireEvent.keyDown(line, { key: "Escape" });
+  expect(screen.queryByRole("combobox")).toBeNull();
+  expect(place.isConnected).toBe(true);
+  expect(place.getAttribute("style")).toContain(`anchor-name: ${named}`);
 });

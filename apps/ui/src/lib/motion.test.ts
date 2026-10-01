@@ -323,3 +323,17 @@ test("a pinned element is held at the place it stood when it started to go", () 
   expect(node.style.left).toBe("180px");
   expect(node.style.margin).toBe("0px");
 });
+
+test("a pinned element is held to the fraction of a pixel it stood at", () => {
+  const parent = document.createElement("div");
+  const node = document.createElement("div");
+  parent.append(node);
+  Object.defineProperty(node, "offsetParent", { value: parent });
+  parent.getBoundingClientRect = () => ({ top: 10, left: 20.25 }) as DOMRect;
+  node.getBoundingClientRect = () => ({ top: 34.5, left: 200.75 }) as DOMRect;
+
+  pinned(node);
+
+  expect(node.style.top).toBe("24.5px");
+  expect(node.style.left).toBe("180.5px");
+});

@@ -53,7 +53,7 @@
   /* The notices panel, hung from the status line where there is room. */
   --spacing-panel: 28rem;
   /* Each side of a carried tag: room for its `×` to slide into when selected. */
-  --spacing-tag: 0.75ch;
+  --spacing-tag: 0.6ch;
   /* The least a tag line is opened at, which the `+` holds before it opens. */
   --spacing-tag-line: 3ch;
 

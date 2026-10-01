@@ -141,7 +141,7 @@
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
-  /** Names the line for the offer to hang from, one per set on the page. */
+  /** Names the line's place for the offer to hang from, one per set on the page. */
   const anchor = `--tags-${id.replace(/[^\w-]/g, "")}`;
 
   const active = $derived(
@@ -305,43 +305,46 @@
 
 <!-- The line's place, held whether or not it is open: at least the room the
      line opens at, so the `+` wraps where the line would and opening it moves
-     nothing. Open, the line takes what is left of its row. -->
+     nothing. Open, the line takes what is left of its row. The offer hangs
+     from the place rather than the line, which is gone before the offer has
+     finished closing. -->
 <span
   class="h-(--text-shell--line-height) min-w-tag-line flex-1 self-start pl-tag"
 >
-  {#if adding}
-    <!-- svelte-ignore a11y_autofocus -->
-    <input
-      bind:value={draft}
-      autofocus
-      onblur={close}
-      {onkeydown}
-      spellcheck="false"
-      autocapitalize="off"
-      autocomplete="off"
-      aria-label={label}
-      role="combobox"
-      aria-autocomplete="list"
-      aria-expanded={rows.length > 0}
-      aria-controls="{id}-tags"
-      aria-activedescendant={active}
-      style="anchor-name: {anchor}"
-      class="h-full w-full border-b border-ink px-1 outline-none"
-      in:drawOut
-    />
-  {:else}
-    <!-- Drawn only where it can be taken: selecting a row then moves nothing
+  <span class="block h-full" style="anchor-name: {anchor}">
+    {#if adding}
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        bind:value={draft}
+        autofocus
+        onblur={close}
+        {onkeydown}
+        spellcheck="false"
+        autocapitalize="off"
+        autocomplete="off"
+        aria-label={label}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={rows.length > 0}
+        aria-controls="{id}-tags"
+        aria-activedescendant={active}
+        class="h-full w-full border-b border-ink px-1 outline-none"
+        in:drawOut
+      />
+    {:else}
+      <!-- Drawn only where it can be taken: selecting a row then moves nothing
          under it. -->
-    <button
-      type="button"
-      aria-label={addable ? label : undefined}
-      aria-hidden={!addable || undefined}
-      tabindex={addable ? undefined : -1}
-      disabled={!addable}
-      onclick={open}
-      class="hover:underline {addable ? '' : 'invisible'}">+</button
-    >
-  {/if}
+      <button
+        type="button"
+        aria-label={addable ? label : undefined}
+        aria-hidden={!addable || undefined}
+        tabindex={addable ? undefined : -1}
+        disabled={!addable}
+        onclick={open}
+        class="hover:underline {addable ? '' : 'invisible'}">+</button
+      >
+    {/if}
+  </span>
 </span>
 
 {#if adding && rows.length > 0}

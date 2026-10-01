@@ -136,8 +136,19 @@ export function pinned(
   node: HTMLElement,
   params: Moving = {},
 ): TransitionConfig {
-  const top = node.offsetTop;
-  const left = node.offsetLeft;
+  // Read off the boxes rather than `offsetTop`, which rounds to a whole pixel
+  // and would step the closing thing sideways as it starts to go.
+  const parent = node.offsetParent;
+  const at = node.getBoundingClientRect();
+  const base = parent?.getBoundingClientRect();
+  const top =
+    parent === null || base === undefined
+      ? node.offsetTop
+      : at.top - base.top - parent.clientTop + parent.scrollTop;
+  const left =
+    parent === null || base === undefined
+      ? node.offsetLeft
+      : at.left - base.left - parent.clientLeft + parent.scrollLeft;
   node.style.setProperty("position-try-fallbacks", "none");
   node.style.margin = "0";
   node.style.top = `${String(top)}px`;

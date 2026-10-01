@@ -1628,7 +1628,9 @@ end ran off the side of the screen)*. *Amended 2026-10-01*: the browser holds it
 **anchored to the line**, so it follows the line as tags taken beside it push the line along or
 onto a row of its own, rather than being measured once and left where the line used to be; and
 where it would run off the side it ends where the line does. **Going away it stays put**, pinned
-where it stood as it slides shut, whatever the line does meanwhile. Where a browser cannot anchor,
+where it stood as it slides shut, whatever the line does meanwhile — and hung from the line's
+place rather than the line itself, which is gone the moment it closes *(2026-10-01; pinned against
+a line already gone, it jumped to the corner of the tags while it closed)*. Where a browser cannot anchor,
 it hangs from the start of the tags' own row, which never moves under it.
 
 **The first match is marked as soon as the line is typed into, and stays marked as it narrows**
