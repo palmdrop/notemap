@@ -5,13 +5,15 @@
 **Shipped**:
 
 - 2026-09-30 — **The status line.** One ruled line at the foot of every surface replaces the corner
-  and the bar's glyph: the newest live notice on the left, with its `undo` or `dismiss`; on the
-  right a route a trigger tag made counting down its window with `cancel`, `N pending`, `N to clear`,
-  `N in queue` and reachability. A panel opens above it on a press or `n` with this session's
-  notices and everything in flight. A fired template is in flight rather than a notice.
-  *Amended in review, 2026-10-01*: no notice is dismissed or has to be cleared — `notices` counts
-  what went wrong until the panel is opened, a refusal is said once and let go, and the line says
-  a failure in a few words, `retrying:` or `routing failed:`.
+  and the bar's glyph: `notices` and the newest live notice on the left, with its `undo`; on the
+  right a route a trigger tag made counting down its window with `cancel`, `N pending`,
+  `N in queue` and `offline`. A panel opens above it on a press or `n` with this session's notices,
+  the captures the pool refused, and everything in flight. A fired template is in flight rather
+  than a notice. No notice is dismissed or has to be cleared — `notices` counts what went wrong
+  until the panel is opened — and the line says a failure in a few words, `retrying:` or
+  `routing failed:`. A refusal is said once and let go, except a capture, which is held until it is
+  edited back into the capture box or deleted. *(As first shipped the line offered `dismiss` and
+  counted `N to clear`; both went in review on 2026-10-01.)*
   ([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md),
   [plan](../plans/status-line.md))
 - 2026-09-30 — **A trigger tag taken during an edit waits for the save.** It is drawn in the grey
@@ -1927,7 +1929,7 @@ happened, and nothing here writes.
 
 **A tag that fired nothing says nothing**, and a tag whose template could not route is a **refusal**
 rather than a notice: nothing happened, the tag is not on the item, and a refusal is what the line
-already holds for a person to act on. It reads as what it is — that tag files somewhere, and its
+says in the accent. It reads as what it is — that tag files somewhere, and its
 template cannot — which is a thing to go and fix in settings.
 
 **Signing out leaves nothing behind.** Notices and routes in flight are emptied with the rest of
@@ -1969,12 +1971,15 @@ happens when nobody is looking at it. The shell **reads the action log on its ow
 ([client.md](client.md#the-action-log)) and says what it finds, so a failure minutes after the
 decision reaches the person who made it without anybody opening `/log`.
 
-**Four kinds are said out loud and no others**: `routed`, `delivery-failed`, `work-failed`,
-`work-abandoned` — the three the log already spends the accent on, and the landing. Everything else
-the log holds stays in the log, which is what it is for. That set and the log's accent set are the
-same set, deliberately, and are stated together so they cannot drift. *Amended 2026-09-30*:
-`template-fired` is read too, but opens a route in flight on the status line rather than saying
-anything, and the four that end a route close it ([above](#the-status-line)).
+**Five kinds are said out loud and no others**: `routed`, `delivery-cancelled`, `delivery-failed`,
+`work-failed`, `work-abandoned` — the three the log already spends the accent on, the landing, and
+a decision called off, which is said briefly so one taken back on another device is not news
+nobody hears *(the count read four from 2026-09-07, when the cancellation was added, until
+2026-10-01)*. Everything else the log holds stays in the log, which is what it is for. The three
+failures and the log's accent set are the same set, deliberately, and are stated together so they
+cannot drift. *Amended 2026-09-30*: `template-fired` is read too, but opens a route in flight on the
+status line rather than saying anything, and the kinds that end a route close it
+([above](#the-status-line)).
 
 **Nothing is said twice.** A notice is keyed by the **routing record** rather than by the log entry:
 a delivery retried four times is one thing that went wrong, and a landing this shell already
