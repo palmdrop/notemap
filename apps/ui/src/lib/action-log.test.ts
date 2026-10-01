@@ -351,6 +351,19 @@ test("every way a route ends closes its firing", () => {
   }
 });
 
+/** Still pending, so its cancel is still real. */
+test("a delivery the pool will try again leaves its firing open", () => {
+  expect(
+    firingOf(
+      anAction("delivery-failed", {
+        record: "r1",
+        failure: { code: "unreachable", detail: "the vault is not mounted" },
+      }),
+      reading,
+    ),
+  ).toBeUndefined();
+});
+
 test("an entry about no record touches no firing", () => {
   expect(firingOf(anAction("captured", {}), reading)).toBeUndefined();
   expect(

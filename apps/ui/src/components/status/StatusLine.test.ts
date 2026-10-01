@@ -420,6 +420,40 @@ test("a second long absence replaces the mark left by the first", async () => {
   ).toHaveLength(1);
 });
 
+/** How it ended may be on a page nobody read, so the pool is asked. */
+test("a catch-up too long to read out still closes the routes that ended", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "captured", {})];
+  const paged: { next?: string } = {};
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged, ...paged });
+    }
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: [{ id: "r1", state: "delivered" }] });
+    }
+    return quiet();
+  });
+
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+  firings.opened({ record: "r1", item: "one", name: "Research" });
+  firings.opened({ record: "r2", item: "two", name: "Reading" });
+
+  logged = [
+    anAction("9", "routed", { record: "r2", destination: "vault" }),
+    anAction("8", "captured", {}),
+  ];
+  paged.next = "/v1/actions?after=2026-09-03T00%3A00%3A00.000Z%2C6";
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  await vi.waitFor(() => {
+    expect(firings.open).toHaveLength(0);
+  });
+});
+
 /**
  * The window is the one thing between a mistyped tag and somebody's vault, so
  * the line says how long is left and offers the way out — and when it has

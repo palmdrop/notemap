@@ -16,7 +16,10 @@ const SAID: ReadonlySet<string> = new Set([
   "work-abandoned",
 ]);
 
-/** Everything that ends a firing: it landed, failed, was given up on, or called off. */
+/**
+ * Everything that ends a firing: it landed, failed for good, was given up on,
+ * or was called off.
+ */
 const ENDS: ReadonlySet<string> = new Set([
   "routed",
   "delivery-cancelled",
@@ -78,6 +81,11 @@ function place(
   return destination === undefined ? undefined : nameOf(destination);
 }
 
+/** A delivery the pool will attempt again is still pending, and can still be called off. */
+function retried(kind: string, detail: Record<string, unknown>): boolean {
+  return kind === "delivery-failed" && failureIn(detail).code === RETRIED;
+}
+
 /** Whether the tag filed this, rather than a person taking the template themselves. */
 function firedByTag(detail: Record<string, unknown>): boolean {
   return detail["firedByTag"] === true;
@@ -107,7 +115,9 @@ export function firingOf(
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
 
-  if (ENDS.has(action.kind)) return { closed: record };
+  if (ENDS.has(action.kind) && !retried(action.kind, detail)) {
+    return { closed: record };
+  }
   if (action.kind !== "template-fired" || action.subject === undefined) {
     return undefined;
   }
@@ -196,16 +206,16 @@ export function noticeOf(
    * with it, so the item is back in the queue.
    */
   if (action.kind === "delivery-failed") {
-    const retried = code === RETRIED;
+    const again = retried(action.kind, detail);
     return {
-      what: headline(retried ? "retrying" : "routing failed", told, at),
+      what: headline(again ? "retrying" : "routing failed", told, at),
       ...joined([
         at,
         code,
-        retried || record === undefined ? undefined : "back in the queue",
+        again || record === undefined ? undefined : "back in the queue",
       ]),
       ...where,
-      ...(retried ? {} : { alarm: true }),
+      ...(again ? {} : { alarm: true }),
       ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };

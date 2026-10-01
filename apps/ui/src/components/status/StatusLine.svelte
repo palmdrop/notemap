@@ -11,7 +11,7 @@
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { cancelRouting } from "$lib/firing";
+  import { cancelRouting, recheckFirings } from "$lib/firing";
   import { firings, type Firing } from "$lib/firings.svelte";
   import { notices } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
@@ -158,18 +158,22 @@
     }
   }
 
+  /** What an entry does to the offers and the routes in flight, said or not. */
+  function follow(action: Action): void {
+    settle(action);
+
+    const firing = firingOf(action, {
+      templateOf: heldName,
+      about: itemHref,
+    });
+    if (firing === undefined) return;
+    if ("opened" in firing) firings.opened(firing.opened);
+    else firings.closed(firing.closed);
+  }
+
   async function hear(actions: readonly Action[]) {
     for (const action of actions) {
-      settle(action);
-
-      const firing = firingOf(action, {
-        templateOf: heldName,
-        about: itemHref,
-      });
-      if (firing !== undefined) {
-        if ("opened" in firing) firings.opened(firing.opened);
-        else firings.closed(firing.closed);
-      }
+      follow(action);
 
       const raised = noticeOf(action, {
         nameOf,
@@ -190,6 +194,8 @@
 
     const held = client.actions.watch().subscribe((since) => {
       if (since.more) {
+        for (const action of since.actions) follow(action);
+        void recheckFirings();
         tooMuch(since.actions.length);
         return;
       }

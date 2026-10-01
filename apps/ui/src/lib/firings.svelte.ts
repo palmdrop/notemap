@@ -1,5 +1,3 @@
-import { SvelteSet } from "svelte/reactivity";
-
 /** A route a trigger tag made that has not resolved yet. */
 export type Firing = {
   readonly record: string;
@@ -19,7 +17,7 @@ let open = $state<Firing[]>([]);
 let now = $state(Date.now());
 let ticking: ReturnType<typeof setInterval> | undefined;
 
-const closed = new SvelteSet<string>();
+const closed = new Set<string>();
 
 function tick(): void {
   if (open.length === 0) {

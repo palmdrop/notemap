@@ -101,6 +101,27 @@ async function windowOf(
   }
 }
 
+/**
+ * Asks the pool about every route still in flight, and closes those it no
+ * longer holds pending: after a catch-up too long to read out, how they ended
+ * may be on a page nobody read.
+ */
+export async function recheckFirings(): Promise<void> {
+  await Promise.all(
+    firings.open.map(async (firing) => {
+      try {
+        const records = await client.routing.recordsFor(firing.item);
+        const pending = records.some(
+          (record) => record.id === firing.record && record.state === "pending",
+        );
+        if (!pending) firings.closed(firing.record);
+      } catch {
+        // Out of reach: what it shows is still the last thing known.
+      }
+    }),
+  );
+}
+
 async function firingOn(
   item: string,
   template: RoutingTemplate,
