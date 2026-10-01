@@ -87,9 +87,9 @@ test("lists what the pool holds, disabled ones hidden until shown", async () => 
   render(Destinations);
   await screen.findByRole("button", { name: "Vault" });
   expect(screen.queryByRole("button", { name: "Board" })).toBeNull();
-  expect(screen.getByText("1 disabled · show")).toBeDefined();
+  expect(screen.getByText("show 1 disabled")).toBeDefined();
 
-  await press("1 disabled · show");
+  await press("show 1 disabled");
   await screen.findByRole("button", { name: "Board" });
   expect(screen.getByText("disabled")).toBeDefined();
 
@@ -102,7 +102,7 @@ test("lists what the pool holds, disabled ones hidden until shown", async () => 
     `GET /v1/destinations/${VAULT}/probe`,
   ]);
 
-  await press("1 disabled · hide");
+  await press("hide 1 disabled");
   expect(screen.queryByRole("button", { name: "Board" })).toBeNull();
 });
 
@@ -582,7 +582,7 @@ test("disables one, and offers it again", async () => {
 
   // A disabled destination is hidden from the ordinary list; showing it
   // brings back the row, still open, so it can be enabled again.
-  await press("1 disabled · show");
+  await press("show 1 disabled");
   await press("enable");
 
   await screen.findByRole("button", { name: "disable" });

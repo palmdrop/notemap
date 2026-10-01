@@ -401,10 +401,10 @@
           ontake={() => take(row.label)}
         >
           {#if row.fresh}
-            new · {row.label}
+            + {row.label}
           {:else}
             <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-            >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
+            >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
           {/if}
         </Walked>
       {/each}

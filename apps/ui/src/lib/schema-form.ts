@@ -25,6 +25,8 @@ export type Field = {
    * what the setting means where it too is absent — never a value to seed.
    */
   readonly inherits: boolean;
+  /** Carries `x-notemap-path`: the field is a `/`-separated place, and a pointer back is one too. */
+  readonly path: boolean;
   /**
    * Carries `x-notemap-when`: the field is offered only while one of these
    * holds, judged against what each named field comes out as.
@@ -98,6 +100,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
         askable: meta["x-notemap-candidates"] === true,
         offeredOnly: meta["x-notemap-offered-only"] === true,
         inherits: meta["x-notemap-inherits"] === true,
+        path: meta["x-notemap-path"] === true,
         ...(when === undefined ? {} : { when }),
         ...(examples === undefined ? {} : { examples }),
       };

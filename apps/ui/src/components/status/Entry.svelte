@@ -11,6 +11,7 @@
   let {
     when,
     what,
+    subject,
     why,
     about,
     href,
@@ -22,6 +23,7 @@
     /** A time, or nothing for work still in flight. */
     when?: string;
     what: string;
+    subject?: string;
     why?: string;
     about?: string;
     href?: string;
@@ -44,7 +46,12 @@
 
   <span class="grid min-w-0 gap-0.5">
     <span class="flex items-baseline gap-2 wrap-anywhere">
-      <span>{what}</span>
+      <span>
+        {what}
+        {#if subject !== undefined}
+          <span class="font-semibold">{subject}</span>
+        {/if}
+      </span>
       {@render mark?.()}
     </span>
 

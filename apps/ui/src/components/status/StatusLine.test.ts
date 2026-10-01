@@ -11,6 +11,18 @@ import { notices } from "$lib/notices.svelte";
 import StatusLine from "./StatusLine.svelte";
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+
+/** The one element saying this, whatever spans it is drawn in. */
+const says = (text: string) =>
+  screen.getByText((_, element) => {
+    const told = (node: Element) =>
+      node.textContent?.replace(/\s+/g, " ").trim();
+    return (
+      element !== null &&
+      told(element) === text &&
+      [...element.children].every((child) => told(child) !== text)
+    );
+  });
 vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
 function firstValueOf<T>(source: {
@@ -330,7 +342,7 @@ test("counts the work this device holds, and lists it in the panel", async () =>
 
   command("notices").run();
   const flying = await screen.findByRole("list", { name: "in flight" });
-  expect(flying.textContent).toContain("tag · kind/quote");
+  expect(flying.textContent?.replace(/\s+/g, " ")).toContain("tag kind/quote");
   expect(flying.textContent).toContain("pending");
 });
 
@@ -560,7 +572,7 @@ test("a fired template counts down on the line, with its cancel", async () => {
   });
   await vi.advanceTimersByTimeAsync(0);
 
-  expect(screen.getByText("routing · Research")).toBeDefined();
+  expect(says("routing Research")).toBeDefined();
   expect(screen.getByText("15s")).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(5_000);
@@ -570,11 +582,11 @@ test("a fired template counts down on the line, with its cancel", async () => {
   expect(screen.queryByText(/^\d+s$/)).toBeNull();
   // Still in flight, and still able to be called off.
   expect(
-    screen.getByRole("button", { name: "cancel routing · Research" }),
+    screen.getByRole("button", { name: "cancel routing Research" }),
   ).toBeDefined();
 
   await fireEvent.click(
-    screen.getByRole("button", { name: "cancel routing · Research" }),
+    screen.getByRole("button", { name: "cancel routing Research" }),
   );
   await vi.waitFor(() => {
     expect(firings.open).toHaveLength(0);
@@ -607,7 +619,7 @@ test("the log opens a firing and closes it with the landing", async () => {
     ...logged,
   ];
   await vi.advanceTimersByTimeAsync(10_000);
-  await screen.findByText("routing · Research links");
+  await vi.waitFor(() => says("routing Research links"));
 
   logged = [
     anAction("3", "routed", {
@@ -622,9 +634,9 @@ test("the log opens a firing and closes it with the landing", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
 
   await vi.waitFor(() => {
-    expect(screen.queryByText("routing · Research links")).toBeNull();
+    expect(firings.open).toHaveLength(0);
   });
-  expect(notices.latest?.what).toMatch(/^routed · /);
+  expect(notices.latest?.what).toBe("routed");
 });
 
 test("more than one firing is counted, and each is cancelled in the panel", async () => {

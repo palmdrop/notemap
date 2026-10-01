@@ -158,6 +158,41 @@ describe("coalescing", () => {
   });
 });
 
+describe("what comes due next", () => {
+  it("answers the earliest job still waiting on a time, of the kinds asked about", async () => {
+    const { pool: p } = pool();
+    const one = capture({ id: "one" as ItemId });
+    const two = capture({ id: "two" as ItemId });
+    await appendCapture(p, one);
+    await appendCapture(p, two);
+
+    await enqueue(
+      p,
+      {
+        ...job({ id: "later", subject: one }),
+        notBefore: at("2026-08-03T10:00:30.000Z"),
+      },
+      {
+        ...job({ id: "sooner", subject: two }),
+        notBefore: at("2026-08-03T10:00:10.000Z"),
+      },
+    );
+
+    expect(await p.nextDue(["mirror"], NOW)).toBe("2026-08-03T10:00:10.000Z");
+    expect(await p.nextDue(["delivery"], NOW)).toBeUndefined();
+  });
+
+  /** A job already claimable is the next claim's; answering it would have a caller wait on nothing. */
+  it("leaves out what is already due", async () => {
+    const { pool: p } = pool();
+    const record = capture();
+    await appendCapture(p, record);
+    await enqueue(p, job({ id: "due", subject: record }));
+
+    expect(await p.nextDue(["mirror"], NOW)).toBeUndefined();
+  });
+});
+
 describe("claiming", () => {
   it("hands out the oldest job first", async () => {
     const { pool: p } = pool({ ids: countingIds() });

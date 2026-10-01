@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -1639,7 +1645,7 @@ test("an unreachable destination is still routable", async () => {
 
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
-  await screen.findByText("unreachable · best effort");
+  await screen.findByText("best effort");
 
   const commit = screen.getByRole("button", { name: "route" });
   expect((commit as HTMLButtonElement).disabled).toBe(false);
@@ -2148,7 +2154,8 @@ test("says in the corner where it went, and stays for a second place", async () 
 
   await stayed();
   const said = notices.shown.at(-1);
-  expect(said?.what).toBe("routed · Vault");
+  expect(said?.what).toBe("routed");
+  expect(said?.subject).toBe("Vault");
   expect(said?.why).toBe("notes/inbox/picker.md");
   expect(said?.href).toBe("/items/one");
   expect(said?.key).toBe("record:r");
@@ -2639,7 +2646,7 @@ test("keeps the field where the destination could not be asked at all", async ()
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "drafts/" } });
 
-  await screen.findByText("unreachable · best effort");
+  await screen.findByText("best effort");
   expect(screen.getByLabelText("under")).toBeDefined();
 });
 
@@ -3565,7 +3572,10 @@ test("says where the item has gone already, on one line under its stamp", async 
     }),
   );
 
-  const line = await screen.findByText(/Vault · …\/2026-09-13\.md/);
-  expect(line.className).toContain("truncate");
+  const place = await screen.findByText("…/2026-09-13.md");
+  const line = place.closest<HTMLElement>(".truncate");
+  if (line === null) throw new Error("the place is not on the routing line");
+  // The destination is told from the place by weight, not by a mark between them.
+  expect(within(line).getByText("Vault").className).toContain("font-semibold");
   expect(line.getAttribute("title")).toBe("journal/deep/2026-09-13.md");
 });

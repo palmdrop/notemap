@@ -360,6 +360,32 @@ export function jobQueue(write: Statements, ids: IdGenerator): JobQueue {
   };
 }
 
+/**
+ * When the earliest job of these kinds that is waiting on a time becomes
+ * claimable. Only what is still ahead of `now`: a job already due is the next
+ * claim's, and answering with it would have a caller wait on nothing.
+ */
+export function nextDue(
+  source: Statements,
+  kinds: readonly string[],
+  now: Timestamp,
+): Timestamp | undefined {
+  if (kinds.length === 0) return undefined;
+
+  const slots = kinds.map(() => "?").join(", ");
+  const row = source
+    .query<{ due: number | null }, Bindable[]>(
+      `SELECT MIN(next_attempt_at) AS due FROM jobs
+       WHERE kind IN (${slots})
+         AND abandoned_at IS NULL
+         AND lease_id IS NULL
+         AND next_attempt_at > ?`,
+    )
+    .get(...kinds, toMillis(now));
+
+  return row?.due == null ? undefined : toTimestamp(row.due);
+}
+
 /** Runs on the reader's connection, so it never sees what a transaction may still roll back. */
 export function abandonedWork(
   source: Statements,

@@ -125,7 +125,12 @@
 </script>
 
 {#snippet facts()}
-  {#if word !== undefined}
+  {#if word === "revision"}
+    <span class="mt-2 block w-max" title="revision">
+      <span aria-hidden="true">[+]</span>
+      <span class="sr-only">revision</span>
+    </span>
+  {:else if word !== undefined}
     <StateWord {word} />
   {/if}
 

@@ -167,7 +167,7 @@ describe("creating a block", () => {
     );
 
     expect(await textOf(outcome.output)).toBe("a thought\n");
-    expect(outcome.output?.note).toContain("its tags");
+    expect(outcome.output?.note).toBe("tags are added as metadata");
   });
 
   it("refuses a capability it does not declare", async () => {

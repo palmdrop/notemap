@@ -39,6 +39,14 @@
 
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
 
+  const PATTERNS = [
+    "{{captured_at}}",
+    "{{captured_at:month}}",
+    "{{captured_at:week}}",
+    "{{item}}",
+    "{{source}}",
+  ];
+
   const FOLDERS = [
     { name: "create", note: "make it if missing" },
     { name: "require", note: "refuse if missing" },
@@ -307,8 +315,10 @@
          out as is the pool's answer, and the pool refuses one it does not know. -->
     {#if field.name === patterned}
       <span></span>
-      <p class="col-start-2 max-narrow:col-start-1">
-        {"{{captured_at}} · {{captured_at:month}} · {{captured_at:week}} · {{item}} · {{source}}"}
+      <p class="col-start-2 flex flex-wrap gap-x-[2ch] max-narrow:col-start-1">
+        {#each PATTERNS as pattern (pattern)}
+          <span>{pattern}</span>
+        {/each}
       </p>
     {/if}
   {/each}

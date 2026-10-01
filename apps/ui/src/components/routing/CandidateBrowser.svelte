@@ -6,6 +6,7 @@
   } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { nameOf } from "$lib/destinations";
@@ -539,7 +540,7 @@
       {#if refusal !== undefined}
         <!-- Held from the last ask, and the ask that just failed said so.
              Drawn rather than dropped: the field is typed either way. -->
-        <p>{refusal} · showing what it said before</p>
+        <p><Lead lead={refusal} rest="showing what it said before" /></p>
       {/if}
       {#each shown as entry, index (entry.scope ?? String(entry.value))}
         {@const picked = moved && at === index}

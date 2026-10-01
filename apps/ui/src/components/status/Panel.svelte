@@ -100,6 +100,7 @@
           <Entry
             when={at(said.at)}
             what={said.what}
+            subject={said.subject}
             why={said.why}
             about={said.about}
             href={said.href}
@@ -140,7 +141,8 @@
         {#each firings as firing (firing.record)}
           {@const seconds = left(firing, now)}
           <Entry
-            what={`routing · ${firing.name}`}
+            what="routing"
+            subject={firing.name}
             href={firing.href}
             offer={{ label: "cancel", take: () => oncancel(firing) }}
           >
@@ -159,8 +161,9 @@
           <Entry
             when={timeOf(held.at)}
             what={said.what}
+            subject={said.subject}
             why={held.state === "unreachable"
-              ? "pending · the pool is out of reach"
+              ? "pending while the pool is out of reach"
               : "pending"}
             href={itemHref(said.item)}
           />

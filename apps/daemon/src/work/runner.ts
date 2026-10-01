@@ -37,6 +37,7 @@ export function startRunner(
 ): Runner {
   let inFlight: Promise<number> | undefined;
   let timer: NodeJS.Timeout | undefined;
+  let waking: NodeJS.Timeout | undefined;
   let stopped = false;
 
   async function runOnce(): Promise<number> {
@@ -88,18 +89,45 @@ export function startRunner(
   function next(): Promise<number> {
     inFlight ??= runOnce().finally(() => {
       inFlight = undefined;
+      void wake();
     });
     return inFlight;
   }
 
-  const tick = () => {
+  /**
+   * A job waiting on a time — a fired template's window, a short backoff — is
+   * claimed when it comes due rather than on whichever poll follows it. Only
+   * what falls before the next poll: anything later that poll will see, and
+   * look again for.
+   */
+  async function wake(): Promise<void> {
+    if (stopped) return;
+    try {
+      const due = await pool.work.nextDue(kinds);
+      if (stopped || due === undefined) return;
+
+      const wait = Date.parse(due) - Date.now();
+      if (wait >= config.pollIntervalMs) return;
+
+      clearTimeout(waking);
+      waking = setTimeout(tick, Math.max(wait, 0));
+      waking.unref?.();
+    } catch (cause) {
+      log.error(
+        { err: cause, kinds },
+        "a work runner could not ask what is due",
+      );
+    }
+  }
+
+  function tick(): void {
     if (stopped) return;
     // The timer wants a drain, not a *fresh* drain — one already running is
     // exactly what this tick would have started.
     void next().catch((cause: unknown) =>
       log.error({ err: cause, kinds }, "a work runner's pass threw"),
     );
-  };
+  }
 
   timer = setInterval(tick, config.pollIntervalMs);
   timer.unref?.();
@@ -110,6 +138,8 @@ export function startRunner(
       stopped = true;
       if (timer !== undefined) clearInterval(timer);
       timer = undefined;
+      clearTimeout(waking);
+      waking = undefined;
       await inFlight?.catch(() => undefined);
     },
   };

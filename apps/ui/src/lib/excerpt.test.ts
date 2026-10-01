@@ -39,7 +39,7 @@ test("names the capture by the stamp its row was read by and its own words", () 
   );
 
   expect(said).toContain("the picker needs a trail");
-  expect(said).toMatch(/^\d\d-\d\d \d\d:\d\d · /);
+  expect(said).toMatch(/^\d\d-\d\d \d\d:\d\d the picker/);
 });
 
 /** An image says nothing; its type is the only thing there is to say. */

@@ -4,6 +4,19 @@
 **Last updated**: 2026-10-01
 **Shipped**:
 
+- 2026-10-01 — **Fewer dots, and marks where words were.** Nothing the shell says separates its
+  parts with `·`: a bold word names a thing, plain text qualifies it, and a list in a sentence is
+  said in words — the destination bold and the place plain on a routing line, `routed **Vault**`
+  and `routing **research**` on the status line, `**14 routed** last today` in the composer,
+  `Nothing tagged a and b is waiting.` A
+  setting a capability takes per delivery — `frontmatter`, `hashtags` — is never read as part of
+  the place, and a template's opened facts give each its own line. A pointer that is a handle
+  rather than a path, an are.na block's id, gives way to the place the decision named. `pending`
+  on a row and on a record is a turning mark rather than a word, a revision is `[+]`, the log's
+  views are one multi-select `views ▾` beside the order, a link preview with nothing to show folds
+  away, a preview stands the capture's picture above what would be written, and the shell asks the
+  pool how a fired template went just after its window closes rather than on its ten-second tempo.
+
 - 2026-10-01 — **The queue's head holds, and rows move again.** The list head holds at the top
   with `timeline ▾`, `tags ▾` and the order at its right, and by day the heading held there shares
   its line, without the weekday below `narrow`; `v` turns the view. Rows, index lines and day
@@ -706,7 +719,7 @@ off by pressing them, and the stamp, which is the accessible way to select it.
 **A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
 `route/journal → journal`. The style is what says the word files the item; the namespace is not a
 decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
-typed against, with the template it fires beside it.
+typed against, with the template it fires beside it after an arrow: `route/journal → journal`.
 
 **Selected, a row is a box.** One click anywhere on either cell, or `enter`, draws a rule around
 both columns — the rail's own rule running through it — with the **actions as the box's foot**:
@@ -738,7 +751,7 @@ control that can be taken off.
 
 **Leaving an edit with changes asks first** *(2026-09-27)*. However it is left — `close` or `esc`,
 `j`/`k`, another row, the capture box, another page — an edit whose field holds something the item
-does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp · first words>`, with
+does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp> <first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
 through history, a link out of the app. `save` waits for a picture still being attached, and a
@@ -786,13 +799,16 @@ read what one just did.
 **In the feed, a routed row says where it went, and no word repeats it** *(amended 2026-09-14; it
 carried `routed`, `manual` and `retrying` as words over the line)*. The feed is the pool read
 completely, so routed and discarded items are in it. A routed row carries a routing line — `→
-Obsidian vault · …/2026-09-13.md`, `→ manual` — naming the places it went and, from the
-summary, what has not landed yet as `· 1 pending` ([core.md](core.md#routing)). **The place is cut
+**Obsidian vault** …/2026-09-13.md`, `→ **manual**` — naming the places it went and, from the
+summary, that something has not landed yet as the turning mark at its end, its count in the mark's
+label ([core.md](core.md#routing)). **The destination is bold and the place plain**
+*(2026-10-01; a `·` stood between them, and between everything else on the line)*. **The place is cut
 to its last segment** *(amended 2026-09-15)*, prefixed `…/` where more than that came before it, so
 a long path does not wrap the line into several — the full place is still in the element's own
 `title`, a hover away. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
-says: `discarded`, `revised`, `revision`. A delivery that failed is the log's and the status line's to
+says: `discarded`, `revised`, and `[+]` on a revision *(2026-10-01; the word `revision` before it,
+which read as one more tag)*, with `revision` as its label and hover. A delivery that failed is the log's and the status line's to
 say, not the feed's. Where it went is read off the records the row asks for when it is selected,
 on whichever surface it is. Tags stay editable on every row in the feed, including a discarded
 one, which also offers `unarchive` among a selected row's actions. Nothing is muted: there is no
@@ -947,7 +963,8 @@ address last said.
   leaves it.
 - **An emptied filter says so and never says the queue is drained**: `Nothing tagged kind/quote is
   waiting.` with `whole queue` beside it, and on the feed `Nothing is tagged kind/quote.` with
-  `whole feed`.
+  `whole feed`. Several tags are said as a sentence says them: `Nothing tagged a, b and c is
+  waiting.`
 - Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
   `tags ▾` panel is the one way in.
 
@@ -971,7 +988,7 @@ always visible.
 
 **The head is the capture, read-only until `edit`.** The stamp and the tags on one line with
 `edit` at the right; **under them, where the item has gone already** *(2026-09-27)* — one line,
-`→ Obsidian vault · …/2026-09-13.md, manual`, the records as a row's routing line names them, cut
+`→ **Obsidian vault** …/2026-09-13.md, **manual**`, the records as a row's routing line names them, cut
 with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
 than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
 second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure; a picture capture draws the
@@ -1000,7 +1017,7 @@ make the list change shape by what happened to the item. The three narrow togeth
 the one entry the line has narrowed to is drawn bold and `⏎` or `⇥` takes it, an ambiguous line
 taking nothing. Typing is an accelerator: the bands are the way in for a pointer and for somebody
 who does not know the names. **Taken, the destination leaves the line** and the section reads the
-name in bold with what it has been routed to before beside it — `14 routed · last today`, read off
+name in bold with what it has been routed to before beside it — **`14 routed`** `last today`, read off
 the places the pool remembers for it — and `change` at the right, which gives the bands back. So
 does backspacing past the head of an empty place line. A destination is described only once it is
 taken, describing being I/O that may hang.
@@ -1042,7 +1059,10 @@ they can press it into a second copy.
 again whenever they or the words change, once the typing has settled. It is a ruled block holding
 the first five lines of what the destination would write, `more ▾` at its foot expanding to all of
 it; while the next answer is in flight the last one stays up, and one that resolves after the
-decision moved on is dropped. A destination that offers no preview draws the block with `no preview
+decision moved on is dropped. **The capture's picture stands above what would be written** *(2026-10-01)*, as a
+delivered record's block draws it, and a preview whose words are blank draws the picture and the
+destination's note alone — an are.na block that is the picture writes no words about it. A
+destination that offers no preview draws the block with `no preview
 for this destination`; one that cannot be reached, `out of reach` — neither in the alarm, neither
 being a failure of the decision. The label is `preview`, and nothing says who writes.
 **The block is five lines tall before it holds anything** *(2026-09-25)*: the section opens when the
@@ -1171,7 +1191,7 @@ it was added to stop.
 
 **A destination that cannot be asked refuses nothing.** No tree, no drawn word — there is nothing
 to infer and nothing that needs inferring — but the line is still typed and `route` is still live,
-the record being made and the delivery deferred, which is what `unreachable · best effort` says. A
+the record being made and the delivery deferred, which is what **`unreachable`** `best effort` says. A
 kind that offers no listing at all draws the same plain line with its own word. Both are muted
 lines rather than alarms, and both are distinct from an unreachable **pool**, which is a different
 condition and one in which the surface opens with its destinations drawn unavailable
@@ -1390,11 +1410,19 @@ deliberately. The register goes on drawing one line per record, because that is 
 summary is what a row is for; what the line gains is the way into the record it summarises.
 
 **On a row, a record reads as its destination and the place it landed** *(2026-09-04)* — the
-pointer the destination handed back, or failing that the place the decision named. The capability
+pointer the destination handed back, or failing that the place the decision named. **A pointer is
+the place only where it is a path** *(2026-10-01)*: the capability marks its path field
+`x-notemap-path`, and where none is marked the pointer is a handle the destination minted — an
+are.na block's id — so the place its decision named, read as the name it stands for, says more.
+Until the capability has been described, the pointer wins, as before. **A setting is never part of
+the place**: an argument the schema marks `x-notemap-inherits` is a destination setting taken for
+one delivery, how a note is written rather than where, and `research.md, none` read as two places.
+The description is asked once a session per destination and reaches nothing past the daemon. The capability
 went with it, `create` being the adapter's vocabulary rather than a person's, and so did
 `delivered`, which is what a record not saying otherwise already means. Those are the two words the
-place needed. **A state is said only where it is not that**, muted and after the place, since a
-record the pool has recorded and not carried out claims no landing. A decision made by hand reads
+place needed. **A state is said only where it is not that**, after the place, since a record the pool has
+recorded and not carried out claims no landing — as the turning mark *(2026-10-01; the word
+`pending` before it)*. A decision made by hand reads
 as `manual` with what the person wrote about it beside it, and carries the `undo` that cancels it.
 
 **The way in is `open`** — last in the opened queue row's actions, and on every feed row, the feed
@@ -1664,7 +1692,7 @@ the line away rather than classifying the item with whatever is most used. `⇥`
 typed as far as the offer agrees, and once there is nothing left to complete walks the offer,
 moving the mark; `↑↓` and the pointer walk it too, without moving the caret out of the line, and
 the walk goes on from wherever the mark is — there is no dead press. `⏎` takes the marked row. A name no offer holds is the
-panel's **last row**, `new · <name>` — how a fresh tag is made — and it is the only row, so the one
+panel's **last row**, `+ <name>` — how a fresh tag is made — and it is the only row, so the one
 marked, exactly where nothing else matched at all. `esc` or leaving the line puts it away and takes
 nothing: a name half-typed is not a decision, and a panel row is taken without the line ever losing
 focus. The composer's row reads the client's held copy of the item, which is where a tag taken
@@ -1740,7 +1768,11 @@ of them the same colour.)*
   status line's `N pending` *(2026-09-30; the bar's `N waiting` before it, and the glyph's `◐`
   between)* answers whether anything at all is outstanding, including for rows nobody is looking
   at, lists it in the panel, and says nothing while there is nothing. A row's own `pending` mark answers whether
-  *this* row is, and sits in the metadata rail — muted, and deliberately not in the inverted idiom
+  *this* row is, and sits in the metadata rail. **It is a mark, not a word** *(2026-10-01)*: a
+  small ruled square with a filled quarter that steps round it at the asking mark's beat, labelled `pending` for a reader that cannot see it and still under
+  `prefers-reduced-motion`. Movement says something is happening where a word sat still; it is
+  one square and not three, so it is never mistaken for asking. A record the pool has not carried
+  out draws the same mark on its routing line. It is muted, and deliberately not in the inverted idiom
   `routed`, `archived` and `revised` use: those say what became of the item in the pool, this says
   what this client has not sent, and an archived row that has not drained carries both without
   either shouting over the other. Pending is the ordinary state of a mutation and it heals itself,
@@ -1832,7 +1864,7 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 
 **The right is the counts**, each drawn only while it is true, in a fixed order:
 
-- **A route in flight** — `routing · research 12s`, with `cancel` (below).
+- **A route in flight** — `routing **research** 12s`, with `cancel` (below).
 - **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
   refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
   **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
@@ -1894,6 +1926,12 @@ only the excerpt says *what* went, and by the time a notice is read the row it n
 register. Where the notice came from the log rather than from a gesture, the item is read for it,
 because the log names an id and nobody recognises a note by its id.
 
+**What happened is a word, and what it happened to is bold after it** *(2026-10-01; one string
+joined with `·` before)*: `routed **Vault**`, `tag **kind/quote**`. The two are held apart on the
+notice rather than joined into one sentence, so nothing reads one back apart to find the deed.
+Where the destination gave its own reason, the reason takes the line and the subject goes to the
+panel, as a failure's place always did.
+
 **One run of attempts at one record is one notice** *(2026-09-30)*. A delivery that failed, and the
 giving up that follows it, take one another's place, and the last word keeps the reason — it would
 otherwise be gone with the notice it replaced. A failure that takes the place of a failure is the
@@ -1905,7 +1943,7 @@ could not be reached — reads **`retrying: the vault is not mounted`**, without
 it is not over and may heal. Any other ends the route and takes the reservation with it, so it reads
 **`routing failed: taken.md is already there`** in the accent, and the panel adds where it was going,
 the code, and that the item is back in the queue. Where the destination gave no words, the line
-names the place instead: `routing failed · Vault`. The pool's own names for this — `work abandoned`,
+names the place instead, in bold: `routing failed **Vault**`. The pool's own names for this — `work abandoned`,
 `delivery failed` — are the log's, not the line's.
 
 **An `undo` is only offered while it would work** *(2026-10-01)*. Taking it from the line says what
@@ -1934,21 +1972,23 @@ clipboard. It is never resent as it was, since what refused it would refuse it a
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
-Nothing has happened yet, so the line draws it with the counts rather than as a notice: **`routing
-· research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
+Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
+**`research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
 window closes the count gives way to the asking mark — the delivery is being attempted — and
-`cancel` stays, since a pending record can be called off until it resolves. It is never drawn in the
-accent: nothing has gone wrong. **More than one is counted** — `routing 2 · 4s`, the soonest window
+`cancel` stays, since a pending record can be called off until it resolves. **The shell asks how it
+went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
+once each — rather than waiting on the watcher's ten-second tempo, since most deliveries land
+within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 · 4s`, the soonest window
 — and each is read and cancelled in the panel.
 
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
 record is still pending, so the route stays in flight with its `cancel` beside the `retrying`
 notice. After a catch-up too long to read out, the routes still in flight are asked about, since how
-they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed · research` naming the
+they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed **research**` naming the
 template, a failure naming its reason — and one decision reads as one thing from beginning to end
 rather than a route still on its way beside the news that it failed.
 
@@ -2135,7 +2175,8 @@ glossary's word for what the capture box keeps.
 **Destinations** lists what the pool holds, one line per destination: its name, its kind, and what
 it last answered — `available`, a refusal, or, where the kind cannot be probed, nothing at all, as
 before. **A disabled destination is hidden** from the ordinary list; under it, `+ add a destination`
-at the left and, where any are disabled, `N disabled · show` at the right, `hide` once shown.
+at the left and, where any are disabled, `show N disabled` at the right, `hide N disabled` once
+shown.
 Opening a row adds its facts — `ACTIONS`, `STATUS` with when it was last checked, then one fact per
 setting its kind asked for, **no id among them** — and the actions line: `check again · edit ·
 disable | delete`, `enable` on a disabled one. **The opened row is a box** *(2026-09-16, the
@@ -2174,13 +2215,17 @@ of a grid.
 **Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
 template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
 after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG ·
-DESTINATION · ACTION · PLACE · FOLDER · USED`, `used` naming the count and when it last fired. A
+DESTINATION · ACTION · PLACE`, then **one fact per setting the template takes for its deliveries**
+— `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `FOLDER ·
+USED`, `used` naming the count and when it last fired. The place leaves those settings out, on the
+line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again · edit | delete`.
 
 **Accounts** sits under Destinations *(2026-09-23)*: the logins the daemon holds on other systems,
-under a sub-head per kind. Each is one row: its name, then its fields, `secret set` or `no secret`,
-and where it came from — `stored <date>` or `config`. `edit` sits at the row's right, and `remove`
+under a sub-head per kind. Each is one row: its name, then its fields in bold, then `secret set` or `no secret`
+and where it came from — `stored <date>` or `config` — plain *(2026-10-01; `·` between each
+before)*. `edit` sits at the row's right, and `remove`
 too for a stored one. A config account a stored one replaces is drawn faded, reading `config —
 ignored, a stored one replaces it`, with no actions. `+ add an account` opens a form built from the
 kind's `accountSchema`, as the destination form is built from `settingsSchema`, with a `secret`
@@ -2198,7 +2243,7 @@ end of the sentence beside it.
 
 **Server** replaces Daemon, its facts drawn rather than a first row about *now* beside two links:
 `ADDRESS`, **`VERSION`** — the daemon's own, from `/v1/health`, which the client now carries beside
-`at` and `ms` on every mark — `STATUS available · checked <when>[, in <ms> ms]` with `check again`
+`at` and `ms` on every mark — `STATUS **available** checked <when>[, in <ms> ms]` with `check again`
 out of the probe's own turn, and `API reference ↗`. Nothing is pressed to find out whether the
 daemon answers, unchanged from 2026-09-02: the client probes on its own and every answered request
 settles the same mark. `daemon` is not said anywhere; `log` is not offered here either — the bar
@@ -2286,15 +2331,15 @@ the head: `HISTORY`, the item's first words as a link to it, and `all of the log
 while keeping the view. The order and the filter both live on the URL, so a reload and a shared
 link come back to the same reading.
 
-**The log is narrowed to a view** *(added 2026-09-13)*: `everything`, `routing`, `captures`,
-`classification`, `pool`, drawn as **tabs on the head's rule** — the one being read bold and
-boxed on three sides so it sits on the rule, the rest as links, the order control at the right of
-the same rule. Every tab keeps the box's room and a bold word's width *(2026-09-25)*, so choosing
-another moves nothing: the box fades from the one to the other over `short` and the weight eases
-with it, the first word starting on the column and its box bleeding past it. Below `narrow` the tabs scroll sideways rather than wrap. A view is a fixed set of
-the pool's own kinds and the URL carries the kinds rather than the name — `?kind=routed,template-fired`
-— so a link somebody writes by hand reads the same way as one of these, and a set that is not
-exactly a view lights none of them. The pool does the narrowing: a page holds what it shows, where
+**The log is narrowed to views** *(added 2026-09-13; a dropdown since 2026-10-01, tabs on the
+head's rule before it)*: `routing`, `captures`, `classification`, `pool`, taken and let go from
+**one `views ▾` panel** in the list head, beside the order, as the tag filter's are — `▸` before
+each taken, the count of them on the control, `everything` at the panel's foot while any is taken,
+and none taken being everything. Several may be taken, and the reading is the union of their
+kinds. A view is a fixed set of the pool's own kinds and the URL carries the kinds rather than the
+name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the same way as one
+of these; a view is drawn taken where the kinds hold it whole, and a kind a hand-written link named
+outside every view it holds is let go with the first change. The pool does the narrowing: a page holds what it shows, where
 a shell sifting the page after the read would page over rows it then threw away. What arrives at
 the head is held to the same kinds. A view composes with a subject.
 
@@ -2355,12 +2400,13 @@ image already follows, and with no referrer. It is **automatic, everywhere a not
 the rows on the queue and the feed, the item surface, and the process surface. **The picture's
 room is kept in every state** *(2026-09-25)*, a square at the block's left whether or not a picture
 comes, and a picture fades in over it once it has arrived, so the words beside it never move.
-Three states are
-ordinary, never the alarm: a block still asking draws the host alone; one whose page said nothing
-reads **`says nothing about itself`**; one that could not be reached — by the daemon, or the daemon
-by this device — reads **`out of reach`**, and is asked again the next time it is drawn; one the
-daemon would not read — an address inside a network — reads **`not read`**. **Every block is the
-same height in every state**, so nothing shifts when an answer lands. A link is asked about once per
+A block still asking draws the host alone. **A link with nothing to show folds away**
+*(2026-10-01; each said so in a block of its own before it — `says nothing about itself`, `out of
+reach`, `not read`)*: one whose page said nothing, one that could not be reached — by the daemon,
+or the daemon by this device, which is asked again the next time it is drawn — and one the daemon
+would not read, an address inside a network. The link is still in the words above it, and four
+lines saying nothing about it were four lines of nothing. **A block is the same height asking as
+answered**, so an answer that has something to show moves nothing. A link is asked about once per
 page, however many rows name it and however often they are drawn — a link the daemon would not read
 included.
 
@@ -2770,9 +2816,9 @@ view is how a reader sees more at once.
   both stay inside a 320px screen.
 - A tag a template declared is drawn with the template's name beside it wherever tags are offered,
   and a tag under `route/` that no template claims is drawn like any other.
-- Putting a trigger tag on an item leaves the status line reading `routing · <template>` with the
+- Putting a trigger tag on an item leaves the status line reading `routing <template>`, the template in bold, with the
   seconds left in its window and a working `cancel`, the asking mark once the window closes, and a
-  `routed · <template>` notice once the delivery lands, the route in flight gone with it.
+  `routed <template>` notice once the delivery lands, the route in flight gone with it.
 - A trigger tag whose template cannot route reaches the person as a refusal, and the item is left
   carrying neither the tag nor a pending record.
 - The Templates section draws from pool state at once, each row asking its own report; a template

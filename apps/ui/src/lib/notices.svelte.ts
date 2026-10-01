@@ -23,7 +23,10 @@ export type Offer = {
 
 export type Notice = {
   readonly id: string;
+  /** What happened, in a word or two: `routed`, `retrying`. */
   readonly what: string;
+  /** What it happened to — a destination, a template, a tag — drawn bold after it. */
+  readonly subject?: string;
   readonly why?: string;
   /** Which capture it was about: its stamp and its own first words. */
   readonly about?: string;

@@ -292,6 +292,12 @@ export interface ActionsApi {
    * pool answers; the first read is the mark it counts from and says nothing.
    */
   watch(): Observable<ActionsSince>;
+  /**
+   * Has the watcher read now rather than on its tempo, for a shell that knows
+   * when something is due — a fired template's window closing. Nothing where
+   * nobody is watching.
+   */
+  ask(): void;
 }
 
 /**

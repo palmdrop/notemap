@@ -20,7 +20,8 @@
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
   import { keepOutput, outputOf } from "$lib/outputs";
-  import { cancelledKey, keyFor, placeNamed } from "$lib/routing";
+  import { capabilityHeld, described } from "$lib/described.svelte";
+  import { cancelledKey, keyFor, placeIn, readingOf } from "$lib/routing";
   import {
     BY_HAND,
     NOT_YET_DELIVERED,
@@ -103,10 +104,13 @@
   );
 
   const place = $derived(
-    record.pointer ??
-      (target.kind === "destination"
-        ? placeNamed(target.arguments, called)
-        : undefined),
+    placeIn(
+      record,
+      called,
+      target.kind === "destination"
+        ? readingOf(capabilityHeld(target.destination, target.capability))
+        : undefined,
+    ),
   );
 
   const link = $derived(followable(record.url));
@@ -114,6 +118,7 @@
   $effect(() => {
     if (target.kind !== "destination") return;
     const where = target;
+    void described(where.destination);
     void resolve(
       where.destination,
       Object.keys(where.arguments).map((field) => ({
@@ -208,14 +213,9 @@
     if (target.kind !== "destination") return;
     const where = target;
     naming = true;
-    const described = await client.destinations
-      .describe(where.destination)
-      .catch(() => undefined);
-    const schema =
-      described?.kind === "described"
-        ? described.capabilities.find((one) => one.name === where.capability)
-            ?.argumentsSchema
-        : undefined;
+    const schema = (await described(where.destination))?.find(
+      (one) => one.name === where.capability,
+    )?.argumentsSchema;
     named = argumentsOf(where.arguments, schema, called);
     naming = false;
   }

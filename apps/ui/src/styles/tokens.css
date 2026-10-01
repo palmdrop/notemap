@@ -77,6 +77,8 @@
   --ease-fade: cubic-bezier(0.4, 0, 0.6, 1);
 
   --animate-step: step calc(var(--duration-step) * 3) steps(1, end) infinite;
+  /* The pending mark: a quarter going round a square, a step a beat. */
+  --animate-turn: turn calc(var(--duration-step) * 4) steps(1, end) infinite;
 
   @keyframes step {
     0% {
@@ -87,6 +89,21 @@
     }
     100% {
       background-color: transparent;
+    }
+  }
+
+  @keyframes turn {
+    0% {
+      translate: 0 0;
+    }
+    25% {
+      translate: 100% 0;
+    }
+    50% {
+      translate: 100% 100%;
+    }
+    75% {
+      translate: 0 100%;
     }
   }
 }

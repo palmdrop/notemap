@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
 
-import type { RoutingRecord } from "@notemap/client";
+import type { Capability, RoutingRecord } from "@notemap/client";
 
-import { placeShort, saidOf, wentTo } from "./routing";
+import { placeIn, placeShort, readingOf, saidOf, wentTo } from "./routing";
 
 const nameOf = (id: string) => (id === "vault" ? "Vault" : "a destination");
 
@@ -28,7 +28,8 @@ test("a delivered record says where it landed, and which capture it was", () => 
     href: "/items/one",
   });
 
-  expect(said.what).toBe("routed · Vault");
+  expect(said.what).toBe("routed");
+  expect(said.subject).toBe("Vault");
   expect(said.why).toBe("notes/inbox/picker.md");
   expect(said.about).toBe("09-03 14:32 · the picker needs a trail");
   expect(said.href).toBe("/items/one");
@@ -56,7 +57,8 @@ test("a landing with no pointer falls back to the place the decision named", () 
 test("a pending record reads as retrying, and claims no landing", () => {
   const said = saidOf(aRecord({ state: "pending" }), nameOf);
 
-  expect(said.what).toBe("retrying · Vault");
+  expect(said.what).toBe("retrying");
+  expect(said.subject).toBe("Vault");
   expect(said.what).not.toContain("routed");
   expect(said.why).toContain("not delivered yet");
   // Unkeyed, or the watcher could never say the landing this one is waiting for.
@@ -72,22 +74,23 @@ test("marking processed is routing to the person, and says so", () => {
 test("a record on a row reads as its destination and the last segment of the place", () => {
   const said = wentTo(aRecord({ pointer: "notes/inbox/picker.md" }), nameOf);
 
-  expect(said.said).toBe("Vault · …/picker.md");
+  expect(said.name).toBe("Vault");
+  expect(said.place).toBe("…/picker.md");
   // The full place is still there for whoever hovers.
   expect(said.title).toBe("notes/inbox/picker.md");
   // The capability is the adapter's word, and delivered is what a record with
   // no alarm on it already means.
-  expect(said.aside).toBeUndefined();
+  expect(said.pending).toBeUndefined();
 });
 
-test("a record the pool has not carried out says the one state worth saying", () => {
+test("a record the pool has not carried out says it is pending", () => {
   const said = wentTo(
     aRecord({ state: "pending", pointer: "notes/inbox/picker.md" }),
     nameOf,
   );
 
-  expect(said.said).toBe("Vault · …/picker.md");
-  expect(said.aside).toBe("pending");
+  expect(said.place).toBe("…/picker.md");
+  expect(said.pending).toBe(true);
 });
 
 test("a place with one segment has nothing to elide", () => {
@@ -101,13 +104,13 @@ test("a decision made by hand reads as done, with the note beside it", () => {
     nameOf,
   );
 
-  expect(said.said).toBe("manual");
-  expect(said.aside).toBe("pasted into the standup doc");
+  expect(said.name).toBe("manual");
+  expect(said.note).toBe("pasted into the standup doc");
 });
 
 test("a decision made by hand with nothing written says only done", () => {
   expect(wentTo(aRecord({ target: { kind: "user" } }), nameOf)).toEqual({
-    said: "manual",
+    name: "manual",
   });
 });
 
@@ -131,8 +134,7 @@ test("a pending record's place leaves notemap's own arguments out of it", () => 
     nameOf,
   );
 
-  expect(said.said).toBe("Vault · …/2026-09-07.md");
-  expect(said.aside).toBe("pending");
+  expect(said.place).toBe("…/2026-09-07.md");
 });
 
 /** Everything the destination itself named is drawn, whatever it called it. */
@@ -150,5 +152,71 @@ test("a place that is not a path draws every argument the destination named", ()
     nameOf,
   );
 
-  expect(said.said).toBe("Vault · reading · 2026-09-07");
+  expect(said.title).toBe("reading, 2026-09-07");
+});
+
+const PATHED = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      path: { type: "string", "x-notemap-path": true },
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        "x-notemap-inherits": true,
+      },
+    },
+  },
+} as unknown as Capability;
+
+const HANDLED = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: { channel: { type: "string" } },
+  },
+} as unknown as Capability;
+
+/**
+ * A frontmatter mode is a setting taken for one delivery: `research.md, none`
+ * reads as two places, and `none` says nothing about what it is.
+ */
+test("a setting a schema marks as inherited is never part of the place", () => {
+  const said = wentTo(
+    aRecord({
+      state: "pending",
+      target: {
+        kind: "destination",
+        destination: "vault",
+        capability: "create",
+        arguments: { path: "research/2026.md", frontmatter: "none" },
+      },
+    }),
+    nameOf,
+    undefined,
+    readingOf(PATHED),
+  );
+
+  expect(said.title).toBe("research/2026.md");
+});
+
+/** An are.na block's id is a handle; the channel it went into is the place. */
+test("a pointer that is not a path gives way to the place the decision named", () => {
+  const record = aRecord({
+    pointer: "48213077",
+    target: {
+      kind: "destination",
+      destination: "vault",
+      capability: "create",
+      arguments: { channel: "1234" },
+    },
+  });
+  const called = (field: string, value: string) =>
+    field === "channel" && value === "1234" ? "Reading" : undefined;
+
+  expect(placeIn(record, called, readingOf(HANDLED))).toBe("Reading");
+  expect(placeIn(record, called, readingOf(PATHED))).toBe("48213077");
 });

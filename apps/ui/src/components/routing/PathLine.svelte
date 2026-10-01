@@ -6,7 +6,10 @@
     type RememberedPlace,
   } from "@notemap/client";
 
+  import { untrack } from "svelte";
+
   import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { nameOf } from "$lib/destinations";
@@ -170,7 +173,9 @@
     // Drawn while they are asked for again, and only where nothing is drawn
     // yet: replacing a tree that is already up with a shorter remembered one
     // would make it flicker under the caret on every keystroke.
-    if (levels.length === 0) {
+    // Untracked: the answer below writes `levels`, and an effect depending
+    // on it would ask again for every answer it drew.
+    if (untrack(() => levels.length) === 0) {
       const kept = heldAlong(scopes);
       if (kept.length > 0) levels = kept;
     }
@@ -209,7 +214,7 @@
     } catch (error) {
       return {
         scope,
-        refusal: "unreachable · best effort",
+        refusal: "unreachable",
         why: saidBy(error),
       };
     }
@@ -253,7 +258,7 @@
     if (answer.kind === "unusable") {
       return { refusal: "unusable", why: answer.detail };
     }
-    return { refusal: "unreachable · best effort", why: answer.detail };
+    return { refusal: "unreachable", why: answer.detail };
   }
 
   $effect(() => {
@@ -396,7 +401,12 @@
   </div>
 
   {#if refusal !== undefined}
-    <p class="mt-3.5" title={why}>{refusal}</p>
+    <p class="mt-3.5" title={why}>
+      <Lead
+        lead={refusal}
+        rest={refusal === "unreachable" ? "best effort" : undefined}
+      />
+    </p>
   {:else if forecast !== undefined}
     <!-- The name a derived leaf would get is not said here: the tree draws it
          where the note lands, which is where the eye already is. -->

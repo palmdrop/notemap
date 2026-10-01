@@ -446,7 +446,7 @@ test("draws a board template's place without knowing what a place is", async () 
 
   // Every string the arguments hold, in the order the destination declared
   // them — never a field name this shell had to be told.
-  await screen.findByText("reading · {{captured_at}}");
+  await screen.findByText("reading, {{captured_at}}");
 });
 
 /**

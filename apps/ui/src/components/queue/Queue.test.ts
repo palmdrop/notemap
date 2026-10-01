@@ -363,13 +363,13 @@ test("says a capture is pending until the pool has taken it", async () => {
 
   await capture("made with the pool out of reach");
   await screen.findByText("made with the pool out of reach");
-  expect(await screen.findByText("pending")).toBeDefined();
+  expect(await screen.findByRole("img", { name: "pending" })).toBeDefined();
 
   transport.unreachable(false);
   await client.drain();
 
   await vi.waitFor(() => {
-    expect(screen.queryByText("pending")).toBeNull();
+    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
   });
   expect(screen.getByText("made with the pool out of reach")).toBeDefined();
 });
@@ -393,7 +393,7 @@ test("does not draw a refused operation as pending", async () => {
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
     expect(screen.queryByText("Nothing left to process.")).toBeNull();
-    expect(screen.queryByText("pending")).toBeNull();
+    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
   });
 });
 

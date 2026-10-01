@@ -22,6 +22,7 @@ export type Watching = {
   readonly changes: Observable<ActionsSince>;
   watched(yes: boolean): void;
   answering(yes: boolean): void;
+  ask(): void;
   stop(): void;
 };
 
@@ -141,6 +142,18 @@ export function watching(
       if (yes === reachable) return;
       reachable = yes;
       gate();
+    },
+
+    /**
+     * Now rather than on the tempo, for a shell that knows when news is due.
+     * The tempo starts again from this read. Nothing while the gates are shut,
+     * and nothing extra while a read is already out.
+     */
+    ask() {
+      if (stopped || !looking || !reachable) return;
+      clearTimeout(waiting);
+      waiting = undefined;
+      void ask();
     },
 
     stop() {

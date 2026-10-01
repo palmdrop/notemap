@@ -114,13 +114,14 @@ export function provenanceOf(
   return Object.keys(written).length === 0 ? undefined : written;
 }
 
-/** What was dropped on the way, said in the delivery's own note. */
+/**
+ * What a block could not carry as itself, said in the delivery's own note: the
+ * tags go into its metadata, where they fit, and artifacts go nowhere.
+ */
 export function droppedBy(delivery: Delivery): string | undefined {
-  const dropped: string[] = [];
-  if (delivery.tags.length > 0) dropped.push("its tags");
-  if (delivery.artifacts.length > 0) dropped.push("its artifacts");
+  const said: string[] = [];
+  if (delivery.tags.length > 0) said.push("tags are added as metadata");
+  if (delivery.artifacts.length > 0) said.push("artifacts are left out");
 
-  return dropped.length === 0
-    ? undefined
-    : `a block carries neither ${dropped.join(" nor ")}; what fitted went into the block's own metadata`;
+  return said.length === 0 ? undefined : said.join("; ");
 }

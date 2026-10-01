@@ -208,6 +208,18 @@ test("asks once per level along the path", async () => {
   expect(scopes).toHaveLength(3);
 });
 
+/** Drawing an answer is not a reason to ask again: the path is what asks. */
+test("asks nothing more once the levels are drawn and the path has not changed", async () => {
+  servingTree();
+  draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await new Promise((done) => setTimeout(done, 600));
+
+  const scopes = asked().filter((route) => route.includes("/candidates"));
+  expect(scopes).toHaveLength(3);
+});
+
 test("narrows the deepest level to what is typed, and leaves the rest whole", async () => {
   servingTree();
   draw("projects/notemap/no");
@@ -261,7 +273,7 @@ test("keeps no floor where there is no tree to hold up", async () => {
   serving(() => ({ kind: "unreachable", detail: "not mounted" }));
   draw("");
 
-  await screen.findByText("unreachable · best effort");
+  await screen.findByText("best effort");
   expect(
     screen.getByRole("listbox", { name: "places" }).className,
   ).not.toContain("min-h-[12.5rem]");
@@ -386,10 +398,12 @@ test("says a destination that cannot be asked is best effort, not a refusal", as
   draw();
 
   await settled();
-  const said = await screen.findByText("unreachable · best effort");
-  expect(said).toBeDefined();
+  const said = (await screen.findByText("best effort")).closest("p");
+  expect(said?.textContent?.replace(/\s+/g, " ").trim()).toBe(
+    "unreachable best effort",
+  );
   // The detail is kept where a hover reaches it rather than spent on a line.
-  expect(said.getAttribute("title")).toBe("the vault is not mounted");
+  expect(said?.getAttribute("title")).toBe("the vault is not mounted");
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
@@ -509,7 +523,7 @@ test("draws no word at all where the destination could not be asked", async () =
   serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
   draw("picker.md", SAID);
 
-  await screen.findByText("unreachable · best effort");
+  await screen.findByText("best effort");
   expect(screen.queryByText("create")).toBeNull();
   expect(screen.queryByText("append")).toBeNull();
 });
@@ -603,7 +617,7 @@ test("an unreachable destination leaves the line typed and the tree empty", asyn
   serving(() => ({ kind: "unreachable", detail: "the vault is not mounted" }));
   const line = draw("projects/notemap/decisions.md", SAID);
 
-  await screen.findByText("unreachable · best effort");
+  await screen.findByText("best effort");
 
   expect(line.line().value).toBe("projects/notemap/decisions.md");
   expect(

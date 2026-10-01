@@ -6,6 +6,7 @@
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
@@ -37,8 +38,11 @@
 
   const status = $derived(
     pool.yes
-      ? `available${answered === undefined ? "" : ` · checked ${answered}`}`
-      : `unavailable${said === "" ? "" : ` — ${said}`}`,
+      ? {
+          lead: "available",
+          rest: answered === undefined ? undefined : `checked ${answered}`,
+        }
+      : { lead: "unavailable", rest: said === "" ? undefined : said },
   );
 
   async function knock() {
@@ -58,8 +62,10 @@
   let sourcesFailed = $state("");
   let showSources = $state(false);
 
-  const sourceSince = (source: SourceUse) =>
-    `${String(source.items)} captured · last ${since(source.lastCapturedAt, now)}`;
+  const sourceSince = (source: SourceUse) => ({
+    lead: `${String(source.items)} captured`,
+    rest: `last ${since(source.lastCapturedAt, now)}`,
+  });
 
   async function readSources() {
     sourcesFailed = "";
@@ -88,7 +94,7 @@
     {#if asking}
       <Asking />
     {:else}
-      {status}
+      <Lead {...status} />
     {/if}
     <Action disabled={asking} onclick={() => void knock()}>check again</Action>
   </Fact>
@@ -109,7 +115,7 @@
     {#if showSources}
       <div transition:slide={{ magnitude: "short" }}>
         {#each sources as source (source.id)}
-          <Fact name={source.id}>{sourceSince(source)}</Fact>
+          <Fact name={source.id}><Lead {...sourceSince(source)} /></Fact>
         {/each}
 
         {#if sourcesFailed !== ""}

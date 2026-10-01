@@ -6,11 +6,20 @@
   } from "@notemap/client";
 
   import { recordHref } from "$components/item/href";
+  import Turning from "$components/primitives/marks/Turning.svelte";
   import { client } from "$lib/client";
+  import { capabilityHeld, described } from "$lib/described.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
-  import { cancelledKey, keyFor, whereItWent, wentTo } from "$lib/routing";
+  import {
+    cancelledKey,
+    keyFor,
+    readingOf,
+    wentTo,
+    wentWhere,
+    type Went,
+  } from "$lib/routing";
 
   /** The records say more than the summary, and only a surface that read them has them. */
   let {
@@ -46,6 +55,7 @@
     for (const record of records) {
       if (record.target.kind !== "destination") continue;
       const target = record.target;
+      void described(target.destination);
       void resolve(
         target.destination,
         Object.keys(target.arguments).map((field) => ({
@@ -57,37 +67,55 @@
     }
   });
 
+  type Line = Went & {
+    readonly href?: string;
+    readonly taken?: RoutingRecord;
+  };
+
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
-  const lines = $derived(
-    records.length > 0
-      ? records.map((record) => ({
-          ...wentTo(record, nameOf, (field, value) =>
-            record.target.kind === "destination"
-              ? nameFor({
-                  destination: record.target.destination,
-                  capability: record.target.capability,
-                  field,
-                  value,
-                })
-              : undefined,
+  const lines = $derived.by((): readonly Line[] => {
+    if (records.length > 0) {
+      return records.map((record) => {
+        const target = record.target;
+        const reading =
+          target.kind === "destination"
+            ? readingOf(capabilityHeld(target.destination, target.capability))
+            : undefined;
+
+        return {
+          ...wentTo(
+            record,
+            nameOf,
+            (field, value) =>
+              target.kind === "destination"
+                ? nameFor({
+                    destination: target.destination,
+                    capability: target.capability,
+                    field,
+                    value,
+                  })
+                : undefined,
+            reading,
           ),
           href: recordHref(record.item, record.id),
           // Only a decision the person made by hand is theirs to take back:
           // a delivery is the pool's, and cancelling one it has carried out
           // would be undoing something that has already happened elsewhere.
-          taken: record.target.kind === "user" ? record : undefined,
-        }))
-      : summary === undefined
-        ? []
-        : [
-            {
-              said: whereItWent(summary, nameOf),
-              aside: undefined,
-              title: undefined,
-              href: undefined,
-              taken: undefined,
-            },
-          ],
+          ...(target.kind === "user" ? { taken: record } : {}),
+        };
+      });
+    }
+
+    return summary === undefined
+      ? []
+      : wentWhere(summary, nameOf).map((name) => ({ name }));
+  });
+
+  const summarized = $derived(records.length === 0 && summary !== undefined);
+
+  /** A summary counts what has not landed without saying which, so its mark ends the line. */
+  const waiting = $derived(
+    summarized && summary !== undefined ? summary.pending : 0,
   );
 
   async function undo(record: RoutingRecord) {
@@ -104,34 +132,47 @@
   }
 </script>
 
+{#snippet went(line: Line)}<span class="font-semibold">{line.name}</span
+  >{#if line.place !== undefined}<span class="ml-[1ch]" title={line.title}
+      >{line.place}</span
+    >{/if}{#if line.note !== undefined}<span class="ml-[1ch]">{line.note}</span
+    >{/if}{#if line.pending === true}<span class="ml-[1ch]"
+      ><Turning said="pending" /></span
+    >{/if}{/snippet}
+
+{#snippet waits()}
+  {#if waiting > 0}
+    <Turning said={`${String(waiting)} pending`} />
+  {/if}
+{/snippet}
+
+{#snippet joined()}
+  <span aria-hidden="true">→</span>
+  {#each lines as line, at (at)}{@render went(line)}{at < lines.length - 1
+      ? ", "
+      : ""}{/each}
+  {@render waits()}
+{/snippet}
+
 {#if short}
   {#if lines.length > 0}
-    {@const all = lines.map((line) =>
-      line.aside === undefined ? line.said : `${line.said} · ${line.aside}`,
-    )}
     <div
       class="truncate"
-      title={lines.map((line) => line.title ?? line.said).join(", ")}
+      title={lines.map((line) => line.title ?? line.name).join(", ")}
     >
-      <span aria-hidden="true">→</span>
-      {all.join(", ")}
+      {@render joined()}
     </div>
   {/if}
+{:else if summarized}
+  <!-- A summary names where without what, so it is one line, as a short one is. -->
+  <div class="mt-2 break-words">{@render joined()}</div>
 {:else if lines.length > 0 || said !== ""}
   <div class="mt-2">
-    {#each lines as line (line.href ?? line.said)}
+    {#each lines as line (line.href)}
       <div class="flex flex-wrap items-baseline gap-x-4">
         <span class="min-w-0 break-words">
           <span aria-hidden="true">→</span>
-          {#if line.href === undefined}
-            <span title={line.title}>{line.said}</span>
-          {:else}
-            <a href={line.href} title={line.title}>{line.said}</a>
-          {/if}
-          <!-- What the person wrote about it, or the one state worth saying. -->
-          {#if line.aside !== undefined}
-            <span>· {line.aside}</span>
-          {/if}
+          <a href={line.href}>{@render went(line)}</a>
         </span>
 
         {#if line.taken !== undefined}

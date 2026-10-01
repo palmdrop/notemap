@@ -30,6 +30,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import Routing from "$components/item/Routing.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
@@ -50,7 +51,7 @@
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { placeNamed, saidOf } from "$lib/routing";
+  import { placeNamed, readingOf, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
     effectiveOf,
@@ -184,11 +185,11 @@
     $destinations.find((one) => one.id === chosen)?.settings ?? {},
   );
 
-  const declared = $derived(
-    fieldsOf(
-      capabilities.find((one) => one.name === capability)?.argumentsSchema,
-    ),
+  const chosenCapability = $derived(
+    capabilities.find((one) => one.name === capability),
   );
+  const declared = $derived(fieldsOf(chosenCapability?.argumentsSchema));
+  const reading = $derived(readingOf(chosenCapability));
 
   /**
    * Only the fields that mean something given the others: a switch about the
@@ -302,7 +303,7 @@
 
     const path = lined
       ? placeFor(args[LINE_FIELD] ?? "")
-      : placeNamed(valuesFrom(fields, args));
+      : placeNamed(valuesFrom(fields, args), undefined, reading?.settings);
 
     return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
   });
@@ -311,7 +312,8 @@
   const settled = $derived(
     lined
       ? (args[LINE_FIELD] ?? "")
-      : (placeNamed(valuesFrom(fields, args)) ?? ""),
+      : (placeNamed(valuesFrom(fields, args), undefined, reading?.settings) ??
+          ""),
   );
 
   function placeFor(value: string): string {
@@ -459,9 +461,10 @@
       .map((place) => place.lastAt)
       .sort()
       .at(-1);
-    return last === undefined
-      ? `${routed} routed`
-      : `${routed} routed · last ${whenOf(last, now)}`;
+    return {
+      lead: `${routed} routed`,
+      rest: last === undefined ? undefined : `last ${whenOf(last, now)}`,
+    };
   });
 
   /**
@@ -757,6 +760,7 @@
         saidOf(record, nameOf, {
           about: aboutItem(item),
           href: itemHref(item.id),
+          ...(reading === undefined ? {} : { reading }),
         }),
       );
       // The surface stays, cleared: an item may go to more than one place,
@@ -1045,7 +1049,7 @@
               {applied?.name ?? nameOf(chosen)}
             </span>
             {#if usedBefore !== undefined}
-              <span>{usedBefore}</span>
+              <span><Lead {...usedBefore} /></span>
             {/if}
           </span>
           <button type="button" onclick={release} class="hover:underline">
@@ -1138,6 +1142,7 @@
         <Preview
           {shown}
           place={previewPlace}
+          images={pictures}
           asking={pending}
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />

@@ -40,7 +40,9 @@
   {@const firing = open[0]!}
   {@const seconds = left(firing, now)}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
-    <span class="max-narrow:hidden">routing · {firing.name}</span>
+    <span class="max-narrow:hidden"
+      >routing <span class="font-semibold">{firing.name}</span></span
+    >
     <span class="narrow:hidden">routing</span>
     {#if seconds !== undefined}
       <span class="tabular-nums">{seconds}s</span>
@@ -50,7 +52,7 @@
     <button
       type="button"
       class="underline"
-      aria-label={`cancel routing · ${firing.name}`}
+      aria-label={`cancel routing ${firing.name}`}
       onclick={() => oncancel(firing)}
     >
       cancel

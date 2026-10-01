@@ -1,6 +1,9 @@
+import { untrack } from "svelte";
+
 import type { Capability } from "@notemap/client";
 
 import { client } from "./client";
+import { described } from "./described.svelte";
 import { learn, nameFor, type Named } from "./names.svelte";
 import { fieldsOf } from "./schema-form";
 
@@ -35,20 +38,19 @@ export async function resolve(
   destination: string,
   wanted: readonly Omit<Named, "destination">[],
 ): Promise<void> {
-  const missing = wanted.filter(
-    (each) => nameFor({ ...each, destination }) === undefined,
+  // Untracked: a surface resolving from an effect would otherwise ask again
+  // for every name learned anywhere, and a value nothing names is asked about
+  // forever.
+  const missing = untrack(() =>
+    wanted.filter((each) => nameFor({ ...each, destination }) === undefined),
   );
   if (missing.length === 0) return;
 
-  const described = await client.destinations
-    .describe(destination)
-    .catch(() => undefined);
-  if (described?.kind !== "described") return;
+  const capabilities = await described(destination);
+  if (capabilities === undefined) return;
 
   const asking = missing.filter((each) => {
-    const capability = described.capabilities.find(
-      (one) => one.name === each.capability,
-    );
+    const capability = capabilities.find((one) => one.name === each.capability);
     return (
       capability !== undefined && nameable(capability).includes(each.field)
     );

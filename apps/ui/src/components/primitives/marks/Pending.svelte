@@ -2,6 +2,7 @@
   import { onMount, untrack } from "svelte";
 
   import { SHOWN_AFTER } from "./Asking.svelte";
+  import Turning from "./Turning.svelte";
 
   /**
    * Drawn only once the work has been waiting as long as the asking mark
@@ -23,5 +24,7 @@
 </script>
 
 {#if due}
-  <span class="w-max {inline ? 'inline-block' : 'mt-2 block'}">pending</span>
+  <span class={inline ? "inline-block" : "mt-2 block"}>
+    <Turning said="pending" />
+  </span>
 {/if}

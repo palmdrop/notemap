@@ -31,7 +31,8 @@ test("a landing says where it went", () => {
     reading,
   );
 
-  expect(said?.what).toBe("routed · Vault");
+  expect(said?.what).toBe("routed");
+  expect(said?.subject).toBe("Vault");
   expect(said?.why).toBe("notes/daily.md");
   expect(said?.alarm).toBeUndefined();
 });
@@ -56,7 +57,7 @@ test("a delivery the pool will try again says it is retrying, without the accent
   );
 
   expect(said?.what).toBe("retrying: the vault is not mounted");
-  expect(said?.why).toBe("Vault · unreachable");
+  expect(said?.why).toBe("Vault, unreachable");
   expect(said?.alarm).toBeUndefined();
   // One thing went wrong, however many attempts the pool wrote for it.
   expect(said?.key).toBe("failed:r1");
@@ -78,7 +79,7 @@ test("a delivery refused says why on the line, and the rest in the panel", () =>
   );
 
   expect(said?.what).toBe("routing failed: taken.md is already there");
-  expect(said?.why).toBe("Vault · rejected-by-destination · back in the queue");
+  expect(said?.why).toBe("Vault, rejected-by-destination, back in the queue");
   expect(said?.alarm).toBe(true);
 });
 
@@ -92,7 +93,8 @@ test("a failure the destination gave no words for names where it was going", () 
     reading,
   );
 
-  expect(said?.what).toBe("routing failed · Vault");
+  expect(said?.what).toBe("routing failed");
+  expect(said?.subject).toBe("Vault");
 });
 
 /**
@@ -121,7 +123,7 @@ test("a delivery given up on keeps its reason and takes the failure's place", ()
   );
 
   expect(abandoned?.what).toBe("routing failed: still not mounted");
-  expect(abandoned?.why).toBe("Vault · unreachable · back in the queue");
+  expect(abandoned?.why).toBe("Vault, unreachable, back in the queue");
   expect(abandoned?.alarm).toBe(true);
   expect(abandoned?.only).toBe(failed?.only);
   expect(abandoned?.only).toBe("delivery:r1");
@@ -140,8 +142,9 @@ test("a fired delivery given up on names the template the tag applied", () => {
     { ...reading, templateOf: () => "Research links" },
   );
 
-  expect(said?.what).toBe("routing failed · Research links");
-  expect(said?.why).toBe("Research links · rejected · back in the queue");
+  expect(said?.what).toBe("routing failed");
+  expect(said?.subject).toBe("Research links");
+  expect(said?.why).toBe("Research links, rejected, back in the queue");
 });
 
 test("work given up on that was about no record says what work and why", () => {
@@ -173,7 +176,8 @@ test("a landing from a tag names the template the tag applied", () => {
     templateOf: () => "Research links",
   });
 
-  expect(said?.what).toBe("routed · Research links");
+  expect(said?.what).toBe("routed");
+  expect(said?.subject).toBe("Research links");
   expect(said?.alarm).toBeUndefined();
 });
 
@@ -282,7 +286,8 @@ test("a landing from a tag names the template rather than the destination", () =
     withTemplates,
   );
 
-  expect(landed?.what).toBe("routed · Research");
+  expect(landed?.what).toBe("routed");
+  expect(landed?.subject).toBe("Research");
   // Nothing is left to call off, so it lingers like any confirmation.
   expect(landed?.alarm).toBeUndefined();
   expect(landed?.offer).toBeUndefined();
@@ -299,7 +304,8 @@ test("a template a person took themselves lands as an ordinary route", () => {
     withTemplates,
   );
 
-  expect(said?.what).toBe("routed · Vault");
+  expect(said?.what).toBe("routed");
+  expect(said?.subject).toBe("Vault");
   expect(said?.alarm).toBeUndefined();
   expect(said?.only).toBeUndefined();
 });
@@ -383,5 +389,6 @@ test("a landing from a template this shell does not hold names the destination",
     { ...reading, templateOf: () => undefined },
   );
 
-  expect(said?.what).toBe("routed · Vault");
+  expect(said?.what).toBe("routed");
+  expect(said?.subject).toBe("Vault");
 });
