@@ -76,7 +76,21 @@ there. Stacked on `agent/abandoned-notice-keeps-its-reason` (#87).
 
 - [x] Typecheck, lint, `pnpm -r --silent test`, and `pnpm test:stack` (a new route and a client
       read).
-- [ ] PR against the fix branch.
+- [x] PR against the fix branch (#88).
+
+### Phase 7 — review and design notes
+
+Added once the PR was open, from the developer's design notes and
+[the review](../reviews/status-line-2026-10-01.md).
+
+- [x] The tag offer is anchored to its line, follows it onto a new row, and stays put as it closes.
+- [x] A route the pool will retry stays in flight; a long absence still closes the routes that
+      ended.
+- [x] A failure restated by the pool is read back and counted once.
+- [x] The open panel sees what arrives; a signed-out line has no panel to open.
+- [x] The counts are read once when the pool comes into reach.
+- [x] A refused capture is held until it is edited back into the capture box or deleted.
+- [x] Selecting a tag, and opening its line, move nothing beside it.
 
 ---
 

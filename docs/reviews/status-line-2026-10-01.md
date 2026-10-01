@@ -1,7 +1,7 @@
 # Review: Status line
 
 **Date**: 2026-10-01
-**Status**: Open
+**Status**: Resolved
 **Scope**: `agent/status-line` against `agent/abandoned-notice-keeps-its-reason` (04b17603), PR #88
 **Plan**: `docs/plans/status-line.md`
 **Spec**: `docs/specs/shell.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`
@@ -153,3 +153,29 @@ task in the plan.
   keyed `refused:<id>` so it is raised once, and a second `dismiss` of a dropped id is harmless.
 - **The counts read awaited inside the drain** — deliberate and in client.md: an answer is proof of
   reach, and a return it causes rides this drain.
+
+---
+
+## Resolution
+
+1. **Fixed.** A `delivery-failed` the pool will retry no longer closes its firing. shell.md's
+   "Everything that ends it" now says so.
+2. **Fixed.** When an alarm takes the place of a live alarm under the same `only`, it replaces that
+   alarm in the history and is not counted again. A `retrying` turning into `routing failed` still
+   keeps both.
+3. **Fixed.** An overflowing catch-up applies its page to the routes in flight, then asks
+   `recordsFor` about each route still open.
+4. **Fixed, with the developer's choice.** A refused capture stays in the outbox and in the
+   panel's `refused` section, and counts on `notices` until somebody decides: `copy`, `edit` (put
+   back into the capture box, then let go) or `delete` (asked first). Other refusals are let go as
+   before. ADR 54, shell.md and CONTEXT.md are amended.
+5. **Fixed.** Dropped the padding rather than adding `viewport-fit=cover`.
+6. **Fixed.** While the panel is open, anything counted is seen at once.
+7. **Fixed.** Signed out, `notices` is not published, the toggle does nothing, and an open panel
+   closes.
+8. **Won't fix.** `svelte/prefer-svelte-reactivity` requires a `SvelteSet` in a rune module.
+9. **Fixed in part.** The client no longer reads on a return, since the shell's read on reach
+   covers it. The drain's read and the later log read are seconds apart, and other devices may
+   change the count in between, so they are not duplicates.
+10. **Fixed.** Five kinds, the stale refusal sentence, and the Shipped entry rewritten as shipped.
+11. **Fixed.** The PR is ticked, and Phase 7 records the work added after it.
