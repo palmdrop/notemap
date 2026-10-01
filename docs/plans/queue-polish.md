@@ -1,9 +1,9 @@
 # Queue polish: the held row, the offer, motion and a sticky head
 
 **Date**: 2026-10-01
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-01
 
 ---
 
@@ -68,7 +68,7 @@ Verify: capture into the queue and the row slides in. Discard a row and `j`, and
 
 Depends on phase 3 only in that both touch `Day.svelte`.
 
-- [x] `ViewToggle` becomes a `Chooser` (`timeline ▾` / `index ▾`), as `OrderSelector` is
+- [x] `ViewToggle` becomes a `Chooser`, renamed `ViewChooser` (`timeline ▾` / `index ▾`), as `OrderSelector` is
 - [x] The head lays all three controls on the right, in the order `view ▾  tags ▾  order ▾`, with the left side empty
 - [x] The head is sticky at the top, as tall as a day heading, with ground behind its controls only. Spanning the screen when stuck is the same treatment as a day heading's
 - [x] By day, a day heading sticks into the head's left, and the next day's heading still slides over the last under the controls _(the vertical separator between date and controls was tried and dropped, 2026-10-01)_
@@ -79,7 +79,18 @@ Depends on phase 3 only in that both touch `Day.svelte`.
 - [x] Tests: the view chooser and `v` change the view and the URL. Existing `Queue`/`Feed` tests are updated for the chooser
 - [x] Commit _(2026-10-01)_
 
-Verify (not yet done in a browser; the tests cover what jsdom can lay out): at 375px and at desktop width, scroll a long queue by day and in rail mode. The head stays put and the dates pass under it. `j` down the list never hides the selected row under the head. Each panel opens over the rows.
+Verify (checked in a browser by the developer, 2026-10-01): at 375px and at desktop width, scroll a long queue by day and in rail mode. The head stays put and the dates pass under it. `j` down the list never hides the selected row under the head. Each panel opens over the rows.
+
+### Phase 5: review fixes
+
+Findings in `docs/reviews/queue-polish-2026-10-01.md`.
+
+- [x] The queue keeps its list drawn while drained and draws `Drained` after it, so the first row in and the last row out move _(2026-10-01)_
+- [x] A row taken on `mousedown` spends the press: the `click` it ends in is swallowed, so a take no longer depends on the offer's outro to keep the row selected _(2026-10-01)_
+- [x] Feed tests for the slide (timeline and index), the view chooser and `v` _(2026-10-01)_
+- [x] The list head stacks above the panels a row opens; the capture box lifts above it only while its own offer is open _(2026-10-01)_
+- [x] `ViewToggle` renamed `ViewChooser`; the spec's "view toggle", its ragged wraps and the Draining paragraph brought in line _(2026-10-01)_
+- [x] Commit _(2026-10-01)_
 
 ---
 

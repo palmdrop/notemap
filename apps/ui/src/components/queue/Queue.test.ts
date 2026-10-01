@@ -196,12 +196,11 @@ test("reads the drained queue as the thing it was working toward", async () => {
 
   const { container } = render(Queue);
 
-  // One line where the rows were, and no register drawn under it.
+  // One line where the rows were, and no row drawn beside it: the register
+  // stays, empty, for the first capture to slide into.
   expect(await screen.findByText("Nothing left to process.")).toBeDefined();
   expect(screen.queryByText("zero")).toBeNull();
-  expect(
-    container.querySelector(".grid-cols-\\[var\\(--spacing-rail\\)_1fr\\]"),
-  ).toBeNull();
+  expect(container.querySelector("[data-row]")).toBeNull();
 });
 
 test("offers the edit on an unprocessed row and not on a processed one", async () => {
@@ -313,6 +312,41 @@ test.each(["rail", "by day"] as const)(
       expect(screen.queryByText("one")).toBeNull();
     });
     expect(moved("one")).toBe(true);
+  },
+);
+
+/** A drained queue is still a list: the first row into it and the last out of it move. */
+test.each(["timeline", "index"] as const)(
+  "the first row into a drained queue slides in, and the last one out slides out, in the %s",
+  async (view) => {
+    rememberView("queue", view);
+    pool((request) =>
+      routeOf(request) === "POST /v1/captures"
+        ? taken(request)
+        : json(200, { values: [] }),
+    );
+
+    render(Queue);
+    await screen.findByText("Nothing left to process.");
+
+    await capture("into the empty queue");
+    await screen.findByText("into the empty queue");
+    expect(screen.queryByText("Nothing left to process.")).toBeNull();
+    expect(moved("into the empty queue")).toBe(true);
+
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await fireEvent.keyDown(window, { key: "j" });
+    await fireEvent.keyDown(window, { key: "D" });
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await screen.findByText("Nothing left to process.");
+    // Once in, once out.
+    expect(
+      slid.calls.filter(
+        (call) =>
+          call.still === false &&
+          call.node.textContent?.includes("into the empty queue"),
+      ),
+    ).toHaveLength(2);
   },
 );
 
@@ -631,11 +665,12 @@ test("a tag taken from the offer with the mouse leaves the row selected", async 
   await fireEvent.input(screen.getByLabelText("Add a tag"), {
     target: { value: "research" },
   });
-  // A browser keeps the offer under the pointer while it slides shut, so the
-  // click lands on it; under test it is gone with the take, and is clicked first.
-  const offered = screen.getByRole("option", { name: /research/ });
-  await fireEvent.click(offered);
-  await fireEvent.mouseDown(offered);
+  // Gone with the take, as it is under reduced motion or a long press, so the
+  // click the press ends in lands on the row beneath.
+  await fireEvent.mouseDown(screen.getByRole("option", { name: /research/ }));
+  const beneath = container.querySelector("[data-body]")!;
+  await fireEvent.mouseUp(beneath);
+  await fireEvent.click(beneath, { detail: 1 });
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");

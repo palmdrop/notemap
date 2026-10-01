@@ -7,12 +7,28 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import { keyboard, online, viewport } from "$testing/dom";
 import { remember } from "$lib/order";
+import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
 
 keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
+
+/** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
+const slid = vi.hoisted(() => ({
+  calls: [] as { node: Element; still: boolean | undefined }[],
+}));
+vi.mock("$lib/motion", async (actual) => {
+  const motion = await actual<typeof import("$lib/motion")>();
+  return {
+    ...motion,
+    slide: (node: Element, params?: Parameters<typeof motion.slide>[1]) => {
+      slid.calls.push({ node, still: params?.still });
+      return motion.slide(node, params);
+    },
+  };
+});
 
 /** Leaving the surface needs a router, and there is none outside the app. */
 const went = vi.hoisted(() => ({ to: [] as string[] }));
@@ -39,6 +55,7 @@ function stamps(expanded: boolean) {
 }
 
 afterEach(() => {
+  slid.calls = [];
   went.to = [];
   localStorage.clear();
 });
@@ -57,6 +74,46 @@ test("draws what the pool holds", async () => {
 
   expect(await screen.findByText("one")).toBeDefined();
   expect(await screen.findByText("two")).toBeDefined();
+});
+
+/** A row the feed gains while it is read slides in; what the pool's read brought draws still. */
+test.each(["timeline", "index"] as const)(
+  "a row captured meanwhile slides in, in the %s",
+  async (view) => {
+    rememberView("feed", view);
+    pool(held(anItem("one")));
+
+    render(Feed);
+    await screen.findByText("one");
+    expect(slid.calls.some((call) => call.still === false)).toBe(false);
+
+    await client.capture({ channel: "web-manual", text: "written meanwhile" });
+    await screen.findByText("written meanwhile");
+    expect(
+      slid.calls.some(
+        (call) =>
+          call.still === false &&
+          call.node.textContent?.includes("written meanwhile"),
+      ),
+    ).toBe(true);
+  },
+);
+
+test("the view is chosen in the head, and v turns it", async () => {
+  pool(held(anItem("one")));
+
+  const { container } = render(Feed);
+  await screen.findByText("one");
+  expect(container.querySelector("[data-rail]")).not.toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "View" }));
+  await fireEvent.click(screen.getByRole("button", { name: "index" }));
+  expect(container.querySelector("[data-rail]")).toBeNull();
+  expect(localStorage.getItem("notemap:view:feed")).toBe("index");
+
+  await fireEvent.keyDown(window, { key: "v" });
+  expect(container.querySelector("[data-rail]")).not.toBeNull();
+  expect(localStorage.getItem("notemap:view:feed")).toBe("timeline");
 });
 
 test("says an archived row is discarded, and offers the way back", async () => {

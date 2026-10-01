@@ -37,3 +37,28 @@ export function doubled(ondouble: () => void) {
     ondouble();
   };
 }
+
+/**
+ * A row taken on `mousedown` has spent the press. The `click` it ends in is
+ * sent wherever the pointer is let go — the row beneath, once the one taken
+ * has gone — and reaches nothing. A press let go outside the page sends no
+ * `mouseup`, so the next press, not a later click, is what forgets it.
+ */
+export function spendPress(): void {
+  const swallow = (event: MouseEvent) => {
+    event.stopPropagation();
+  };
+  const released = () => {
+    window.removeEventListener("mousedown", forget, true);
+    window.addEventListener("click", swallow, { capture: true, once: true });
+    // The click is sent in the same task as the release, or not at all.
+    setTimeout(() => {
+      window.removeEventListener("click", swallow, true);
+    });
+  };
+  const forget = () => {
+    window.removeEventListener("mouseup", released, true);
+  };
+  window.addEventListener("mouseup", released, { capture: true, once: true });
+  window.addEventListener("mousedown", forget, { capture: true, once: true });
+}

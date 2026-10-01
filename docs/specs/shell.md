@@ -817,8 +817,7 @@ register walks the same way whatever it holds. `j`/`k` walk the rows, moving the
 bringing it into view — and off a held row, which then goes; `enter` selects the first row where
 none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
 one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)); `v` turns the
-list to the other view *(2026-10-01)*. The selected
-row adds every command its own actions draw
+list to the other view *(2026-10-01)*. The selected row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
 button reaches, on either surface, and a control that is not drawn has no key either. On the queue
@@ -846,9 +845,9 @@ top of the page while the rows scroll beneath it, as a day's heading does, at a 
 height. Held there, it covers what scrolls under it, spanning the screen with its rule beneath, as
 a heading does and for the same reason. **By day, the two share the line**: the heading held at the
 top shows through the head's left, and the head draws nothing over it but its controls; the next
-day's heading still slides over the last, under the controls. Nothing at the head moves as a heading comes and goes: the controls stand at
-the right whether or not a date is beside them. A row walked to by `j`/`k` stops clear of the line,
-by day or not.
+day's heading still slides over the last, under the controls. Nothing at the head moves as a
+heading comes and goes: the controls stand at the right whether or not a date is beside them. A row
+walked to by `j`/`k` stops clear of the line, by day or not.
 
 #### Rows by day
 
@@ -2060,9 +2059,10 @@ already being read rather than giving up on the step — unless the reader has m
 the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
 failed is asked for again, since scrolling never retries one. While a page is read the foot draws
 the asking mark in the width `load more` already took. **The drained queue is one line where the rows were** —
-`Nothing left to process.` — in the body column's position, with no register drawn under it.
-Reaching the end is what the queue is for, so it is said once and quietly: no paragraph, no
-`zero`, and not as a notice.
+`Nothing left to process.` — in the body column's position, with no row drawn beside it. The empty
+list stays under it *(2026-10-01)*, so the last row out slides out and the first capture into it
+slides in, as any other. Reaching the end is what the queue is for, so it is said once and quietly:
+no paragraph, no `zero`, and not as a notice.
 
 **A page arrives still** *(2026-09-25)*. Rows a read brought — the next page, the list read again,
 an order turned, the pool's first answer over what the cache drew, the cache filling an empty list
@@ -2078,7 +2078,7 @@ turned toward from wherever it stands; a change of width is the window's and mov
 log only a heard row grows: what a read brought, and what it goes on to fill in, stands still.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
-— beside the view toggle, and acts on the list it heads; settings and an item have no end to
+— beside the view chooser, and acts on the list it heads; settings and an item have no end to
 start from and draw none. **It is the shell's own chooser** — a word, a mark, and a panel of
 marked options — and not the browser's `select`, which draws in the system's face and colours and
 cannot be brought into this one. Leaving the control shuts it, whichever way a person leaves; `esc`

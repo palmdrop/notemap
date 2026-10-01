@@ -17,7 +17,7 @@
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
-  import ViewToggle from "$components/view/ViewToggle.svelte";
+  import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
@@ -311,7 +311,7 @@
 />
 
 <Head>
-  <ViewToggle {view} onchoose={read} />
+  <ViewChooser {view} onchoose={read} />
   <TagFilter
     bind:this={tagFilter}
     surface={SURFACE}
@@ -345,9 +345,9 @@
   />
 {/snippet}
 
-{#if drained}
-  <Drained filter={$queue.filter} onwhole={reading.clear} />
-{:else if view === "index"}
+<!-- The list stays drawn while the queue is drained, so the first row into it
+     and the last row out of it move as any other. -->
+{#if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
   {/if}
@@ -397,4 +397,8 @@
       />
     {/if}
   </Register>
+{/if}
+
+{#if drained}
+  <Drained filter={$queue.filter} onwhole={reading.clear} />
 {/if}

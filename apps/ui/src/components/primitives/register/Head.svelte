@@ -20,10 +20,12 @@
   const covers = $derived(stuck && !band.dated);
 </script>
 
+<!-- Above the panels a row opens, which would otherwise draw over it as they
+     scroll beneath. -->
 <div
   data-head
   data-covers={covers ? "" : undefined}
-  class="sticky top-0 z-20 mt-3.5 flex h-day-head items-center justify-end"
+  class="sticky top-0 z-40 mt-3.5 flex h-day-head items-center justify-end"
   {@attach stick}
 >
   <div class="flex items-baseline gap-x-5 bg-ground pl-[1ch]">

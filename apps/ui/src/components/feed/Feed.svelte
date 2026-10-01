@@ -18,7 +18,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
-  import ViewToggle from "$components/view/ViewToggle.svelte";
+  import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
@@ -228,7 +228,7 @@
 </script>
 
 <Head>
-  <ViewToggle {view} onchoose={read} />
+  <ViewChooser {view} onchoose={read} />
   <TagFilter
     bind:this={tagFilter}
     surface={SURFACE}
