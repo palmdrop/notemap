@@ -25,7 +25,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain } from "$lib/days";
+  import { byDay, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -236,6 +236,29 @@
   </span>
 </Head>
 
+{#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
+  <Day at={one.at} {motion} />
+{/snippet}
+
+{#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
+  {@const item = one.row}
+  <Row
+    {motion}
+    bind:this={drawn[item.id]}
+    {item}
+    surface="feed"
+    filter={$feed.filter}
+    selected={selected === item.id}
+    offline={!pool.yes}
+    commands={selected === item.id ? commands : []}
+    pending={undrained.has(item.id)}
+    layout={layout.drawn}
+    opens={one.opens}
+    onselect={() => select(item.id)}
+    onprocess={() => void goto(processHref(item.id))}
+  />
+{/snippet}
+
 {#if view === "index" && !bare}
   {#if refused !== undefined}
     <Register><Refused surface="feed" {refused} /></Register>
@@ -285,26 +308,10 @@
     {/if}
 
     {#each headed as one (one.key)}
-      {#if one.kind === "day"}
-        <Day at={one.at} {motion} />
-      {:else}
-        {@const item = one.row}
-        <Row
-          {motion}
-          bind:this={drawn[item.id]}
-          {item}
-          surface="feed"
-          filter={$feed.filter}
-          selected={selected === item.id}
-          offline={!pool.yes}
-          commands={selected === item.id ? commands : []}
-          pending={undrained.has(item.id)}
-          layout={layout.drawn}
-          opens={one.opens}
-          onselect={() => select(item.id)}
-          onprocess={() => void goto(processHref(item.id))}
-        />
-      {/if}
+      <!-- Not an `{#if}`: that would be the block the transitions belong to,
+           and they would play only when it turned, never as a row comes or
+           goes. A render is transparent to them. -->
+      {@render (one.kind === "day" ? heading : entry)(one as never)}
     {/each}
 
     {#if footed}

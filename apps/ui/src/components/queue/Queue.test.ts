@@ -23,6 +23,27 @@ keyboard();
 
 vi.mock("$lib/client", () => import("$testing/pool"));
 
+/** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
+const slid = vi.hoisted(() => ({
+  calls: [] as { node: Element; still: boolean | undefined }[],
+}));
+vi.mock("$lib/motion", async (actual) => {
+  const motion = await actual<typeof import("$lib/motion")>();
+  return {
+    ...motion,
+    slide: (node: Element, params?: Parameters<typeof motion.slide>[1]) => {
+      slid.calls.push({ node, still: params?.still });
+      return motion.slide(node, params);
+    },
+  };
+});
+
+/** Whether a row holding these words slid, rather than being drawn still. */
+const moved = (said: string) =>
+  slid.calls.some(
+    (call) => call.still === false && call.node.textContent?.includes(said),
+  );
+
 /** Leaving the surface needs a router, and there is none outside the app. */
 const went = vi.hoisted(() => ({ to: [] as string[] }));
 
@@ -41,6 +62,7 @@ vi.mock("$app/state", () => ({
 }));
 
 afterEach(() => {
+  slid.calls = [];
   notices.clear();
   went.to = [];
   replaced.urls = [];
@@ -255,6 +277,44 @@ async function capture(said: string) {
   await fireEvent.input(written, { target: { value: said } });
   return fireEvent.click(screen.getByRole("button", { name: "capture" }));
 }
+
+/** A row comes and goes by sliding, by day or not: a read is what draws still. */
+test.each(["rail", "by day"] as const)(
+  "a captured row slides in and a released one slides out, read %s",
+  async (reading) => {
+    layout.choose(reading);
+    let queued = [anItem("one")];
+    pool((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue") return json(200, { values: queued });
+      if (route === "POST /v1/items/one/archive") {
+        queued = [];
+        return json(204, undefined);
+      }
+      if (route === "POST /v1/captures") return taken(request);
+      return json(200, { values: [] });
+    });
+
+    render(Queue);
+    await screen.findByText("one");
+    expect(moved("one")).toBe(false);
+
+    await capture("just written");
+    await screen.findByText("just written");
+    expect(moved("just written")).toBe(true);
+
+    const row = screen.getByText("one").closest<HTMLElement>("[data-row]")!;
+    await fireEvent.click(
+      within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ }),
+    );
+    await discard();
+    await fireEvent.keyDown(window, { key: "Escape" });
+    await vi.waitFor(() => {
+      expect(screen.queryByText("one")).toBeNull();
+    });
+    expect(moved("one")).toBe(true);
+  },
+);
 
 test("says a capture is pending until the pool has taken it", async () => {
   const transport = pool((request) =>

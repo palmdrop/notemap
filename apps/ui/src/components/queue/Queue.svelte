@@ -24,7 +24,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain } from "$lib/days";
+  import { byDay, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -319,6 +319,29 @@
   </span>
 </Head>
 
+{#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
+  <Day at={one.at} {motion} />
+{/snippet}
+
+{#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
+  {@const row = one.row}
+  <Row
+    {motion}
+    bind:this={drawn[row.id]}
+    item={row}
+    surface="queue"
+    filter={$queue.filter}
+    selected={selected === row.id}
+    offline={!pool.yes}
+    commands={selected === row.id ? commands : []}
+    pending={undrained.has(row.id)}
+    layout={layout.drawn}
+    opens={one.opens}
+    onselect={() => select(row.id)}
+    onprocess={() => process(row)}
+  />
+{/snippet}
+
 {#if drained}
   <Drained filter={$queue.filter} onwhole={reading.clear} />
 {:else if view === "index"}
@@ -355,26 +378,10 @@
     {/if}
 
     {#each headed as one (one.key)}
-      {#if one.kind === "day"}
-        <Day at={one.at} {motion} />
-      {:else}
-        {@const row = one.row}
-        <Row
-          {motion}
-          bind:this={drawn[row.id]}
-          item={row}
-          surface="queue"
-          filter={$queue.filter}
-          selected={selected === row.id}
-          offline={!pool.yes}
-          commands={selected === row.id ? commands : []}
-          pending={undrained.has(row.id)}
-          layout={layout.drawn}
-          opens={one.opens}
-          onselect={() => select(row.id)}
-          onprocess={() => process(row)}
-        />
-      {/if}
+      <!-- Not an `{#if}`: that would be the block the transitions belong to,
+           and they would play only when it turned, never as a row comes or
+           goes. A render is transparent to them. -->
+      {@render (one.kind === "day" ? heading : entry)(one as never)}
     {/each}
 
     {#if footed}

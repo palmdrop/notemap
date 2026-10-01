@@ -68,75 +68,84 @@
     }),
   );
 
+  type Line = (typeof lines)[number];
+
   /** A capture with no words in it, said by what it holds instead. */
   function whatItIs(item: Item): string {
     return client.images(item).length > 0 ? "picture" : item.payload.type;
   }
 </script>
 
+{#snippet heading(line: Extract<Line, { kind: "day" }>)}
+  <Day at={line.at} {motion} />
+{/snippet}
+
+{#snippet entry(line: Extract<Line, { kind: "line" }>)}
+  {@const on = selected === line.item.id}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    data-gap={line.gap ? "" : undefined}
+    class="col-span-full grid grid-cols-subgrid transition-[font-weight] duration-(--duration-short) ease-fade {on
+      ? 'font-semibold'
+      : ''}"
+    transition:slide={{ fade: true, still: motion?.still ?? true }}
+    onclick={pickable(() => onselect(line.item.id))}
+    ondblclick={doubled(() => onprocess(line.item.id))}
+  >
+    <span
+      bind:this={stamps[line.item.id]}
+      class="{line.gap ? 'pt-[var(--spacing-gap-time)]' : ''} {byDay
+        ? 'scroll-mt-day-head'
+        : ''} whitespace-nowrap"
+    >
+      <Stamp
+        at={line.item.createdAt}
+        dated={!byDay}
+        opened={on}
+        onopen={() => onselect(line.item.id)}
+        inline
+      />
+    </span>
+    <span
+      class="{line.gap
+        ? 'pt-[var(--spacing-gap-time)]'
+        : ''} min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+    >
+      {line.said}
+    </span>
+    <span
+      class="{line.gap
+        ? 'pt-[var(--spacing-gap-time)]'
+        : ''} text-right whitespace-nowrap max-narrow:hidden"
+    >
+      <span class="inline-flex gap-x-[1ch]">
+        {#each line.tags as tag (tag.name)}
+          {@const said =
+            tag.fires && tag.name.startsWith(TRIGGER_NAMESPACE)
+              ? tag.name.slice(TRIGGER_NAMESPACE.length)
+              : tag.name}
+          <span
+            data-word={said}
+            class="steady-weight {tag.fires
+              ? 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'
+              : ''}"
+          >
+            {said}
+          </span>
+        {/each}
+      </span>
+    </span>
+  </div>
+{/snippet}
+
 <div
   class="grid grid-cols-[max-content_1fr_max-content] gap-x-6 max-narrow:grid-cols-[max-content_1fr]"
 >
   {#each lines as line (line.key)}
-    {#if line.kind === "day"}
-      <Day at={line.at} {motion} />
-    {:else}
-      {@const on = selected === line.item.id}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        data-gap={line.gap ? "" : undefined}
-        class="col-span-full grid grid-cols-subgrid transition-[font-weight] duration-(--duration-short) ease-fade {on
-          ? 'font-semibold'
-          : ''}"
-        transition:slide={{ fade: true, still: motion?.still ?? true }}
-        onclick={pickable(() => onselect(line.item.id))}
-        ondblclick={doubled(() => onprocess(line.item.id))}
-      >
-        <span
-          bind:this={stamps[line.item.id]}
-          class="{line.gap ? 'pt-[var(--spacing-gap-time)]' : ''} {byDay
-            ? 'scroll-mt-day-head'
-            : ''} whitespace-nowrap"
-        >
-          <Stamp
-            at={line.item.createdAt}
-            dated={!byDay}
-            opened={on}
-            onopen={() => onselect(line.item.id)}
-            inline
-          />
-        </span>
-        <span
-          class="{line.gap
-            ? 'pt-[var(--spacing-gap-time)]'
-            : ''} min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-        >
-          {line.said}
-        </span>
-        <span
-          class="{line.gap
-            ? 'pt-[var(--spacing-gap-time)]'
-            : ''} text-right whitespace-nowrap max-narrow:hidden"
-        >
-          <span class="inline-flex gap-x-[1ch]">
-            {#each line.tags as tag (tag.name)}
-              {@const said =
-                tag.fires && tag.name.startsWith(TRIGGER_NAMESPACE)
-                  ? tag.name.slice(TRIGGER_NAMESPACE.length)
-                  : tag.name}
-              <span
-                data-word={said}
-                class="steady-weight {tag.fires
-                  ? 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'
-                  : ''}"
-              >
-                {said}
-              </span>
-            {/each}
-          </span>
-        </span>
-      </div>
-    {/if}
+    <!-- Not an `{#if}`: that would be the block the transitions belong to,
+         and they would play only when it turned, never as a line comes or
+         goes. A render is transparent to them. -->
+    {@render (line.kind === "day" ? heading : entry)(line as never)}
   {/each}
 </div>

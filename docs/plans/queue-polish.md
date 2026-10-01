@@ -57,10 +57,10 @@ Since 09212f64 (by day), `<Row>` and the index line sit inside `{#if one.kind ==
 within the `{#each}`. Svelte 5 transitions are local, so they play only when that `{#if}` branch
 changes, not when a list item comes or goes.
 
-- [ ] Make the row's, the day heading's and the index line's transitions global, leaving the `moving()` gate to keep a read still
-- [ ] Check queue and feed, both views, by day and rail: a capture slides in, a decision released slides out, a page read or an order turned draws still, and arriving at a surface draws still
-- [ ] A test that a row added to a mounted register runs its transition (or the nearest observable the test setup allows)
-- [ ] Commit
+- [x] Render the row, the day heading and the index line through a `{@render}` rather than an `{#if}`, which is transparent to local transitions; `|global` was rejected, since it would also play outros on a view switch and on navigation _(2026-10-01)_
+- [x] Check queue and feed, both views, by day and rail: a capture slides in, a decision released slides out, a page read or an order turned draws still, and arriving at a surface draws still
+- [x] A test that a row added to a mounted register runs its transition (or the nearest observable the test setup allows)
+- [x] Commit _(2026-10-01)_
 
 Verify: capture into the queue and the row slides in. Discard a row and `j`, and it slides out. Turning the order moves nothing.
 
@@ -86,7 +86,6 @@ Verify: at 375px and at desktop width, scroll a long queue by day and in rail mo
 ## Unknowns
 
 - **Width at 375px.** Without the weekday, the bar reads `2026-09-13 | timeline ▾ tags 2 ▾ newest ▾`, which should fit about 343px. If it wraps, drop the year below `narrow` (`09-13`) rather than let the bar grow a line.
-- **Global transitions on arrival.** `moving()` settles on mount, which should keep a surface still when first drawn. If a global transition plays on navigation anyway, gate it on the same `still` at the `{#each}` instead.
 - **The look of the slide.** This phase restores the motion the spec already describes (grow with a fade). Whether it should read as sliding down from the top is left to iterating once it is visible again.
 - **Separator vs label.** The filter panel sets trigger tags apart under a `templates` label, and the chooser gets a bare rule, as asked. Whether the two should match is for after seeing it.
 
