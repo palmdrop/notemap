@@ -169,14 +169,13 @@ export const notices = {
     // said again with the last word: read back once, and counted once.
     const restated =
       notice.alarm === true && replaced.some((one) => one.alarm === true);
-    const superseded = new Set(
-      restated
-        ? replaced.filter((one) => one.alarm === true).map((one) => one.id)
-        : [],
-    );
-    past = [...past.filter((one) => !superseded.has(one.id)), raised].slice(
-      -KEPT,
-    );
+    const superseded = restated
+      ? replaced.filter((one) => one.alarm === true).map((one) => one.id)
+      : [];
+    past = [
+      ...past.filter((one) => !superseded.includes(one.id)),
+      raised,
+    ].slice(-KEPT);
 
     if (notice.alarm === true && notice.counted !== false && !restated) {
       unseen += 1;
