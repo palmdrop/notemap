@@ -148,10 +148,10 @@ export const notices = {
     }
 
     let kept = held;
+    let replaced: readonly Notice[] = [];
     if (notice.only !== undefined) {
-      for (const gone of held) {
-        if (gone.only === notice.only) forget(gone.id);
-      }
+      replaced = held.filter((one) => one.only === notice.only);
+      for (const gone of replaced) forget(gone.id);
       kept = held.filter((one) => one.only !== notice.only);
     }
 
@@ -162,9 +162,21 @@ export const notices = {
       at: Date.now(),
     };
     held = [...kept, raised];
-    past = [...past, raised].slice(-KEPT);
 
-    if (notice.alarm === true) unseen += 1;
+    // A failure taking the place of a failure is the same thing gone wrong,
+    // said again with the last word: read back once, and counted once.
+    const restated =
+      notice.alarm === true && replaced.some((one) => one.alarm === true);
+    const superseded = new Set(
+      restated
+        ? replaced.filter((one) => one.alarm === true).map((one) => one.id)
+        : [],
+    );
+    past = [...past.filter((one) => !superseded.has(one.id)), raised].slice(
+      -KEPT,
+    );
+
+    if (notice.alarm === true && !restated) unseen += 1;
     if (!holding) wait(raised);
 
     return raised.id;

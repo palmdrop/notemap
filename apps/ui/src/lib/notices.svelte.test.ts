@@ -178,6 +178,25 @@ test("the history keeps both sides of a notice that took another's place", () =>
   ]);
 });
 
+/** A delivery refused and then given up on is one failure, told twice by the pool. */
+test("a failure taking a failure's place is read back once, and counted once", () => {
+  notices.raise({ what: "routing failed: taken", alarm: true, only: "record" });
+  notices.raise({ what: "routing failed: taken", alarm: true, only: "record" });
+
+  expect(notices.history.map((notice) => notice.what)).toEqual([
+    "routing failed: taken",
+  ]);
+  expect(notices.unseen).toBe(1);
+});
+
+test("a failure taking the place of one already read is not counted again", () => {
+  notices.raise({ what: "routing failed", alarm: true, only: "record" });
+  notices.seen();
+  notices.raise({ what: "routing failed", alarm: true, only: "record" });
+
+  expect(notices.unseen).toBe(0);
+});
+
 test("a notice that has gone offers nothing", () => {
   const put = vi.fn();
   const id = notices.raise({

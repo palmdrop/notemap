@@ -1857,7 +1857,9 @@ because the log names an id and nobody recognises a note by its id.
 
 **One run of attempts at one record is one notice** *(2026-09-30)*. A delivery that failed, and the
 giving up that follows it, take one another's place, and the last word keeps the reason — it would
-otherwise be gone with the notice it replaced.
+otherwise be gone with the notice it replaced. A failure that takes the place of a failure is the
+same thing gone wrong said twice by the pool, so the panel reads it back once and `notices` counts it
+once *(2026-10-01)*; a `retrying` that turns into `routing failed` is two things, and both stay.
 
 **A failure says whether it is over** *(2026-10-01)*. One the pool will try again — the destination
 could not be reached — reads **`retrying: the vault is not mounted`**, without the accent, because
