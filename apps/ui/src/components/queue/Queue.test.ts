@@ -947,6 +947,7 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const { container } = render(Queue);
   await screen.findByText("one");
 
+  await fireEvent.click(screen.getByRole("button", { name: "View" }));
   await fireEvent.click(screen.getByRole("button", { name: "index" }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
@@ -956,8 +957,8 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const gapped = [...container.querySelectorAll("[data-gap]")];
   expect(gapped).toHaveLength(1);
   expect(gapped[0]?.textContent).toContain("three");
-  expect(screen.getByRole("button", { name: "index" }).className).toContain(
-    "font-semibold",
+  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
+    "index",
   );
 
   cleanup();
@@ -965,9 +966,25 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   render(Queue);
   await screen.findByText("one");
   expect(container.querySelector("[data-gap]")).toBeDefined();
-  expect(screen.getByRole("button", { name: "index" }).className).toContain(
-    "font-semibold",
+  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
+    "index",
   );
+});
+
+test("v turns the list to the other view, and back", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  await fireEvent.keyDown(window, { key: "v" });
+  expect(replaced.urls.at(-1)).toBe("http://localhost/?view=index");
+  expect(container.querySelector("[data-rail]")).toBeNull();
+
+  await fireEvent.keyDown(window, { key: "v" });
+  expect(replaced.urls.at(-1)).toBe("http://localhost/");
+  expect(container.querySelector("[data-rail]")).not.toBeNull();
 });
 
 /** The stamp is a button of its own, and a click on it must not reach the line as a second one. */

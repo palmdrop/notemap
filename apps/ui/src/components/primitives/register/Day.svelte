@@ -1,59 +1,10 @@
-<script lang="ts" module>
-  import { on } from "svelte/events";
-
-  type Watched = {
-    readonly node: HTMLElement;
-    readonly tell: (stuck: boolean) => void;
-  };
-
-  const watched: Watched[] = [];
-  let queued = false;
-  let stop: (() => void) | undefined;
-
-  /**
-   * Read on every scroll, so a jump that lands a heading in the band — a
-   * reload, `j`, the end of the page — is seen as surely as a slow scroll.
-   */
-  function measure(): void {
-    queued = false;
-    for (const { node, tell } of watched) {
-      const at = node.getBoundingClientRect();
-      tell(at.top < at.height && at.bottom > 0);
-    }
-  }
-
-  function soon(): void {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(measure);
-  }
-
-  function watch(node: HTMLElement, tell: (stuck: boolean) => void) {
-    const one = { node, tell };
-    watched.push(one);
-    if (stop === undefined) {
-      const scrolled = on(window, "scroll", soon, { passive: true });
-      const resized = on(window, "resize", soon);
-      stop = () => {
-        scrolled();
-        resized();
-      };
-    }
-    soon();
-    return () => {
-      watched.splice(watched.indexOf(one), 1);
-      if (watched.length > 0) return;
-      stop?.();
-      stop = undefined;
-    };
-  }
-</script>
-
 <script lang="ts">
   import type { Attachment } from "svelte/attachments";
 
   import { dayOf, weekdayOf } from "$lib/stamp";
   import { slide } from "$lib/motion";
+
+  import { band, watch } from "./stuck.svelte";
 
   let {
     at,
@@ -74,8 +25,16 @@
    */
   let stuck = $state(false);
 
-  const stick: Attachment<HTMLElement> = (node) =>
-    watch(node, (now) => (stuck = now));
+  const stick: Attachment<HTMLElement> = (node) => {
+    const stop = watch(node, (now) => {
+      stuck = now;
+      band.hold(node, now);
+    });
+    return () => {
+      stop();
+      band.hold(node, false);
+    };
+  };
 </script>
 
 <!-- A day is a region of the register, so it takes the rule a region does, and
@@ -88,7 +47,7 @@
   {@attach stick}
 >
   <time datetime={dayOf(at)} class="font-semibold">{dayOf(at)}</time>
-  <span>{weekdayOf(at)}</span>
+  <span class="max-narrow:hidden">{weekdayOf(at)}</span>
 </div>
 
 <style>

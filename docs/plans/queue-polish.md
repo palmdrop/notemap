@@ -68,18 +68,18 @@ Verify: capture into the queue and the row slides in. Discard a row and `j`, and
 
 Depends on phase 3 only in that both touch `Day.svelte`.
 
-- [ ] `ViewToggle` becomes a `Chooser` (`timeline ▾` / `index ▾`), as `OrderSelector` is
-- [ ] The head lays all three controls on the right, in the order `view ▾  tags ▾  order ▾`, with the left side empty
-- [ ] The head is sticky at the top, as tall as a day heading, with ground behind its controls only. Spanning the screen when stuck is the same treatment as a day heading's
-- [ ] By day, a day heading sticks into the head's left, with a short vertical separator between the date and the controls, and the next day's heading still slides over the last under them
-- [ ] Below `narrow`, the heading drops the weekday
-- [ ] Whatever clears a stuck heading clears the head too: a row walked to by `j`/`k`, `Day`'s stuck measure, and the panels of `tags ▾`, the order and the view drawn above day headings
-- [ ] `v` toggles the view on the queue and the feed (`lib/command/bindings.ts`, published beside `filter`)
-- [ ] Amend `shell.md`: the index paragraph (`timeline · index` → a dropdown, `v`), § Tags and a filter (where the control sits), § Rows by day (the heading in the head's bar, no weekday below `narrow`), and the register keyboard paragraph (`v`)
-- [ ] Tests: the view chooser and `v` change the view and the URL. Existing `Queue`/`Feed` tests are updated for the chooser
-- [ ] Commit
+- [x] `ViewToggle` becomes a `Chooser` (`timeline ▾` / `index ▾`), as `OrderSelector` is
+- [x] The head lays all three controls on the right, in the order `view ▾  tags ▾  order ▾`, with the left side empty
+- [x] The head is sticky at the top, as tall as a day heading, with ground behind its controls only. Spanning the screen when stuck is the same treatment as a day heading's
+- [x] By day, a day heading sticks into the head's left, with a short vertical separator between the date and the controls, and the next day's heading still slides over the last under them
+- [x] Below `narrow`, the heading drops the weekday
+- [x] Whatever clears a stuck heading clears the head too: a row walked to by `j`/`k`, `Day`'s stuck measure, and the panels of `tags ▾`, the order and the view drawn above day headings
+- [x] `v` toggles the view on the queue and the feed (`lib/command/bindings.ts`, published beside `filter`)
+- [x] Amend `shell.md`: the index paragraph (`timeline · index` → a dropdown, `v`), § Tags and a filter (where the control sits), § Rows by day (the heading in the head's bar, no weekday below `narrow`), and the register keyboard paragraph (`v`)
+- [x] Tests: the view chooser and `v` change the view and the URL. Existing `Queue`/`Feed` tests are updated for the chooser
+- [x] Commit _(2026-10-01)_
 
-Verify: at 375px and at desktop width, scroll a long queue by day and in rail mode. The head stays put and the dates pass under it. `j` down the list never hides the selected row under the head. Each panel opens over the rows.
+Verify (not yet done in a browser; the tests cover what jsdom can lay out): at 375px and at desktop width, scroll a long queue by day and in rail mode. The head stays put and the dates pass under it. `j` down the list never hides the selected row under the head. Each panel opens over the rows.
 
 ---
 

@@ -4,6 +4,12 @@
 **Last updated**: 2026-10-01
 **Shipped**:
 
+- 2026-10-01 — **The queue's head holds, and rows move again.** The list head holds at the top
+  with `timeline ▾`, `tags ▾` and the order at its right, and by day the heading held there shares
+  its line, without the weekday below `narrow`; `v` turns the view. Rows, index lines and day
+  headings slide in and out again. A tag taken from the offer with the mouse keeps the row
+  selected, and the offer sets trigger tags apart beneath the rest.
+  ([plan](../plans/queue-polish.md))
 - 2026-10-01 — **The tag chooser holds its places.** Selecting a tag moves nothing beside it: every
   carried tag holds room on both sides, and the `×` takes it. The `+` holds the room its line opens
   at, so it wraps where the line would, and the line is drawn across that room rather than widening
@@ -810,7 +816,8 @@ body's words stay the browser's.
 register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
 bringing it into view — and off a held row, which then goes; `enter` selects the first row where
 none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
-one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)). The selected
+one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)); `v` turns the
+list to the other view *(2026-10-01)*. The selected
 row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
@@ -822,8 +829,9 @@ the first row goes into its field, and `j` from the box is the first row.
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is
 guarded, the status line's `undo` being what makes the rest cheap to take back.
 
-**The index is a second view of the same list**, toggled in the list head beside the order
-control — `timeline · index`, the current one bold — and carried on the URL as `view=index`,
+**The index is a second view of the same list**, chosen in the list head as the order is —
+`timeline ▾` or `index ▾` *(amended 2026-10-01; it was `timeline · index` at the head's left, the
+current one bold)* — and carried on the URL as `view=index`,
 remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
 the first words cut at a word with `…`, the tags at the right, dropped below the narrow
 breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
@@ -831,6 +839,17 @@ fixed size, the same whether a day or a month passed: time passing is read from 
 selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
 process. The feed has the same view. By day, the index takes the same headings as the timeline,
 each line keeping its time alone, and opens no gap: the heading already says that a day passed.
+
+**The list head holds at the top** *(2026-10-01)*. It is three controls at the right —
+`timeline ▾`, `tags ▾` and the order, in that order — and nothing at the left, and it holds at the
+top of the page while the rows scroll beneath it, as a day's heading does, at a day heading's
+height. Held there, it covers what scrolls under it, spanning the screen with its rule beneath, as
+a heading does and for the same reason. **By day, the two share the line**: the heading held at the
+top shows through the head's left, and the head draws nothing over it but its controls, with a
+short upright rule between the date and them; the next day's heading still slides over the last,
+under the controls. Nothing at the head moves as a heading comes and goes: the controls stand at
+the right whether or not a date is beside them. A row walked to by `j`/`k` stops clear of the line,
+by day or not.
 
 #### Rows by day
 
@@ -842,7 +861,9 @@ cannot spare.
 
 **By day, each day is headed once.** A heading goes before the first row of each local day, in
 whichever order the list is read: the date bold, the weekday beside it (`2026-09-13 sunday`),
-ruled under. There is no month heading. It spans both columns and holds at the top of the page
+ruled under. **Below `narrow` the weekday is not drawn** *(2026-10-01)*: held at the top, the
+heading shares its line with the list head's controls, and a phone has room for the date and
+them and no more. There is no month heading. It spans both columns and holds at the top of the page
 while its day's rows scroll beneath it, and the next day's heading slides over it. A row walked
 to by `j`/`k` stops clear of it. A heading comes and goes with the rows it heads: the last row of
 a day leaving takes the heading with it. **Held at the top, a heading spans the screen**, its

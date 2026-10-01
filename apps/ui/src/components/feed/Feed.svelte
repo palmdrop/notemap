@@ -219,21 +219,24 @@
     }),
     ...reached(),
     { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+    {
+      id: "view",
+      label: "view",
+      run: () => read(view === "timeline" ? "index" : "timeline"),
+    },
   ]);
 </script>
 
 <Head>
   <ViewToggle {view} onchoose={read} />
-  <span class="flex items-baseline gap-5">
-    <TagFilter
-      bind:this={tagFilter}
-      surface={SURFACE}
-      filter={reading.filter}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-    <Order />
-  </span>
+  <TagFilter
+    bind:this={tagFilter}
+    surface={SURFACE}
+    filter={reading.filter}
+    ontoggle={reading.toggle}
+    onclear={reading.clear}
+  />
+  <Order />
 </Head>
 
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}

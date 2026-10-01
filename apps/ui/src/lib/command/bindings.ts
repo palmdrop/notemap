@@ -26,8 +26,10 @@ const BINDINGS: Record<string, string> = {
   select: "enter",
   deselect: "escape",
 
-  // The queue's and the feed's own: the tags they are read through.
+  // The queue's and the feed's own: the tags they are read through, and
+  // which of the two views they are read in.
   filter: "f",
+  view: "v",
 
   // The capture box's own, while it is selected and the field does not have
   // the caret: the field commits the same chord itself.

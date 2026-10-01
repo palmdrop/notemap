@@ -6,6 +6,7 @@ import { NO_MORE_OFFLINE } from "$lib/said";
 import Day from "./Day.svelte";
 import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
+import HeadFixture from "./Head.fixture.svelte";
 
 /**
  * The box is the selection: the rail takes the head and the left edge, the
@@ -205,4 +206,33 @@ test("a day's heading spans the screen once it reaches the top, and not before",
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);
   });
+});
+
+test("the list head covers what scrolls under it once it reaches the top", async () => {
+  laidAt(300);
+  const { container } = render(HeadFixture);
+  const head = () => container.querySelector("[data-head]")!;
+
+  await vi.waitFor(() => {
+    expect(head().hasAttribute("data-covers")).toBe(false);
+  });
+
+  laidAt(0);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(head().hasAttribute("data-covers")).toBe(true);
+  });
+  expect(head().querySelector("[aria-hidden='true']")).toBeNull();
+});
+
+/** By day the heading in the band is the date beside the head's controls, ruled off from them. */
+test("the list head lets a day heading in the band show through, ruled off from its controls", async () => {
+  laidAt(0);
+  const { container } = render(HeadFixture, { dated: true });
+  const head = () => container.querySelector("[data-head]")!;
+
+  await vi.waitFor(() => {
+    expect(head().querySelector("[aria-hidden='true']")).not.toBeNull();
+  });
+  expect(head().hasAttribute("data-covers")).toBe(false);
 });
