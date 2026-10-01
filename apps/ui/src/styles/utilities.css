@@ -135,3 +135,21 @@
     font-weight: var(--font-weight-semibold);
   }
 }
+
+/**
+ * A menu under a line in a wrapping row of controls. Where the browser can
+ * anchor, it hangs from the line, and ends where the line does when starting
+ * there would run off the side; where it cannot, it hangs from the start of
+ * the row, which never moves under it.
+ */
+@utility offer {
+  position: absolute;
+  top: 100%;
+  left: 0;
+
+  @supports (anchor-name: --offer) {
+    top: anchor(bottom);
+    left: anchor(left);
+    position-try-fallbacks: flip-inline;
+  }
+}

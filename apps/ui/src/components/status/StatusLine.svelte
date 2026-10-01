@@ -69,7 +69,7 @@
   });
 
   function cancel(firing: Firing): void {
-    cancelRouting(firing.record, firing.item);
+    cancelRouting(firing.record, firing.item, firing.name);
   }
 
   publish(() => [

@@ -9,6 +9,7 @@ import {
   fade,
   following,
   grow,
+  pinned,
   revealed,
   rise,
   slide,
@@ -309,4 +310,18 @@ describe("following", () => {
     resize({ height: 180, width: 300 });
     expect(animate).not.toHaveBeenCalled();
   });
+});
+
+/** Going away, it stays where it stood however the thing it hung from moves. */
+test("a pinned element is held at the place it stood when it started to go", () => {
+  const node = document.createElement("div");
+  Object.defineProperty(node, "offsetTop", { value: 24 });
+  Object.defineProperty(node, "offsetLeft", { value: 180 });
+  node.style.marginTop = "4px";
+
+  pinned(node);
+
+  expect(node.style.top).toBe("24px");
+  expect(node.style.left).toBe("180px");
+  expect(node.style.margin).toBe("0px");
 });

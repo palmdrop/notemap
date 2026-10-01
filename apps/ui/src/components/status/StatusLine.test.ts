@@ -468,6 +468,9 @@ test("a fired template counts down on the line, with its cancel", async () => {
     expect(firings.open).toHaveLength(0);
   });
   expect(cancelled).toEqual(["POST /v1/routing/r1/cancel"]);
+  // Said at once rather than a poll later, and the log's copy adds nothing.
+  expect(notices.latest?.what).toBe("routing cancelled");
+  expect(notices.said("cancelled:r1")).toBe(true);
 });
 
 test("the log opens a firing and closes it with the landing", async () => {

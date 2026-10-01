@@ -64,7 +64,7 @@
 </script>
 
 <div
-  class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] {stacked
+  class="relative flex min-w-0 flex-wrap items-baseline gap-x-[1ch] {stacked
     ? 'max-narrow:flex-col max-narrow:items-start'
     : ''}"
 >

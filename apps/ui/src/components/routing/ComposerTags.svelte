@@ -61,7 +61,7 @@
   }
 </script>
 
-<div class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
+<div class="relative flex min-w-0 flex-wrap items-baseline gap-x-[1ch]">
   <TagSet
     {names}
     {offered}

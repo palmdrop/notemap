@@ -5,7 +5,7 @@ import { itemHref } from "$components/item/href";
 import { client } from "./client";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
-import { keyFor } from "./routing";
+import { cancelledKey, keyFor } from "./routing";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
@@ -13,12 +13,23 @@ import { nameOf, triggeredBy } from "./templates";
  * pool takes the tag off with the reservation, so the item comes back to the
  * queue able to be filed by that tag again.
  */
-export function cancelRouting(record: string, item: string): void {
+export function cancelRouting(
+  record: string,
+  item: string,
+  name?: string,
+): void {
   void client.routing
     .cancel(record, item)
     .then(() => {
       firings.closed(record);
       notices.settled(keyFor(record));
+      // Said at once, under the name the log's own entry arrives with.
+      notices.raise({
+        what: "routing cancelled",
+        ...(name === undefined ? {} : { why: name }),
+        href: itemHref(item),
+        key: cancelledKey(record),
+      });
     })
     .catch(() => {
       notices.raise({ what: "could not cancel", alarm: true });

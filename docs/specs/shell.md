@@ -1611,7 +1611,12 @@ too* — holding the pool's offer: the eight most used while the line is empty, 
 line narrows to once it is typed into, minus what the item carries either way. **Opened near the
 end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
 `narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
-end ran off the side of the screen)*.
+end ran off the side of the screen)*. *Amended 2026-10-01*: the browser holds it there. It is
+**anchored to the line**, so it follows the line as tags taken beside it push the line along or
+onto a row of its own, rather than being measured once and left where the line used to be; and
+where it would run off the side it ends where the line does. **Going away it stays put**, pinned
+where it stood as it slides shut, whatever the line does meanwhile. Where a browser cannot anchor,
+it hangs from the start of the tags' own row, which never moves under it.
 
 **The first match is marked as soon as the line is typed into, and stays marked as it narrows**
 *(amended 2026-09-15; the match `⏎` was about to take used to be unmarked, so `⏎` on a half-typed

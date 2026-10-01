@@ -16,6 +16,9 @@ export type Moving = {
 /** How far a rising thing travels, in pixels: a third of the shell's line. */
 const RISE = 8;
 
+/** How far a line that says something new travels as it arrives. */
+const ARRIVE = 24;
+
 function token(name: string): string {
   if (typeof document === "undefined") return "";
   return getComputedStyle(document.documentElement)
@@ -123,6 +126,30 @@ export function widen(node: Element, params: Moving = {}): TransitionConfig {
 
 export function fade(node: Element, params: Moving = {}): TransitionConfig {
   return fading(node, timing({ magnitude: "short", ...params }, "fade"));
+}
+
+/**
+ * Sliding shut from exactly where it stood. Something placed against
+ * another element follows it while it moves; going away, it stays put, so a
+ * line that moves as it closes does not drag the closing thing along.
+ */
+export function pinned(
+  node: HTMLElement,
+  params: Moving = {},
+): TransitionConfig {
+  const top = node.offsetTop;
+  const left = node.offsetLeft;
+  node.style.setProperty("position-try-fallbacks", "none");
+  node.style.margin = "0";
+  node.style.top = `${String(top)}px`;
+  node.style.left = `${String(left)}px`;
+  node.style.right = "auto";
+  return slide(node, params);
+}
+
+/** Arriving from the side it is read from: a line that has something new to say. */
+export function arrive(node: Element, params: Moving = {}): TransitionConfig {
+  return fly(node, { ...timing(params), x: -ARRIVE });
 }
 
 /** Fading in from a little below where it comes to rest. */

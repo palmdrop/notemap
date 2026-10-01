@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { tick } from "svelte";
 import { expect, test, vi } from "vitest";
 
 import Action from "./Action.svelte";
@@ -503,63 +502,23 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
   }
 });
 
-test("the offer, opened near the end of a line, is drawn back to end where the line does", async () => {
+/**
+ * The browser keeps the offer under the line as the line moves, so nothing
+ * here measures it: the line is named, and the offer is placed against it.
+ */
+test("the offer hangs from the line it was opened from", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();
-  const list = screen.getByRole("listbox", { name: "Tags in use" });
-
-  const at = (left: number, right: number) => () =>
-    ({ left, right }) as DOMRect;
-  line.parentElement!.getBoundingClientRect = at(340, 376);
-  line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
-  Object.defineProperty(list, "offsetWidth", { get: () => 144 });
-
   await typed(line, "re");
-  expect(list.parentElement!.style.left).toBe("-108px");
 
-  line.parentElement!.getBoundingClientRect = at(60, 376);
-  await typed(line, "rea");
-  expect(list.parentElement!.style.left).toBe("0px");
-});
+  const offer = screen.getByRole("listbox", {
+    name: "Tags in use",
+  }).parentElement!;
+  const named = /anchor-name:\s*(--[\w-]+)/.exec(
+    line.getAttribute("style") ?? "",
+  )?.[1];
 
-/**
- * A tag taken unfolds beside the line after the offer has been placed, and
- * can push the line onto a row of its own: placed where the line was, the
- * offer would hang off to the left of where the line now starts.
- */
-test("the offer is placed again when the line drops to a row of its own", async () => {
-  const watched: (() => void)[] = [];
-  const held = window.ResizeObserver;
-  window.ResizeObserver = class {
-    constructor(callback: () => void) {
-      watched.push(callback);
-    }
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  } as unknown as typeof ResizeObserver;
-
-  try {
-    tagSet({ offered: ["reading", "research", "design"] });
-    const line = await opened();
-    const list = screen.getByRole("listbox", { name: "Tags in use" });
-
-    const at = (left: number, right: number) => () =>
-      ({ left, right }) as DOMRect;
-    line.parentElement!.getBoundingClientRect = at(340, 376);
-    line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
-    Object.defineProperty(list, "offsetWidth", { get: () => 144 });
-
-    await typed(line, "re");
-    expect(list.parentElement!.style.left).toBe("-108px");
-
-    // Wrapped: nothing typed, only the line's box changed.
-    line.parentElement!.getBoundingClientRect = at(60, 376);
-    for (const callback of watched) callback();
-    await tick();
-
-    expect(list.parentElement!.style.left).toBe("0px");
-  } finally {
-    window.ResizeObserver = held;
-  }
+  expect(named).toBeDefined();
+  expect(offer.getAttribute("style")).toContain(`position-anchor: ${named}`);
+  expect(offer.classList.contains("offer")).toBe(true);
 });

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { rise } from "$lib/motion";
+  import { arrive } from "$lib/motion";
   import type { Notice } from "$lib/notices.svelte";
 
   import { PANEL } from "./panel";
@@ -47,21 +47,22 @@
   </button>
 
   {#if notice !== undefined}
-    <button
-      type="button"
-      aria-expanded={expanded}
-      aria-controls={PANEL}
-      onclick={ontoggle}
-      class="min-w-0 truncate text-left {notice.alarm === true
-        ? 'text-alarm'
-        : ''}"
-    >
-      {#key notice.id}
-        <span in:rise role={notice.alarm === true ? "alert" : "status"}>
+    {#key notice.id}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={PANEL}
+        onclick={ontoggle}
+        in:arrive
+        class="min-w-0 truncate text-left {notice.alarm === true
+          ? 'text-alarm'
+          : ''}"
+      >
+        <span role={notice.alarm === true ? "alert" : "status"}>
           {notice.what}
         </span>
-      {/key}
-    </button>
+      </button>
+    {/key}
 
     {#if notice.offer !== undefined}
       <button

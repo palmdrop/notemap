@@ -3,7 +3,7 @@
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { completed, narrowed } from "$lib/candidate-list";
-  import { grow, slide, unfold, widen } from "$lib/motion";
+  import { grow, pinned, slide, unfold, widen } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
@@ -141,36 +141,8 @@
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
-  let line = $state<HTMLElement | null>(null);
-  let shift = $state(0);
-
-  // Opened near the end of a line, the offer would run past it and be cut off
-  // at the side of the screen: it is drawn back to end where the line does.
-  function place(): void {
-    const within = line?.parentElement?.getBoundingClientRect();
-    if (line === null || panel === null || within === undefined) {
-      shift = 0;
-      return;
-    }
-    const from = line.getBoundingClientRect().left;
-    const over = from + panel.offsetWidth - within.right;
-    shift = over > 0 ? -Math.min(over, from - within.left) : 0;
-  }
-
-  $effect(() => {
-    void rows;
-    place();
-  });
-
-  // A tag taken unfolds beside the line after the offer was placed, and can
-  // push the line onto a row of its own; the line fills that row, so its width
-  // changing is the cue to place the offer again under where it now starts.
-  $effect(() => {
-    if (line === null) return;
-    const watching = new ResizeObserver(() => place());
-    watching.observe(line);
-    return () => watching.disconnect();
-  });
+  /** Names the line for the offer to hang from, one per set on the page. */
+  const anchor = `--tags-${id.replace(/[^\w-]/g, "")}`;
 
   const active = $derived(
     at !== undefined && rows[at] !== undefined ? `${id}-tag-${at}` : undefined,
@@ -327,8 +299,7 @@
 
 {#if adding}
   <div
-    bind:this={line}
-    class="relative h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
+    class="h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
     transition:widen={{ magnitude: "short" }}
   >
     <!-- svelte-ignore a11y_autofocus -->
@@ -346,15 +317,20 @@
       aria-expanded={rows.length > 0}
       aria-controls="{id}-tags"
       aria-activedescendant={active}
+      style="anchor-name: {anchor}"
       class="h-full w-full border-b border-ink px-1 outline-none"
     />
     {#if rows.length > 0}
       <!-- Rows taken on `mousedown` with the default prevented, so taking one
            never blurs the line out from under the click. -->
+      <!-- Hung from the line where the browser can tie it there, and from the
+           start of the set's own row where it cannot; the set's container is
+           what it is placed against, so callers make that container relative. -->
       <div
-        class="absolute top-full z-30 mt-1"
-        style:left="{shift}px"
-        transition:slide|global={{ magnitude: "short" }}
+        class="offer z-30 mt-1"
+        style="position-anchor: {anchor}"
+        in:slide|global={{ magnitude: "short" }}
+        out:pinned|global={{ magnitude: "short" }}
       >
         <div
           bind:this={panel}
