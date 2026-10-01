@@ -49,7 +49,7 @@
     </span>
 
     {#if why !== undefined}
-      <span class="whitespace-pre-line wrap-anywhere">{why}</span>
+      <span class="wrap-anywhere whitespace-pre-line">{why}</span>
     {/if}
 
     {#if about !== undefined}

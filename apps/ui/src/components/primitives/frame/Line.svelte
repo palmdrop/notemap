@@ -38,9 +38,7 @@
   Fixed to the bottom of every surface, in the page's column. The ground runs
   the width of the window so nothing scrolls through beside it.
 -->
-<div
-  class="fixed inset-x-0 bottom-0 z-10 bg-ground px-8 max-narrow:px-3.5"
->
+<div class="fixed inset-x-0 bottom-0 z-10 bg-ground px-8 max-narrow:px-3.5">
   <div
     bind:this={line}
     role="presentation"

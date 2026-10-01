@@ -1,10 +1,6 @@
 <script lang="ts">
   import { copyable } from "$lib/clipboard";
-  import {
-    hasPicture,
-    wordsOf,
-    type RefusedCapture,
-  } from "$lib/refused";
+  import { hasPicture, wordsOf, type RefusedCapture } from "$lib/refused";
   import { timeOf } from "$lib/stamp";
 
   import Entry from "./Entry.svelte";
