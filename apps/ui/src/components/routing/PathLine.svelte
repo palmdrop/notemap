@@ -6,6 +6,8 @@
     type RememberedPlace,
   } from "@notemap/client";
 
+  import { untrack } from "svelte";
+
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
@@ -170,7 +172,9 @@
     // Drawn while they are asked for again, and only where nothing is drawn
     // yet: replacing a tree that is already up with a shorter remembered one
     // would make it flicker under the caret on every keystroke.
-    if (levels.length === 0) {
+    // Untracked: the answer below writes `levels`, and an effect depending
+    // on it would ask again for every answer it drew.
+    if (untrack(() => levels.length) === 0) {
       const kept = heldAlong(scopes);
       if (kept.length > 0) levels = kept;
     }

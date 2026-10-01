@@ -5,7 +5,9 @@ import { client } from "./client";
 /**
  * The routing records of one item. Nothing caches them, so this is the pool's
  * answer or it is nothing — which is why a change of item empties it rather
- * than leaving the last one's records under the new one's summary.
+ * than leaving the last one's records under the new one's summary. Reading the
+ * same item again keeps what is drawn until the answer replaces it: emptied, a
+ * routing line would fall back to the summary for the length of a request.
  *
  * Out of reach is not carried back: every surface reading these already says
  * whether the pool answers, and a second sentence saying it again in the
@@ -17,15 +19,19 @@ export function recordsOf(item: () => string | undefined, when: () => boolean) {
   let refused = $state("");
   let settled = $state(false);
   let again = $state(0);
+  let read: string | undefined;
 
   $effect(() => {
     void again;
-    const wanted = item();
-    drawn = [];
+    const wanted = when() ? item() : undefined;
+    if (wanted !== read) {
+      drawn = [];
+      settled = false;
+    }
+    read = wanted;
     refused = "";
-    settled = false;
 
-    if (wanted === undefined || !when()) return;
+    if (wanted === undefined) return;
 
     void (async () => {
       try {

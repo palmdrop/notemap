@@ -208,6 +208,18 @@ test("asks once per level along the path", async () => {
   expect(scopes).toHaveLength(3);
 });
 
+/** Drawing an answer is not a reason to ask again: the path is what asks. */
+test("asks nothing more once the levels are drawn and the path has not changed", async () => {
+  servingTree();
+  draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await new Promise((done) => setTimeout(done, 600));
+
+  const scopes = asked().filter((route) => route.includes("/candidates"));
+  expect(scopes).toHaveLength(3);
+});
+
 test("narrows the deepest level to what is typed, and leaves the rest whole", async () => {
   servingTree();
   draw("projects/notemap/no");

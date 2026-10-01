@@ -1,3 +1,4 @@
+import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 
 import type { Capability } from "@notemap/client";
@@ -17,9 +18,17 @@ const asking = new SvelteMap<
   Promise<readonly Capability[] | undefined>
 >();
 
+/**
+ * Untracked, since the effects that ask are the ones drawing what comes back:
+ * one depending on what is being asked would ask again whenever it changed.
+ */
 export function described(
   destination: string,
 ): Promise<readonly Capability[] | undefined> {
+  return untrack(() => ask(destination));
+}
+
+function ask(destination: string): Promise<readonly Capability[] | undefined> {
   const already = asking.get(destination);
   if (already !== undefined) return already;
 

@@ -1,3 +1,5 @@
+import { untrack } from "svelte";
+
 import type { Capability } from "@notemap/client";
 
 import { client } from "./client";
@@ -36,8 +38,11 @@ export async function resolve(
   destination: string,
   wanted: readonly Omit<Named, "destination">[],
 ): Promise<void> {
-  const missing = wanted.filter(
-    (each) => nameFor({ ...each, destination }) === undefined,
+  // Untracked: a surface resolving from an effect would otherwise ask again
+  // for every name learned anywhere, and a value nothing names is asked about
+  // forever.
+  const missing = untrack(() =>
+    wanted.filter((each) => nameFor({ ...each, destination }) === undefined),
   );
   if (missing.length === 0) return;
 
