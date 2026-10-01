@@ -193,11 +193,13 @@ export const notices = {
 
   /** Taken back elsewhere: whatever offered to take it back offers nothing now. */
   settled(what: string): void {
-    held = held.map((notice) => {
+    const spent = (notice: Notice): Notice => {
       if (notice.settles !== what || notice.offer === undefined) return notice;
       const { offer: _gone, ...rest } = notice;
       return rest;
-    });
+    };
+    held = held.map(spent);
+    past = past.map(spent);
   },
 
   /** What has gone is let go of; what is live stays. */

@@ -588,3 +588,23 @@ test("a decision taken back on another device takes the line's undo away", async
     notices.shown.find((notice) => notice.what === "marked manual")?.offer,
   ).toBeUndefined();
 });
+
+/** The panel reads the same notice back, and may not offer what the line no longer does. */
+test("an undo taken elsewhere leaves the panel too", async () => {
+  pool(quiet);
+  render(StatusLine);
+
+  notices.raise({
+    what: "marked manual",
+    settles: "record:r1",
+    offer: { label: "undo", take: vi.fn() },
+  });
+  const panel = await opened();
+  expect(within(panel).getByRole("button", { name: "undo" })).toBeDefined();
+
+  notices.settled("record:r1");
+
+  await vi.waitFor(() => {
+    expect(within(panel).queryByRole("button", { name: "undo" })).toBeNull();
+  });
+});
