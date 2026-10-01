@@ -19,7 +19,7 @@ test("a capture names its own first words", () => {
         },
       },
     }),
-  ).toEqual({ what: "capture · a thought", item: "one" });
+  ).toEqual({ what: "capture", subject: "a thought", item: "one" });
 });
 
 test("archiving is said in the shell's word for it", () => {
@@ -31,7 +31,8 @@ test("archiving is said in the shell's word for it", () => {
 
 test("a tag names the tag", () => {
   expect(outgoing({ kind: "untag", item: "one", tag: "kind/quote" })).toEqual({
-    what: "untag · kind/quote",
+    what: "untag",
+    subject: "kind/quote",
     item: "one",
   });
 });

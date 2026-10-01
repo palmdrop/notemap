@@ -60,6 +60,9 @@
       >
         <span role={notice.alarm === true ? "alert" : "status"}>
           {notice.what}
+          {#if notice.subject !== undefined}
+            <span class="font-semibold">{notice.subject}</span>
+          {/if}
         </span>
       </button>
     {/key}

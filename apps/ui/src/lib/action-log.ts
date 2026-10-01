@@ -63,14 +63,14 @@ function headline(
   lead: string,
   said: string | undefined,
   at: string | undefined,
-): string {
-  if (said !== undefined) return `${lead}: ${said}`;
-  return at === undefined ? lead : `${lead} · ${at}`;
+): { readonly what: string; readonly subject?: string } {
+  if (said !== undefined) return { what: `${lead}: ${said}` };
+  return at === undefined ? { what: lead } : { what: lead, subject: at };
 }
 
 function joined(parts: readonly (string | undefined)[]): { why?: string } {
   const kept = parts.filter((part) => part !== undefined);
-  return kept.length === 0 ? {} : { why: kept.join(" · ") };
+  return kept.length === 0 ? {} : { why: kept.join(", ") };
 }
 
 function place(
@@ -187,10 +187,9 @@ export function noticeOf(
     const fired = firedByTag(detail);
 
     return {
-      what:
-        named === undefined
-          ? "marked processed"
-          : `routed · ${fired ? (called ?? named) : named}`,
+      ...(named === undefined
+        ? { what: "marked processed" }
+        : { what: "routed", subject: fired ? (called ?? named) : named }),
       ...(pointer === undefined ? {} : { why: pointer }),
       ...where,
       ...(record === undefined ? {} : { key: keyFor(record) }),
@@ -208,7 +207,7 @@ export function noticeOf(
   if (action.kind === "delivery-failed") {
     const again = retried(action.kind, detail);
     return {
-      what: headline(again ? "retrying" : "routing failed", told, at),
+      ...headline(again ? "retrying" : "routing failed", told, at),
       ...joined([
         at,
         code,
@@ -230,7 +229,7 @@ export function noticeOf(
   if (action.kind === "work-abandoned") {
     const work = stringAt(detail, "work") ?? "work";
     return {
-      what: headline(
+      ...headline(
         record === undefined ? `${work} failed` : "routing failed",
         told,
         at,
@@ -248,7 +247,7 @@ export function noticeOf(
   }
 
   return {
-    what: headline(
+    ...headline(
       `${stringAt(detail, "work") ?? "work"} failed`,
       told,
       undefined,

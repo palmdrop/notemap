@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { everyOf } from "$lib/said";
+
   /**
    * Reaching the end is what the queue is for, so it is said once, quietly,
    * where the rows were. No count, because the pool gives none. Filtered, it
@@ -19,7 +21,7 @@
   {#if filter.length === 0}
     Nothing left to process.
   {:else}
-    Nothing tagged {filter.join(" · ")} is waiting.
+    Nothing tagged {everyOf(filter)} is waiting.
     <button type="button" class="ml-[1ch] hover:underline" onclick={onwhole}>
       whole queue
     </button>

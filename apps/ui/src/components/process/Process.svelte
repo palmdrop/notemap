@@ -30,6 +30,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import Routing from "$components/item/Routing.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
@@ -460,9 +461,10 @@
       .map((place) => place.lastAt)
       .sort()
       .at(-1);
-    return last === undefined
-      ? `${routed} routed`
-      : `${routed} routed · last ${whenOf(last, now)}`;
+    return {
+      lead: `${routed} routed`,
+      rest: last === undefined ? undefined : `last ${whenOf(last, now)}`,
+    };
   });
 
   /**
@@ -1047,7 +1049,7 @@
               {applied?.name ?? nameOf(chosen)}
             </span>
             {#if usedBefore !== undefined}
-              <span>{usedBefore}</span>
+              <span><Lead {...usedBefore} /></span>
             {/if}
           </span>
           <button type="button" onclick={release} class="hover:underline">

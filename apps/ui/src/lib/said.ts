@@ -49,3 +49,12 @@ export function slowToAnswer(subject: string): string {
 
 /** What a reader that cannot see the asking mark is told instead. */
 export const ASKING = "loading";
+
+/** Every one of several, as a sentence says it: `a`, `a and b`, `a, b and c`. */
+export function everyOf(names: readonly string[]): string {
+  const last = names.at(-1);
+  if (last === undefined) return "";
+  return names.length === 1
+    ? last
+    : `${names.slice(0, -1).join(", ")} and ${last}`;
+}

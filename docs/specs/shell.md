@@ -4,8 +4,11 @@
 **Last updated**: 2026-10-01
 **Shipped**:
 
-- 2026-10-01 — **Fewer dots, and marks where words were.** A routing line and a settings fact tell
-  what from what qualifies it by weight rather than `·`: the destination bold, the place plain. A
+- 2026-10-01 — **Fewer dots, and marks where words were.** Nothing the shell says separates its
+  parts with `·`: a bold word names a thing, plain text qualifies it, and a list in a sentence is
+  said in words — the destination bold and the place plain on a routing line, `routed **Vault**`
+  and `routing **research**` on the status line, `**14 routed** last today` in the composer,
+  `Nothing tagged a and b is waiting.` A
   setting a capability takes per delivery — `frontmatter`, `hashtags` — is never read as part of
   the place, and a template's opened facts give each its own line. A pointer that is a handle
   rather than a path, an are.na block's id, gives way to the place the decision named. `pending`
@@ -716,7 +719,7 @@ off by pressing them, and the stamp, which is the accessible way to select it.
 **A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
 `route/journal → journal`. The style is what says the word files the item; the namespace is not a
 decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
-typed against, with the template it fires beside it.
+typed against, with the template it fires beside it after an arrow: `route/journal → journal`.
 
 **Selected, a row is a box.** One click anywhere on either cell, or `enter`, draws a rule around
 both columns — the rail's own rule running through it — with the **actions as the box's foot**:
@@ -748,7 +751,7 @@ control that can be taken off.
 
 **Leaving an edit with changes asks first** *(2026-09-27)*. However it is left — `close` or `esc`,
 `j`/`k`, another row, the capture box, another page — an edit whose field holds something the item
-does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp · first words>`, with
+does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp> <first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
 through history, a link out of the app. `save` waits for a picture still being attached, and a
@@ -960,7 +963,8 @@ address last said.
   leaves it.
 - **An emptied filter says so and never says the queue is drained**: `Nothing tagged kind/quote is
   waiting.` with `whole queue` beside it, and on the feed `Nothing is tagged kind/quote.` with
-  `whole feed`.
+  `whole feed`. Several tags are said as a sentence says them: `Nothing tagged a, b and c is
+  waiting.`
 - Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
   `tags ▾` panel is the one way in.
 
@@ -1013,7 +1017,7 @@ make the list change shape by what happened to the item. The three narrow togeth
 the one entry the line has narrowed to is drawn bold and `⏎` or `⇥` takes it, an ambiguous line
 taking nothing. Typing is an accelerator: the bands are the way in for a pointer and for somebody
 who does not know the names. **Taken, the destination leaves the line** and the section reads the
-name in bold with what it has been routed to before beside it — `14 routed · last today`, read off
+name in bold with what it has been routed to before beside it — **`14 routed`** `last today`, read off
 the places the pool remembers for it — and `change` at the right, which gives the bands back. So
 does backspacing past the head of an empty place line. A destination is described only once it is
 taken, describing being I/O that may hang.
@@ -1187,7 +1191,7 @@ it was added to stop.
 
 **A destination that cannot be asked refuses nothing.** No tree, no drawn word — there is nothing
 to infer and nothing that needs inferring — but the line is still typed and `route` is still live,
-the record being made and the delivery deferred, which is what `unreachable · best effort` says. A
+the record being made and the delivery deferred, which is what **`unreachable`** `best effort` says. A
 kind that offers no listing at all draws the same plain line with its own word. Both are muted
 lines rather than alarms, and both are distinct from an unreachable **pool**, which is a different
 condition and one in which the surface opens with its destinations drawn unavailable
@@ -1688,7 +1692,7 @@ the line away rather than classifying the item with whatever is most used. `⇥`
 typed as far as the offer agrees, and once there is nothing left to complete walks the offer,
 moving the mark; `↑↓` and the pointer walk it too, without moving the caret out of the line, and
 the walk goes on from wherever the mark is — there is no dead press. `⏎` takes the marked row. A name no offer holds is the
-panel's **last row**, `new · <name>` — how a fresh tag is made — and it is the only row, so the one
+panel's **last row**, `+ <name>` — how a fresh tag is made — and it is the only row, so the one
 marked, exactly where nothing else matched at all. `esc` or leaving the line puts it away and takes
 nothing: a name half-typed is not a decision, and a panel row is taken without the line ever losing
 focus. The composer's row reads the client's held copy of the item, which is where a tag taken
@@ -1860,7 +1864,7 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 
 **The right is the counts**, each drawn only while it is true, in a fixed order:
 
-- **A route in flight** — `routing · research 12s`, with `cancel` (below).
+- **A route in flight** — `routing **research** 12s`, with `cancel` (below).
 - **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
   refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
   **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
@@ -1922,6 +1926,12 @@ only the excerpt says *what* went, and by the time a notice is read the row it n
 register. Where the notice came from the log rather than from a gesture, the item is read for it,
 because the log names an id and nobody recognises a note by its id.
 
+**What happened is a word, and what it happened to is bold after it** *(2026-10-01; one string
+joined with `·` before)*: `routed **Vault**`, `tag **kind/quote**`. The two are held apart on the
+notice rather than joined into one sentence, so nothing reads one back apart to find the deed.
+Where the destination gave its own reason, the reason takes the line and the subject goes to the
+panel, as a failure's place always did.
+
 **One run of attempts at one record is one notice** *(2026-09-30)*. A delivery that failed, and the
 giving up that follows it, take one another's place, and the last word keeps the reason — it would
 otherwise be gone with the notice it replaced. A failure that takes the place of a failure is the
@@ -1933,7 +1943,7 @@ could not be reached — reads **`retrying: the vault is not mounted`**, without
 it is not over and may heal. Any other ends the route and takes the reservation with it, so it reads
 **`routing failed: taken.md is already there`** in the accent, and the panel adds where it was going,
 the code, and that the item is back in the queue. Where the destination gave no words, the line
-names the place instead: `routing failed · Vault`. The pool's own names for this — `work abandoned`,
+names the place instead, in bold: `routing failed **Vault**`. The pool's own names for this — `work abandoned`,
 `delivery failed` — are the log's, not the line's.
 
 **An `undo` is only offered while it would work** *(2026-10-01)*. Taking it from the line says what
@@ -1962,8 +1972,8 @@ clipboard. It is never resent as it was, since what refused it would refuse it a
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
-Nothing has happened yet, so the line draws it with the counts rather than as a notice: **`routing
-· research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
+Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
+**`research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
@@ -1978,7 +1988,7 @@ within a second of being attempted. It is never drawn in the accent: nothing has
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
 record is still pending, so the route stays in flight with its `cancel` beside the `retrying`
 notice. After a catch-up too long to read out, the routes still in flight are asked about, since how
-they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed · research` naming the
+they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed **research**` naming the
 template, a failure naming its reason — and one decision reads as one thing from beginning to end
 rather than a route still on its way beside the news that it failed.
 
@@ -2806,9 +2816,9 @@ view is how a reader sees more at once.
   both stay inside a 320px screen.
 - A tag a template declared is drawn with the template's name beside it wherever tags are offered,
   and a tag under `route/` that no template claims is drawn like any other.
-- Putting a trigger tag on an item leaves the status line reading `routing · <template>` with the
+- Putting a trigger tag on an item leaves the status line reading `routing <template>`, the template in bold, with the
   seconds left in its window and a working `cancel`, the asking mark once the window closes, and a
-  `routed · <template>` notice once the delivery lands, the route in flight gone with it.
+  `routed <template>` notice once the delivery lands, the route in flight gone with it.
 - A trigger tag whose template cannot route reaches the person as a refusal, and the item is left
   carrying neither the tag nor a pending record.
 - The Templates section draws from pool state at once, each row asking its own report; a template

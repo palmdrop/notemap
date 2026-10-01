@@ -40,7 +40,5 @@ export function aboutItem(item: Item): string {
   const said = excerptOf(client.says(item));
   const stamp = briefly(item.createdAt);
 
-  return said === undefined
-    ? `${stamp} · ${item.payload.type}`
-    : `${stamp} · ${said}`;
+  return `${stamp} ${said ?? item.payload.type}`;
 }

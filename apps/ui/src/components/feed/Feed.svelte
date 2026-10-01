@@ -36,7 +36,7 @@
   import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
-  import { NOTHING_CAPTURED } from "$lib/said";
+  import { everyOf, NOTHING_CAPTURED } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "feed";
@@ -298,7 +298,7 @@
         {#if $feed.filter.length === 0}
           <Prose text={NOTHING_CAPTURED} />
         {:else}
-          Nothing is tagged {$feed.filter.join(" · ")}.
+          Nothing is tagged {everyOf($feed.filter)}.
           <button
             type="button"
             class="ml-[1ch] hover:underline"

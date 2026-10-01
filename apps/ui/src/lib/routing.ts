@@ -194,17 +194,19 @@ export function saidOf(
 
   return record.state === "delivered"
     ? {
-        what: `routed · ${name}`,
+        what: "routed",
+        subject: name,
         ...(place === undefined ? {} : { why: place }),
         ...where,
         key: keyFor(record.id),
       }
     : {
-        what: `retrying · ${name}`,
+        what: "retrying",
+        subject: name,
         why:
           place === undefined
             ? "not delivered yet"
-            : `not delivered yet · ${place}`,
+            : `not delivered yet to ${place}`,
         ...where,
       };
 }

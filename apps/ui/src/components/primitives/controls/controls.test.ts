@@ -220,7 +220,7 @@ test("the offer is drawn beneath the line, minus what the item carries, narrowed
   await typed(line, "rec");
   // `recipe` matches, and the last row is how a name no offer holds is made —
   // drawn even where something else matched, since nothing offered is `rec`.
-  expect(options()).toEqual(["recipe", "new · rec"]);
+  expect(options()).toEqual(["recipe", "+ rec"]);
 });
 
 /** A long offer is a sample while the line is empty, and the whole list once typing narrows it. */
@@ -253,15 +253,15 @@ test("an empty line offers trigger tags apart beneath the rest, and typing mixes
     container.querySelector("[role='listbox'] > [aria-hidden='true']");
   expect(options()).toEqual([
     ...many.slice(0, 8),
-    "route/research · research",
-    "route/journal · journal",
+    "route/research → research",
+    "route/journal → journal",
   ]);
   expect(rule()?.nextElementSibling?.getAttribute("role")).toBe("option");
   expect(rule()?.previousElementSibling?.textContent).toContain("tag-7");
 
   await typed(line, "r");
   expect(rule()).toBeNull();
-  expect(options()[0]).toBe("route/research · research");
+  expect(options()[0]).toBe("route/research → research");
 
   // The walk passes the rule as though it were not there.
   await typed(line, "");

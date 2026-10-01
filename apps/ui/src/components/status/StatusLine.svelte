@@ -88,13 +88,20 @@
    * somebody edits or deletes it.
    */
   function said(held: PendingOperation): void {
-    const deed = outgoing(held.operation).what;
+    const deed = outgoing(held.operation);
     const capture = isCapture(held);
+    // The reason takes the line where there is one, as a failed route's does,
+    // and what it was of goes beneath it.
     notices.raise({
-      what: `${deed.split(" · ")[0] ?? deed} refused${
-        held.failure === undefined ? "" : `: ${held.failure}`
-      }`,
-      why: deed,
+      ...(held.failure === undefined
+        ? {
+            what: `${deed.what} refused`,
+            ...(deed.subject === undefined ? {} : { subject: deed.subject }),
+          }
+        : {
+            what: `${deed.what} refused: ${held.failure}`,
+            ...(deed.subject === undefined ? {} : { why: deed.subject }),
+          }),
       alarm: true,
       ...(capture ? { counted: false } : {}),
       key: `refused:${held.id}`,

@@ -28,7 +28,8 @@ test("a delivered record says where it landed, and which capture it was", () => 
     href: "/items/one",
   });
 
-  expect(said.what).toBe("routed · Vault");
+  expect(said.what).toBe("routed");
+  expect(said.subject).toBe("Vault");
   expect(said.why).toBe("notes/inbox/picker.md");
   expect(said.about).toBe("09-03 14:32 · the picker needs a trail");
   expect(said.href).toBe("/items/one");
@@ -56,7 +57,8 @@ test("a landing with no pointer falls back to the place the decision named", () 
 test("a pending record reads as retrying, and claims no landing", () => {
   const said = saidOf(aRecord({ state: "pending" }), nameOf);
 
-  expect(said.what).toBe("retrying · Vault");
+  expect(said.what).toBe("retrying");
+  expect(said.subject).toBe("Vault");
   expect(said.what).not.toContain("routed");
   expect(said.why).toContain("not delivered yet");
   // Unkeyed, or the watcher could never say the landing this one is waiting for.
