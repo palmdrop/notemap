@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { expect, test, vi } from "vitest";
 
 import Action from "./Action.svelte";
@@ -519,4 +520,46 @@ test("the offer, opened near the end of a line, is drawn back to end where the l
   line.parentElement!.getBoundingClientRect = at(60, 376);
   await typed(line, "rea");
   expect(list.parentElement!.style.left).toBe("0px");
+});
+
+/**
+ * A tag taken unfolds beside the line after the offer has been placed, and
+ * can push the line onto a row of its own: placed where the line was, the
+ * offer would hang off to the left of where the line now starts.
+ */
+test("the offer is placed again when the line drops to a row of its own", async () => {
+  const watched: (() => void)[] = [];
+  const held = window.ResizeObserver;
+  window.ResizeObserver = class {
+    constructor(callback: () => void) {
+      watched.push(callback);
+    }
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  } as unknown as typeof ResizeObserver;
+
+  try {
+    tagSet({ offered: ["reading", "research", "design"] });
+    const line = await opened();
+    const list = screen.getByRole("listbox", { name: "Tags in use" });
+
+    const at = (left: number, right: number) => () =>
+      ({ left, right }) as DOMRect;
+    line.parentElement!.getBoundingClientRect = at(340, 376);
+    line.parentElement!.parentElement!.getBoundingClientRect = at(60, 376);
+    Object.defineProperty(list, "offsetWidth", { get: () => 144 });
+
+    await typed(line, "re");
+    expect(list.parentElement!.style.left).toBe("-108px");
+
+    // Wrapped: nothing typed, only the line's box changed.
+    line.parentElement!.getBoundingClientRect = at(60, 376);
+    for (const callback of watched) callback();
+    await tick();
+
+    expect(list.parentElement!.style.left).toBe("0px");
+  } finally {
+    window.ResizeObserver = held;
+  }
 });

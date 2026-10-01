@@ -146,8 +146,7 @@
 
   // Opened near the end of a line, the offer would run past it and be cut off
   // at the side of the screen: it is drawn back to end where the line does.
-  $effect(() => {
-    void rows;
+  function place(): void {
     const within = line?.parentElement?.getBoundingClientRect();
     if (line === null || panel === null || within === undefined) {
       shift = 0;
@@ -156,6 +155,21 @@
     const from = line.getBoundingClientRect().left;
     const over = from + panel.offsetWidth - within.right;
     shift = over > 0 ? -Math.min(over, from - within.left) : 0;
+  }
+
+  $effect(() => {
+    void rows;
+    place();
+  });
+
+  // A tag taken unfolds beside the line after the offer was placed, and can
+  // push the line onto a row of its own; the line fills that row, so its width
+  // changing is the cue to place the offer again under where it now starts.
+  $effect(() => {
+    if (line === null) return;
+    const watching = new ResizeObserver(() => place());
+    watching.observe(line);
+    return () => watching.disconnect();
   });
 
   const active = $derived(
