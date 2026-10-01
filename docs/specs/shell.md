@@ -1,9 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-01
 **Shipped**:
 
+- 2026-10-01 — **The tag chooser holds its places.** Selecting a tag moves nothing beside it: every
+  carried tag holds room on both sides, and the `×` takes it. The `+` holds the room its line opens
+  at, so it wraps where the line would, and the line is drawn across that room rather than widening
+  into it. The offer is anchored to its line and stays put as it closes.
 - 2026-09-30 — **The status line.** One ruled line at the foot of every surface replaces the corner
   and the bar's glyph: `notices` and the newest live notice on the left, with its `undo`; on the
   right a route a trigger tag made counting down its window with `cancel`, `N pending`,
@@ -1602,11 +1606,18 @@ sits on the collapsed row.
 is a row of pressed words, a trigger tag marked with the template it applies, each pressed to
 select it — **bold**, holding its width so nothing beside it moves *(amended 2026-09-29; it was
 ruled round from 2026-09-25, and drawn inverted, ink behind it, before that; before 2026-09-18 a
-selected tag looked like every other)* — and taken off on the `×` that then slides in beside it *(amended 2026-09-15; a single
-press used to remove it outright)*. `esc`, opening the line, pressing another tag, or the row
+selected tag looked like every other)* — and taken off on the `×` that then appears beside it *(amended 2026-09-15; a single
+press used to remove it outright)*. **The `×` takes no room of its own** *(2026-10-01; it used to
+slide in after the word and push every tag after it along)*: every carried tag holds a little room
+on both sides, selected or not, and selected, the word steps left into its own and the `×` fades
+in across the two on its right. The tags read a little further apart for it. `esc`, opening the line, pressing another tag, or the row
 losing its selection clears the selection without taking anything off. `+` opens a line **where
 the `+` stood, one line tall, taking what is left of that line** *(2026-09-25; it was a fixed width
-and a little taller, and wrapped under the tags)*, and an **absolute panel** beneath it —
+and a little taller, and wrapped under the tags)*. **The `+` holds the line's place**
+*(2026-10-01)*: at least the room the line opens at, so where that room is not left on the row the
+`+` is drawn on a row of its own before anything is opened, and opening the line moves nothing —
+the line is drawn out across room already held, rather than widening into it and wrapping when it
+is done. Beneath it is an **absolute panel** —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
@@ -2450,7 +2461,8 @@ row onto its own surfaces was tried on 2026-09-25 and taken out the same day. Th
 overlays — the order chooser, the path and candidate lists — do not move of themselves: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
 chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
-right, and its panel unrolls downward, both over `short` and back again as it closes; the panel
+right across the room the `+` held *(2026-10-01; it used to widen into it)*, and its panel unrolls
+downward from where it will stand, both over `short` and back again as it closes; the panel
 grows and shrinks over `short` as typing narrows it, turned from wherever it stands at each key.
 Nothing waits on either: the caret is live from the first frame and a key is never held back,
 though a quick hand may be a step ahead of the panel. **A tag slides in** across its line when it

@@ -213,9 +213,7 @@
       </span>
 
       <span class="flex items-baseline gap-x-4 px-3 leading-8">
-        <span
-          class="relative flex min-w-0 flex-wrap items-baseline gap-x-[1ch]"
-        >
+        <span class="relative -ml-tag flex min-w-0 flex-wrap items-baseline">
           <TagSet
             bind:this={chooser}
             names={tags}

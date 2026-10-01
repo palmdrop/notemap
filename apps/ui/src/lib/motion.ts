@@ -112,15 +112,14 @@ export function unfold(
 }
 
 /**
- * Width from nothing at the start of the line, with what is inside drawn to
- * the width it is given: a line opening where a mark stood, whose underline
- * runs out to the right.
+ * Drawn out from the start of the line across the room it already holds: the
+ * box is its full size from the first frame, so nothing beside or below it
+ * moves while it opens.
  */
-export function widen(node: Element, params: Moving = {}): TransitionConfig {
-  const width = node.getBoundingClientRect().width;
+export function drawOut(node: Element, params: Moving = {}): TransitionConfig {
   return {
     ...timing({ magnitude: "short", ...params }),
-    css: (t) => `min-width: 0; max-width: ${String(t * width)}px`,
+    css: (t) => `clip-path: inset(0 ${String((1 - t) * 100)}% 0 0)`,
   };
 }
 

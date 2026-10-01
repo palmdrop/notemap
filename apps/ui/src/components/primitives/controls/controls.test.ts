@@ -380,6 +380,33 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
   expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
 });
 
+/** Its room is held either side whether or not it is selected, so nothing beside it moves. */
+test("a selected tag's × takes no room of its own", async () => {
+  tagSet({ names: ["design", "notemap"] });
+  const word = screen.getByRole("button", { name: "design" });
+  const box = word.parentElement!;
+  expect(box.classList.contains("px-tag")).toBe(true);
+
+  await fireEvent.click(word);
+
+  const remove = screen.getByRole("button", { name: "remove design" });
+  expect(remove.parentElement).toBe(box);
+  expect(remove.classList.contains("absolute")).toBe(true);
+  expect(box.classList.contains("px-tag")).toBe(true);
+});
+
+/** The `+` wraps where the line would, so opening the line moves nothing. */
+test("the + holds the place the line opens into", async () => {
+  tagSet({ names: ["design"] });
+  const plus = screen.getByRole("button", { name: "Add a tag" });
+  const place = plus.parentElement!;
+  expect(place.classList.contains("min-w-tag-line")).toBe(true);
+
+  await fireEvent.click(plus);
+
+  expect(place.contains(screen.getByRole("combobox"))).toBe(true);
+});
+
 test("pressing it again, esc, or pressing another tag deselects it", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 

@@ -3,13 +3,13 @@
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { completed, narrowed } from "$lib/candidate-list";
-  import { grow, pinned, slide, unfold, widen } from "$lib/motion";
+  import { drawOut, fade, grow, pinned, slide, unfold } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it — ruled
-   * round — and again on the `×` that appears inside the rule. `+` opens a line with the pool's offer in a
+   * of pressed words, each taken off by pressing it once to select it — bold —
+   * and again on the `×` that appears beside it. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
@@ -245,14 +245,19 @@
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}
-        class="{fired === undefined ? '' : TRIGGER} {filtered
+        class="px-tag {fired === undefined ? '' : TRIGGER} {filtered
           ? 'underline'
           : ''}"
       >
         {@render said(fired === undefined ? name : trigger(name))}
       </span>
     {:else}
-      <span data-chosen={chosen === name ? "" : undefined}>
+      <!-- Room on both sides, always: selected, the word steps left by one
+           side's room and the `×` takes the two, so nothing beside it moves. -->
+      <span
+        class="relative inline-block px-tag"
+        data-chosen={chosen === name ? "" : undefined}
+      >
         <button
           type="button"
           aria-pressed="true"
@@ -273,8 +278,9 @@
                 .filter((part) => part !== undefined)
                 .join(", ")}
           title={pending ? WAITING : undefined}
-          class="{chosen === name
-            ? 'font-semibold'
+          class="transition-transform duration-(--duration-short) ease-(--ease-motion) {chosen ===
+          name
+            ? '-translate-x-(--spacing-tag) font-semibold'
             : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
             ? 'underline'
             : ''} {pending ? 'text-inert' : ''}"
@@ -287,8 +293,8 @@
               chosen = undefined;
               onremove(name);
             }}
-            class="ml-1 hover:underline"
-            transition:slide={{ axis: "x", magnitude: "short" }}
+            class="absolute right-0 hover:underline"
+            transition:fade
           >
             ×
           </button>{/if}
@@ -297,11 +303,13 @@
   </span>
 {/each}
 
-{#if adding}
-  <div
-    class="h-(--text-shell--line-height) min-w-[3ch] flex-1 self-start"
-    transition:widen={{ magnitude: "short" }}
-  >
+<!-- The line's place, held whether or not it is open: at least the room the
+     line opens at, so the `+` wraps where the line would and opening it moves
+     nothing. Open, the line takes what is left of its row. -->
+<span
+  class="h-(--text-shell--line-height) min-w-tag-line flex-1 self-start pl-tag"
+>
+  {#if adding}
     <!-- svelte-ignore a11y_autofocus -->
     <input
       bind:value={draft}
@@ -319,58 +327,61 @@
       aria-activedescendant={active}
       style="anchor-name: {anchor}"
       class="h-full w-full border-b border-ink px-1 outline-none"
+      in:drawOut
     />
-    {#if rows.length > 0}
-      <!-- Rows taken on `mousedown` with the default prevented, so taking one
-           never blurs the line out from under the click. -->
-      <!-- Hung from the line where the browser can tie it there, and from the
-           start of the set's own row where it cannot; the set's container is
-           what it is placed against, so callers make that container relative. -->
-      <div
-        class="offer z-30 mt-1"
-        style="position-anchor: {anchor}"
-        in:slide|global={{ magnitude: "short" }}
-        out:pinned|global={{ magnitude: "short" }}
-      >
-        <div
-          bind:this={panel}
-          id="{id}-tags"
-          role="listbox"
-          aria-label="Tags in use"
-          class="max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
-        >
-          {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-            {@const on = at === index}
-            {@const fired = row.fresh ? undefined : fires?.(row.label)}
-            <Walked
-              id={on ? `${id}-tag-${index}` : undefined}
-              {on}
-              onhover={() => (at = index)}
-              ontake={() => take(row.label)}
-            >
-              {#if row.fresh}
-                new · {row.label}
-              {:else}
-                <span class={fired === undefined ? "" : TRIGGER}
-                  >{row.label}</span
-                >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
-              {/if}
-            </Walked>
-          {/each}
-        </div>
-      </div>
-    {/if}
-  </div>
-{:else}
-  <!-- Held in place on every row, drawn only where it can be taken: selecting
-       a row, and opening the line, then move nothing under it. -->
-  <button
-    type="button"
-    aria-label={addable ? label : undefined}
-    aria-hidden={!addable || undefined}
-    tabindex={addable ? undefined : -1}
-    disabled={!addable}
-    onclick={open}
-    class="hover:underline {addable ? '' : 'invisible'}">+</button
+  {:else}
+    <!-- Drawn only where it can be taken: selecting a row then moves nothing
+         under it. -->
+    <button
+      type="button"
+      aria-label={addable ? label : undefined}
+      aria-hidden={!addable || undefined}
+      tabindex={addable ? undefined : -1}
+      disabled={!addable}
+      onclick={open}
+      class="hover:underline {addable ? '' : 'invisible'}">+</button
+    >
+  {/if}
+</span>
+
+{#if adding && rows.length > 0}
+  <!-- Rows taken on `mousedown` with the default prevented, so taking one
+       never blurs the line out from under the click. -->
+  <!-- Hung from the line where the browser can tie it there, and from the
+       start of the set's own row where it cannot; the set's container is
+       what it is placed against, so callers make that container relative.
+       Outside the line's own block, so the line goes the moment it closes
+       while the offer slides shut where it stood. -->
+  <div
+    class="offer z-30"
+    style="position-anchor: {anchor}"
+    in:slide|global={{ magnitude: "short" }}
+    out:pinned|global={{ magnitude: "short" }}
   >
+    <div
+      bind:this={panel}
+      id="{id}-tags"
+      role="listbox"
+      aria-label="Tags in use"
+      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
+    >
+      {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+        {@const on = at === index}
+        {@const fired = row.fresh ? undefined : fires?.(row.label)}
+        <Walked
+          id={on ? `${id}-tag-${index}` : undefined}
+          {on}
+          onhover={() => (at = index)}
+          ontake={() => take(row.label)}
+        >
+          {#if row.fresh}
+            new · {row.label}
+          {:else}
+            <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
+            >{#if fired !== undefined}<span>&nbsp;· {fired}</span>{/if}
+          {/if}
+        </Walked>
+      {/each}
+    </div>
+  </div>
 {/if}

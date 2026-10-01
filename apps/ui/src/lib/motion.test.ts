@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   bezier,
+  drawOut,
   duration,
   fade,
   following,
@@ -14,7 +15,6 @@ import {
   rise,
   slide,
   unfold,
-  widen,
 } from "./motion";
 
 const root = document.documentElement;
@@ -197,18 +197,16 @@ describe("unfold", () => {
   });
 });
 
-test("widening caps the width at the share of it the moment has reached", () => {
+test("drawing out clips what is not yet drawn, and never the box's size", () => {
   root.style.setProperty("--duration-short", "150ms");
   const node = document.createElement("div");
-  node.getBoundingClientRect = () => ({ width: 200 }) as DOMRect;
 
-  const opening = widen(node);
+  const opening = drawOut(node);
 
   expect(opening.duration).toBe(150);
-  const cap = (css: string | undefined) =>
-    Number(/max-width:\s*([\d.]+)px/.exec(css ?? "")?.[1]);
-  expect(cap(opening.css?.(0.5, 0.5))).toBe(100);
-  expect(cap(opening.css?.(1, 0))).toBe(200);
+  expect(opening.css?.(0.25, 0.75)).toBe("clip-path: inset(0 75% 0 0)");
+  expect(opening.css?.(1, 0)).toBe("clip-path: inset(0 0% 0 0)");
+  expect(opening.css?.(0.5, 0.5)).not.toMatch(/width/);
 });
 
 describe("revealed", () => {
