@@ -127,6 +127,37 @@ describe("watching what the pool has done", () => {
     watcher.stop();
   });
 
+  /** A shell that knows a fired template's window just closed should not wait out the tempo. */
+  it("asks at once when asked to, and counts the tempo again from there", async () => {
+    const watcher = over([page(["one"]), page(["two", "one"])]);
+    await vi.advanceTimersByTimeAsync(0);
+
+    await vi.advanceTimersByTimeAsync(EVERY / 2);
+    watcher.held.ask();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(watcher.asks()).toBe(2);
+    expect(watcher.heard[0]?.actions.map((action) => action.id)).toEqual([
+      "two",
+    ]);
+
+    await vi.advanceTimersByTimeAsync(EVERY - 1);
+    expect(watcher.asks()).toBe(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(watcher.asks()).toBe(3);
+    watcher.stop();
+  });
+
+  it("asks nothing when asked while nobody is reading", async () => {
+    const watcher = over([page(["one"])]);
+    await vi.advanceTimersByTimeAsync(0);
+
+    watcher.held.watched(false);
+    watcher.held.ask();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(watcher.asks()).toBe(1);
+    watcher.stop();
+  });
+
   /** Silence is not something to report: reachability is what a person reads. */
   it("says nothing when the read fails, and asks again on the next tick", async () => {
     let at = 0;

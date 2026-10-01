@@ -99,6 +99,7 @@ export function createActions(deps: ActionsDeps): Actions {
       gates.answering = yes;
       watcher?.answering(yes);
     },
+    ask: () => watcher?.ask(),
     stop: () => watcher?.stop(),
   };
 }

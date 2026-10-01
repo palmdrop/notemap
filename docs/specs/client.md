@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-01
 **Shipped**:
 
 - 2026-09-30 — **`client.counts` says how much the queue holds.** Read from `GET /v1/counts`, held
@@ -577,6 +577,10 @@ from its first read.
   a page to read out.
 - **A read that fails says nothing.** Silence is not an event; reachability is what a person reads.
 - **It is lazy.** A client nobody asks to watch never asks the pool anything on its own.
+- **It can be asked now** *(added 2026-10-01)*. `ask()` reads at once rather than on the tempo,
+  and the tempo counts again from that read. It is for a shell that knows when something is due —
+  a fired template's window closing — and asks nothing while the gates are shut or a read is
+  already out.
 - **It maintains the surfaces as well as reporting them** *(added 2026-09-08)*. An action that
   says an item was processed — a template fired, routed, archived, revised, purged — takes that row
   off the queue before anything is told about it, so one read serves the corner and the surface both
