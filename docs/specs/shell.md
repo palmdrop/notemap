@@ -1621,7 +1621,11 @@ is done. Beneath it is an **absolute panel** —
 *amended 2026-09-15: it used to sit in the flow, which shifted whatever was below the row; an
 absolute panel still extends the process surface's scrolling middle, so it stays reachable there
 too* — holding the pool's offer: the eight most used while the line is empty, the whole list the
-line narrows to once it is typed into, minus what the item carries either way. **Opened near the
+line narrows to once it is typed into, minus what the item carries either way. **While the line is
+empty, the trigger tags are apart** *(2026-10-01; they were mixed in among the rest by use)*: every
+one beneath the eight, ruled off from them, since a tag that files the item is not read among the
+ones that say what it is. Typed into, the rule goes and each match takes its place by how it
+matched. The rule is not a row: the walk passes it as though it were not there. **Opened near the
 end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
 `narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
 end ran off the side of the screen)*. *Amended 2026-10-01*: the browser holds it there. It is

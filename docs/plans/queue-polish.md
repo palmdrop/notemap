@@ -42,12 +42,12 @@ Verify: on the queue, select a row, take a trigger tag with the mouse, and the r
 
 Depends on nothing.
 
-- [ ] While the line is empty the offer is the eight most-used ordinary tags, then a separator line, then every trigger tag (declared or in use), each with its template as now
-- [ ] Once typed into, there is no separator, the order is the match order, and `new · <name>` stays last
-- [ ] `↑↓`/`⇥` walk over the separator as if it were absent, and the separator is not an option to assistive technology
-- [ ] Amend `shell.md` § Tagging (the "eight most used" sentence)
-- [ ] Tests beside `TagSet`/`offerable`
-- [ ] Commit
+- [x] While the line is empty the offer is the eight most-used ordinary tags, then a separator line, then every trigger tag (declared or in use), each with its template as now
+- [x] Once typed into, there is no separator, the order is the match order, and `new · <name>` stays last
+- [x] `↑↓`/`⇥` walk over the separator as if it were absent, and the separator is not an option to assistive technology
+- [x] Amend `shell.md` § Tagging (the "eight most used" sentence)
+- [x] Tests beside `TagSet`/`offerable`
+- [x] Commit _(2026-10-01)_
 
 Verify: open `+` on a row with templates declared and the triggers sit below a rule. Type `r` and the rule is gone.
 
