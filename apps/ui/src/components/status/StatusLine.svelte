@@ -60,12 +60,17 @@
   });
 
   function toggle(): void {
-    open = !open;
+    open = !shut && !open;
   }
 
-  // Opening the panel is seeing what went wrong: nothing else has to clear it.
   $effect(() => {
-    if (open) untrack(() => notices.seen());
+    if (shut) open = false;
+  });
+
+  // Opening the panel is seeing what went wrong, and so is anything that goes
+  // wrong while it is open: nothing else has to clear it.
+  $effect(() => {
+    if (open && notices.unseen > 0) untrack(() => notices.seen());
   });
 
   /**
@@ -95,9 +100,18 @@
     cancelRouting(firing.record, firing.item, firing.name);
   }
 
-  publish(() => [
-    { id: "notices", label: open ? "close notices" : "notices", run: toggle },
-  ]);
+  // Signed out there is no panel to open.
+  publish(() =>
+    shut
+      ? []
+      : [
+          {
+            id: "notices",
+            label: open ? "close notices" : "notices",
+            run: toggle,
+          },
+        ],
+  );
 
   // A press anywhere but the line or its panel puts the panel away.
   $effect(() => {

@@ -178,6 +178,20 @@ test("what went wrong is counted on notices until the panel is opened", async ()
   expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
 });
 
+/** Somebody reading the panel has seen what arrives in it. */
+test("what goes wrong while the panel is open is not counted", async () => {
+  pool(quiet);
+  render(StatusLine);
+  const panel = await opened();
+
+  notices.raise({ what: "routing failed", alarm: true });
+  await within(panel).findByText("routing failed");
+
+  await vi.waitFor(() => {
+    expect(notices.unseen).toBe(0);
+  });
+});
+
 test("notices opens the panel when nothing has been said", async () => {
   pool(quiet);
   render(StatusLine);
@@ -574,6 +588,11 @@ test("signed out, it says only the work this device holds and whether the pool a
 
   expect(screen.queryByText("routed · vault")).toBeNull();
   expect(screen.queryByRole("button", { name: /^notices/ })).toBeNull();
+  expect(
+    published()
+      .flatMap((get) => get())
+      .some((one) => one.id === "notices"),
+  ).toBe(false);
 });
 
 /** Taken back on the row, the line's own `undo` would refuse, so it goes. */

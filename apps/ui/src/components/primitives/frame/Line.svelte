@@ -39,7 +39,7 @@
   the width of the window so nothing scrolls through beside it.
 -->
 <div
-  class="fixed inset-x-0 bottom-0 z-10 bg-ground px-8 pb-[env(safe-area-inset-bottom)] max-narrow:px-3.5"
+  class="fixed inset-x-0 bottom-0 z-10 bg-ground px-8 max-narrow:px-3.5"
 >
   <div
     bind:this={line}

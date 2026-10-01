@@ -1787,7 +1787,7 @@ every notice of the session, and the way back is not only here either — a disc
 `unarchive`, and a manual mark's record offers `undo` on the item surface. **What went wrong is
 counted** on `notices` until the panel is next opened, so a failure that lingered and went while
 nobody was looking is still in front of them when they return; opening the panel is the whole of
-acknowledging it. The accent is spent on what went wrong and on nothing else, as it is in the log.
+acknowledging it, and what goes wrong while it is open is seen as it arrives. The accent is spent on what went wrong and on nothing else, as it is in the log.
 **Nothing leaves while the pointer is over the line or focus is inside it**, its panel included, so
 nothing vanishes under somebody's hand; let go, everything lingers again from the start.
 
