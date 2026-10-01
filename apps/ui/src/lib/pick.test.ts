@@ -40,6 +40,17 @@ test("leaves a click on a control to the control", () => {
   expect(open).not.toHaveBeenCalled();
 });
 
+/** A chooser's offer takes on `mousedown`, and the click after it is still its own. */
+test("leaves a click on an offered option to the chooser", () => {
+  const open = vi.fn();
+  const option = document.createElement("div");
+  option.setAttribute("role", "option");
+
+  pickable(open)(click(1, option));
+
+  expect(open).not.toHaveBeenCalled();
+});
+
 test("goes on a double the browser spent on nothing", () => {
   selected(true);
   const go = vi.fn();

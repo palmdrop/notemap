@@ -1,4 +1,5 @@
-const CONTROLS = "a, button, input, textarea, select, label, [role='button']";
+const CONTROLS =
+  "a, button, input, textarea, select, label, [role='button'], [role='option']";
 
 /** A click on a control inside the cell is that control's, not the row's. */
 function inside(event: MouseEvent): boolean {

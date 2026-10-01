@@ -559,6 +559,30 @@ test("tagging says nothing in the corner", async () => {
   expect(notices.shown).toHaveLength(0);
 });
 
+/** The offer's rows are the chooser's, and a click on one is not a click on the row. */
+test("a tag taken from the offer with the mouse leaves the row selected", async () => {
+  pool(queued("one"));
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+  await open(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  await fireEvent.input(screen.getByLabelText("Add a tag"), {
+    target: { value: "research" },
+  });
+  // A browser keeps the offer under the pointer while it slides shut, so the
+  // click lands on it; under test it is gone with the take, and is clicked first.
+  const offered = screen.getByRole("option", { name: /research/ });
+  await fireEvent.click(offered);
+  await fireEvent.mouseDown(offered);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
+});
+
 /** A processed item is seen on the feed; the corner holds the way back. */
 /** The decision can be looked at, and taken back from the row, after it is made. */
 test("a discarded row stays where it stood while it is selected, and leaves when the selection does", async () => {

@@ -32,9 +32,9 @@ A row in the tag offer is a `role="option"` that takes on `mousedown`. The `clic
 up to the rail or body cell, which counts it as a click on the row and toggles the selection off.
 On a trigger tag that releases the held row, so the row disappears.
 
-- [ ] `pickable`/`doubled` (`lib/pick.ts`) treat `[role='option']` as a control
-- [ ] Test in `lib/pick.test.ts`, and a row-level test: taking a tag from the offer by mouse leaves the row selected
-- [ ] Commit
+- [x] `pickable`/`doubled` (`lib/pick.ts`) treat `[role='option']` as a control _(2026-10-01)_
+- [x] Test in `lib/pick.test.ts`, and a row-level test: taking a tag from the offer by mouse leaves the row selected
+- [x] Commit _(2026-10-01)_
 
 Verify: on the queue, select a row, take a trigger tag with the mouse, and the row stays drawn and selected. The tests are green.
 
