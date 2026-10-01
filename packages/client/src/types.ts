@@ -238,7 +238,9 @@ export interface TagsApi {
 /**
  * How much the pool holds, as it last answered. The client reads it again on
  * its own whenever something it can see may have changed it: its own work
- * draining, the log showing the pool did something, the pool coming back.
+ * draining, or the log showing the pool did something. Reading it when the
+ * pool comes into reach is the caller's, as it is for the other reads a
+ * surface needs on every screen.
  */
 export interface CountsApi {
   /** The items the queue holds. Absent until the pool has answered once. */

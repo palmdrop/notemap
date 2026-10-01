@@ -423,8 +423,6 @@ export function createClient(config: ClientConfig): Client {
       filter(Boolean),
     )
     .subscribe(() => {
-      // Whatever the pool counted while it was away is read by the drain.
-      sent = true;
       // The surfaces are read whichever drain this is: a read cannot start a
       // drain, so nothing here can loop.
       void (sweeping === 0 ? drain() : draining)
