@@ -1414,7 +1414,10 @@ pointer the destination handed back, or failing that the place the decision name
 the place only where it is a path** *(2026-10-01)*: the capability marks its path field
 `x-notemap-path`, and where none is marked the pointer is a handle the destination minted — an
 are.na block's id — so the place its decision named, read as the name it stands for, says more.
-Until the capability has been described, the pointer wins, as before. **A setting is never part of
+**Until the capability has been described the line names the destination alone**, and the place
+joins it once the description is in, so the line never says a handle or a setting and takes it
+back; the same holds for a record's place and a template's. A destination that could not be
+described — a deleted one — has its pointer win, as before. **A setting is never part of
 the place**: an argument the schema marks `x-notemap-inherits` is a destination setting taken for
 one delivery, how a note is written rather than where, and `research.md, none` read as two places.
 The description is asked once a session per destination and reaches nothing past the daemon. The capability
@@ -1980,7 +1983,8 @@ delivery's job, so the shell is counting down to a fact rather than inventing a 
 window closes the count gives way to the asking mark — the delivery is being attempted — and
 `cancel` stays, since a pending record can be called off until it resolves. **The shell asks how it
 went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
-once each — rather than waiting on the watcher's ten-second tempo, since most deliveries land
+once each, timed by this device's clock as the countdown is, and only those still ahead for a
+firing first heard of from the log — rather than waiting on the watcher's ten-second tempo, since most deliveries land
 within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 · 4s`, the soonest window
 — and each is read and cancelled in the panel.
 

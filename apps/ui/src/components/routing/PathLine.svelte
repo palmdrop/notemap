@@ -33,6 +33,7 @@
     textOf,
     withTyping,
     type Level,
+    type Refusal,
   } from "$lib/path-line";
 
   /**
@@ -253,7 +254,7 @@
    */
   function refused(
     answer: Exclude<DestinationCandidates, { kind: "answered" }>,
-  ): { refusal: string; why?: string } {
+  ): { refusal: Refusal; why?: string } {
     if (answer.kind === "not-offered") return { refusal: "not offered" };
     if (answer.kind === "unusable") {
       return { refusal: "unusable", why: answer.detail };

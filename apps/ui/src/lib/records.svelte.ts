@@ -20,6 +20,7 @@ export function recordsOf(item: () => string | undefined, when: () => boolean) {
   let settled = $state(false);
   let again = $state(0);
   let read: string | undefined;
+  let asked = 0;
 
   $effect(() => {
     void again;
@@ -31,17 +32,19 @@ export function recordsOf(item: () => string | undefined, when: () => boolean) {
     read = wanted;
     refused = "";
 
+    const mine = ++asked;
     if (wanted === undefined) return;
 
+    // Only the latest read draws: two of the same item can answer out of order.
     void (async () => {
       try {
         const answered = await client.routing.recordsFor(wanted);
-        if (wanted === item()) {
+        if (mine === asked) {
           drawn = answered;
           settled = true;
         }
       } catch (error) {
-        if (wanted === item() && !(error instanceof Unreachable)) {
+        if (mine === asked && !(error instanceof Unreachable)) {
           refused = saidBy(error);
           settled = true;
         }

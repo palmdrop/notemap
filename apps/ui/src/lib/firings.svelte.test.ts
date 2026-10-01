@@ -104,3 +104,24 @@ test("stops asking once the pool has said how it ended", async () => {
   await vi.advanceTimersByTimeAsync(60_000);
   expect(ask).toHaveBeenCalledTimes(1);
 });
+
+/** The countdown ticks by the second; the looks are not held to it. */
+test("asks at each look's own moment rather than on the next tick", async () => {
+  const ask = vi.fn();
+  firings.asks(ask);
+  firings.opened({ ...research, until: Date.now() + 1_000 });
+
+  await vi.advanceTimersByTimeAsync(1_000 + LOOKS_AFTER[0] - 1);
+  expect(ask).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(ask).toHaveBeenCalledOnce();
+});
+
+test("looks only ahead for a firing first heard of after its window closed", async () => {
+  const ask = vi.fn();
+  firings.asks(ask);
+  firings.opened({ ...research, until: Date.now() - LOOKS_AFTER[1] - 1 });
+
+  await vi.advanceTimersByTimeAsync(60_000);
+  expect(ask).toHaveBeenCalledTimes(LOOKS_AFTER.length - 2);
+});

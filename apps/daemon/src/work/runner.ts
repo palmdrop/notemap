@@ -17,6 +17,8 @@ export type RunnerConfig = {
 export type Runner = {
   /** Runs every claimable job now, and answers how many it resolved. */
   drain(): Promise<number>;
+  /** Looks again for work waiting on a time, for a host that just made some. */
+  wake(): void;
   stop(): Promise<void>;
 };
 
@@ -103,11 +105,10 @@ export function startRunner(
   async function wake(): Promise<void> {
     if (stopped) return;
     try {
-      const due = await pool.work.nextDue(kinds);
-      if (stopped || due === undefined) return;
-
-      const wait = Date.parse(due) - Date.now();
-      if (wait >= config.pollIntervalMs) return;
+      const wait = await pool.work.dueIn(kinds);
+      if (stopped || wait === undefined || wait >= config.pollIntervalMs) {
+        return;
+      }
 
       clearTimeout(waking);
       waking = setTimeout(tick, Math.max(wait, 0));
@@ -134,6 +135,7 @@ export function startRunner(
 
   return {
     drain,
+    wake: () => void wake(),
     stop: async () => {
       stopped = true;
       if (timer !== undefined) clearInterval(timer);

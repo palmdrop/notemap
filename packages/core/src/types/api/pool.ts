@@ -48,7 +48,6 @@ import type {
   SuggestionId,
   SyncCursor,
   TagName,
-  Timestamp,
 } from "../domain/ids";
 import type { Counts, EditOutcome, Item, TagUse } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
@@ -388,11 +387,11 @@ export interface WorkApi {
   release(lease: LeaseId): Promise<Result<void, LeaseRefusal>>;
 
   /**
-   * When the next job of these kinds waiting on a time comes due — a fired
-   * template's window, a retry's backoff — so a host can wake for it rather
-   * than for its next poll. Nothing where none is waiting.
+   * How long until the next job of these kinds waiting on a time comes due — a
+   * fired template's window, a retry's backoff — so a host can wake for it
+   * rather than for its next poll. Nothing where none is waiting.
    */
-  nextDue(kinds: readonly JobKind[]): Promise<Timestamp | undefined>;
+  dueIn(kinds: readonly JobKind[]): Promise<Duration | undefined>;
 
   /** Everything core has stopped retrying, of every kind, in one list. */
   abandoned(

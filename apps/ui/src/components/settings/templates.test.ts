@@ -124,7 +124,7 @@ test("draws each template with its tag, its place and what it last answered", as
   render(Templates);
 
   await screen.findByRole("button", { name: "research" });
-  expect(screen.getByText("research/{{captured_at}}")).toBeTruthy();
+  expect(await screen.findByText("research/{{captured_at}}")).toBeTruthy();
   await vi.waitFor(() => {
     expect(screen.getByText("ok")).toBeTruthy();
   });

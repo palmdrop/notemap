@@ -220,3 +220,23 @@ test("a pointer that is not a path gives way to the place the decision named", (
   expect(placeIn(record, called, readingOf(HANDLED))).toBe("Reading");
   expect(placeIn(record, called, readingOf(PATHED))).toBe("48213077");
 });
+
+/** Drawn and then taken back, the handle would read as a place for the length of a request. */
+test("a place is held back while the capability is still being described", () => {
+  const record = aRecord({
+    pointer: "48213077",
+    target: {
+      kind: "destination",
+      destination: "vault",
+      capability: "create",
+      arguments: { channel: "1234" },
+    },
+  });
+
+  expect(placeIn(record, undefined, "asking")).toBeUndefined();
+  expect(wentTo(record, nameOf, undefined, "asking")).toEqual({
+    name: nameOf("vault"),
+  });
+  // A destination nothing could describe still says where it landed.
+  expect(placeIn(record, undefined, undefined)).toBe("48213077");
+});

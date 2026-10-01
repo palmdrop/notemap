@@ -24,6 +24,7 @@ import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
   destinationRegistry,
+  type Action,
   type ActionObserver,
   type BlobStore,
   type Clock,
@@ -72,6 +73,8 @@ export type OpenPoolConfig = {
   readonly accounts?: Accounts;
   /** Told each action the pool records. Absent is a pool nobody listens to. */
   readonly log?: Logger;
+  /** Told each action too, after the log: how the host reacts to what the pool did. */
+  readonly heard?: (action: Action) => void;
 };
 
 /**
@@ -99,11 +102,16 @@ export type OpenPool = {
  * observer's throw as an uncaught exception — so it is dropped here rather than
  * taking the daemon down over a line nobody will read anyway.
  */
-function observing(log: Logger): ActionObserver {
+function observing(
+  log: Logger | undefined,
+  heard: ((action: Action) => void) | undefined,
+): ActionObserver | undefined {
+  if (log === undefined && heard === undefined) return undefined;
   return {
     action: (action) => {
       try {
-        logAction(log, action);
+        if (log !== undefined) logAction(log, action);
+        heard?.(action);
       } catch {
         // Nowhere left to say so.
       }
@@ -178,7 +186,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     clock: systemClock,
   });
 
-  const { log } = options;
+  const observer = observing(options.log, options.heard);
 
   const ports: PoolPorts = {
     store,
@@ -189,7 +197,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
     blobs,
     ...(mirrorWriter === undefined ? {} : { mirrorWriter }),
     destinations,
-    ...(log === undefined ? {} : { observer: observing(log) }),
+    ...(observer === undefined ? {} : { observer }),
   };
 
   return {

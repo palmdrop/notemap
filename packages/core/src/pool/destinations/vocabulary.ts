@@ -15,6 +15,9 @@ export const FOLDER_ARGUMENT = "folder";
  * arguments schema, so core reads what a kind says about itself rather than
  * holding a table keyed on capability names — which is the rule
  * [CONTEXT.md](../../../../../CONTEXT.md) states for capabilities generally.
+ *
+ * Marking it also promises that the pointer a delivery hands back is that path,
+ * as it landed. A capability that marks none hands back a handle it minted.
  */
 export const PATH_FIELD = "x-notemap-path";
 

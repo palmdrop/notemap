@@ -61,3 +61,22 @@ test("empties at once for another item, never drawing one item's records under a
   await rerender({ id: "two", version: 0 });
   expect(drawn()).toBe("");
 });
+
+test("draws the latest read of the same item, whichever answers last", async () => {
+  const answers: ((response: Response) => void)[] = [];
+  pool((request) => {
+    if (!routeOf(request).endsWith("/routing")) return json(404, {});
+    return new Promise<Response>((done) => answers.push(done));
+  });
+
+  const { rerender } = render(Fixture, { id: "one", version: 0 });
+  await vi.waitFor(() => expect(answers).toHaveLength(1));
+  await rerender({ id: "one", version: 1 });
+  await vi.waitFor(() => expect(answers).toHaveLength(2));
+
+  answers[1]?.(json(200, { values: [record("newer", "one")] }));
+  await vi.waitFor(() => expect(drawn()).toBe("newer"));
+  answers[0]?.(json(200, { values: [record("older", "one")] }));
+  await new Promise((done) => setTimeout(done, 20));
+  expect(drawn()).toBe("newer");
+});

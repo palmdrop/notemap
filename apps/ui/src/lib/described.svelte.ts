@@ -1,9 +1,10 @@
 import { untrack } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import type { Capability } from "@notemap/client";
 
 import { client } from "./client";
+import { readingOf, type Reading } from "./routing";
 
 /**
  * What each destination's capabilities are, asked once a session. Describing
@@ -13,6 +14,7 @@ import { client } from "./client";
  * refusal is asked again by whoever wants it next.
  */
 const held = new SvelteMap<string, readonly Capability[]>();
+const refused = new SvelteSet<string>();
 const asking = new SvelteMap<
   string,
   Promise<readonly Capability[] | undefined>
@@ -32,20 +34,18 @@ function ask(destination: string): Promise<readonly Capability[] | undefined> {
   const already = asking.get(destination);
   if (already !== undefined) return already;
 
-  const asked = client.destinations.describe(destination).then(
-    (answer) => {
-      if (answer.kind !== "described") {
-        asking.delete(destination);
-        return undefined;
-      }
-      held.set(destination, answer.capabilities);
-      return answer.capabilities;
-    },
-    () => {
-      asking.delete(destination);
-      return undefined;
-    },
-  );
+  const failed = () => {
+    asking.delete(destination);
+    refused.add(destination);
+    return undefined;
+  };
+
+  const asked = client.destinations.describe(destination).then((answer) => {
+    if (answer.kind !== "described") return failed();
+    held.set(destination, answer.capabilities);
+    refused.delete(destination);
+    return answer.capabilities;
+  }, failed);
   asking.set(destination, asked);
   return asked;
 }
@@ -58,8 +58,24 @@ export function capabilityHeld(
   return held.get(destination)?.find((one) => one.name === capability);
 }
 
+/**
+ * How a capability's arguments read, `asking` until its destination has
+ * answered once. A refusal reads as nothing known rather than holding forever:
+ * a deleted destination is never described.
+ */
+export function readingHeld(
+  destination: string,
+  capability: string,
+): Reading | "asking" | undefined {
+  if (held.has(destination)) {
+    return readingOf(capabilityHeld(destination, capability));
+  }
+  return refused.has(destination) ? undefined : "asking";
+}
+
 /** For tests, which would otherwise carry one case's descriptions into the next. */
 export function forgetDescriptions(): void {
   held.clear();
+  refused.clear();
   asking.clear();
 }

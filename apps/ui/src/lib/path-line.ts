@@ -39,6 +39,9 @@ export function scopesAlong(path: TypedPath): readonly string[] {
   ];
 }
 
+/** The words a destination's refusal at the root is drawn in. */
+export type Refusal = "not offered" | "unusable" | "unreachable";
+
 /**
  * What one scope answered, held by index against `scopesAlong`. A scope with no
  * entries is a folder that is not there yet, which is an ordinary state of a
@@ -49,7 +52,7 @@ export type Level = {
   readonly entries?: readonly CandidateEntry[];
   readonly truncated?: boolean;
   /** Why it answered nothing. At the root that is the destination refusing; deeper it is a folder that is not there. */
-  readonly refusal?: string;
+  readonly refusal?: Refusal;
   /** What the destination said, kept where a hover reaches it rather than spent on a line. */
   readonly why?: string;
 };

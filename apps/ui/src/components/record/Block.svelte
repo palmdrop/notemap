@@ -20,8 +20,8 @@
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
   import { keepOutput, outputOf } from "$lib/outputs";
-  import { capabilityHeld, described } from "$lib/described.svelte";
-  import { cancelledKey, keyFor, placeIn, readingOf } from "$lib/routing";
+  import { described, readingHeld } from "$lib/described.svelte";
+  import { cancelledKey, keyFor, placeIn } from "$lib/routing";
   import {
     BY_HAND,
     NOT_YET_DELIVERED,
@@ -108,7 +108,7 @@
       record,
       called,
       target.kind === "destination"
-        ? readingOf(capabilityHeld(target.destination, target.capability))
+        ? readingHeld(target.destination, target.capability)
         : undefined,
     ),
   );

@@ -210,14 +210,20 @@ test("asks once per level along the path", async () => {
 
 /** Drawing an answer is not a reason to ask again: the path is what asks. */
 test("asks nothing more once the levels are drawn and the path has not changed", async () => {
-  servingTree();
-  draw("projects/notemap/");
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  try {
+    servingTree();
+    draw("projects/notemap/");
 
-  await screen.findByText("notes/");
-  await new Promise((done) => setTimeout(done, 600));
+    await screen.findByText("notes/");
+    // Many times the debounce: a loop would have asked again by now.
+    await vi.advanceTimersByTimeAsync(10_000);
 
-  const scopes = asked().filter((route) => route.includes("/candidates"));
-  expect(scopes).toHaveLength(3);
+    const scopes = asked().filter((route) => route.includes("/candidates"));
+    expect(scopes).toHaveLength(3);
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("narrows the deepest level to what is typed, and leaves the rest whole", async () => {

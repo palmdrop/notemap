@@ -4,12 +4,13 @@
 **Last updated**: 2026-10-01
 **Shipped**:
 
-- 2026-10-01 — **A host can wake for work that is waiting on a time.** `work.nextDue(kinds)`
-  answers when the earliest unleased job of those kinds that is not yet claimable becomes so — a
-  fired template's window, a retry's backoff — and nothing where none is waiting. The daemon's
-  runner asks after every pass and, where that falls before its next poll, claims at that moment
-  rather than on the poll after it. A trigger tag's delivery no longer waits up to a poll past its
-  window: the window is longer than the poll, so the runner always sees the job before it is due.
+- 2026-10-01 — **A host can wake for work that is waiting on a time.** `work.dueIn(kinds)`
+  answers how long until the earliest unleased job of those kinds that is not yet claimable becomes
+  so — a fired template's window, a retry's backoff — measured on the pool's own clock, and nothing
+  where none is waiting. The daemon's runner asks after every pass, and the delivery runner also
+  whenever the pool records `template-fired`; where the answer falls before its next poll, it
+  claims at that moment rather than on the poll after it. A trigger tag's delivery no longer waits
+  up to a poll past its window, however the two are configured.
 - 2026-09-30 — **A reservation nothing has tried does not seal a capture.** An edit reaching an
   item whose only records are reservations still waiting for their first attempt — in practice a
   trigger tag's, inside its window — amends it in place, and the delivery carries what it now
@@ -1310,7 +1311,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   mailbox — marks no field and has no folders, which is the ordinary case rather than a gap: there
   is nothing to check, and nothing about a path is inferred for it. Marking a field is the whole of
   what a new kind has to do to be folder-checked, and doing nothing is the whole of what it has to
-  do not to be.
+  do not to be. *Amended 2026-10-01*: **marking a path field also says the pointer is that path**
+  — the place a delivery hands back is the field's value as it landed, readable as a place. A
+  capability that marks none hands back a handle it minted, an are.na block's id, and a surface
+  reads the place its decision named instead. A kind whose pointer is not the path it was given
+  marks no field.
 - **A capability may say a field holds only something the destination already has** (added
   2026-09-08, [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)).
   A vault's folder is *made* by the delivery that needs it; an are.na channel is joined, a mailbox

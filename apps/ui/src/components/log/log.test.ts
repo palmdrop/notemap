@@ -591,7 +591,7 @@ test("draws the record as a block under routed, reading what was sent, and none 
   reading();
 
   expect(await screen.findByText("Fiction vault")).toBeDefined();
-  expect(screen.getByText("drafts/note.md")).toBeDefined();
+  expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.getByText("created")).toBeDefined();
   expect(await screen.findByText("# what went")).toBeDefined();
   // The way to the item is in the block's foot, in the log alone.

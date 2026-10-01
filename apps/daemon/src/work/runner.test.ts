@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-import type { Lease, Pool, Timestamp } from "@notemap/core";
+import type { Duration, Lease, Pool } from "@notemap/core";
 
 import { startRunner } from "./runner";
 
@@ -26,11 +26,11 @@ function holding(due: number) {
       },
       complete: () => Promise.resolve({ ok: true }),
       release: () => Promise.resolve({ ok: true }),
-      nextDue: () =>
+      dueIn: () =>
         Promise.resolve(
           taken || Date.now() >= due
             ? undefined
-            : (new Date(due).toISOString() as Timestamp),
+            : ((due - Date.now()) as Duration),
         ),
     },
   } as unknown as Pool;
@@ -73,6 +73,27 @@ it("leaves a job due after the next poll to that poll", async () => {
 
   await vi.advanceTimersByTimeAsync(POLL * 2);
   expect(queue.claims).toEqual([POLL, POLL * 2]);
+
+  await runner.stop();
+});
+
+/** A window shorter than the poll: no pass would see the job before it is due. */
+it("claims a job made between polls as it comes due, once woken", async () => {
+  const queue = holding(1_000);
+  const runner = startRunner(
+    queue.pool,
+    ["delivery"],
+    () => Promise.resolve({ kind: "succeeded" } as never),
+    CONFIG,
+  );
+
+  runner.wake();
+  await vi.advanceTimersByTimeAsync(999);
+  expect(queue.taken()).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(queue.taken()).toBe(true);
+  // Nothing asked before it was due, and nothing after but the pass that took it.
+  expect(new Set(queue.claims)).toEqual(new Set([1_000]));
 
   await runner.stop();
 });

@@ -65,7 +65,11 @@ const DESCRIBED = {
       argumentsSchema: {
         type: "object",
         properties: {
-          directory: { type: "string", title: "Directory" },
+          directory: {
+            type: "string",
+            title: "Directory",
+            "x-notemap-path": true,
+          },
           filename: { type: "string", title: "Filename" },
         },
       },
@@ -114,7 +118,9 @@ test("reads as a file: destination, place, what was done, and the template", asy
 
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(
-    screen.getByText("drafts/note.md").closest("a")?.getAttribute("href"),
+    (await screen.findByText("drafts/note.md"))
+      .closest("a")
+      ?.getAttribute("href"),
   ).toBe("https://vault.example/drafts/note.md");
   expect(screen.getByText("created")).toBeDefined();
   expect(screen.getByText("via Research")).toBeDefined();

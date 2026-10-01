@@ -74,7 +74,7 @@ test("draws the capture and the one record under it", async () => {
   const { container } = render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText("Fiction vault")).toBeDefined();
-  expect(screen.getByText("drafts/note.md")).toBeDefined();
+  expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.queryByText("drafts/two.md")).toBeNull();
   expect(screen.getByText(dayOf(RECORD.at))).toBeDefined();
   expect(screen.getByText("delivered")).toBeDefined();

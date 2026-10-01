@@ -65,7 +65,7 @@ export function wentTo(
   record: RoutingRecord,
   nameOf: (destination: string) => string,
   called?: Namer,
-  reading?: Reading,
+  reading?: Reading | "asking",
 ): Went {
   if (record.target.kind !== "destination") {
     const note = record.target.note;
@@ -131,15 +131,19 @@ export type Namer = (field: string, value: string) => string | undefined;
 /**
  * Where a delivery put a copy, in the words a person could go and look with:
  * the pointer the destination handed back where it is a path, or else the
- * place the decision named. Until the capability has been read, the pointer
- * wins, as it did before anything could tell a path from a handle.
+ * place the decision named. Nothing while the capability is still `asking`,
+ * so a line does not say a handle or a setting and then take it back. Where it
+ * could not be read at all, the pointer wins, as it did before anything could
+ * tell a path from a handle.
  */
 export function placeIn(
   record: RoutingRecord,
   called?: Namer,
-  reading?: Reading,
+  reading?: Reading | "asking",
 ): string | undefined {
-  if (record.target.kind !== "destination") return undefined;
+  if (record.target.kind !== "destination" || reading === "asking") {
+    return undefined;
+  }
 
   const named = placeNamed(record.target.arguments, called, reading?.settings);
   if (reading === undefined || reading.pathed) return record.pointer ?? named;

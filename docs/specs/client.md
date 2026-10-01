@@ -4,6 +4,10 @@
 **Last updated**: 2026-10-01
 **Shipped**:
 
+- 2026-10-01 — **`client.actions.ask()` reads the log now rather than on the tempo.** The watcher
+  reads at once and counts its tempo again from that read; nothing while the gates are shut or a
+  read is already out. The shell asks just after a fired template's window closes, so the corner
+  stops saying `routing` within a second of the delivery landing rather than up to ten.
 - 2026-09-30 — **`client.counts` says how much the queue holds.** Read from `GET /v1/counts`, held
   in memory and never persisted, and read again on the client's own events: a drain that sent
   something, the watcher seeing the pool act, and a route, mark or cancel. See

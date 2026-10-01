@@ -8,7 +8,10 @@ import { createApp } from "./app";
 import { startSweeper } from "./assets/sweeper";
 import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
-import { startDeliveryRunner } from "./destinations/runner";
+import {
+  startDeliveryRunner,
+  type DeliveryRunner,
+} from "./destinations/runner";
 import { startMirrorRunner } from "./mirror/runner";
 import { openAccounts, openAuth, openPool, systemClock } from "./ports";
 import { runCliCommand } from "./cli";
@@ -67,6 +70,10 @@ async function start(): Promise<void> {
 
   mkdirSync(dirname(config.pool), { recursive: true });
 
+  // Started once the pool is open, and told by it of every template that
+  // fires: a window shorter than the poll would otherwise wait for the poll.
+  const runners: { delivery?: DeliveryRunner } = {};
+
   const {
     pool,
     ports,
@@ -80,6 +87,9 @@ async function start(): Promise<void> {
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
     accounts,
     log,
+    heard: (action) => {
+      if (action.kind === "template-fired") runners.delivery?.wake();
+    },
   });
 
   // What the adapters make of the accounts they were handed. The daemon prints
@@ -119,6 +129,7 @@ async function start(): Promise<void> {
     config.delivery,
     log,
   );
+  runners.delivery = delivery;
 
   const sweeper = startSweeper(pool, config.sweep, log);
 

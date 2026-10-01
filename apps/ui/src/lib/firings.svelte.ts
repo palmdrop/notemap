@@ -28,8 +28,8 @@ let now = $state(Date.now());
 let ticking: ReturnType<typeof setInterval> | undefined;
 
 const closed = new SvelteSet<string>();
-/** By record, how many of `LOOKS_AFTER` have been spent. */
-const looked = new SvelteMap<string, number>();
+/** By record, the looks still to come. */
+const looks = new SvelteMap<string, ReturnType<typeof setTimeout>[]>();
 let asking: (() => void) | undefined;
 
 function tick(): void {
@@ -39,22 +39,27 @@ function tick(): void {
     return;
   }
   now = Date.now();
-  look();
   if (ticking === undefined) ticking = setInterval(tick, 1_000);
 }
 
-/** One ask however many windows are due, since one read answers them all. */
-function look(): void {
-  let due = false;
-  for (const firing of open) {
-    if (firing.until === undefined) continue;
-    const spent = looked.get(firing.record) ?? 0;
-    const after = LOOKS_AFTER[spent];
-    if (after === undefined || now < firing.until + after) continue;
-    looked.set(firing.record, spent + 1);
-    due = true;
-  }
-  if (due) asking?.();
+/**
+ * Against the same clock the countdown reads. Only what is still ahead: a
+ * firing first heard of from the log was heard of by a read.
+ */
+function lookAfter(firing: Firing): void {
+  if (firing.until === undefined || looks.has(firing.record)) return;
+  const until = firing.until;
+  looks.set(
+    firing.record,
+    LOOKS_AFTER.map((after) => until + after - Date.now())
+      .filter((wait) => wait > 0)
+      .map((wait) => setTimeout(() => asking?.(), wait)),
+  );
+}
+
+function stopLooking(record: string): void {
+  for (const look of looks.get(record) ?? []) clearTimeout(look);
+  looks.delete(record);
 }
 
 /**
@@ -106,6 +111,7 @@ export const firings = {
           };
 
     open = [...open.filter((one) => one.record !== firing.record), merged];
+    lookAfter(merged);
     tick();
   },
 
@@ -116,7 +122,7 @@ export const firings = {
       if (!oldest.done) closed.delete(oldest.value);
     }
     open = open.filter((one) => one.record !== record);
-    looked.delete(record);
+    stopLooking(record);
     tick();
   },
 
@@ -127,9 +133,9 @@ export const firings = {
 
   /** A shut door leaves nothing in flight on screen. */
   clear(): void {
+    for (const record of looks.keys()) stopLooking(record);
     open = [];
     closed.clear();
-    looked.clear();
     tick();
   },
 };

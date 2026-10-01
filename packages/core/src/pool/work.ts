@@ -91,6 +91,21 @@ export function release(
   return ports.work.releaseLease(lease);
 }
 
+/**
+ * Measured on the pool's own clock, so a host waiting on it never compares a
+ * time the store judged against one it read itself.
+ */
+export async function dueIn(
+  ports: PoolPorts,
+  kinds: readonly JobKind[],
+): Promise<Duration | undefined> {
+  const now = ports.clock.now();
+  const due = await ports.work.nextDue(kinds, now);
+  return due === undefined
+    ? undefined
+    : ((Date.parse(due) - Date.parse(now)) as Duration);
+}
+
 export function abandoned(
   ports: PoolPorts,
   page: Page<AbandonedPosition>,

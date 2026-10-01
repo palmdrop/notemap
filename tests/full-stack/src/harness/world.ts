@@ -25,6 +25,9 @@ export type Told = {
   readonly origin?: string;
   /** Written at the end of the config file as it is, for a test that declares `[[accounts]]`. */
   readonly accounts?: string;
+  /** How often the delivery runner looks, where a test needs it slower than a window. */
+  readonly deliveryPoll?: number;
+  readonly triggerWindow?: number;
 };
 
 export type World = {
@@ -123,8 +126,8 @@ grace = 86400000
 interval = 3600000
 
 [delivery]
-pollInterval = ${POLL}
+pollInterval = ${told.deliveryPoll ?? POLL}
 leaseFor = 300000
 batch = 4
-${told.accounts ?? ""}`;
+${told.triggerWindow === undefined ? "" : `\n[routing]\ntriggerWindow = ${told.triggerWindow}\n`}${told.accounts ?? ""}`;
 }

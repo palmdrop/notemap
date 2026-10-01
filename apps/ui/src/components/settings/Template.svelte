@@ -9,12 +9,15 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { argumentsOf } from "$lib/arguments";
-  import { capabilityHeld, described } from "$lib/described.svelte";
+  import {
+    capabilityHeld,
+    described,
+    readingHeld,
+  } from "$lib/described.svelte";
   import { slide } from "$lib/motion";
   import { pickable } from "$lib/pick";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
-  import { readingOf } from "$lib/routing";
   import { placeOf } from "$lib/templates";
 
   let {
@@ -112,7 +115,10 @@
   }
 
   const capability = $derived(capabilityHeld(one.destination, one.capability));
-  const settings = $derived(readingOf(capability)?.settings ?? []);
+  const reading = $derived(readingHeld(one.destination, one.capability));
+  const settings = $derived(
+    reading === "asking" ? [] : (reading?.settings ?? []),
+  );
 
   const called = $derived((field: string, value: string) =>
     nameFor({
@@ -123,7 +129,9 @@
     }),
   );
 
-  const place = $derived(placeOf(one, called, settings));
+  const place = $derived(
+    reading === "asking" ? "" : placeOf(one, called, settings),
+  );
 
   /** The settings this template takes for its deliveries, each its own fact. */
   const taken = $derived(

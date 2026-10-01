@@ -8,14 +8,13 @@
   import { recordHref } from "$components/item/href";
   import Turning from "$components/primitives/marks/Turning.svelte";
   import { client } from "$lib/client";
-  import { capabilityHeld, described } from "$lib/described.svelte";
+  import { described, readingHeld } from "$lib/described.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
   import {
     cancelledKey,
     keyFor,
-    readingOf,
     wentTo,
     wentWhere,
     type Went,
@@ -79,7 +78,7 @@
         const target = record.target;
         const reading =
           target.kind === "destination"
-            ? readingOf(capabilityHeld(target.destination, target.capability))
+            ? readingHeld(target.destination, target.capability)
             : undefined;
 
         return {
