@@ -5,6 +5,7 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { publish } from "$lib/command/stack.svelte";
   import { left, type Firing } from "$lib/firings.svelte";
+  import { slide } from "$lib/motion";
   import type { Said } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
   import { timeOf } from "$lib/stamp";
@@ -64,11 +65,16 @@
   }
 </script>
 
+<!--
+  Hung from `notices` at the line's left, and clear of the line's rule so the
+  two never read as one box. A phone has no room to spare, so there it spans.
+-->
 <section
   bind:this={scroller}
+  transition:slide
   id={PANEL}
   aria-label="notices"
-  class="absolute inset-x-0 bottom-full max-h-[60dvh] overflow-y-auto border-x border-t border-ink bg-ground"
+  class="absolute bottom-[calc(100%+1px)] left-0 max-h-[60dvh] w-full max-w-panel overflow-y-auto border-x border-t border-ink bg-ground max-narrow:max-w-none"
 >
   <header
     class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-ground px-3 py-1.5"

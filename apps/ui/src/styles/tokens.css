@@ -50,6 +50,8 @@
   --spacing-gap-time: 28px;
   /* The status line: one line of the shell's text and its air. */
   --spacing-status: 2.25rem;
+  /* The notices panel, hung from the status line where there is room. */
+  --spacing-panel: 28rem;
 
   --breakpoint-narrow: 44rem;
   --breakpoint-wide: 64rem;

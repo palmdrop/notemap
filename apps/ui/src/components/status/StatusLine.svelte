@@ -171,7 +171,6 @@
       <Message
         notice={notices.latest}
         refused={newestRefusal}
-        told={notices.history.length}
         expanded={open}
         ontoggle={toggle}
         ontake={(id) => notices.take(id)}

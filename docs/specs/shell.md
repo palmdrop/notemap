@@ -1761,11 +1761,12 @@ who did not ask: an item routed and where it went, a delivery that failed, a del
 Beside the notices the line says what is true of the shell rather than of any item: what is in
 flight, what stands, how much is left, and whether the pool answers.
 
-**The left is the message line.** It says the **newest notice still live**, its first line and its
-reason on one line, cut to fit rather than wrapped, and beside it whatever the notice offers
-(`undo`) and, for one that stands, `dismiss`. Where no notice is live it says the newest refusal,
-with `dismiss`; where nothing is live at all and something has been said this session, it offers
-`notices`; otherwise it is empty. A notice rises into the line as it arrives: the line is read at
+**The left is the message line.** It begins with **`notices ▴`**, always there, which opens the
+panel and is what the panel hangs from — a button that came and went with what had been said would
+be one nobody could find when they wanted it. After it, the **newest notice still live**, its first
+line and its reason on one line, cut to fit rather than wrapped, and beside it whatever the notice
+offers (`undo`) and, for one that stands, `dismiss`. Where no notice is live it says the newest
+refusal, with `dismiss`, or nothing. Below `narrow`, `notices` is its mark alone. A notice rises into the line as it arrives: the line is read at
 the edge of the eye, and motion is what tells that edge something was said.
 
 **A confirmation goes on its own and a failure holds.** Anything a person may have to act on stays
@@ -1792,8 +1793,12 @@ A press on any count but the queue's opens the panel. **Below `narrow`** the wor
 flight is `routing 12s cancel`, pending `◐ 3`, what stands `! 2`, the queue's count is not drawn, and
 reachability is the glyph alone. The message keeps its first line and drops its reason.
 
-**The panel** opens above the line from a press on the message or a count, or `n` anywhere, and
-closes on `esc`, on its own `close`, or on a press anywhere outside the line. It is the one place a
+**The panel** opens above the line from `notices`, a press on the message or a count, or `n`
+anywhere, and closes on `esc`, on its own `close`, or on a press anywhere outside the line. It
+**hangs from `notices`** at the line's left, at most `28rem` wide so it reads as the notices' own
+rather than as a sheet over the page, and spans the line below `narrow`. It **slides open and
+shut** as a section does, and stands clear of the line's rule, which stays drawn under it so the
+two never read as one box. Opened before anything has been said, it says so. It is the one place a
 notice that has gone can be read again: this session's notices, **oldest first so the newest sits
 nearest the line**, each with its time, what and why, the capture it was about, and `look`. A notice
 still live keeps its offer and its `dismiss`; one that has gone keeps neither, since what it offered

@@ -5,14 +5,14 @@
   import { PANEL } from "./panel";
 
   /**
-   * The left of the status line: the newest notice still live, on one line and
-   * cut to fit, with whatever it offers beside it. Where nothing is live it
-   * says what the pool refused, or offers the panel's history, or is empty.
+   * The left of the status line: `notices`, which the panel opens from and is
+   * always there to open, then the newest notice still live, on one line and
+   * cut to fit, with whatever it offers beside it. Where no notice is live it
+   * says what the pool refused, or nothing.
    */
   let {
     notice,
     refused,
-    told,
     expanded,
     ontoggle,
     ontake,
@@ -22,8 +22,6 @@
     notice?: Notice;
     /** The newest refusal, said where no notice is live. */
     refused?: { readonly id: string; readonly what: string };
-    /** How many notices the panel can read back. */
-    told: number;
     expanded: boolean;
     ontoggle: () => void;
     ontake: (id: string) => void;
@@ -47,6 +45,19 @@
 </script>
 
 <div class="flex min-w-0 flex-1 items-baseline gap-4 max-narrow:gap-3">
+  <button
+    type="button"
+    aria-label="notices"
+    aria-expanded={expanded}
+    aria-controls={PANEL}
+    onclick={ontoggle}
+    class="flex-none whitespace-nowrap"
+    class:font-semibold={expanded}
+  >
+    <span class="max-narrow:hidden">notices</span>
+    {expanded ? "▾" : "▴"}
+  </button>
+
   {#if said !== undefined}
     <button
       type="button"
@@ -91,14 +102,5 @@
         dismiss
       </button>
     {/if}
-  {:else if told > 0}
-    <button
-      type="button"
-      aria-expanded={expanded}
-      aria-controls={PANEL}
-      onclick={ontoggle}
-    >
-      notices
-    </button>
   {/if}
 </div>

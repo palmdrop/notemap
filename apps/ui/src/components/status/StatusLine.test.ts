@@ -41,8 +41,7 @@ function command(id: string) {
 }
 
 async function opened() {
-  const [toggle] = await screen.findAllByRole("button", { expanded: false });
-  await fireEvent.click(toggle!);
+  await fireEvent.click(await screen.findByRole("button", { name: "notices" }));
   return screen.getByRole("region", { name: "notices" });
 }
 
@@ -182,6 +181,21 @@ test("a standing notice is dismissed from the panel", async () => {
   await fireEvent.click(within(panel).getByRole("button", { name: "dismiss" }));
 
   expect(notices.standing).toHaveLength(0);
+});
+
+/** The panel is where notices are read back, so it is there to open before anything is said. */
+test("notices opens the panel when nothing has been said", async () => {
+  pool(quiet);
+  render(StatusLine);
+
+  const panel = await opened();
+
+  expect(panel.textContent).toContain("Nothing has been said yet.");
+  expect(
+    screen
+      .getByRole("button", { name: "notices" })
+      .getAttribute("aria-expanded"),
+  ).toBe("true");
 });
 
 test("the panel opens and closes by command, and closes on a press outside", async () => {
