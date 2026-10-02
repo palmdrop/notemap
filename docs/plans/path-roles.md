@@ -1,9 +1,9 @@
 # Path roles
 
 **Date**: 2026-10-02
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-02
 
 ---
 
@@ -129,12 +129,12 @@ whose fix was a shape on `x-notemap-candidates` (`"path" | "flat"`). Path roles 
 askable field carrying `x-notemap-path` is `/`-separated, and one carrying none is flat. Drop this
 phase if the ADR should stay about places alone.
 
-- [ ] Fold the decision into the phase-1 ADR: an askable field marked with a path role draws the
+- [x] Fold the decision into the phase-1 ADR: an askable field marked with a path role draws the
       typed line, any other the flat browser. `x-notemap-candidates` stays a flag.
-- [ ] `candidate-browsers.ts`: choose by the field's mark, not the kind's name; the registry
+- [x] `candidate-browsers.ts`: choose by the field's mark, not the kind's name; the registry
       keyed on `filesystem` / `webdav` goes.
-- [ ] shell.md: amend where it says which kinds get the typed line. Tick the todo item.
-- [ ] Commit.
+- [x] shell.md: amend where it says which kinds get the typed line. Tick the todo item.
+- [x] Commit.
 
 **Verify:** a component test where a made-up kind with a path-marked askable field gets
 `PathLine`, and an are.na-shaped field gets `CandidateBrowser`; filesystem and webdav composers
@@ -147,9 +147,12 @@ unchanged by eye.
 - **Whether the adapter's own `require` check has the same gap as the report.** ADR 36 puts the
   delivery-time check in the adapter. If it also treats `directory`'s last segment as a leaf, fix it
   in phase 2 with a test; if it already checks the whole directory, only the report was wrong.
+  *Resolved*: both `destination-fs` and `destination-webdav` check the folder of the composed note,
+  the deepest included. Only the report was wrong.
 - **Whether a client holds a description across sessions.** shell.md says a description is asked
   once a session; if anything persists one, a stale `true` on `directory` reads as a whole path
   until it is asked again. Greenfield: acceptable, but confirm rather than assume.
+  *Resolved*: nothing persists one. The client asks and keeps nothing; the shell holds it in memory.
 - **Patterns in a leaf.** A template's `filename: "{{date}}.md"` composes to
   `…/{{date}}.md` in the templates list. That is today's behaviour with a different separator; if
   it reads worse, it is the templates list's to expand, not this plan's.

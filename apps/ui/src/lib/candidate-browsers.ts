@@ -3,6 +3,7 @@ import type { Component } from "svelte";
 import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
 import PathLine from "$components/routing/PathLine.svelte";
 import type { Said } from "$lib/forecast";
+import type { Field } from "$lib/schema-form";
 
 /**
  * A control for one askable field, and the whole of it — the text the field
@@ -29,22 +30,14 @@ export type BrowserProps = {
   onrelease?: () => void;
 };
 
-export type BrowserRegistry = Partial<Record<string, Component<BrowserProps>>>;
-
 /**
- * The kinds that hold a filesystem draw the typed line; every other kind draws
- * the schema-driven browser, which knows nothing about paths. The lookup is on
- * the kind alone: what a field means is the kind's business, and a capability
- * a kind shares with another does not make their vaults the same shape.
+ * A field marked as a path, or part of one, is `/`-separated and draws the
+ * typed line; any other draws the schema-driven browser, which knows nothing
+ * about paths. The line has to know before the first answer arrives, since
+ * its asks, its forecast and its `+ folder` all read the path apart.
  */
-const REGISTRY: BrowserRegistry = {
-  filesystem: PathLine,
-  webdav: PathLine,
-};
-
 export function browserFor(
-  kind: string,
-  registry: BrowserRegistry = REGISTRY,
+  field: Pick<Field, "path">,
 ): Component<BrowserProps> {
-  return registry[kind] ?? CandidateBrowser;
+  return field.path === undefined ? CandidateBrowser : PathLine;
 }

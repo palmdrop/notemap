@@ -92,6 +92,23 @@ const CREATE_ASKABLE = {
   },
 };
 
+const CREATE_ASKABLE_PATH = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["directory"],
+    properties: {
+      directory: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-path": "folders",
+      },
+      filename: { type: "string", "x-notemap-path": "leaf" },
+    },
+  },
+};
+
 const CREATE_WITH_ENUM = {
   name: "create",
   accepts: ["text"],
@@ -165,6 +182,7 @@ const CREATE_OR_APPEND = {
         description:
           "The note, relative to the vault's root. Ending in `/` names a folder, and the filename is derived.",
         "x-notemap-candidates": true,
+        "x-notemap-path": true,
       },
       heading: {
         type: "string",
@@ -240,24 +258,23 @@ function serving(
 }
 
 /**
- * A destination whose `create` capability's `directory` can be browsed.
- * The kind is one nothing registers a control for, so this draws the
- * schema-driven browser; the kinds that hold a filesystem draw the typed line
- * and are exercised in `PathLine.test.ts`.
+ * A destination whose `create` capability's `directory` can be browsed. The
+ * field is marked as no path, so this draws the schema-driven browser; a field
+ * marked as one draws the typed line, exercised in `PathLine.test.ts`.
  */
 function servingBrowsable(
   answerAt: (scope: string | undefined) => Record<string, unknown>,
-  kind = "kanban",
+  capability: Record<string, unknown> = CREATE_ASKABLE,
 ) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
-      return json(200, { values: [aDestination({ kind })] });
+      return json(200, { values: [aDestination({ kind: "kanban" })] });
     }
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_ASKABLE],
+        capabilities: [capability],
       });
     }
     if (route.endsWith("/candidates")) {
@@ -463,7 +480,7 @@ test("a template's summary hides the capability choice until edit", async () => 
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE, CREATE_OR_APPEND],
+        capabilities: [CREATE, APPEND],
       });
     }
     return json(404, { error: { code: "unknown-route" } });
@@ -1043,15 +1060,15 @@ test("an unregistered kind gets the schema-driven control", async () => {
   expect(await screen.findByText("inbox")).toBeDefined();
 });
 
-/** The seam decides on the kind alone, and a filesystem-shaped one draws the line. */
-test("a kind that holds a filesystem gets the typed line instead", async () => {
+/** The seam decides on the field's mark, whatever the kind is called. */
+test("a field marked as a path gets the typed line instead", async () => {
   servingBrowsable(
     () => ({
       kind: "answered",
       entries: [{ label: "inbox", value: "inbox" }],
       truncated: false,
     }),
-    "filesystem",
+    CREATE_ASKABLE_PATH,
   );
 
   draw();

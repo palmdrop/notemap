@@ -176,10 +176,6 @@
     described?.kind === "described" ? described.capabilities : [],
   );
 
-  const destinationKind = $derived(
-    $destinations.find((one) => one.id === chosen)?.kind,
-  );
-
   /** What an argument left unset falls back to, where the kind says it inherits one. */
   const inherited = $derived(
     $destinations.find((one) => one.id === chosen)?.settings ?? {},
@@ -203,13 +199,18 @@
   /**
    * Where the line is what draws the place, *what will happen* is not a step:
    * it is read off the line and said in one word, and `⇧⏎` is the way to the
-   * one capability that overrides it. A kind that draws the schema-driven
-   * browser is asked, where it has more than one to be asked about.
+   * one capability that overrides it. A destination whose line field is no
+   * path is asked, where it has more than one to be asked about.
    */
   const settles = $derived(
-    destinationKind !== undefined &&
-      browserFor(destinationKind) !== CandidateBrowser &&
-      capabilities.some((one) => one.name === CREATE_OR_APPEND),
+    capabilities.some(
+      (one) =>
+        one.name === CREATE_OR_APPEND &&
+        fieldsOf(one.argumentsSchema).some(
+          (field) =>
+            field.name === LINE_FIELD && browserFor(field) !== CandidateBrowser,
+        ),
+    ),
   );
 
   /**
@@ -861,8 +862,8 @@
 
 {#snippet control(field: (typeof fields)[number])}
   {@const title = field.title ?? field.name}
-  {#if field.askable && chosen !== undefined && capability !== undefined && destinationKind !== undefined}
-    {@const Browser = browserFor(destinationKind)}
+  {#if field.askable && chosen !== undefined && capability !== undefined}
+    {@const Browser = browserFor(field)}
     <Browser
       destination={chosen}
       {capability}

@@ -4,6 +4,11 @@
 **Last updated**: 2026-10-02
 **Shipped**:
 
+- 2026-10-02 — **A place reads as one path, and the line follows the mark.** A pending `create`
+  reads `…/a.md`, or `…/2026/` until it has a filename, where it read `…/2026, a.md`. A field
+  marked as a path draws the typed line whatever its kind is called.
+  ([ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md),
+  [plan](../plans/path-roles.md))
 - 2026-10-02 — **The first day shares the list head's line.** By day, the first heading is drawn
   on the head's line before anything scrolls, as it already was once held at the top.
 - 2026-10-02 — **The shell grows with the screen.** The one size is the reader's own at 350px and
@@ -1137,7 +1142,8 @@ is live. Routing and marking processed still reach the pool or do not happen
 
 #### The place is one line you type
 
-**For a destination whose kind holds a filesystem, the place is one monospace line** (added
+**For a place field marked as a path, the place is one monospace line** (amended 2026-10-02 from
+*a destination whose kind holds a filesystem*; added
 2026-09-02, replacing the browser described here on 2026-08-31 — that control is what every other
 kind still draws). Typing filters the entries at the deepest settled scope, `/` descends, `⇥`
 completes the segment under the caret as far as the matches agree — and **does nothing where there
@@ -1236,11 +1242,13 @@ all**. An absent forecast is not knowing, and not knowing keeps the field. This 
 hint: a second such capability, with a field that applies either way, is what would make one
 necessary, and that is the moment to add it.
 
-**Which control a field draws is a lookup keyed by destination kind**, and it decides on the kind
-alone: what a field means is the kind's business, and a capability one kind shares with another
-does not make their contents the same shape. That it is keyed on the *name* is the weak part — a
-third filesystem-like kind needs a shell edit to get the tree — and `docs/todo.md` carries the
-shape this should take instead, which is the schema saying it. A kind with no hierarchy in it draws no tree, and
+**Which control a field draws follows the field's path mark** *(amended 2026-10-02,
+[ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md); until then a lookup
+keyed by destination kind name)*. A field marked `x-notemap-path`, in any role, is `/`-separated
+and draws the typed line; a field marked with none draws the schema-driven browser. The line has to
+know before the first answer arrives, and the mark is the kind saying so in its own schema, so a
+third filesystem-like kind gets the tree by marking its fields and with no shell edit. The line
+settles `create-or-append` where that capability's place field is marked. A field with no hierarchy in it draws no tree, and
 keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
 field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
 `↑↓` walking and `⏎` taking the one walked to or committing where the walk has not moved. The same

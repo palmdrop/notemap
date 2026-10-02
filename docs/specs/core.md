@@ -4,6 +4,12 @@
 **Last updated**: 2026-10-02
 **Shipped**:
 
+- 2026-10-02 — **A path field says which part of the path it holds.** `x-notemap-path` takes
+  `true` for a whole path, `"folders"` and `"leaf"` for one split across two fields, and the
+  markdown kinds' `create` declares its directory and filename that way. A `create` template that
+  requires its folder is now checked against the deepest folder too.
+  ([ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md),
+  [plan](../plans/path-roles.md))
 - 2026-10-01 — **A host can wake for work that is waiting on a time.** `work.dueIn(kinds)`
   answers how long until the earliest unleased job of those kinds that is not yet claimable becomes
   so — a fired template's window, a retry's backoff — measured on the pool's own clock, and nothing
