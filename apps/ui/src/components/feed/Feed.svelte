@@ -240,7 +240,11 @@
 </Head>
 
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
-  <Day at={one.at} {motion} />
+  <Day
+    at={one.at}
+    leads={refused === undefined && one.key === headed[0]?.key}
+    {motion}
+  />
 {/snippet}
 
 {#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
@@ -271,6 +275,7 @@
     {motion}
     bind:this={index}
     byDay={layout.byDay}
+    leads={refused === undefined}
     items={rows}
     {selected}
     onselect={select}

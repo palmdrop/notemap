@@ -29,13 +29,13 @@
     "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --default-font-family: var(--font-shell);
 
-  --text-shell: 15px;
-  --text-shell--line-height: 22px;
+  --text-shell: 0.9375rem;
+  --text-shell--line-height: 1.375rem;
 
   /* The bar's status mark, which is a glyph and not a word: at the shell's
      size a filled circle reads as a button. */
-  --text-glyph: 11px;
-  --text-glyph--line-height: 22px;
+  --text-glyph: 0.6875rem;
+  --text-glyph--line-height: 1.375rem;
 
   --tracking-caps: 0.08em;
 
@@ -47,7 +47,7 @@
   --spacing-measure: 72rem;
   --spacing-read: 44rem;
   --spacing-prose: 38rem;
-  --spacing-gap-time: 28px;
+  --spacing-gap-time: 1.75rem;
   /* The status line: one line of the shell's text and its air. */
   --spacing-status: 2.25rem;
   /* The notices panel, hung from the status line where there is room. */
@@ -59,6 +59,19 @@
 
   --breakpoint-narrow: 44rem;
   --breakpoint-wide: 64rem;
+}
+
+/* Every size is in `rem`, so the root's size scales the whole shell as a
+   browser's zoom would: the reader's own size at 350px and below, a quarter
+   more at 500px, half as much again at 1200px and above, and straight lines
+   between. Breakpoints stay where they are, a media query's `rem` being the
+   browser's and not the root's. */
+:root {
+  font-size: clamp(100%, 0.41667rem + 2.66667vw, 125%);
+
+  @media (width >= 500px) {
+    font-size: clamp(125%, 1.07143rem + 0.57143vw, 150%);
+  }
 }
 
 /* Motion, named by magnitude rather than role: it is the one scale here whose

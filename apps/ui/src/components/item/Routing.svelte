@@ -139,6 +139,29 @@
       ><Turning said="pending" /></span
     >{/if}{/snippet}
 
+<!-- Two lines at the most, however narrow the rail: where the place does not
+     fit beside the destination it goes under it, whole or cut, and the mark
+     saying it has not landed stays at its end. -->
+{#snippet single(line: Line)}
+  <span class="flex max-w-full min-w-0 items-baseline gap-x-[0.5ch]">
+    <span aria-hidden="true" class="shrink-0">→</span>
+    <span class="min-w-0 truncate font-semibold">{line.name}</span>
+  </span>
+  {#if line.place !== undefined || line.note !== undefined || line.pending === true}
+    <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch]">
+      {#if line.place !== undefined}
+        <span class="min-w-0 truncate" title={line.title}>{line.place}</span>
+      {/if}
+      {#if line.note !== undefined}
+        <span class="min-w-0 truncate">{line.note}</span>
+      {/if}
+      {#if line.pending === true}
+        <span class="shrink-0"><Turning said="pending" /></span>
+      {/if}
+    </span>
+  {/if}
+{/snippet}
+
 {#snippet waits()}
   {#if waiting > 0}
     <Turning said={`${String(waiting)} pending`} />
@@ -164,15 +187,34 @@
   {/if}
 {:else if summarized}
   <!-- A summary names where without what, so it is one line, as a short one is. -->
-  <div class="mt-2 break-words">{@render joined()}</div>
+  <div
+    class="mt-2 flex items-baseline gap-x-[1ch]"
+    title={lines.map((line) => line.name).join(", ")}
+  >
+    <span class="flex min-w-0 items-baseline gap-x-[0.5ch]">
+      <span aria-hidden="true" class="shrink-0">→</span>
+      <span class="min-w-0 truncate"
+        >{#each lines as line, at (at)}{@render went(line)}{at <
+          lines.length - 1
+            ? ", "
+            : ""}{/each}</span
+      >
+    </span>
+    {#if waiting > 0}
+      <span class="shrink-0">{@render waits()}</span>
+    {/if}
+  </div>
 {:else if lines.length > 0 || said !== ""}
   <div class="mt-2">
     {#each lines as line (line.href)}
-      <div class="flex flex-wrap items-baseline gap-x-4">
-        <span class="min-w-0 break-words">
-          <span aria-hidden="true">→</span>
-          <a href={line.href}>{@render went(line)}</a>
-        </span>
+      <div class="flex items-baseline gap-x-4">
+        <a
+          href={line.href}
+          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]"
+          title={[line.name, line.title ?? line.place, line.note]
+            .filter((part) => part !== undefined)
+            .join(" ")}>{@render single(line)}</a
+        >
 
         {#if line.taken !== undefined}
           {@const record = line.taken}

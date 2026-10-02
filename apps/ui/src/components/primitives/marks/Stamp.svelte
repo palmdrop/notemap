@@ -41,10 +41,14 @@
     <!-- The heading draws the day; the stamp still says it, so a stamp read
          alone, or a link or button named by it, names the whole instant. -->
     <span class="sr-only">{dayOf(at)}</span>
+    <!-- Bold on a row, where the tags under it are words too; the index keeps
+         bold for the line that is selected. -->
     <time
       datetime={at}
       data-word={timeOf(at)}
-      class="steady-weight whitespace-nowrap tabular-nums">{timeOf(at)}</time
+      class="steady-weight whitespace-nowrap tabular-nums {inline
+        ? ''
+        : 'font-semibold'}">{timeOf(at)}</time
     >
   {/if}
 {/snippet}

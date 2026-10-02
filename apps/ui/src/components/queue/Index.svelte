@@ -22,6 +22,7 @@
     items,
     selected,
     byDay = false,
+    leads = false,
     motion,
     onselect,
     onprocess,
@@ -29,6 +30,8 @@
     items: readonly Item[];
     selected: string | undefined;
     byDay?: boolean;
+    /** Straight under the list head, whose line the first heading then shares. */
+    leads?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
     onselect: (id: string) => void;
@@ -77,7 +80,7 @@
 </script>
 
 {#snippet heading(line: Extract<Line, { kind: "day" }>)}
-  <Day at={line.at} {motion} />
+  <Day at={line.at} leads={leads && line.key === lines[0]?.key} {motion} />
 {/snippet}
 
 {#snippet entry(line: Extract<Line, { kind: "line" }>)}

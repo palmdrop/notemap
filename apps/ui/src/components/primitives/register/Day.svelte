@@ -8,10 +8,13 @@
 
   let {
     at,
+    leads = false,
     motion,
   }: {
     /** Any time in the day it heads. */
     at: string;
+    /** The list's first, drawn on the list head's line rather than under it. */
+    leads?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
   } = $props();
@@ -42,7 +45,10 @@
 <div
   data-day={dayOf(at)}
   data-stuck={stuck ? "" : undefined}
-  class="sticky top-0 z-10 col-span-full mt-3.5 flex h-day-head items-center gap-x-[2ch] border-b border-ink bg-ground tabular-nums"
+  data-leads={leads ? "" : undefined}
+  class="sticky top-0 z-10 col-span-full {leads
+    ? '-mt-day-head'
+    : 'mt-3.5'} flex h-day-head items-center gap-x-[2ch] border-b border-ink bg-ground tabular-nums"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach stick}
 >

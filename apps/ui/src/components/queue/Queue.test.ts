@@ -1640,6 +1640,24 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
   ).toBeTruthy();
 });
 
+test.each(["timeline", "index"] as const)(
+  "by day, the %s's first heading shares the list head's line, and no other does",
+  async (view) => {
+    viewport(390);
+    rememberView("queue", view);
+    pool(overDays());
+
+    const { container } = render(Queue);
+    await screen.findByText("three");
+
+    const days = [...container.querySelectorAll("[data-day]")];
+    expect(days.map((day) => day.hasAttribute("data-leads"))).toEqual([
+      true,
+      false,
+    ]);
+  },
+);
+
 test("reads by day on a wide screen only when chosen, keeping the tags in the rail", async () => {
   pool(overDays());
 

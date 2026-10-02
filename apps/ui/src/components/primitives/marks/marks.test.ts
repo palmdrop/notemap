@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import Asking, { SHOWN_AFTER, SLOW_AFTER } from "./Asking.svelte";
@@ -23,6 +23,16 @@ test("under a heading that says the day, draws the time alone and still names th
   expect(
     screen.getByRole("button", { name: "2026-09-13 07:02" }),
   ).toBeDefined();
+});
+
+test("bolds the time alone on a row, and leaves the index's bold to its selection", () => {
+  const at = new Date(2026, 8, 13, 7, 2).toISOString();
+  render(Stamp, { at, dated: false });
+  expect(screen.getByText("07:02").className).toContain("font-semibold");
+  cleanup();
+
+  render(Stamp, { at, dated: false, inline: true });
+  expect(screen.getByText("07:02").className).not.toContain("font-semibold");
 });
 
 test("says the whole instant with the time alone drawn, where it is not a button", () => {

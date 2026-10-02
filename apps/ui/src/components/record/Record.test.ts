@@ -64,7 +64,7 @@ function answering(records: readonly unknown[] = [RECORD]) {
   };
 }
 
-/** The item's register with one record row: the capture, the rule, the block. */
+/** The item's register with one record row: the capture's box, then the block. */
 test("draws the capture and the one record under it", async () => {
   pool(
     answering([RECORD, { ...RECORD, id: "rec-2", pointer: "drafts/two.md" }]),
@@ -78,7 +78,8 @@ test("draws the capture and the one record under it", async () => {
   expect(screen.queryByText("drafts/two.md")).toBeNull();
   expect(screen.getByText(dayOf(RECORD.at))).toBeDefined();
   expect(screen.getByText("delivered")).toBeDefined();
-  expect(container.querySelectorAll(".border-t.col-span-full")).toHaveLength(1);
+  expect(container.querySelector("[data-foot]")).not.toBeNull();
+  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 
   // The address bar already says which record this is: the stamp goes nowhere.
   expect(screen.getByText(dayOf(RECORD.at)).closest("a")).toBeNull();

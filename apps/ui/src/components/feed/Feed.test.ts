@@ -245,7 +245,7 @@ test("says where a routed row went, without asking for its records", async () =>
   // One of the two records has not been carried out: the line says so, and
   // no word over it repeats what the line says.
   const waiting = await screen.findByRole("img", { name: "1 pending" });
-  expect(waiting.parentElement?.textContent?.replace(/\s+/g, " ")).toContain(
+  expect(waiting.closest("div")?.textContent?.replace(/\s+/g, " ")).toContain(
     "Fiction, manual",
   );
   expect(screen.queryByText("retrying")).toBeNull();

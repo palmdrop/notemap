@@ -65,14 +65,15 @@
 <!--
   Hung from `notices` at the line's left, its edge on the line's own, and clear
   of the line's rule so the two never read as one box. A phone has no room to
-  spare, so there it spans. Reversed so it scrolls from the bottom: it opens on
-  the newest, and what arrives while it is read there stays in view.
+  spare, so there it spans the screen, as the line does. Reversed so it
+  scrolls from the bottom: it opens on the newest, and what arrives while it
+  is read there stays in view.
 -->
 <section
   transition:slide
   id={PANEL}
   aria-label="notices"
-  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-ground max-narrow:max-w-none"
+  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-ground max-narrow:left-0 max-narrow:w-full max-narrow:max-w-none max-narrow:border-x-0"
 >
   <div>
     <header

@@ -1,38 +1,20 @@
 # Developer TODOs
 
-## Urgent
-
-- [x] sometimes, trigger tag routing seem to successfully route but then, on a restart, or later return to notemap, the item is back in the queue. Trigger tag is there but routing record is gone
-
-- [x] routing revisions causes a broken state: it seems like the original entry is back in the queue, with the trigger tags on it. Revision is routed successfully. Routing records are not associated with the original, so it stays in the queue. This is surprising and reads as wrong. Routing a revision should result in the original being hidden from the queue too, and it should be possible to associate the original with the revised cpature's routing records. Investigate.
-
 ## Shell — layout and interaction
 
-- [x] the small dots as separators is ugly, especially when describing destinations and settings, or when followed by "none" or "full", indicating frontmatter settings 
-- [x] remove frontmatter setting indicator from routing record entry on capture items
-
-- [x] "pending" should be a loading icon. Same goes for a lot of status words, they could be simple icons or loading indicators. Investigate.
-    - especially on pending routing records on capture rows. A small spinner might be better. Movement clearly communicates that something is happening.
-
-- [x] routing by trigger tag stays pending for too long 
-
-- [x] "revised" mark on revised items looks almost like a tag and provides little value. Replace with an icon or some other way to indicate that an item is edited.
-
-- [x] when a routing fails, for example, when the item already exists, we get a notice saying "given up / back in the queue", saying nothing about WHY this happened. The event for "Work abandoned" is shown, but not the related "Delivery failed", which describes that the entry is already in the destination (revealed by the /log)
-
-- [x] log menu should be a filter dropdown similar to the tag filter, not a menu button
-
-- [x] instead of notice popup, a bottom bar with info, like a vim statusbar. Notices show there, with an expandable notice tab that shows history?
-- [x] statusbar should show indicators of pending actions, loaders, etc...
-- [x] statusbar with statistics, online/offline status, outbox count, queue count, errors, expandable notice list, etc... 
+- [x] minor ui fixes:
+    - in "by day" view mode, bold the time mark to make it stand out more against the tags
+    - give the statusbar slightly wider so it aligns with the border of a selected capture row
+    - on smaller screens, statusbar should reach all the way to the edges of the viewport, no vertical border on the edges
+    - the routing record entry in a capture row requires too much space. Especially when pending, the arrow, destination/place, and the loader ends up on three separate rows. Need to find an alternative way to represent routing record lines, especially pending ones
+    - opened capture items have double borders 
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
+- [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
 
 - [x] link unfurl/preview that contain nothing should not provide a preview at all. Instead, we get a preview with a message saying something about the link not responding or that it states nothing about itself. Hide preview if it is not meaningful
 
 - [x] when a delivery has no text content, just an asset, we get this in the preview: "a block carries neither its tags; what fitted went into the block's own metadata". I do not like that, needs to be an image preview instead, to show that the asset itself is included. That text, "a block carries..." does not make sense to a user.
-
-- [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
 
 - [x] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
 

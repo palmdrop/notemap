@@ -268,7 +268,9 @@
     />
   {/if}
 
-  <div class="flex h-status items-center gap-x-5 px-3 max-narrow:gap-x-3">
+  <div
+    class="flex h-status items-center gap-x-5 px-3 max-narrow:gap-x-3 max-narrow:px-3.5"
+  >
     {#if shut}
       <span class="flex-1"></span>
     {:else}

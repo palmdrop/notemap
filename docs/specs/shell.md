@@ -1,9 +1,20 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-01
+**Last updated**: 2026-10-02
 **Shipped**:
 
+- 2026-10-02 — **The first day shares the list head's line.** By day, the first heading is drawn
+  on the head's line before anything scrolls, as it already was once held at the top.
+- 2026-10-02 — **The shell grows with the screen.** The one size is the reader's own at 350px and
+  below, a quarter more at 500px and half as much again at 1200px and above, growing in straight
+  lines between, and everything sized with it: the shell at 1200px reads as it did at 150% zoom.
+- 2026-10-02 — **Minor fixes to the row and the line.** By day, a row's time is bold, so it stands
+  apart from the tags beside it. A routing line takes two lines at most: the destination on one,
+  the place and its turning mark on the next where both do not fit, each cut with `…` rather than
+  wrapped. The status line is as wide as a selected row's box, and below `narrow` it spans the
+  screen with no rule at its ends. The item surface draws no rule of its own under the capture's
+  box, or against the bar above it: both read as a doubled line.
 - 2026-10-01 — **Fewer dots, and marks where words were.** Nothing the shell says separates its
   parts with `·`: a bold word names a thing, plain text qualifies it, and a list in a sentence is
   said in words — the destination bold and the place plain on a routing line, `routed **Vault**`
@@ -805,7 +816,12 @@ label ([core.md](core.md#routing)). **The destination is bold and the place plai
 *(2026-10-01; a `·` stood between them, and between everything else on the line)*. **The place is cut
 to its last segment** *(amended 2026-09-15)*, prefixed `…/` where more than that came before it, so
 a long path does not wrap the line into several — the full place is still in the element's own
-`title`, a hover away. An unrouted row
+`title`, a hover away. **A record's line takes two lines at most** *(2026-10-02; in the rail the
+arrow, the destination and the turning mark could each end up on a line of its own)*: the arrow
+and the destination are one unit and the place with the mark after it another, and the line breaks
+between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
+the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
+it. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, and `[+]` on a revision *(2026-10-01; the word `revision` before it,
 which read as one more tag)*, with `revision` as its label and hover. A delivery that failed is the log's and the status line's to
@@ -860,7 +876,9 @@ each line keeping its time alone, and opens no gap: the heading already says tha
 top of the page while the rows scroll beneath it, as a day's heading does, at a day heading's
 height. Held there, it covers what scrolls under it, spanning the screen with its rule beneath, as
 a heading does and for the same reason. **By day, the two share the line**: the heading held at the
-top shows through the head's left, and the head draws nothing over it but its controls; the next
+top shows through the head's left, and the head draws nothing over it but its controls. **The first
+day's heading is on that line from the start** *(2026-10-02; it stood under the head, a line's room
+between them, until it was scrolled to the top)*, unless a refusal is said between the two; the next
 day's heading still slides over the last, under the controls. Nothing at the head moves as a
 heading comes and goes: the controls stand at the right whether or not a date is beside them. A row
 walked to by `j`/`k` stops clear of the line, by day or not.
@@ -888,7 +906,9 @@ edge as it slides over it, and at no other time. **The heading is a line tall wi
 above and below the date**, and the room between one day and the next is margin outside it: held
 at the top, the date sits as far from the top of the screen as from the rule under it.
 
-**The row keeps only its time**, the heading having said the day. The stamp still names the whole
+**The row keeps only its time**, the heading having said the day, **in bold** *(2026-10-02)*, so it
+stands apart from the tags under or beside it. The index's line keeps it plain, bold being how the
+index marks the selected line. The stamp still names the whole
 instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
 wide as a time, and everything else it held **follows the capture** in the body: the state word,
 `pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
@@ -1469,16 +1489,19 @@ rail and a record was a page of facts)*. The capture is the first row, **drawn a
 selected row is** *(amended 2026-09-29; the actions sat in the body, unboxed)*: the box, its
 actions as the foot, the tags where the reader's rows put them, and by day under a heading of its
 own ([Rows by day](#rows-by-day)) — the same row, offering the item's own actions, `history` where
-the row has `open`. It says no routing line, its records being the rows beneath it. Then one rule across both columns, the one
-rule the surface has, and under it **one row per routing record**: the record's own stamp and its
+the row has `open`. It says no routing line, its records being the rows beneath it. **The box's
+foot is the edge between the capture and its records** *(amended 2026-10-02; a rule of its own was
+drawn across both columns under the foot, and the two read as one doubled line)*, and under it
+**one row per routing record**: the record's own stamp and its
 state in the rail, and the record itself, as a block, in the body. The state is said on every
 record row, `delivered` included: the rule that a state is said only where it is not that was a
 rule for a summary line, and a row of its own is not a summary. The record's stamp is the way into
 its own address, `/items/{id}/records/{recordId}`, which is the same register narrowed to that one
 record; on it the stamp goes nowhere, the address bar already saying which. A record the item
 does not have is said plainly there, and is not a failure. Records out of reach, or refused, are
-said in the first record row's place, under the rule; nothing about the records is said at all
-where the item was never routed, and the rule is not drawn.
+said in the first record row's place, under the box; nothing about the records is said at all
+where the item was never routed. **Above the box is the room a day heading would hold**
+*(2026-10-02)*, in the rail as by day, so its top edge is not drawn against the bar's rule.
 
 **A record reads as the file it became.** The block is a ruled frame whose head is the
 destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
@@ -1808,7 +1831,7 @@ in`, and the pool settings' `reading…` all became the mark.
 Where a region is waiting rather than an action, the mark stands on the first line its answer will
 take: a list read cold draws it in the foot's place, where `load more` would have been, and no
 `load more` beside it, there being nothing yet to have more of; an item read cold, in the body
-column where the capture will be; an item's routing records, under the rule, where the first
+column where the capture will be; an item's routing records, under the capture's box, where the first
 record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
 line's tree, at the top of the floor the list already keeps. A browse or a tree already drawn is
 not marked while it is asked again, being what the last answer said and exactly as useful.
@@ -1836,8 +1859,11 @@ never answered still draws no failure at all.
 
 *(2026-09-30, [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md). It replaces the corner,
 which said what happened from 2026-09-03, and the bar's glyph.)* The shell says anything in its own
-voice from **one ruled line fixed to the bottom of every surface**, in the page's column, at the
-shell's one size, ruled along its top and down both its ends *(2026-10-01)*. **One place, with gradations** — a second place would be a reader learning where
+voice from **one ruled line fixed to the bottom of every surface**, at the shell's one size,
+ruled along its top and down both its ends *(2026-10-01)*. **It is as wide as a selected row's box**
+*(2026-10-02)*, reaching as far past the page's column as the box does, so its ends fall on the
+box's edges. **Below `narrow` it spans the screen** and its ends are the screen's, drawn with no
+rule, as the panel above it is. **One place, with gradations** — a second place would be a reader learning where
 to look to learn nothing more. A **notice** is work that has already happened, reported to somebody
 who did not ask: an item routed and where it went, a delivery that failed, a delivery given up on.
 Beside the notices the line says what is true of the shell rather than of any item: what is in
@@ -2479,7 +2505,12 @@ nothing else. Dark theme is the inversion, designed once, in light.
 **Type.** One face, Bricolage Grotesque at 400 and 600, self-hosted from `static/fonts/` and
 served by the daemon beside the app — a face on the same origin is exactly as offline as the app,
 which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
-captured prose, timestamps, labels, actions, the bar. Hierarchy is weight, capitals or small-caps
+captured prose, timestamps, labels, actions, the bar. **The size grows with the screen**
+*(2026-10-02)*: 15px on 22px is the size at 350px wide and below, at the browser's default, and
+the root grows from there in straight lines to a quarter more at 500px and half as much again at
+1200px, where it stops. Every size and measure is in `rem`, so the whole shell grows with it as it
+would under the browser's zoom, the one size staying one size at any width. The breakpoints do not
+move: a media query's `rem` is the browser's, not the root's. Hierarchy is weight, capitals or small-caps
 with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
 under the cursor is underlined, never coloured. **The face is asked for in the page's head and never
 swapped in** *(2026-09-25)*: it comes from the same origin as the page, so it is there before first

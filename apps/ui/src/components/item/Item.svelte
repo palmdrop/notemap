@@ -123,6 +123,10 @@
   {#if item !== undefined}
     {#if layout.byDay}
       <Day at={item.createdAt} />
+    {:else}
+      <!-- The room a heading would hold, so the box's top edge is not drawn
+           against the bar's rule. -->
+      <div class="col-span-full h-3.5"></div>
     {/if}
 
     <!-- The capture as a selected row is drawn, box and foot, the page being
@@ -140,12 +144,6 @@
       opens={layout.byDay}
       cached={read?.fromCache === true}
     />
-
-    {#if (drawn.length > 0 && !layout.byDay) || (drawn.length === 0 && aboutRecords !== undefined)}
-      <!-- The one rule between regions: the capture above, what became of it
-           below. By day, the records' own heading draws it. -->
-      <div data-rule class="col-span-full border-t border-ink"></div>
-    {/if}
 
     {#each headed as one (one.key)}
       {#if one.kind === "day"}

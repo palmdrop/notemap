@@ -247,15 +247,17 @@ test("names the channel a row's routing line went to", async () => {
   expect(screen.queryByText(/12345/)).toBeNull();
 });
 
-/** The capture, a rule, then each record as a row: its stamp is the way into it. */
-test("draws each record as a row under a rule, with the way into it", async () => {
+/** The capture's box, then each record as a row: its stamp is the way into it. */
+test("draws each record as a row under the capture's box, with the way into it", async () => {
   pool(routed([RECORD, { ...RECORD, id: "rec-2", pointer: "drafts/two.md" }]));
 
   const { container } = render(Item, { id: "routed" });
 
   await screen.findByText("drafts/two.md");
   expect(screen.getByText("drafts")).toBeDefined();
-  expect(container.querySelectorAll(".border-t.col-span-full")).toHaveLength(1);
+  // The box's foot is the edge between the two regions; a rule under it read as a double.
+  expect(container.querySelector("[data-foot]")).not.toBeNull();
+  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 
   const ways = screen
     .getAllByRole("link")
@@ -267,15 +269,6 @@ test("draws each record as a row under a rule, with the way into it", async () =
   ]);
   // Delivered is said on a row of its own.
   expect(screen.getAllByText("delivered")).toHaveLength(2);
-});
-
-test("draws no rule under an item nothing became of", async () => {
-  pool(holding(saying("plain", "nothing was routed")));
-
-  const { container } = render(Item, { id: "plain" });
-
-  await screen.findByText("nothing was routed");
-  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 });
 
 test("says the records are out of reach while the item still draws", async () => {
@@ -596,7 +589,7 @@ test("stands the asking mark where the item will be, before the pool has said an
   expect(container.querySelector("[data-asking]")).toBeNull();
 });
 
-test("stands the asking mark under the rule while the records are read", async () => {
+test("stands the asking mark under the box while the records are read", async () => {
   let answer!: (response: Response) => void;
   pool((request) => {
     switch (routeOf(request)) {
@@ -676,6 +669,4 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
     screen.getByText("routed").compareDocumentPosition(tag) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  // The records' heading is the rule between the two regions.
-  expect(container.querySelector("[data-rule]")).toBeNull();
 });
