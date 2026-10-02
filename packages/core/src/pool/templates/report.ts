@@ -1,4 +1,4 @@
-import { FOLDER_ARGUMENT, pathField } from "../destinations/vocabulary";
+import { FOLDER_ARGUMENT, pathFields } from "../destinations/vocabulary";
 import { candidates } from "../destinations/candidates";
 import { describe } from "../destinations/reports";
 import { usability } from "../destinations/usability";
@@ -113,13 +113,14 @@ async function folderReport(
     (template.folder === "establish" && template.establishedAt !== undefined);
   if (!required) return { kind: "fits" };
 
-  const field = pathField(capability);
-  if (field === undefined) return { kind: "fits" };
+  const path = pathFields(capability);
+  if (path === undefined) return { kind: "fits" };
 
+  const field = path.kind === "whole" ? path.field : path.folders;
   const place = template.arguments[field];
   if (typeof place !== "string") return { kind: "fits" };
 
-  const segments = literalFolders(place);
+  const segments = literalFolders(place, path.kind === "whole");
   if (segments.length === 0) return { kind: "fits" };
 
   let scope: string | undefined;
@@ -163,9 +164,15 @@ async function folderReport(
   return { kind: "fits" };
 }
 
-/** The folders of a path, up to the first pattern: the part that a reorganisation moves. */
-function literalFolders(place: string): readonly string[] {
-  const literal = place.split("{{")[0] ?? "";
-  const folders = literal.split("/").slice(0, -1);
+/**
+ * The folders of a path, up to the first pattern: the part that a
+ * reorganisation moves. The segment a pattern cuts into is not a whole folder,
+ * and neither is a whole path's leaf.
+ */
+function literalFolders(place: string, endsInLeaf: boolean): readonly string[] {
+  const [literal = "", ...patterned] = place.split("{{");
+  const segments = literal.split("/");
+  const folders =
+    endsInLeaf || patterned.length > 0 ? segments.slice(0, -1) : segments;
   return folders.filter((segment) => segment !== "");
 }

@@ -168,7 +168,7 @@
 
 - [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 
-- [ ] **The shell picks a browse control by destination kind name.**
+- [x] **The shell picks a browse control by destination kind name.**
   `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
   everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —
   which is the shell knowing about particular destinations, the thing the adapter seam exists to
@@ -182,6 +182,8 @@
   every other annotation is. It changes an annotation that has already shipped and that
   `docs/specs/shell.md` and [ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)
   both describe, so it wants an ADR and a migration of the three kinds that declare it.
+  Closed 2026-10-02 by [ADR 55](adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md): the
+  path role already says a field is `/`-separated, so `x-notemap-candidates` stays a flag.
 - [ ] Verify and repair reach destination, template and pool-setting records. The mirror carries
   them ([ADR 20](adr/0020-destinations-are-pool-state.md),
   [ADR 50](adr/0050-pool-settings-are-pool-state.md)), but neither verify nor repair exists to

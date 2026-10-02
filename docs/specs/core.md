@@ -1,9 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-01
+**Last updated**: 2026-10-02
 **Shipped**:
 
+- 2026-10-02 — **A path field says which part of the path it holds.** `x-notemap-path` takes
+  `true` for a whole path, `"folders"` and `"leaf"` for one split across two fields, and the
+  markdown kinds' `create` declares its directory and filename that way. A `create` template that
+  requires its folder is now checked against the deepest folder too.
+  ([ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md),
+  [plan](../plans/path-roles.md))
 - 2026-10-01 — **A host can wake for work that is waiting on a time.** `work.dueIn(kinds)`
   answers how long until the earliest unleased job of those kinds that is not yet claimable becomes
   so — a fired template's window, a retry's backoff — measured on the pool's own clock, and nothing
@@ -1315,7 +1321,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   — the place a delivery hands back is the field's value as it landed, readable as a place. A
   capability that marks none hands back a handle it minted, an are.na block's id, and a surface
   reads the place its decision named instead. A kind whose pointer is not the path it was given
-  marks no field.
+  marks no field. *Amended 2026-10-02*
+  ([ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md)): **the mark says
+  which part of the path a field holds.** `true` is the whole path, its last segment the leaf;
+  `"folders"` is a field every segment of which is a folder; `"leaf"` is the segment that completes
+  the folders field. A path is held whole in one field or split into folders and an optional leaf,
+  and a capability marking two of one role, both shapes, or a leaf with no folders marks no path.
+  The folder check walks every literal folder: all of a folders field, all but the leaf of a whole
+  path, and never a segment a pattern cuts into.
 - **A capability may say a field holds only something the destination already has** (added
   2026-09-08, [ADR 42](../adr/0042-a-candidate-carries-both-its-readable-name-and-its-lasting-one.md)).
   A vault's folder is *made* by the delivery that needs it; an are.na channel is joined, a mailbox
@@ -1952,6 +1965,8 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   editing its arguments makes it establish again.
 - A capability whose place field is called anything at all is folder-checked, and one that marks no
   path field is not checked rather than checked against nothing.
+- A template whose capability splits its path into folders and a leaf is checked against every
+  folder of the folders field, the deepest included.
 - A template against a destination with no folders and a fixed set of places saves, expands the
   patterns in the fields that have them, leaves the fixed value untouched, routes and fires from a
   trigger tag, with no change to core.

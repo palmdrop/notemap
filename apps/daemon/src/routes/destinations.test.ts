@@ -287,6 +287,12 @@ describe("GET /v1/destinations/{id}/description", () => {
     expect(described.capabilities[0]?.argumentsSchema).toMatchObject({
       properties: { path: { "x-notemap-candidates": true } },
     });
+    expect(described.capabilities[1]?.argumentsSchema).toMatchObject({
+      properties: {
+        directory: { "x-notemap-path": "folders" },
+        filename: { "x-notemap-path": "leaf" },
+      },
+    });
     expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
       required: ["path"],
     });

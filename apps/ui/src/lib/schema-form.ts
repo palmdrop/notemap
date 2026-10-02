@@ -25,8 +25,12 @@ export type Field = {
    * what the setting means where it too is absent — never a value to seed.
    */
   readonly inherits: boolean;
-  /** Carries `x-notemap-path`: the field is a `/`-separated place, and a pointer back is one too. */
-  readonly path: boolean;
+  /**
+   * Carries `x-notemap-path`: the field is a `/`-separated place, or part of
+   * one, and a pointer back is a path too. `true` is the whole path,
+   * `"folders"` every segment a folder, `"leaf"` what completes the folders.
+   */
+  readonly path?: PathRole;
   /**
    * Carries `x-notemap-when`: the field is offered only while one of these
    * holds, judged against what each named field comes out as.
@@ -50,6 +54,8 @@ export type Field = {
    */
   readonly options?: readonly string[];
 };
+
+export type PathRole = true | "folders" | "leaf";
 
 export type Condition = {
   readonly field: string;
@@ -87,6 +93,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
       const options = kind === "flag" ? [ON, OFF] : stringsAt(meta, "enum");
       const preset = presetOf(meta);
       const when = conditionsOf(meta["x-notemap-when"]);
+      const path = pathRoleOf(meta["x-notemap-path"]);
       return {
         name,
         required: required.includes(name),
@@ -100,12 +107,18 @@ export function fieldsOf(schema: Schema): readonly Field[] {
         askable: meta["x-notemap-candidates"] === true,
         offeredOnly: meta["x-notemap-offered-only"] === true,
         inherits: meta["x-notemap-inherits"] === true,
-        path: meta["x-notemap-path"] === true,
+        ...(path === undefined ? {} : { path }),
         ...(when === undefined ? {} : { when }),
         ...(examples === undefined ? {} : { examples }),
       };
     },
   );
+}
+
+function pathRoleOf(held: unknown): PathRole | undefined {
+  return held === true || held === "folders" || held === "leaf"
+    ? held
+    : undefined;
 }
 
 function conditionsOf(held: unknown): readonly Condition[] | undefined {

@@ -39,9 +39,9 @@ export type CapabilitiesOptions = {
  * unchanged. A template's `establish` never reaches here — it resolves to one
  * of these two when the decision is made.
  *
- * The field this is *about* is marked with `PATH_FIELD` below, so whatever has
- * to check a folder reads which one it is rather than knowing these three
- * capabilities by name.
+ * The fields this is *about* are marked with `PATH_FIELD` below, each with the
+ * part of the path it holds, so whatever has to check a folder reads them
+ * rather than knowing these three capabilities by name.
  */
 const FOLDER_MODE = {
   type: "string",
@@ -62,7 +62,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         type: "string",
         title: "Folder",
         description: "Where the note is created, relative to the vault's root.",
-        [PATH_FIELD]: true,
+        [PATH_FIELD]: "folders",
         ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
       },
       filename: {
@@ -71,6 +71,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         title: "Filename",
         description:
           "The note's filename. Left blank, one is derived from the item.",
+        [PATH_FIELD]: "leaf",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
       [FRONTMATTER]: FRONTMATTER_MODE,

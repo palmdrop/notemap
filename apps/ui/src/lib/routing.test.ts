@@ -240,3 +240,132 @@ test("a place is held back while the capability is still being described", () =>
   // A destination nothing could describe still says where it landed.
   expect(placeIn(record, undefined, undefined)).toBe("48213077");
 });
+
+const SPLIT = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      directory: { type: "string", "x-notemap-path": "folders" },
+      filename: { type: "string", "x-notemap-path": "leaf" },
+    },
+  },
+} as unknown as Capability;
+
+const APPENDING = {
+  name: "append",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      path: { type: "string", "x-notemap-path": true },
+      heading: { type: "string" },
+    },
+  },
+} as unknown as Capability;
+
+const pendingWith = (
+  capability: string,
+  args: Record<string, string>,
+): RoutingRecord =>
+  aRecord({
+    state: "pending",
+    target: {
+      kind: "destination",
+      destination: "vault",
+      capability,
+      arguments: args,
+    },
+  });
+
+test("a path split into folders and a leaf reads as one path", () => {
+  const said = wentTo(
+    pendingWith("create", {
+      directory: "projects/research/2026",
+      filename: "a.md",
+    }),
+    nameOf,
+    undefined,
+    readingOf(SPLIT),
+  );
+
+  expect(said.title).toBe("projects/research/2026/a.md");
+  expect(said.place).toBe("…/a.md");
+});
+
+/** No filename yet: the pointer is what will say what the file was called. */
+test("folders with no leaf read as the folder, ending in a slash", () => {
+  const said = wentTo(
+    pendingWith("create", { directory: "projects/research/2026" }),
+    nameOf,
+    undefined,
+    readingOf(SPLIT),
+  );
+
+  expect(said.title).toBe("projects/research/2026/");
+  expect(said.place).toBe("…/2026/");
+});
+
+test("a leaf with its folders at the root reads as the leaf alone", () => {
+  const said = wentTo(
+    pendingWith("create", { directory: "", filename: "a.md" }),
+    nameOf,
+    undefined,
+    readingOf(SPLIT),
+  );
+
+  expect(said.title).toBe("a.md");
+});
+
+test("a whole path keeps what follows it after a comma", () => {
+  const said = wentTo(
+    pendingWith("append", { path: "research/2026.md", heading: "Links" }),
+    nameOf,
+    undefined,
+    readingOf(APPENDING),
+  );
+
+  expect(said.title).toBe("research/2026.md, Links");
+});
+
+test("a capability that marks no path reads every field after a comma", () => {
+  const said = wentTo(
+    pendingWith("create", { directory: "research", filename: "a.md" }),
+    nameOf,
+    undefined,
+    readingOf(HANDLED),
+  );
+
+  expect(said.title).toBe("research, a.md");
+});
+
+test("a folder keeps its own name when cut, rather than the nothing after it", () => {
+  expect(placeShort("projects/2026/")).toBe("…/2026/");
+  expect(placeShort("2026/")).toBe("2026/");
+});
+
+const marking = (roles: Record<string, unknown>) =>
+  ({
+    name: "create",
+    accepts: ["text"],
+    argumentsSchema: {
+      type: "object",
+      properties: Object.fromEntries(
+        Object.entries(roles).map(([name, role]) => [
+          name,
+          { type: "string", "x-notemap-path": role },
+        ]),
+      ),
+    },
+  }) as unknown as Capability;
+
+test.each([
+  ["two whole paths", { a: true, b: true }],
+  ["two folders fields", { a: "folders", b: "folders" }],
+  ["two leaves", { a: "folders", b: "leaf", c: "leaf" }],
+  ["a whole path beside a split one", { a: true, b: "folders" }],
+  ["a leaf with no folders", { a: "leaf" }],
+])("a capability that marks %s marks no path", (_, roles) => {
+  expect(readingOf(marking(roles))).toEqual({ settings: [], pathed: false });
+});

@@ -954,6 +954,17 @@ describe("a destination that is not filesystem-shaped", () => {
     additionalProperties: false,
   };
 
+  /** The shape of a markdown `create`: folders in one field, the leaf in another. */
+  const FOLDERS_SCHEMA = {
+    type: "object",
+    properties: {
+      directory: { type: "string", [PATH_FIELD]: "folders" },
+      filename: { type: "string", [PATH_FIELD]: "leaf" },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+    additionalProperties: false,
+  };
+
   it("saves a template whose place is a value from a fixed set", async () => {
     const { pool } = await pooled(COLUMN_SCHEMA);
 
@@ -1070,6 +1081,56 @@ describe("a destination that is not filesystem-shaped", () => {
       kind: "folder-missing",
       folder: "research/notes/research/",
     });
+  });
+
+  /**
+   * `create`'s folders field names no leaf, so its last segment is a folder
+   * like the rest. Read as a whole path, that deepest folder went unchecked.
+   */
+  it("checks every folder of a folders field, the deepest included", async () => {
+    const { pool, destination } = await pooled(FOLDERS_SCHEMA);
+    destination.answersCandidates((request) =>
+      request.scope === undefined
+        ? {
+            entries: [{ label: "research", scope: "research/" }],
+            truncated: false,
+          }
+        : { entries: [], truncated: false },
+    );
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: {
+            directory: "research/2026",
+            filename: "{{captured_at}}.md",
+          },
+          folder: "require",
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({
+      kind: "folder-missing",
+      folder: "research/2026/",
+    });
+  });
+
+  it("does not check a folder a pattern cuts into", async () => {
+    const { pool, destination } = await pooled(FOLDERS_SCHEMA);
+    destination.answersCandidates({
+      entries: [{ label: "research", scope: "research/" }],
+      truncated: false,
+    });
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { directory: "research/day-{{captured_at}}" },
+          folder: "require",
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
   });
 
   it("says it fits once that folder is there", async () => {

@@ -1,32 +1,18 @@
-import type { Component } from "svelte";
 import { describe, expect, it } from "vitest";
 
 import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
 import PathLine from "$components/routing/PathLine.svelte";
-import Option from "$components/primitives/composer/Option.svelte";
 
-import { browserFor, type BrowserProps } from "./candidate-browsers";
+import { browserFor } from "./candidate-browsers";
 
-/** Any component at all: what is under test is the lookup, not what it found. */
-const bespoke = Option as unknown as Component<BrowserProps>;
-
-describe("which control a destination kind's field draws through", () => {
-  it("is the one registered for that kind", () => {
-    expect(browserFor("kanban", { kanban: bespoke })).toBe(bespoke);
+describe("which control a field draws through", () => {
+  it("is the typed line for a field marked as any part of a path", () => {
+    expect(browserFor({ path: true })).toBe(PathLine);
+    expect(browserFor({ path: "folders" })).toBe(PathLine);
+    expect(browserFor({ path: "leaf" })).toBe(PathLine);
   });
 
-  it("is the schema-driven browser for a kind that registered nothing", () => {
-    expect(browserFor("filesystem", { kanban: bespoke })).toBe(
-      CandidateBrowser,
-    );
-  });
-
-  it("is the typed line for the kinds that hold a filesystem", () => {
-    expect(browserFor("filesystem")).toBe(PathLine);
-    expect(browserFor("webdav")).toBe(PathLine);
-  });
-
-  it("is the schema-driven browser for a kind with no filesystem in it", () => {
-    expect(browserFor("kanban")).toBe(CandidateBrowser);
+  it("is the schema-driven browser for a field marked as no path", () => {
+    expect(browserFor({})).toBe(CandidateBrowser);
   });
 });

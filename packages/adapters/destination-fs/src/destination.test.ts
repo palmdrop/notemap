@@ -181,6 +181,21 @@ describe("what it says it can do", () => {
     );
   });
 
+  it("splits create's path into its folders and its leaf", async () => {
+    const { destination } = await vault();
+    const described = await destination.describe();
+
+    expect(described.capabilities[1]?.argumentsSchema).toMatchObject({
+      properties: {
+        directory: { "x-notemap-path": "folders" },
+        filename: { "x-notemap-path": "leaf" },
+      },
+    });
+    expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
+      properties: { path: { "x-notemap-path": true } },
+    });
+  });
+
   /** The schema used to demand a folder the adapter has always read as the root. */
   it("no longer requires create's directory", async () => {
     const { destination } = await vault();

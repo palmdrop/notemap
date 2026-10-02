@@ -16,7 +16,6 @@ export {
   OFFERED_ONLY_FIELD,
   OFFERED_WHEN_FIELD,
   PATH_FIELD,
-  pathField,
 } from "./destinations/vocabulary";
 
 // A kind adapter throws this from `describe()` to say a destination cannot

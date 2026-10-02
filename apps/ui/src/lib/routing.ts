@@ -5,17 +5,21 @@ import type {
 } from "@notemap/client";
 
 import { OWN_ARGUMENTS } from "./arguments";
-import { fieldsOf } from "./schema-form";
+import { fieldsOf, type Field, type PathRole } from "./schema-form";
 import type { Raised } from "./notices.svelte";
 
 /**
  * The last segment of a place, prefixed `…/` where more remains before it: a
  * row's line stays one line long whatever the path's depth, and the elided
- * head is still in the element's own `title`.
+ * head is still in the element's own `title`. A place ending in `/` names a
+ * folder, and keeps the folder rather than the nothing after it.
  */
 export function placeShort(place: string): string {
-  const at = place.lastIndexOf("/");
-  return at < 0 ? place : `…/${place.slice(at + 1)}`;
+  const folder = place.endsWith("/");
+  const held = folder ? place.slice(0, -1) : place;
+  const at = held.lastIndexOf("/");
+  if (at < 0) return place;
+  return `…/${held.slice(at + 1)}${folder ? "/" : ""}`;
 }
 
 /**
@@ -28,19 +32,47 @@ export function placeShort(place: string): string {
 export type Reading = {
   readonly settings: readonly string[];
   readonly pathed: boolean;
+  /** Where the path is split across a folders field and the leaf completing it. */
+  readonly split?: Split;
 };
+
+export type Split = { readonly folders: string; readonly leaf?: string };
 
 export function readingOf(
   capability: Capability | undefined,
 ): Reading | undefined {
   if (capability === undefined) return undefined;
   const fields = fieldsOf(capability.argumentsSchema);
+  const path = pathOf(fields);
   return {
     settings: fields
       .filter((field) => field.inherits)
       .map((field) => field.name),
-    pathed: fields.some((field) => field.path),
+    pathed: path !== undefined,
+    ...(path === undefined || path === "whole" ? {} : { split: path }),
   };
+}
+
+/**
+ * Two fields of one role, a whole path beside a split one, or a leaf with no
+ * folders to complete say nothing a place could be composed from, and mark no
+ * path at all — as core reads them.
+ */
+function pathOf(fields: readonly Field[]): "whole" | Split | undefined {
+  const named = (role: PathRole) =>
+    fields.filter((field) => field.path === role).map((field) => field.name);
+  const [whole, ...moreWhole] = named(true);
+  const [folders, ...moreFolders] = named("folders");
+  const [leaf, ...moreLeaves] = named("leaf");
+  if (moreWhole.length + moreFolders.length + moreLeaves.length > 0) {
+    return undefined;
+  }
+
+  if (whole !== undefined) {
+    return folders === undefined && leaf === undefined ? "whole" : undefined;
+  }
+  if (folders === undefined) return undefined;
+  return leaf === undefined ? { folders } : { folders, leaf };
 }
 
 /**
@@ -100,23 +132,55 @@ export function wentWhere(
  * Notemap's own arguments are left out, and so are the `settings` a schema
  * marks as inheriting: a folder mode or a frontmatter mode is about how a note
  * gets somewhere rather than the somewhere, and `research/2026.md, none` reads
- * as though the note went to two places.
+ * as though the note went to two places. A path split across folders and a
+ * leaf reads as the one path it is.
  */
 export function placeNamed(
   args: Readonly<Record<string, unknown>>,
   called?: Namer,
-  settings: readonly string[] = [],
+  reading?: Reading,
 ): string | undefined {
+  const settings = reading?.settings ?? [];
+  const split = reading?.split;
+  const path = split === undefined ? undefined : joined(args, split, called);
+  const inPath = (name: string) =>
+    split !== undefined && (name === split.folders || name === split.leaf);
+
+  let placed = false;
   const said = Object.entries(args)
     .filter(([name]) => !OWN_ARGUMENTS.includes(name))
     .filter(([name]) => !settings.includes(name))
-    .filter(
-      (entry): entry is [string, string] =>
-        typeof entry[1] === "string" && entry[1] !== "",
-    )
-    .map(([name, value]) => called?.(name, value) ?? value);
+    .flatMap(([name, value]): string[] => {
+      if (inPath(name)) {
+        if (placed || path === undefined) return [];
+        placed = true;
+        return [path];
+      }
+      return typeof value === "string" && value !== ""
+        ? [called?.(name, value) ?? value]
+        : [];
+    });
 
   return said.length === 0 ? undefined : said.join(", ");
+}
+
+/** A folders field with no leaf names the folder, and ends in `/` to say so. */
+function joined(
+  args: Readonly<Record<string, unknown>>,
+  split: Split,
+  called?: Namer,
+): string | undefined {
+  const part = (field: string | undefined) => {
+    const value = field === undefined ? undefined : args[field];
+    return field === undefined || typeof value !== "string" || value === ""
+      ? undefined
+      : (called?.(field, value) ?? value);
+  };
+
+  const folders = part(split.folders)?.replace(/\/+$/, "");
+  const leaf = part(split.leaf);
+  if (folders === undefined || folders === "") return leaf;
+  return `${folders}/${leaf ?? ""}`;
 }
 
 /**
@@ -145,7 +209,7 @@ export function placeIn(
     return undefined;
   }
 
-  const named = placeNamed(record.target.arguments, called, reading?.settings);
+  const named = placeNamed(record.target.arguments, called, reading);
   if (reading === undefined || reading.pathed) return record.pointer ?? named;
   return named ?? record.pointer;
 }

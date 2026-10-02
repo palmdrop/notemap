@@ -170,6 +170,21 @@ describe("a vendor keyword this validator does not interpret", () => {
     ).toThrow();
   });
 
+  it("is tolerated where a path field names its role", () => {
+    const roled = (role: JsonValue): JsonSchema => ({
+      type: "object",
+      properties: {
+        directory: { type: "string", "x-notemap-path": "folders" },
+        filename: { type: "string", "x-notemap-path": role },
+      },
+    });
+
+    expect(issues(roled("leaf"), { filename: "a.md" })).toEqual([]);
+    expect(issues(roled(true), { filename: "a.md" })).toEqual([]);
+    expect(() => issues(roled("leaves"), { filename: "a.md" })).toThrow();
+    expect(() => issues(roled(false), { filename: "a.md" })).toThrow();
+  });
+
   it("is not stripped from the schema object handed in", () => {
     const withCandidates: JsonSchema = {
       type: "object",
