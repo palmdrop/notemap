@@ -10,16 +10,26 @@ import type { JsonObject, JsonSchema, JsonValue } from "#types/json";
 export const FOLDER_ARGUMENT = "folder";
 
 /**
- * The field a folder mode is about: a `/`-separated place whose last segment is
- * the leaf and whose earlier ones are folders. An adapter marks it in its own
- * arguments schema, so core reads what a kind says about itself rather than
- * holding a table keyed on capability names — which is the rule
+ * A field holding a `/`-separated path, or part of one, and which part:
+ *
+ * - `true`, the whole path: its last segment is the leaf and its earlier ones
+ *   are folders.
+ * - `"folders"`, every segment a folder.
+ * - `"leaf"`, the segment that completes the `"folders"` field beside it.
+ *
+ * It is what a folder mode is about. An adapter marks it in its own arguments
+ * schema, so core reads what a kind says about itself rather than holding a
+ * table keyed on capability names — which is the rule
  * [CONTEXT.md](../../../../../CONTEXT.md) states for capabilities generally.
  *
  * Marking it also promises that the pointer a delivery hands back is that path,
  * as it landed. A capability that marks none hands back a handle it minted.
  */
 export const PATH_FIELD = "x-notemap-path";
+
+export const PATH_ROLES = [true, "folders", "leaf"] as const;
+
+export type PathRole = (typeof PATH_ROLES)[number];
 
 /** The field a destination can be asked what it could hold, drawn as a browse. */
 export const ASKABLE_FIELD = "x-notemap-candidates";
@@ -92,23 +102,50 @@ export const ANNOTATIONS: readonly {
   { keyword: INHERITS_FIELD, value: FLAG },
   { keyword: OFFERED_ONLY_FIELD, value: FLAG },
   { keyword: OFFERED_WHEN_FIELD, value: CONDITIONS },
-  { keyword: PATH_FIELD, value: FLAG },
+  { keyword: PATH_FIELD, value: { enum: [...PATH_ROLES] } },
 ];
 
+/** Where a capability's path is held: in one field, or split into folders and a leaf. */
+export type PathFields =
+  | { readonly kind: "whole"; readonly field: string }
+  | {
+      readonly kind: "split";
+      readonly folders: string;
+      readonly leaf?: string;
+    };
+
 /**
- * The argument field holding a hierarchical path, where the capability declares
- * one. Absent is the ordinary case, not a fault: a board column, a webhook or a
- * mailbox has no folders above it, and nothing about a path is inferred for
- * them.
+ * The argument fields holding a hierarchical path, where the capability
+ * declares one. Absent is the ordinary case, not a fault: a board column, a
+ * webhook or a mailbox has no folders above it, and nothing about a path is
+ * inferred for them.
  *
- * The first marked field wins. A capability marking two has said something with
- * no meaning, and choosing between them would be a guess.
+ * A capability marking two of one role, a whole path beside a split one, or a
+ * leaf with no folders to complete has said something with no meaning, and
+ * choosing between them would be a guess.
  */
-export function pathField(capability: Capability): string | undefined {
+export function pathFields(capability: Capability): PathFields | undefined {
+  const marked = new Map<PathRole, string[]>();
   for (const [name, property] of properties(capability.argumentsSchema)) {
-    if (property[PATH_FIELD] === true) return name;
+    const role = PATH_ROLES.find((each) => each === property[PATH_FIELD]);
+    if (role !== undefined)
+      marked.set(role, [...(marked.get(role) ?? []), name]);
   }
-  return undefined;
+
+  const [whole, ...moreWhole] = marked.get(true) ?? [];
+  const [folders, ...moreFolders] = marked.get("folders") ?? [];
+  const [leaf, ...moreLeaves] = marked.get("leaf") ?? [];
+  if (moreWhole.length + moreFolders.length + moreLeaves.length > 0) {
+    return undefined;
+  }
+
+  if (whole !== undefined) {
+    return folders === undefined && leaf === undefined
+      ? { kind: "whole", field: whole }
+      : undefined;
+  }
+  if (folders === undefined) return undefined;
+  return { kind: "split", folders, ...(leaf === undefined ? {} : { leaf }) };
 }
 
 function properties(
