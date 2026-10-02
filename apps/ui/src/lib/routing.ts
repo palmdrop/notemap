@@ -43,25 +43,35 @@ export function readingOf(
 ): Reading | undefined {
   if (capability === undefined) return undefined;
   const fields = fieldsOf(capability.argumentsSchema);
-  const split = splitOf(fields);
+  const path = pathOf(fields);
   return {
     settings: fields
       .filter((field) => field.inherits)
       .map((field) => field.name),
-    pathed: fields.some((field) => field.path !== undefined),
-    ...(split === undefined ? {} : { split }),
+    pathed: path !== undefined,
+    ...(path === undefined || path === "whole" ? {} : { split: path }),
   };
 }
 
-/** Two folders fields, or two leaves, say nothing a place could be composed from. */
-function splitOf(fields: readonly Field[]): Split | undefined {
+/**
+ * Two fields of one role, a whole path beside a split one, or a leaf with no
+ * folders to complete say nothing a place could be composed from, and mark no
+ * path at all — as core reads them.
+ */
+function pathOf(fields: readonly Field[]): "whole" | Split | undefined {
   const named = (role: PathRole) =>
     fields.filter((field) => field.path === role).map((field) => field.name);
+  const [whole, ...moreWhole] = named(true);
   const [folders, ...moreFolders] = named("folders");
   const [leaf, ...moreLeaves] = named("leaf");
-  if (folders === undefined || moreFolders.length + moreLeaves.length > 0) {
+  if (moreWhole.length + moreFolders.length + moreLeaves.length > 0) {
     return undefined;
   }
+
+  if (whole !== undefined) {
+    return folders === undefined && leaf === undefined ? "whole" : undefined;
+  }
+  if (folders === undefined) return undefined;
   return leaf === undefined ? { folders } : { folders, leaf };
 }
 

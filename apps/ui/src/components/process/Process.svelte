@@ -19,7 +19,6 @@
   } from "@notemap/client";
   import { placeOf } from "@notemap/output-markdown/naming";
 
-  import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import ComposerTags from "$components/routing/ComposerTags.svelte";
   import DestinationLine from "$components/routing/DestinationLine.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
@@ -207,8 +206,7 @@
       (one) =>
         one.name === CREATE_OR_APPEND &&
         fieldsOf(one.argumentsSchema).some(
-          (field) =>
-            field.name === LINE_FIELD && browserFor(field) !== CandidateBrowser,
+          (field) => field.name === LINE_FIELD && field.path !== undefined,
         ),
     ),
   );

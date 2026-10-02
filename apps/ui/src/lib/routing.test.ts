@@ -344,3 +344,28 @@ test("a folder keeps its own name when cut, rather than the nothing after it", (
   expect(placeShort("projects/2026/")).toBe("…/2026/");
   expect(placeShort("2026/")).toBe("2026/");
 });
+
+const marking = (roles: Record<string, unknown>) =>
+  ({
+    name: "create",
+    accepts: ["text"],
+    argumentsSchema: {
+      type: "object",
+      properties: Object.fromEntries(
+        Object.entries(roles).map(([name, role]) => [
+          name,
+          { type: "string", "x-notemap-path": role },
+        ]),
+      ),
+    },
+  }) as unknown as Capability;
+
+test.each([
+  ["two whole paths", { a: true, b: true }],
+  ["two folders fields", { a: "folders", b: "folders" }],
+  ["two leaves", { a: "folders", b: "leaf", c: "leaf" }],
+  ["a whole path beside a split one", { a: true, b: "folders" }],
+  ["a leaf with no folders", { a: "leaf" }],
+])("a capability that marks %s marks no path", (_, roles) => {
+  expect(readingOf(marking(roles))).toEqual({ settings: [], pathed: false });
+});

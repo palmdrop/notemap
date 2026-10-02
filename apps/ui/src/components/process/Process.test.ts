@@ -1041,7 +1041,7 @@ test("a typed value that was never listed still routes", async () => {
   expect(body.arguments).toEqual({ directory: "brand-new-folder" });
 });
 
-test("an unregistered kind gets the schema-driven control", async () => {
+test("a field marked as no path gets the schema-driven control", async () => {
   servingBrowsable(() => ({
     kind: "answered",
     entries: [{ label: "inbox", value: "inbox" }],

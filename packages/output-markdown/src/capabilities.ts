@@ -39,9 +39,9 @@ export type CapabilitiesOptions = {
  * unchanged. A template's `establish` never reaches here — it resolves to one
  * of these two when the decision is made.
  *
- * The field this is *about* is marked with `PATH_FIELD` below, so whatever has
- * to check a folder reads which one it is rather than knowing these three
- * capabilities by name.
+ * The fields this is *about* are marked with `PATH_FIELD` below, each with the
+ * part of the path it holds, so whatever has to check a folder reads them
+ * rather than knowing these three capabilities by name.
  */
 const FOLDER_MODE = {
   type: "string",
