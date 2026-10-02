@@ -62,7 +62,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         type: "string",
         title: "Folder",
         description: "Where the note is created, relative to the vault's root.",
-        [PATH_FIELD]: true,
+        [PATH_FIELD]: "folders",
         ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
       },
       filename: {
@@ -71,6 +71,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         title: "Filename",
         description:
           "The note's filename. Left blank, one is derived from the item.",
+        [PATH_FIELD]: "leaf",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
       [FRONTMATTER]: FRONTMATTER_MODE,

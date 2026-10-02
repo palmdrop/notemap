@@ -89,13 +89,13 @@ typecheck, lint.
 
 Depends on phase 1.
 
-- [ ] `packages/output-markdown/src/capabilities.ts`: `create`'s `directory` is `"folders"`, its
+- [x] `packages/output-markdown/src/capabilities.ts`: `create`'s `directory` is `"folders"`, its
       `filename` `"leaf"`. `append` and `create-or-append` keep `path: true`.
-- [ ] Check that `destination-fs` and `destination-webdav` (both built on these capabilities) need
+- [x] Check that `destination-fs` and `destination-webdav` (both built on these capabilities) need
       nothing else, and that `destination-arena` marks nothing.
-- [ ] Grep the adapter specs and `docs/standards.md` for the `create` schema's annotations and
+- [x] Grep the adapter specs and `docs/standards.md` for the `create` schema's annotations and
       amend any that describe them.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** output-markdown, destination-fs and destination-webdav tests pass; the daemon's
 `GET /v1/destinations/{id}/description` for a filesystem destination shows the two roles;
