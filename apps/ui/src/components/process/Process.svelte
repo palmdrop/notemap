@@ -303,7 +303,7 @@
 
     const path = lined
       ? placeFor(args[LINE_FIELD] ?? "")
-      : placeNamed(valuesFrom(fields, args), undefined, reading?.settings);
+      : placeNamed(valuesFrom(fields, args), undefined, reading);
 
     return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
   });
@@ -312,8 +312,7 @@
   const settled = $derived(
     lined
       ? (args[LINE_FIELD] ?? "")
-      : (placeNamed(valuesFrom(fields, args), undefined, reading?.settings) ??
-          ""),
+      : (placeNamed(valuesFrom(fields, args), undefined, reading) ?? ""),
   );
 
   function placeFor(value: string): string {

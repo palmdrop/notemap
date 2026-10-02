@@ -61,3 +61,45 @@ test("keeps a record to two lines, the mark at the end of the place", async () =
   expect(rest?.contains(mark)).toBe(true);
   expect(line.title).toBe("a destination projects/research/2026");
 });
+
+test("reads a pending create as a path, and as its folder until it has a filename", async () => {
+  pool((request) => {
+    if (routeOf(request).endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [
+          {
+            name: "create",
+            accepts: ["text"],
+            argumentsSchema: {
+              type: "object",
+              properties: {
+                directory: { type: "string", "x-notemap-path": "folders" },
+                filename: { type: "string", "x-notemap-path": "leaf" },
+              },
+            },
+          },
+        ],
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  const named = {
+    ...PENDING,
+    id: "named",
+    target: {
+      ...PENDING.target,
+      arguments: {
+        directory: "projects/research/2026",
+        filename: "a-rather-long-filename-for-the-day.md",
+      },
+    },
+  };
+  render(Routing, { summary: undefined, records: [named, PENDING] });
+
+  expect(
+    await screen.findByText("…/a-rather-long-filename-for-the-day.md"),
+  ).toBeDefined();
+  expect(screen.getByText("…/2026/")).toBeDefined();
+});

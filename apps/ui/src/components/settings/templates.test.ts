@@ -57,6 +57,19 @@ const CREATE_WITH_SWITCHES = {
   },
 };
 
+/** The markdown kind's `create`, its path split into folders and the leaf. */
+const CREATE_SPLIT = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      directory: { type: "string", "x-notemap-path": "folders" },
+      filename: { type: "string", "x-notemap-path": "leaf" },
+    },
+  },
+};
+
 function aDestination(overrides: Record<string, unknown> = {}) {
   return {
     id: VAULT,
@@ -131,6 +144,23 @@ test("draws each template with its tag, its place and what it last answered", as
 
   await open(/research/);
   expect(await said("tag")).toBe("route/research");
+});
+
+test("draws a place split into folders and a leaf as one path", async () => {
+  serving(
+    [
+      aTemplate({
+        arguments: { directory: "research", filename: "{{captured_at}}.md" },
+      }),
+    ],
+    { kind: "fits" },
+    [aDestination()],
+    [CREATE_SPLIT],
+  );
+
+  render(Templates);
+
+  expect(await screen.findByText("research/{{captured_at}}.md")).toBeTruthy();
 });
 
 test("asks each row for its own report, and asks a settled one once", async () => {

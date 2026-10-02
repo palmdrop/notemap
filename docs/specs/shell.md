@@ -1434,6 +1434,12 @@ pointer the destination handed back, or failing that the place the decision name
 the place only where it is a path** *(2026-10-01)*: the capability marks its path field
 `x-notemap-path`, and where none is marked the pointer is a handle the destination minted — an
 are.na block's id — so the place its decision named, read as the name it stands for, says more.
+**A place is composed from the path's parts** *(2026-10-02,
+[ADR 55](../adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md))*: a folders field and
+the leaf completing it join with `/`, so a pending `create` reads `…/a-rather-long-filename.md`;
+with no leaf the folders end in `/` and are cut to their last folder, `…/2026/`, until the pointer
+says what the file was called. A whole path is one field, and every field that is no part of the
+path follows after `, `, as `append`'s heading does.
 **Until the capability has been described the line names the destination alone**, and the place
 joins it once the description is in, so the line never says a handle or a setting and takes it
 back; the same holds for a record's place and a template's. A destination that could not be

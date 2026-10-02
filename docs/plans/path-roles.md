@@ -105,17 +105,17 @@ Depends on phase 1.
 
 Depends on phase 1 for the vocabulary; reads correctly only once phase 2 has landed.
 
-- [ ] `schema-form.ts`: a field's `path` becomes its role, or nothing.
-- [ ] `routing.ts`: `placeNamed` joins the folders field and the leaf with `/`, the leaf absent
+- [x] `schema-form.ts`: a field's `path` becomes its role, or nothing.
+- [x] `routing.ts`: `placeNamed` joins the folders field and the leaf with `/`, the leaf absent
       giving the folders with a trailing `/`; every other field still follows after `, `. `pathed`
       means any role is marked. `placeShort` cuts a trailing-slash place to its last folder,
       `…/2026/`, rather than to an empty segment.
-- [ ] Callers read the composed place unchanged: the routing line, the record block's head, the
+- [x] Callers read the composed place unchanged: the routing line, the record block's head, the
       composer's place, the templates list. Check each draws `projects/research/2026/a.md` where
       it drew `projects/research/2026, a.md`.
-- [ ] shell.md: amend *On a row, a record reads as its destination and the place it landed*
+- [x] shell.md: amend *On a row, a record reads as its destination and the place it landed*
       (dated) with how a place is composed from a path's parts.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** `routing.test.ts` covers folders + leaf, folders with no leaf, a whole-path field with
 a `heading` after it, and a capability marking nothing; `Routing.test.ts` / `Block.test.ts` draw

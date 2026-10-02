@@ -68,9 +68,13 @@ const DESCRIBED = {
           directory: {
             type: "string",
             title: "Directory",
-            "x-notemap-path": true,
+            "x-notemap-path": "folders",
           },
-          filename: { type: "string", title: "Filename" },
+          filename: {
+            type: "string",
+            title: "Filename",
+            "x-notemap-path": "leaf",
+          },
         },
       },
     },
@@ -259,6 +263,16 @@ test("a pending record says so and offers cancel, and nothing else does", async 
   await rerender({ record: RECORD });
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+});
+
+test("a pending record's head reads its folders and leaf as one path", async () => {
+  await named();
+
+  render(Block, {
+    record: { ...RECORD, state: "pending", pointer: undefined },
+  });
+
+  expect(await screen.findByText("drafts/note.md")).toBeDefined();
 });
 
 test("cancelling calls the record off, says so in the corner, and tells the surface", async () => {

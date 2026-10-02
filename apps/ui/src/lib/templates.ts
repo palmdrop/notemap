@@ -1,7 +1,7 @@
 import type { RoutingTemplate } from "@notemap/client";
 
 import { client } from "./client";
-import { placeNamed, type Namer } from "./routing";
+import { placeNamed, type Namer, type Reading } from "./routing";
 
 /**
  * What a template says about where it files, in its own words — patterns and
@@ -16,9 +16,9 @@ import { placeNamed, type Namer } from "./routing";
 export function placeOf(
   template: RoutingTemplate,
   called?: Namer,
-  settings: readonly string[] = [],
+  reading?: Reading,
 ): string {
-  return placeNamed(template.arguments, called, settings) ?? "—";
+  return placeNamed(template.arguments, called, reading) ?? "—";
 }
 
 /**

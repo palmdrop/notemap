@@ -130,7 +130,7 @@
   );
 
   const place = $derived(
-    reading === "asking" ? "" : placeOf(one, called, settings),
+    reading === "asking" ? "" : placeOf(one, called, reading),
   );
 
   /** The settings this template takes for its deliveries, each its own fact. */

@@ -39,7 +39,6 @@ describe("the fields a schema asks for", () => {
         askable: true,
         offeredOnly: false,
         inherits: false,
-        path: false,
       },
       {
         name: "tags",
@@ -48,9 +47,22 @@ describe("the fields a schema asks for", () => {
         askable: false,
         offeredOnly: false,
         inherits: false,
-        path: false,
       },
     ]);
+  });
+
+  test("reads which part of a path a field holds, and nothing where it is unmarked", () => {
+    const roles = fieldsOf({
+      type: "object",
+      properties: {
+        whole: { type: "string", "x-notemap-path": true },
+        directory: { type: "string", "x-notemap-path": "folders" },
+        filename: { type: "string", "x-notemap-path": "leaf" },
+        heading: { type: "string" },
+      },
+    }).map((field) => field.path);
+
+    expect(roles).toEqual([true, "folders", "leaf", undefined]);
   });
 
   test("asks for nothing where there is no schema to ask from", () => {
