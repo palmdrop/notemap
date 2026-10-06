@@ -12,7 +12,7 @@ export type Tally = {
   unchanged: number;
   amended: number;
   revised: number;
-  /** Blocks holding neither prose nor a file, or a channel-class block. */
+  /** Blocks holding neither prose nor a file. */
   empty: number;
   failed: number;
 };

@@ -67,14 +67,15 @@ relay container's.
 | a digest of the block's prose and file | the identity an edit is captured under — never `updated_at`, which are.na moves whenever the block is connected into any channel |
 | a Text block's title, prose and source URL | composed into `note` prose — the prose verbatim, unless `hashtags` is set, which takes a trailing line of `#tags` off it |
 | a Link block's title, caption and source URL | composed into `note` prose         |
-| an Image or Attachment block's title, caption and source URL | composed into `note` prose |
+| an Image or Attachment block's title, caption and source URL | composed into `note` prose — the title only where it is not just the uploaded file's name |
 | an Embed block                | mapped like a Link — are.na never hosts the actual media, only a cached thumbnail, so no attachment is carried |
 | an Image block's stored image, an Attachment block's file | one asset, under a derived id |
 | the watched channel's configured `tags`, and a trailing `#tag` line where `hashtags` is set | tags, attributed to the source, **at capture** |
 | a Channel-class block         | its title, description and `https://www.are.na/channel/<slug>`, composed into `note` prose, under `channel/<id>` — a channel's id may also be a block's |
 
 The parts are joined as paragraphs in that order, each only where the block
-has it. A source URL the block's own words already hold is not repeated. The
+has it. A source URL the block's own words already hold whole is not repeated;
+one that only starts a longer URL in them is. The
 source URL of a Text or an Image is the page it was saved from, where it was
 saved with are.na's browser extension.
 
@@ -96,9 +97,11 @@ last line of a block's own words — a Text block's prose, any other block's
 caption — is read as tags where it holds nothing but hashtags, after the
 channel's own, and comes off the words captured before the source URL is put
 after them. A title is never read for tags. The line comes off so a vault that
-writes tags as a `#tag` foot writes them once rather than twice. A `#tag` mid-sentence is a word
-somebody wrote and stays one. The block's version digests the prose the payload
-carries, foot already off, so a foot edited upstream alone is
+writes tags as a `#tag` foot writes them once rather than twice. Words that are
+nothing but a foot come off too wherever a title, a link or a file is left to
+capture, and stay as the text where nothing would be. A `#tag` mid-sentence is
+a word somebody wrote and stays one. The block's version digests the prose the
+payload carries, foot already off, so a foot edited upstream alone is
 `already-captured`; turning the flag on, though, changes that payload, so the
 next poll amends or revises every item made from a block carrying one, once.
 
@@ -111,9 +114,11 @@ reconciled.
 
 **A change to how the relay reads a block is an edit, once.** The pool compares
 payloads and cannot tell a block edited upstream from a block read differently.
-Titles and source URLs joined the prose on 2026-10-06, so the first full poll
-after upgrading past that amends every unprocessed item made from a block
-carrying either, and revises every processed one.
+Titles and source URLs joined the prose on 2026-10-06, and with `hashtags` set
+a foot is now read off a caption too, so the first full poll after upgrading
+past that amends every unprocessed item whose prose changed, and revises every
+processed one. A channel's prose holds its slug, so renaming the channel on
+are.na is an edit as well.
 
 **An edit to a *processed* block lands at the time of the poll.** A revision is
 an ordinary capture carrying a link, and mints its own capture time of now

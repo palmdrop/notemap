@@ -11,6 +11,7 @@ export type ArenaBlock = {
   readonly type: "Text" | "Link" | "Image" | "Attachment" | "Embed" | "Channel";
   readonly updated_at: string;
   readonly title?: string | null;
+  readonly slug?: string | null;
   readonly content?: { markdown: string } | null;
   readonly description?: { markdown: string } | null;
   readonly source?: { url: string } | null;

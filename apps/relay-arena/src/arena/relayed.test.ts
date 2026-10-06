@@ -331,6 +331,162 @@ describe("a block as the pool takes it", () => {
     });
   });
 
+  it("leaves the source URL in where the words hold only a longer URL starting with it", () => {
+    const relaying = relayedFrom(
+      block({
+        content: { markdown: "next: https://example.com/essay/part-2" },
+        source: { url: "https://example.com/essay" },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe(
+      "next: https://example.com/essay/part-2\n\nhttps://example.com/essay",
+    );
+  });
+
+  it("reads a URL closing a sentence or inside a markdown link as held", () => {
+    const source = { url: "https://example.com/essay" };
+    const said = (markdown: string) =>
+      relayedFrom(block({ content: { markdown }, source }), bytes, {
+        tags: [],
+        hashtags: false,
+      })?.text;
+
+    expect(said("from https://example.com/essay.")).toBe(
+      "from https://example.com/essay.",
+    );
+    expect(said("[the essay](https://example.com/essay)")).toBe(
+      "[the essay](https://example.com/essay)",
+    );
+  });
+
+  it("takes words that are only a foot off where a title, link or file is left", () => {
+    const titled = relayedFrom(
+      block({
+        type: "Link",
+        title: "A title",
+        description: { markdown: "#topic/x" },
+        source: { url: "https://example.com/page" },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(titled).toMatchObject({
+      text: "A title\n\nhttps://example.com/page",
+      tags: ["topic/x"],
+    });
+
+    const image = relayedFrom(
+      block({
+        type: "Image",
+        description: { markdown: "#topic/x" },
+        image: {
+          filename: "a.png",
+          content_type: "image/png",
+          src: "https://images.example.com/a.png",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(image).not.toHaveProperty("text");
+    expect(image?.tags).toEqual(["topic/x"]);
+  });
+
+  it("keeps words that are only a foot where nothing else would be left", () => {
+    const relaying = relayedFrom(
+      block({ content: { markdown: "#topic/x" } }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({ text: "#topic/x", tags: ["topic/x"] });
+  });
+
+  it("carries a Text block that has only a title", () => {
+    expect(
+      relayedFrom(block({ title: "Just a title" }), bytes, {
+        tags: [],
+        hashtags: false,
+      })?.text,
+    ).toBe("Just a title");
+  });
+
+  it("carries the source URL of an Image whose title is only its file's name", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Image",
+        title: "IMG_2231.jpg",
+        source: { url: "https://example.com/gallery" },
+        image: {
+          filename: "495ca161.jpg",
+          content_type: "image/jpeg",
+          src: "https://images.example.com/495ca161.jpg",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe("https://example.com/gallery");
+    expect(relaying?.attachments[0]?.filename).toBe("IMG_2231.jpg");
+  });
+
+  it("reads a foot off a channel's description", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Channel",
+        title: "A channel",
+        slug: "a-channel",
+        description: { markdown: "Films\n\n#topic/film" },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "A channel\n\nFilms\n\nhttps://www.are.na/channel/a-channel",
+      tags: ["topic/film"],
+    });
+  });
+
+  it("carries a channel with no description, and one with no slug without a link", () => {
+    const bare = relayedFrom(
+      block({
+        type: "Channel",
+        title: "A channel",
+        slug: "a-channel",
+        description: null,
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(bare?.text).toBe(
+      "A channel\n\nhttps://www.are.na/channel/a-channel",
+    );
+
+    const unslugged = relayedFrom(
+      block({ type: "Channel", title: "A channel" }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(unslugged?.text).toBe("A channel");
+  });
+
+  it("versions a block by its source URL as well as its words", () => {
+    const at = (url: string) =>
+      relayedFrom(
+        block({ content: { markdown: "a" }, source: { url } }),
+        bytes,
+        { tags: [], hashtags: false },
+      )?.version;
+
+    expect(at("https://example.com/a")).toBe(at("https://example.com/a"));
+    expect(at("https://example.com/a")).not.toBe(at("https://example.com/b"));
+  });
+
   it("relays nothing for a block holding neither prose nor a file", () => {
     expect(
       relayedFrom(block({ content: { markdown: "   " } }), bytes, {

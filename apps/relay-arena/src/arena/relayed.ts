@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { classified } from "@notemap/relay";
+import { classified, tagFootOf } from "@notemap/relay";
 import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
 import { ARENA_CHANNEL_PAGE } from "../constants";
@@ -35,11 +35,9 @@ function uploadedAs(block: ArenaBlock): string | undefined {
 }
 
 function titleOf(block: ArenaBlock): string | undefined {
-  return block.type === "Image" || block.type === "Attachment"
-    ? uploadedAs(block) === undefined
-      ? nonEmpty(block.title)
-      : undefined
-    : nonEmpty(block.title);
+  const named = block.type === "Image" || block.type === "Attachment";
+  if (named && uploadedAs(block) !== undefined) return undefined;
+  return nonEmpty(block.title);
 }
 
 /** A Text block's own prose; every other class's caption, a channel's description included. */
@@ -61,6 +59,13 @@ function linkOf(block: ArenaBlock): string | undefined {
   return slug === undefined
     ? undefined
     : `${ARENA_CHANNEL_PAGE}/${encodeURIComponent(slug)}`;
+}
+
+/** Whether the words hold this URL whole, rather than as the start of a longer one. */
+function holds(words: string | undefined, url: string): boolean {
+  return (words?.match(/https?:\/\/[^\s<>()[\]"']+/g) ?? []).some(
+    (found) => found.replace(/[.,;:!?]+$/, "") === url,
+  );
 }
 
 /** Title, the block's own words and its link, each present or not, joined as paragraphs. */
@@ -133,18 +138,27 @@ export function relayedFrom(
   open: Open,
   { tags: configured, hashtags }: Reading,
 ): Relayed | undefined {
-  const { text: words, tags } = classified(
-    wordsOf(block),
-    configured,
-    hashtags,
-  );
+  const words = wordsOf(block);
+  const { text: read, tags } = classified(words, configured, hashtags);
+  const title = titleOf(block);
   const link = linkOf(block);
-  const text = composed([
-    titleOf(block),
-    words,
-    link !== undefined && words?.includes(link) === true ? undefined : link,
-  ]);
   const attachment = attachmentOf(block, open);
+
+  // `classified` keeps words that are only a foot so the capture is not empty;
+  // a title, link or file around them already keeps it from being empty.
+  const onlyFoot =
+    hashtags && words !== undefined && tagFootOf(words).prose === "";
+  const own =
+    onlyFoot &&
+    (title !== undefined || link !== undefined || attachment !== undefined)
+      ? undefined
+      : read;
+
+  const text = composed([
+    title,
+    own,
+    link !== undefined && holds(own, link) ? undefined : link,
+  ]);
   if (text === undefined && attachment === undefined) return undefined;
 
   return {
