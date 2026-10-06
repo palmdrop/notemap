@@ -1,8 +1,9 @@
 import { createHash } from "node:crypto";
 
-import { classified } from "@notemap/relay";
+import { classified, tagFootOf } from "@notemap/relay";
 import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
+import { ARENA_CHANNEL_PAGE } from "../constants";
 import type { ArenaBlock } from "./types";
 
 /** How this relay was asked to read a block. */
@@ -34,39 +35,43 @@ function uploadedAs(block: ArenaBlock): string | undefined {
 }
 
 function titleOf(block: ArenaBlock): string | undefined {
-  return uploadedAs(block) === undefined ? nonEmpty(block.title) : undefined;
+  const named = block.type === "Image" || block.type === "Attachment";
+  if (named && uploadedAs(block) !== undefined) return undefined;
+  return nonEmpty(block.title);
 }
 
-/** Title, caption and source URL, each present or not, joined as paragraphs. */
-function composed(parts: readonly (string | undefined)[]): string | undefined {
-  const kept = parts.filter((part): part is string => part !== undefined);
-  return kept.length === 0 ? undefined : kept.join("\n\n");
+/** A Text block's own prose; every other class's caption, a channel's description included. */
+function wordsOf(block: ArenaBlock): string | undefined {
+  return nonEmpty(
+    block.type === "Text"
+      ? block.content?.markdown
+      : block.description?.markdown,
+  );
 }
 
 /**
- * A Text block's own prose verbatim; a Link or an Embed's title, caption and
- * source URL composed into prose — are.na never hosts an Embed's actual
- * media, only a cached thumbnail, so it is treated as a Link and carries no
- * attachment; an Image or Attachment's title and caption where it has them,
- * which may be nothing at all, since the file itself is the content.
+ * Where the block points: a Link or Embed's page, the page an image or a text
+ * was saved from, or a channel's own page on are.na.
  */
-function textOf(block: ArenaBlock): string | undefined {
-  switch (block.type) {
-    case "Text":
-      return nonEmpty(block.content?.markdown);
-    case "Link":
-    case "Embed":
-      return composed([
-        nonEmpty(block.title),
-        nonEmpty(block.description?.markdown),
-        nonEmpty(block.source?.url),
-      ]);
-    case "Image":
-    case "Attachment":
-      return composed([titleOf(block), nonEmpty(block.description?.markdown)]);
-    case "Channel":
-      return undefined;
-  }
+function linkOf(block: ArenaBlock): string | undefined {
+  if (block.type !== "Channel") return nonEmpty(block.source?.url);
+  const slug = nonEmpty(block.slug);
+  return slug === undefined
+    ? undefined
+    : `${ARENA_CHANNEL_PAGE}/${encodeURIComponent(slug)}`;
+}
+
+/** Whether the words hold this URL whole, rather than as the start of a longer one. */
+function holds(words: string | undefined, url: string): boolean {
+  return (words?.match(/https?:\/\/[^\s<>()[\]"']+/g) ?? []).some(
+    (found) => found.replace(/[.,;:!?]+$/, "") === url,
+  );
+}
+
+/** Title, the block's own words and its link, each present or not, joined as paragraphs. */
+function composed(parts: readonly (string | undefined)[]): string | undefined {
+  const kept = parts.filter((part): part is string => part !== undefined);
+  return kept.length === 0 ? undefined : kept.join("\n\n");
 }
 
 /**
@@ -115,12 +120,14 @@ function versionOf(
 /**
  * One block as the pool takes it, or nothing where there is nothing to take:
  * core lets an empty capture through, and each relay guards its own input. A
- * channel connected into a channel is not a note and is never captured.
+ * channel connected into a channel arrives as a link to it, under an identity
+ * of its own, since its id may be a block's as well.
  *
  * `tags` are the watched channel's configured tags, and — where `hashtags` asks
- * for it — the foot of tags the block's own prose ends with, which are.na has
- * nothing of its own to put there. They travel once, at capture, and are never
- * reconciled afterwards.
+ * for it — the foot of tags the block's own words end with, which are.na has
+ * nothing of its own to put there. The foot is read before the title and link
+ * are composed around those words, so that it is still a foot. Tags travel
+ * once, at capture, and are never reconciled afterwards.
  *
  * The version digests the prose the payload will carry, foot already off, so a
  * block whose foot alone was edited upstream is `already-captured` rather than
@@ -131,16 +138,34 @@ export function relayedFrom(
   open: Open,
   { tags: configured, hashtags }: Reading,
 ): Relayed | undefined {
-  if (block.type === "Channel") return undefined;
-
-  const prose = textOf(block);
+  const words = wordsOf(block);
+  const { text: read, tags } = classified(words, configured, hashtags);
+  const title = titleOf(block);
+  const link = linkOf(block);
   const attachment = attachmentOf(block, open);
-  if (prose === undefined && attachment === undefined) return undefined;
 
-  const { text, tags } = classified(prose, configured, hashtags);
+  // `classified` keeps words that are only a foot so the capture is not empty;
+  // a title, link or file around them already keeps it from being empty.
+  const onlyFoot =
+    hashtags && words !== undefined && tagFootOf(words).prose === "";
+  const own =
+    onlyFoot &&
+    (title !== undefined || link !== undefined || attachment !== undefined)
+      ? undefined
+      : read;
+
+  const text = composed([
+    title,
+    own,
+    link !== undefined && holds(own, link) ? undefined : link,
+  ]);
+  if (text === undefined && attachment === undefined) return undefined;
 
   return {
-    sourceItemId: String(block.id),
+    sourceItemId:
+      block.type === "Channel"
+        ? `channel/${String(block.id)}`
+        : String(block.id),
     version: versionOf(text, attachment),
     // The moment the block was connected into *this* channel, not when it was
     // made — a block connected here may have been made by someone else years

@@ -5,7 +5,7 @@ export type ArenaProse = {
   readonly markdown: string;
 };
 
-/** Where a Link or Embed block points, and what an image or attachment's file becomes. */
+/** Where a block points: a Link or Embed's page, or the page an image or a text was saved from. */
 export type ArenaSource = {
   readonly url: string;
 };
@@ -28,14 +28,20 @@ export type ArenaAttachment = {
 export type ArenaBlockType =
   "Text" | "Link" | "Image" | "Attachment" | "Embed" | "Channel";
 
-/** One block, as `/v3/channels/{handle}/contents` answers it in a channel's context. */
+/**
+ * One block, as `/v3/channels/{handle}/contents` answers it in a channel's
+ * context. A Channel-class entry is a channel, not a block, and its `id` is
+ * from a different sequence than a block's.
+ */
 export type ArenaBlock = {
   readonly id: number;
   readonly type: ArenaBlockType;
   readonly title?: string | null;
+  /** A Channel-class entry's slug. */
+  readonly slug?: string | null;
   /** A Text block's own prose. */
   readonly content?: ArenaProse | null;
-  /** A caption, on every block class that can carry one. */
+  /** A caption, on every block class that can carry one, and a channel's description. */
   readonly description?: ArenaProse | null;
   readonly source?: ArenaSource | null;
   readonly image?: ArenaImage | null;

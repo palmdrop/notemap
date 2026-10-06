@@ -204,13 +204,287 @@ describe("a block as the pool takes it", () => {
     );
   });
 
-  it("relays nothing for a Channel block: a channel connected into a channel is not a note", () => {
-    expect(
-      relayedFrom(block({ type: "Channel" }), bytes, {
+  it("carries a Text block's title above its prose, and the page it was saved from below", () => {
+    const relaying = relayedFrom(
+      block({
+        title: "A quote",
+        content: { markdown: "a thought" },
+        source: { url: "https://example.com/essay" },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe(
+      "A quote\n\na thought\n\nhttps://example.com/essay",
+    );
+  });
+
+  it("carries the page an Image or an Attachment was saved from", () => {
+    const image = relayedFrom(
+      block({
+        type: "Image",
+        title: "A picture",
+        description: { markdown: "A caption" },
+        source: { url: "https://example.com/gallery" },
+        image: {
+          filename: "a.png",
+          content_type: "image/png",
+          src: "https://images.example.com/a.png",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(image?.text).toBe(
+      "A picture\n\nA caption\n\nhttps://example.com/gallery",
+    );
+
+    const attachment = relayedFrom(
+      block({
+        type: "Attachment",
+        source: { url: "https://example.com/paper.pdf" },
+        attachment: {
+          filename: "a.pdf",
+          content_type: "application/pdf",
+          url: "https://attachments.example.com/a.pdf",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(attachment?.text).toBe("https://example.com/paper.pdf");
+  });
+
+  it("leaves the source URL out where the block's own words already hold it", () => {
+    const relaying = relayedFrom(
+      block({
+        content: { markdown: "read this: https://example.com/essay" },
+        source: { url: "https://example.com/essay" },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe("read this: https://example.com/essay");
+  });
+
+  it("reads the foot off the block's own words before the source URL is put after them", () => {
+    const text = relayedFrom(
+      block({
+        content: { markdown: "a thought\n\n#kind/quote" },
+        source: { url: "https://example.com/essay" },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(text).toMatchObject({
+      text: "a thought\n\nhttps://example.com/essay",
+      tags: ["kind/quote"],
+    });
+
+    const link = relayedFrom(
+      block({
+        type: "Link",
+        title: "A title",
+        description: { markdown: "A caption\n#topic/x" },
+        source: { url: "https://example.com/page" },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(link).toMatchObject({
+      text: "A title\n\nA caption\n\nhttps://example.com/page",
+      tags: ["topic/x"],
+    });
+  });
+
+  it("never reads a title as a foot", () => {
+    const relaying = relayedFrom(
+      block({ type: "Link", title: "#kind/quote" }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({ text: "#kind/quote", tags: [] });
+  });
+
+  it("carries a Channel block as a link to the channel, under an identity a block cannot hold", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Channel",
+        title: "Adam Curtis",
+        slug: "adam-curtis",
+        description: { markdown: "Films and notes" },
+      }),
+      bytes,
+      { tags: ["arena/influences"], hashtags: false },
+    );
+
+    expect(relaying).toEqual({
+      sourceItemId: "channel/123",
+      version: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown,
+      capturedAt: "2026-09-04T14:23:05Z",
+      text: "Adam Curtis\n\nFilms and notes\n\nhttps://www.are.na/channel/adam-curtis",
+      tags: ["arena/influences"],
+      attachments: [],
+    });
+  });
+
+  it("leaves the source URL in where the words hold only a longer URL starting with it", () => {
+    const relaying = relayedFrom(
+      block({
+        content: { markdown: "next: https://example.com/essay/part-2" },
+        source: { url: "https://example.com/essay" },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe(
+      "next: https://example.com/essay/part-2\n\nhttps://example.com/essay",
+    );
+  });
+
+  it("reads a URL closing a sentence or inside a markdown link as held", () => {
+    const source = { url: "https://example.com/essay" };
+    const said = (markdown: string) =>
+      relayedFrom(block({ content: { markdown }, source }), bytes, {
         tags: [],
         hashtags: false,
+      })?.text;
+
+    expect(said("from https://example.com/essay.")).toBe(
+      "from https://example.com/essay.",
+    );
+    expect(said("[the essay](https://example.com/essay)")).toBe(
+      "[the essay](https://example.com/essay)",
+    );
+  });
+
+  it("takes words that are only a foot off where a title, link or file is left", () => {
+    const titled = relayedFrom(
+      block({
+        type: "Link",
+        title: "A title",
+        description: { markdown: "#topic/x" },
+        source: { url: "https://example.com/page" },
       }),
-    ).toBeUndefined();
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(titled).toMatchObject({
+      text: "A title\n\nhttps://example.com/page",
+      tags: ["topic/x"],
+    });
+
+    const image = relayedFrom(
+      block({
+        type: "Image",
+        description: { markdown: "#topic/x" },
+        image: {
+          filename: "a.png",
+          content_type: "image/png",
+          src: "https://images.example.com/a.png",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+    expect(image).not.toHaveProperty("text");
+    expect(image?.tags).toEqual(["topic/x"]);
+  });
+
+  it("keeps words that are only a foot where nothing else would be left", () => {
+    const relaying = relayedFrom(
+      block({ content: { markdown: "#topic/x" } }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({ text: "#topic/x", tags: ["topic/x"] });
+  });
+
+  it("carries a Text block that has only a title", () => {
+    expect(
+      relayedFrom(block({ title: "Just a title" }), bytes, {
+        tags: [],
+        hashtags: false,
+      })?.text,
+    ).toBe("Just a title");
+  });
+
+  it("carries the source URL of an Image whose title is only its file's name", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Image",
+        title: "IMG_2231.jpg",
+        source: { url: "https://example.com/gallery" },
+        image: {
+          filename: "495ca161.jpg",
+          content_type: "image/jpeg",
+          src: "https://images.example.com/495ca161.jpg",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe("https://example.com/gallery");
+    expect(relaying?.attachments[0]?.filename).toBe("IMG_2231.jpg");
+  });
+
+  it("reads a foot off a channel's description", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Channel",
+        title: "A channel",
+        slug: "a-channel",
+        description: { markdown: "Films\n\n#topic/film" },
+      }),
+      bytes,
+      { tags: [], hashtags: true },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "A channel\n\nFilms\n\nhttps://www.are.na/channel/a-channel",
+      tags: ["topic/film"],
+    });
+  });
+
+  it("carries a channel with no description, and one with no slug without a link", () => {
+    const bare = relayedFrom(
+      block({
+        type: "Channel",
+        title: "A channel",
+        slug: "a-channel",
+        description: null,
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(bare?.text).toBe(
+      "A channel\n\nhttps://www.are.na/channel/a-channel",
+    );
+
+    const unslugged = relayedFrom(
+      block({ type: "Channel", title: "A channel" }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+    expect(unslugged?.text).toBe("A channel");
+  });
+
+  it("versions a block by its source URL as well as its words", () => {
+    const at = (url: string) =>
+      relayedFrom(
+        block({ content: { markdown: "a" }, source: { url } }),
+        bytes,
+        { tags: [], hashtags: false },
+      )?.version;
+
+    expect(at("https://example.com/a")).toBe(at("https://example.com/a"));
+    expect(at("https://example.com/a")).not.toBe(at("https://example.com/b"));
   });
 
   it("relays nothing for a block holding neither prose nor a file", () => {

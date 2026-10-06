@@ -220,6 +220,7 @@
 - [x] are.na relay does not seem to handle links well, or channels... should send them to notemap just as links, not skip entirely
   - channels arrive as links since 2026-10-06. The links half could not be reproduced: the live v3
     shape matches what the relay reads.
+
 - [ ] relays: an upstream edit to a *processed* item becomes a revision and resurfaces in the queue,
   which may not be what a person who already dealt with it expects. It is also the only way the edit
   reaches a destination, so dropping it would let the vault diverge silently. If it bites, a

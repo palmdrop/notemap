@@ -226,14 +226,28 @@ describe("the arena relay, over a real daemon", () => {
     expect(after?.payload.content).toEqual({ text: "rewritten since" });
   });
 
-  it("relays nothing for a Channel-class block", async () => {
+  it("relays a Channel-class block as a link to the channel, under an identity of its own", async () => {
     const where = await relaying();
-    where.arena
-      .channel("one")
-      .push(block(1, { type: "Channel", content: null }));
+    where.arena.channel("one").push(
+      block(1, {
+        type: "Channel",
+        content: null,
+        title: "A channel",
+        slug: "a-channel",
+      }),
+    );
 
-    expect(await polled(where)).toMatch(/empty=1/);
-    expect(await where.items()).toEqual([]);
+    expect(await polled(where)).toMatch(/captured=1/);
+
+    const [held] = await where.items();
+    expect(held).toMatchObject({
+      sourceItemId: "channel/1",
+      payload: {
+        content: {
+          text: "A channel\n\nhttps://www.are.na/channel/a-channel",
+        },
+      },
+    });
   });
 
   it("puts a block in a second channel under its own source", async () => {
