@@ -19,8 +19,10 @@ shape cron wants. `--help` says the rest.
 
 ## In Docker
 
-Its own image, because it is its own program. Nothing is published yet, so
-build it where it will run:
+Its own image, because it is its own program: `ghcr.io/palmdrop/notemap-relay-memos`,
+published with every release under the daemon's version, and pulled with the
+daemon's login. For a change no release has yet, build it where it will run and
+point the compose service's `image` at it:
 
 ```sh
 docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .

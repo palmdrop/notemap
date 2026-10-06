@@ -5,7 +5,8 @@
 # program that is not a browser. Its own image for the same reason it is its
 # own program.
 #
-# Not published anywhere yet. Build it where the compose file will run it:
+# Published with every release as `ghcr.io/palmdrop/notemap-relay-arena`. For a
+# change no release has yet, build it where the compose file will run it:
 #
 #   docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .
 

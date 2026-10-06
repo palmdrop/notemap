@@ -30,8 +30,10 @@ the two apart.
 
 ## In Docker
 
-Its own image, because it is its own program. Nothing is published yet, so
-build it where it will run:
+Its own image, because it is its own program: `ghcr.io/palmdrop/notemap-relay-arena`,
+published with every release under the daemon's version, and pulled with the
+daemon's login. For a change no release has yet, build it where it will run and
+point the compose service's `image` at it:
 
 ```sh
 docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .

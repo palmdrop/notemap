@@ -73,19 +73,19 @@ Settled with the developer on 2026-10-06.
 Independent of phase 1 in content. It lands in the same PR because the docs describe what CI
 does.
 
-- [ ] `docs/running.md`: the tags table loses `sha-`. The "Every push to `main`" paragraph is
+- [x] `docs/running.md`: the tags table loses `sha-`. The "Every push to `main`" paragraph is
       replaced by "a release publishes all three images". The relay images are named, with the
       login that already covers them.
-- [ ] `docker/compose/compose.yaml` and `compose.proxy.yaml`: the commented-out relay services
+- [x] `docker/compose/compose.yaml` and `compose.proxy.yaml`: the commented-out relay services
       use `ghcr.io/palmdrop/notemap-relay-<upstream>:${NOTEMAP_VERSION:-latest}`. "No image is
       published yet" goes. A local build stays as the alternative for an unreleased change.
-- [ ] `Dockerfile.relay-arena` and `Dockerfile.relay-memos`: their headers stop saying the image
+- [x] `Dockerfile.relay-arena` and `Dockerfile.relay-memos`: their headers stop saying the image
       is not published
-- [ ] `apps/relay-arena/README.md` and the memos relay's README: "In Docker" pulls the published
+- [x] `apps/relay-arena/README.md` and the memos relay's README: "In Docker" pulls the published
       image and keeps building as the alternative
-- [ ] Verify: `pnpm lint` (prettier covers the markdown and YAML).
+- [x] Verify: `pnpm lint` (prettier covers the markdown and YAML).
       `docker compose -f docker/compose/compose.yaml config` still parses.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 3: first release
 

@@ -25,7 +25,8 @@ cd /srv/notemap
 They are yours from then on; upgrading does not replace them, and nothing else from that clone is
 needed on the host.
 
-The image lives at `ghcr.io/palmdrop/notemap`, and the package is private too. Log in once per host:
+The image lives at `ghcr.io/palmdrop/notemap`, and the package is private too, as are the relays'
+`notemap-relay-arena` and `notemap-relay-memos` beside it. Log in once per host:
 
 ```sh
 echo $PAT | docker login ghcr.io -u palmdrop --password-stdin
@@ -212,7 +213,6 @@ Which tags exist:
 | | |
 |---|---|
 | `v0.2.0`, `v0.2` | A release. What you should be running. |
-| `sha-a1b2c3d` | Any commit on `main`, for trying something that has no release yet. |
 | `latest` | The most recent release. Moves on its own. |
 
 The image tags carry the `v` the git tag does, so the version in `.env` is the release as it is
@@ -497,10 +497,8 @@ pnpm release patch   # or minor, or major
 It refuses unless you are on `main` with a clean tree and nothing unpulled, runs typecheck, lint,
 format, the tests and the full-stack suite, then bumps the version in `package.json`, commits it as
 `chore(release): v0.2.0`, tags, and pushes both. CI builds from the tag and pushes `v0.2.0`, `v0.2`
-and `latest` to GHCR — and refuses if the tag and `package.json` disagree.
-
-Every push to `main` also gets a `sha-<short>` tag, so a build with no release yet is still
-something the homelab can pin.
+and `latest` to GHCR for the daemon and both relays — and refuses if the tag and `package.json`
+disagree. A push to `main` publishes nothing.
 
 To try the image locally without a release, build it under a name the compose files will use:
 
