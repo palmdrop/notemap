@@ -37,11 +37,9 @@ export function realRootOf(root: string): Promise<string> {
 /**
  * The first of `reserved` that `root` contains or sits inside of, resolved the
  * same way a person's setting is — `~` and `..` — but never through a symlink
- * of its own: this is string arithmetic, and how much it catches depends on
- * what its caller hands it. `deliver()` and `candidates()` pass a root already
- * read back through the filesystem; `describe()` touches no filesystem at all,
- * so a root that is a *link* to reserved state passes it and is caught only
- * once something goes and looks.
+ * of its own: this is string arithmetic, for `describe()`, which touches no
+ * filesystem at all. A root that is a *link* to reserved state passes it and is
+ * caught only once something goes and looks.
  */
 export function overlapsAny(
   root: string,
@@ -49,6 +47,22 @@ export function overlapsAny(
 ): string | undefined {
   const candidate = rootPath(root);
   return reserved.find((each) => overlaps(candidate, rootPath(each)));
+}
+
+/**
+ * `overlapsAny` for a root already read back through the filesystem: reserved
+ * state is read back the same way, or a link anywhere above it — `/var` on
+ * macOS — hides the overlap. Reserved state not made yet is taken as written.
+ */
+export async function realOverlapsAny(
+  realRoot: string,
+  reserved: readonly string[],
+): Promise<string | undefined> {
+  for (const each of reserved) {
+    const real = await realpath(rootPath(each)).catch(() => rootPath(each));
+    if (overlaps(realRoot, real)) return each;
+  }
+  return undefined;
 }
 
 function overlaps(a: string, b: string): boolean {

@@ -13,7 +13,7 @@ import {
 
 import { APPEND, CREATE, CREATE_OR_APPEND } from "@notemap/output-markdown";
 
-import { contain, overlapsAny, realRootOf } from "./paths";
+import { contain, realOverlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
 
 /** However large a vault gets, past this many entries browsing is a search problem, not a paging one. */
@@ -61,7 +61,7 @@ export async function filesystemCandidates(
 
   const realRoot = await resolveRoot(settings.root);
 
-  const overlap = overlapsAny(realRoot, config.reserved ?? []);
+  const overlap = await realOverlapsAny(realRoot, config.reserved ?? []);
   if (overlap !== undefined) {
     throw new Unusable(`${realRoot} overlaps notemap's own ${overlap}`);
   }
