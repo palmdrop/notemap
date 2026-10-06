@@ -2,12 +2,16 @@
 
 ## Shell — layout and interaction
 
-- [x] minor ui fixes:
-    - in "by day" view mode, bold the time mark to make it stand out more against the tags
-    - give the statusbar slightly wider so it aligns with the border of a selected capture row
-    - on smaller screens, statusbar should reach all the way to the edges of the viewport, no vertical border on the edges
-    - the routing record entry in a capture row requires too much space. Especially when pending, the arrow, destination/place, and the loader ends up on three separate rows. Need to find an alternative way to represent routing record lines, especially pending ones
-    - opened capture items have double borders 
+- [ ] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
+- [ ] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
+- [ ] trying to capture an empty capture gives no error or warning indicating why it does not work
+- [ ] destination fields should provide succinct placeholder texts
+
+- [ ] update empty lists inidcators: 
+    - when no items match the tag filters, we get "Nothing tagged <tag> and <tag> is waiting." and a button for "whole queue" that reads just like text. Should say: "Nothing matches both <tag> and <tag>" and the button should read "Clear filters" and look like a button, not just text.
+    - empty queue reads like "Nothing left to process", should say "Queue is empty
+    - when the notices expandable is empty, it says "Nothing has been said yet" but it should say "No notices".
+    - also, for the queue message (empty queue or no tags matching), the text is strangely offset to the right and down. Align with the left of the queue, no additional padding on top.
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 - [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
@@ -25,6 +29,12 @@
 - [ ] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
 
 - [ ] feed, filter on routed and non-routed
+
+- [ ] mobile view improvements (this might be deferred until we do the app?):
+    - action button for adding a new capture
+    - full-screen for editing and capturing
+    - tag input using a centered input field and expandable
+    - bottom bar for switching views
 
 - [x] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
 
@@ -206,9 +216,20 @@
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
 
-- [ ] are.na relay: if "source" link is present, include it in the relayed capture
+- [x] are.na relay: if "source" link is present, include it in the relayed capture
+- [x] are.na relay does not seem to handle links well, or channels... should send them to notemap just as links, not skip entirely
+  - channels arrive as links since 2026-10-06. The links half could not be reproduced: the live v3
+    shape matches what the relay reads.
+- [ ] relays: an upstream edit to a *processed* item becomes a revision and resurfaces in the queue,
+  which may not be what a person who already dealt with it expects. It is also the only way the edit
+  reaches a destination, so dropping it would let the vault diverge silently. If it bites, a
+  per-source policy in `packages/relay` rather than per relay: archiving the revision on arrival
+  keeps the edit in the pool and the feed and out of the queue. A relay reading a block differently
+  after an upgrade looks like an edit too, and the same policy would quiet that.
 
 ## Pool, store and correctness
+
+- [ ] add a way to edit tags, remove tags, rename tags, see tag statistics, etc
 
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
