@@ -13,28 +13,20 @@ the daemon's config, and an `.env` naming the version.
 
 ## Get the files
 
-The repository is private, so the four files come out of a clone rather than a public tarball:
+The files are the `docker/compose` directory of the repository, and nothing else from it is needed
+on the host:
 
 ```sh
 mkdir -p /srv/notemap
-gh repo clone palmdrop/notemap /tmp/notemap -- --depth 1
-cp -r /tmp/notemap/docker/compose/. /srv/notemap/
+curl -fsSL https://github.com/palmdrop/notemap/archive/refs/heads/main.tar.gz \
+  | tar -xz -C /srv/notemap --strip-components=3 notemap-main/docker/compose
 cd /srv/notemap
 ```
 
-They are yours from then on; upgrading does not replace them, and nothing else from that clone is
-needed on the host.
+They are yours from then on; upgrading does not replace them.
 
-The image lives at `ghcr.io/palmdrop/notemap`, and the package is private too, as are the relays'
-`notemap-relay-arena` and `notemap-relay-memos` beside it. Log in once per host:
-
-```sh
-echo $PAT | docker login ghcr.io -u palmdrop --password-stdin
-```
-
-A classic personal access token with the `read:packages` scope is the form that has always worked;
-fine-grained tokens have been gaining Packages support, so check the current state before assuming
-one will not do. The login is stored, so this is a one-time step per machine.
+The images are public and need no login: `ghcr.io/palmdrop/notemap`, and the relays'
+`notemap-relay-arena` and `notemap-relay-memos` beside it.
 
 ## Standalone
 

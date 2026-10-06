@@ -48,8 +48,9 @@ Settled with the developer on 2026-10-06.
   release fails on the relay legs with a permission error: create each package once by hand
   with a pushed image, give the repo write access under the package's settings, and re-run the
   failed legs.
-- **A new package is private.** So is `notemap`, and the repo, so the login `running.md`
-  already asks for covers the relay packages too. Nothing to flip.
+- **A new package is private**, and so, still, is `notemap`: the repo went public, its package
+  did not. `running.md` now says all three are public and need no login, so each must be made
+  public by hand — `notemap` now, the relays after their first push.
 
 ---
 
@@ -75,7 +76,8 @@ does.
 
 - [x] `docs/running.md`: the tags table loses `sha-`. The "Every push to `main`" paragraph is
       replaced by "a release publishes all three images". The relay images are named, with the
-      login that already covers them.
+      images public and needing no login. "Get the files" fetches a tarball rather than cloning
+      a private repo.
 - [x] `docker/compose/compose.yaml` and `compose.proxy.yaml`: the commented-out relay services
       use `ghcr.io/palmdrop/notemap-relay-<upstream>:${NOTEMAP_VERSION:-latest}`. "No image is
       published yet" goes. A local build stays as the alternative for an unreleased change.
@@ -93,6 +95,7 @@ Depends on phases 1 and 2 being merged. This is done by the developer, not an ag
 
 - [ ] Cut a release with `pnpm release`. All three legs of `Image` are green, and GHCR holds
       the three packages, each with the new `vX.Y.Z`, `vX.Y` and `latest`.
+- [ ] Make `notemap`, `notemap-relay-arena` and `notemap-relay-memos` public in GHCR
 - [ ] Optional: delete the old `sha-*` versions of `notemap` from GHCR. Nothing refers to them.
 
 ---
