@@ -6,8 +6,6 @@ import { json, refusal, routeOf } from "@notemap/client/testing";
 import { asked, pool } from "$testing/pool";
 import { log } from "./log.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 afterEach(() => {
   log.forget();
 });

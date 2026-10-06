@@ -6,8 +6,6 @@ import { json, routeOf, VERSION } from "@notemap/client/testing";
 import { asked, pool } from "$testing/pool";
 import Server from "./Server.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 

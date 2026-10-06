@@ -1,13 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
 import Access from "./Access.svelte";
 import { keepOutput, outputOf } from "$lib/outputs";
-
-vi.mock("$lib/client", () => import("$testing/pool"));
 
 const said = (
   authenticated: boolean,

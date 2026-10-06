@@ -6,8 +6,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { asked, pool } from "$testing/pool";
 import PathLine from "./PathLine.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 
 type Entry = { label: string; value?: string; scope?: string };

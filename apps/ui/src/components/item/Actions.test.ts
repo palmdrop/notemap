@@ -8,8 +8,6 @@ import { commandsFor, type Surroundings } from "$lib/command/item";
 import { notices } from "$lib/notices.svelte";
 import Actions from "./Actions.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 afterEach(() => {
   notices.clear();
   Reflect.deleteProperty(navigator, "clipboard");

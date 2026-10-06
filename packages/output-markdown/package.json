@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@types/mdast": "^4.0.4",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.4",
     "vitest": "^4.1.10"
   }
 }

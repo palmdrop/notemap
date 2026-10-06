@@ -15,7 +15,7 @@
     "@notemap/output-markdown": "workspace:*",
     "@notemap/schema-ajv": "workspace:*",
     "@notemap/store-sqlite": "workspace:*",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.4",
     "vitest": "^4.1.10"
   }
 }

@@ -8,6 +8,11 @@ import { clearDraft } from "$lib/draft";
 import { forgetEveryName } from "$lib/names.svelte";
 import { forgetOutputs } from "$lib/outputs";
 
+// The real one opens IndexedDB, which jsdom does not have, and starts a probe
+// nothing closes — and this file reaches it for every test file, through the
+// caches it clears.
+vi.mock("$lib/client", () => import("$testing/pool"));
+
 /**
  * jsdom lays nothing out, so it implements neither scrolling nor a scroll
  * offset. A component that restores a scroll mark still calls both.

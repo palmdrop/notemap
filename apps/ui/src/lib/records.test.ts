@@ -6,8 +6,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { pool } from "$testing/pool";
 import Fixture from "./records.fixture.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const record = (id: string, item: string) => ({
   id,
   item,

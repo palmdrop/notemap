@@ -1,12 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
 import SignIn from "./SignIn.svelte";
-
-vi.mock("$lib/client", () => import("$testing/pool"));
 
 test("signing in sends the credential and says nothing back about it", async () => {
   const transport = pool((request) =>

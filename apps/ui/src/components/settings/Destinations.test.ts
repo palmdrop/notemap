@@ -7,8 +7,6 @@ import { online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
 import Destinations from "./Destinations.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 
 const FILESYSTEM = {

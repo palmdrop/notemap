@@ -12,8 +12,6 @@ import Queue from "$components/queue/Queue.svelte";
 
 keyboard();
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const went = vi.hoisted(() => ({ to: [] as string[] }));
 const replaced = vi.hoisted(() => ({ urls: [] as string[] }));
 vi.mock("$app/navigation", () => ({

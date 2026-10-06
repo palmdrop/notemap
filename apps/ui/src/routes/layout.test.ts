@@ -7,8 +7,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import Layout from "./+layout.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 vi.mock("$app/paths", () => ({
   resolve: (path: string) => path,
 }));

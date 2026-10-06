@@ -9,8 +9,6 @@ import { notices } from "$lib/notices.svelte";
 import { NOT_YET_DELIVERED, NOTHING_KEPT } from "$lib/said";
 import Block from "./Block.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 afterEach(() => notices.clear());
 
 const TARGET = {

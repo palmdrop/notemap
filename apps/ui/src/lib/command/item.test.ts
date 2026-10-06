@@ -7,8 +7,6 @@ import { notices } from "$lib/notices.svelte";
 
 import { commandsFor, type Surroundings } from "./item";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 afterEach(() => {
   notices.clear();
   Reflect.deleteProperty(navigator, "clipboard");

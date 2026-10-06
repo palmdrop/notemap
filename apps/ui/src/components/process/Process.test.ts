@@ -23,8 +23,6 @@ import Process from "./Process.svelte";
 
 keyboard();
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 /** Leaving the surface needs a router, and there is none outside the app. */
 const went = vi.hoisted(() => ({ to: [] as string[] }));
 vi.mock("$app/navigation", () => ({

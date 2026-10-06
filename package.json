@@ -5,7 +5,7 @@
   "packageManager": "pnpm@11.20.0",
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "dev": "node scripts/dev.ts",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@notemap/seed": "workspace:*",
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.4",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.23.0",

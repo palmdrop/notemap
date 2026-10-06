@@ -35,6 +35,8 @@ Verification
 - Run typecheck, tests and linters when you finish a feature or a larger test.
 - Run tests as `pnpm -r --silent test`, which prints nothing at all; on a non-zero exit, re-run
   the failing package without `--silent` to see why.
+- You never see console output from passing tests: Vitest hides it in an agent session. To
+  check for log noise, read the CI run's logs or run `env -u AI_AGENT -u CLAUDECODE pnpm test`.
 - `pnpm test:stack` is not part of finishing a feature. Run it after a change that crosses the
   layers — the HTTP surface, the host's wiring, the client's transport, the config file.
 - Resolve every issue before you commit or state that you are done.

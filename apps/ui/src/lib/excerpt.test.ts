@@ -1,11 +1,9 @@
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 
 import { anItem } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
 import { aboutItem, excerptOf, lineOf } from "./excerpt";
-
-vi.mock("$lib/client", () => import("$testing/pool"));
 
 test("takes the first line, and enough of it to recognise", () => {
   expect(excerptOf("the picker needs a trail")).toBe(

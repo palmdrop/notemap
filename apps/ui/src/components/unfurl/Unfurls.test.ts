@@ -6,8 +6,6 @@ import { json, refusal, routeOf } from "@notemap/client/testing";
 import { asked, client, pool, sentUrls } from "$testing/pool";
 import Unfurls from "./Unfurls.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 type Answer = Response | Promise<Response>;
 
 async function serving(

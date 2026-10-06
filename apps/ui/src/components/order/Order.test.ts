@@ -13,8 +13,6 @@ async function turn(word: string) {
   await fireEvent.click(screen.getByRole("button", { name: word }));
 }
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 /** Chrome, so it is drawn a level above whichever surface it acts on. */
 const at = vi.hoisted(() => ({ route: "/", path: "/" }));
 vi.mock("$app/state", () => ({

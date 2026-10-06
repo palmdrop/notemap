@@ -30,7 +30,7 @@ await build({
   bundle: true,
   platform: "node",
   format: "esm",
-  target: "node24",
+  target: "node26",
   packages: "bundle",
   external: ["node:*"],
   // pino is CommonJS and `require`s node's own modules, which an ESM bundle

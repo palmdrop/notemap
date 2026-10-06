@@ -11,8 +11,6 @@ import { NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
 import LogRow from "./LogRow.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 // Module-scoped, as the rail is: the log a test walked is not the next one's.
 afterEach(() => {
   log.forget();

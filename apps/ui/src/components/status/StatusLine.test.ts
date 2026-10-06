@@ -10,8 +10,6 @@ import { clearDraft, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
 import StatusLine from "./StatusLine.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 /** The one element saying this, whatever spans it is drawn in. */
 const says = (text: string) =>
   screen.getByText((_, element) => {

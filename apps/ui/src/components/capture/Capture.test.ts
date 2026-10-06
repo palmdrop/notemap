@@ -9,8 +9,6 @@ import { readDraft, writeDraft } from "$lib/draft";
 import { client, pool } from "$testing/pool";
 import Capture from "./Capture.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 type Envelope = {
   id: string;
   source: string;

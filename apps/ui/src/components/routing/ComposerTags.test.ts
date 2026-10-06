@@ -6,8 +6,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool } from "$testing/pool";
 import ComposerTags from "./ComposerTags.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const RESEARCH = {
   id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a80",
   name: "research",

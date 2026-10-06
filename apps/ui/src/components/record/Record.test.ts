@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
@@ -7,8 +7,6 @@ import { asked, client, pool } from "$testing/pool";
 import { NO_RECORDS_OFFLINE } from "$lib/said";
 import { dayOf } from "$lib/stamp";
 import Record from "./Record.svelte";
-
-vi.mock("$lib/client", () => import("$testing/pool"));
 
 const RECORD = {
   id: "rec",

@@ -6,8 +6,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { asked, client, pool, sent } from "$testing/pool";
 import PoolSettings from "./PoolSettings.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 function serving(
   values: readonly Record<string, unknown>[] = [
     { name: "unfurl", value: true },

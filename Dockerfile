@@ -1,10 +1,11 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 
 WORKDIR /src
 
-RUN corepack enable
+# Node stopped shipping corepack in 25.
+RUN npm install -g corepack && corepack enable
 
 # The lockfile is what populates the store, so a workspace package added later
 # needs nothing remembered here. The root manifest comes with it only so that
@@ -20,7 +21,7 @@ RUN pnpm install --offline --frozen-lockfile
 RUN pnpm build
 
 
-FROM node:24-alpine
+FROM node:26-alpine
 
 ENV NODE_ENV=production
 ENV NOTEMAP_CONFIG=/etc/notemap/config.toml

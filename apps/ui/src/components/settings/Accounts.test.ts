@@ -6,8 +6,6 @@ import { json, routeOf } from "@notemap/client/testing";
 import { asked, pool, sent } from "$testing/pool";
 import Accounts from "./Accounts.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 const KINDS = [
   {
     name: "webdav",

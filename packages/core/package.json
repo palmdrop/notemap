@@ -17,7 +17,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.4",
     "fast-check": "^4.9.0",
     "vitest": "^4.1.10"
   },

@@ -1,12 +1,10 @@
 import { render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
 import Routing from "./Routing.svelte";
-
-vi.mock("$lib/client", () => import("$testing/pool"));
 
 const PENDING = {
   id: "rec",

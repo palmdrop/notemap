@@ -21,8 +21,6 @@ import Queue from "./Queue.svelte";
 
 keyboard();
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 /** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
 const slid = vi.hoisted(() => ({
   calls: [] as { node: Element; still: boolean | undefined }[],

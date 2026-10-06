@@ -34,7 +34,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^26.6.4",
     "esbuild": "^0.28.0",
     "swagger-ui-dist": "^5.32.12",
     "vitest": "^4.1.10"

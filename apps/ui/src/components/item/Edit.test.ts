@@ -12,8 +12,6 @@ import {
 import { pool } from "$testing/pool";
 import Edit from "./Edit.fixture.svelte";
 
-vi.mock("$lib/client", () => import("$testing/pool"));
-
 type Envelope = {
   source: string;
   payload: { assets: readonly { slot: string; asset: string }[] };
