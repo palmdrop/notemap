@@ -13,27 +13,22 @@ the daemon's config, and an `.env` naming the version.
 
 ## Get the files
 
-The repository is private, so the four files come out of a clone rather than a public tarball:
+The files are the `docker/compose` directory of the repository, and nothing else from it is needed
+on the host. Take them from the release you are going to run, so they never describe an image newer
+than the one `.env` pins:
 
 ```sh
+version=v0.2.0
 mkdir -p /srv/notemap
-gh repo clone palmdrop/notemap /tmp/notemap -- --depth 1
-cp -r /tmp/notemap/docker/compose/. /srv/notemap/
+curl -fsSL https://github.com/palmdrop/notemap/archive/refs/tags/$version.tar.gz \
+  | tar -xz -C /srv/notemap --strip-components=3 notemap-${version#v}/docker/compose
 cd /srv/notemap
 ```
 
-They are yours from then on; upgrading does not replace them, and nothing else from that clone is
-needed on the host.
+They are yours from then on; upgrading does not replace them.
 
-The image lives at `ghcr.io/palmdrop/notemap`, and the package is private too. Log in once per host:
-
-```sh
-echo $PAT | docker login ghcr.io -u palmdrop --password-stdin
-```
-
-A classic personal access token with the `read:packages` scope is the form that has always worked;
-fine-grained tokens have been gaining Packages support, so check the current state before assuming
-one will not do. The login is stored, so this is a one-time step per machine.
+The images are public and need no login: `ghcr.io/palmdrop/notemap`, and the relays'
+`notemap-relay-arena` and `notemap-relay-memos` beside it.
 
 ## Standalone
 
@@ -212,7 +207,6 @@ Which tags exist:
 | | |
 |---|---|
 | `v0.2.0`, `v0.2` | A release. What you should be running. |
-| `sha-a1b2c3d` | Any commit on `main`, for trying something that has no release yet. |
 | `latest` | The most recent release. Moves on its own. |
 
 The image tags carry the `v` the git tag does, so the version in `.env` is the release as it is
@@ -497,14 +491,14 @@ pnpm release patch   # or minor, or major
 It refuses unless you are on `main` with a clean tree and nothing unpulled, runs typecheck, lint,
 format, the tests and the full-stack suite, then bumps the version in `package.json`, commits it as
 `chore(release): v0.2.0`, tags, and pushes both. CI builds from the tag and pushes `v0.2.0`, `v0.2`
-and `latest` to GHCR — and refuses if the tag and `package.json` disagree.
+and `latest` to GHCR for the daemon and both relays — and refuses if the tag and `package.json`
+disagree. A push to `main` publishes nothing.
 
-Every push to `main` also gets a `sha-<short>` tag, so a build with no release yet is still
-something the homelab can pin.
-
-To try the image locally without a release, build it under a name the compose files will use:
+To try the images locally without a release, build them under the names the compose files will use —
+the daemon, and each relay whose service is uncommented, since one `NOTEMAP_VERSION` pins them all:
 
 ```sh
 docker build -t ghcr.io/palmdrop/notemap:dev .
+docker build -f Dockerfile.relay-memos -t ghcr.io/palmdrop/notemap-relay-memos:dev .
 cd docker/compose && NOTEMAP_VERSION=dev docker compose up -d
 ```

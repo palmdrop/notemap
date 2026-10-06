@@ -72,19 +72,22 @@ services:
   # and its own container: nothing about it is in the daemon, which is why its
   # Memos credential never reaches the daemon's config.
   #
-  # No image is published yet. Build it from the repo:
-  #
-  #   docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
-  #
-  # Then mint the token it carries, put it beside this file, and uncomment the
+  # Mint the token it carries, put it beside this file, and uncomment the
   # service, the two secrets below and the `relay-memos.toml` that comes with
   # this directory:
   #
   #   docker compose exec notemap notemap token mint --name relay-memos \
   #     > notemap_relay_pool_token
   #
+  # Its image is released with the daemon's and pinned by the same version.
+  # For a change no release has yet, build it from the repo as `dev`, with the
+  # daemon's, and run with `NOTEMAP_VERSION=dev`:
+  #
+  #   docker build -f Dockerfile.relay-memos \
+  #     -t ghcr.io/palmdrop/notemap-relay-memos:dev .
+  #
   # relay-memos:
-  #   image: notemap-relay-memos:local
+  #   image: ghcr.io/palmdrop/notemap-relay-memos:${NOTEMAP_VERSION:-latest}
   #   restart: unless-stopped
   #
   #   # `http://notemap:4747` and never `127.0.0.1` — the port above is
@@ -111,13 +114,17 @@ services:
   # `arena` destination also delivers into, or its own blocks are read back
   # as fresh captures.
   #
-  #   docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .
-  #
   #   docker compose exec notemap notemap token mint --name relay-arena \
   #     > notemap_relay_arena_pool_token
   #
+  # Released and pinned like the memos relay's; an unreleased change is built
+  # the same way:
+  #
+  #   docker build -f Dockerfile.relay-arena \
+  #     -t ghcr.io/palmdrop/notemap-relay-arena:dev .
+  #
   # relay-arena:
-  #   image: notemap-relay-arena:local
+  #   image: ghcr.io/palmdrop/notemap-relay-arena:${NOTEMAP_VERSION:-latest}
   #   restart: unless-stopped
   #
   #   depends_on:

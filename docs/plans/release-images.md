@@ -1,7 +1,7 @@
 # Release images: the daemon and every relay, on a release tag only
 
 **Date**: 2026-10-06
-**Status**: Todo
+**Status**: In progress
 **Spec**:
 **Closed**:
 
@@ -35,8 +35,17 @@ Settled with the developer on 2026-10-06.
   partway through a push. A release is complete when all three legs are green, and a failed leg
   is re-run on its own. The check that the tag matches `package.json` runs once, before any leg
   starts.
-- **Each image has its own build cache scope.** Under one shared `type=gha` cache the three
-  builds would overwrite each other and every build would start cold.
+- **Each image has its own build cache scope on a pull request.** Under one shared `type=gha`
+  cache the three builds would overwrite each other and every build would start cold. A release
+  builds without a cache: a tag reads only caches written by itself or by `main`, and neither
+  builds an image any more, so anything a release wrote would never be read. The same holds for
+  a pull request: with nothing on `main` writing a cache, a scope only serves re-runs within one
+  PR, and each PR's first run builds all three cold. Accepted — a warm first run would mean a
+  build per merge to `main` again, which is the cost this plan removes.
+- **An unreleased build is tagged `dev`, for all three images.** The compose files pin daemon
+  and relays with the one `NOTEMAP_VERSION`, so `NOTEMAP_VERSION=dev` needs a `dev` build of
+  each image whose service is running. A relay built under any other name would need its
+  `image` edited and would break the daemon's `dev` run.
 
 ### Unknowns
 
@@ -46,9 +55,9 @@ Settled with the developer on 2026-10-06.
   release fails on the relay legs with a permission error: create each package once by hand
   with a pushed image, give the repo write access under the package's settings, and re-run the
   failed legs.
-- **A new package is private.** Each relay package must be made public by hand after its first
-  push, or pulling it needs a login. This is a manual step for the developer, recorded in
-  `running.md`.
+- **A new package is private**, and so, still, is `notemap`: the repo went public, its package
+  did not. `running.md` now says all three are public and need no login, so each must be made
+  public by hand — `notemap` now, the relays after their first push.
 
 ---
 
@@ -56,35 +65,36 @@ Settled with the developer on 2026-10-06.
 
 ### Phase 1: CI
 
-- [ ] Create branch `agent/release-images`
-- [ ] `release.yml`: triggered by `v*` tags alone. The version check becomes its own job that the
+- [x] Create branch `agent/release-images`
+- [x] `release.yml`: triggered by `v*` tags alone. The version check becomes its own job that the
       image job needs. The image job is a matrix over `{Dockerfile, image name}` with
-      `fail-fast: false`, a cache scope per image, and no `sha-` tag. The comments describing
-      `main` and `sha-` go.
-- [ ] `verify.yml`: the `image` job runs the same matrix on pull requests, with the same cache
+      `fail-fast: false`, no cache, and no `sha-` tag. The comments describing `main` and `sha-`
+      go.
+- [x] `verify.yml`: the `image` job runs the same matrix on pull requests, with the same cache
       scopes, and pushes nothing
-- [ ] Verify: `actionlint` on both workflows where it is installed. The PR's checks show three
-      image builds, all green.
-- [ ] Commit
+- [x] Verify: `actionlint` on both workflows where it is installed.
+- [ ] Verify: the PR's checks show three image builds, all green.
+- [x] Commit
 
 ### Phase 2: docs
 
 Independent of phase 1 in content. It lands in the same PR because the docs describe what CI
 does.
 
-- [ ] `docs/running.md`: the tags table loses `sha-`. The "Every push to `main`" paragraph is
+- [x] `docs/running.md`: the tags table loses `sha-`. The "Every push to `main`" paragraph is
       replaced by "a release publishes all three images". The relay images are named, with the
-      one-time step of making a new package public.
-- [ ] `docker/compose/compose.yaml` and `compose.proxy.yaml`: the commented-out relay services
+      images public and needing no login. "Get the files" fetches a tarball rather than cloning
+      a private repo.
+- [x] `docker/compose/compose.yaml` and `compose.proxy.yaml`: the commented-out relay services
       use `ghcr.io/palmdrop/notemap-relay-<upstream>:${NOTEMAP_VERSION:-latest}`. "No image is
       published yet" goes. A local build stays as the alternative for an unreleased change.
-- [ ] `Dockerfile.relay-arena` and `Dockerfile.relay-memos`: their headers stop saying the image
+- [x] `Dockerfile.relay-arena` and `Dockerfile.relay-memos`: their headers stop saying the image
       is not published
-- [ ] `apps/relay-arena/README.md` and the memos relay's README: "In Docker" pulls the published
+- [x] `apps/relay-arena/README.md` and the memos relay's README: "In Docker" pulls the published
       image and keeps building as the alternative
-- [ ] Verify: `pnpm lint` (prettier covers the markdown and YAML).
+- [x] Verify: `pnpm lint` (prettier covers the markdown and YAML).
       `docker compose -f docker/compose/compose.yaml config` still parses.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 3: first release
 
@@ -92,7 +102,7 @@ Depends on phases 1 and 2 being merged. This is done by the developer, not an ag
 
 - [ ] Cut a release with `pnpm release`. All three legs of `Image` are green, and GHCR holds
       the three packages, each with the new `vX.Y.Z`, `vX.Y` and `latest`.
-- [ ] Make `notemap-relay-arena` and `notemap-relay-memos` public in GHCR
+- [ ] Make `notemap`, `notemap-relay-arena` and `notemap-relay-memos` public in GHCR
 - [ ] Optional: delete the old `sha-*` versions of `notemap` from GHCR. Nothing refers to them.
 
 ---
