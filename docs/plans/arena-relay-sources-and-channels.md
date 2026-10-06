@@ -1,9 +1,9 @@
 # are.na relay: titles, source URLs and channels
 
 **Date**: 2026-10-06
-**Status**: In progress
+**Status**: Done
 **Spec**:
-**Closed**:
+**Closed**: 2026-10-06
 
 ---
 
@@ -82,10 +82,10 @@ Settled with the developer on 2026-10-06.
 
 Depends on phase 1.
 
-- [ ] `apps/relay-arena/README.md`: the mapping table, the Channel row, the foot paragraph, and
+- [x] `apps/relay-arena/README.md`: the mapping table, the Channel row, the foot paragraph, and
       the one-time amend or revise on upgrade
-- [ ] `docs/todo.md`: close the two are.na relay items. Add the processed-edit policy item.
-- [ ] Commit
+- [x] `docs/todo.md`: close the two are.na relay items. Add the processed-edit policy item.
+- [x] Commit
 
 ---
 
