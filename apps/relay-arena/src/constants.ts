@@ -3,6 +3,8 @@ export const DEFAULT_POOL_URL = "http://127.0.0.1:4747";
 /** The service, not a deployment: nothing in config or in a setting can move it. */
 export const ARENA_API = "https://api.are.na";
 
+export const ARENA_CHANNEL_PAGE = "https://www.are.na/channel";
+
 export const DEFAULT_POLL_MS = 900_000;
 
 /** The shortest interval a config may set: are.na asks callers not to poll it hard. */

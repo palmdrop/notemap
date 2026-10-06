@@ -128,11 +128,11 @@ describe("one scan of every watched channel", () => {
     ]);
   });
 
-  it("counts a channel-class block and an empty block as empty, and captures neither", async () => {
+  it("captures a channel-class block, and counts an empty block as empty", async () => {
     const reports = await relayEverything(
       upstream({
         c: [
-          block(1, { type: "Channel" }),
+          block(1, { type: "Channel", title: "A channel", slug: "a-channel" }),
           block(2, { content: { markdown: "   " } }),
         ],
       }),
@@ -141,7 +141,7 @@ describe("one scan of every watched channel", () => {
       shallow,
     );
 
-    expect(reports[0]?.tally).toMatchObject({ read: 2, empty: 2, captured: 0 });
+    expect(reports[0]?.tally).toMatchObject({ read: 2, empty: 1, captured: 1 });
   });
 
   it("stops at once where it was the pool that failed, not the block", async () => {
