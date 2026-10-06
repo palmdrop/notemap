@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -89,6 +89,19 @@ describe("a process that captures through a client", () => {
     expect(await readdir(join(directory, "outbox"))).toHaveLength(1);
     // Past the patience above, so a process that never ends is reported as
     // that rather than as the runner giving up on the test.
+  }, 15_000);
+
+  it("leaves what it abandoned unleased by the time the close settles", async () => {
+    const { code, stderr } = await ran(10_000, "killed");
+
+    expect(stderr).toBe("");
+    expect(code).toBe(0);
+    const [name, ...rest] = await readdir(join(directory, "outbox"));
+    expect(rest).toEqual([]);
+    const held = JSON.parse(
+      await readFile(join(directory, "outbox", name ?? ""), "utf8"),
+    ) as { state: string };
+    expect(held.state).toBe("unreachable");
   }, 15_000);
 
   it("is held open by a client left open", async () => {

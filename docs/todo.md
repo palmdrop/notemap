@@ -211,7 +211,7 @@
 ## Inboxes
 - [ ] raycast extension: add command for viewing inbox
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
-- [ ] in raycast, show undrained count, and/or view for outbox
+- [x] in raycast, show undrained count, and/or view for outbox
 
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay

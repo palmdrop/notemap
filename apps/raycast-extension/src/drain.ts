@@ -1,7 +1,12 @@
-import { environment, LaunchType, showHUD } from "@raycast/api";
+import {
+  environment,
+  LaunchType,
+  showHUD,
+  updateCommandMetadata,
+} from "@raycast/api";
 
 import { openClient } from "./lib/client";
-import { remaining } from "./lib/outbox";
+import { remaining, waitingSaid } from "./lib/outbox";
 
 /**
  * Sends what the capture command left in the outbox. Runs on an interval in
@@ -13,6 +18,7 @@ export default async function Command() {
 
   try {
     const waiting = await remaining(client);
+    await updateCommandMetadata({ subtitle: waitingSaid(waiting) });
 
     if (environment.launchType === LaunchType.UserInitiated) {
       await showHUD(
@@ -22,6 +28,6 @@ export default async function Command() {
       );
     }
   } finally {
-    client.close();
+    await client.close();
   }
 }

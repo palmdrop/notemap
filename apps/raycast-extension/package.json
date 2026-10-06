@@ -24,6 +24,13 @@
       "mode": "view"
     },
     {
+      "name": "outbox",
+      "title": "Outbox",
+      "subtitle": "Notemap",
+      "description": "What is waiting to be sent to your Notemap pool, and why",
+      "mode": "view"
+    },
+    {
       "name": "drain",
       "title": "Drain Outbox",
       "subtitle": "Notemap",

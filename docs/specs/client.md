@@ -383,8 +383,12 @@ wire. Waiting is not something a shell can afford to promise: a pool that accept
 and never answers, which is what a tunnel dropping mid-request looks like, holds the request open
 with nothing to time it out, and a shell that waited for its last call would never end. So a shell
 may close on a drain it has stopped waiting for, which is what the Raycast capture command does
-once its note is safely in the outbox. What was being sent stays there, `sending` until its lease
-lapses, and the next drain sends it — the same reading as a process killed mid-send.
+once its note is safely in the outbox. What was being sent is written back as unreachable, and the
+promise `close()` answers settles once it has been (2026-10-06). Abandoning is quick — every
+request still to go fails on a signal already fired — so a shell can afford to await it, and one
+whose process is killed when it moves on must: Raycast ends a command the moment it pops to root,
+and a process ended mid-write leaves its operation leased, unsent until the lease lapses and
+something drains again.
 
 Closing does not undo. The signal a close fires does not un-fire, so a closed client sends nothing
 further: what it is given is written to the store and waits there, which from the outside is

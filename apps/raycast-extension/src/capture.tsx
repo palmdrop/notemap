@@ -48,7 +48,7 @@ export default function Command() {
         console.error(error);
       })
       .finally(() => {
-        client.close();
+        void client.close();
       });
 
     return () => {
@@ -97,6 +97,9 @@ export default function Command() {
         pause(SETTLE_MS).then(() => undefined),
       ]);
 
+      // Popping to root ends this process, so whatever is still on the wire is
+      // abandoned and written back first rather than left leased.
+      await client.close();
       await toast.hide();
       // The form is left behind as well as closed: without this the next launch
       // comes back to it, still holding the note that has already been sent.
@@ -106,6 +109,7 @@ export default function Command() {
       );
     } catch (error) {
       if (captured) {
+        await client.close();
         await toast.hide();
         await showHUD(`Captured, but not all of it — ${said}`, {
           clearRootSearch: true,
@@ -119,7 +123,7 @@ export default function Command() {
         toast.message = error instanceof Error ? error.message : said;
       }
     } finally {
-      client.close();
+      await client.close();
     }
   }
 

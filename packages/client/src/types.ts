@@ -508,15 +508,17 @@ export interface Client {
    * A request already on the wire is abandoned too, so this can be called on a
    * call that has not settled: a pool that accepts a connection and never
    * answers would otherwise hold the process open with nothing to wait for.
-   * What it was sending stays in the outbox and goes again once its lease has
-   * lapsed, the same reading as a process that was killed mid-send.
+   * What it was sending is written back to the outbox as unreachable, and the
+   * answer settles once it has been — so a shell whose process is killed when
+   * it moves on awaits this first, or leaves the operation leased until the
+   * lease lapses.
    *
    * This does not undo. A closed client sends nothing further — what it is
    * given is written and then waits — so a client is built for a piece of work
    * and closed when that work ends, not held across one that may close it
    * before it is used.
    */
-  close(): void;
+  close(): Promise<void>;
 }
 
 export type ClientConfig = {

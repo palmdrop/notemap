@@ -395,6 +395,7 @@ export function createClient(config: ClientConfig): Client {
 
   function drainWhenLapsed(until: string): void {
     clearTimeout(lapsing);
+    if (closing.signal.aborted) return;
     lapsing = setTimeout(
       () => {
         lapsing = undefined;
@@ -658,6 +659,7 @@ export function createClient(config: ClientConfig): Client {
       actions.stop();
       onReturn.unsubscribe();
       onReach.unsubscribe();
+      return draining.catch(() => undefined);
     },
   };
 }

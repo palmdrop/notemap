@@ -11,7 +11,8 @@ import { createClient } from "../client";
  *
  * `stalling` is the pool that answers nothing rather than refusing: the drain
  * is abandoned rather than awaited, so at `close()` there is a request on the
- * wire with nothing to time it out.
+ * wire with nothing to time it out. `killed` is that, with the process ended
+ * the moment the close settles, as Raycast ends a command that has moved on.
  */
 const [directory, mode] = process.argv.slice(2);
 
@@ -29,7 +30,7 @@ function accepting(): Promise<string> {
   });
 }
 
-const stalling = mode === "stalling";
+const stalling = mode === "stalling" || mode === "killed";
 const client = createClient({
   transport: createFetchTransport(
     stalling ? await accepting() : "http://127.0.0.1:1",
@@ -48,4 +49,9 @@ if (stalling) {
   await client.drain();
 }
 
-if (mode !== "open") client.close();
+if (mode === "killed") {
+  await client.close();
+  process.exit(0);
+}
+
+if (mode !== "open") void client.close();
