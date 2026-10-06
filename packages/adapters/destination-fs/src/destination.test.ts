@@ -1136,6 +1136,21 @@ describe("a root that overlaps notemap's own state", () => {
     expect(await filesUnder(reserved)).toEqual([]);
   });
 
+  it("catches reserved state named through a link to the root", async () => {
+    const made = root();
+    cleanups.push(made.cleanup);
+    const real = join(made.path, "state");
+    await mkdir(real, { recursive: true });
+    const reserved = join(made.path, "linked-state");
+    await symlink(real, reserved);
+    const destination = bind(real, [TEXT], {}, [reserved]);
+
+    const outcome = await destination.deliver(delivery());
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(real)).toEqual([]);
+  });
+
   it("leaves an unrelated root alone", async () => {
     const made = root();
     cleanups.push(made.cleanup);

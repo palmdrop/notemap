@@ -38,7 +38,13 @@ import { assetNames, placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
 import { filesystemCandidates } from "./candidates";
 import { Refused } from "./errors";
-import { contain, overlapsAny, realRootOf, type Contained } from "./paths";
+import {
+  contain,
+  overlapsAny,
+  realOverlapsAny,
+  realRootOf,
+  type Contained,
+} from "./paths";
 import {
   asFilesystemSettings,
   FILESYSTEM,
@@ -117,7 +123,7 @@ export function createFilesystemDestination(
       const reached = await reachRoot(settings.root);
       if (typeof reached !== "string") return reached;
 
-      const overlap = overlapsAny(reached, reserved);
+      const overlap = await realOverlapsAny(reached, reserved);
       if (overlap !== undefined) {
         return { kind: "rejected", detail: overlapDetail(reached, overlap) };
       }
@@ -157,7 +163,7 @@ export function createFilesystemDestination(
       const reached = await reachRoot(settings.root);
       if (typeof reached !== "string") throw new Error(reached.detail);
 
-      const overlap = overlapsAny(reached, reserved);
+      const overlap = await realOverlapsAny(reached, reserved);
       if (overlap !== undefined) {
         throw new Unusable(overlapDetail(reached, overlap));
       }
@@ -189,7 +195,7 @@ export function createFilesystemDestination(
         throw unresolvable(settings.root, cause);
       }
 
-      const overlap = overlapsAny(realRoot, reserved);
+      const overlap = await realOverlapsAny(realRoot, reserved);
       if (overlap !== undefined) {
         throw new Unusable(overlapDetail(realRoot, overlap));
       }
