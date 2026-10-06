@@ -6,9 +6,10 @@
 # own program.
 #
 # Published with every release as `ghcr.io/palmdrop/notemap-relay-arena`. For a
-# change no release has yet, build it where the compose file will run it:
+# change no release has yet, build it where the compose file will run it, under
+# the tag the compose file reads with `NOTEMAP_VERSION=dev`:
 #
-#   docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .
+#   docker build -f Dockerfile.relay-arena -t ghcr.io/palmdrop/notemap-relay-arena:dev .
 
 FROM node:24-alpine AS build
 

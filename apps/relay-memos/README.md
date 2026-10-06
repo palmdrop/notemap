@@ -21,11 +21,11 @@ shape cron wants. `--help` says the rest.
 
 Its own image, because it is its own program: `ghcr.io/palmdrop/notemap-relay-memos`,
 published with every release under the daemon's version. For a change no
-release has yet, build it where it will run and point the compose service's
-`image` at it:
+release has yet, build it where it will run under the `dev` tag, alongside a
+`dev` build of the daemon, and run compose with `NOTEMAP_VERSION=dev`:
 
 ```sh
-docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+docker build -f Dockerfile.relay-memos -t ghcr.io/palmdrop/notemap-relay-memos:dev .
 ```
 
 The image is the bundle and nothing else: no port, no volume, no healthcheck,

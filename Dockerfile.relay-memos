@@ -6,9 +6,10 @@
 # program.
 #
 # Published with every release as `ghcr.io/palmdrop/notemap-relay-memos`. For a
-# change no release has yet, build it where the compose file will run it:
+# change no release has yet, build it where the compose file will run it, under
+# the tag the compose file reads with `NOTEMAP_VERSION=dev`:
 #
-#   docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+#   docker build -f Dockerfile.relay-memos -t ghcr.io/palmdrop/notemap-relay-memos:dev .
 
 FROM node:24-alpine AS build
 

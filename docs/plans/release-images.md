@@ -38,7 +38,14 @@ Settled with the developer on 2026-10-06.
 - **Each image has its own build cache scope on a pull request.** Under one shared `type=gha`
   cache the three builds would overwrite each other and every build would start cold. A release
   builds without a cache: a tag reads only caches written by itself or by `main`, and neither
-  builds an image any more, so anything a release wrote would never be read.
+  builds an image any more, so anything a release wrote would never be read. The same holds for
+  a pull request: with nothing on `main` writing a cache, a scope only serves re-runs within one
+  PR, and each PR's first run builds all three cold. Accepted — a warm first run would mean a
+  build per merge to `main` again, which is the cost this plan removes.
+- **An unreleased build is tagged `dev`, for all three images.** The compose files pin daemon
+  and relays with the one `NOTEMAP_VERSION`, so `NOTEMAP_VERSION=dev` needs a `dev` build of
+  each image whose service is running. A relay built under any other name would need its
+  `image` edited and would break the daemon's `dev` run.
 
 ### Unknowns
 
@@ -65,8 +72,8 @@ Settled with the developer on 2026-10-06.
       go.
 - [x] `verify.yml`: the `image` job runs the same matrix on pull requests, with the same cache
       scopes, and pushes nothing
-- [ ] Verify: `actionlint` on both workflows where it is installed. The PR's checks show three
-      image builds, all green.
+- [x] Verify: `actionlint` on both workflows where it is installed.
+- [ ] Verify: the PR's checks show three image builds, all green.
 - [x] Commit
 
 ### Phase 2: docs

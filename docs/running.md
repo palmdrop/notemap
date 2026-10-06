@@ -14,12 +14,14 @@ the daemon's config, and an `.env` naming the version.
 ## Get the files
 
 The files are the `docker/compose` directory of the repository, and nothing else from it is needed
-on the host:
+on the host. Take them from the release you are going to run, so they never describe an image newer
+than the one `.env` pins:
 
 ```sh
+version=v0.2.0
 mkdir -p /srv/notemap
-curl -fsSL https://github.com/palmdrop/notemap/archive/refs/heads/main.tar.gz \
-  | tar -xz -C /srv/notemap --strip-components=3 notemap-main/docker/compose
+curl -fsSL https://github.com/palmdrop/notemap/archive/refs/tags/$version.tar.gz \
+  | tar -xz -C /srv/notemap --strip-components=3 notemap-${version#v}/docker/compose
 cd /srv/notemap
 ```
 
@@ -492,9 +494,11 @@ format, the tests and the full-stack suite, then bumps the version in `package.j
 and `latest` to GHCR for the daemon and both relays — and refuses if the tag and `package.json`
 disagree. A push to `main` publishes nothing.
 
-To try the image locally without a release, build it under a name the compose files will use:
+To try the images locally without a release, build them under the names the compose files will use —
+the daemon, and each relay whose service is uncommented, since one `NOTEMAP_VERSION` pins them all:
 
 ```sh
 docker build -t ghcr.io/palmdrop/notemap:dev .
+docker build -f Dockerfile.relay-memos -t ghcr.io/palmdrop/notemap-relay-memos:dev .
 cd docker/compose && NOTEMAP_VERSION=dev docker compose up -d
 ```

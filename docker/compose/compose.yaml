@@ -80,10 +80,11 @@ services:
   #     > notemap_relay_pool_token
   #
   # Its image is released with the daemon's and pinned by the same version.
-  # For a change no release has yet, build it from the repo and point `image`
-  # at that instead:
+  # For a change no release has yet, build it from the repo as `dev`, with the
+  # daemon's, and run with `NOTEMAP_VERSION=dev`:
   #
-  #   docker build -f Dockerfile.relay-memos -t notemap-relay-memos:local .
+  #   docker build -f Dockerfile.relay-memos \
+  #     -t ghcr.io/palmdrop/notemap-relay-memos:dev .
   #
   # relay-memos:
   #   image: ghcr.io/palmdrop/notemap-relay-memos:${NOTEMAP_VERSION:-latest}
@@ -116,7 +117,11 @@ services:
   #   docker compose exec notemap notemap token mint --name relay-arena \
   #     > notemap_relay_arena_pool_token
   #
-  #   docker build -f Dockerfile.relay-arena -t notemap-relay-arena:local .
+  # Released and pinned like the memos relay's; an unreleased change is built
+  # the same way:
+  #
+  #   docker build -f Dockerfile.relay-arena \
+  #     -t ghcr.io/palmdrop/notemap-relay-arena:dev .
   #
   # relay-arena:
   #   image: ghcr.io/palmdrop/notemap-relay-arena:${NOTEMAP_VERSION:-latest}
