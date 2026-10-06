@@ -5,7 +5,7 @@ import {
   screen,
   within,
 } from "@testing-library/svelte";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
@@ -59,8 +59,13 @@ vi.mock("$app/state", () => ({
   },
 }));
 
-afterEach(() => {
+// Before rather than after: the unmount that ends a test slides its rows out
+// after this file's own cleanup has run.
+beforeEach(() => {
   slid.calls = [];
+});
+
+afterEach(() => {
   notices.clear();
   went.to = [];
   replaced.urls = [];
