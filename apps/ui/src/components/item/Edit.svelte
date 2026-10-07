@@ -5,6 +5,7 @@
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
+  import { slide } from "$lib/motion";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
   import AttachmentLine from "./AttachmentLine.svelte";
@@ -53,9 +54,9 @@
 <!-- The capture's own place, edited where it is read: the foot that saves it
      is the row's, drawn by `EditFoot` in place of the actions. -->
 {#if editing.attachments.length > 0}
-  <div class="mb-2 flex flex-col gap-2">
+  <div class="flex flex-col" transition:slide={{ fade: true }}>
     {#each editing.attachments as held (held.asset)}
-      <div class="flex items-end gap-4">
+      <div class="flex items-end gap-4 pb-2" transition:slide={{ fade: true }}>
         {#if held.image}
           <img
             src={held.url}

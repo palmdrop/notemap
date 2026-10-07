@@ -2592,8 +2592,10 @@ indent.
 
 **Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
 slides in and out of a list; a notice rises into the status line; a section, a
-settings row and `more` slide open and shut over `short`; the capture box's picture comes and goes
-as a row does, sliding and fading over `long`, being a thing arriving rather than a disclosure; an
+settings row and `more` slide open and shut over `short`; each attachment in the capture box and
+in an edit comes and goes as a row does, sliding and fading over `long`, being a thing arriving
+rather than a disclosure — the list as a whole too, as its first arrives or its last is dropped
+*(each one since 2026-10-07; the box held one picture until then)*; an
 open section of the
 process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
 described, the decision cleared by `route` — over `short`, turned from wherever it stands when a

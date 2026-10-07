@@ -175,12 +175,17 @@
   class="mt-6 border border-ink has-[.offer]:relative has-[.offer]:z-50"
 >
   {#if chosen.length > 0}
+    <!-- Each file carries the space under it, so the space goes with it as it
+         slides rather than jumping once it has gone. -->
     <div
-      class="flex flex-col gap-2 border-b border-ink px-3 py-2.5"
+      class="flex flex-col border-b border-ink px-3 pt-2.5 pb-0.5"
       transition:slide={{ fade: true }}
     >
       {#each chosen as file, at (file)}
-        <div class="flex items-end gap-4">
+        <div
+          class="flex items-end gap-4 pb-2"
+          transition:slide={{ fade: true }}
+        >
           {#if isImage({ mime: file.type })}
             <!-- The picture's room is there before the picture is, so the
                  section opens to the height it keeps. -->
