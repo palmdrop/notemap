@@ -2434,7 +2434,11 @@ in slot order, each by its own media type *(amended 2026-10-07)*: **the first tw
 drawn**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
 line under the words**, before any link's block — its filename in bold, which downloads the bytes,
 then its size, and nothing between them but space. The media type is not said: the filename's own
-extension says it, in the words a person knows a file by. A third picture is a line too, so a
+extension says it, in the words a person knows a file by. **A name too long for the line is cut in
+the middle** *(2026-10-07)*, its last dozen characters kept whole so the extension stays and the
+size stays on the line beside it, and the whole name is the link's title, which the browser says on
+hover. Where a file is being put in — the capture box and an edit — the name is whole instead,
+wrapping, with the size following its last fragment rather than taking a line of its own. A third picture is a line too, so a
 capture of twenty photographs does not become twenty screens. **A short rule sets the lines off
 from the words above them**, a few characters wide at the left, the way a footnote is set off —
 not the full width, since a rule across the column is what a selected row's box draws and nothing

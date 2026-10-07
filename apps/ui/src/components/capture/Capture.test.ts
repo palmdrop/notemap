@@ -162,6 +162,9 @@ test("draws a file that is not a picture as a line, with no picture's room", asy
 
   const name = await screen.findByText("paper.pdf");
   expect(name.classList.contains("font-semibold")).toBe(true);
+  // Whole where it is being put in: wrapped rather than cut, and nothing to hover for.
+  expect(name.children).toHaveLength(0);
+  expect(name.getAttribute("title")).toBeNull();
   expect(screen.getByText("4 bytes")).toBeDefined();
   expect(screen.queryByText("application/pdf")).toBeNull();
   expect(screen.queryByAltText("What is about to be captured")).toBeNull();

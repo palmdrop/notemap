@@ -203,6 +203,7 @@
             <AttachmentLine
               name={file.name}
               url={previews[at] ?? ""}
+              whole
               bytes={file.size}
             />
           </span>

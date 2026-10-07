@@ -23,6 +23,18 @@ export function nameOf(attachment: Pick<Attachment, "filename">): string {
   return attachment.filename ?? "attachment";
 }
 
+/** How much of a name's end is kept whole when it is cut, enough to hold its extension. */
+export const KEPT_END = 12;
+
+/** A name as the part that may be cut and the end that never is. */
+export function endKept(name: string): {
+  readonly head: string;
+  readonly end: string;
+} {
+  const at = Math.max(0, name.length - KEPT_END);
+  return { head: name.slice(0, at), end: name.slice(at) };
+}
+
 const UNITS = ["KB", "MB", "GB"];
 
 /** Decimal units, as a file manager says them. */

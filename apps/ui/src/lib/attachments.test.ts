@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { drawn, sizeOf } from "./attachments";
+import { drawn, endKept, sizeOf } from "./attachments";
 
 describe("an attachment's size", () => {
   it("is said in decimal units, as a file manager says it", () => {
@@ -24,5 +24,20 @@ describe("what is drawn as a picture", () => {
       pictures: [one, two],
       lines: [paper, three, unknown],
     });
+  });
+});
+
+describe("a long name cut to fit", () => {
+  it("keeps its end whole, where the extension is", () => {
+    expect(
+      endKept("annie-g.-rogers-incandescent-alphabets-karnac-books-2016-.pdf"),
+    ).toEqual({
+      head: "annie-g.-rogers-incandescent-alphabets-karnac-boo",
+      end: "ks-2016-.pdf",
+    });
+  });
+
+  it("has nothing to cut where the name is no longer than the end it keeps", () => {
+    expect(endKept("paper.pdf")).toEqual({ head: "", end: "paper.pdf" });
   });
 });

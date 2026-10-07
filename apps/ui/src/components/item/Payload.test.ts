@@ -95,3 +95,17 @@ test("draws the first two pictures, and every attachment after them as a line", 
     "three.png",
   ]);
 });
+
+test("cuts a long name in the middle, keeping its end, and says it whole on hover", () => {
+  pool(() => json(200, {}));
+  const long = "annie-g.-rogers-incandescent-alphabets-karnac-books-2016-.pdf";
+
+  render(Payload, { item: carrying([long, "application/pdf"]) });
+
+  const link = screen.getByRole("link", { name: long });
+  expect(link.getAttribute("title")).toBe(long);
+  const [head, end] = [...link.children];
+  expect(head?.classList.contains("truncate")).toBe(true);
+  expect(end?.textContent).toBe("ks-2016-.pdf");
+  expect(end?.classList.contains("shrink-0")).toBe(true);
+});
