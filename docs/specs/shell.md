@@ -795,7 +795,7 @@ saved words, and a row drawing unsaved ones would show one text and send another
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
 item carries is drawn above the words as the capture box draws one before it is sent — a list to
-drop from, not the order a capture is read in — with `drop` beside it, and `attach` in the foot adds
+drop from, not the order a capture is read in — with the box's `×` beside it, and `attach` in the foot adds
 files after them. `save` sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
 and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The

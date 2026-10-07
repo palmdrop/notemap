@@ -69,10 +69,10 @@
         <button
           type="button"
           onclick={() => editing.drop(held.asset)}
-          aria-label={`drop ${held.name}`}
+          aria-label={`remove ${held.name}`}
           class="shrink-0 hover:underline"
         >
-          drop
+          ×
         </button>
       </div>
     {/each}

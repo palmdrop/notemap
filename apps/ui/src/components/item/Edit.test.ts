@@ -76,7 +76,9 @@ test("draws the picture the item carries, and dropping it saves the item without
   expect(screen.getByAltText("What it carries")).toBeDefined();
   expect(screen.getByText("shot.png")).toBeDefined();
 
-  await fireEvent.click(screen.getByRole("button", { name: "drop shot.png" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove shot.png" }),
+  );
   expect(screen.queryByAltText("What it carries")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
