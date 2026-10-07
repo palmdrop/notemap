@@ -961,11 +961,14 @@ nothing about it needs the pool to be there ([ADR 22](../adr/0022-the-uploader-m
 
 **A file larger than the pool takes is refused at attach** *(2026-10-07)*, in the pool's own words —
 `asset-too-large`, with its `max` — and nothing is held. The client reads the limit from
-`GET /v1/assets/limits` once a session can be answered for, and again when the pool identity changes;
-it is held in memory, so a client that has not reached the pool since it started attaches anything,
-and the drain's `413` stays the backstop. `refuses(file)` answers the same refusal without
-attaching, for a shell that holds a file before the capture that attaches it. It is asked only once signed in, or where nothing asks
-anyone to be: a `401` from anywhere reads as a session that lapsed.
+`GET /v1/assets/limits` once the session is known to be signed in, or known to need no signing in:
+a `401` from anywhere reads as a session that lapsed, so the limit is never asked of a pool that
+would answer one. It is forgotten when the session ends and when the pool identity changes, and
+read again after; an answer to a question asked before it was forgotten is not kept. It is held in
+memory, so a client that has not reached the pool since it started attaches anything, and the
+drain's `413` stays the backstop. `refuses(file)` answers the same refusal without attaching, for a
+shell that holds a file before the capture that attaches it, and `detach(asset)` lets go of bytes
+attached for a capture that was then never made — bytes an operation still names are left to it.
 
 **The drain sends the pair**: the bytes under the id the envelope already names, then the envelope.
 The `edit` handler does the same, a revision being an ordinary capture whose payload may name an

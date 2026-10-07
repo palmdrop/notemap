@@ -470,6 +470,11 @@ export interface Client {
    * when it is captured.
    */
   refuses(file: File): Refused | undefined;
+  /**
+   * Lets go of bytes `attach` held for a capture that was never made. Bytes an
+   * operation still names are left alone: that operation releases them.
+   */
+  detach(asset: AssetId): Promise<void>;
   /** Where an asset's bytes are: the store's own, while it still holds them. */
   assetContent(asset: AssetId): string;
   /** What an item reads as. Which slot holds that is the payload type's business. */

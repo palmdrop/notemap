@@ -26,7 +26,9 @@ export function attachmentsIn(
   urlOf: (asset: AssetId) => string,
 ): readonly Attachment[] {
   return [...item.payload.assets]
-    .sort((one, other) => (one.slot < other.slot ? -1 : 1))
+    .sort((one, other) =>
+      one.slot.localeCompare(other.slot, "en", { numeric: true }),
+    )
     .map(({ asset }) => {
       const answered = item.assets?.find((each) => each.id === asset);
       const known = answered ?? held.get(asset);

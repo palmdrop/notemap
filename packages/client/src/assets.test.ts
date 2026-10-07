@@ -435,3 +435,125 @@ describe("a file larger than the pool takes", () => {
     ).toBe(false);
   });
 });
+
+describe("the pool's upload limit, as the client holds it", () => {
+  const tooBig = () => new File([new Uint8Array(3)], "big.bin");
+
+  /** A pool that asks for credentials, signed in or not, taking at most `max` bytes. */
+  function aGuardedPool(state: { signedIn: boolean; max: number }) {
+    const pool = aPool();
+    const handler: Handler = (request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/session") {
+        return json(200, {
+          authenticated: state.signedIn,
+          requiresCredentials: true,
+        });
+      }
+      if (route === "DELETE /v1/session") {
+        state.signedIn = false;
+        return json(200, {});
+      }
+      if (route === "GET /v1/assets/limits") {
+        return state.signedIn
+          ? json(200, { maxUpload: state.max })
+          : json(401, { error: { code: "unauthenticated" } });
+      }
+      return pool.handler(request);
+    };
+    return handler;
+  }
+
+  const askedForLimits = (transport: { readonly sent: readonly Request[] }) =>
+    transport.sent.filter(
+      (request) => routeOf(request) === "GET /v1/assets/limits",
+    ).length;
+
+  async function known(client: Client) {
+    await until(() => client.refuses(tooBig()) !== undefined);
+    expect(client.refuses(tooBig())).toBeDefined();
+  }
+
+  it("is not asked while the pool wants credentials nobody has given", async () => {
+    const state = { signedIn: false, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+
+    await client.askSession();
+    await client.probe();
+
+    expect(askedForLimits(transport)).toBe(0);
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is forgotten on signing out", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client } = clientOver(createMemoryStore(), aGuardedPool(state));
+    await client.askSession();
+    await known(client);
+
+    await client.logout();
+
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is forgotten when the session lapses", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+    await client.askSession();
+    await known(client);
+
+    transport.health = () => json(401, { error: { code: "unauthenticated" } });
+    await client.probe();
+
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is asked again of a pool that is not the one it was read from", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+    await client.askSession();
+    await known(client);
+
+    state.max = 10;
+    transport.pool = "a-pool-built-since";
+    await client.probe();
+
+    await until(() => client.refuses(tooBig()) === undefined);
+    expect(client.refuses(tooBig())).toBeUndefined();
+    expect(askedForLimits(transport)).toBe(2);
+  });
+});
+
+describe("letting go of bytes no capture claimed", () => {
+  it("removes what was attached for a capture that was never made", async () => {
+    const store = createMemoryStore();
+    const { client } = clientOver(store, aPool().handler);
+
+    const asset = await client.attach(file());
+    await client.detach(asset);
+
+    expect(await store.readBlob(asset)).toBeUndefined();
+    expect(client.assetContent(asset)).not.toMatch(/^blob:/);
+  });
+
+  it("leaves bytes a queued capture still names", async () => {
+    const store = createMemoryStore();
+    const { client, transport } = clientOver(store, aPool().handler);
+    transport.unreachable(true);
+
+    const asset = await client.attach(file());
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
+    await client.detach(asset);
+
+    expect(await store.readBlob(asset)).toBeDefined();
+  });
+});

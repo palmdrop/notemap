@@ -73,6 +73,15 @@
 - [x] Should it be possible to attach multiple attachments to the same capture — yes, any number
   of any kind since 2026-10-07 ([attachments-of-any-kind](plans/attachments-of-any-kind.md))
 
+- [ ] **An edit's dropped, reverted or abandoned attachments stay in the client's store.** An edit
+  attaches each file as it is picked, so `drop`, `revert` and closing without saving forget the
+  asset but leave its bytes held, and no operation will ever release them
+  (`apps/ui/src/components/item/editing.svelte.ts`). Older than many attachments, but bounded at one
+  picture until 2026-10-07 and now any number of files of up to the upload limit each. The capture
+  box lets go of what a failed capture attached through `client.detach`; the edit wants the same at
+  each of its three exits — or to attach at `save`, as the box attaches at the button. Raised
+  reviewing [attachments-of-any-kind](reviews/attachments-of-any-kind-2026-10-07.md).
+
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
     carrying a **trigger tag** fires its template, so a capture template that auto-tags gets the

@@ -5,7 +5,7 @@ import { createActions } from "./actions/actions";
 import { createCounts } from "./counts/counts";
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
-import { releasedBy } from "./assets/assets";
+import { namedBy, releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { attached, attachmentsIn } from "./capture/attachments";
 import { saidAs, saidIn } from "./capture/says";
@@ -209,14 +209,21 @@ export function createClient(config: ClientConfig): Client {
     },
   });
 
-  // The watcher keeps its own tempo, and only the gates are the client's to
-  // hold: it asks nothing while nobody is reading and nothing while the pool
-  // is not answering.
-  /** The largest file this install takes, once a signed-in read has said. */
+  /** The largest file this install takes, once the pool has said. */
   let maxUpload: number | undefined;
+  /** Whether the pool has answered since the limit was forgotten, so a daemon without the route is not asked every probe. */
+  let limitsAnswered = false;
+  /** Moved on whenever the limit is forgotten, so an answer to an earlier question is not written over the reset. */
+  let limitsAsked = 0;
+  /** Which of those questions is out, so a probe and a sign-in landing together ask once. */
+  let limitsAsking: number | undefined;
 
-  // Asked only where it can be answered: a `401` from anywhere reads as a
-  // session that lapsed, and drops the cache with it.
+  function forgetLimits(): void {
+    maxUpload = undefined;
+    limitsAnswered = false;
+    limitsAsked += 1;
+  }
+
   // In the pool's own words, rather than when the drain sends the file, which
   // may be days after the person has moved on.
   function refused(file: File): Refused | undefined {
@@ -225,14 +232,27 @@ export function createClient(config: ClientConfig): Client {
       : undefined;
   }
 
+  // Asked only where it can be answered: a `401` from anywhere reads as a
+  // session that lapsed, and drops the cache with it.
   async function askedLimits(): Promise<void> {
     const session = sessions.get();
     if (!session.known || (session.required && !session.signedIn)) return;
+    if (limitsAnswered || limitsAsking === limitsAsked) return;
 
-    const limits = await answered(api.GET("/v1/assets/limits")).catch(
-      () => undefined,
-    );
-    if (limits !== undefined) maxUpload = limits.maxUpload;
+    const asking = limitsAsked;
+    limitsAsking = asking;
+    try {
+      const limits = await answered(api.GET("/v1/assets/limits"));
+      if (asking !== limitsAsked) return;
+      maxUpload = limits.maxUpload;
+      limitsAnswered = true;
+    } catch (error) {
+      if (asking === limitsAsked && error instanceof Refused) {
+        limitsAnswered = true;
+      }
+    } finally {
+      if (limitsAsking === asking) limitsAsking = undefined;
+    }
   }
 
   const onSession = sessions.changes
@@ -242,11 +262,14 @@ export function createClient(config: ClientConfig): Client {
       ),
       distinctUntilChanged(),
     )
-    .subscribe((reachable) => {
-      if (reachable) void askedLimits();
-      else maxUpload = undefined;
+    .subscribe((answerable) => {
+      if (answerable) void askedLimits();
+      else forgetLimits();
     });
 
+  // The watcher keeps its own tempo, and only the gates are the client's to
+  // hold: it asks nothing while nobody is reading and nothing while the pool
+  // is not answering.
   const onReach = reach.changes
     .pipe(
       map((mark) => mark.yes),
@@ -294,11 +317,16 @@ export function createClient(config: ClientConfig): Client {
   }> {
     try {
       const health = await answered(api.GET("/v1/health"));
-      if (health.pool !== undefined && health.pool !== state.get().pool) {
-        maxUpload = undefined;
+      const ours = state.get().pool;
+      if (
+        ours !== undefined &&
+        health.pool !== undefined &&
+        health.pool !== ours
+      ) {
+        forgetLimits();
       }
       isThePoolWeCached(health.pool);
-      if (maxUpload === undefined) void askedLimits();
+      void askedLimits();
       return { yes: true, version: health.version };
     } catch (error) {
       // A refusal is still the pool answering. Only silence is not.
@@ -602,6 +630,17 @@ export function createClient(config: ClientConfig): Client {
       }),
 
     refuses: (file) => refused(file),
+
+    detach: (asset) =>
+      after(async () => {
+        const named = state
+          .get()
+          .outbox.some((held) => namedBy(held.operation).includes(asset));
+        if (named) return;
+
+        state.update((current) => withHeld(current, asset, undefined));
+        await store.removeBlob(asset);
+      }),
 
     assetContent: (asset) => bytesOf(asset),
 

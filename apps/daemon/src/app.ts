@@ -297,7 +297,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
   // Before `/v1/assets/{id}`, which would otherwise read `limits` as an id.
-  app.get(assetLimitsRoute.path, assetLimitsHandler(limits));
+  app.get(honoPath(assetLimitsRoute.path), assetLimitsHandler(limits));
   app.get(honoPath(assetRoute.path), assetHandler(pool));
   app.get(honoPath(assetContentRoute.path), assetContentHandler(pool));
 

@@ -34,7 +34,6 @@
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
-  import { isImage } from "$lib/attachments";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
@@ -101,9 +100,6 @@
   /** What the capture says, which is what editing starts from and what it replaces. */
   const captured = $derived(client.says(item));
   const attachments = $derived(client.attachments(item));
-  const pictures = $derived(
-    attachments.filter(isImage).map((attachment) => attachment.url),
-  );
   /**
    * What the item carries, read from the client's held copy rather than the
    * item this opened on: a tag taken here lands on the held copy first, and
@@ -1148,7 +1144,7 @@
         <Preview
           {shown}
           place={previewPlace}
-          images={pictures}
+          {attachments}
           asking={pending}
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />

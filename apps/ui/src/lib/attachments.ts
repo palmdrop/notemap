@@ -39,13 +39,16 @@ const UNITS = ["KB", "MB", "GB"];
 
 /** Decimal units, as a file manager says them. */
 export function sizeOf(bytes: number): string {
-  if (bytes < 1000) return `${String(bytes)} bytes`;
+  if (bytes < 1000) return bytes === 1 ? "1 byte" : `${String(bytes)} bytes`;
 
   let size = bytes / 1000;
-  let unit = 0;
-  while (size >= 1000 && unit < UNITS.length - 1) {
+  for (let unit = 0; ; unit += 1) {
+    // One decimal while it still says something, and never a size that rounds
+    // up to the next unit's first.
+    const shown = size < 9.95 ? size.toFixed(1) : String(Math.round(size));
+    if (Number(shown) < 1000 || unit === UNITS.length - 1) {
+      return `${shown} ${UNITS[unit] ?? ""}`;
+    }
     size /= 1000;
-    unit += 1;
   }
-  return `${size < 10 ? size.toFixed(1) : String(Math.round(size))} ${UNITS[unit] ?? ""}`;
 }

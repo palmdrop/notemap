@@ -199,6 +199,12 @@
   const kept = $derived(
     !none && (blind || record.output?.content !== undefined),
   );
+  /** Whether anything is written where the output goes: the output, why there is none, or the line it will take. */
+  const written = $derived(
+    body !== undefined ||
+      (!kept && !byHand) ||
+      (kept && !blind && unreadable === ""),
+  );
   const delivered = $derived(record.state === "delivered");
 
   /** The arguments named against the capability's schema, asked for on the press and kept. */
@@ -273,7 +279,7 @@
   {:else if !delivered}
     <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
   {:else}
-    {#if attachments.length > 0 || body !== undefined || (!kept && !byHand) || (kept && !blind && unreadable === "")}
+    {#if attachments.length > 0 || written}
       <div class="px-3 py-2.5">
         <AttachedPictures {attachments} picture="max-h-48" />
         {#if body !== undefined}
@@ -284,7 +290,7 @@
           <!-- The line the output will take, held while it is read. -->
           <Asking />
         {/if}
-        <AttachedLines {attachments} ruled={body !== undefined} />
+        <AttachedLines {attachments} ruled={written} />
       </div>
     {/if}
 

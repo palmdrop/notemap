@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onDestroy, untrack } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
+
   import { saidBy } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
@@ -69,23 +72,34 @@
    * has, so it is looked at before it is sent rather than recognised
    * afterwards in the feed.
    */
-  let previews = $state<readonly string[]>([]);
+  const previews = new SvelteMap<File, string>();
 
   /** Pictures above the field and every other file under it, as a capture is read. */
-  const placed = $derived(chosen.map((file, at) => ({ file, at })));
   const pictures = $derived(
-    placed.filter(({ file }) => isImage({ mime: file.type })),
+    chosen.filter((file) => isImage({ mime: file.type })),
   );
   const files = $derived(
-    placed.filter(({ file }) => !isImage({ mime: file.type })),
+    chosen.filter((file) => !isImage({ mime: file.type })),
   );
 
+  // One URL per file for as long as the file is held, so adding or dropping
+  // one leaves every other thumbnail where it is.
   $effect(() => {
-    const urls = chosen.map((file) => URL.createObjectURL(file));
-    previews = urls;
-    return () => {
-      for (const url of urls) URL.revokeObjectURL(url);
-    };
+    const held = chosen;
+    untrack(() => {
+      for (const file of held) {
+        if (!previews.has(file)) previews.set(file, URL.createObjectURL(file));
+      }
+      for (const [file, url] of previews) {
+        if (held.includes(file)) continue;
+        URL.revokeObjectURL(url);
+        previews.delete(file);
+      }
+    });
+  });
+
+  onDestroy(() => {
+    for (const url of previews.values()) URL.revokeObjectURL(url);
   });
 
   // The queue is where capture happens, and this is the head of it.
@@ -120,18 +134,31 @@
     ),
   );
 
+  /** The files the pool would take, and what it would say of the ones it would not, by name. */
+  function sorted(offered: readonly File[]): {
+    readonly taken: readonly File[];
+    readonly said: string;
+  } {
+    const refusals = offered
+      .map((file) => ({ file, refusal: client.refuses(file) }))
+      .filter((each) => each.refusal !== undefined);
+    const [first] = refusals;
+    return {
+      taken: offered.filter((file) => client.refuses(file) === undefined),
+      said:
+        first?.refusal === undefined
+          ? ""
+          : `${refusals.map((each) => each.file.name).join(", ")}: ${saidBy(first.refusal)}`,
+    };
+  }
+
   function pick(event: Event) {
     const picked = [...((event.currentTarget as HTMLInputElement).files ?? [])];
     picker.value = "";
 
-    const refusal = picked
-      .map((file) => client.refuses(file))
-      .find((refused) => refused !== undefined);
-    said = refusal === undefined ? "" : saidBy(refusal);
-    chosen = [
-      ...chosen,
-      ...picked.filter((file) => client.refuses(file) === undefined),
-    ];
+    const { taken, said: refused } = sorted(picked);
+    said = refused;
+    chosen = [...chosen, ...taken];
   }
 
   function drop(file: File) {
@@ -141,11 +168,22 @@
   async function capture() {
     if (chosen.length === 0 && text.trim() === "") return;
 
+    // The limit may have been learned since a file was picked, or a refused
+    // capture put back with the file that was refused.
+    const { taken, said: refused } = sorted(chosen);
+    if (refused !== "") {
+      chosen = taken;
+      said = refused;
+      return;
+    }
+
     busy = true;
     said = "";
+    // Held rather than uploaded: the bytes go up when the capture drains. Bytes
+    // held for a capture that is then never made are let go of, since nothing
+    // else would.
+    const assets: string[] = [];
     try {
-      // Held rather than uploaded: the bytes go up when the capture drains.
-      const assets = [];
       for (const file of chosen) assets.push(await client.attach(file));
 
       const sent = [...tags];
@@ -164,6 +202,7 @@
       for (const name of sent) void sayItFired(item.id, name);
     } catch (error) {
       said = saidBy(error);
+      for (const asset of assets) await client.detach(asset).catch(() => {});
     } finally {
       busy = false;
     }
@@ -188,13 +227,12 @@
       class="flex flex-col border-b border-ink px-3 pt-2.5 pb-0.5"
       transition:slide={{ fade: true }}
     >
-      {#each pictures as { file, at } (file)}
+      {#each pictures as file (file)}
         <HeldAttachment
           name={file.name}
-          url={previews[at]}
+          url={previews.get(file)}
           bytes={file.size}
           picture
-          alt="What is about to be captured"
           ondrop={() => drop(file)}
         />
       {/each}
@@ -216,12 +254,11 @@
 
   {#if files.length > 0}
     <div class="flex flex-col px-3 pb-0.5" transition:slide={{ fade: true }}>
-      {#each files as { file, at } (file)}
+      {#each files as file (file)}
         <HeldAttachment
           name={file.name}
-          url={previews[at]}
+          url={previews.get(file)}
           bytes={file.size}
-          alt="What is about to be captured"
           ondrop={() => drop(file)}
         />
       {/each}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RoutingPreview } from "@notemap/client";
+  import type { Attachment, RoutingPreview } from "@notemap/client";
 
   import {
     NO_PREVIEW_OFFERED,
@@ -9,6 +9,8 @@
 
   import { tick } from "svelte";
 
+  import AttachedLines from "$components/item/AttachedLines.svelte";
+  import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { grow } from "$lib/motion";
 
@@ -20,20 +22,21 @@
    * the block says both where and what. It is five lines tall before there is
    * anything to draw in it, so an answer landing moves nothing under it;
    * while `asking`, the mark stands on the first of them, or beside the path
-   * over an answer that is about to be replaced. The capture's own `images`
-   * stand above what would be written, as they do on a delivered record: a
+   * over an answer that is about to be replaced. The capture's own
+   * `attachments` are drawn around what would be written as a delivered
+   * record draws them — pictures above, every other file under it — since a
    * block that is the picture writes no words about it.
    */
   let {
     shown,
     place,
-    images = [],
+    attachments = [],
     asking = false,
     subject,
   }: {
     shown?: RoutingPreview;
     place?: string;
-    images?: readonly string[];
+    attachments?: readonly Attachment[];
     asking?: boolean;
     /** What is being asked, named once it is slow to answer. */
     subject?: string;
@@ -96,19 +99,13 @@
         <Asking {subject} />
       {/if}
     {:else if drawn !== undefined}
-      {#each images as image (image)}
-        <img
-          src={image}
-          alt=""
-          loading="lazy"
-          class="mb-2 block max-h-48 max-w-full object-contain object-left"
-        />
-      {/each}
+      <AttachedPictures {attachments} picture="max-h-48" />
       {#if !blank}
         <pre
           bind:this={written}
           class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
       {/if}
+      <AttachedLines {attachments} ruled={!blank} />
       {#if shown.kind === "previewed" && shown.note !== undefined}
         <div class="mt-2 break-words">{shown.note}</div>
       {/if}

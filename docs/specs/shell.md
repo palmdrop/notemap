@@ -710,9 +710,13 @@ shuts with its last. *(Until 2026-10-07 every file was listed above the field, w
 on the opposite side of the words from where the capture it made would draw it.)* The bytes go up with the capture and cannot be taken back
 once they have, so the one moment to look at what was picked is before the button, not afterwards
 in the feed. **A file larger than the pool takes is refused when it is picked** *(2026-10-07)*, in
-the box's own failure line and in the pool's words, and is not attached: the box would otherwise
-take it and the drain refuse it, possibly days later. Where the shell has not yet reached the pool
-to learn the limit, the drain's refusal is what says so.
+the box's own failure line, naming each file it refuses, in the pool's words, and is not attached:
+the box would otherwise take it and the drain refuse it, possibly days later. It is asked again at
+the button, since the limit may have been learned since a file was picked, or a refused capture
+put back with the file that was refused. Where the shell has not yet reached the pool to learn the
+limit, the drain's refusal is what says so. **Files are attached as the capture is made, and a
+capture that fails lets go of every file it had attached** — the box keeps them, to be sent again
+— since bytes held for a capture never made are bytes nothing would claim.
 
 **Every capture is a `note`** — prose, attachments, or both — because there is one payload type,
 and **every capture the shell makes is stamped `web`** *(2026-10-07)*. Until then it stamped
@@ -796,10 +800,13 @@ and the row always draws what the item says: `copy`, the process surface and a r
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
-item carries is drawn where the row being edited drew it — every picture above the words, as a
-thumbnail, and every other file under them behind the short rule — with the box's `×` beside it,
-so opening an edit moves nothing but the pictures shrinking to the box's size. `attach` in the foot
-adds files after them. `save` sends the edit naming what the
+item carries is drawn on the side of the words the row being edited drew it — every picture above
+them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
+beside it. Opening an edit therefore moves no file across the words, though each picture shrinks
+to the box's size and gains its line, and a third picture and after, a line under the words when
+read, joins the thumbnails above them. `attach` in the foot adds files after them, and **a file
+larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
+and is not attached. `save` sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
 and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
@@ -2432,9 +2439,9 @@ routes, and one the browser leaves for.
 ### Content
 
 A **note** renders as CommonMark, collapsed and opened — that is what
-[standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn above it,
-in slot order, each by its own media type *(amended 2026-10-07)*: **the first two pictures are
-drawn**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
+[standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn around it
+in slot order, each by its own media type *(amended 2026-10-07; all were drawn above it until
+then)*: **the first two pictures are drawn above the words**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
 line under the words**, before any link's block — its filename in bold, which downloads the bytes,
 then its size, and nothing between them but space. The media type is not said: the filename's own
 extension says it, in the words a person knows a file by. **A name too long for the line is cut in

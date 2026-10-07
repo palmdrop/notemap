@@ -6,7 +6,7 @@ import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 import { client, pool } from "$testing/pool";
 import { published } from "$lib/command/stack.svelte";
 import { firings } from "$lib/firings.svelte";
-import { clearDraft, readDraft } from "$lib/draft";
+import { clearDraft, heldFiles, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
 import StatusLine from "./StatusLine.svelte";
 
@@ -753,4 +753,46 @@ test("work that drains at once is never counted", async () => {
 
   await vi.advanceTimersByTimeAsync(200);
   expect(screen.getByRole("button", { name: "1 pending" })).toBeDefined();
+});
+
+test("a refused capture edited puts every file it carried back in the box, by name", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("PUT /v1/assets/")) {
+      return json(201, { id: route.slice("PUT /v1/assets/".length) });
+    }
+    return route === "POST /v1/captures"
+      ? refusal(422, "payload-invalid")
+      : quiet();
+  });
+  // Read back from wherever the client says the bytes are; jsdom fetches nothing.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.resolve(new Response(new Blob(["bytes"])))),
+  );
+  render(StatusLine);
+
+  const shot = await client.attach(
+    new File(["bytes"], "shot.png", { type: "image/png" }),
+  );
+  const paper = await client.attach(
+    new File(["%PDF"], "paper.pdf", { type: "application/pdf" }),
+  );
+  await client.capture({ channel: "web", text: "", assets: [shot, paper] });
+  await client.drain();
+  await screen.findByRole("alert");
+
+  const panel = await opened();
+  expect(panel.textContent).toContain("with 2 attachments");
+  await fireEvent.click(within(panel).getByRole("button", { name: "edit" }));
+
+  await vi.waitFor(async () => {
+    expect(await refusedOf()).toHaveLength(0);
+  });
+  expect(heldFiles().map((file) => [file.name, file.type])).toEqual([
+    ["shot.png", "image/png"],
+    ["paper.pdf", "application/pdf"],
+  ]);
+  clearDraft();
+  vi.unstubAllGlobals();
 });

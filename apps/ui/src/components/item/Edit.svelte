@@ -64,7 +64,6 @@
         url={held.url}
         bytes={held.bytes}
         picture
-        alt="What it carries"
         ondrop={() => editing.drop(held.asset)}
       />
     {/each}
@@ -95,7 +94,6 @@
         name={held.name}
         url={held.url}
         bytes={held.bytes}
-        alt="What it carries"
         ondrop={() => editing.drop(held.asset)}
       />
     {/each}

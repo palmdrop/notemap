@@ -10,6 +10,12 @@ describe("an attachment's size", () => {
     expect(sizeOf(268435456)).toBe("268 MB");
     expect(sizeOf(3_200_000_000)).toBe("3.2 GB");
   });
+
+  it("says one byte, and never a size that has rounded into the next unit", () => {
+    expect(sizeOf(1)).toBe("1 byte");
+    expect(sizeOf(9960)).toBe("10 KB");
+    expect(sizeOf(999_999)).toBe("1.0 MB");
+  });
 });
 
 describe("what is drawn as a picture", () => {

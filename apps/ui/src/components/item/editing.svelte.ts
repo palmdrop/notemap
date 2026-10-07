@@ -92,7 +92,10 @@ export class Editing {
               },
             ];
           } catch (error) {
-            notices.raise({ what: saidBy(error), alarm: true });
+            notices.raise({
+              what: `${file.name}: ${saidBy(error)}`,
+              alarm: true,
+            });
           }
         }
       } finally {

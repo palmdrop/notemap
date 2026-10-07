@@ -70,6 +70,22 @@ describe("what an item carries", () => {
     ]);
   });
 
+  it("orders slots by their number, however many digits it has", () => {
+    const item = anItem("one", {
+      payload: {
+        ...payload,
+        assets: [
+          { slot: "1000", asset: "last" },
+          { slot: "999", asset: "first" },
+        ],
+      },
+    });
+
+    expect(
+      attachmentsIn(item, new Map(), urlOf).map((each) => each.asset),
+    ).toEqual(["first", "last"]);
+  });
+
   it("reads a slot named before slots were numbered", () => {
     const item = anItem("one", {
       payload: { ...payload, assets: [{ slot: "image", asset: "old" }] },

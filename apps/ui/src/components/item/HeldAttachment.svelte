@@ -14,14 +14,12 @@
     url,
     bytes,
     picture = false,
-    alt,
     ondrop,
   }: {
     name: string;
     url: string | undefined;
     bytes?: number;
     picture?: boolean;
-    alt: string;
     ondrop: () => void;
   } = $props();
 </script>
@@ -32,12 +30,12 @@
          to the height it keeps. -->
     <div class="size-21 shrink-0 border border-ink">
       {#if url !== undefined}
-        <img src={url} {alt} class="size-full object-cover" />
+        <img src={url} alt={name} class="size-full object-cover" />
       {/if}
     </div>
   {/if}
   <span class="min-w-0">
-    <AttachmentLine {name} url={url ?? ""} {bytes} whole />
+    <AttachmentLine {name} {url} {bytes} whole />
   </span>
   <button
     type="button"

@@ -9,7 +9,8 @@ import {
   type MockTransport,
 } from "@notemap/client/testing";
 
-import { pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
+import { client, pool } from "$testing/pool";
 import Edit from "./Edit.fixture.svelte";
 
 type Envelope = {
@@ -73,13 +74,13 @@ test("draws the picture the item carries, and dropping it saves the item without
 
   render(Edit, { item: pictured("one"), onclose: done });
 
-  expect(screen.getByAltText("What it carries")).toBeDefined();
+  expect(screen.getByAltText("shot.png")).toBeDefined();
   expect(screen.getByText("shot.png")).toBeDefined();
 
   await fireEvent.click(
     screen.getByRole("button", { name: "remove shot.png" }),
   );
-  expect(screen.queryByAltText("What it carries")).toBeNull();
+  expect(screen.queryByAltText("shot.png")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
   expect(done).toHaveBeenCalled();
@@ -110,7 +111,7 @@ test("attaching adds after what the item carries, and the edit names every slot 
   });
 
   const paper = await screen.findByText("paper.pdf");
-  const [picture] = screen.getAllByAltText("What it carries");
+  const [picture] = screen.getAllByAltText("shot.png");
   const field = screen.getByLabelText("What it says");
   // Where the row being edited draws them: the picture above the words, the file under.
   expect(
@@ -166,4 +167,30 @@ test("save waits for an attachment still being attached", async () => {
   const [edit] = await edits(transport);
   expect(edit?.payload.assets).toHaveLength(1);
   expect(closed).toHaveBeenCalled();
+});
+
+test("refuses a file larger than the pool takes as it is picked, in the status line", async () => {
+  stubObjectUrls();
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: false });
+    }
+    if (route === "GET /v1/assets/limits") return json(200, { maxUpload: 4 });
+    return accepting()(request);
+  });
+  await client.askSession();
+  await vi.waitFor(() => {
+    expect(client.refuses(new File(["far too many"], "probe"))).toBeDefined();
+  });
+
+  render(Edit, { item: anItem("one"), onclose: vi.fn() });
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
+    target: { files: [new File(["far too many bytes"], "huge.bin")] },
+  });
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toContain("huge.bin: that file is larger");
+  });
+  expect(screen.queryByText("huge.bin")).toBeNull();
 });
