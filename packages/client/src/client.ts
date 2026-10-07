@@ -9,7 +9,13 @@ import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { pictured, pictureIn } from "./capture/picture";
 import { saidAs, saidIn } from "./capture/says";
-import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
+import {
+  PoolChanged,
+  readRefusal,
+  Refused,
+  saidBy,
+  Unreachable,
+} from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createPoolSettings } from "./settings/settings";
@@ -206,6 +212,33 @@ export function createClient(config: ClientConfig): Client {
   // The watcher keeps its own tempo, and only the gates are the client's to
   // hold: it asks nothing while nobody is reading and nothing while the pool
   // is not answering.
+  /** The largest file this install takes, once a signed-in read has said. */
+  let maxUpload: number | undefined;
+
+  // Asked only where it can be answered: a `401` from anywhere reads as a
+  // session that lapsed, and drops the cache with it.
+  async function askedLimits(): Promise<void> {
+    const session = sessions.get();
+    if (!session.known || (session.required && !session.signedIn)) return;
+
+    const limits = await answered(api.GET("/v1/assets/limits")).catch(
+      () => undefined,
+    );
+    if (limits !== undefined) maxUpload = limits.maxUpload;
+  }
+
+  const onSession = sessions.changes
+    .pipe(
+      map(
+        (session) => session.known && (session.signedIn || !session.required),
+      ),
+      distinctUntilChanged(),
+    )
+    .subscribe((reachable) => {
+      if (reachable) void askedLimits();
+      else maxUpload = undefined;
+    });
+
   const onReach = reach.changes
     .pipe(
       map((mark) => mark.yes),
@@ -253,7 +286,11 @@ export function createClient(config: ClientConfig): Client {
   }> {
     try {
       const health = await answered(api.GET("/v1/health"));
+      if (health.pool !== undefined && health.pool !== state.get().pool) {
+        maxUpload = undefined;
+      }
       isThePoolWeCached(health.pool);
+      if (maxUpload === undefined) void askedLimits();
       return { yes: true, version: health.version };
     } catch (error) {
       // A refusal is still the pool answering. Only silence is not.
@@ -542,6 +579,14 @@ export function createClient(config: ClientConfig): Client {
     // two calls over one file are two assets, as two uploads have always been.
     attach: (file) =>
       after(async () => {
+        // Refused here in the pool's own words, rather than when the drain
+        // sends it, which may be days after the person has moved on.
+        if (maxUpload !== undefined && file.size > maxUpload) {
+          throw readRefusal({
+            error: { code: "asset-too-large", max: maxUpload },
+          });
+        }
+
         const asset = uuidv7();
         // Copied rather than referenced: a picker's `File` points at a file on
         // disk, which a capture that has not drained may outlive by days.
@@ -659,6 +704,7 @@ export function createClient(config: ClientConfig): Client {
       actions.stop();
       onReturn.unsubscribe();
       onReach.unsubscribe();
+      onSession.unsubscribe();
       return draining.catch(() => undefined);
     },
   };

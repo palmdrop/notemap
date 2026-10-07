@@ -375,6 +375,24 @@ describe("PUT /v1/assets/{id}", () => {
   });
 });
 
+describe("GET /v1/assets/limits", () => {
+  it("answers the largest upload this install takes, as a 413 would name it", async () => {
+    const started = host({ maxUploadBytes: 8 });
+
+    const response = await started.app.request("/v1/assets/limits");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ maxUpload: 8 });
+
+    const refused = await put(started.app, "far more than eight bytes", {
+      "content-type": "text/plain",
+      "content-disposition": attachment("long.txt"),
+    });
+    expect(await refused.json()).toEqual({
+      error: { code: "asset-too-large", max: 8 },
+    });
+  });
+});
+
 describe("GET /v1/assets/{id}", () => {
   it("answers the asset", async () => {
     const started = host();

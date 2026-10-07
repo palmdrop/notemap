@@ -952,6 +952,13 @@ the moment of capture.
 before anything is sent. Attaching is a store write, not a request: it costs no round trip and
 nothing about it needs the pool to be there ([ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)).
 
+**A file larger than the pool takes is refused at attach** *(2026-10-07)*, in the pool's own words —
+`asset-too-large`, with its `max` — and nothing is held. The client reads the limit from
+`GET /v1/assets/limits` once a session can be answered for, and again when the pool identity changes;
+it is held in memory, so a client that has not reached the pool since it started attaches anything,
+and the drain's `413` stays the backstop. It is asked only once signed in, or where nothing asks
+anyone to be: a `401` from anywhere reads as a session that lapsed.
+
 **The drain sends the pair**: the bytes under the id the envelope already names, then the envelope.
 The `edit` handler does the same, a revision being an ordinary capture whose payload may name an
 asset the pool has never seen. Both requests are idempotent under ids minted before either was

@@ -77,16 +77,16 @@ Depends on nothing. Phase 4 depends on it.
 
 Depends on nothing. Phase 4 uses it.
 
-- [ ] Daemon: `GET /v1/assets/limits`, authenticated, answers `{ "maxUpload": <bytes> }` — the
+- [x] Daemon: `GET /v1/assets/limits`, authenticated, answers `{ "maxUpload": <bytes> }` — the
       name and unit the `413 asset-too-large` refusal's `max` already uses. Not on health, which
       says whether the daemon is up and what it is, and not a pool setting, being what the install
       is. http-v1.md and `definitions.ts` in the same change.
-- [ ] Client: read it once signed in, hold it beside the pool identity, read it again when the
+- [x] Client: read it once signed in, hold it beside the pool identity, read it again when the
       identity changes, and refuse `attach(file)` over it with a typed refusal before anything is
       written to the store. Where the limit isn't known yet (never online), accept, and the
       drain's `413` stays the backstop.
-- [ ] Verify: `pnpm -r --silent test`, then `pnpm test:stack` (crosses the HTTP surface)
-- [ ] Commit
+- [x] Verify: `pnpm -r --silent test`, then `pnpm test:stack` (crosses the HTTP surface)
+- [x] Commit _(2026-10-07)_
 
 ### Phase 4 — the shell attaches and draws any file
 

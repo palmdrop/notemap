@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
+import { Refused } from "./errors";
 import type { ClientStore } from "./ports/store";
 import { read, until } from "./testing/observing";
 import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
@@ -343,5 +344,75 @@ describe("an edit naming bytes the store still holds", () => {
 
     // Nothing else was waiting to name them, so they went with the edit.
     expect(await store.readBlob("asset-1")).toBeUndefined();
+  });
+});
+
+describe("a file larger than the pool takes", () => {
+  /** A pool that takes uploads of at most `max` bytes, and asks for no credentials. */
+  function aLimitedPool(max: number) {
+    const pool = aPool();
+    const handler: Handler = (request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/session") {
+        return json(200, { authenticated: false, requiresCredentials: false });
+      }
+      if (route === "GET /v1/assets/limits") {
+        return json(200, { maxUpload: max });
+      }
+      return pool.handler(request);
+    };
+    return { ...pool, handler };
+  }
+
+  async function limitKnown(transport: { readonly sent: readonly Request[] }) {
+    await until(() =>
+      transport.sent.some(
+        (request) => routeOf(request) === "GET /v1/assets/limits",
+      ),
+    );
+    await new Promise((settle) => setTimeout(settle, 0));
+  }
+
+  it("is refused at attach, in the pool's own words, and nothing is held", async () => {
+    const store = createMemoryStore();
+    const written: string[] = [];
+    const watched: ClientStore = {
+      ...store,
+      writeBlob: (asset, blob) => {
+        written.push(asset);
+        return store.writeBlob(asset, blob);
+      },
+    };
+    const pool = aLimitedPool(2);
+    const { client, transport } = clientOver(watched, pool.handler);
+    await client.askSession();
+    await limitKnown(transport);
+
+    const attaching = client.attach(file());
+
+    await expect(attaching).rejects.toBeInstanceOf(Refused);
+    await expect(attaching).rejects.toMatchObject({ code: "asset-too-large" });
+    expect(written).toEqual([]);
+  });
+
+  it("is attached where it fits", async () => {
+    const pool = aLimitedPool(3);
+    const { client, transport } = clientOver(createMemoryStore(), pool.handler);
+    await client.askSession();
+    await limitKnown(transport);
+
+    await expect(client.attach(file())).resolves.toEqual(expect.any(String));
+  });
+
+  it("is attached while nobody has said what the limit is, and left to the drain", async () => {
+    const pool = aLimitedPool(2);
+    const { client, transport } = clientOver(createMemoryStore(), pool.handler);
+
+    await expect(client.attach(file())).resolves.toEqual(expect.any(String));
+    expect(
+      transport.sent.some(
+        (request) => routeOf(request) === "GET /v1/assets/limits",
+      ),
+    ).toBe(false);
   });
 });

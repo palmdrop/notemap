@@ -3917,6 +3917,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/assets/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What an upload may be
+         * @description What this install allows an upload, so a caller can refuse a file before it holds or sends it rather than learn it from a `413`. `maxUpload` is the same number, in the same unit, as that refusal's `max`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The limits. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AssetLimits"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assets/{id}/content": {
         parameters: {
             query?: never;
@@ -4842,6 +4881,13 @@ export interface components {
             detail: {
                 [key: string]: unknown;
             };
+        };
+        AssetLimits: {
+            /**
+             * @description The largest body an upload may carry, in bytes.
+             * @example 268435456
+             */
+            maxUpload: number;
         };
         PoolSettings: {
             values: components["schemas"]["PoolSetting"][];
