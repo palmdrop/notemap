@@ -4,8 +4,8 @@ import "$testing/dom";
 
 import {
   clearDraft,
-  heldPicture,
-  holdPicture,
+  heldFiles,
+  holdFiles,
   onRestored,
   readDraft,
   restoreDraft,
@@ -65,14 +65,14 @@ describe("the capture draft", () => {
     expect(readDraft()).toEqual({ text: "a thought", tags: ["research"] });
   });
 
-  it("holds the picture in memory, and lets go of it with the rest", () => {
+  it("holds the attachments in memory, and lets go of them with the rest", () => {
     const shot = new File(["bytes"], "shot.png", { type: "image/png" });
-    holdPicture(shot);
-    expect(heldPicture()).toBe(shot);
+    holdFiles([shot]);
+    expect(heldFiles()).toEqual([shot]);
     expect(localStorage.getItem(KEY)).toBeNull();
 
     clearDraft();
-    expect(heldPicture()).toBeUndefined();
+    expect(heldFiles()).toEqual([]);
   });
 
   it("does not throw where the store refuses the write", () => {
@@ -101,19 +101,17 @@ describe("the capture draft", () => {
     expect(told).toHaveBeenCalledOnce();
   });
 
-  it("puts back a picture only where the box holds none", () => {
+  it("puts attachments back after the ones the box already holds", () => {
     const shot = new File(["bytes"], "shot.png", { type: "image/png" });
-    const other = new File(["other"], "other.png", { type: "image/png" });
+    const paper = new File(["%PDF"], "paper.pdf", { type: "application/pdf" });
 
-    expect(restoreDraft({ text: "", tags: [] }, shot)).toBe("restored");
-    expect(heldPicture()).toBe(shot);
+    holdFiles([shot]);
+    expect(restoreDraft({ text: "words", tags: [] }, [paper])).toBe("restored");
 
-    expect(restoreDraft({ text: "words", tags: [] }, other)).toBe(
-      "picture-held",
-    );
-    expect(heldPicture()).toBe(shot);
-    expect(readDraft().text).toBe("");
+    expect(heldFiles()).toEqual([shot, paper]);
+    expect(readDraft().text).toBe("words");
     clearDraft();
+    expect(heldFiles()).toEqual([]);
   });
 
   it("says so where the store refused the words", () => {

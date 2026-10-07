@@ -101,7 +101,7 @@ export async function seed(
   const capture = async (
     index: number,
     payload: Payload,
-    from = options.source ?? "web-manual",
+    from = options.source ?? "web",
   ): Promise<string> => {
     const at = index + offset;
     const outcome = await http.post<CaptureOutcome>("/v1/captures", {
@@ -169,9 +169,9 @@ async function captureAnImage(
     {
       type: options.payloadType ?? "note",
       content: { text: "the whiteboard, before anyone rubbed it out" },
-      assets: [{ slot: options.imageSlot ?? "image", asset }],
+      assets: [{ slot: options.imageSlot ?? "000", asset }],
     },
-    options.imageSource ?? "web-image",
+    options.imageSource ?? "web",
   );
 
   return { item, asset };

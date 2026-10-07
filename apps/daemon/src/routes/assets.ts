@@ -71,6 +71,10 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
   };
 }
 
+export function assetLimitsHandler(limits: UploadLimits) {
+  return (): Response => json({ maxUpload: limits.maxUploadBytes }, 200);
+}
+
 export function assetHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const id = (context.req.param("id") ?? "") as AssetId;

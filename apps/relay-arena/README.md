@@ -74,6 +74,7 @@ relay container's.
 | an Image block's stored image, an Attachment block's file | one asset, under a derived id |
 | the watched channel's configured `tags`, and a trailing `#tag` line where `hashtags` is set | tags, attributed to the source, **at capture** |
 | a Channel-class block         | its title, description and `https://www.are.na/channel/<slug>`, composed into `note` prose, under `channel/<id>` — a channel's id may also be a block's |
+| the block's own page, `https://www.are.na/block/<id>` | the last paragraph of every block's prose but a channel's, whose link already is its page |
 
 The parts are joined as paragraphs in that order, each only where the block
 has it. A source URL the block's own words already hold whole is not repeated;
@@ -82,7 +83,7 @@ source URL of a Text or an Image is the page it was saved from, where it was
 saved with are.na's browser extension.
 
 A block with neither prose nor a file is not captured: core would take it, and
-a relay guards its own input.
+a relay guards its own input. Its own page does not count as prose.
 
 An Image or Attachment titled with nothing but a filename — `IMG_2231.jpg`,
 which is what are.na titles an upload until someone retitles it — carries no
@@ -117,9 +118,9 @@ reconciled.
 **A change to how the relay reads a block is an edit, once.** The pool compares
 payloads and cannot tell a block edited upstream from a block read differently.
 Titles and source URLs joined the prose on 2026-10-06, and with `hashtags` set
-a foot is now read off a caption too, so the first full poll after upgrading
-past that amends every unprocessed item whose prose changed, and revises every
-processed one. A channel's prose holds its slug, so renaming the channel on
+a foot is now read off a caption too; the block's own page joined it on
+2026-10-07. The first full poll after upgrading past either amends every
+unprocessed item whose prose changed, and revises every processed one. A channel's prose holds its slug, so renaming the channel on
 are.na is an edit as well.
 
 **An edit to a *processed* block lands at the time of the poll.** A revision is

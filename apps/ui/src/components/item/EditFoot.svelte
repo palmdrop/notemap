@@ -10,13 +10,9 @@
   let picker: HTMLInputElement;
 
   async function pick(event: Event) {
-    const file = (event.currentTarget as HTMLInputElement).files?.[0];
-    if (file === undefined) return;
-    try {
-      await editing.pick(file);
-    } finally {
-      picker.value = "";
-    }
+    const files = [...((event.currentTarget as HTMLInputElement).files ?? [])];
+    picker.value = "";
+    if (files.length > 0) await editing.pick(files);
   }
 </script>
 
@@ -47,9 +43,9 @@
   <input
     bind:this={picker}
     type="file"
-    accept="image/*"
+    multiple
     onchange={pick}
-    aria-label="A picture to carry"
+    aria-label="Files to carry"
     class="hidden"
   />
 </div>

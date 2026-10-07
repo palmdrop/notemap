@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daemons, IMAGE_SOURCE, MANUAL } from "./harness/index.ts";
+import { daemons, WEB } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -15,9 +15,9 @@ describe("bytes the client attached to a capture", () => {
       new File([BYTES], "whiteboard.png", { type: "image/png" }),
     );
     const captured = await client.capture({
-      channel: IMAGE_SOURCE,
+      channel: WEB,
       text: "before anyone rubbed it out",
-      asset,
+      assets: [asset],
     });
     await client.drain();
 
@@ -29,7 +29,7 @@ describe("bytes the client attached to a capture", () => {
 
     // The item the pool holds names the asset, so the two halves agree.
     const { item } = await client.item(captured.id);
-    expect(item?.payload.assets).toEqual([{ slot: "image", asset }]);
+    expect(item?.payload.assets).toEqual([{ slot: "000", asset }]);
 
     // And answers what it is, so nothing reads an attachment to find out.
     expect(item?.assets).toEqual([
@@ -48,7 +48,7 @@ describe("bytes the client attached to a capture", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "no pictures here",
     });
     await client.drain();

@@ -39,5 +39,5 @@ business:
   routing to any of the three is refused.
 
 Make one of each of the first two to get both states. The daemon's own payload types and
-sources are likewise its own: the defaults here are `web-manual`, `web-image`, `text` and `image`,
-matching `apps/daemon/config.example.toml`, and every one is an option.
+sources are likewise its own: the defaults here are the shell's — source `web`, payload type
+`note`, and the picture in slot `000` — and every one is an option.

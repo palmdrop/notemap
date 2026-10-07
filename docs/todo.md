@@ -70,7 +70,17 @@
 
 ## Composer and capture
 
-- [ ] Should it be possible to attach multiple attachments to the same capture   
+- [x] Should it be possible to attach multiple attachments to the same capture — yes, any number
+  of any kind since 2026-10-07 ([attachments-of-any-kind](plans/attachments-of-any-kind.md))
+
+- [ ] **An edit's dropped, reverted or abandoned attachments stay in the client's store.** An edit
+  attaches each file as it is picked, so `drop`, `revert` and closing without saving forget the
+  asset but leave its bytes held, and no operation will ever release them
+  (`apps/ui/src/components/item/editing.svelte.ts`). Older than many attachments, but bounded at one
+  picture until 2026-10-07 and now any number of files of up to the upload limit each. The capture
+  box lets go of what a failed capture attached through `client.detach`; the edit wants the same at
+  each of its three exits — or to attach at `save`, as the box attaches at the button. Raised
+  reviewing [attachments-of-any-kind](reviews/attachments-of-any-kind-2026-10-07.md).
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
@@ -175,6 +185,18 @@
     - notemap keeps a backup of the original file when doing this?
 
 ## Destinations and adapters
+
+- [ ] **are.na refuses a capture carrying more than one file.** A block holds one thing, so the
+  arena kind refuses any capture whose payload names more than one asset — reachable from the shell
+  since 2026-10-07, when a capture began carrying any number of files
+  ([attachments-of-any-kind](plans/attachments-of-any-kind.md)). Routing by hand hears it in the
+  preview, before deciding; a trigger tag hears it only at delivery. Options weighed then: keep
+  refusing; **one block per file**, the words captioning the first — what a person would do by hand,
+  but one delivery making several blocks against a record holding one pointer, and a partial
+  failure retried may duplicate more than [ADR 41](adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)
+  accepts for one; or **the first file only, saying what was dropped**, through the output and note
+  [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) already
+  gives a lossy delivery. Leaning to the last, unless are.na should receive everything.
 
 - [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 

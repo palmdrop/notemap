@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "./adapters/memory-store";
 import { createClient } from "./client";
+import { Refused } from "./errors";
 import type { ClientStore } from "./ports/store";
 import { read, until } from "./testing/observing";
 import { anItem, asked, routeOf, stoppedClock } from "./testing/pool";
@@ -38,7 +39,7 @@ const unreadable = () =>
     arrayBuffer: () => Promise.reject(new Error("that file is not there")),
   }) as File;
 
-const PICTURE = "web-picture";
+const WEB = "web";
 
 /** A pool that remembers what it was given, so a replay can be told from a second upload. */
 function aPool() {
@@ -116,16 +117,16 @@ beforeEach(() => {
   clock.set("2026-08-17T12:00:00.000Z");
 });
 
-describe("a picture captured with the pool out of reach", () => {
+describe("an attachment captured with the pool out of reach", () => {
   it("goes up under the id the capture already named, and before it", async () => {
     const pool = aPool();
     const { client, transport } = clientOver(createMemoryStore(), pool.handler);
 
     const asset = await client.attach(file());
     const item = await client.capture({
-      channel: PICTURE,
+      channel: WEB,
       text: "a whiteboard",
-      asset,
+      assets: [asset],
     });
     await client.drain();
 
@@ -149,21 +150,33 @@ describe("a picture captured with the pool out of reach", () => {
     transport.unreachable(true);
 
     const asset = await client.attach(file());
-    const item = await client.capture({ channel: PICTURE, text: "", asset });
+    const item = await client.capture({
+      channel: WEB,
+      text: "",
+      assets: [asset],
+    });
     await client.drain();
 
-    expect(client.images(item)[0]).toMatch(/^blob:/);
+    expect(client.attachments(item)[0]?.url).toMatch(/^blob:/);
     expect(client.assetContent(asset)).toMatch(/^blob:/);
     expect(await store.readBlob(asset)).toBeDefined();
 
     transport.unreachable(false);
     await client.drain();
 
-    // The pool's own answer, which is what says the attachment is a picture
-    // once the bytes this client held have gone.
+    // The pool's own answer, which is what says what the attachment is once
+    // the bytes this client held have gone.
     const landed = read(client.held(item.id));
     if (landed === undefined) throw new Error("the item went");
-    expect(client.images(landed)).toEqual([transport.assetUrl(asset)]);
+    expect(client.attachments(landed)).toEqual([
+      {
+        asset,
+        url: transport.assetUrl(asset),
+        filename: "a photo.png",
+        mime: "image/png",
+        bytes: 3,
+      },
+    ]);
     expect(await store.readBlob(asset)).toBeUndefined();
   });
 
@@ -174,7 +187,7 @@ describe("a picture captured with the pool out of reach", () => {
     const first = clientOver(store, pool.handler);
     first.transport.unreachable(true);
     const asset = await first.client.attach(file());
-    await first.client.capture({ channel: PICTURE, text: "", asset });
+    await first.client.capture({ channel: WEB, text: "", assets: [asset] });
     await first.client.drain();
     first.client.close();
 
@@ -183,7 +196,12 @@ describe("a picture captured with the pool out of reach", () => {
     await until(() => read(second.client.queue).items.length > 0);
 
     const drawn = read(second.client.queue).items[0]!;
-    expect(second.client.images(drawn)[0]).toMatch(/^blob:/);
+    expect(second.client.attachments(drawn)[0]).toMatchObject({
+      url: expect.stringMatching(/^blob:/) as unknown,
+      filename: "a photo.png",
+      mime: "image/png",
+      bytes: 3,
+    });
 
     second.transport.unreachable(false);
     await second.client.drain();
@@ -203,7 +221,7 @@ describe("a picture captured with the pool out of reach", () => {
     });
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await until(() => read(client.outbox)[0]?.state === "unreachable");
 
     expect(pool.assets).toEqual([asset]);
@@ -232,7 +250,7 @@ describe("a picture captured with the pool out of reach", () => {
     );
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await client.drain();
 
     expect(read(client.outbox)[0]?.state).toBe("refused");
@@ -267,7 +285,7 @@ describe("bytes the store cannot answer for", () => {
     );
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await until(() => read(client.outbox)[0]?.state === "unreachable");
 
     expect(read(client.outbox)[0]?.state).toBe("unreachable");
@@ -278,7 +296,7 @@ describe("bytes the store cannot answer for", () => {
     await store.writeBlob("asset-1", unreadable());
 
     const { client } = clientOver(store, aPool().handler);
-    await client.capture({ channel: PICTURE, text: "", asset: "asset-1" });
+    await client.capture({ channel: WEB, text: "", assets: ["asset-1"] });
     await client.drain();
 
     expect(read(client.outbox)[0]?.state).toBe("refused");
@@ -310,7 +328,7 @@ describe("a store that cannot forget the bytes", () => {
     built.push(client);
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await client.drain();
 
     expect(read(client.outbox)).toEqual([]);
@@ -343,5 +361,199 @@ describe("an edit naming bytes the store still holds", () => {
 
     // Nothing else was waiting to name them, so they went with the edit.
     expect(await store.readBlob("asset-1")).toBeUndefined();
+  });
+});
+
+describe("a file larger than the pool takes", () => {
+  /** A pool that takes uploads of at most `max` bytes, and asks for no credentials. */
+  function aLimitedPool(max: number) {
+    const pool = aPool();
+    const handler: Handler = (request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/session") {
+        return json(200, { authenticated: false, requiresCredentials: false });
+      }
+      if (route === "GET /v1/assets/limits") {
+        return json(200, { maxUpload: max });
+      }
+      return pool.handler(request);
+    };
+    return { ...pool, handler };
+  }
+
+  async function limitKnown(transport: { readonly sent: readonly Request[] }) {
+    await until(() =>
+      transport.sent.some(
+        (request) => routeOf(request) === "GET /v1/assets/limits",
+      ),
+    );
+    await new Promise((settle) => setTimeout(settle, 0));
+  }
+
+  it("is refused at attach, in the pool's own words, and nothing is held", async () => {
+    const store = createMemoryStore();
+    const written: string[] = [];
+    const watched: ClientStore = {
+      ...store,
+      writeBlob: (asset, blob) => {
+        written.push(asset);
+        return store.writeBlob(asset, blob);
+      },
+    };
+    const pool = aLimitedPool(2);
+    const { client, transport } = clientOver(watched, pool.handler);
+    await client.askSession();
+    await limitKnown(transport);
+
+    const attaching = client.attach(file());
+
+    expect(client.refuses(file())).toMatchObject({ code: "asset-too-large" });
+    await expect(attaching).rejects.toBeInstanceOf(Refused);
+    await expect(attaching).rejects.toMatchObject({ code: "asset-too-large" });
+    expect(written).toEqual([]);
+  });
+
+  it("is attached where it fits", async () => {
+    const pool = aLimitedPool(3);
+    const { client, transport } = clientOver(createMemoryStore(), pool.handler);
+    await client.askSession();
+    await limitKnown(transport);
+
+    expect(client.refuses(file())).toBeUndefined();
+    await expect(client.attach(file())).resolves.toEqual(expect.any(String));
+  });
+
+  it("is attached while nobody has said what the limit is, and left to the drain", async () => {
+    const pool = aLimitedPool(2);
+    const { client, transport } = clientOver(createMemoryStore(), pool.handler);
+
+    await expect(client.attach(file())).resolves.toEqual(expect.any(String));
+    expect(
+      transport.sent.some(
+        (request) => routeOf(request) === "GET /v1/assets/limits",
+      ),
+    ).toBe(false);
+  });
+});
+
+describe("the pool's upload limit, as the client holds it", () => {
+  const tooBig = () => new File([new Uint8Array(3)], "big.bin");
+
+  /** A pool that asks for credentials, signed in or not, taking at most `max` bytes. */
+  function aGuardedPool(state: { signedIn: boolean; max: number }) {
+    const pool = aPool();
+    const handler: Handler = (request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/session") {
+        return json(200, {
+          authenticated: state.signedIn,
+          requiresCredentials: true,
+        });
+      }
+      if (route === "DELETE /v1/session") {
+        state.signedIn = false;
+        return json(200, {});
+      }
+      if (route === "GET /v1/assets/limits") {
+        return state.signedIn
+          ? json(200, { maxUpload: state.max })
+          : json(401, { error: { code: "unauthenticated" } });
+      }
+      return pool.handler(request);
+    };
+    return handler;
+  }
+
+  const askedForLimits = (transport: { readonly sent: readonly Request[] }) =>
+    transport.sent.filter(
+      (request) => routeOf(request) === "GET /v1/assets/limits",
+    ).length;
+
+  async function known(client: Client) {
+    await until(() => client.refuses(tooBig()) !== undefined);
+    expect(client.refuses(tooBig())).toBeDefined();
+  }
+
+  it("is not asked while the pool wants credentials nobody has given", async () => {
+    const state = { signedIn: false, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+
+    await client.askSession();
+    await client.probe();
+
+    expect(askedForLimits(transport)).toBe(0);
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is forgotten on signing out", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client } = clientOver(createMemoryStore(), aGuardedPool(state));
+    await client.askSession();
+    await known(client);
+
+    await client.logout();
+
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is forgotten when the session lapses", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+    await client.askSession();
+    await known(client);
+
+    transport.health = () => json(401, { error: { code: "unauthenticated" } });
+    await client.probe();
+
+    expect(client.refuses(tooBig())).toBeUndefined();
+  });
+
+  it("is asked again of a pool that is not the one it was read from", async () => {
+    const state = { signedIn: true, max: 2 };
+    const { client, transport } = clientOver(
+      createMemoryStore(),
+      aGuardedPool(state),
+    );
+    await client.askSession();
+    await known(client);
+
+    state.max = 10;
+    transport.pool = "a-pool-built-since";
+    await client.probe();
+
+    await until(() => client.refuses(tooBig()) === undefined);
+    expect(client.refuses(tooBig())).toBeUndefined();
+    expect(askedForLimits(transport)).toBe(2);
+  });
+});
+
+describe("letting go of bytes no capture claimed", () => {
+  it("removes what was attached for a capture that was never made", async () => {
+    const store = createMemoryStore();
+    const { client } = clientOver(store, aPool().handler);
+
+    const asset = await client.attach(file());
+    await client.detach(asset);
+
+    expect(await store.readBlob(asset)).toBeUndefined();
+    expect(client.assetContent(asset)).not.toMatch(/^blob:/);
+  });
+
+  it("leaves bytes a queued capture still names", async () => {
+    const store = createMemoryStore();
+    const { client, transport } = clientOver(store, aPool().handler);
+    transport.unreachable(true);
+
+    const asset = await client.attach(file());
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
+    await client.detach(asset);
+
+    expect(await store.readBlob(asset)).toBeDefined();
   });
 });

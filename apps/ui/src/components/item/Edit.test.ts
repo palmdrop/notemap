@@ -9,7 +9,8 @@ import {
   type MockTransport,
 } from "@notemap/client/testing";
 
-import { pool } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
+import { client, pool } from "$testing/pool";
 import Edit from "./Edit.fixture.svelte";
 
 type Envelope = {
@@ -73,11 +74,13 @@ test("draws the picture the item carries, and dropping it saves the item without
 
   render(Edit, { item: pictured("one"), onclose: done });
 
-  expect(screen.getByAltText("What it carries")).toBeDefined();
+  expect(screen.getByAltText("shot.png")).toBeDefined();
   expect(screen.getByText("shot.png")).toBeDefined();
 
-  await fireEvent.click(screen.getByRole("button", { name: "drop" }));
-  expect(screen.queryByAltText("What it carries")).toBeNull();
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove shot.png" }),
+  );
+  expect(screen.queryByAltText("shot.png")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
   expect(done).toHaveBeenCalled();
@@ -87,10 +90,10 @@ test("draws the picture the item carries, and dropping it saves the item without
   });
   const [edit] = await edits(transport);
   expect(edit?.payload.assets).toEqual([]);
-  expect(edit?.source).toBe("web-manual");
+  expect(edit?.source).toBe("web");
 });
 
-test("attaching a picture puts it in the slot, and the edit names what went up", async () => {
+test("attaching adds after what the item carries, and the edit names every slot afresh", async () => {
   stubObjectUrls();
   const uploaded: string[] = [];
   const transport = pool((request) => {
@@ -99,17 +102,24 @@ test("attaching a picture puts it in the slot, and the edit names what went up",
     return accepting()(request);
   });
 
-  render(Edit, { item: anItem("one"), onclose: vi.fn() });
-  expect(screen.queryByRole("button", { name: "drop" })).toBeNull();
+  render(Edit, { item: pictured("one"), onclose: vi.fn() });
 
-  await fireEvent.change(screen.getByLabelText("A picture to carry"), {
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
     target: {
-      files: [new File(["bytes"], "shot.png", { type: "image/png" })],
+      files: [new File(["%PDF"], "paper.pdf", { type: "application/pdf" })],
     },
   });
 
-  expect(await screen.findByText("shot.png")).toBeDefined();
-  expect(screen.getByAltText("What it carries")).toBeDefined();
+  const paper = await screen.findByText("paper.pdf");
+  const [picture] = screen.getAllByAltText("shot.png");
+  const field = screen.getByLabelText("What it says");
+  // Where the row being edited draws them: the picture above the words, the file under.
+  expect(
+    picture!.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    field.compareDocumentPosition(paper) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
 
@@ -118,12 +128,15 @@ test("attaching a picture puts it in the slot, and the edit names what went up",
   });
   const [edit] = await edits(transport);
   expect(uploaded).toHaveLength(1);
-  expect(edit?.payload.assets).toEqual([{ slot: "image", asset: uploaded[0] }]);
-  expect(edit?.source).toBe("web-image");
+  expect(edit?.payload.assets).toEqual([
+    { slot: "000", asset: "asset-p" },
+    { slot: "001", asset: uploaded[0] },
+  ]);
+  expect(edit?.source).toBe("web");
 });
 
-/** A picture on its way counts as a change, and `save` waits for it to go with the words. */
-test("save waits for a picture still being attached", async () => {
+/** An attachment on its way counts as a change, and `save` waits for it to go with the words. */
+test("save waits for an attachment still being attached", async () => {
   stubObjectUrls();
   let release!: () => void;
   const held = new Promise<void>((resolve) => (release = resolve));
@@ -135,7 +148,7 @@ test("save waits for a picture still being attached", async () => {
 
   render(Edit, { item: anItem("one"), onclose: closed });
 
-  await fireEvent.change(screen.getByLabelText("A picture to carry"), {
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
     target: {
       files: [new File(["bytes"], "shot.png", { type: "image/png" })],
     },
@@ -154,4 +167,30 @@ test("save waits for a picture still being attached", async () => {
   const [edit] = await edits(transport);
   expect(edit?.payload.assets).toHaveLength(1);
   expect(closed).toHaveBeenCalled();
+});
+
+test("refuses a file larger than the pool takes as it is picked, in the status line", async () => {
+  stubObjectUrls();
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: false });
+    }
+    if (route === "GET /v1/assets/limits") return json(200, { maxUpload: 4 });
+    return accepting()(request);
+  });
+  await client.askSession();
+  await vi.waitFor(() => {
+    expect(client.refuses(new File(["far too many"], "probe"))).toBeDefined();
+  });
+
+  render(Edit, { item: anItem("one"), onclose: vi.fn() });
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
+    target: { files: [new File(["far too many bytes"], "huge.bin")] },
+  });
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toContain("huge.bin: that file is larger");
+  });
+  expect(screen.queryByText("huge.bin")).toBeNull();
 });

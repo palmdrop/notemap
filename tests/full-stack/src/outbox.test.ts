@@ -5,7 +5,7 @@ import {
 } from "@notemap/client";
 import { describe, expect, it } from "vitest";
 
-import { daemons, IMAGE_SOURCE, MANUAL, read, until } from "./harness/index.ts";
+import { daemons, WEB, read, until } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -20,7 +20,7 @@ describe("an outbox that filled up while the daemon was gone", () => {
     await running.stop();
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "written to nobody",
     });
     await client.drain();
@@ -57,9 +57,9 @@ describe("an outbox the tab was closed on", () => {
       new File([BYTES], "whiteboard.png", { type: "image/png" }),
     );
     const captured = await before.capture({
-      channel: IMAGE_SOURCE,
+      channel: WEB,
       text: "before anyone rubbed it out",
-      asset,
+      assets: [asset],
     });
     await before.tag(captured.id, "meeting");
     await before.drain();

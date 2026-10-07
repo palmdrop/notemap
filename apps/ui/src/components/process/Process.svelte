@@ -28,6 +28,8 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
+  import AttachedLines from "$components/item/AttachedLines.svelte";
+  import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -97,7 +99,7 @@
   });
   /** What the capture says, which is what editing starts from and what it replaces. */
   const captured = $derived(client.says(item));
-  const pictures = $derived(client.images(item));
+  const attachments = $derived(client.attachments(item));
   /**
    * What the item carries, read from the client's held copy rather than the
    * item this opened on: a tag taken here lands on the held copy first, and
@@ -947,13 +949,9 @@
       </div>
     {/if}
 
-    {#each pictures as picture (picture)}
-      <img
-        src={picture}
-        alt=""
-        class="mb-2 block max-h-64 max-w-full flex-none object-contain object-left"
-      />
-    {/each}
+    <div class="flex-none">
+      <AttachedPictures {attachments} picture="max-h-64" />
+    </div>
 
     {#if editing}
       <textarea
@@ -974,6 +972,9 @@
           done
         </button>
       </div>
+      <div class="mt-2 flex-none">
+        <AttachedLines {attachments} ruled />
+      </div>
     {:else}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
@@ -981,6 +982,9 @@
         ondblclick={edit}
       >
         {words ?? captured}
+      </div>
+      <div class="flex-none">
+        <AttachedLines {attachments} ruled={(words ?? captured) !== ""} />
       </div>
       <Unfurls text={words ?? captured} />
     {/if}
@@ -1140,7 +1144,7 @@
         <Preview
           {shown}
           place={previewPlace}
-          images={pictures}
+          {attachments}
           asking={pending}
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />

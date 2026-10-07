@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const MANUAL = "web-manual";
-export const IMAGE_SOURCE = "web-image";
+export const WEB = "web";
 
 /**
  * What the two destinations are called. Names rather than ids: a destination is

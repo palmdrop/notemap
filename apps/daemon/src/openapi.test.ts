@@ -35,6 +35,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/accounts/{kind}/{name}",
       "/v1/actions",
       "/v1/archived",
+      "/v1/assets/limits",
       "/v1/assets/{id}",
       "/v1/assets/{id}/content",
       "/v1/captures",

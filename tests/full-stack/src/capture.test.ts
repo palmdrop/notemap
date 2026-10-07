@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { seed } from "@notemap/seed";
 
-import { daemons, MANUAL, read, vaults } from "./harness/index.ts";
+import { daemons, WEB, read, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -12,7 +12,7 @@ describe("a capture made by the client", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "the seam between the client and the daemon",
     });
     await client.drain();
@@ -31,7 +31,7 @@ describe("a capture made by the client", () => {
     const running = await daemon();
     const client = running.client;
 
-    await client.capture({ channel: MANUAL, text: "read back, not assumed" });
+    await client.capture({ channel: WEB, text: "read back, not assumed" });
     await client.drain();
     await client.loadFeed();
 

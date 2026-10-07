@@ -2,9 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-09-30
+**Last updated**: 2026-10-07
 **Shipped**:
 
+- 2026-10-07 — **`GET /v1/assets/limits`.** What an upload may be — `maxUpload`, the number a
+  `413 asset-too-large` names as `max` — so a caller refuses a file before holding or sending it.
+  See [attachments-of-any-kind](../plans/attachments-of-any-kind.md).
 - 2026-09-30 — **`GET /v1/counts`.** How much the pool holds, counted rather than paged:
   `queue`, every item `GET /v1/queue` would answer. See
   [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md).
@@ -1613,6 +1616,25 @@ asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
 - **This is the one `/v1` route whose body is not JSON**, and the media-type guard carves out that
   method and that path pattern rather than a prefix, so a route added under `/v1/assets` — or
   another bodied method on this same path — does not quietly inherit the exemption.
+
+#### Limits
+
+`GET /v1/assets/limits` — what this install allows an upload.
+
+```json
+{ "maxUpload": 268435456 }
+```
+
+- **`maxUpload` is the `max` a `413 asset-too-large` names**, in bytes, and the daemon's
+  `assets.maxUpload`. It exists so a client that holds a file before sending it — the shell's
+  outbox does, for as long as the pool is out of reach — can refuse it when it is picked rather
+  than when the drain sends it.
+- **Authenticated, and not on health.** Health says whether the daemon is up and what it is; this
+  is what the install takes, and answers nothing to a caller who could not upload anyway. Not a
+  pool setting either: an install sets it, never a person using notemap.
+- **`limits` is not an asset id.** Ids are minted by the uploader and nothing refuses this one, but
+  every uploader mints UUIDs; an asset stored under `limits` would be unreadable through
+  `GET /v1/assets/{id}`.
 
 #### Download
 

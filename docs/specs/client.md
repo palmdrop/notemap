@@ -1,9 +1,15 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-01
+**Last updated**: 2026-10-07
 **Shipped**:
 
+- 2026-10-07 — **Any number of attachments, of any kind.** `attachments(item)` answers everything
+  an item carries in slot order, with its URL, filename, media type and size wherever the pool or the
+  store can say them; `attached(payload, assets)` names an ordered list, every slot numbered
+  afresh. They replace `picture`, `pictured` and `images`, and `CaptureInput` carries `assets`. The
+  client learns the pool's upload limit and refuses a file over it at `attach`, and `refuses(file)`
+  says so before anything is attached. ([plan](../plans/attachments-of-any-kind.md))
 - 2026-10-01 — **`client.actions.ask()` reads the log now rather than on the tempo.** The watcher
   reads at once and counts its tempo again from that read; nothing while the gates are shut or a
   read is already out. The shell asks just after a fired template's window closes, so the corner
@@ -927,10 +933,11 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   retry after a restart claims the identity the first attempt did and the pool answers one revision.
 - **An edit may change what is attached** *(added 2026-09-18)*. The payload an edit carries names
   whatever assets it names, and the drain uploads any the pool has never seen before it sends the
-  edit — which is what an edit of a picture captured offline already needed. The client keeps the
-  shell's one picture slot beside `saying`: `picture` reads what the item carries there, with the
-  filename and media type where the pool has said them, and `pictured` puts an attached asset in
-  the slot or empties it, leaving any other slot as it was.
+  edit — which is what an edit of a picture captured offline already needed. Beside `saying`,
+  `attached` names what an edit carries: an ordered list of assets, written into slots `000`,
+  `001`, … afresh, so an item still carrying the shell's old `image` slot is renumbered by the edit
+  that next touches it. *(Amended 2026-10-07: the client kept one picture slot, `picture` and
+  `pictured`, until then.)*
 
 ### Source identity
 
@@ -952,6 +959,17 @@ the moment of capture.
 before anything is sent. Attaching is a store write, not a request: it costs no round trip and
 nothing about it needs the pool to be there ([ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)).
 
+**A file larger than the pool takes is refused at attach** *(2026-10-07)*, in the pool's own words —
+`asset-too-large`, with its `max` — and nothing is held. The client reads the limit from
+`GET /v1/assets/limits` once the session is known to be signed in, or known to need no signing in:
+a `401` from anywhere reads as a session that lapsed, so the limit is never asked of a pool that
+would answer one. It is forgotten when the session ends and when the pool identity changes, and
+read again after; an answer to a question asked before it was forgotten is not kept. It is held in
+memory, so a client that has not reached the pool since it started attaches anything, and the
+drain's `413` stays the backstop. `refuses(file)` answers the same refusal without attaching, for a
+shell that holds a file before the capture that attaches it, and `detach(asset)` lets go of bytes
+attached for a capture that was then never made — bytes an operation still names are left to it.
+
 **The drain sends the pair**: the bytes under the id the envelope already names, then the envelope.
 The `edit` handler does the same, a revision being an ordinary capture whose payload may name an
 asset the pool has never seen. Both requests are idempotent under ids minted before either was
@@ -959,8 +977,10 @@ sent, so **a failure between them retries the pair** — the upload the pool alr
 with the asset it holds rather than making a second one, and one capture lands.
 
 **An asset resolves to the store's own bytes while it holds them, and through the transport
-otherwise.** One rule, and the shell asks the question it always asked: what an item's pictures
-are. The URL is the store's answer rather than the client's, for the same reason `assetUrl` is the
+otherwise.** One rule, and the shell asks the question it always asked: what an item's attachments
+are. `attachments(item)` answers it in slot order, each with what the pool says it is — filename,
+media type, size — or, for bytes the pool has not answered for yet, what the store holds of the file
+it was attached from. The URL is the store's answer rather than the client's, for the same reason `assetUrl` is the
 transport's — a browser adapter mints an object URL and owns revoking it.
 
 **The bytes are released when the operation that named them leaves the outbox** — landing, or being
@@ -984,7 +1004,7 @@ rather than at a drain that is nobody's business to watch.
 loses interest is holding bytes with no operation behind them, and nothing sweeps them; the
 compose row therefore attaches and captures in the same gesture. A shell that wants a longer-lived
 draft needs an answer to this, and does not have one. *(2026-09-22: the web shell's capture box
-keeps a draft of its words and tags and nothing else — the picture is held in memory until the
+keeps a draft of its words and tags and nothing else — the attachments are held in memory until the
 button — which is why it still has none.)
 
 **Closing a client does not revoke the URLs it minted.** They go when the bytes do, and a page that

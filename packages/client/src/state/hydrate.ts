@@ -104,6 +104,8 @@ async function heldBy(
       const url = await store.blobUrl(asset);
       blobs.set(asset, {
         mime: file.type,
+        filename: file.name,
+        bytes: file.size,
         ...(url === undefined ? {} : { url }),
       });
     }

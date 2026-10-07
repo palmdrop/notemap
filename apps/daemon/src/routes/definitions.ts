@@ -1411,6 +1411,31 @@ export const assetUploadRoute = createRoute({
   },
 });
 
+export const assetLimitsRoute = createRoute({
+  method: "get",
+  path: "/v1/assets/limits",
+  summary: "What an upload may be",
+  description:
+    "What this install allows an upload, so a caller can refuse a file before it holds or sends it rather than learn it from a `413`. `maxUpload` is the same number, in the same unit, as that refusal's `max`.",
+  responses: {
+    200: {
+      description: "The limits.",
+      content: {
+        [JSON_MEDIA_TYPE]: {
+          schema: z
+            .object({
+              maxUpload: z.number().int().positive().openapi({
+                description: "The largest body an upload may carry, in bytes.",
+                example: 268435456,
+              }),
+            })
+            .openapi("AssetLimits"),
+        },
+      },
+    },
+  },
+});
+
 export const assetRoute = createRoute({
   method: "get",
   path: "/v1/assets/{id}",
@@ -1678,6 +1703,7 @@ export const ROUTES = [
   routingOutputRoute,
   actionsRoute,
   assetUploadRoute,
+  assetLimitsRoute,
   assetRoute,
   assetContentRoute,
   poolSettingsRoute,

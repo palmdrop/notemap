@@ -69,16 +69,16 @@ test("takes the caret, so the queue is typed into rather than clicked into", () 
   expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
 });
 
-test("stamps a typed note and a picture with different channels", async () => {
+test("stamps every capture web, and names every file in the order picked", async () => {
   const stamped: string[] = [];
   const named: string[] = [];
-  let minted = "";
+  const minted: string[] = [];
 
   pool(async (request) => {
     const route = routeOf(request);
     if (route.startsWith(UPLOAD)) {
-      minted = route.slice(UPLOAD.length);
-      return json(201, { id: minted });
+      minted.push(route.slice(UPLOAD.length));
+      return json(201, { id: minted.at(-1) });
     }
     if (route !== "POST /v1/captures") return empty.clone();
 
@@ -96,19 +96,24 @@ test("stamps a typed note and a picture with different channels", async () => {
 
   await cleared(await capture("a typed note"));
 
-  const picker = screen.getByLabelText("A picture to capture");
+  const picker = screen.getByLabelText("Files to capture");
   await fireEvent.change(picker, {
     target: { files: [new File(["bytes"], "shot.png", { type: "image/png" })] },
   });
-  await capture("a picture");
+  await fireEvent.change(picker, {
+    target: {
+      files: [new File(["%PDF"], "paper.pdf", { type: "application/pdf" })],
+    },
+  });
+  await capture("a picture and a paper");
 
   await vi.waitFor(() => {
-    expect(stamped).toEqual(["web-manual", "web-image"]);
+    expect(stamped).toEqual(["web", "web"]);
   });
 
-  // The capture names the asset the upload actually went up under.
-  expect(named).toEqual([minted]);
-  expect(minted).not.toBe("");
+  // The capture names the assets the uploads actually went up under.
+  expect(minted).toHaveLength(2);
+  expect(named).toEqual(minted);
 });
 
 /** jsdom draws nothing, so it implements no handle on a blob's bytes either. */
@@ -120,7 +125,7 @@ function stubObjectUrls(): void {
 const shot = () => new File(["bytes"], "shot.png", { type: "image/png" });
 
 async function attach(file = shot()) {
-  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+  await fireEvent.change(screen.getByLabelText("Files to capture"), {
     target: { files: [file] },
   });
 }
@@ -136,7 +141,7 @@ test("draws an attached picture before it is committed, and offers a way to drop
   render(Capture);
   await attach();
 
-  const drawn = await screen.findByAltText("What is about to be captured");
+  const drawn = await screen.findByAltText("shot.png");
   expect(drawn.getAttribute("src")).toBe("blob:held");
   expect(screen.getByText("shot.png")).toBeDefined();
 
@@ -144,8 +149,43 @@ test("draws an attached picture before it is committed, and offers a way to drop
     screen.getByRole("button", { name: "remove shot.png" }),
   );
 
-  expect(screen.queryByAltText("What is about to be captured")).toBeNull();
+  expect(screen.queryByAltText("shot.png")).toBeNull();
   expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+test("draws a file that is not a picture as a line, with no picture's room", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach(new File(["%PDF"], "paper.pdf", { type: "application/pdf" }));
+
+  const name = await screen.findByText("paper.pdf");
+  expect(name.classList.contains("font-semibold")).toBe(true);
+  // Whole where it is being put in: wrapped rather than cut, and nothing to hover for.
+  expect(name.children).toHaveLength(0);
+  expect(name.getAttribute("title")).toBeNull();
+  expect(screen.getByText("4 bytes")).toBeDefined();
+  expect(screen.queryByText("application/pdf")).toBeNull();
+  expect(screen.queryByAltText("shot.png")).toBeNull();
+});
+
+const follows = (one: Node, other: Node) =>
+  (one.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+test("draws a picture above the field and every other file under it, as a capture is read", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach(new File(["%PDF"], "paper.pdf", { type: "application/pdf" }));
+  await attach();
+
+  const field = screen.getByLabelText("What to capture");
+  const picture = await screen.findByAltText("shot.png");
+  const paper = screen.getByText("paper.pdf");
+  expect(follows(picture, field)).toBe(true);
+  expect(follows(field, paper)).toBe(true);
 });
 
 test("a dropped picture is not sent with the capture that follows", async () => {
@@ -340,4 +380,104 @@ test("keeps a picked picture across the box being drawn again, until the capture
 
   render(Capture);
   expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+/** A pool that asks for no credentials and takes at most `max` bytes, its limit already learned. */
+async function limitedTo(
+  max: number,
+  handler: (request: Request) => Response | Promise<Response> = () =>
+    empty.clone(),
+) {
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: false });
+    }
+    if (route === "GET /v1/assets/limits") return json(200, { maxUpload: max });
+    return handler(request);
+  });
+  await client.askSession();
+  await vi.waitFor(() => {
+    expect(
+      client.refuses(new File(["x".repeat(max + 1)], "probe")),
+    ).toBeDefined();
+  });
+  return transport;
+}
+
+test("refuses a file larger than the pool takes as it is picked, by name, and keeps the rest", async () => {
+  stubObjectUrls();
+  await limitedTo(4);
+
+  render(Capture);
+  await fireEvent.change(screen.getByLabelText("Files to capture"), {
+    target: {
+      files: [
+        new File(["far too many bytes"], "huge.bin"),
+        new File(["%PDF"], "paper.pdf", { type: "application/pdf" }),
+      ],
+    },
+  });
+
+  const refused = await screen.findByRole("status");
+  expect(refused.textContent).toContain("huge.bin");
+  expect(refused.textContent).toContain("larger than this daemon accepts");
+  expect(screen.queryByText("huge.bin")).toBeNull();
+  expect(screen.getByText("paper.pdf")).toBeDefined();
+});
+
+test("lets go of every file it attached when the capture fails, and keeps them in the box", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+  const detached: string[] = [];
+  const detach = vi.spyOn(client, "detach").mockImplementation((asset) => {
+    detached.push(asset);
+    return Promise.resolve();
+  });
+  const attached: string[] = [];
+  const held = client.attach.bind(client);
+  vi.spyOn(client, "attach").mockImplementation(async (file) => {
+    if (file.name === "second.pdf") throw new Error("the store is full");
+    const asset = await held(file);
+    attached.push(asset);
+    return asset;
+  });
+
+  render(Capture);
+  await attach(new File(["%PDF"], "first.pdf", { type: "application/pdf" }));
+  await attach(new File(["%PDF"], "second.pdf", { type: "application/pdf" }));
+  await capture("with two files");
+
+  await vi.waitFor(() => expect(detached).toHaveLength(1));
+  expect(detached).toEqual(attached);
+  expect(screen.getByText("first.pdf")).toBeDefined();
+  expect(screen.getByText("second.pdf")).toBeDefined();
+  detach.mockRestore();
+});
+
+test("asks again at the button, where the limit was learned after the file was picked", async () => {
+  stubObjectUrls();
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: false });
+    }
+    if (route === "GET /v1/assets/limits") return json(200, { maxUpload: 4 });
+    return empty.clone();
+  });
+  const attaching = vi.spyOn(client, "attach");
+
+  render(Capture);
+  await attach(new File(["far too many bytes"], "huge.bin"));
+  expect(screen.getByText("huge.bin")).toBeDefined();
+
+  await client.askSession();
+  await vi.waitFor(() => {
+    expect(client.refuses(new File(["far too many"], "probe"))).toBeDefined();
+  });
+  await capture("with a file learned too large");
+
+  expect((await screen.findByRole("status")).textContent).toContain("huge.bin");
+  expect(screen.queryByText("huge.bin")).toBeNull();
+  expect(attaching).not.toHaveBeenCalled();
 });

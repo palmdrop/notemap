@@ -5,13 +5,18 @@
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
+  import { slide } from "$lib/motion";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
+  import HeldAttachment from "./HeldAttachment.svelte";
   import type { Editing } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
 
   const id = $props.id();
+
+  const pictures = $derived(editing.attachments.filter((held) => held.image));
+  const files = $derived(editing.attachments.filter((held) => !held.image));
 
   let field = $state<HTMLTextAreaElement | undefined>(undefined);
 
@@ -51,23 +56,17 @@
 
 <!-- The capture's own place, edited where it is read: the foot that saves it
      is the row's, drawn by `EditFoot` in place of the actions. -->
-{#if editing.picture !== null}
-  <div class="mb-2 flex items-end gap-4">
-    {#if editing.picture.image}
-      <img
-        src={editing.picture.url}
-        alt="What it carries"
-        class="size-21 border border-ink object-cover"
+{#if pictures.length > 0}
+  <div class="flex flex-col" transition:slide={{ fade: true }}>
+    {#each pictures as held (held.asset)}
+      <HeldAttachment
+        name={held.name}
+        url={held.url}
+        bytes={held.bytes}
+        picture
+        ondrop={() => editing.drop(held.asset)}
       />
-    {/if}
-    <span class="min-w-0 break-words">{editing.picture.name}</span>
-    <button
-      type="button"
-      onclick={() => editing.drop()}
-      class="shrink-0 hover:underline"
-    >
-      drop
-    </button>
+    {/each}
   </div>
 {/if}
 
@@ -85,6 +84,21 @@
   aria-label="What it says"
   class="block min-h-[88px] w-full resize-y bg-transparent outline-none max-narrow:min-h-[72px]"
 ></textarea>
+
+<!-- Under the words behind the short rule, where the row being edited draws them. -->
+{#if files.length > 0}
+  <div class="mt-2 flex flex-col" transition:slide={{ fade: true }}>
+    <div class="mb-1 w-12 border-t border-ink"></div>
+    {#each files as held (held.asset)}
+      <HeldAttachment
+        name={held.name}
+        url={held.url}
+        bytes={held.bytes}
+        ondrop={() => editing.drop(held.asset)}
+      />
+    {/each}
+  </div>
+{/if}
 
 <!-- Asked wherever the row has scrolled to, so it says which capture. `esc`,
      the backdrop and a close nobody answered all stay. -->

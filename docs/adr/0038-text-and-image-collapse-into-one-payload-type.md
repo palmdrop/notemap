@@ -75,6 +75,14 @@ Consequences worth stating:
   attachment that is a picture is embedded; one that is not is linked.
 - **The shell keeps two capture sources.** `web-manual` and `web-image` both produce a `note`.
 
+  > *Amended 2026-10-07 — the shell stamps one source, `web`.* The two were kept so that policy
+  > could differ between a typed note and a picture. None ever did, and once the shell attaches any
+  > file, in any number, `web-image` would have to name a capture carrying a PDF and three photos —
+  > a split along no line anyone would set policy on. Items captured before keep the sources they
+  > were stamped with; a source is discovered from the items, so both still appear among the
+  > sources for as long as the pool holds one.
+  > ([plan](../plans/attachments-of-any-kind.md))
+
 ### The rule this leaves behind
 
 A second payload type exists **only when `content` needs a different schema**. `link` qualifies,

@@ -1,7 +1,15 @@
 import { createHash } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import type { Timestamp } from "@notemap/core";
+
+import { createAuth } from "../auth";
+import { createSqliteAuthStore } from "../auth/store";
+import { CHEAP_HASHING } from "../testing/hashing";
 import { assetUploadRoute, ROUTES } from "./definitions";
 import { daemon, put, type Daemon } from "../testing/fixture";
 
@@ -372,6 +380,45 @@ describe("PUT /v1/assets/{id}", () => {
 
       expect(response.status, `${route.method} ${path}`).toBe(415);
     }
+  });
+});
+
+describe("GET /v1/assets/limits", () => {
+  it("turns away a caller who has not signed in", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-route-limits-"));
+    try {
+      const auth = createAuth(
+        createSqliteAuthStore({ file: join(directory, "auth.db") }),
+        {
+          clock: { now: () => new Date().toISOString() as Timestamp },
+          hashing: CHEAP_HASHING,
+        },
+      );
+      await auth.setPassword("anton", "correct horse battery staple");
+      const started = host({ auth });
+
+      const response = await started.app.request("/v1/assets/limits");
+
+      expect(response.status).toBe(401);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("answers the largest upload this install takes, as a 413 would name it", async () => {
+    const started = host({ maxUploadBytes: 8 });
+
+    const response = await started.app.request("/v1/assets/limits");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ maxUpload: 8 });
+
+    const refused = await put(started.app, "far more than eight bytes", {
+      "content-type": "text/plain",
+      "content-disposition": attachment("long.txt"),
+    });
+    expect(await refused.json()).toEqual({
+      error: { code: "asset-too-large", max: 8 },
+    });
   });
 });
 

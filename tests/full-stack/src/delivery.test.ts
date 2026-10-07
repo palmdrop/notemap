@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL, until, vaults } from "./harness/index.ts";
+import { daemons, WEB, until, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -19,11 +19,11 @@ describe("a delivery, on the daemon's own timer", () => {
     const vault = await vaults(running);
 
     const carried = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "one for the vault",
     });
     const stranded = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "one for the drive nobody mounted",
     });
     await client.drain();
@@ -63,7 +63,7 @@ describe("a delivery, on the daemon's own timer", () => {
     const vault = await vaults(running);
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "a thought",
     });
     await client.drain();

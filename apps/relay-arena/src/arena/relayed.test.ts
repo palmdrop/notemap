@@ -26,7 +26,7 @@ describe("a block as the pool takes it", () => {
       sourceItemId: "123",
       version: expect.stringMatching(/^[0-9a-f]{64}$/) as unknown,
       capturedAt: "2026-09-04T14:23:05Z",
-      text: "a thought",
+      text: "a thought\n\nhttps://www.are.na/block/123",
       tags: [],
       attachments: [],
     });
@@ -45,7 +45,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying).toMatchObject({
-      text: "A title\n\nA caption\n\nhttps://example.com/page",
+      text: "A title\n\nA caption\n\nhttps://example.com/page\n\nhttps://www.are.na/block/123",
       tags: ["arena/influences"],
     });
   });
@@ -67,7 +67,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying).toMatchObject({
-      text: "A video\n\nhttps://vimeo.com/1",
+      text: "A video\n\nhttps://vimeo.com/1\n\nhttps://www.are.na/block/123",
       attachments: [],
     });
   });
@@ -88,14 +88,14 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying).toMatchObject({
-      text: "A picture",
+      text: "A picture\n\nhttps://www.are.na/block/123",
       attachments: [
         { id: "block/123/image", filename: "a.png", mime: "image/png" },
       ],
     });
   });
 
-  it("carries an Attachment block's file under the same composed id, and no text where it has none", () => {
+  it("carries an Attachment block's file under the same composed id, and only its own page where it has no words", () => {
     const relaying = relayedFrom(
       block({
         type: "Attachment",
@@ -114,7 +114,7 @@ describe("a block as the pool takes it", () => {
         { id: "block/123/image", filename: "a.pdf", mime: "application/pdf" },
       ],
     });
-    expect(relaying && "text" in relaying).toBe(false);
+    expect(relaying?.text).toBe("https://www.are.na/block/123");
   });
 
   it("names an Image's file by a title that is only the uploaded file's name, and keeps it out of the prose", () => {
@@ -129,7 +129,7 @@ describe("a block as the pool takes it", () => {
       bytes,
       { tags: [], hashtags: false },
     );
-    expect(untitled).not.toHaveProperty("text");
+    expect(untitled?.text).toBe("https://www.are.na/block/123");
     expect(untitled?.attachments[0]?.filename).toBe("098__resnet-bitstamp.png");
 
     const titled = relayedFrom(
@@ -137,7 +137,7 @@ describe("a block as the pool takes it", () => {
       bytes,
       { tags: [], hashtags: false },
     );
-    expect(titled?.text).toBe("a scan.png");
+    expect(titled?.text).toBe("a scan.png\n\nhttps://www.are.na/block/123");
     expect(titled?.attachments[0]?.filename).toBe("495ca161.png");
   });
 
@@ -171,7 +171,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying).toMatchObject({
-      text: "a thought",
+      text: "a thought\n\nhttps://www.are.na/block/123",
       tags: ["arena/influences", "kind/quote", "topic/x"],
     });
   });
@@ -184,7 +184,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying).toMatchObject({
-      text: "a thought\n\n#kind/quote",
+      text: "a thought\n\n#kind/quote\n\nhttps://www.are.na/block/123",
       tags: ["arena/influences"],
     });
   });
@@ -216,7 +216,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying?.text).toBe(
-      "A quote\n\na thought\n\nhttps://example.com/essay",
+      "A quote\n\na thought\n\nhttps://example.com/essay\n\nhttps://www.are.na/block/123",
     );
   });
 
@@ -237,7 +237,7 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: false },
     );
     expect(image?.text).toBe(
-      "A picture\n\nA caption\n\nhttps://example.com/gallery",
+      "A picture\n\nA caption\n\nhttps://example.com/gallery\n\nhttps://www.are.na/block/123",
     );
 
     const attachment = relayedFrom(
@@ -253,7 +253,9 @@ describe("a block as the pool takes it", () => {
       bytes,
       { tags: [], hashtags: false },
     );
-    expect(attachment?.text).toBe("https://example.com/paper.pdf");
+    expect(attachment?.text).toBe(
+      "https://example.com/paper.pdf\n\nhttps://www.are.na/block/123",
+    );
   });
 
   it("leaves the source URL out where the block's own words already hold it", () => {
@@ -266,7 +268,9 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: false },
     );
 
-    expect(relaying?.text).toBe("read this: https://example.com/essay");
+    expect(relaying?.text).toBe(
+      "read this: https://example.com/essay\n\nhttps://www.are.na/block/123",
+    );
   });
 
   it("reads the foot off the block's own words before the source URL is put after them", () => {
@@ -279,7 +283,7 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: true },
     );
     expect(text).toMatchObject({
-      text: "a thought\n\nhttps://example.com/essay",
+      text: "a thought\n\nhttps://example.com/essay\n\nhttps://www.are.na/block/123",
       tags: ["kind/quote"],
     });
 
@@ -294,7 +298,7 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: true },
     );
     expect(link).toMatchObject({
-      text: "A title\n\nA caption\n\nhttps://example.com/page",
+      text: "A title\n\nA caption\n\nhttps://example.com/page\n\nhttps://www.are.na/block/123",
       tags: ["topic/x"],
     });
   });
@@ -306,7 +310,10 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: true },
     );
 
-    expect(relaying).toMatchObject({ text: "#kind/quote", tags: [] });
+    expect(relaying).toMatchObject({
+      text: "#kind/quote\n\nhttps://www.are.na/block/123",
+      tags: [],
+    });
   });
 
   it("carries a Channel block as a link to the channel, under an identity a block cannot hold", () => {
@@ -342,7 +349,7 @@ describe("a block as the pool takes it", () => {
     );
 
     expect(relaying?.text).toBe(
-      "next: https://example.com/essay/part-2\n\nhttps://example.com/essay",
+      "next: https://example.com/essay/part-2\n\nhttps://example.com/essay\n\nhttps://www.are.na/block/123",
     );
   });
 
@@ -355,10 +362,10 @@ describe("a block as the pool takes it", () => {
       })?.text;
 
     expect(said("from https://example.com/essay.")).toBe(
-      "from https://example.com/essay.",
+      "from https://example.com/essay.\n\nhttps://www.are.na/block/123",
     );
     expect(said("[the essay](https://example.com/essay)")).toBe(
-      "[the essay](https://example.com/essay)",
+      "[the essay](https://example.com/essay)\n\nhttps://www.are.na/block/123",
     );
   });
 
@@ -374,7 +381,7 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: true },
     );
     expect(titled).toMatchObject({
-      text: "A title\n\nhttps://example.com/page",
+      text: "A title\n\nhttps://example.com/page\n\nhttps://www.are.na/block/123",
       tags: ["topic/x"],
     });
 
@@ -391,7 +398,7 @@ describe("a block as the pool takes it", () => {
       bytes,
       { tags: [], hashtags: true },
     );
-    expect(image).not.toHaveProperty("text");
+    expect(image?.text).toBe("https://www.are.na/block/123");
     expect(image?.tags).toEqual(["topic/x"]);
   });
 
@@ -402,7 +409,10 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: true },
     );
 
-    expect(relaying).toMatchObject({ text: "#topic/x", tags: ["topic/x"] });
+    expect(relaying).toMatchObject({
+      text: "#topic/x\n\nhttps://www.are.na/block/123",
+      tags: ["topic/x"],
+    });
   });
 
   it("carries a Text block that has only a title", () => {
@@ -411,7 +421,7 @@ describe("a block as the pool takes it", () => {
         tags: [],
         hashtags: false,
       })?.text,
-    ).toBe("Just a title");
+    ).toBe("Just a title\n\nhttps://www.are.na/block/123");
   });
 
   it("carries the source URL of an Image whose title is only its file's name", () => {
@@ -430,7 +440,9 @@ describe("a block as the pool takes it", () => {
       { tags: [], hashtags: false },
     );
 
-    expect(relaying?.text).toBe("https://example.com/gallery");
+    expect(relaying?.text).toBe(
+      "https://example.com/gallery\n\nhttps://www.are.na/block/123",
+    );
     expect(relaying?.attachments[0]?.filename).toBe("IMG_2231.jpg");
   });
 
@@ -485,6 +497,44 @@ describe("a block as the pool takes it", () => {
 
     expect(at("https://example.com/a")).toBe(at("https://example.com/a"));
     expect(at("https://example.com/a")).not.toBe(at("https://example.com/b"));
+  });
+
+  it("links every block to its own page on are.na, last", () => {
+    const relaying = relayedFrom(
+      block({
+        id: 15937456,
+        type: "Attachment",
+        title: "incandescent-alphabets.pdf",
+        attachment: {
+          filename: "a7619b34.pdf",
+          content_type: "application/pdf",
+          url: "https://attachments.example.com/a7619b34.pdf",
+        },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying).toMatchObject({
+      text: "https://www.are.na/block/15937456",
+      attachments: [{ filename: "incandescent-alphabets.pdf" }],
+    });
+  });
+
+  it("leaves the block's own page out where its words already hold it", () => {
+    const relaying = relayedFrom(
+      block({
+        type: "Link",
+        description: { markdown: "see https://www.are.na/block/123" },
+        source: { url: "https://example.com/page" },
+      }),
+      bytes,
+      { tags: [], hashtags: false },
+    );
+
+    expect(relaying?.text).toBe(
+      "see https://www.are.na/block/123\n\nhttps://example.com/page",
+    );
   });
 
   it("relays nothing for a block holding neither prose nor a file", () => {

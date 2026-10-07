@@ -11,6 +11,7 @@ import { actionsHandler } from "./routes/actions";
 import {
   assetContentHandler,
   assetHandler,
+  assetLimitsHandler,
   assetUploadHandler,
   type UploadLimits,
 } from "./routes/assets";
@@ -24,6 +25,7 @@ import {
   assetContentRoute,
   accountKindsRoute,
   accountsRoute,
+  assetLimitsRoute,
   assetRoute,
   assetUploadRoute,
   cancelDeliveryRoute,
@@ -294,6 +296,8 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(unfurlRoute.path), unfurlHandler(pool, options.unfurler));
 
   app.put(honoPath(assetUploadRoute.path), assetUploadHandler(pool, limits));
+  // Before `/v1/assets/{id}`, which would otherwise read `limits` as an id.
+  app.get(honoPath(assetLimitsRoute.path), assetLimitsHandler(limits));
   app.get(honoPath(assetRoute.path), assetHandler(pool));
   app.get(honoPath(assetContentRoute.path), assetContentHandler(pool));
 

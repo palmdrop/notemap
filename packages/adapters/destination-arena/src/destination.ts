@@ -189,8 +189,9 @@ function wanting(
     return { kind: "refused", detail: "that is not a create argument set" };
   }
 
-  // A guard rather than a case: the client builds `assets` as zero-or-one, so
-  // only a direct `/v1` caller reaches this.
+  // A capture may carry any number of files and a block holds one. The preview
+  // asks this too, so routing by hand hears it before deciding; a trigger tag
+  // hears it at delivery.
   if (delivery.payload.assets.length > 1) {
     return {
       kind: "refused",

@@ -5,11 +5,17 @@ import { createActions } from "./actions/actions";
 import { createCounts } from "./counts/counts";
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
-import { releasedBy } from "./assets/assets";
+import { namedBy, releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
-import { pictured, pictureIn } from "./capture/picture";
+import { attached, attachmentsIn } from "./capture/attachments";
 import { saidAs, saidIn } from "./capture/says";
-import { PoolChanged, Refused, saidBy, Unreachable } from "./errors";
+import {
+  PoolChanged,
+  readRefusal,
+  Refused,
+  saidBy,
+  Unreachable,
+} from "./errors";
 import { derived, writable, type Writable } from "./observable/observable";
 import { createDestinations } from "./destinations/destinations";
 import { createPoolSettings } from "./settings/settings";
@@ -203,6 +209,64 @@ export function createClient(config: ClientConfig): Client {
     },
   });
 
+  /** The largest file this install takes, once the pool has said. */
+  let maxUpload: number | undefined;
+  /** Whether the pool has answered since the limit was forgotten, so a daemon without the route is not asked every probe. */
+  let limitsAnswered = false;
+  /** Moved on whenever the limit is forgotten, so an answer to an earlier question is not written over the reset. */
+  let limitsAsked = 0;
+  /** Which of those questions is out, so a probe and a sign-in landing together ask once. */
+  let limitsAsking: number | undefined;
+
+  function forgetLimits(): void {
+    maxUpload = undefined;
+    limitsAnswered = false;
+    limitsAsked += 1;
+  }
+
+  // In the pool's own words, rather than when the drain sends the file, which
+  // may be days after the person has moved on.
+  function refused(file: File): Refused | undefined {
+    return maxUpload !== undefined && file.size > maxUpload
+      ? readRefusal({ error: { code: "asset-too-large", max: maxUpload } })
+      : undefined;
+  }
+
+  // Asked only where it can be answered: a `401` from anywhere reads as a
+  // session that lapsed, and drops the cache with it.
+  async function askedLimits(): Promise<void> {
+    const session = sessions.get();
+    if (!session.known || (session.required && !session.signedIn)) return;
+    if (limitsAnswered || limitsAsking === limitsAsked) return;
+
+    const asking = limitsAsked;
+    limitsAsking = asking;
+    try {
+      const limits = await answered(api.GET("/v1/assets/limits"));
+      if (asking !== limitsAsked) return;
+      maxUpload = limits.maxUpload;
+      limitsAnswered = true;
+    } catch (error) {
+      if (asking === limitsAsked && error instanceof Refused) {
+        limitsAnswered = true;
+      }
+    } finally {
+      if (limitsAsking === asking) limitsAsking = undefined;
+    }
+  }
+
+  const onSession = sessions.changes
+    .pipe(
+      map(
+        (session) => session.known && (session.signedIn || !session.required),
+      ),
+      distinctUntilChanged(),
+    )
+    .subscribe((answerable) => {
+      if (answerable) void askedLimits();
+      else forgetLimits();
+    });
+
   // The watcher keeps its own tempo, and only the gates are the client's to
   // hold: it asks nothing while nobody is reading and nothing while the pool
   // is not answering.
@@ -253,7 +317,16 @@ export function createClient(config: ClientConfig): Client {
   }> {
     try {
       const health = await answered(api.GET("/v1/health"));
+      const ours = state.get().pool;
+      if (
+        ours !== undefined &&
+        health.pool !== undefined &&
+        health.pool !== ours
+      ) {
+        forgetLimits();
+      }
       isThePoolWeCached(health.pool);
+      void askedLimits();
       return { yes: true, version: health.version };
     } catch (error) {
       // A refusal is still the pool answering. Only silence is not.
@@ -263,13 +336,6 @@ export function createClient(config: ClientConfig): Client {
 
   function bytesOf(asset: AssetId): string {
     return state.get().held.get(asset)?.url ?? transport.assetUrl(asset);
-  }
-
-  function mimeOf(item: Item, asset: AssetId): string | undefined {
-    return (
-      item.assets?.find((each) => each.id === asset)?.mime ??
-      state.get().held.get(asset)?.mime
-    );
   }
 
   const tags = createTags({
@@ -535,13 +601,16 @@ export function createClient(config: ClientConfig): Client {
 
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => saidAs(item.payload, said),
-    pictured: (payload, asset) => pictured(payload, asset),
-    picture: (item) => pictureIn(item),
+    attached: (payload, assets) => attached(payload, assets),
+    attachments: (item) => attachmentsIn(item, state.get().held, bytesOf),
 
     // A fresh id per call, not per file: nothing here replays an attachment, so
     // two calls over one file are two assets, as two uploads have always been.
     attach: (file) =>
       after(async () => {
+        const refusal = refused(file);
+        if (refusal !== undefined) throw refusal;
+
         const asset = uuidv7();
         // Copied rather than referenced: a picker's `File` points at a file on
         // disk, which a capture that has not drained may outlive by days.
@@ -551,6 +620,8 @@ export function createClient(config: ClientConfig): Client {
         state.update((current) =>
           withHeld(current, asset, {
             mime: file.type,
+            filename: file.name,
+            bytes: file.size,
             ...(url === undefined ? {} : { url }),
           }),
         );
@@ -558,22 +629,22 @@ export function createClient(config: ClientConfig): Client {
         return asset;
       }),
 
+    refuses: (file) => refused(file),
+
+    detach: (asset) =>
+      after(async () => {
+        const named = state
+          .get()
+          .outbox.some((held) => namedBy(held.operation).includes(asset));
+        if (named) return;
+
+        state.update((current) => withHeld(current, asset, undefined));
+        await store.removeBlob(asset);
+      }),
+
     assetContent: (asset) => bytesOf(asset),
 
     says: (item) => saidIn(item.payload),
-
-    /**
-     * By media type, never by the payload's: a note carries any number of
-     * attachments and any of them may be anything at all. What the pool says
-     * an asset is wins; what this client attached is the only answer there is
-     * until the capture lands.
-     */
-    images: (item) =>
-      item.payload.assets
-        .filter((reference) =>
-          mimeOf(item, reference.asset)?.startsWith("image/"),
-        )
-        .map((reference) => bytesOf(reference.asset)),
 
     sources: createSources(api),
 
@@ -659,6 +730,7 @@ export function createClient(config: ClientConfig): Client {
       actions.stop();
       onReturn.unsubscribe();
       onReach.unsubscribe();
+      onSession.unsubscribe();
       return draining.catch(() => undefined);
     },
   };

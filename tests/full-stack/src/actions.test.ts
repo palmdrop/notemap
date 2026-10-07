@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL } from "./harness/index.ts";
+import { daemons, WEB } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -13,7 +13,7 @@ describe("the action log", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "the one thing that happened",
     });
     for (let nth = 0; nth < TAGS; nth += 1) {
@@ -45,10 +45,10 @@ describe("the action log", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "about this one",
     });
-    await client.capture({ channel: MANUAL, text: "about another" });
+    await client.capture({ channel: WEB, text: "about another" });
     await client.drain();
 
     const narrowed = await client.actions.read({

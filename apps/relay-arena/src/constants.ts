@@ -5,6 +5,8 @@ export const ARENA_API = "https://api.are.na";
 
 export const ARENA_CHANNEL_PAGE = "https://www.are.na/channel";
 
+export const ARENA_BLOCK_PAGE = "https://www.are.na/block";
+
 export const DEFAULT_POLL_MS = 900_000;
 
 /** The shortest interval a config may set: are.na asks callers not to poll it hard. */
