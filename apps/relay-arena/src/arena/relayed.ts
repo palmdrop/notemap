@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { classified, tagFootOf } from "@notemap/relay";
 import type { Attachment, Bytes, Relayed } from "@notemap/relay";
 
-import { ARENA_CHANNEL_PAGE } from "../constants";
+import { ARENA_BLOCK_PAGE, ARENA_CHANNEL_PAGE } from "../constants";
 import type { ArenaBlock } from "./types";
 
 /** How this relay was asked to read a block. */
@@ -59,6 +59,13 @@ function linkOf(block: ArenaBlock): string | undefined {
   return slug === undefined
     ? undefined
     : `${ARENA_CHANNEL_PAGE}/${encodeURIComponent(slug)}`;
+}
+
+/** The block's own page on are.na. A channel's link already is its page. */
+function pageOf(block: ArenaBlock): string | undefined {
+  return block.type === "Channel"
+    ? undefined
+    : `${ARENA_BLOCK_PAGE}/${String(block.id)}`;
 }
 
 /** Whether the words hold this URL whole, rather than as the start of a longer one. */
@@ -154,12 +161,20 @@ export function relayedFrom(
       ? undefined
       : read;
 
-  const text = composed([
+  const said = [
     title,
     own,
     link !== undefined && holds(own, link) ? undefined : link,
+  ];
+  if (composed(said) === undefined && attachment === undefined) {
+    return undefined;
+  }
+
+  const page = pageOf(block);
+  const text = composed([
+    ...said,
+    page !== undefined && holds(own, page) ? undefined : page,
   ]);
-  if (text === undefined && attachment === undefined) return undefined;
 
   return {
     sourceItemId:

@@ -1,7 +1,7 @@
 # Attachments of any kind
 
 **Date**: 2026-10-07
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`, `docs/specs/http-v1.md`, `CONTEXT.md`, `apps/relay-arena/README.md`
 **Closed**:
 
@@ -39,20 +39,20 @@ are.na block's prose links back to the block.
 
 ### Phase 0
 
-- [ ] Branch `agent/attachments-of-any-kind`
+- [x] Branch `agent/attachments-of-any-kind` _(2026-10-07)_
 
 ### Phase 1 — the relay links each block (independent)
 
-- [ ] `relayed.ts` composes `https://www.are.na/block/<id>` into the prose of every block that is
+- [x] `relayed.ts` composes `https://www.are.na/block/<id>` into the prose of every block that is
       not a Channel, as the last paragraph, after the source URL. A block's own words that already
       hold the link don't repeat it, by the rule that already applies to source URLs.
-- [ ] A block with no prose and no file still isn't captured. The link alone doesn't make it
+- [x] A block with no prose and no file still isn't captured. The link alone doesn't make it
       capturable.
-- [ ] Update the README table and the "a change to how the relay reads a block is an edit" note.
-- [ ] Verify: `pnpm --filter @notemap/relay-arena test`, with `relayed.test.ts` covering an
+- [x] Update the README table and the "a change to how the relay reads a block is an edit" note.
+- [x] Verify: `pnpm --filter @notemap/relay-arena test`, with `relayed.test.ts` covering an
       Attachment block whose title is a filename (the PDF case) and a Link block whose caption
       already holds the block URL
-- [ ] Commit
+- [x] Commit _(2026-10-07)_
 
 ### Phase 2 — the client carries many attachments, under one source
 
