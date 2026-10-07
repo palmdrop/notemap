@@ -170,6 +170,24 @@ test("draws a file that is not a picture as a line, with no picture's room", asy
   expect(screen.queryByAltText("What is about to be captured")).toBeNull();
 });
 
+const follows = (one: Node, other: Node) =>
+  (one.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
+test("draws a picture above the field and every other file under it, as a capture is read", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach(new File(["%PDF"], "paper.pdf", { type: "application/pdf" }));
+  await attach();
+
+  const field = screen.getByLabelText("What to capture");
+  const picture = await screen.findByAltText("What is about to be captured");
+  const paper = screen.getByText("paper.pdf");
+  expect(follows(picture, field)).toBe(true);
+  expect(follows(field, paper)).toBe(true);
+});
+
 test("a dropped picture is not sent with the capture that follows", async () => {
   stubObjectUrls();
   const sent: Envelope[] = [];

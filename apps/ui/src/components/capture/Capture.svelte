@@ -3,7 +3,7 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
-  import AttachmentLine from "$components/item/AttachmentLine.svelte";
+  import HeldAttachment from "$components/item/HeldAttachment.svelte";
   import { isImage } from "$lib/attachments";
   import { WEB } from "$lib/channels";
   import { client } from "$lib/client";
@@ -70,6 +70,15 @@
    * afterwards in the feed.
    */
   let previews = $state<readonly string[]>([]);
+
+  /** Pictures above the field and every other file under it, as a capture is read. */
+  const placed = $derived(chosen.map((file, at) => ({ file, at })));
+  const pictures = $derived(
+    placed.filter(({ file }) => isImage({ mime: file.type })),
+  );
+  const files = $derived(
+    placed.filter(({ file }) => !isImage({ mime: file.type })),
+  );
 
   $effect(() => {
     const urls = chosen.map((file) => URL.createObjectURL(file));
@@ -174,48 +183,20 @@
   data-selected={selected ? "" : undefined}
   class="mt-6 border border-ink has-[.offer]:relative has-[.offer]:z-50"
 >
-  {#if chosen.length > 0}
-    <!-- Each file carries the space under it, so the space goes with it as it
-         slides rather than jumping once it has gone. -->
+  {#if pictures.length > 0}
     <div
       class="flex flex-col border-b border-ink px-3 pt-2.5 pb-0.5"
       transition:slide={{ fade: true }}
     >
-      {#each chosen as file, at (file)}
-        <div
-          class="flex items-end gap-4 pb-2"
-          transition:slide={{ fade: true }}
-        >
-          {#if isImage({ mime: file.type })}
-            <!-- The picture's room is there before the picture is, so the
-                 section opens to the height it keeps. -->
-            <div class="size-21 shrink-0 border border-ink">
-              {#if previews[at] !== undefined}
-                <img
-                  src={previews[at]}
-                  alt="What is about to be captured"
-                  class="size-full object-cover"
-                />
-              {/if}
-            </div>
-          {/if}
-          <span class="min-w-0">
-            <AttachmentLine
-              name={file.name}
-              url={previews[at] ?? ""}
-              whole
-              bytes={file.size}
-            />
-          </span>
-          <button
-            type="button"
-            onclick={() => drop(file)}
-            aria-label={`remove ${file.name}`}
-            class="shrink-0 hover:underline"
-          >
-            ×
-          </button>
-        </div>
+      {#each pictures as { file, at } (file)}
+        <HeldAttachment
+          name={file.name}
+          url={previews[at]}
+          bytes={file.size}
+          picture
+          alt="What is about to be captured"
+          ondrop={() => drop(file)}
+        />
       {/each}
     </div>
   {/if}
@@ -232,6 +213,20 @@
     aria-label="What to capture"
     class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-narrow:min-h-[72px]"
   ></textarea>
+
+  {#if files.length > 0}
+    <div class="flex flex-col px-3 pb-0.5" transition:slide={{ fade: true }}>
+      {#each files as { file, at } (file)}
+        <HeldAttachment
+          name={file.name}
+          url={previews[at]}
+          bytes={file.size}
+          alt="What is about to be captured"
+          ondrop={() => drop(file)}
+        />
+      {/each}
+    </div>
+  {/if}
 
   <div class="flex items-baseline justify-between border-t border-ink">
     <span class="flex items-baseline">

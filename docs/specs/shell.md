@@ -699,13 +699,15 @@ restored after a reload comes back with its words and no attachments, which are 
 draft per origin — two tabs share it, and the last write wins; it is never sent and the pool
 never sees it.
 
-**What is attached is drawn before it is committed**, inside the box above the text and ruled off
-from it, one line per file in the order picked: a picture's thumbnail where it is one, then the
-line a captured attachment is read as ([Content](#content)), and a `×` that drops it. The list
-stays above the field, though a capture as read puts its lines under its words: here each one can
-be dropped until the button, and a list at the head of the box is where that is done. `attach` picks one file or several, and pressing it
-again adds to what is there. The section slides open, fading in, as the first file is attached, and
-shut as the last is dropped or captured. The bytes go up with the capture and cannot be taken back
+**What is attached is drawn before it is committed**, where a capture is read with it
+([Content](#content)): **every picture above the field**, ruled off from it, as a thumbnail beside
+its line, and **every other file under the field**, just above the foot whose `attach` brought it —
+each with the line a captured attachment is read as, whole rather than cut, and a `×` that drops
+it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
+at to decide whether it goes. `attach` picks one file or several, and pressing it again adds to what
+is there. Each slides in and out, fading, and each part of the box opens with its first file and
+shuts with its last. *(Until 2026-10-07 every file was listed above the field, which put a file
+on the opposite side of the words from where the capture it made would draw it.)* The bytes go up with the capture and cannot be taken back
 once they have, so the one moment to look at what was picked is before the button, not afterwards
 in the feed. **A file larger than the pool takes is refused when it is picked** *(2026-10-07)*, in
 the box's own failure line and in the pool's words, and is not attached: the box would otherwise
@@ -794,9 +796,10 @@ and the row always draws what the item says: `copy`, the process surface and a r
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
-item carries is drawn above the words as the capture box draws one before it is sent — a list to
-drop from, not the order a capture is read in — with the box's `×` beside it, and `attach` in the foot adds
-files after them. `save` sends the edit naming what the
+item carries is drawn where the row being edited drew it — every picture above the words, as a
+thumbnail, and every other file under them behind the short rule — with the box's `×` beside it,
+so opening an edit moves nothing but the pictures shrinking to the box's size. `attach` in the foot
+adds files after them. `save` sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
 and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which

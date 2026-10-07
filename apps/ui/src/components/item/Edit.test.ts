@@ -109,8 +109,16 @@ test("attaching adds after what the item carries, and the edit names every slot 
     },
   });
 
-  expect(await screen.findByText("paper.pdf")).toBeDefined();
-  expect(screen.getAllByAltText("What it carries")).toHaveLength(1);
+  const paper = await screen.findByText("paper.pdf");
+  const [picture] = screen.getAllByAltText("What it carries");
+  const field = screen.getByLabelText("What it says");
+  // Where the row being edited draws them: the picture above the words, the file under.
+  expect(
+    picture!.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    field.compareDocumentPosition(paper) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
 
