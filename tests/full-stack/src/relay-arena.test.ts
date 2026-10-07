@@ -116,7 +116,10 @@ describe("the arena relay, over a real daemon", () => {
       sourceItemId: "1",
       // connected_at, not created_at, and never the time the poll ran.
       createdAt: CONNECTED,
-      payload: { type: "note", content: { text: "a note" } },
+      payload: {
+        type: "note",
+        content: { text: "a note\n\nhttps://www.are.na/block/1" },
+      },
     });
   });
 
@@ -130,7 +133,10 @@ describe("the arena relay, over a real daemon", () => {
 
     const [held] = await where.items();
     expect(held).toMatchObject({
-      payload: { type: "note", content: { text: "a note" } },
+      payload: {
+        type: "note",
+        content: { text: "a note\n\nhttps://www.are.na/block/1" },
+      },
       tags: [
         { name: "kind/quote", by: { kind: "source", source: "arena/one" } },
       ],
@@ -147,7 +153,11 @@ describe("the arena relay, over a real daemon", () => {
 
     const [held] = await where.items();
     expect(held).toMatchObject({
-      payload: { content: { text: "a note\n\n#kind/quote" } },
+      payload: {
+        content: {
+          text: "a note\n\n#kind/quote\n\nhttps://www.are.na/block/1",
+        },
+      },
       tags: [],
     });
   });
@@ -181,7 +191,9 @@ describe("the arena relay, over a real daemon", () => {
     await polled(where);
 
     const [held] = await where.items();
-    expect(held?.payload.content).toEqual({ text: "a picture" });
+    expect(held?.payload.content).toEqual({
+      text: "a picture\n\nhttps://www.are.na/block/1",
+    });
     expect(held?.assets).toMatchObject([
       { filename: "a.png", mime: "image/png", bytes: "PNG-BYTES".length },
     ]);
@@ -223,7 +235,9 @@ describe("the arena relay, over a real daemon", () => {
 
     const [after] = await where.items();
     expect(after?.id).toBe(before?.id);
-    expect(after?.payload.content).toEqual({ text: "rewritten since" });
+    expect(after?.payload.content).toEqual({
+      text: "rewritten since\n\nhttps://www.are.na/block/1",
+    });
   });
 
   it("relays a Channel-class block as a link to the channel, under an identity of its own", async () => {
