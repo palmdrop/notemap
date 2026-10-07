@@ -4,6 +4,7 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 
 import { copyable } from "./clipboard";
+import { nameOf } from "./attachments";
 import { client } from "./client";
 import { restoreDraft } from "./draft";
 import { notices } from "./notices.svelte";
@@ -30,21 +31,33 @@ export function wordsOf(held: RefusedCapture): string {
   return typeof text === "string" ? text : "";
 }
 
-function pictureOf(held: RefusedCapture): string | undefined {
-  return held.operation.envelope.payload.assets[0]?.asset;
+function assetsOf(held: RefusedCapture): readonly string[] {
+  return held.operation.envelope.payload.assets.map(
+    (reference) => reference.asset,
+  );
 }
 
-export function hasPicture(held: RefusedCapture): boolean {
-  return pictureOf(held) !== undefined;
+export function attachmentCount(held: RefusedCapture): number {
+  return assetsOf(held).length;
 }
 
 /** The bytes it was holding, read back while the client still holds them. */
-async function fileOf(asset: string): Promise<File> {
-  const response = await fetch(client.assetContent(asset));
-  if (!response.ok) throw new Error(`picture ${String(response.status)}`);
-  const blob = await response.blob();
-  const [, kind = "bin"] = blob.type.split("/");
-  return new File([blob], `picture.${kind}`, { type: blob.type });
+async function filesOf(held: RefusedCapture): Promise<File[]> {
+  const known = client.attachments({
+    payload: held.operation.envelope.payload,
+  });
+  return Promise.all(
+    known.map(async (attachment) => {
+      const response = await fetch(attachment.url);
+      if (!response.ok) {
+        throw new Error(`attachment ${String(response.status)}`);
+      }
+      const blob = await response.blob();
+      return new File([blob], nameOf(attachment), {
+        type: attachment.mime ?? blob.type,
+      });
+    }),
+  );
 }
 
 /**
@@ -53,25 +66,21 @@ async function fileOf(asset: string): Promise<File> {
  * capture. Nothing is let go of where it could not be put back.
  */
 export async function editRefused(held: RefusedCapture): Promise<void> {
-  const asset = pictureOf(held);
-  let file: File | undefined;
+  let files: File[];
   try {
-    file = asset === undefined ? undefined : await fileOf(asset);
+    files = assetsOf(held).length === 0 ? [] : await filesOf(held);
   } catch {
-    notices.raise({ what: "could not read its picture back", alarm: true });
+    notices.raise({ what: "could not read its attachments back", alarm: true });
     return;
   }
 
   const restored = restoreDraft(
     { text: wordsOf(held), tags: held.operation.envelope.tags ?? [] },
-    file,
+    files,
   );
   if (restored !== "restored") {
     notices.raise({
-      what:
-        restored === "picture-held"
-          ? "the capture box already holds a picture"
-          : "could not put it back in the capture box",
+      what: "could not put it back in the capture box",
       alarm: true,
     });
     return;

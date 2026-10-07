@@ -43,7 +43,8 @@ import type {
 } from "./api/types";
 import type { Observable } from "rxjs";
 
-import type { Picture } from "./capture/picture";
+import type { Attachment } from "./capture/attachments";
+import type { Refused } from "./errors";
 
 import type { SessionState } from "./session/session";
 import type { Surface } from "./state/state";
@@ -100,7 +101,8 @@ export type CaptureInput = {
   /** The capture channel, stamped as the item's source. */
   readonly channel: string;
   readonly text: string;
-  readonly asset?: AssetId;
+  /** In the order they are drawn. */
+  readonly assets?: readonly AssetId[];
   /** Applied as the item arrives, so a trigger tag among them files it on capture. */
   readonly tags?: readonly string[];
 };
@@ -447,10 +449,14 @@ export interface Client {
   ): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;
-  /** The payload with this picture in the shell's one slot, or with that slot emptied. */
-  pictured(payload: Payload, asset: AssetId | undefined): Payload;
-  /** The picture an item carries in that slot, with what the pool says it is where it has said. */
-  picture(item: Item): Picture | undefined;
+  /** The payload naming these assets, in this order, every slot written afresh. */
+  attached(payload: Payload, assets: readonly AssetId[]): Payload;
+  /**
+   * Everything an item carries, in slot order, with what is known of each.
+   * Only what it names and what the pool answered are read, so a capture still
+   * in the outbox can be asked too.
+   */
+  attachments(item: Pick<Item, "payload" | "assets">): readonly Attachment[];
 
   /**
    * Mints an asset for a file and holds its bytes, so a capture can name them
@@ -458,9 +464,14 @@ export interface Client {
    * here.
    */
   attach(file: File): Promise<AssetId>;
+  /**
+   * The refusal `attach` would answer for this file, where the pool has said
+   * enough to know — so a box can say so when the file is picked rather than
+   * when it is captured.
+   */
+  refuses(file: File): Refused | undefined;
   /** Where an asset's bytes are: the store's own, while it still holds them. */
   assetContent(asset: AssetId): string;
-  images(item: Item): readonly string[];
   /** What an item reads as. Which slot holds that is the payload type's business. */
   says(item: Item): string;
 

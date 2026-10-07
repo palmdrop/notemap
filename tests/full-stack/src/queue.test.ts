@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL, read } from "./harness/index.ts";
+import { daemons, WEB, read } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -17,7 +17,7 @@ describe("archiving", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "read it, kept nothing",
     });
     await client.drain();
@@ -42,7 +42,7 @@ describe("editing", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "a first thought",
     });
     await client.drain();
@@ -51,7 +51,7 @@ describe("editing", () => {
     await client.edit(
       captured.id,
       client.saying(captured, "a better thought"),
-      MANUAL,
+      WEB,
     );
     await client.drain();
 
@@ -69,18 +69,14 @@ describe("editing", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "a first thought",
     });
     await client.drain();
     await client.loadQueue();
     await client.routing.markProcessed(captured.id, "pasted it");
 
-    await client.edit(
-      captured.id,
-      client.saying(captured, "said again"),
-      MANUAL,
-    );
+    await client.edit(captured.id, client.saying(captured, "said again"), WEB);
     await client.drain();
 
     const { item: from } = await client.item(captured.id);

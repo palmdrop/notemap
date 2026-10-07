@@ -1,6 +1,6 @@
 <script lang="ts">
   import { copyable } from "$lib/clipboard";
-  import { hasPicture, wordsOf, type RefusedCapture } from "$lib/refused";
+  import { attachmentCount, wordsOf, type RefusedCapture } from "$lib/refused";
   import { timeOf } from "$lib/stamp";
 
   import Entry from "./Entry.svelte";
@@ -25,12 +25,20 @@
   let asked = $state(false);
 
   const words = $derived(wordsOf(held));
+  const carried = $derived(attachmentCount(held));
 </script>
 
 <Entry
   when={timeOf(held.at)}
   what={`capture refused${held.failure === undefined ? "" : `: ${held.failure}`}`}
-  why={[words, hasPicture(held) ? "with a picture" : undefined]
+  why={[
+    words,
+    carried === 0
+      ? undefined
+      : carried === 1
+        ? "with an attachment"
+        : `with ${String(carried)} attachments`,
+  ]
     .filter((part) => part !== undefined && part !== "")
     .join("\n")}
   alarm

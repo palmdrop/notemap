@@ -7,28 +7,22 @@
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import { client } from "$lib/client";
 
+  import Attachments from "./Attachments.svelte";
+
   let { item }: { item: Item } = $props();
 
-  const images = $derived(client.images(item));
+  const attachments = $derived(client.attachments(item));
   const text = $derived(client.says(item));
 </script>
 
-{#each images as image (image)}
-  <!-- Bounded in both directions: a tall photograph would otherwise swallow the list. -->
-  <img
-    src={image}
-    alt=""
-    loading="lazy"
-    class="mb-2 block max-h-96 max-w-full object-contain object-left"
-  />
-{/each}
+<Attachments {attachments} picture="max-h-96" />
 
 {#if text !== ""}
   <Clamp>
     <Prose {text} />
   </Clamp>
   <Unfurls {text} />
-{:else if images.length === 0}
+{:else if attachments.length === 0}
   <!-- Nothing this shell knows how to draw, which is said by name rather than hidden. -->
   <Figure label={item.payload.type} />
 {/if}

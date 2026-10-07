@@ -1,9 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-02
+**Last updated**: 2026-10-07
 **Shipped**:
 
+- 2026-10-07 — **Attach anything, and as much as you like.** The capture box and an edit take any
+  number of files of any kind. The first two pictures in slot order are drawn; every other
+  attachment — a PDF, a recording, a third picture — is a line with its name, media type, size and
+  a download. A file larger than the pool takes is refused when it is picked. Every capture is
+  stamped `web`. ([plan](../plans/attachments-of-any-kind.md))
 - 2026-10-02 — **A place reads as one path, and the line follows the mark.** A pending `create`
   reads `…/a.md`, or `…/2026/` until it has a filename, where it read `…/2026, a.md`. A field
   marked as a path draws the typed line whatever its kind is called.
@@ -651,9 +656,9 @@ foot along its bottom rule carrying `attach` behind a rule of its own and the ta
 left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
 stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
 
-A capture asks nothing — text, an optional attachment, send. Nothing waits on the pool: the client
+A capture asks nothing — text, any number of attachments, send. Nothing waits on the pool: the client
 mints the asset id and holds the bytes, which go up with the capture when it drains
-([client.md](client.md#an-attachment-made-offline)), so a picture is captured in the turn the
+([client.md](client.md#an-attachment-made-offline)), so a file is captured in the turn the
 button is pressed whether or not the daemon is there — and the box attaches and captures in one
 gesture, bytes with no capture behind them being bytes nothing will claim.
 
@@ -687,23 +692,30 @@ with the same `cancel` the row's chooser earns. Committing clears them with the 
 **What is typed is not lost before the button** *(added 2026-09-22)*. The box keeps a **draft**
 of its words and its tags in the browser's own storage, written as they change and cleared when
 a capture commits, so a reload, a crash, a closed tab or a visit to the feed and back finds the
-box as it was left. A capture that fails keeps it. The picture is held in memory rather than
+box as it was left. A capture that fails keeps it. The attachments are held in memory rather than
 written: it survives the box being drawn again — the feed and back — and not the page, so a box
-restored after a reload comes back with its words and no picture, which is picked again. One
+restored after a reload comes back with its words and no attachments, which are picked again. One
 draft per origin — two tabs share it, and the last write wins; it is never sent and the pool
 never sees it.
 
-**An attached picture is drawn before it is committed**, inside the box above the text and ruled
-off from it, beside its name and a `×` that drops it. The section slides open, fading in, as a
-picture is attached, and shut as it is dropped or captured. The bytes go up with the capture and cannot be taken back once they
-have, so the one moment to look at what was picked is before the button, not afterwards in the
-feed.
+**What is attached is drawn before it is committed**, inside the box above the text and ruled off
+from it, one line per file in the order picked: a picture's thumbnail where it is one, its name,
+media type and size, and a `×` that drops it. `attach` picks one file or several, and pressing it
+again adds to what is there. The section slides open, fading in, as the first file is attached, and
+shut as the last is dropped or captured. The bytes go up with the capture and cannot be taken back
+once they have, so the one moment to look at what was picked is before the button, not afterwards
+in the feed. **A file larger than the pool takes is refused when it is picked** *(2026-10-07)*, in
+the box's own failure line and in the pool's words, and is not attached: the box would otherwise
+take it and the drain refuse it, possibly days later. Where the shell has not yet reached the pool
+to learn the limit, the drain's refusal is what says so.
 
-**Every capture is a `note`** — prose, an attachment, or both — because there is one payload type.
-What the shell still varies is the **source**: `web-manual` for a typed note and `web-image` for one
-with a picture, which is what a source is for and is where policy about the two can differ. The
-shell draws an attachment as a picture by its **media type**, never by the payload's, so a note
-carrying a recording is not drawn as a broken image.
+**Every capture is a `note`** — prose, attachments, or both — because there is one payload type,
+and **every capture the shell makes is stamped `web`** *(2026-10-07)*. Until then it stamped
+`web-manual` for a typed note and `web-image` for one with a picture, so that policy could differ
+between them; none ever did, and with any file attachable the split no longer named a difference
+anyone would set policy on ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)).
+Items captured before keep the sources they were stamped with. The shell decides how to draw an
+attachment by its **media type**, never by the payload's ([Content](#content)).
 
 ### The row
 
@@ -748,7 +760,7 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear.
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
 for `close · revert · attach` on the left and a bold `save` on the right**, `revert` drawn only
-while the edit holds something the item does not say — words, a picture, or a trigger tag waiting
+while the edit holds something the item does not say — words, an attachment, or a trigger tag waiting
 for the save — sliding in beside `close` as it appears. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
 the tags are: `+`, `×` and `t` work as
@@ -770,20 +782,19 @@ control that can be taken off.
 does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp> <first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
-through history, a link out of the app. `save` waits for a picture still being attached, and a
-picture on its way counts as a change. `keep editing`, `esc`, a press outside it or the dialog
+through history, a link out of the app. `save` waits for an attachment still being attached, and an
+attachment on its way counts as a change. `keep editing`, `esc`, a press outside it or the dialog
 closing any other way goes back into the field, the row brought into view. It is a dialog rather than a line in the
 row's foot because the question arrives wherever the person has scrolled to, often far from the
 row. An edit left with nothing changed closes without asking. Nothing an edit holds outlives it,
 and the row always draws what the item says: `copy`, the process surface and a route all read the
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
-or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The picture is
-editable there too** *(added 2026-09-18)*: the one the item carries is drawn above the words as the
-capture box draws one before it is sent, with `drop` beside it, and `attach` in the foot picks one
-in its place — at most one, the capture's own shape, and other kinds of attachment are left as they
-are. `save` sends the edit naming what the field then holds, uploading a fresh picture on the way,
-and stamps it `web-image` where a picture is carried and `web-manual` where none is, the capture's
-own rule. The item's own surface edits the same way, its actions giving way to the same foot. The
+or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
+editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
+item carries is drawn above the words as the capture box draws one before it is sent, with `drop`
+beside it, and `attach` in the foot adds files after them. `save` sends the edit naming what the
+edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
+and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
@@ -1016,8 +1027,8 @@ always visible.
 `→ **Obsidian vault** …/2026-09-13.md, **manual**`, the records as a row's routing line names them, cut
 with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
 than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
-second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure; a picture capture draws the
-picture above them. Under the words, while not editing, a block per link they name *(2026-09-24;
+second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure, with the
+capture's attachments above them as [Content](#content) draws them. Under the words, while not editing, a block per link they name *(2026-09-24;
 [Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
 ruled box with the caret in it, `keep the capture's` puts them back and a bold `done` closes the
 box, `edit` being hidden meanwhile. **The edited words are this delivery's alone** — the record's
@@ -2005,9 +2016,10 @@ and a capture's operation is the only copy of what was written, so a capture the
 said as a notice and then **kept**: in the outbox, across a reload, and in the panel under
 `refused` with its words whole, until somebody decides. It is counted on `notices` for as long as
 it is held, opening the panel not being a decision. **`edit`** puts it back in the capture box —
-its words after whatever the box holds, its tags beside the box's, and its picture where the box
-holds none — and lets it go; sending it from there is a new capture. It is not let go where it
-could not be put back: the box already holding a picture, or a store that refused the words.
+its words after whatever the box holds, its tags beside the box's, and its attachments after the
+box's *(amended 2026-10-07; the box held one picture until then, and refused a second)* — and lets
+it go; sending it from there is a new capture. It is not let go where it could not be put back: a
+store that refused the words, or bytes that could not be read back.
 **`delete`** asks, and then lets it go. **`copy`** takes its words where the browser offers a
 clipboard. It is never resent as it was, since what refused it would refuse it again.
 
@@ -2414,7 +2426,14 @@ routes, and one the browser leaves for.
 
 A **note** renders as CommonMark, collapsed and opened — that is what
 [standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn above it,
-in slot order, each by its own media type. **One renderer draws every note** *(2026-09-14; the shell
+in slot order, each by its own media type *(amended 2026-10-07)*: **the first two pictures are
+drawn**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
+line** — its name, media type and size, the name a download of the bytes. A third picture is a line
+too, so a capture of twenty photographs does not become twenty screens. Nothing is previewed in
+place but a picture: a PDF downloads, the pool serving it as an attachment rather than rendering it
+([http-v1.md](http-v1.md#inline-or-attachment)). A row with no words is named in the index by its
+first attachment's filename. Until 2026-10-07 the shell drew pictures and nothing else, so a note
+carrying only a PDF drew as a hatched `note`. **One renderer draws every note** *(2026-09-14; the shell
 showed its asterisks until then)* — and no output, which is drawn as sent (`An item has an
 address`): `micromark`, which is CommonMark and
 nothing more. Every element is at the one size; a heading is bold; a list keeps its marks; a code
@@ -2819,6 +2838,9 @@ view is how a reader sees more at once.
   has gone offers nothing.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
+- An item carrying only a PDF draws a line naming the file, its media type and its size, and the
+  name downloads it; one carrying three pictures and a PDF draws the first two pictures and two
+  lines.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture
   and tagging and editing remain operable, `process` opens and discarding works from it, and its
   destinations and `manual` read as unavailable rather than as broken.

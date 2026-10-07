@@ -58,20 +58,20 @@ are.na block's prose links back to the block.
 
 Depends on nothing. Phase 4 depends on it.
 
-- [ ] **Agree the API with the developer before coding.** It replaces `picture` / `pictured` /
+- [x] **Agree the API with the developer before coding.** It replaces `picture` / `pictured` /
       `images` in `packages/client/src/types.ts`. Proposed: `attachments(item)` answers every
       asset in slot order, each with id, filename, media type, size and URL. `attached(payload,
       assets)` writes the ordered list back into slots. Whether `images` survives as a filter
       over `attachments` is part of that conversation.
-- [ ] `capture/picture.ts` → `capture/attachments.ts`. `envelope.ts` names every asset the box
+- [x] `capture/picture.ts` → `capture/attachments.ts`. `envelope.ts` names every asset the box
       holds. Rewrites that only touch the words (`saying`) leave the asset list alone.
-- [ ] An edit of an item that still uses the `image` slot rewrites its assets into ordered slots.
-- [ ] `apps/ui/src/lib/channels.ts`: one constant, `web`.
-- [ ] Update client.md (the one-picture-slot passages, around L930–962 and L987) and the
+- [x] An edit of an item that still uses the `image` slot rewrites its assets into ordered slots.
+- [x] `apps/ui/src/lib/channels.ts`: one constant, `web`.
+- [x] Update client.md (the one-picture-slot passages, around L930–962 and L987) and the
       superseding note on ADR 38.
-- [ ] Update `CONTEXT.md`: **Draft** holds attachments, and **Source** loses "its picture".
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm -r lint`
-- [ ] Commit
+- [x] Update `CONTEXT.md`: **Draft** holds attachments, and **Source** loses "its picture".
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm -r lint`
+- [x] Commit _(2026-10-07, with phase 4: the client API change breaks the shell until it is ported)_
 
 ### Phase 3 — the client knows the upload limit
 
@@ -92,26 +92,28 @@ Depends on nothing. Phase 4 uses it.
 
 Depends on phases 2 and 3.
 
-- [ ] Add an attachment line primitive: filename, media type, size, and a `download` link to
+- [x] Add an attachment line primitive: filename, media type, size, and a `download` link to
       `GET /v1/assets/{id}/content`, or to the store's `blob:` URL while the capture hasn't
       drained. Words only, in the one face and size.
-- [ ] `Payload.svelte`: the first two images in slot order are drawn as pictures. Every other
+- [x] `Payload.svelte`: the first two images in slot order are drawn as pictures. Every other
       attachment, images past the second included, is drawn as a line. The `<Figure>` fallback
       remains only for an item with no words and no assets.
-- [ ] `queue/Index.svelte` `whatItIs`, `process/Process.svelte` and `record/Block.svelte` draw
+- [x] `queue/Index.svelte` `whatItIs`, `process/Process.svelte` and `record/Block.svelte` draw
       the same way.
-- [ ] Capture box: `attach` takes any file and can be pressed again to add more. Each attachment
+- [x] Capture box: `attach` takes any file and can be pressed again to add more. Each attachment
       is drawn before commit (a picture for an image, a line otherwise), each with its own `×`. A
-      file over the limit is refused in the status line and isn't attached.
-- [ ] Edit: the same. `drop` per attachment and `attach` adds, replacing "at most one, the
+      file over the limit is refused in the box's own failure line, through `client.refuses(file)`
+      — the box attaches at commit, not at pick — and isn't attached. An edit, which attaches at
+      pick, says it in the status line.
+- [x] Edit: the same. `drop` per attachment and `attach` adds, replacing "at most one, the
       capture's own shape".
-- [ ] `lib/draft.ts` holds a list of files in memory, under its new name.
-- [ ] Update shell.md: capture box, edit, Content. Replace "a note carrying a recording is not
+- [x] `lib/draft.ts` holds a list of files in memory, under its new name.
+- [x] Update shell.md: capture box, edit, Content. Replace "a note carrying a recording is not
       drawn as a broken image" with what is drawn, and add the dated amendments.
 - [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm -r lint`. By hand: capture a
       PDF and three images and see two pictures and two lines. Download the PDF. Capture
-      offline, then reload. Attach a file over the limit.
-- [ ] Commit
+      offline, then reload. Attach a file over the limit. _(automated checks green 2026-10-07; the by-hand pass in a browser is not done)_
+- [x] Commit _(2026-10-07)_
 
 ---
 

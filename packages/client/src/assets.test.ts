@@ -39,7 +39,7 @@ const unreadable = () =>
     arrayBuffer: () => Promise.reject(new Error("that file is not there")),
   }) as File;
 
-const PICTURE = "web-picture";
+const WEB = "web";
 
 /** A pool that remembers what it was given, so a replay can be told from a second upload. */
 function aPool() {
@@ -117,16 +117,16 @@ beforeEach(() => {
   clock.set("2026-08-17T12:00:00.000Z");
 });
 
-describe("a picture captured with the pool out of reach", () => {
+describe("an attachment captured with the pool out of reach", () => {
   it("goes up under the id the capture already named, and before it", async () => {
     const pool = aPool();
     const { client, transport } = clientOver(createMemoryStore(), pool.handler);
 
     const asset = await client.attach(file());
     const item = await client.capture({
-      channel: PICTURE,
+      channel: WEB,
       text: "a whiteboard",
-      asset,
+      assets: [asset],
     });
     await client.drain();
 
@@ -150,21 +150,33 @@ describe("a picture captured with the pool out of reach", () => {
     transport.unreachable(true);
 
     const asset = await client.attach(file());
-    const item = await client.capture({ channel: PICTURE, text: "", asset });
+    const item = await client.capture({
+      channel: WEB,
+      text: "",
+      assets: [asset],
+    });
     await client.drain();
 
-    expect(client.images(item)[0]).toMatch(/^blob:/);
+    expect(client.attachments(item)[0]?.url).toMatch(/^blob:/);
     expect(client.assetContent(asset)).toMatch(/^blob:/);
     expect(await store.readBlob(asset)).toBeDefined();
 
     transport.unreachable(false);
     await client.drain();
 
-    // The pool's own answer, which is what says the attachment is a picture
-    // once the bytes this client held have gone.
+    // The pool's own answer, which is what says what the attachment is once
+    // the bytes this client held have gone.
     const landed = read(client.held(item.id));
     if (landed === undefined) throw new Error("the item went");
-    expect(client.images(landed)).toEqual([transport.assetUrl(asset)]);
+    expect(client.attachments(landed)).toEqual([
+      {
+        asset,
+        url: transport.assetUrl(asset),
+        filename: "a photo.png",
+        mime: "image/png",
+        bytes: 3,
+      },
+    ]);
     expect(await store.readBlob(asset)).toBeUndefined();
   });
 
@@ -175,7 +187,7 @@ describe("a picture captured with the pool out of reach", () => {
     const first = clientOver(store, pool.handler);
     first.transport.unreachable(true);
     const asset = await first.client.attach(file());
-    await first.client.capture({ channel: PICTURE, text: "", asset });
+    await first.client.capture({ channel: WEB, text: "", assets: [asset] });
     await first.client.drain();
     first.client.close();
 
@@ -184,7 +196,12 @@ describe("a picture captured with the pool out of reach", () => {
     await until(() => read(second.client.queue).items.length > 0);
 
     const drawn = read(second.client.queue).items[0]!;
-    expect(second.client.images(drawn)[0]).toMatch(/^blob:/);
+    expect(second.client.attachments(drawn)[0]).toMatchObject({
+      url: expect.stringMatching(/^blob:/) as unknown,
+      filename: "a photo.png",
+      mime: "image/png",
+      bytes: 3,
+    });
 
     second.transport.unreachable(false);
     await second.client.drain();
@@ -204,7 +221,7 @@ describe("a picture captured with the pool out of reach", () => {
     });
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await until(() => read(client.outbox)[0]?.state === "unreachable");
 
     expect(pool.assets).toEqual([asset]);
@@ -233,7 +250,7 @@ describe("a picture captured with the pool out of reach", () => {
     );
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await client.drain();
 
     expect(read(client.outbox)[0]?.state).toBe("refused");
@@ -268,7 +285,7 @@ describe("bytes the store cannot answer for", () => {
     );
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await until(() => read(client.outbox)[0]?.state === "unreachable");
 
     expect(read(client.outbox)[0]?.state).toBe("unreachable");
@@ -279,7 +296,7 @@ describe("bytes the store cannot answer for", () => {
     await store.writeBlob("asset-1", unreadable());
 
     const { client } = clientOver(store, aPool().handler);
-    await client.capture({ channel: PICTURE, text: "", asset: "asset-1" });
+    await client.capture({ channel: WEB, text: "", assets: ["asset-1"] });
     await client.drain();
 
     expect(read(client.outbox)[0]?.state).toBe("refused");
@@ -311,7 +328,7 @@ describe("a store that cannot forget the bytes", () => {
     built.push(client);
 
     const asset = await client.attach(file());
-    await client.capture({ channel: PICTURE, text: "", asset });
+    await client.capture({ channel: WEB, text: "", assets: [asset] });
     await client.drain();
 
     expect(read(client.outbox)).toEqual([]);
@@ -390,6 +407,7 @@ describe("a file larger than the pool takes", () => {
 
     const attaching = client.attach(file());
 
+    expect(client.refuses(file())).toMatchObject({ code: "asset-too-large" });
     await expect(attaching).rejects.toBeInstanceOf(Refused);
     await expect(attaching).rejects.toMatchObject({ code: "asset-too-large" });
     expect(written).toEqual([]);
@@ -401,6 +419,7 @@ describe("a file larger than the pool takes", () => {
     await client.askSession();
     await limitKnown(transport);
 
+    expect(client.refuses(file())).toBeUndefined();
     await expect(client.attach(file())).resolves.toEqual(expect.any(String));
   });
 

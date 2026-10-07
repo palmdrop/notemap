@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL } from "./harness/index.ts";
+import { daemons, WEB } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -8,7 +8,7 @@ describe("a daemon told to stop", () => {
   it("exits cleanly, and gives back the same pool when it starts again", async () => {
     const first = await daemon();
     const captured = await first.client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "still here in the morning",
     });
     await first.client.drain();

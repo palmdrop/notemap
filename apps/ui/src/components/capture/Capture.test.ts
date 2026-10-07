@@ -69,16 +69,16 @@ test("takes the caret, so the queue is typed into rather than clicked into", () 
   expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
 });
 
-test("stamps a typed note and a picture with different channels", async () => {
+test("stamps every capture web, and names every file in the order picked", async () => {
   const stamped: string[] = [];
   const named: string[] = [];
-  let minted = "";
+  const minted: string[] = [];
 
   pool(async (request) => {
     const route = routeOf(request);
     if (route.startsWith(UPLOAD)) {
-      minted = route.slice(UPLOAD.length);
-      return json(201, { id: minted });
+      minted.push(route.slice(UPLOAD.length));
+      return json(201, { id: minted.at(-1) });
     }
     if (route !== "POST /v1/captures") return empty.clone();
 
@@ -96,19 +96,24 @@ test("stamps a typed note and a picture with different channels", async () => {
 
   await cleared(await capture("a typed note"));
 
-  const picker = screen.getByLabelText("A picture to capture");
+  const picker = screen.getByLabelText("Files to capture");
   await fireEvent.change(picker, {
     target: { files: [new File(["bytes"], "shot.png", { type: "image/png" })] },
   });
-  await capture("a picture");
+  await fireEvent.change(picker, {
+    target: {
+      files: [new File(["%PDF"], "paper.pdf", { type: "application/pdf" })],
+    },
+  });
+  await capture("a picture and a paper");
 
   await vi.waitFor(() => {
-    expect(stamped).toEqual(["web-manual", "web-image"]);
+    expect(stamped).toEqual(["web", "web"]);
   });
 
-  // The capture names the asset the upload actually went up under.
-  expect(named).toEqual([minted]);
-  expect(minted).not.toBe("");
+  // The capture names the assets the uploads actually went up under.
+  expect(minted).toHaveLength(2);
+  expect(named).toEqual(minted);
 });
 
 /** jsdom draws nothing, so it implements no handle on a blob's bytes either. */
@@ -120,7 +125,7 @@ function stubObjectUrls(): void {
 const shot = () => new File(["bytes"], "shot.png", { type: "image/png" });
 
 async function attach(file = shot()) {
-  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+  await fireEvent.change(screen.getByLabelText("Files to capture"), {
     target: { files: [file] },
   });
 }
@@ -146,6 +151,19 @@ test("draws an attached picture before it is committed, and offers a way to drop
 
   expect(screen.queryByAltText("What is about to be captured")).toBeNull();
   expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+test("draws a file that is not a picture as a line, with no picture's room", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach(new File(["%PDF"], "paper.pdf", { type: "application/pdf" }));
+
+  expect(await screen.findByText("paper.pdf")).toBeDefined();
+  expect(screen.getByText("application/pdf")).toBeDefined();
+  expect(screen.getByText("4 bytes")).toBeDefined();
+  expect(screen.queryByAltText("What is about to be captured")).toBeNull();
 });
 
 test("a dropped picture is not sent with the capture that follows", async () => {

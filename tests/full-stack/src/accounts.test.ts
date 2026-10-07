@@ -5,7 +5,7 @@ import {
   browser,
   daemons,
   davServers,
-  MANUAL,
+  WEB,
   mintToken,
   NAME,
   PASSWORD,
@@ -49,7 +49,7 @@ async function routeOne(client: Client, filename: string): Promise<void> {
     settings: { account: ACCOUNT, root: "" },
   });
   const captured = await client.capture({
-    channel: MANUAL,
+    channel: WEB,
     text: "out to somebody else's server",
   });
   await client.drain();

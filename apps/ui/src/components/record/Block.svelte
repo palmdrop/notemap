@@ -8,6 +8,7 @@
     type RoutingRecord,
   } from "@notemap/client";
 
+  import Attachments from "$components/item/Attachments.svelte";
   import { itemHref } from "$components/item/href";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
@@ -129,7 +130,9 @@
     );
   });
 
-  const images = $derived(held === undefined ? [] : client.images(held));
+  const attachments = $derived(
+    held === undefined ? [] : client.attachments(held),
+  );
 
   let output = $state<string | undefined>(
     untrack(() => outputOf(record.id) ?? undefined),
@@ -269,16 +272,9 @@
   {:else if !delivered}
     <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
   {:else}
-    {#if images.length > 0 || body !== undefined || (!kept && !byHand) || (kept && !blind && unreadable === "")}
+    {#if attachments.length > 0 || body !== undefined || (!kept && !byHand) || (kept && !blind && unreadable === "")}
       <div class="px-3 py-2.5">
-        {#each images as image (image)}
-          <img
-            src={image}
-            alt=""
-            loading="lazy"
-            class="mb-2 block max-h-48 max-w-full object-contain object-left"
-          />
-        {/each}
+        <Attachments {attachments} picture="max-h-48" />
         {#if body !== undefined}
           <pre class="break-words whitespace-pre-wrap">{body}</pre>
         {:else if !kept && !byHand}

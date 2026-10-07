@@ -1,6 +1,6 @@
 import type { CaptureEnvelope, Item } from "#api/types";
 import type { CaptureInput } from "../types";
-import { SLOT } from "./picture";
+import { attached } from "./attachments";
 
 const NOTE = "note";
 
@@ -19,7 +19,6 @@ export function envelopeFor(
    */
   utcOffset?: number,
 ): CaptureEnvelope {
-  const asset = input.asset;
   const said = input.text.trim() === "" ? {} : { text: input.text };
   const tags = input.tags ?? [];
 
@@ -30,12 +29,10 @@ export function envelopeFor(
     capturedAt: at,
     ...(utcOffset === undefined ? {} : { utcOffset }),
     ...(tags.length === 0 ? {} : { tags: [...tags] }),
-    payload: {
-      type: NOTE,
-      content: said,
-      metadata: {},
-      assets: asset === undefined ? [] : [{ slot: SLOT, asset }],
-    },
+    payload: attached(
+      { type: NOTE, content: said, metadata: {}, assets: [] },
+      input.assets ?? [],
+    ),
   };
 }
 

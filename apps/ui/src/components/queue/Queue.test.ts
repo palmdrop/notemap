@@ -472,7 +472,7 @@ test("draws a picture before it is sent, and the pool's copy after", async () =>
   await screen.findByText("Nothing left to process.");
   transport.unreachable(true);
 
-  await fireEvent.change(screen.getByLabelText("A picture to capture"), {
+  await fireEvent.change(screen.getByLabelText("Files to capture"), {
     target: {
       files: [new File(["bytes"], "shot.png", { type: "image/png" })],
     },

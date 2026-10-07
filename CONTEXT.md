@@ -44,15 +44,15 @@ _Avoid_: original, raw note
 
 **Draft**:
 What a capture box holds before its capture commits — the words and the tags, kept across a
-reload, and the picture, kept in memory and so only across the box being drawn again. Kept by
+reload, and the attachments, kept in memory and so only across the box being drawn again. Kept by
 the shell, on the device, and never sent: the pool has no draft. Cleared when the capture
 commits, kept when it fails.
 _Avoid_: unsaved, pending *(the outbox's word, for a capture that has committed and not landed)*
 
 **Source**:
-The channel a capture came in through — a shell's typed note, its picture, a watched folder, a
-polled inbox. Finer than the app that sent it, because policy is what the distinction is for: one
-page may stamp two sources. Recorded on every item, along with that source's own id for what it
+The channel a capture came in through — a shell, a watched folder, a polled inbox, one watched
+are.na channel. Finer than the app that sent it where policy wants the distinction: one relay may
+stamp a source per channel it watches. Recorded on every item, along with that source's own id for what it
 sent, so re-reading a source cannot duplicate. A source is **discovered**, never declared: the
 sources that exist are every one the pool has an item from, with how much of it and when it last
 captured, read from the items themselves (*amended 2026-09-07*). *Amended 2026-09-09*: the

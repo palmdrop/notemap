@@ -3,6 +3,7 @@
 
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Day from "$components/primitives/register/Day.svelte";
+  import { isImage } from "$lib/attachments";
   import { client } from "$lib/client";
   import { byDay as headed, plain } from "$lib/days";
   import { lineOf } from "$lib/excerpt";
@@ -75,7 +76,9 @@
 
   /** A capture with no words in it, said by what it holds instead. */
   function whatItIs(item: Item): string {
-    return client.images(item).length > 0 ? "picture" : item.payload.type;
+    const [first] = client.attachments(item);
+    if (first === undefined) return item.payload.type;
+    return first.filename ?? (isImage(first) ? "picture" : "attachment");
   }
 </script>
 

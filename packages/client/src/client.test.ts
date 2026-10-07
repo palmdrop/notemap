@@ -83,7 +83,7 @@ describe("capturing", () => {
       return captured(anItem(body.id));
     });
 
-    await client.capture({ channel: "web-image", text: "", asset: "asset-1" });
+    await client.capture({ channel: "web", text: "", assets: ["asset-1"] });
     await client.drain();
 
     const sent = (await asked(transport)[0]!.json()) as {
@@ -91,7 +91,7 @@ describe("capturing", () => {
       sourceItemId: string;
       id: string;
     };
-    expect(sent.source).toBe("web-image");
+    expect(sent.source).toBe("web");
     expect(sent.sourceItemId).toBe(sent.id);
   });
 
@@ -836,11 +836,19 @@ describe("an asset", () => {
       ],
     };
 
-    expect(client.images(item)).toEqual([transport.assetUrl("an asset/1")]);
+    expect(client.attachments(item)).toEqual([
+      {
+        asset: "an asset/1",
+        url: transport.assetUrl("an asset/1"),
+        filename: "photo.png",
+        mime: "image/png",
+        bytes: 3,
+      },
+    ]);
     expect(client.assetContent("an asset/1")).toContain("an%20asset%2F1");
   });
 
-  it("is drawn as a picture by its media type, never by the payload's type", () => {
+  it("says what each attachment is by its media type, never by the payload's type", () => {
     const { client } = clientOver(() => json(200, {}));
     const attached = (mime: string) => ({
       ...anItem("one"),
@@ -861,8 +869,12 @@ describe("an asset", () => {
       ],
     });
 
-    expect(client.images(attached("image/png"))).toHaveLength(1);
-    expect(client.images(attached("audio/opus"))).toEqual([]);
+    expect(client.attachments(attached("image/png"))[0]?.mime).toBe(
+      "image/png",
+    );
+    expect(client.attachments(attached("audio/opus"))[0]?.mime).toBe(
+      "audio/opus",
+    );
   });
 
   it("reads what an item says, and nothing where it said nothing", () => {

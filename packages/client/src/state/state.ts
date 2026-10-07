@@ -75,6 +75,8 @@ export type ClientState = {
 /** A shell that cannot make a URL for its own bytes still knows what they are. */
 export type HeldBlob = {
   readonly mime: string;
+  readonly filename: string;
+  readonly bytes: number;
   readonly url?: string;
 };
 

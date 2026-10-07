@@ -7,7 +7,7 @@ import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { releasedBy } from "./assets/assets";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
-import { pictured, pictureIn } from "./capture/picture";
+import { attached, attachmentsIn } from "./capture/attachments";
 import { saidAs, saidIn } from "./capture/says";
 import {
   PoolChanged,
@@ -217,6 +217,14 @@ export function createClient(config: ClientConfig): Client {
 
   // Asked only where it can be answered: a `401` from anywhere reads as a
   // session that lapsed, and drops the cache with it.
+  // In the pool's own words, rather than when the drain sends the file, which
+  // may be days after the person has moved on.
+  function refused(file: File): Refused | undefined {
+    return maxUpload !== undefined && file.size > maxUpload
+      ? readRefusal({ error: { code: "asset-too-large", max: maxUpload } })
+      : undefined;
+  }
+
   async function askedLimits(): Promise<void> {
     const session = sessions.get();
     if (!session.known || (session.required && !session.signedIn)) return;
@@ -300,13 +308,6 @@ export function createClient(config: ClientConfig): Client {
 
   function bytesOf(asset: AssetId): string {
     return state.get().held.get(asset)?.url ?? transport.assetUrl(asset);
-  }
-
-  function mimeOf(item: Item, asset: AssetId): string | undefined {
-    return (
-      item.assets?.find((each) => each.id === asset)?.mime ??
-      state.get().held.get(asset)?.mime
-    );
   }
 
   const tags = createTags({
@@ -572,20 +573,15 @@ export function createClient(config: ClientConfig): Client {
 
     /** What an edit starts from: the payload as it stands, with new words in it. */
     saying: (item, said) => saidAs(item.payload, said),
-    pictured: (payload, asset) => pictured(payload, asset),
-    picture: (item) => pictureIn(item),
+    attached: (payload, assets) => attached(payload, assets),
+    attachments: (item) => attachmentsIn(item, state.get().held, bytesOf),
 
     // A fresh id per call, not per file: nothing here replays an attachment, so
     // two calls over one file are two assets, as two uploads have always been.
     attach: (file) =>
       after(async () => {
-        // Refused here in the pool's own words, rather than when the drain
-        // sends it, which may be days after the person has moved on.
-        if (maxUpload !== undefined && file.size > maxUpload) {
-          throw readRefusal({
-            error: { code: "asset-too-large", max: maxUpload },
-          });
-        }
+        const refusal = refused(file);
+        if (refusal !== undefined) throw refusal;
 
         const asset = uuidv7();
         // Copied rather than referenced: a picker's `File` points at a file on
@@ -596,6 +592,8 @@ export function createClient(config: ClientConfig): Client {
         state.update((current) =>
           withHeld(current, asset, {
             mime: file.type,
+            filename: file.name,
+            bytes: file.size,
             ...(url === undefined ? {} : { url }),
           }),
         );
@@ -603,22 +601,11 @@ export function createClient(config: ClientConfig): Client {
         return asset;
       }),
 
+    refuses: (file) => refused(file),
+
     assetContent: (asset) => bytesOf(asset),
 
     says: (item) => saidIn(item.payload),
-
-    /**
-     * By media type, never by the payload's: a note carries any number of
-     * attachments and any of them may be anything at all. What the pool says
-     * an asset is wins; what this client attached is the only answer there is
-     * until the capture lands.
-     */
-    images: (item) =>
-      item.payload.assets
-        .filter((reference) =>
-          mimeOf(item, reference.asset)?.startsWith("image/"),
-        )
-        .map((reference) => bytesOf(reference.asset)),
 
     sources: createSources(api),
 

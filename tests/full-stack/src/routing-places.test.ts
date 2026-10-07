@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL, until, vaults } from "./harness/index.ts";
+import { daemons, WEB, until, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -52,7 +52,7 @@ describe("the two answers a typed place is completed from", () => {
     ).toEqual({ truncated: false, places: [] });
 
     const carried = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "one for the vault",
     });
     await client.drain();
@@ -115,7 +115,7 @@ describe("the two answers a typed place is completed from", () => {
     const note = join(running.world.up, "journal", "monday.md");
 
     for (const said of ["the first thought", "the second thought"]) {
-      const carried = await client.capture({ channel: MANUAL, text: said });
+      const carried = await client.capture({ channel: WEB, text: said });
       await client.drain();
       await client.routing.route(carried.id, {
         destination: vault.up,
@@ -141,7 +141,7 @@ describe("the two answers a typed place is completed from", () => {
     const vault = await vaults(running);
 
     const carried = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "one for the drive nobody mounted",
     });
     await client.drain();

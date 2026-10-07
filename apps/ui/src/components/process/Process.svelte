@@ -28,10 +28,12 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
+  import Attachments from "$components/item/Attachments.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
+  import { isImage } from "$lib/attachments";
   import { browserFor } from "$lib/candidate-browsers";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
@@ -97,7 +99,10 @@
   });
   /** What the capture says, which is what editing starts from and what it replaces. */
   const captured = $derived(client.says(item));
-  const pictures = $derived(client.images(item));
+  const attachments = $derived(client.attachments(item));
+  const pictures = $derived(
+    attachments.filter(isImage).map((attachment) => attachment.url),
+  );
   /**
    * What the item carries, read from the client's held copy rather than the
    * item this opened on: a tag taken here lands on the held copy first, and
@@ -947,13 +952,9 @@
       </div>
     {/if}
 
-    {#each pictures as picture (picture)}
-      <img
-        src={picture}
-        alt=""
-        class="mb-2 block max-h-64 max-w-full flex-none object-contain object-left"
-      />
-    {/each}
+    <div class="flex-none">
+      <Attachments {attachments} picture="max-h-64" />
+    </div>
 
     {#if editing}
       <textarea

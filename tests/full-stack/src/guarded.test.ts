@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import {
   browser,
   daemons,
-  MANUAL,
+  WEB,
   mintToken,
   NAME,
   PASSWORD,
@@ -36,7 +36,7 @@ describe("the whole path with the door shut", () => {
         await fetch(`${running.url}/v1/captures`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ channel: MANUAL, text: "no" }),
+          body: JSON.stringify({ channel: WEB, text: "no" }),
         })
       ).status,
     ).toBe(401);
@@ -50,7 +50,7 @@ describe("the whole path with the door shut", () => {
 
     const vault = await vaults(running, client);
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "through the door and out the other side",
     });
     await client.drain();
@@ -86,7 +86,7 @@ describe("a client carrying an access token", () => {
 
     const vault = await vaults(running, client);
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "sent by something with no browser in it",
     });
     await client.drain();

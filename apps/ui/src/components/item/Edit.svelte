@@ -7,6 +7,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
+  import AttachmentLine from "./AttachmentLine.svelte";
   import type { Editing } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
@@ -51,23 +52,35 @@
 
 <!-- The capture's own place, edited where it is read: the foot that saves it
      is the row's, drawn by `EditFoot` in place of the actions. -->
-{#if editing.picture !== null}
-  <div class="mb-2 flex items-end gap-4">
-    {#if editing.picture.image}
-      <img
-        src={editing.picture.url}
-        alt="What it carries"
-        class="size-21 border border-ink object-cover"
-      />
-    {/if}
-    <span class="min-w-0 break-words">{editing.picture.name}</span>
-    <button
-      type="button"
-      onclick={() => editing.drop()}
-      class="shrink-0 hover:underline"
-    >
-      drop
-    </button>
+{#if editing.attachments.length > 0}
+  <div class="mb-2 flex flex-col gap-2">
+    {#each editing.attachments as held (held.asset)}
+      <div class="flex items-end gap-4">
+        {#if held.image}
+          <img
+            src={held.url}
+            alt="What it carries"
+            class="size-21 border border-ink object-cover"
+          />
+        {/if}
+        <span class="min-w-0">
+          <AttachmentLine
+            name={held.name}
+            url={held.url}
+            mime={held.mime}
+            bytes={held.bytes}
+          />
+        </span>
+        <button
+          type="button"
+          onclick={() => editing.drop(held.asset)}
+          aria-label={`drop ${held.name}`}
+          class="shrink-0 hover:underline"
+        >
+          drop
+        </button>
+      </div>
+    {/each}
   </div>
 {/if}
 

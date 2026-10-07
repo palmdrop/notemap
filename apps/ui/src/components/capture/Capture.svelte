@@ -3,12 +3,14 @@
 
   import Action from "$components/primitives/controls/Action.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
-  import { PICTURE, TYPED } from "$lib/channels";
+  import AttachmentLine from "$components/item/AttachmentLine.svelte";
+  import { isImage } from "$lib/attachments";
+  import { WEB } from "$lib/channels";
   import { client } from "$lib/client";
   import {
     clearDraft,
-    heldPicture,
-    holdPicture,
+    heldFiles,
+    holdFiles,
     onRestored,
     readDraft,
     writeDraft,
@@ -39,7 +41,7 @@
   const held = readDraft();
   let text = $state(held.text);
   let tags = $state<string[]>([...held.tags]);
-  let chosen = $state<File | undefined>(heldPicture());
+  let chosen = $state<readonly File[]>(heldFiles());
   let busy = $state(false);
   let said = $state("");
   let picker: HTMLInputElement;
@@ -62,21 +64,19 @@
   }
 
   /**
-   * The bytes as the browser can draw them. A picture goes up with the capture
-   * and cannot be taken back once it has, so it is looked at before it is sent
-   * rather than recognised afterwards in the feed.
+   * The bytes as the browser can draw them, one per file in the order picked.
+   * An attachment goes up with the capture and cannot be taken back once it
+   * has, so it is looked at before it is sent rather than recognised
+   * afterwards in the feed.
    */
-  let preview = $state<string | undefined>(undefined);
+  let previews = $state<readonly string[]>([]);
 
   $effect(() => {
-    if (chosen === undefined) {
-      preview = undefined;
-      return;
-    }
-
-    const url = URL.createObjectURL(chosen);
-    preview = url;
-    return () => URL.revokeObjectURL(url);
+    const urls = chosen.map((file) => URL.createObjectURL(file));
+    previews = urls;
+    return () => {
+      for (const url of urls) URL.revokeObjectURL(url);
+    };
   });
 
   // The queue is where capture happens, and this is the head of it.
@@ -89,7 +89,7 @@
   });
 
   $effect(() => {
-    holdPicture(chosen);
+    holdFiles(chosen);
   });
 
   // A refused capture put back while the box is drawn.
@@ -98,7 +98,7 @@
       const back = readDraft();
       text = back.text;
       tags = [...back.tags];
-      chosen = heldPicture();
+      chosen = heldFiles();
     }),
   );
 
@@ -112,36 +112,44 @@
   );
 
   function pick(event: Event) {
-    chosen = (event.currentTarget as HTMLInputElement).files?.[0];
+    const picked = [...((event.currentTarget as HTMLInputElement).files ?? [])];
+    picker.value = "";
+
+    const refusal = picked
+      .map((file) => client.refuses(file))
+      .find((refused) => refused !== undefined);
+    said = refusal === undefined ? "" : saidBy(refusal);
+    chosen = [
+      ...chosen,
+      ...picked.filter((file) => client.refuses(file) === undefined),
+    ];
   }
 
-  function drop() {
-    chosen = undefined;
-    picker.value = "";
+  function drop(file: File) {
+    chosen = chosen.filter((one) => one !== file);
   }
 
   async function capture() {
-    if (chosen === undefined && text.trim() === "") return;
+    if (chosen.length === 0 && text.trim() === "") return;
 
     busy = true;
     said = "";
     try {
       // Held rather than uploaded: the bytes go up when the capture drains.
-      const asset =
-        chosen === undefined ? undefined : await client.attach(chosen);
+      const assets = [];
+      for (const file of chosen) assets.push(await client.attach(file));
 
       const sent = [...tags];
       const item = await client.capture({
-        channel: chosen === undefined ? TYPED : PICTURE,
+        channel: WEB,
         text,
-        ...(asset === undefined ? {} : { asset }),
+        ...(assets.length === 0 ? {} : { assets }),
         ...(sent.length === 0 ? {} : { tags: sent }),
       });
 
       text = "";
       tags = [];
-      chosen = undefined;
-      picker.value = "";
+      chosen = [];
       clearDraft();
 
       for (const name of sent) void sayItFired(item.id, name);
@@ -166,31 +174,44 @@
   data-selected={selected ? "" : undefined}
   class="mt-6 border border-ink has-[.offer]:relative has-[.offer]:z-50"
 >
-  {#if chosen !== undefined}
+  {#if chosen.length > 0}
     <div
-      class="flex items-end gap-4 border-b border-ink px-3 py-2.5"
+      class="flex flex-col gap-2 border-b border-ink px-3 py-2.5"
       transition:slide={{ fade: true }}
     >
-      <!-- The picture's room is there before the picture is, so the section
-           opens to the height it keeps. -->
-      <div class="size-21 shrink-0 border border-ink">
-        {#if preview !== undefined}
-          <img
-            src={preview}
-            alt="What is about to be captured"
-            class="size-full object-cover"
-          />
-        {/if}
-      </div>
-      <span class="min-w-0 break-words">{chosen.name}</span>
-      <button
-        type="button"
-        onclick={drop}
-        aria-label={`remove ${chosen.name}`}
-        class="shrink-0 hover:underline"
-      >
-        ×
-      </button>
+      {#each chosen as file, at (file)}
+        <div class="flex items-end gap-4">
+          {#if isImage({ mime: file.type })}
+            <!-- The picture's room is there before the picture is, so the
+                 section opens to the height it keeps. -->
+            <div class="size-21 shrink-0 border border-ink">
+              {#if previews[at] !== undefined}
+                <img
+                  src={previews[at]}
+                  alt="What is about to be captured"
+                  class="size-full object-cover"
+                />
+              {/if}
+            </div>
+          {/if}
+          <span class="min-w-0">
+            <AttachmentLine
+              name={file.name}
+              url={previews[at] ?? ""}
+              mime={file.type}
+              bytes={file.size}
+            />
+          </span>
+          <button
+            type="button"
+            onclick={() => drop(file)}
+            aria-label={`remove ${file.name}`}
+            class="shrink-0 hover:underline"
+          >
+            ×
+          </button>
+        </div>
+      {/each}
     </div>
   {/if}
 
@@ -240,9 +261,9 @@
     <input
       bind:this={picker}
       type="file"
-      accept="image/*"
+      multiple
       onchange={pick}
-      aria-label="A picture to capture"
+      aria-label="Files to capture"
       class="hidden"
     />
   </div>

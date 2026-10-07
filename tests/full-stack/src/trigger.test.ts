@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 
 import { describe, it } from "vitest";
 
-import { daemons, MANUAL, until, vaults } from "./harness/index.ts";
+import { daemons, WEB, until, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -21,7 +21,7 @@ describe("a trigger tag's delivery", () => {
       triggerTag: "route/inbox",
     });
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "a thought",
     });
     await client.drain();

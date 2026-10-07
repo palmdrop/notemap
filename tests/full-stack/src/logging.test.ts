@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   daemons,
-  MANUAL,
+  WEB,
   NAME,
   shutWorld,
   until,
@@ -31,7 +31,7 @@ describe("what the daemon says on stdout", () => {
     const running = await daemon();
 
     const captured = await running.client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "a capture the log should mention",
     });
     await running.client.drain();

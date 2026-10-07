@@ -5,8 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   browser,
   daemons,
-  IMAGE_SOURCE,
-  MANUAL,
+  WEB,
   NAME,
   PASSWORD,
   read,
@@ -207,7 +206,7 @@ describe("a client against a daemon with a password set", () => {
     const client = browser(running.url);
 
     await client.login(NAME, PASSWORD);
-    await client.capture({ channel: MANUAL, text: "through the door" });
+    await client.capture({ channel: WEB, text: "through the door" });
     await client.drain();
     await client.loadFeed();
 
@@ -272,12 +271,12 @@ describe("an outbox that filled up against a shut door", () => {
       new File([BYTES], "whiteboard.png", { type: "image/png" }),
     );
     const first = await client.capture({
-      channel: IMAGE_SOURCE,
+      channel: WEB,
       text: "written while nobody was signed in",
-      asset,
+      assets: [asset],
     });
     const second = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "and one after it",
     });
     await client.tag(first.id, "meeting");

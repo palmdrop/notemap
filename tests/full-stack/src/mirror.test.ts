@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL, until } from "./harness/index.ts";
+import { daemons, WEB, until } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -31,7 +31,7 @@ describe("the mirror, on the daemon's own timer", () => {
     const client = running.client;
 
     const captured = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "the mirror is the backup, the database is the index",
     });
     await client.drain();

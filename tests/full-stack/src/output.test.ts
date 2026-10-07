@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, MANUAL, vaults } from "./harness/index.ts";
+import { daemons, WEB, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -15,7 +15,7 @@ describe("what a delivery produced, and what one would", () => {
     const vault = await vaults(running);
 
     const item = await client.capture({
-      channel: MANUAL,
+      channel: WEB,
       text: "one for the vault",
     });
     await client.drain();
@@ -51,7 +51,7 @@ describe("what a delivery produced, and what one would", () => {
     const client = running.client;
     const vault = await vaults(running);
 
-    const item = await client.capture({ channel: MANUAL, text: "later" });
+    const item = await client.capture({ channel: WEB, text: "later" });
     await client.drain();
 
     const request = {
