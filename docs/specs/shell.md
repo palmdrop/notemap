@@ -5,10 +5,11 @@
 **Shipped**:
 
 - 2026-10-07 — **Attach anything, and as much as you like.** The capture box and an edit take any
-  number of files of any kind. The first two pictures in slot order are drawn; every other
-  attachment — a PDF, a recording, a third picture — is a line with its name, media type, size and
-  a download. A file larger than the pool takes is refused when it is picked. Every capture is
-  stamped `web`. ([plan](../plans/attachments-of-any-kind.md))
+  number of files of any kind. The first two pictures in slot order are drawn above the words;
+  every other attachment — a PDF, a recording, a third picture — is a line under them, its name in
+  bold, which downloads it, and its size, set off from the words by a short rule. A file larger
+  than the pool takes is refused when it is picked. Every capture is stamped `web`.
+  ([plan](../plans/attachments-of-any-kind.md))
 - 2026-10-02 — **A place reads as one path, and the line follows the mark.** A pending `create`
   reads `…/a.md`, or `…/2026/` until it has a filename, where it read `…/2026, a.md`. A field
   marked as a path draws the typed line whatever its kind is called.
@@ -699,8 +700,10 @@ draft per origin — two tabs share it, and the last write wins; it is never sen
 never sees it.
 
 **What is attached is drawn before it is committed**, inside the box above the text and ruled off
-from it, one line per file in the order picked: a picture's thumbnail where it is one, its name,
-media type and size, and a `×` that drops it. `attach` picks one file or several, and pressing it
+from it, one line per file in the order picked: a picture's thumbnail where it is one, then the
+line a captured attachment is read as ([Content](#content)), and a `×` that drops it. The list
+stays above the field, though a capture as read puts its lines under its words: here each one can
+be dropped until the button, and a list at the head of the box is where that is done. `attach` picks one file or several, and pressing it
 again adds to what is there. The section slides open, fading in, as the first file is attached, and
 shut as the last is dropped or captured. The bytes go up with the capture and cannot be taken back
 once they have, so the one moment to look at what was picked is before the button, not afterwards
@@ -791,8 +794,9 @@ and the row always draws what the item says: `copy`, the process surface and a r
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
-item carries is drawn above the words as the capture box draws one before it is sent, with `drop`
-beside it, and `attach` in the foot adds files after them. `save` sends the edit naming what the
+item carries is drawn above the words as the capture box draws one before it is sent — a list to
+drop from, not the order a capture is read in — with `drop` beside it, and `attach` in the foot adds
+files after them. `save` sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
 and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
@@ -2428,8 +2432,14 @@ A **note** renders as CommonMark, collapsed and opened — that is what
 [standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn above it,
 in slot order, each by its own media type *(amended 2026-10-07)*: **the first two pictures are
 drawn**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
-line** — its name, media type and size, the name a download of the bytes. A third picture is a line
-too, so a capture of twenty photographs does not become twenty screens. Nothing is previewed in
+line under the words**, before any link's block — its filename in bold, which downloads the bytes,
+then its size, and nothing between them but space. The media type is not said: the filename's own
+extension says it, in the words a person knows a file by. A third picture is a line too, so a
+capture of twenty photographs does not become twenty screens. **A short rule sets the lines off
+from the words above them**, a few characters wide at the left, the way a footnote is set off —
+not the full width, since a rule across the column is what a selected row's box draws and nothing
+else does. With no words above, there is no rule. The record's block and the process surface read
+a capture the same way. Nothing is previewed in
 place but a picture: a PDF downloads, the pool serving it as an attachment rather than rendering it
 ([http-v1.md](http-v1.md#inline-or-attachment)). A row with no words is named in the index by its
 first attachment's filename. Until 2026-10-07 the shell drew pictures and nothing else, so a note
@@ -2838,9 +2848,9 @@ view is how a reader sees more at once.
   has gone offers nothing.
 - A picture captured with the pool out of reach draws the picture, and the same row after the drain
   draws the pool's copy.
-- An item carrying only a PDF draws a line naming the file, its media type and its size, and the
-  name downloads it; one carrying three pictures and a PDF draws the first two pictures and two
-  lines.
+- An item carrying only a PDF draws a line with the filename in bold and the size, no media type
+  and no rule, and the name downloads it; one carrying words, three pictures and a PDF draws the
+  first two pictures above the words, and two lines under them behind a short rule.
 - With the daemon unreachable: the chrome says so once, no row and no surface repeats it, capture
   and tagging and editing remain operable, `process` opens and discarding works from it, and its
   destinations and `manual` read as unavailable rather than as broken.

@@ -39,9 +39,37 @@ test("draws a PDF as a line to download, not as a payload type nobody draws", ()
   });
   expect(link.getAttribute("href")).toContain("/v1/assets/asset-0/content");
   expect(link.getAttribute("download")).toBe("incandescent-alphabets.pdf");
-  expect(screen.getByText("application/pdf")).toBeDefined();
+  expect(link.classList.contains("font-semibold")).toBe(true);
   expect(screen.getByText("517 KB")).toBeDefined();
+  expect(screen.queryByText("application/pdf")).toBeNull();
   expect(screen.queryByText("note")).toBeNull();
+});
+
+test("sets the lines off under the words with a short rule, and draws none with no words above", () => {
+  pool(() => json(200, {}));
+  const paper = carrying(["paper.pdf", "application/pdf"]);
+
+  const bare = render(Payload, { item: paper });
+  expect(bare.container.querySelector("[data-rule]")).toBeNull();
+  bare.unmount();
+
+  const { container } = render(Payload, {
+    item: anItem("one", {
+      ...paper,
+      payload: { ...paper.payload, content: { text: "the words" } },
+    }),
+  });
+
+  const words = screen.getByText("the words");
+  const rule = container.querySelector("[data-rule]");
+  const line = screen.getByRole("link", { name: "paper.pdf" });
+  expect(rule).not.toBeNull();
+  expect(
+    words.compareDocumentPosition(rule!) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    rule!.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("draws the first two pictures, and every attachment after them as a line", () => {

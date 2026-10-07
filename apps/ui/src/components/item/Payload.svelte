@@ -7,7 +7,8 @@
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import { client } from "$lib/client";
 
-  import Attachments from "./Attachments.svelte";
+  import AttachedLines from "./AttachedLines.svelte";
+  import AttachedPictures from "./AttachedPictures.svelte";
 
   let { item }: { item: Item } = $props();
 
@@ -15,12 +16,17 @@
   const text = $derived(client.says(item));
 </script>
 
-<Attachments {attachments} picture="max-h-96" />
+<AttachedPictures {attachments} picture="max-h-96" />
 
 {#if text !== ""}
   <Clamp>
     <Prose {text} />
   </Clamp>
+{/if}
+
+<AttachedLines {attachments} ruled={text !== ""} />
+
+{#if text !== ""}
   <Unfurls {text} />
 {:else if attachments.length === 0}
   <!-- Nothing this shell knows how to draw, which is said by name rather than hidden. -->

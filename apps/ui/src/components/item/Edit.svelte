@@ -64,12 +64,7 @@
           />
         {/if}
         <span class="min-w-0">
-          <AttachmentLine
-            name={held.name}
-            url={held.url}
-            mime={held.mime}
-            bytes={held.bytes}
-          />
+          <AttachmentLine name={held.name} url={held.url} bytes={held.bytes} />
         </span>
         <button
           type="button"

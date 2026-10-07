@@ -28,7 +28,8 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
-  import Attachments from "$components/item/Attachments.svelte";
+  import AttachedLines from "$components/item/AttachedLines.svelte";
+  import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -953,7 +954,7 @@
     {/if}
 
     <div class="flex-none">
-      <Attachments {attachments} picture="max-h-64" />
+      <AttachedPictures {attachments} picture="max-h-64" />
     </div>
 
     {#if editing}
@@ -975,6 +976,9 @@
           done
         </button>
       </div>
+      <div class="mt-2 flex-none">
+        <AttachedLines {attachments} ruled />
+      </div>
     {:else}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
@@ -982,6 +986,9 @@
         ondblclick={edit}
       >
         {words ?? captured}
+      </div>
+      <div class="flex-none">
+        <AttachedLines {attachments} ruled={(words ?? captured) !== ""} />
       </div>
       <Unfurls text={words ?? captured} />
     {/if}

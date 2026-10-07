@@ -160,9 +160,10 @@ test("draws a file that is not a picture as a line, with no picture's room", asy
   render(Capture);
   await attach(new File(["%PDF"], "paper.pdf", { type: "application/pdf" }));
 
-  expect(await screen.findByText("paper.pdf")).toBeDefined();
-  expect(screen.getByText("application/pdf")).toBeDefined();
+  const name = await screen.findByText("paper.pdf");
+  expect(name.classList.contains("font-semibold")).toBe(true);
   expect(screen.getByText("4 bytes")).toBeDefined();
+  expect(screen.queryByText("application/pdf")).toBeNull();
   expect(screen.queryByAltText("What is about to be captured")).toBeNull();
 });
 

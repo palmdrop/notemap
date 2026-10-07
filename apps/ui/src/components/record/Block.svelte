@@ -8,7 +8,8 @@
     type RoutingRecord,
   } from "@notemap/client";
 
-  import Attachments from "$components/item/Attachments.svelte";
+  import AttachedLines from "$components/item/AttachedLines.svelte";
+  import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import { itemHref } from "$components/item/href";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
@@ -274,7 +275,7 @@
   {:else}
     {#if attachments.length > 0 || body !== undefined || (!kept && !byHand) || (kept && !blind && unreadable === "")}
       <div class="px-3 py-2.5">
-        <Attachments {attachments} picture="max-h-48" />
+        <AttachedPictures {attachments} picture="max-h-48" />
         {#if body !== undefined}
           <pre class="break-words whitespace-pre-wrap">{body}</pre>
         {:else if !kept && !byHand}
@@ -283,6 +284,7 @@
           <!-- The line the output will take, held while it is read. -->
           <Asking />
         {/if}
+        <AttachedLines {attachments} ruled={body !== undefined} />
       </div>
     {/if}
 

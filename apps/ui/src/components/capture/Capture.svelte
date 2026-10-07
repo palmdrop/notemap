@@ -198,7 +198,6 @@
             <AttachmentLine
               name={file.name}
               url={previews[at] ?? ""}
-              mime={file.type}
               bytes={file.size}
             />
           </span>
