@@ -124,11 +124,11 @@ Depends on Phase 2.
 
 Depends on Phase 2. Independent of Phase 3.
 
-- [ ] `Dav`: `look` answers a size, and a streamed GET for hashing.
-- [ ] `destination-webdav`: the same capability on the same terms as Phase 3.
-- [ ] Tests mirroring Phase 3's, plus a listing that answers no size.
-- [ ] Verify: `pnpm --filter @notemap/destination-webdav test`
-- [ ] Commit
+- [x] `Dav`: `look` answers a size, and a streamed GET for hashing.
+- [x] `destination-webdav`: the same capability on the same terms as Phase 3.
+- [x] Tests mirroring Phase 3's, plus a listing that answers no size.
+- [x] Verify: `pnpm --filter @notemap/destination-webdav test`
+- [x] Commit _(2026-10-08)_
 
 ### Phase 5 — the shell
 

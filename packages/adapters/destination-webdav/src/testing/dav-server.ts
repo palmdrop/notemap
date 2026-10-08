@@ -40,6 +40,8 @@ export type DavServer = {
    * compressing responses does. Nothing can then match `If-Match`.
    */
   weakenEtags(): void;
+  /** Answer `PROPFIND` with no `getcontentlength` from here on, as some servers do. */
+  withholdSizes(): void;
   close(): Promise<void>;
 };
 
@@ -57,12 +59,20 @@ function childrenOf(tree: Map<string, Entry>, path: string): readonly string[] {
   });
 }
 
-function propfindResponse(tree: Map<string, Entry>, path: string): string {
-  const resourceType =
-    tree.get(path)?.kind === "collection" ? "<d:collection/>" : "";
+function propfindResponse(
+  tree: Map<string, Entry>,
+  path: string,
+  sized: boolean,
+): string {
+  const entry = tree.get(path);
+  const resourceType = entry?.kind === "collection" ? "<d:collection/>" : "";
+  const length =
+    sized && entry?.kind === "file"
+      ? `<d:getcontentlength>${Buffer.byteLength(entry.content, "utf8")}</d:getcontentlength>`
+      : "";
   const href = `/${BASE}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
-  return `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+  return `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype>${length}</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
 }
 
 const BASE = "dav";
@@ -79,6 +89,7 @@ export async function startDavServer(): Promise<DavServer> {
 
   let versions = 0;
   let weak = false;
+  let sized = true;
   const etagOf = (entry: Entry & { kind: "file" }): string =>
     `${weak ? "W/" : ""}"v${entry.version}"`;
 
@@ -129,7 +140,7 @@ export async function startDavServer(): Promise<DavServer> {
         .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
         .end(
           `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">${listed
-            .map((each) => propfindResponse(tree, each))
+            .map((each) => propfindResponse(tree, each, sized))
             .join("")}</d:multistatus>`,
         );
       return;
@@ -236,6 +247,10 @@ export async function startDavServer(): Promise<DavServer> {
 
     weakenEtags: () => {
       weak = true;
+    },
+
+    withholdSizes: () => {
+      sized = false;
     },
 
     interceptOnce: (method, run) => {

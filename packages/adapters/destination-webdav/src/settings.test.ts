@@ -119,6 +119,7 @@ describe("describing a destination", () => {
       "create-or-append",
       "create",
       "append",
+      "place-assets",
     ]);
   });
 

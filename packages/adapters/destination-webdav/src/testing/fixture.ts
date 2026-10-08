@@ -105,6 +105,8 @@ type DeliveryOverrides = {
   readonly content?: JsonObject;
   readonly tags?: readonly string[];
   readonly assets?: readonly DeliveredAsset[];
+  /** Assets the payload itself references, as a person's attachments are. */
+  readonly attached?: readonly DeliveredAsset[];
   readonly createdAt?: string;
   readonly item?: string;
 };
@@ -122,7 +124,10 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       type: overrides.type ?? TEXT,
       content: overrides.content ?? { text: "a thought" },
       metadata: {},
-      assets: [],
+      assets: (overrides.attached ?? []).map((each) => ({
+        slot: each.slot,
+        asset: each.asset.id,
+      })),
     },
     tags: (overrides.tags ?? []).map((name) => ({
       name: name as TagName,
@@ -131,6 +136,6 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
     })),
     createdAt,
     artifacts: [],
-    assets: overrides.assets ?? [],
+    assets: [...(overrides.attached ?? []), ...(overrides.assets ?? [])],
   };
 }
