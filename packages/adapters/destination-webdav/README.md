@@ -64,8 +64,9 @@ exactly as the filesystem kind does.
   `name-1`, `name-2` past a file holding different bytes, with a file holding the same bytes taken
   as already landed. The sizes the server answers are compared first, and a file is downloaded to
   be hashed only where they match; a server that answers no size has every colliding file
-  downloaded. The write is the same conditional `PUT`, so a file landing between the walk and the
-  write refuses the delivery rather than being written over.
+  downloaded. A preview downloads nothing, taking a file of the same size for the same bytes. The
+  write is the same conditional `PUT`, so a file landing between the walk and the write is never
+  written over; that attempt is unreachable and retried, and the retry walks past it.
 - **No append loses a concurrent write.** The note is read, its `ETag` kept, and written back with
   `If-Match`. A `412` means somebody wrote in between, so it re-reads and tries again, four times,
   and then reports contention as unreachable rather than throwing a routing decision away over

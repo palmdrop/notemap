@@ -7,6 +7,7 @@ import {
   placements,
   type Occupant,
   type Placement,
+  type Walking,
 } from "@notemap/output-markdown";
 
 import type { Dav } from "./dav";
@@ -23,6 +24,7 @@ export async function composePlacing(
   dav: Dav,
   root: string,
   delivery: Delivery,
+  walking: Walking,
   signal?: AbortSignal,
 ): Promise<Placing> {
   const args = asPlaceAssetsArguments(delivery.arguments);
@@ -39,8 +41,19 @@ export async function composePlacing(
   if (contained.kind === "refused") throw new Refused(contained.detail);
 
   const folder = contained.path;
-  const placed = await placements(assets, (name) =>
-    occupantOf(dav, childOf(folder, name), signal),
+
+  // A folder that is not there holds nothing, and asking after each name in
+  // it is a request apiece that some servers answer with a refusal.
+  const looked = await dav.look(folder.encoded, signal);
+  const empty = looked.kind === "not-there";
+
+  const placed = await placements(
+    assets,
+    (name) =>
+      empty
+        ? Promise.resolve({ kind: "free" })
+        : occupantOf(dav, childOf(folder, name), signal),
+    walking,
   );
   return { folder, placed };
 }
@@ -100,8 +113,10 @@ export async function carryOutPlacing(
       await each.asset.open(signal),
       signal,
     );
+    // A later attempt walks past whatever took it, or finds its own copy
+    // there, so this is retried rather than refused.
     if (created === "condition-failed") {
-      throw new Refused(
+      throw new Unreachable(
         `${each.name} appeared while the attachments were being placed`,
       );
     }
@@ -136,14 +151,13 @@ async function occupantOf(
   }
 }
 
-/** A file gone between the look and the read holds nothing these bytes could match. */
 async function digestOf(
   dav: Dav,
   path: string,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<string | undefined> {
   const body = await dav.read(path, signal);
-  if (body === undefined) return "";
+  if (body === undefined) return undefined;
 
   const digest = createHash("sha256");
   for await (const chunk of body) digest.update(chunk);

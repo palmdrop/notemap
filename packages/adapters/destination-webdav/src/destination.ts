@@ -127,6 +127,7 @@ export function createWebdavDestination(
             dav,
             settings.root,
             delivery,
+            { exact: true },
             signal,
           );
           await requirePlacingFolder(dav, placing, delivery, signal);
@@ -172,6 +173,7 @@ export function createWebdavDestination(
             dav,
             settings.root,
             delivery,
+            { exact: false },
             signal,
           );
           return placedOutput(placing.placed, placing.folder.relative);

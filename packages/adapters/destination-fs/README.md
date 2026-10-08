@@ -36,7 +36,9 @@ file is then ours.
 with no note. A capture referencing none is refused. Each asset lands under the name it was
 uploaded with, with no digest in it: a file nobody links to is read by its name. Where that name
 holds different bytes the next is tried, `paper-1.pdf`, `paper-2.pdf`, and where it holds the same
-bytes the asset has already landed. The pointer is the folder.
+bytes the asset has already landed. A file landing between the walk and the write is never
+written over; that attempt is unreachable and retried, and the retry walks past it. A preview
+reads no file, taking one of the same size for the same bytes. The pointer is the folder.
 
 Whether a note has frontmatter is the `frontmatter` setting — `full` or `none`, unset meaning none — which
 each capability takes as an argument of the same name to override for one delivery. A note written

@@ -10,10 +10,11 @@ import {
   placements,
   type Occupant,
   type Placement,
+  type Walking,
 } from "@notemap/output-markdown";
 
 import { createFile } from "./atomic";
-import { Refused } from "./errors";
+import { Contended, Refused } from "./errors";
 import { contain, type Contained } from "./paths";
 
 /** Where a capture's attachments would land, worked out without writing any of them. */
@@ -25,6 +26,8 @@ export type Placing = {
 export async function composePlacing(
   realRoot: string,
   delivery: Delivery,
+  walking: Walking,
+  signal?: AbortSignal,
 ): Promise<Placing> {
   const args = asPlaceAssetsArguments(delivery.arguments);
   if (args === undefined) {
@@ -40,8 +43,10 @@ export async function composePlacing(
   if (contained.kind === "refused") throw new Refused(contained.detail);
 
   const folder = contained.path;
-  const placed = await placements(assets, (name) =>
-    occupantOf(join(folder.absolute, name)),
+  const placed = await placements(
+    assets,
+    (name) => occupantOf(join(folder.absolute, name), signal),
+    walking,
   );
   return { folder, placed };
 }
@@ -83,7 +88,7 @@ export async function carryOutPlacing(
       );
     } catch (cause) {
       if ((cause as NodeJS.ErrnoException).code !== "EEXIST") throw cause;
-      throw new Refused(
+      throw new Contended(
         `${each.name} appeared while the attachments were being placed`,
         { cause },
       );
@@ -95,7 +100,10 @@ export async function carryOutPlacing(
  * Not followed through a link: what a link points at may be outside the root,
  * and reading it to compare would be reading somewhere this destination is not.
  */
-async function occupantOf(path: string): Promise<Occupant> {
+async function occupantOf(
+  path: string,
+  signal?: AbortSignal,
+): Promise<Occupant> {
   let found;
   try {
     found = await lstat(path);
@@ -107,13 +115,28 @@ async function occupantOf(path: string): Promise<Occupant> {
   }
 
   if (!found.isFile()) return { kind: "other" };
-  return { kind: "file", bytes: found.size, digest: () => digestOf(path) };
+  return {
+    kind: "file",
+    bytes: found.size,
+    digest: () => digestOf(path, signal),
+  };
 }
 
-async function digestOf(path: string): Promise<string> {
+async function digestOf(
+  path: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
   const digest = createHash("sha256");
-  for await (const chunk of createReadStream(path)) {
-    digest.update(chunk as Buffer);
+  try {
+    for await (const chunk of createReadStream(
+      path,
+      signal ? { signal } : {},
+    )) {
+      digest.update(chunk as Buffer);
+    }
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw cause;
   }
   return digest.digest("hex");
 }

@@ -1109,8 +1109,12 @@ describe("what it says it would write", () => {
 });
 
 /** An attachment whose blob is its real digest, as the pool's would be. */
-function attachment(slot: string, filename: string, content: string) {
-  const held = bytes(content);
+function attachment(
+  slot: string,
+  filename: string,
+  content: string | Uint8Array,
+) {
+  const held = typeof content === "string" ? bytes(content) : content;
   return deliveredAsset(
     slot,
     filename,
@@ -1216,6 +1220,35 @@ describe("placing a capture's attachments alone", () => {
     );
   });
 
+  it("lands bytes that are not text exactly, and knows them again", async () => {
+    const server = await vault();
+    const pdf = Uint8Array.from([
+      0x25, 0x50, 0x44, 0x46, 0xff, 0xfe, 0x00, 0x80,
+    ]);
+    const wanted = placing("library", [attachment("000", "paper.pdf", pdf)]);
+    const row = destinationRow({ root: "" });
+
+    await adapter(server).deliver(row, wanted);
+    const again = await adapter(server).deliver(row, wanted);
+
+    expect(server.bytesOf("library/paper.pdf")).toEqual(pdf);
+    expect(delivered(again).output?.note).toBe(
+      "already there: library/paper.pdf",
+    );
+  });
+
+  it("asks after no name in a folder that is not there", async () => {
+    const server = await vault();
+
+    await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "PDF")]),
+    );
+
+    expect(server.requests()).not.toContain("PROPFIND /library/paper.pdf");
+    expect(server.files()).toEqual({ "library/paper.pdf": "PDF" });
+  });
+
   it("is rejected for a capture with no attachments", async () => {
     const server = await vault();
 
@@ -1245,7 +1278,7 @@ describe("placing a capture's attachments alone", () => {
     expect(server.files()).toEqual({});
   });
 
-  it("refuses where the name is taken between the walk and the write", async () => {
+  it("is retried where the name is taken between the walk and the write", async () => {
     const server = await vault();
     server.makeCollection("library");
     server.interceptOnce("PUT", () => server.put("library/paper.pdf", "x"));
@@ -1255,7 +1288,7 @@ describe("placing a capture's attachments alone", () => {
       placing("library", [attachment("000", "paper.pdf", "ours")]),
     );
 
-    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(outcome).toMatchObject({ kind: "unreachable" });
     expect(server.files()).toEqual({ "library/paper.pdf": "x" });
   });
 

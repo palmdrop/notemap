@@ -11,9 +11,18 @@ export type Occupant =
       readonly kind: "file";
       /** Absent where the destination did not say. */
       readonly bytes?: number;
-      /** The SHA-256 of what the file holds, in hex. */
-      digest(): Promise<string>;
+      /** The SHA-256 of what the file holds, in hex, or nothing where it went meanwhile. */
+      digest(): Promise<string | undefined>;
     };
+
+export type Walking = {
+  /**
+   * Off for a preview, which is asked again as a decision settles and is
+   * indicative anyway: a file of the same size is taken for the same bytes,
+   * and one of no known size for different ones, so nothing is read in full.
+   */
+  readonly exact: boolean;
+};
 
 export type Placement = {
   readonly asset: DeliveredAsset;
@@ -42,11 +51,14 @@ export function attachedAssets(delivery: Delivery): readonly DeliveredAsset[] {
  * which is what keeps a retry from duplicating without a digest in the name.
  *
  * Assets earlier in the same delivery claim their names before anything is
- * written, so two attachments called `scan.pdf` land as two files.
+ * written, so two attachments called `scan.pdf` land as two files. A claim
+ * is matched without case or Unicode form, which is how a case-insensitive
+ * volume would match it: `Scan.pdf` and `scan.pdf` are one name there.
  */
 export async function placements(
   assets: readonly DeliveredAsset[],
   occupant: (name: string) => Promise<Occupant>,
+  walking: Walking = { exact: true },
 ): Promise<readonly Placement[]> {
   const claimed = new Map<string, Placement>();
   const placed: Placement[] = [];
@@ -57,21 +69,22 @@ export async function placements(
     for (let step = 0; ; step += 1) {
       const name = numbered(wanted, step);
 
-      const earlier = claimed.get(name);
+      const earlier = claimed.get(folded(name));
       if (earlier !== undefined) {
         if (earlier.asset.asset.blob !== asset.asset.blob) continue;
-        placed.push({ asset, name, there: earlier.there });
+        placed.push({ asset, name: earlier.name, there: earlier.there });
         break;
       }
 
       const held = await occupant(name);
       if (held.kind === "other") continue;
 
-      const there = held.kind === "file";
-      if (there && !(await holds(held, asset))) continue;
+      const there =
+        held.kind === "file" ? await holds(held, asset, walking) : "free";
+      if (there === "different") continue;
 
-      const placement = { asset, name, there };
-      claimed.set(name, placement);
+      const placement = { asset, name, there: there === "same" };
+      claimed.set(folded(name), placement);
       placed.push(placement);
       break;
     }
@@ -122,14 +135,24 @@ function numbered(name: string, step: number): string {
     : `${name}-${step}`;
 }
 
+function folded(name: string): string {
+  return name.normalize("NFC").toLowerCase();
+}
+
+/** A file that went between being seen and being read leaves its name `free`. */
 async function holds(
   held: Extract<Occupant, { kind: "file" }>,
   asset: DeliveredAsset,
-): Promise<boolean> {
+  walking: Walking,
+): Promise<"same" | "different" | "free"> {
   if (held.bytes !== undefined && held.bytes !== asset.asset.bytes) {
-    return false;
+    return "different";
   }
-  return (await held.digest()) === asset.asset.blob;
+  if (!walking.exact) return held.bytes === undefined ? "different" : "same";
+
+  const digest = await held.digest();
+  if (digest === undefined) return "free";
+  return digest === asset.asset.blob ? "same" : "different";
 }
 
 async function* once(written: Uint8Array): AsyncGenerator<Uint8Array> {

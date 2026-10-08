@@ -18,9 +18,11 @@ export type DavServer = {
   readonly password: string;
   /** Every file, path to content, so a test reads the vault as one value. */
   files(): Record<string, string>;
+  /** One file's bytes exactly, for content that is not text. */
+  bytesOf(path: string): Uint8Array | undefined;
   collections(): readonly string[];
   /** Puts a file there without going through the API, for a vault that already had one. */
-  put(path: string, content: string): void;
+  put(path: string, content: string | Uint8Array): void;
   makeCollection(path: string): void;
   /** What arrived, in order, as `METHOD /path`. */
   requests(): readonly string[];
@@ -47,7 +49,7 @@ export type DavServer = {
 
 type Entry =
   | { readonly kind: "collection" }
-  | { kind: "file"; content: string; version: number };
+  | { kind: "file"; content: Buffer; version: number };
 
 /** One level down, which is all `Depth: 1` promises. */
 function childrenOf(tree: Map<string, Entry>, path: string): readonly string[] {
@@ -68,7 +70,7 @@ function propfindResponse(
   const resourceType = entry?.kind === "collection" ? "<d:collection/>" : "";
   const length =
     sized && entry?.kind === "file"
-      ? `<d:getcontentlength>${Buffer.byteLength(entry.content, "utf8")}</d:getcontentlength>`
+      ? `<d:getcontentlength>${entry.content.byteLength}</d:getcontentlength>`
       : "";
   const href = `/${BASE}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
@@ -201,9 +203,13 @@ export async function startDavServer(): Promise<DavServer> {
 
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
-  const write = (path: string, content: string): void => {
+  const write = (path: string, content: string | Uint8Array): void => {
     versions += 1;
-    tree.set(trim(path), { kind: "file", content, version: versions });
+    tree.set(trim(path), {
+      kind: "file",
+      content: Buffer.from(content),
+      version: versions,
+    });
   };
 
   return {
@@ -215,11 +221,18 @@ export async function startDavServer(): Promise<DavServer> {
     files: () => {
       const held: Array<{ path: string; content: string }> = [];
       for (const [path, entry] of tree) {
-        if (entry.kind === "file") held.push({ path, content: entry.content });
+        if (entry.kind === "file") {
+          held.push({ path, content: entry.content.toString("utf8") });
+        }
       }
       held.sort((a, b) => (a.path < b.path ? -1 : 1));
 
       return Object.fromEntries(held.map((each) => [each.path, each.content]));
+    },
+
+    bytesOf: (path) => {
+      const entry = tree.get(trim(path));
+      return entry?.kind === "file" ? new Uint8Array(entry.content) : undefined;
     },
 
     collections: () =>
@@ -290,10 +303,10 @@ function hasParent(tree: ReadonlyMap<string, Entry>, path: string): boolean {
   return tree.get(parent)?.kind === "collection";
 }
 
-async function read(request: IncomingMessage): Promise<string> {
+async function read(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(chunk as Buffer);
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
 }
 
 function closed(server: Server): Promise<void> {

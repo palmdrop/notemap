@@ -45,7 +45,7 @@ import {
   composePlacing,
   placingFolderMissing,
 } from "./placing";
-import { Refused } from "./errors";
+import { Contended, Refused } from "./errors";
 import {
   contain,
   overlapsAny,
@@ -138,7 +138,12 @@ export function createFilesystemDestination(
 
       try {
         if (delivery.capability === PLACE_ASSETS) {
-          const placing = await composePlacing(reached, delivery);
+          const placing = await composePlacing(
+            reached,
+            delivery,
+            { exact: true },
+            signal,
+          );
 
           const missing = await placingFolderMissing(placing, delivery);
           if (missing !== undefined) {
@@ -195,7 +200,9 @@ export function createFilesystemDestination(
 
       try {
         if (delivery.capability === PLACE_ASSETS) {
-          const placing = await composePlacing(reached, delivery);
+          const placing = await composePlacing(reached, delivery, {
+            exact: false,
+          });
           return placedOutput(placing.placed, placing.folder.relative);
         }
 
@@ -541,6 +548,7 @@ function unreachable(detail: string): Unreachable {
  * abandoned on the first attempt, because retrying cannot change it.
  */
 function failure(cause: unknown): DeliveryOutcome {
+  if (cause instanceof Contended) return unreachable(why(cause));
   if (cause instanceof Refused || cause instanceof RenderingFailed) {
     return { kind: "rejected", detail: why(cause) };
   }

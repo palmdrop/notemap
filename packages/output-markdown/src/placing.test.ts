@@ -146,12 +146,66 @@ describe("where each attachment lands", () => {
     ]);
   });
 
+  /** On a case-insensitive volume the second would be refused at the write, every time. */
+  it("numbers past an earlier claim that differs only in case", async () => {
+    const placed = await placements(
+      [asset("000", "Scan.pdf"), asset("001", "scan.pdf", OTHER)],
+      folder({}).occupant,
+    );
+    expect(placed.map((each) => each.name)).toEqual(["Scan.pdf", "scan-1.pdf"]);
+  });
+
+  it("takes a name whose file went before it could be read", async () => {
+    const placed = await placements([asset("000", "paper.pdf")], () =>
+      Promise.resolve({
+        kind: "file",
+        bytes: 10,
+        digest: () => Promise.resolve(undefined),
+      }),
+    );
+    expect(placed.map((each) => [each.name, each.there])).toEqual([
+      ["paper.pdf", false],
+    ]);
+  });
+
+  it("numbers before the last dot alone", async () => {
+    const placed = await placements(
+      [asset("000", "archive.tar.gz")],
+      folder({ "archive.tar.gz": { blob: OTHER, bytes: 10 } }).occupant,
+    );
+    expect(placed.map((each) => each.name)).toEqual(["archive.tar-1.gz"]);
+  });
+
   it("flattens a name that was never a name", async () => {
     const placed = await placements(
       [asset("000", "../../authorized_keys")],
       folder({}).occupant,
     );
     expect(placed.map((each) => each.name)).toEqual(["authorized_keys"]);
+  });
+});
+
+describe("a walk for a preview", () => {
+  it("reads nothing, taking the same size for the same bytes", async () => {
+    const { occupant, digested } = folder({
+      "paper.pdf": { blob: OTHER, bytes: 10 },
+    });
+    const placed = await placements([asset("000", "paper.pdf")], occupant, {
+      exact: false,
+    });
+    expect(digested).toEqual([]);
+    expect(placed.map((each) => [each.name, each.there])).toEqual([
+      ["paper.pdf", true],
+    ]);
+  });
+
+  it("takes a file of no known size for different bytes", async () => {
+    const { occupant, digested } = folder({ "paper.pdf": { blob: PAPER } });
+    const placed = await placements([asset("000", "paper.pdf")], occupant, {
+      exact: false,
+    });
+    expect(digested).toEqual([]);
+    expect(placed.map((each) => each.name)).toEqual(["paper-1.pdf"]);
   });
 });
 
