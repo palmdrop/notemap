@@ -1,7 +1,8 @@
 # Review: Notices that linger, and lists that read on
 
 **Date**: 2026-09-24
-**Status**: Open <!-- Open | Partially addressed | Resolved -->
+**Status**: Resolved
+**PR**: [#77](https://github.com/palmdrop/notemap/pull/77)
 **Scope**: `main...agent/notices-linger-and-endless-scroll` (PR #77, 804c91e6): `apps/ui/src/lib/notices.svelte.ts`, `apps/ui/src/components/notices/Corner.svelte`, `apps/ui/src/components/primitives/alarm/Notice.svelte`, `apps/ui/src/components/primitives/register/More.svelte`, `apps/ui/src/components/{feed,queue}/*.svelte`, `apps/ui/src/lib/{quick,action-log}.ts`, tests, `docs/specs/shell.md`, `docs/todo.md`
 **Spec**: `docs/specs/shell.md`
 
