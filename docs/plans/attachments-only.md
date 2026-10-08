@@ -89,7 +89,7 @@ Depends on nothing. Every later phase codes against it.
       `edit` unavailable while it is on, the preview listing the paths with a note for those
       already there, the routing line reading the folder, and a template carrying it.
 - [x] The file kinds' READMEs: the capability and the naming walk, as each kind's retry promise.
-- [ ] Verify: the developer confirms the docs — open, reviewed with the code in the PR
+- [x] Verify: the developer confirms the docs _(2026-10-08)_
 - [x] Commit _(2026-10-08)_
 
 ### Phase 2 — the shared vocabulary
@@ -150,7 +150,7 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
 
 - [x] Typecheck, lint, `pnpm -r --silent test`.
 - [x] `pnpm test:stack`: the description a destination answers changes shape.
-- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status. Left `In progress`: the docs await your confirmation, and the by-hand check in Phase 5 is not done.
+- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status. Left `In progress`: the by-hand check in Phase 5 is not done.
 - [x] Commit _(2026-10-08)_
 
 ---

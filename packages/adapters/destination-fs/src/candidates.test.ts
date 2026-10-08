@@ -93,6 +93,23 @@ describe("what the typed line's path offers", () => {
   });
 });
 
+describe("what place-assets' directory offers", () => {
+  it("lists folders, as create's directory does", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "library"));
+    await writeFile(join(path, "readme.md"), "not a folder");
+
+    const answer = await candidates({
+      capability: "place-assets" as CapabilityName,
+      field: "directory",
+    });
+
+    expect(answer.entries).toEqual([
+      { label: "library", value: "library", scope: "library" },
+    ]);
+  });
+});
+
 describe("what create's directory offers", () => {
   it("lists folders at the root, and nothing else", async () => {
     const { path, candidates } = await vault();

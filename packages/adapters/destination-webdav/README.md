@@ -38,8 +38,9 @@ password crosses the network in the clear, and then used: the host says it, and 
 same argument shapes, from the same definition. Two kinds doing one thing under different words would make every rule and
 every composer choice kind-specific for no gain.
 
-Neither field offers **candidates**: enumerating what is already in the vault is a slice of its own,
-and a field that claimed otherwise would draw a browse button for an answer this kind refuses.
+The place fields offer **candidates**, one `PROPFIND` at `Depth: 1` per level browsed: collections
+for a folder field, collections and notes for a field naming a note. A heading offers none, being
+free text.
 
 Whether a note carries provenance is the `frontmatter` setting — `full` or `none`, unset meaning
 none — which each capability takes as an argument of the same name to override for one delivery,

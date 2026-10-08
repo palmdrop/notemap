@@ -11,7 +11,12 @@ import {
   type Destination,
 } from "@notemap/core";
 
-import { APPEND, CREATE, CREATE_OR_APPEND } from "@notemap/output-markdown";
+import {
+  APPEND,
+  CREATE,
+  CREATE_OR_APPEND,
+  PLACE_ASSETS,
+} from "@notemap/output-markdown";
 
 import { contain, realOverlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
@@ -28,7 +33,10 @@ type Offered = "directory" | "file";
 
 /** Which fields offer anything, and which of the two things they offer. Nothing else does. */
 function offered(request: CandidatesRequest): Offered | undefined {
-  if (request.capability === CREATE && request.field === "directory") {
+  if (
+    (request.capability === CREATE || request.capability === PLACE_ASSETS) &&
+    request.field === "directory"
+  ) {
     return "directory";
   }
   if (request.capability === APPEND && request.field === "path") {
