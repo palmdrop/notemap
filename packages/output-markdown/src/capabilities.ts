@@ -54,7 +54,7 @@ const FOLDER_MODE = {
   type: "string",
   enum: ["create", "require"],
   default: "create",
-  title: "folder",
+  title: "if missing",
   description:
     "Whether a folder that is not there is made, or the delivery refused.",
 } as const;
@@ -304,4 +304,31 @@ export function asPlaceAssetsArguments(
   if (folder === undefined) return undefined;
 
   return { directory: directory ?? "", folder };
+}
+
+/** What browsing a field offers: folders alone, or folders and the notes in them. */
+export type Browsed = "directory" | "file";
+
+/**
+ * Read off the capability's own schema rather than a list beside it, so a
+ * capability that marks a field askable is browsed without anything else to
+ * remember. A field holding folders offers folders; one holding a whole path
+ * offers folders and the notes in them.
+ */
+export function browsedBy(
+  capability: CapabilityName,
+  field: string,
+): Browsed | undefined {
+  const declared = capabilitiesFor({ accepts: [], browsable: true }).find(
+    (one) => one.name === capability,
+  );
+  const properties = declared?.argumentsSchema["properties"];
+  if (properties === undefined || properties === null) return undefined;
+
+  const held = (properties as Readonly<Record<string, JsonObject>>)[field];
+  if (held?.[ASKABLE_FIELD] !== true) return undefined;
+
+  if (held[PATH_FIELD] === "folders") return "directory";
+  if (held[PATH_FIELD] === true) return "file";
+  return undefined;
 }
