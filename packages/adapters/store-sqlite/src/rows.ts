@@ -51,6 +51,8 @@ export type AssetRow = {
   readonly mime: string;
   readonly blob: string;
   readonly bytes: number;
+  readonly width: number | null;
+  readonly height: number | null;
   readonly stored_at: number;
 };
 
@@ -195,7 +197,16 @@ export const TABLE_COLUMNS = {
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id"],
-  assets: ["id", "filename", "mime", "blob", "bytes", "stored_at"],
+  assets: [
+    "id",
+    "filename",
+    "mime",
+    "blob",
+    "bytes",
+    "stored_at",
+    "width",
+    "height",
+  ],
   destinations: [
     "id",
     "name",

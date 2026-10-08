@@ -17,7 +17,7 @@
   import type { Command } from "$lib/command/command";
   import type { Layout } from "$lib/rows.svelte";
   import { became, editable } from "$lib/lineage";
-  import { fade, following, slide } from "$lib/motion";
+  import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -67,9 +67,10 @@
   const byDay = $derived(layout !== "rail");
   const slim = $derived(layout === "slim");
   const routed = $derived(surface !== "item");
+  const headed = $derived(byDay || surface !== "item");
 
   let editing = $state<Editing | undefined>(undefined);
-  let rail = $state<Rail | undefined>(undefined);
+  let row = $state<HTMLElement | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
   // Only ever for the one row that is selected, and only where the item's
@@ -120,8 +121,24 @@
 
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
-    rail?.reveal();
+    if (row !== undefined) bringIntoView(row, { headFirst: true });
   }
+
+  // A file attached or dropped grows or shrinks the row where it stands, which
+  // can carry the row past either edge of the screen.
+  let attached: number | undefined;
+  $effect(() => {
+    const count = editing?.attachments.length;
+    const was = attached;
+    attached = count;
+    if (count === undefined || was === undefined || count === was) return;
+    const moving = row?.parentElement;
+    if (moving != null) {
+      void settled(moving).then(() => {
+        if (row !== undefined) bringIntoView(row);
+      });
+    }
+  });
 </script>
 
 {#snippet facts()}
@@ -175,17 +192,15 @@
   {@attach following}
 >
   <div
+    bind:this={row}
     data-row
     data-opens={opens ? "" : undefined}
-    class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''}"
+    data-headed={headed ? "" : undefined}
+    class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed
+      ? 'scroll-mt-day-head'
+      : ''}"
   >
-    <Rail
-      bind:this={rail}
-      {selected}
-      headed={byDay || surface !== "item"}
-      onpick={pick}
-      onreach={reach}
-    >
+    <Rail {selected} onpick={pick} onreach={reach}>
       <Stamp
         at={item.createdAt}
         dated={!byDay}

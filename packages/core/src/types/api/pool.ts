@@ -434,6 +434,8 @@ export interface MaintenanceApi {
   verifyMirror(reader: MirrorReader, depth: VerifyDepth): Promise<MirrorReport>;
   repairMirror(reader: MirrorReader): Promise<MirrorReport>;
   sweepUnreferencedAssets(): Promise<readonly AssetId[]>;
+  /** Answers how many pictures it measured; stopped, how many it had measured by then. */
+  measurePictures(signal?: AbortSignal): Promise<number>;
 }
 
 export interface Pool {

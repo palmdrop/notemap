@@ -190,7 +190,7 @@ test("draws the way to add to the queue even when the queue is empty", async () 
 
   render(Queue);
 
-  expect(await screen.findByText("Nothing left to process.")).toBeDefined();
+  expect(await screen.findByText("Queue is empty.")).toBeDefined();
   expect(screen.getByLabelText("What to capture")).toBeDefined();
 });
 
@@ -201,7 +201,7 @@ test("reads the drained queue as the thing it was working toward", async () => {
 
   // One line where the rows were, and no row drawn beside it: the register
   // stays, empty, for the first capture to slide into.
-  expect(await screen.findByText("Nothing left to process.")).toBeDefined();
+  expect(await screen.findByText("Queue is empty.")).toBeDefined();
   expect(screen.queryByText("zero")).toBeNull();
   expect(container.querySelector("[data-row]")).toBeNull();
 });
@@ -330,18 +330,18 @@ test.each(["timeline", "index"] as const)(
     );
 
     render(Queue);
-    await screen.findByText("Nothing left to process.");
+    await screen.findByText("Queue is empty.");
 
     await capture("into the empty queue");
     await screen.findByText("into the empty queue");
-    expect(screen.queryByText("Nothing left to process.")).toBeNull();
+    expect(screen.queryByText("Queue is empty.")).toBeNull();
     expect(moved("into the empty queue")).toBe(true);
 
     await fireEvent.keyDown(window, { key: "Escape" });
     await fireEvent.keyDown(window, { key: "j" });
     await fireEvent.keyDown(window, { key: "D" });
     await fireEvent.keyDown(window, { key: "Escape" });
-    await screen.findByText("Nothing left to process.");
+    await screen.findByText("Queue is empty.");
     // Once in, once out.
     expect(
       slid.calls.filter(
@@ -361,7 +361,7 @@ test("says a capture is pending until the pool has taken it", async () => {
   );
 
   render(Queue);
-  await screen.findByText("Nothing left to process.");
+  await screen.findByText("Queue is empty.");
   transport.unreachable(true);
 
   await capture("made with the pool out of reach");
@@ -395,7 +395,7 @@ test("does not draw a refused operation as pending", async () => {
   // refusal rather than reading the row in the window before it lands.
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
-    expect(screen.queryByText("Nothing left to process.")).toBeNull();
+    expect(screen.queryByText("Queue is empty.")).toBeNull();
     expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
   });
 });
@@ -411,7 +411,7 @@ test("says nothing in the register about a queue the pool has not answered for",
   // register repeats neither that nor what the surface is drawn from.
   expect(screen.queryByText("queue")).toBeNull();
   expect(screen.queryByText("the daemon is not reachable")).toBeNull();
-  expect(screen.queryByText("Nothing left to process.")).toBeNull();
+  expect(screen.queryByText("Queue is empty.")).toBeNull();
 });
 
 test("offers no page it cannot fetch while the pool is out of reach", async () => {
@@ -469,7 +469,7 @@ test("draws a picture before it is sent, and the pool's copy after", async () =>
   });
 
   render(Queue);
-  await screen.findByText("Nothing left to process.");
+  await screen.findByText("Queue is empty.");
   transport.unreachable(true);
 
   await fireEvent.change(screen.getByLabelText("Files to capture"), {
@@ -815,6 +815,20 @@ test("j past the last row held reads the next page and steps into it", async () 
 
   await vi.waitFor(() => {
     expect(stamps(true)[0]?.textContent).toContain(LATER.slice(0, 10));
+  });
+});
+
+test("brings the whole row walked to into view, its foot and all", async () => {
+  pool(queued("one", "two"));
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "j" });
+
+  await vi.waitFor(() => {
+    expect(scrolled.mock.contexts.at(-1)).toHaveProperty("dataset.row", "");
   });
 });
 

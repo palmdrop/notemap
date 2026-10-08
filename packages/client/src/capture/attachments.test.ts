@@ -29,6 +29,7 @@ describe("what an item carries", () => {
           mime: "image/png",
           blob: "b",
           bytes: 4,
+          dimensions: { width: 640, height: 480 },
         },
       ],
     });
@@ -40,6 +41,7 @@ describe("what an item carries", () => {
         filename: "shot.png",
         mime: "image/png",
         bytes: 4,
+        dimensions: { width: 640, height: 480 },
       },
       { asset: "second", url: "pool:second" },
     ]);

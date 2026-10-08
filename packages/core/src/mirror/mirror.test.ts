@@ -256,6 +256,22 @@ describe("what the record leaves out", () => {
     expect(record.item.revisionOf).toBe("item-0");
   });
 
+  it("carries no picture's dimensions, which are read from its blob", () => {
+    const measured: Asset = {
+      id: "asset-a" as Asset["id"],
+      filename: "a.png",
+      mime: "image/png",
+      blob: "hash-a" as Asset["blob"],
+      bytes: 1,
+      dimensions: { width: 640, height: 480 },
+    };
+
+    const record = projectMirrorRecord(anItem(), [measured], [], []);
+
+    expect(serialiseMirrorRecord(record)).not.toContain("dimensions");
+    expect(parseMirrorRecord(serialiseMirrorRecord(record))).toEqual(record);
+  });
+
   it("carries a delivered routing record and leaves a pending one out", () => {
     const delivered: RoutingRecord = {
       id: "routing-1" as RoutingRecord["id"],

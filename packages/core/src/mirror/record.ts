@@ -30,7 +30,7 @@ export function projectMirrorRecord(
   return {
     kind: "item",
     item: canonicalItem(item),
-    assets: [...assets].sort(byKey((asset) => asset.id)),
+    assets: [...assets].map(canonicalAsset).sort(byKey((asset) => asset.id)),
     artifacts: [...artifacts]
       .map(canonicalArtifact)
       .sort(byKey((artifact) => artifact.id)),
@@ -98,6 +98,11 @@ export function projectPoolSettingRecord(
  * `ItemRecord` structurally, so a spread carries whatever the store derived and
  * a rebuild restores it as though the pool had stated it.
  */
+/** A picture's dimensions are read from its blob, so a rebuild measures them again. */
+function canonicalAsset({ dimensions: _dimensions, ...asset }: Asset): Asset {
+  return asset;
+}
+
 function canonicalItem(item: Item): ItemRecord {
   return {
     id: item.id,

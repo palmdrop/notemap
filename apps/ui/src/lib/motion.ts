@@ -162,6 +162,51 @@ export function arrive(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), x: -ARRIVE });
 }
 
+/** Scrolled to the nearest edge that shows it whole, gliding there unless motion is off. */
+export function bringIntoView(
+  node: Element,
+  { headFirst = false }: { headFirst?: boolean } = {},
+): void {
+  node.scrollIntoView({
+    block: headFirst && !fits(node) ? "start" : "nearest",
+    behavior: duration("short") === 0 ? "instant" : "smooth",
+  });
+}
+
+/** Whether the box fits the view less what stands over its edges. */
+function fits(node: Element): boolean {
+  const clear = (value: string) => Number.parseFloat(value) || 0;
+  const covered =
+    clear(getComputedStyle(node).scrollMarginTop) +
+    clear(getComputedStyle(document.documentElement).scrollPaddingBottom);
+  return node.getBoundingClientRect().height <= window.innerHeight - covered;
+}
+
+function nextFrame(): Promise<unknown> {
+  return new Promise((frame) => requestAnimationFrame(frame));
+}
+
+/**
+ * Resolves once nothing in or on `node` that ever ends is still moving. Two
+ * frames first: a box that follows its content's height starts growing from a
+ * resize observer, which hears of the change only after the first frame's
+ * callbacks have run.
+ */
+export async function settled(node: Element): Promise<void> {
+  if (typeof requestAnimationFrame !== "function") return;
+  await nextFrame();
+  await nextFrame();
+  if (typeof node.getAnimations !== "function") return;
+  await Promise.all(
+    node
+      .getAnimations({ subtree: true })
+      .filter(
+        (moving) => moving.effect?.getComputedTiming().endTime !== Infinity,
+      )
+      .map((moving) => moving.finished.catch(() => undefined)),
+  );
+}
+
 /** Fading in from a little below where it comes to rest. */
 export function rise(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), y: RISE });
@@ -201,16 +246,24 @@ export function grow(node: HTMLElement, from: number): void {
 
 /**
  * Marks a picture `data-loaded` once it has arrived, so it can fade in over
- * the room already kept for it. One the browser already held is marked before
- * it is ever painted, and so is simply there.
+ * the room already kept for it, and `data-failed` if it never will. One the
+ * browser already held is marked before it is ever painted, and so is simply
+ * there.
  */
 export function revealed(node: HTMLImageElement): () => void {
   const show = () => {
     node.dataset["loaded"] = "";
   };
+  const fail = () => {
+    node.dataset["failed"] = "";
+  };
   if (node.complete && node.naturalWidth > 0) show();
   else node.addEventListener("load", show, { once: true });
-  return () => node.removeEventListener("load", show);
+  node.addEventListener("error", fail, { once: true });
+  return () => {
+    node.removeEventListener("load", show);
+    node.removeEventListener("error", fail);
+  };
 }
 
 /**

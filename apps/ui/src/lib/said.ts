@@ -18,6 +18,23 @@ This pool has never held it, or does not hold it any more. A link outlives the i
 
 export const NOTHING_LOGGED = "Nothing has happened yet.";
 
+export const QUEUE_EMPTY = "Queue is empty.";
+
+export const NOTHING_TO_CAPTURE = "nothing to capture";
+
+export const NO_NOTICES = "No notices.";
+
+export const CLEAR_FILTERS = "clear filters";
+
+/** An emptied filter, its tags said as a sentence says them. */
+export function nothingMatches(names: readonly string[]): string {
+  const which =
+    names.length === 1
+      ? everyOf(names)
+      : `${names.length === 2 ? "both" : "all of"} ${everyOf(names)}`;
+  return `Nothing matches ${which}.`;
+}
+
 export const NO_PREVIEW_OFFERED = "no preview for this destination";
 
 export const PREVIEW_UNREACHABLE = "out of reach";

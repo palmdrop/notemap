@@ -156,6 +156,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       repairMirror: notImplemented("maintenance.repairMirror"),
       sweepUnreferencedAssets: () =>
         maintenance.sweepUnreferencedAssets(config, ports),
+      measurePictures: (signal) => maintenance.measurePictures(ports, signal),
     },
 
     close: () => store.close(),

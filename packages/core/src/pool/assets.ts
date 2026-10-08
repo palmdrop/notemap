@@ -10,6 +10,8 @@ import type {
 import type { AssetId } from "#types/domain/ids";
 import type { Result } from "#types/result";
 
+import { isPicture, keepingHead, measure } from "./pictures";
+
 type StoreResult = Result<AssetOutcome, AssetStoreRefusal>;
 
 /**
@@ -24,7 +26,10 @@ export async function store(
   bytes: AsyncIterable<Uint8Array>,
   meta: AssetMeta,
 ): Promise<StoreResult> {
-  const blob = await ports.blobs.put(bytes);
+  const picture = isPicture(meta.mime) ? keepingHead(bytes) : undefined;
+  const blob = await ports.blobs.put(picture?.bytes ?? bytes);
+  const dimensions =
+    picture === undefined ? undefined : measure(picture.head());
 
   const arriving: Asset = {
     id,
@@ -32,6 +37,7 @@ export async function store(
     mime: meta.mime,
     blob: blob.hash,
     bytes: blob.bytes,
+    ...(dimensions === undefined ? {} : { dimensions }),
   };
 
   return ports.store.transaction((tx) => insert(tx, arriving));
@@ -40,16 +46,24 @@ export async function store(
 async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
   const held = await tx.asset(arriving.id);
   if (held !== undefined) {
-    return isSame(held, arriving)
-      ? ok({ kind: "already-stored", asset: held })
-      : refused({ kind: "asset-id-conflict", asset: arriving.id });
+    if (!isSame(held, arriving)) {
+      return refused({ kind: "asset-id-conflict", asset: arriving.id });
+    }
+    if (held.dimensions === undefined && arriving.dimensions !== undefined) {
+      await tx.measureAsset(held.id, arriving.dimensions);
+      return ok({
+        kind: "already-stored",
+        asset: { ...held, dimensions: arriving.dimensions },
+      });
+    }
+    return ok({ kind: "already-stored", asset: held });
   }
 
   await tx.insertAsset(arriving);
   return ok({ kind: "stored", asset: arriving });
 }
 
-/** `bytes` is not compared: it comes from the blob, so equal hashes agree on it. */
+/** `bytes` and `dimensions` are not compared: they come from the blob, so equal hashes agree on them. */
 function isSame(held: Asset, arriving: Asset): boolean {
   return (
     held.blob === arriving.blob &&

@@ -9,6 +9,8 @@ export type Attachment = {
   readonly filename?: string;
   readonly mime?: string;
   readonly bytes?: number;
+  /** A picture's as the pool measured it, which a client's own held bytes never are. */
+  readonly dimensions?: { readonly width: number; readonly height: number };
 };
 
 function slotFor(index: number): string {
@@ -38,6 +40,9 @@ export function attachmentsIn(
         ...(known?.filename === undefined ? {} : { filename: known.filename }),
         ...(known?.mime === undefined ? {} : { mime: known.mime }),
         ...(known?.bytes === undefined ? {} : { bytes: known.bytes }),
+        ...(answered?.dimensions === undefined
+          ? {}
+          : { dimensions: answered.dimensions }),
       };
     });
 }

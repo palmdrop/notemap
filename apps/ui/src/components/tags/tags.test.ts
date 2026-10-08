@@ -223,12 +223,10 @@ test("says a filtered queue has nothing waiting, never that the queue is drained
 
   render(Queue);
 
-  expect(
-    await screen.findByText(/Nothing tagged kind\/quote is waiting/),
-  ).toBeTruthy();
-  expect(screen.queryByText("Nothing left to process.")).toBeNull();
+  expect(await screen.findByText(/Nothing matches kind\/quote\./)).toBeTruthy();
+  expect(screen.queryByText("Queue is empty.")).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "whole queue" }));
+  await fireEvent.click(screen.getByRole("button", { name: "clear filters" }));
   expect(went.to).toEqual(["http://localhost/"]);
 });
 
@@ -238,8 +236,8 @@ test("says a filtered feed holds nothing tagged, rather than nothing captured", 
 
   render(Feed);
 
-  expect(await screen.findByText(/Nothing is tagged kind\/quote/)).toBeTruthy();
-  expect(screen.getByRole("button", { name: "whole feed" })).toBeTruthy();
+  expect(await screen.findByText(/Nothing matches kind\/quote\./)).toBeTruthy();
+  expect(screen.getByRole("button", { name: "clear filters" })).toBeTruthy();
 });
 
 test("holds a selected row whose filter tag is taken off until the selection leaves it", async () => {

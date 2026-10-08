@@ -166,7 +166,7 @@ test("the panel reads back what the line has let go of", async () => {
   expect(said.textContent).toContain("routed · vault");
   expect(said.textContent).toContain("a thought");
   expect(
-    within(said).getByRole("link", { name: "look" }).getAttribute("href"),
+    within(said).getByRole("link", { name: "open" }).getAttribute("href"),
   ).toBe("/items/one");
   // Nothing is ever dismissed: a notice goes on its own and is read here.
   expect(within(said).queryByRole("button", { name: "dismiss" })).toBeNull();
@@ -210,7 +210,7 @@ test("notices opens the panel when nothing has been said", async () => {
 
   const panel = await opened();
 
-  expect(panel.textContent).toContain("Nothing has been said yet.");
+  expect(panel.textContent).toContain("No notices.");
   expect(
     screen
       .getByRole("button", { name: "notices" })
@@ -417,7 +417,7 @@ test("says what logged while nobody was asking", async () => {
     const panel = screen.getByRole("list", { name: "said" });
     expect(panel.textContent).toContain("the picker needs a trail");
     expect(
-      within(panel).getByRole("link", { name: "look" }).getAttribute("href"),
+      within(panel).getByRole("link", { name: "open" }).getAttribute("href"),
     ).toBe("/items/one");
   });
 });

@@ -150,7 +150,7 @@
         <Day at={one.at} />
       {:else}
         {@const record = one.row.record}
-        <Rail headed={layout.byDay}>
+        <Rail>
           <!-- The record's own address, where this is not already it. -->
           {#if only === undefined}
             <a href={recordHref(record.item, record.id)} class="block w-max">

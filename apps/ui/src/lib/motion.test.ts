@@ -13,6 +13,7 @@ import {
   pinned,
   revealed,
   rise,
+  settled,
   slide,
   unfold,
 } from "./motion";
@@ -336,4 +337,40 @@ test("a pinned element is held to the fraction of a pixel it stood at", () => {
 
   expect(node.style.top).toBe("24.5px");
   expect(node.style.left).toBe("180.5px");
+});
+
+describe("settled", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("waits for what ends, and not for what turns forever", async () => {
+    vi.stubGlobal("requestAnimationFrame", (frame: () => void) =>
+      setTimeout(frame, 0),
+    );
+    let finish = () => {};
+    const ending = {
+      effect: { getComputedTiming: () => ({ endTime: 200 }) },
+      finished: new Promise<void>((resolve) => {
+        finish = resolve;
+      }),
+    };
+    const turning = {
+      effect: { getComputedTiming: () => ({ endTime: Infinity }) },
+      finished: new Promise<void>(() => {}),
+    };
+    const node = document.createElement("div");
+    node.getAnimations = () => [ending, turning] as unknown as Animation[];
+
+    let done = false;
+    const waiting = settled(node).then(() => {
+      done = true;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(done).toBe(false);
+
+    finish();
+    await waiting;
+    expect(done).toBe(true);
+  });
 });

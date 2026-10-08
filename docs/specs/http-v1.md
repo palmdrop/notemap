@@ -2,8 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-10-07
+**Last updated**: 2026-10-08
 **Shipped**:
+
+- 2026-10-08 — **An `Asset` says a picture's dimensions.** `dimensions: { width, height }`, read
+  by the pool from the bytes as the picture is drawn, and absent where they could not say.
+  ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))
 
 - 2026-10-07 — **`GET /v1/assets/limits`.** What an upload may be — `maxUpload`, the number a
   `413 asset-too-large` names as `max` — so a caller refuses a file before holding or sending it.
@@ -581,7 +585,8 @@ archive, a capture outcome, an edit outcome:
 ```json
 { "payload": { "assets": [ { "slot": "000", "asset": "0198f0c2-..." } ] },
   "assets": [ { "id": "0198f0c2-...", "filename": "whiteboard.png",
-                "mime": "image/png", "blob": "sha256-...", "bytes": 8 } ] }
+                "mime": "image/png", "blob": "sha256-...", "bytes": 8,
+                "dimensions": { "width": 1600, "height": 900 } } ] }
 ```
 
 - **Derived at read time and never stored.** The payload's own `assets` are what was written and
@@ -597,6 +602,11 @@ archive, a capture outcome, an edit outcome:
 - A flat list rather than pairs: the slot is in `payload.assets`, and a reader that wants both
   joins on the id it already has. What it saves is a read per attachment to answer "is this one a
   picture" — `mime` is the answer, and nothing derives that from the payload's type.
+- **`dimensions` is a picture's as it is drawn** *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))*: read by the
+  pool from the bytes of an asset whose media type is `image/*`, a JPEG's EXIF orientation
+  applied, so a reader can keep a picture's room before its bytes arrive. Absent where the bytes
+  could not say, for a HEIC or an AVIF, whose turn the pool does not read, and on a picture stored
+  before the pool measured them until the host has.
 
 ### The feed
 
@@ -1571,7 +1581,8 @@ caller's ([ADR 22](../adr/0022-the-uploader-mints-the-asset-id.md)).
 | `Content-Disposition` | required | `attachment; filename="…"`, or `filename*=UTF-8''…` |
 | `Repr-Digest` | optional | RFC 9530, `sha-256=:…:`, checked against the bytes received |
 
-`201 Created` with the `Asset` — `{ "id", "filename", "mime", "blob", "bytes" }` — and
+`201 Created` with the `Asset` — `{ "id", "filename", "mime", "blob", "bytes" }`, and
+`"dimensions"` where it is a picture the pool could measure — and
 `Location: /v1/assets/<id>`. An upload the pool already holds under that id is `200 OK` with that
 asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
 

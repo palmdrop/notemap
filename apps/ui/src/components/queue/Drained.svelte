@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { everyOf } from "$lib/said";
+  import ClearFilters from "$components/tags/ClearFilters.svelte";
+  import { nothingMatches, QUEUE_EMPTY } from "$lib/said";
 
   /**
    * Reaching the end is what the queue is for, so it is said once, quietly,
@@ -15,15 +16,11 @@
   } = $props();
 </script>
 
-<div
-  class="pt-8 pl-[calc(var(--spacing-rail)+var(--spacing-gutter))] max-narrow:pl-[calc(var(--spacing-rail-narrow)+0.875rem)]"
->
+<div>
   {#if filter.length === 0}
-    Nothing left to process.
+    {QUEUE_EMPTY}
   {:else}
-    Nothing tagged {everyOf(filter)} is waiting.
-    <button type="button" class="ml-[1ch] hover:underline" onclick={onwhole}>
-      whole queue
-    </button>
+    {nothingMatches(filter)}
+    <ClearFilters onclick={onwhole} />
   {/if}
 </div>

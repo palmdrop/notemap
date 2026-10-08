@@ -55,6 +55,13 @@ export const assetSchema = z
     mime: z.string(),
     blob: z.string(),
     bytes: z.number().int().nonnegative(),
+    /** A picture's as it is drawn, read from its bytes; absent where they could not say. */
+    dimensions: z
+      .object({
+        width: z.number().int().positive(),
+        height: z.number().int().positive(),
+      })
+      .optional(),
   })
   .openapi("Asset");
 

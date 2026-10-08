@@ -228,6 +228,9 @@ export function toAsset(row: Omit<AssetRow, "stored_at">): Asset {
     mime: row.mime,
     blob: row.blob as BlobHash,
     bytes: row.bytes,
+    ...(row.width === null || row.height === null
+      ? {}
+      : { dimensions: { width: row.width, height: row.height } }),
   };
 }
 

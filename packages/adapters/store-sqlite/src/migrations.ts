@@ -907,6 +907,11 @@ export const MIGRATIONS: readonly string[] = [
   -- The tags in use are grouped by name; the key already serves a filter.
   CREATE INDEX item_tags_name ON item_tags (name, item_id);
   `,
+  `
+  ALTER TABLE assets ADD COLUMN width INTEGER CHECK (width > 0);
+  ALTER TABLE assets ADD COLUMN height INTEGER
+    CHECK (height > 0 AND (width IS NULL) = (height IS NULL));
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

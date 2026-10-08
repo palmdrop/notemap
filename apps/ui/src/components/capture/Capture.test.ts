@@ -33,6 +33,22 @@ async function cleared(written: HTMLTextAreaElement): Promise<void> {
   });
 }
 
+test("says why an empty box captures nothing, until something is written", async () => {
+  const asked: string[] = [];
+  pool((request) => {
+    asked.push(routeOf(request));
+    return empty.clone();
+  });
+  render(Capture);
+
+  const written = await capture("   ");
+  expect(screen.getByRole("status").textContent).toBe("nothing to capture");
+  expect(asked).not.toContain("POST /v1/captures");
+
+  await fireEvent.input(written, { target: { value: "a thought" } });
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
 test("draws a capture before the pool answers, and clears the form", async () => {
   let answer = () => {};
   const held = new Promise<void>((resolve) => {

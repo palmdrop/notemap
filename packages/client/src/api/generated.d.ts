@@ -4416,6 +4416,10 @@ export interface components {
             mime: string;
             blob: string;
             bytes: number;
+            dimensions?: {
+                width: number;
+                height: number;
+            };
         };
         CaptureEnvelope: {
             id?: string;

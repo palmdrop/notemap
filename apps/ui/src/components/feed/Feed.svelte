@@ -17,6 +17,7 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import ClearFilters from "$components/tags/ClearFilters.svelte";
   import TagFilter from "$components/tags/TagFilter.svelte";
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
@@ -36,7 +37,7 @@
   import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
-  import { everyOf, NOTHING_CAPTURED } from "$lib/said";
+  import { NOTHING_CAPTURED, nothingMatches } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
   const SURFACE = "feed";
@@ -303,14 +304,8 @@
         {#if $feed.filter.length === 0}
           <Prose text={NOTHING_CAPTURED} />
         {:else}
-          Nothing is tagged {everyOf($feed.filter)}.
-          <button
-            type="button"
-            class="ml-[1ch] hover:underline"
-            onclick={reading.clear}
-          >
-            whole feed
-          </button>
+          {nothingMatches($feed.filter)}
+          <ClearFilters onclick={reading.clear} />
         {/if}
       </Body>
     {/if}
