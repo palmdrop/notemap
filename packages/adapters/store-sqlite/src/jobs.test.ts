@@ -182,14 +182,16 @@ describe("what comes due next", () => {
     expect(await p.nextDue(["delivery"], NOW)).toBeUndefined();
   });
 
-  /** A job already claimable is the next claim's; answering it would have a caller wait on nothing. */
-  it("leaves out what is already due", async () => {
+  it("leaves out what was due by the time asked about, and only that", async () => {
     const { pool: p } = pool();
     const record = capture();
     await appendCapture(p, record);
     await enqueue(p, job({ id: "due", subject: record }));
 
     expect(await p.nextDue(["mirror"], NOW)).toBeUndefined();
+    expect(await p.nextDue(["mirror"], at("2026-08-03T08:59:59.000Z"))).toBe(
+      "2026-08-03T09:00:00.000Z",
+    );
   });
 });
 

@@ -503,11 +503,11 @@ export interface WorkQueue {
     page: Page<AbandonedPosition>,
   ): Promise<Slice<AbandonedWork, AbandonedPosition>>;
   /**
-   * When the earliest unleased job of these kinds waiting on a time becomes
-   * claimable, where one is still ahead of `now`.
+   * When the earliest unleased job of these kinds becomes claimable, of those
+   * that become so after `after`.
    */
   nextDue(
     kinds: readonly JobKind[],
-    now: Timestamp,
+    after: Timestamp,
   ): Promise<Timestamp | undefined>;
 }

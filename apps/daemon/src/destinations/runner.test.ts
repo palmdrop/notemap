@@ -1,10 +1,12 @@
 import type {
   AttemptableDelivery,
+  Clock,
   Destinations,
   Duration,
   Lease,
   Pool,
   RoutingRecordId,
+  Timestamp,
   WorkOutcome,
 } from "@notemap/core";
 import { describe, expect, it } from "vitest";
@@ -56,6 +58,8 @@ const config = {
   batch: 4,
 };
 
+const clock: Clock = { now: () => new Date().toISOString() as Timestamp };
+
 const destinations: Destinations = {
   kinds: () => [],
   describe: () => Promise.resolve({ capabilities: [] }),
@@ -71,7 +75,7 @@ describe("a delivery the runner cannot even prepare", () => {
     const { pool: stub, completed } = pool(() =>
       Promise.reject(new Error("database is locked")),
     );
-    const runner = startDeliveryRunner(stub, destinations, config);
+    const runner = startDeliveryRunner(stub, destinations, config, clock);
 
     // The drain has to answer. A throw here would leave the lease to expire,
     // and an expired delivery lease is abandoned rather than retried.
@@ -89,7 +93,7 @@ describe("a delivery the runner cannot even prepare", () => {
 
   it("succeeds without attempting anything when the record has gone", async () => {
     const { pool: stub, completed } = pool(() => Promise.resolve(undefined));
-    const runner = startDeliveryRunner(stub, destinations, config);
+    const runner = startDeliveryRunner(stub, destinations, config, clock);
 
     await runner.drain();
     await runner.stop();
@@ -109,7 +113,7 @@ describe("a delivery the runner cannot even prepare", () => {
         detail: "nothing here speaks the kanban kind",
       }),
     );
-    const runner = startDeliveryRunner(stub, destinations, config);
+    const runner = startDeliveryRunner(stub, destinations, config, clock);
 
     await runner.drain();
     await runner.stop();

@@ -48,6 +48,7 @@ import type {
   SuggestionId,
   SyncCursor,
   TagName,
+  Timestamp,
 } from "../domain/ids";
 import type { Counts, EditOutcome, Item, TagUse } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
@@ -390,8 +391,15 @@ export interface WorkApi {
    * How long until the next job of these kinds waiting on a time comes due — a
    * fired template's window, a retry's backoff — so a host can wake for it
    * rather than for its next poll. Nothing where none is waiting.
+   *
+   * `since` is when the host last claimed, read from the pool's clock: a job
+   * that came due after it is one that claim may have missed, and answers
+   * zero. One due by then is left out, as one the claim passed over.
    */
-  dueIn(kinds: readonly JobKind[]): Promise<Duration | undefined>;
+  dueIn(
+    kinds: readonly JobKind[],
+    since?: Timestamp,
+  ): Promise<Duration | undefined>;
 
   /** Everything core has stopped retrying, of every kind, in one list. */
   abandoned(

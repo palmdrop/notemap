@@ -733,8 +733,8 @@ export function createSqlitePoolStore(
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
 
-      nextDue: async (kinds: readonly JobKind[], now: Timestamp) =>
-        nextDue(source, kinds, now),
+      nextDue: async (kinds: readonly JobKind[], after: Timestamp) =>
+        nextDue(source, kinds, after),
 
       // No table yet, so empty is what an item genuinely has.
       artifacts: async (): Promise<readonly Artifact[]> => [],

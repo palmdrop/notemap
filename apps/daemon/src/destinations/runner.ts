@@ -4,6 +4,7 @@ import {
   type Delivery,
   type Destination,
   type Destinations,
+  type Clock,
   type JobKind,
   type Lease,
   type Pool,
@@ -33,6 +34,7 @@ export function startDeliveryRunner(
   pool: Pool,
   destinations: Destinations,
   config: DeliveryRunnerConfig,
+  clock: Clock,
   log?: Logger,
 ): DeliveryRunner {
   /**
@@ -125,7 +127,7 @@ export function startDeliveryRunner(
     }
   }
 
-  return startRunner(pool, KINDS, perform, config, log);
+  return startRunner(pool, KINDS, perform, config, clock, log);
 }
 
 function why(cause: unknown): string {

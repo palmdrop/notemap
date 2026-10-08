@@ -120,7 +120,7 @@ async function start(): Promise<void> {
   const mirror =
     config.mirror === undefined || mirrorWriter === undefined
       ? undefined
-      : startMirrorRunner(pool, mirrorWriter, config.mirror, log);
+      : startMirrorRunner(pool, mirrorWriter, config.mirror, ports.clock, log);
 
   // Unconditional: a destination is a row a person may add at any moment, so
   // no startup fact says a delivery job cannot exist.
@@ -128,6 +128,7 @@ async function start(): Promise<void> {
     pool,
     destinations,
     config.delivery,
+    ports.clock,
     log,
   );
   runners.delivery = delivery;
