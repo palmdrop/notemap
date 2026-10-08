@@ -1,7 +1,12 @@
 import type { JsonSchema, JsonValue, SchemaIssue } from "../json";
 import type { OrderedPage, Page, Result, Slice } from "../result";
 import type { Action, ActionQuery } from "../domain/action-log";
-import type { Asset, BlobIntegrity, StoredBlob } from "../domain/asset";
+import type {
+  Asset,
+  BlobIntegrity,
+  Dimensions,
+  StoredBlob,
+} from "../domain/asset";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   AssetId,
@@ -343,6 +348,15 @@ export interface PoolReads {
   /** Resolves a reference. Inside a transaction this is what makes a capture's assets a precondition. */
   asset(id: AssetId): Promise<Asset | undefined>;
 
+  /**
+   * Pictures held without dimensions, in id order after `after`: stored before
+   * the pool measured them, or with bytes that could not say.
+   */
+  unmeasuredPictures(
+    after: AssetId | undefined,
+    limit: number,
+  ): Promise<readonly Asset[]>;
+
   /** The pool store owns the item-to-asset count, so only it can find these. */
   unreferencedAssets(
     olderThan: Timestamp,
@@ -420,6 +434,9 @@ export interface PoolTx extends PoolReads {
 
   /** When it was stored is the store's, the way `modifiedAt` is: operational, and not part of the asset. */
   insertAsset(asset: Asset): Promise<void>;
+
+  /** Dimensions are read from the blob, so setting them after the fact changes nothing the asset is. */
+  measureAsset(id: AssetId, dimensions: Dimensions): Promise<void>;
 
   /**
    * Releases assets, and answers the blobs that lost their last one — which are

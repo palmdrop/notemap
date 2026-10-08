@@ -1,8 +1,13 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-02
+**Last updated**: 2026-10-08
 **Shipped**:
+
+- 2026-10-08 — **A picture's dimensions are read from its bytes.** An asset whose media type is
+  `image/*` is measured as it is stored and carries `dimensions`, upright, where its bytes say;
+  `maintenance.measurePictures` measures the ones stored before, and the host runs it once as it
+  starts. ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))
 
 - 2026-10-02 — **A path field says which part of the path it holds.** `x-notemap-path` takes
   `true` for a whole path, `"folders"` and `"leaf"` for one split across two fields, and the
@@ -687,6 +692,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   nothing about names. Before this, no side held the registry, and the sweep's real subject — an
   asset no item *ever* referenced, because its capture never arrived — could not be named by
   either.
+- **A picture's dimensions are read from its bytes** (decided 2026-10-08,
+  [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md)). Storing an asset whose media type is `image/*` copies the first 512 KiB
+  aside as the bytes go to the blob store, and the asset carries `dimensions: { width, height }`
+  read from them, the EXIF orientation applied so they are the picture's as it is drawn; absent
+  where the bytes could not say. They are not compared by the conflict check, since equal blobs
+  agree on them, and they change nothing an item is: measuring touches no item and logs no action.
+  `maintenance.measurePictures` measures every picture held without them, a page at a time and
+  each in a transaction of its own, passing over one whose bytes still cannot say rather than
+  marking it.
 - **The sweep's grace window is configuration core is given**, beside the retry policy, and for
   the same reason: it is an operational knob, not a rule core invents. A sweep with no grace
   takes an asset whose capture is in flight, since "referenced" and "about to be referenced"

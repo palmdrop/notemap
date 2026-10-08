@@ -2,6 +2,7 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import type { AssetId, BlobHash, Page } from "@notemap/core";
+import { png } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -207,6 +208,38 @@ describe("capturing against an asset", () => {
     });
     expect((await p.views.feed({ limit: 10 })).values).toEqual([]);
     expect((await p.actions.read({}, ALL)).values).toEqual([]);
+  });
+});
+
+describe("a picture's dimensions", () => {
+  it("are read from the bytes as they are stored, and reach the item that carries them", async () => {
+    const { pool: p } = pool();
+    const asset = await upload(p, "photo.png", png(640, 480));
+
+    const captured = await p.capture(
+      envelope({ assets: [{ slot: "image", asset: asset.id }] }),
+    );
+    if (captured.kind !== "ok") throw new Error("capture refused");
+
+    const item = await p.items.get(captured.value.item.id);
+    expect(item?.assets?.[0]?.dimensions).toEqual({ width: 640, height: 480 });
+  });
+
+  it("are measured afterwards for a picture stored without them", async () => {
+    const { pool: p, store } = pool();
+    const measured = await upload(p, "photo.png", png(640, 480));
+    const { dimensions: _, ...unmeasured } = {
+      ...measured,
+      id: "stored-before" as AssetId,
+    };
+    await store.transaction((tx) => tx.insertAsset(unmeasured));
+
+    expect(await p.maintenance.measurePictures()).toBe(1);
+    expect((await p.assets.get(unmeasured.id))?.dimensions).toEqual({
+      width: 640,
+      height: 480,
+    });
+    expect(await p.maintenance.measurePictures()).toBe(0);
   });
 });
 

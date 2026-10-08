@@ -72,6 +72,59 @@ describe("storing an asset", () => {
   });
 });
 
+describe("a picture's dimensions", () => {
+  it("reads back the dimensions it was given", async () => {
+    const { pool: p } = pool();
+    const stored = asset({ dimensions: { width: 640, height: 480 } });
+
+    await putAssets(p, stored);
+
+    expect(await p.asset(stored.id)).toEqual(stored);
+  });
+
+  it("answers the pictures held without dimensions, in id order after a cursor", async () => {
+    const { pool: p } = pool();
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, blob: "blob-1" as BlobHash }),
+      asset({
+        id: "asset-2" as AssetId,
+        blob: "blob-2" as BlobHash,
+        dimensions: { width: 1, height: 1 },
+      }),
+      asset({
+        id: "asset-3" as AssetId,
+        blob: "blob-3" as BlobHash,
+        mime: "application/pdf",
+      }),
+      asset({ id: "asset-4" as AssetId, blob: "blob-4" as BlobHash }),
+    );
+
+    const ids = async (after?: string) =>
+      (await p.unmeasuredPictures(after as AssetId | undefined, 10)).map(
+        (one) => one.id,
+      );
+    expect(await ids()).toEqual(["asset-1", "asset-4"]);
+    expect(await ids("asset-1")).toEqual(["asset-4"]);
+  });
+
+  it("measures one held without them", async () => {
+    const { pool: p } = pool();
+    const stored = asset();
+    await putAssets(p, stored);
+
+    await p.transaction((tx) =>
+      tx.measureAsset(stored.id, { width: 20, height: 10 }),
+    );
+
+    expect((await p.asset(stored.id))?.dimensions).toEqual({
+      width: 20,
+      height: 10,
+    });
+    expect(await p.unmeasuredPictures(undefined, 10)).toEqual([]);
+  });
+});
+
 describe("releasing assets", () => {
   it("answers the blob that lost its last asset", async () => {
     const { pool: p } = pool();

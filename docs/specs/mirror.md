@@ -153,7 +153,9 @@ restore that item. It carries
   archive state, and its tags with their attribution;
 - the payload — type, content, metadata, and its asset references;
 - the assets those references reach, each with its id, filename, media type, size and blob
-  hash, so a rebuild restores the same asset identities and a human can find the bytes;
+  hash, so a rebuild restores the same asset identities and a human can find the bytes. Not a
+  picture's dimensions *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))*: they are read from the blob, so a
+  rebuild measures them again rather than restoring them;
 - the item's artifacts, including corrections, each with its attribution and `correctionOf`
   link;
 - the item's **delivered** routing records — a record still pending delivery is a reservation

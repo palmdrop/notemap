@@ -10,6 +10,8 @@ import type {
 import type { AssetId } from "#types/domain/ids";
 import type { Result } from "#types/result";
 
+import { isPicture, keepingHead, measure } from "./pictures";
+
 type StoreResult = Result<AssetOutcome, AssetStoreRefusal>;
 
 /**
@@ -24,7 +26,10 @@ export async function store(
   bytes: AsyncIterable<Uint8Array>,
   meta: AssetMeta,
 ): Promise<StoreResult> {
-  const blob = await ports.blobs.put(bytes);
+  const picture = isPicture(meta.mime) ? keepingHead(bytes) : undefined;
+  const blob = await ports.blobs.put(picture?.bytes ?? bytes);
+  const dimensions =
+    picture === undefined ? undefined : measure(picture.head());
 
   const arriving: Asset = {
     id,
@@ -32,6 +37,7 @@ export async function store(
     mime: meta.mime,
     blob: blob.hash,
     bytes: blob.bytes,
+    ...(dimensions === undefined ? {} : { dimensions }),
   };
 
   return ports.store.transaction((tx) => insert(tx, arriving));
@@ -49,7 +55,7 @@ async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
   return ok({ kind: "stored", asset: arriving });
 }
 
-/** `bytes` is not compared: it comes from the blob, so equal hashes agree on it. */
+/** `bytes` and `dimensions` are not compared: they come from the blob, so equal hashes agree on them. */
 function isSame(held: Asset, arriving: Asset): boolean {
   return (
     held.blob === arriving.blob &&

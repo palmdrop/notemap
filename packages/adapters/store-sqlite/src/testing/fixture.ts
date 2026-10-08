@@ -149,6 +149,9 @@ export function asset(overrides: Partial<Asset> = {}): Asset {
     mime: overrides.mime ?? "image/png",
     blob: (overrides.blob ?? "blob-abc") as BlobHash,
     bytes: overrides.bytes ?? 12,
+    ...(overrides.dimensions === undefined
+      ? {}
+      : { dimensions: overrides.dimensions }),
   };
 }
 

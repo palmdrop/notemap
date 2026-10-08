@@ -109,3 +109,22 @@ test("cuts a long name in the middle, keeping its end, and says it whole on hove
   expect(end?.textContent).toBe("ks-2016-.pdf");
   expect(end?.classList.contains("shrink-0")).toBe(true);
 });
+
+test("keeps a measured picture's room before it arrives, and leaves an unmeasured one to its own", () => {
+  pool(() => json(200, {}));
+  const item = carrying(["wide.png", "image/png"], ["other.png", "image/png"]);
+  const [wide, other] = item.assets ?? [];
+
+  const { container } = render(Payload, {
+    item: anItem("one", {
+      ...item,
+      assets: [{ ...wide!, dimensions: { width: 1600, height: 900 } }, other!],
+    }),
+  });
+
+  const [measured, unmeasured] = container.querySelectorAll("img");
+  expect(measured?.getAttribute("width")).toBe("1600");
+  expect(measured?.getAttribute("height")).toBe("900");
+  expect(measured?.classList.contains("h-auto")).toBe(true);
+  expect(unmeasured?.hasAttribute("width")).toBe(false);
+});

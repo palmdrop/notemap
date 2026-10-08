@@ -9,6 +9,7 @@ import type {
   Counts,
   Asset,
   AssetId,
+  Dimensions,
   BlobHash,
   ClaimRequest,
   Clock,
@@ -119,7 +120,7 @@ const ITEM_COLUMNS = `
   revision_of, archived_at, archive_reason
 `;
 
-const ASSET_COLUMNS = `id, filename, mime, blob, bytes, stored_at`;
+const ASSET_COLUMNS = `id, filename, mime, blob, bytes, width, height, stored_at`;
 
 const DESTINATION_COLUMNS = `
   id, name, kind, settings, retired_at, created_at, modified_at
@@ -318,11 +319,23 @@ export function createSqlitePoolStore(
   `);
   const insertAsset = write.query<
     never,
-    [string, string, string, string, number, number]
+    [
+      string,
+      string,
+      string,
+      string,
+      number,
+      number | null,
+      number | null,
+      number,
+    ]
   >(`
-    INSERT INTO assets (id, filename, mime, blob, bytes, stored_at)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO assets (id, filename, mime, blob, bytes, width, height, stored_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
+  const measureAsset = write.query<never, [number, number, string]>(
+    `UPDATE assets SET width = ?, height = ? WHERE id = ?`,
+  );
   const deleteAsset = write.query<never, [string]>(
     `DELETE FROM assets WHERE id = ?`,
   );
@@ -476,6 +489,12 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
+    const unmeasured = source.query<AssetRow, [string, number]>(`
+      SELECT ${ASSET_COLUMNS} FROM assets
+      WHERE mime LIKE 'image/%' AND width IS NULL AND id > ?
+      ORDER BY id
+      LIMIT ?
+    `);
     const queueCount = source.query<{ count: number }, []>(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
@@ -585,7 +604,8 @@ export function createSqlitePoolStore(
       const assetRows = source
         .query<ItemAssetJoinRow, Bindable[]>(
           `SELECT reference.item_id, reference.slot, reference.asset_id,
-                  asset.filename, asset.mime, asset.blob, asset.bytes
+                  asset.filename, asset.mime, asset.blob, asset.bytes,
+                  asset.width, asset.height
            FROM item_assets AS reference
            JOIN assets AS asset ON asset.id = reference.asset_id
            WHERE reference.item_id IN (${slots}) ORDER BY reference.slot`,
@@ -807,6 +827,12 @@ export function createSqlitePoolStore(
         return row === undefined ? undefined : toAsset(row);
       },
 
+      unmeasuredPictures: async (
+        after: AssetId | undefined,
+        limit: number,
+      ): Promise<readonly Asset[]> =>
+        unmeasured.all(after ?? "", limit).map(toAsset),
+
       unreferencedAssets: async (
         olderThan: Timestamp,
         limit: number,
@@ -952,6 +978,7 @@ export function createSqlitePoolStore(
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
+      unmeasuredPictures: guard(uncommitted.unmeasuredPictures),
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
         insertItem.run(...itemParams(record, nextModifiedAt()));
@@ -1165,9 +1192,17 @@ export function createSqlitePoolStore(
           asset.mime,
           asset.blob,
           asset.bytes,
+          asset.dimensions?.width ?? null,
+          asset.dimensions?.height ?? null,
           toMillis(clock.now()),
         );
       }),
+
+      measureAsset: guard(
+        async (id: AssetId, dimensions: Dimensions): Promise<void> => {
+          measureAsset.run(dimensions.width, dimensions.height, id);
+        },
+      ),
 
       /**
        * The blobs, read before the deletes rather than after: afterwards there

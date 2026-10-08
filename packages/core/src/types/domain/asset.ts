@@ -6,6 +6,14 @@ export type Asset = {
   readonly mime: string;
   readonly blob: BlobHash;
   readonly bytes: number;
+  /** A picture's, as it is drawn: read from its bytes, and absent where they could not say. */
+  readonly dimensions?: Dimensions;
+};
+
+/** Upright, a photograph's orientation already applied. */
+export type Dimensions = {
+  readonly width: number;
+  readonly height: number;
 };
 
 export type AssetOutcome =

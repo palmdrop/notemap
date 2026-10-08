@@ -12,7 +12,8 @@
   lead with what happened in bold, name the capture as `<stamp>: <first words>`, go to it by
   `open`, and slide out as `clear` lets go of them; its head no longer leads to the log. An empty
   capture says `nothing to capture`. The process surface's head draws no tags, the composer's
-  `tags` being where they are, and `keep the capture's` is `restore`.
+  `tags` being where they are, and `keep the capture's` is `restore`. A picture the pool has
+  measured keeps its room before it arrives ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md)).
 
 - 2026-10-07 — **Attach anything, and as much as you like.** The capture box and an edit take any
   number of files of any kind. The first two pictures in slot order are drawn above the words;
@@ -2463,7 +2464,7 @@ routes, and one the browser leaves for.
 A **note** renders as CommonMark, collapsed and opened — that is what
 [standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn around it
 in slot order, each by its own media type *(amended 2026-10-07; all were drawn above it until
-then)*: **the first two pictures are drawn above the words**, bounded so a tall one cannot swallow what holds it, and **every other attachment is a
+then)*: **the first two pictures are drawn above the words**, bounded so a tall one cannot swallow what holds it, **keeping their room before they arrive** where the pool has measured them, at their own proportions within the bound, and fading in over it *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))* — one the pool could not measure, and one this device holds the bytes of before the capture drains, still opens as it loads — and **every other attachment is a
 line under the words**, before any link's block — its filename in bold, which downloads the bytes,
 then its size, and nothing between them but space. The media type is not said: the filename's own
 extension says it, in the words a person knows a file by. **A name too long for the line is cut in

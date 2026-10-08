@@ -4,6 +4,8 @@ import type { BlobStore, PoolPorts, PoolStore } from "#types/api/ports";
 import type { Asset, StoredBlob } from "#types/domain/asset";
 import type { AssetId, BlobHash } from "#types/domain/ids";
 
+import { png } from "#testing/pictures";
+
 import { store } from "./assets";
 
 const PHOTO = "photo" as AssetId;
@@ -131,5 +133,34 @@ describe("storing an asset under an id the uploader minted", () => {
     });
 
     expect(result).toMatchObject({ kind: "ok", value: { kind: "stored" } });
+  });
+});
+
+describe("measuring a picture as it is stored", () => {
+  async function* bytesOfPicture(): AsyncIterable<Uint8Array> {
+    yield png(640, 480);
+  }
+
+  it("keeps a picture's dimensions with the asset", async () => {
+    const result = await store(ports(), PHOTO, bytesOfPicture(), {
+      filename: "photo.png",
+      mime: "image/png",
+    });
+
+    expect(result).toMatchObject({
+      kind: "ok",
+      value: { asset: { dimensions: { width: 640, height: 480 } } },
+    });
+  });
+
+  it("measures nothing the uploader did not call a picture", async () => {
+    const result = await store(ports(), PHOTO, bytesOfPicture(), {
+      filename: "photo.bin",
+      mime: "application/octet-stream",
+    });
+
+    expect(result.kind === "ok" && result.value.asset.dimensions).toBe(
+      undefined,
+    );
   });
 });
