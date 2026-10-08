@@ -3609,6 +3609,7 @@ const PLACE_ASSETS = {
   accepts: ["text"],
   argumentsSchema: {
     type: "object",
+    additionalProperties: false,
     "x-notemap-carries": "assets",
     properties: {
       directory: {
@@ -3617,6 +3618,26 @@ const PLACE_ASSETS = {
         "x-notemap-candidates": true,
         "x-notemap-path": "folders",
       },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+  },
+};
+
+/** The markdown kinds' `create`, split into folders and a leaf, with its folder mode. */
+const CREATE_SPLIT = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      directory: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-path": "folders",
+      },
+      filename: { type: "string", "x-notemap-path": "leaf" },
+      folder: { type: "string", enum: ["create", "require"] },
     },
   },
 };
@@ -3642,16 +3663,25 @@ function aPaper() {
   });
 }
 
-function servingCarrier() {
+function servingCarrier(
+  template?: Record<string, unknown>,
+  resolved?: Record<string, unknown>,
+) {
   return pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
       return json(200, { values: [aDestination()] });
     }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: template === undefined ? [] : [template] });
+    }
+    if (route === "GET /v1/items/one/route/resolve" && resolved !== undefined) {
+      return json(200, resolved);
+    }
     if (route.endsWith("/description")) {
       return json(200, {
         kind: "described",
-        capabilities: [CREATE_OR_APPEND, PLACE_ASSETS],
+        capabilities: [CREATE_OR_APPEND, CREATE_SPLIT, PLACE_ASSETS],
       });
     }
     if (route.endsWith("/candidates")) return json(200, answered([]));
@@ -3718,7 +3748,7 @@ test("attachments only routes the carrier to the folder the line had typed", asy
   });
 });
 
-test("taking everything gives the line back, holding the folder", async () => {
+test("taking everything gives the line back as it was, in the folder as it stands", async () => {
   servingCarrier();
 
   draw(aPaper());
@@ -3733,7 +3763,7 @@ test("taking everything gives the line back, holding the folder", async () => {
   const back = (await screen.findByRole("combobox", {
     name: "place",
   })) as HTMLInputElement;
-  expect(back.value).toBe("library/");
+  expect(back.value).toBe("library/a.md");
 });
 
 test("draws no edit while only the attachments go, and lets a rewrite go", async () => {
@@ -3761,4 +3791,113 @@ test("draws no edit while only the attachments go, and lets a rewrite go", async
       (each as Record<string, unknown>)["capability"] === "place-assets",
   ) as Record<string, unknown>;
   expect(body).not.toHaveProperty("content");
+});
+
+const LIBRARY = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a81",
+  name: "library",
+  destination: VAULT,
+  capability: "place-assets",
+  arguments: { directory: "library" },
+  folder: "create",
+};
+
+const FILED = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a82",
+  name: "filed",
+  destination: VAULT,
+  capability: "create",
+  arguments: { directory: "research", filename: "a.md" },
+  folder: "require",
+};
+
+const routeSent = async () => {
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  return sent();
+};
+
+test("a template placing the attachments alone draws attachments only taken, and commits as itself", async () => {
+  servingCarrier(LIBRARY, {
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+
+  draw(aPaper());
+  await choose("library");
+
+  const only = await screen.findByRole("button", { name: "attachments only" });
+  expect(only.getAttribute("aria-pressed")).toBe("true");
+  expect(await screen.findByText("library/")).toBeDefined();
+
+  await commit();
+  expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
+});
+
+/** Only the toggle used to let a rewrite go, so a template reached after one sent it. */
+test("a rewrite made before taking an attachments-only template is neither drawn nor sent", async () => {
+  servingCarrier(LIBRARY, {
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+
+  draw(aPaper());
+  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.input(screen.getByLabelText("words"), {
+    target: { value: "rewritten" },
+  });
+  await choose("library");
+  await screen.findByRole("button", { name: "attachments only" });
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.queryByText("rewritten")).toBeNull();
+
+  await commit();
+  const bodies = (await routeSent()) as Record<string, unknown>[];
+  expect(bodies.every((body) => !("content" in body))).toBe(true);
+});
+
+test("attachments only keeps a create template's folder and its folder mode", async () => {
+  servingCarrier(FILED, {
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research", filename: "a.md", folder: "require" },
+  });
+
+  draw(aPaper());
+  await choose("filed");
+  await choose("attachments only");
+
+  const folder = (await screen.findByRole("combobox", {
+    name: "Folder",
+  })) as HTMLInputElement;
+  expect(folder.value).toBe("research");
+
+  await commit();
+  expect(await routeSent()).toContainEqual({
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "research", folder: "require" },
+  });
+});
+
+/** Back as it was, so nothing was corrected and it commits as the template. */
+test("everything gives a create template back as itself", async () => {
+  servingCarrier(FILED, {
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research", filename: "a.md", folder: "require" },
+  });
+
+  draw(aPaper());
+  await choose("filed");
+  await choose("attachments only");
+  await screen.findByRole("combobox", { name: "Folder" });
+  await choose("everything");
+
+  await commit();
+  expect(await routeSent()).toContainEqual({ template: FILED.id });
 });

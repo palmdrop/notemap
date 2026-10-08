@@ -34,6 +34,7 @@
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
+  import { folderIn, withFolder } from "$lib/output";
   import { browserFor } from "$lib/candidate-browsers";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
@@ -77,6 +78,8 @@
   const CREATE_OR_APPEND = "create-or-append";
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
+  /** Where a folder mode is carried, which core writes and no adapter names. */
+  const FOLDER_MODE = "folder";
 
   /** A keystroke in the decision waits this long before the preview is asked for again. */
   const SETTLING = 400;
@@ -192,6 +195,12 @@
   const assetsOnly = $derived(
     chosenCapability !== undefined && carriesAssets(chosenCapability),
   );
+
+  /**
+   * The words the head draws: a rewrite is set aside while only the
+   * attachments go, and comes back with `everything`.
+   */
+  const shownWords = $derived(assetsOnly ? captured : (words ?? captured));
   const declared = $derived(fieldsOf(chosenCapability?.argumentsSchema));
   const reading = $derived(readingOf(chosenCapability));
 
@@ -273,36 +282,52 @@
       (attachments.length > 0 || assetsOnly),
   );
 
+  /** What the decision held before `attachments only` was taken, which `everything` gives back. */
+  let before = $state<
+    { capability: string; args: Record<string, string> } | undefined
+  >(undefined);
+
   /**
-   * Takes the carrier or gives the settled capability back, keeping the folder
-   * the one held, and opens the place it changed. The words go: a delivery of
-   * the attachments alone carries none for a rewrite to replace.
+   * Takes the carrier, or gives back what was held before it, in the folder as
+   * it now stands and keeping the folder mode, and opens the place it changed.
+   * A template's capability comes back as itself, not as the settled one.
    */
   function output(attachmentsOnly: boolean): void {
     if (carrier === undefined || implied === undefined) return;
-    if (attachmentsOnly === assetsOnly) return;
+    if (capability === undefined || attachmentsOnly === assetsOnly) return;
     placing = true;
     opened.place = true;
-    const folders = fieldsOf(carrier.argumentsSchema).find(
-      (field) => field.path === "folders",
-    )?.name;
-
     forecast = undefined;
-    if (assetsOnly) {
-      const folder = (
-        folders === undefined ? "" : (args[folders] ?? "")
-      ).replace(/\/+$/, "");
-      capability = implied;
-      args = folder === "" ? {} : { [LINE_FIELD]: `${folder}/` };
+
+    const folder = folderIn(chosenCapability?.argumentsSchema, args);
+    const mode = args[FOLDER_MODE];
+    const carried = (
+      schema: Record<string, unknown> | undefined,
+      held: Record<string, string>,
+    ) => {
+      const placed = withFolder(schema, held, folder);
+      const takesMode = fieldsOf(schema).some(
+        (one) => one.name === FOLDER_MODE,
+      );
+      return mode === undefined || !takesMode
+        ? placed
+        : { ...placed, [FOLDER_MODE]: mode };
+    };
+
+    if (attachmentsOnly) {
+      before = { capability, args };
+      capability = carrier.name;
+      args = carried(carrier.argumentsSchema, {});
       return;
     }
 
-    const { directory } = placeOf(args[LINE_FIELD] ?? "");
-    capability = carrier.name;
-    args =
-      folders === undefined || directory === "" ? {} : { [folders]: directory };
-    words = undefined;
-    editing = false;
+    const back = before ?? { capability: implied, args: {} };
+    before = undefined;
+    capability = back.capability;
+    args = carried(
+      capabilities.find((one) => one.name === back.capability)?.argumentsSchema,
+      back.args,
+    );
   }
 
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
@@ -388,6 +413,7 @@
     previewing = false;
     answeredFor = undefined;
     placing = true;
+    before = undefined;
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
@@ -568,7 +594,7 @@
    * content is replaced, so the assets stay the capture's.
    */
   function carried(): { content?: Record<string, unknown> } {
-    return words === undefined || words === captured
+    return assetsOnly || words === undefined || words === captured
       ? {}
       : { content: saidAs(item.payload, words).content };
   }
@@ -1002,7 +1028,7 @@
       <AttachedPictures {attachments} picture="max-h-64" />
     </div>
 
-    {#if editing}
+    {#if editing && !assetsOnly}
       <textarea
         bind:this={typing}
         bind:value={words}
@@ -1030,12 +1056,12 @@
         class="min-h-0 max-w-prose overflow-auto break-words whitespace-pre-wrap"
         ondblclick={edit}
       >
-        {words ?? captured}
+        {shownWords}
       </div>
       <div class="flex-none">
-        <AttachedLines {attachments} ruled={(words ?? captured) !== ""} />
+        <AttachedLines {attachments} ruled={shownWords !== ""} />
       </div>
-      <Unfurls text={words ?? captured} />
+      <Unfurls text={shownWords} />
     {/if}
   </div>
 

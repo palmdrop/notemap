@@ -98,11 +98,20 @@
     carrier !== undefined && capability === carrier.name,
   );
 
+  /** The action held before `attachments only` was taken, which `everything` gives back. */
+  let before = $state<string | undefined>(undefined);
+
   function output(attachmentsOnly: boolean): void {
     if (attachmentsOnly === assetsOnly) return;
-    capability = attachmentsOnly
-      ? (carrier?.name ?? capability)
-      : (actions[0]?.name ?? capability);
+    if (attachmentsOnly) {
+      before = capability;
+      capability = carrier?.name ?? capability;
+      return;
+    }
+    capability =
+      actions.find((one) => one.name === before)?.name ??
+      actions[0]?.name ??
+      capability;
   }
 
   /**

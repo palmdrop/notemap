@@ -975,6 +975,34 @@ test("saves a template that places the attachments alone", async () => {
   });
 });
 
+const APPEND_PATH = {
+  name: "append",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: { path: { type: "string", "x-notemap-path": true } },
+  },
+};
+
+test("everything gives back the action held before attachments only", async () => {
+  serving(
+    [],
+    { kind: "fits" },
+    [aDestination()],
+    [CREATE, APPEND_PATH, PLACE_ASSETS],
+  );
+
+  render(Templates);
+  await open(/add a template/);
+
+  await open("append");
+  await open("attachments only");
+  await open("everything");
+
+  const append = await screen.findByRole("button", { name: "append" });
+  expect(append.getAttribute("aria-pressed")).toBe("true");
+});
+
 test("a kind with no other capability draws no output", async () => {
   serving([], { kind: "fits" }, [aDestination()], [PLACE_ASSETS]);
 
