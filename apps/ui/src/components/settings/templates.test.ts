@@ -384,7 +384,7 @@ test("a capability with no folders is offered no folder mode", async () => {
 
   await screen.findByRole("button", { name: "reading" });
   expect(screen.queryByRole("button", { name: /^establish/ })).toBeNull();
-  expect(screen.queryByText("folder")).toBeNull();
+  expect(screen.queryByText("if missing")).toBeNull();
 });
 
 test("saves what was chosen, and says create where there are no folders", async () => {

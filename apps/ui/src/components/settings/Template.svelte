@@ -207,7 +207,7 @@
       {#each taken as setting (setting.name)}
         <Fact name={setting.name}>{setting.said}</Fact>
       {/each}
-      <Fact name="folder">
+      <Fact name="if missing">
         <Lead
           lead={one.folder}
           rest={one.folder === "establish"

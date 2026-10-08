@@ -1,9 +1,9 @@
 # Attachments only
 
 **Date**: 2026-10-08
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/shell.md`, `CONTEXT.md`
-**Closed**:
+**Closed**: 2026-10-08
 
 ---
 
@@ -142,7 +142,7 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
 - [x] The routing line and the record view read a folder pointer, and the block says `placed`. Folder pointers already read as `…/library/` (`routing.test.ts`); only `placed` was added.
 - [x] The template form offers `place-assets` like any other capability. Already generic, listing the description's capabilities; no test added.
 - [x] Tests beside the components and state that changed.
-- [ ] Verify: `pnpm --filter ui test` passes; still to do by hand against a local vault: attach a PDF, toggle
+- [x] Verify: `pnpm --filter ui test` passes; by hand against a local vault: attach a PDF, toggle
       on, route to `library/`, and see `library/paper.pdf` land with no note beside it.
 - [x] Commit _(2026-10-08)_
 
@@ -151,12 +151,17 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
       template form, where the carrier leaves the `action` list. `CONTEXT.md` notes the shell's
       use of `output`.
 - [x] *(Fixed after review)* Both kinds answer candidates for `place-assets`' folder.
+- [x] *(After review)* Which fields are browsed is read off the capability's schema
+      (`browsedBy`) rather than a list of capability names in each kind.
+- [x] *(After review)* The folder mode is titled `if missing`, on records, the template form and
+      the template's facts, so it no longer reads as a second `FOLDER`.
+- [x] *(After review)* The by-hand check, done by the developer.
 
 ### Phase 6 — finishing
 
 - [x] Typecheck, lint, `pnpm -r --silent test`.
 - [x] `pnpm test:stack`: the description a destination answers changes shape.
-- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status. Left `In progress`: the by-hand check in Phase 5 is not done.
+- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status. 
 - [x] Commit _(2026-10-08)_
 
 ---

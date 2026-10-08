@@ -49,8 +49,8 @@
   ];
 
   const FOLDERS = [
-    { name: "create", note: "make it if missing" },
-    { name: "require", note: "refuse if missing" },
+    { name: "create", note: "make it" },
+    { name: "require", note: "refuse" },
     { name: "establish", note: "make once, require after" },
   ] as const;
 
@@ -361,7 +361,7 @@
   {/each}
 
   {#if folders}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">folder</span>
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">if missing</span>
     <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
       {#each FOLDERS as one (one.name)}
         <Option

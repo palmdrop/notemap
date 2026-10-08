@@ -2336,8 +2336,9 @@ of a grid.
 template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
 after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG ·
 DESTINATION · ACTION · PLACE`, then **one fact per setting the template takes for its deliveries**
-— `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `FOLDER ·
-USED`, `used` naming the count and when it last fired. The place leaves those settings out, on the
+— `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING ·
+USED` *(the folder mode, retitled from `FOLDER` 2026-10-08, which read the same as a folder
+field)*, `used` naming the count and when it last fired. The place leaves those settings out, on the
 line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again · edit | delete`.
