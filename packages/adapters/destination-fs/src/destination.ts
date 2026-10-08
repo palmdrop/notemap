@@ -24,8 +24,11 @@ import {
   CREATE_OR_APPEND,
   deriveFilename,
   insertUnder,
+  folderPointer,
   markdownOutput,
+  placedOutput,
   placeOf,
+  PLACE_ASSETS,
   renderNote,
   RenderingFailed,
   hashtagsOf,
@@ -37,7 +40,12 @@ import {
 import { assetNames, placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
 import { filesystemCandidates } from "./candidates";
-import { Refused } from "./errors";
+import {
+  carryOutPlacing,
+  composePlacing,
+  placingFolderMissing,
+} from "./placing";
+import { Contended, Refused } from "./errors";
 import {
   contain,
   overlapsAny,
@@ -129,6 +137,28 @@ export function createFilesystemDestination(
       }
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(
+            reached,
+            delivery,
+            { exact: true },
+            signal,
+          );
+
+          const missing = await placingFolderMissing(placing, delivery);
+          if (missing !== undefined) {
+            return { kind: "rejected", detail: `${missing} is missing` };
+          }
+
+          await carryOutPlacing(placing, signal);
+          const pointer = folderPointer(placing.folder.relative);
+          return {
+            kind: "delivered",
+            ...(pointer === undefined ? {} : { pointer }),
+            output: placedOutput(placing.placed, placing.folder.relative),
+          };
+        }
+
         const composed = await compose(
           wiringFor(reached, renderers, settings),
           delivery,
@@ -169,6 +199,13 @@ export function createFilesystemDestination(
       }
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(reached, delivery, {
+            exact: false,
+          });
+          return placedOutput(placing.placed, placing.folder.relative);
+        }
+
         const composed = await compose(
           wiringFor(reached, renderers, settings),
           delivery,
@@ -511,6 +548,7 @@ function unreachable(detail: string): Unreachable {
  * abandoned on the first attempt, because retrying cannot change it.
  */
 function failure(cause: unknown): DeliveryOutcome {
+  if (cause instanceof Contended) return unreachable(why(cause));
   if (cause instanceof Refused || cause instanceof RenderingFailed) {
     return { kind: "rejected", detail: why(cause) };
   }

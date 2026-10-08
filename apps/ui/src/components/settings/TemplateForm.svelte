@@ -12,6 +12,7 @@
   import Option from "$components/primitives/composer/Option.svelte";
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
+  import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
   import {
@@ -48,8 +49,8 @@
   ];
 
   const FOLDERS = [
-    { name: "create", note: "make it if missing" },
-    { name: "require", note: "refuse if missing" },
+    { name: "create", note: "make it" },
+    { name: "require", note: "refuse" },
     { name: "establish", note: "make once, require after" },
   ] as const;
 
@@ -85,6 +86,33 @@
     const effective = effectiveOf(declared, typed, inherited);
     return declared.filter((one) => offered(one, effective));
   });
+
+  /**
+   * The capability carrying the attachments alone is chosen under `output`,
+   * not among the others under `action`, wherever there are others to choose.
+   */
+  const carrier = $derived(capabilities.find(carriesAssets));
+  const actions = $derived(capabilities.filter((one) => !carriesAssets(one)));
+  const offersOutput = $derived(carrier !== undefined && actions.length > 0);
+  const assetsOnly = $derived(
+    carrier !== undefined && capability === carrier.name,
+  );
+
+  /** The action held before `attachments only` was taken, which `everything` gives back. */
+  let before = $state<string | undefined>(undefined);
+
+  function output(attachmentsOnly: boolean): void {
+    if (attachmentsOnly === assetsOnly) return;
+    if (attachmentsOnly) {
+      before = capability;
+      capability = carrier?.name ?? capability;
+      return;
+    }
+    capability =
+      actions.find((one) => one.name === before)?.name ??
+      actions[0]?.name ??
+      capability;
+  }
 
   /**
    * Notemap's own arguments are drawn as their own controls below, so the
@@ -237,16 +265,34 @@
     {/each}
   </div>
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">action</span>
-  <div class="flex flex-wrap gap-x-[2ch]">
-    {#each capabilities as one (one.name)}
+  {#if offersOutput}
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">output</span>
+    <div class="flex flex-wrap gap-x-[2ch]">
       <Option
-        label={one.name}
-        chosen={capability === one.name}
-        onchoose={() => (capability = one.name)}
+        label="everything"
+        chosen={!assetsOnly}
+        onchoose={() => output(false)}
       />
-    {/each}
-  </div>
+      <Option
+        label="attachments only"
+        chosen={assetsOnly}
+        onchoose={() => output(true)}
+      />
+    </div>
+  {/if}
+
+  {#if !(offersOutput && assetsOnly)}
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">action</span>
+    <div class="flex flex-wrap gap-x-[2ch]">
+      {#each offersOutput ? actions : capabilities as one (one.name)}
+        <Option
+          label={one.name}
+          chosen={capability === one.name}
+          onchoose={() => (capability = one.name)}
+        />
+      {/each}
+    </div>
+  {/if}
 
   {#each typeable as field (field.name)}
     <span class="tracking-caps uppercase max-narrow:mt-1.5">
@@ -324,7 +370,7 @@
   {/each}
 
   {#if folders}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">folder</span>
+    <span class="tracking-caps uppercase max-narrow:mt-1.5">if missing</span>
     <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
       {#each FOLDERS as one (one.name)}
         <Option

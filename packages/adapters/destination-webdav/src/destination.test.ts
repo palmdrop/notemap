@@ -1,14 +1,16 @@
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import { Rejected, Unusable } from "@notemap/core";
 import type {
   DeliveredOutput,
+  Delivery,
   DeliveryOutcome,
   JsonObject,
   PayloadTypeName,
 } from "@notemap/core";
-import { linkTo, type Renderer } from "@notemap/output-markdown";
+import { linkTo, PLACE_ASSETS, type Renderer } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createWebdavDestination } from "./destination";
@@ -1103,5 +1105,206 @@ describe("what it says it would write", () => {
         delivery({ arguments: { directory: "../..", filename: "note.md" } }),
       ),
     ).rejects.toThrow(Rejected);
+  });
+});
+
+/** An attachment whose blob is its real digest, as the pool's would be. */
+function attachment(
+  slot: string,
+  filename: string,
+  content: string | Uint8Array,
+) {
+  const held = typeof content === "string" ? bytes(content) : content;
+  return deliveredAsset(
+    slot,
+    filename,
+    held,
+    createHash("sha256").update(held).digest("hex"),
+  );
+}
+
+function placing(
+  directory: string,
+  attached: ReturnType<typeof attachment>[],
+  folder?: "create" | "require",
+): Delivery {
+  return delivery({
+    capability: PLACE_ASSETS,
+    arguments: { directory, ...(folder === undefined ? {} : { folder }) },
+    attached,
+  });
+}
+
+describe("placing a capture's attachments alone", () => {
+  it("lands each under its uploaded name, making the folder, with no note", async () => {
+    const server = await vault();
+    const row = destinationRow({ root: "Notes" });
+    server.makeCollection("Notes");
+
+    const outcome = await adapter(server).deliver(
+      row,
+      placing("library/papers", [
+        attachment("000", "paper.pdf", "PDF"),
+        attachment("001", "notes.txt", "TXT"),
+      ]),
+    );
+
+    expect(server.files()).toEqual({
+      "Notes/library/papers/notes.txt": "TXT",
+      "Notes/library/papers/paper.pdf": "PDF",
+    });
+    expect(delivered(outcome).pointer).toBe("library/papers/");
+    expect(await outputOf(outcome)).toEqual({
+      mediaType: "text/plain",
+      text: "library/papers/paper.pdf\nlibrary/papers/notes.txt\n",
+    });
+  });
+
+  it("numbers past a file of the same name holding something else", async () => {
+    const server = await vault();
+    server.put("library/paper.pdf", "theirs");
+
+    await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(server.files()).toEqual({
+      "library/paper.pdf": "theirs",
+      "library/paper-1.pdf": "ours",
+    });
+  });
+
+  it("downloads a file to compare only where its size matches", async () => {
+    const server = await vault();
+    server.put("library/paper.pdf", "a longer file");
+
+    await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(server.requests()).not.toContain("GET /library/paper.pdf");
+  });
+
+  it("downloads every colliding file where the server answers no size", async () => {
+    const server = await vault();
+    server.withholdSizes();
+    server.put("library/paper.pdf", "theirs");
+
+    await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(server.requests()).toContain("GET /library/paper.pdf");
+    expect(server.files()["library/paper-1.pdf"]).toBe("ours");
+  });
+
+  /** The first attempt wrote `paper-1.pdf` and was never heard back from. */
+  it("lands a retry on the copy the last attempt wrote", async () => {
+    const server = await vault();
+    server.put("library/paper.pdf", "theirs");
+    const wanted = placing("library", [attachment("000", "paper.pdf", "ours")]);
+    const row = destinationRow({ root: "" });
+
+    await adapter(server).deliver(row, wanted);
+    const again = await adapter(server).deliver(row, wanted);
+
+    expect(server.files()).toEqual({
+      "library/paper.pdf": "theirs",
+      "library/paper-1.pdf": "ours",
+    });
+    expect(delivered(again).output?.note).toBe(
+      "already there: library/paper-1.pdf",
+    );
+  });
+
+  it("lands bytes that are not text exactly, and knows them again", async () => {
+    const server = await vault();
+    const pdf = Uint8Array.from([
+      0x25, 0x50, 0x44, 0x46, 0xff, 0xfe, 0x00, 0x80,
+    ]);
+    const wanted = placing("library", [attachment("000", "paper.pdf", pdf)]);
+    const row = destinationRow({ root: "" });
+
+    await adapter(server).deliver(row, wanted);
+    const again = await adapter(server).deliver(row, wanted);
+
+    expect(server.bytesOf("library/paper.pdf")).toEqual(pdf);
+    expect(delivered(again).output?.note).toBe(
+      "already there: library/paper.pdf",
+    );
+  });
+
+  it("asks after no name in a folder that is not there", async () => {
+    const server = await vault();
+
+    await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "PDF")]),
+    );
+
+    expect(server.requests()).not.toContain("PROPFIND /library/paper.pdf");
+    expect(server.files()).toEqual({ "library/paper.pdf": "PDF" });
+  });
+
+  it("is rejected for a capture with no attachments", async () => {
+    const server = await vault();
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", []),
+    );
+
+    expect(outcome).toMatchObject({
+      kind: "rejected",
+      detail: expect.stringContaining("no attachments"),
+    });
+  });
+
+  it("is rejected where the folder it requires is not there", async () => {
+    const server = await vault();
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "PDF")], "require"),
+    );
+
+    expect(outcome).toEqual({
+      kind: "rejected",
+      detail: "library/ is missing",
+    });
+    expect(server.files()).toEqual({});
+  });
+
+  it("is retried where the name is taken between the walk and the write", async () => {
+    const server = await vault();
+    server.makeCollection("library");
+    server.interceptOnce("PUT", () => server.put("library/paper.pdf", "x"));
+
+    const outcome = await adapter(server).deliver(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect(server.files()).toEqual({ "library/paper.pdf": "x" });
+  });
+
+  it("previews the paths it would choose, and writes nothing", async () => {
+    const server = await vault();
+    server.put("library/paper.pdf", "theirs");
+
+    const shown = await adapter(server).preview?.(
+      destinationRow({ root: "" }),
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(await textOf(shown)).toEqual({
+      mediaType: "text/plain",
+      text: "library/paper-1.pdf\n",
+    });
+    expect(server.files()).toEqual({ "library/paper.pdf": "theirs" });
   });
 });

@@ -1,4 +1,10 @@
-import { ASKABLE_FIELD, FOLDER_ARGUMENT, PATH_FIELD } from "@notemap/core";
+import {
+  ASKABLE_FIELD,
+  CARRIES,
+  CARRIES_ASSETS,
+  FOLDER_ARGUMENT,
+  PATH_FIELD,
+} from "@notemap/core";
 import type {
   Capability,
   CapabilityName,
@@ -18,6 +24,7 @@ import {
 export const CREATE = "create" as CapabilityName;
 export const APPEND = "append" as CapabilityName;
 export const CREATE_OR_APPEND = "create-or-append" as CapabilityName;
+export const PLACE_ASSETS = "place-assets" as CapabilityName;
 
 export type CapabilitiesOptions = {
   readonly accepts: readonly PayloadTypeName[];
@@ -47,7 +54,7 @@ const FOLDER_MODE = {
   type: "string",
   enum: ["create", "require"],
   default: "create",
-  title: "folder",
+  title: "if missing",
   description:
     "Whether a folder that is not there is made, or the delivery refused.",
 } as const;
@@ -146,6 +153,26 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
   };
 }
 
+/** No note is written, so nothing a note is shaped by is asked for. */
+function placeAssetsArguments(browsable: boolean): JsonSchema {
+  return {
+    type: "object",
+    additionalProperties: false,
+    [CARRIES]: CARRIES_ASSETS,
+    properties: {
+      directory: {
+        type: "string",
+        title: "Folder",
+        description:
+          "Where the attachments are placed, relative to the vault's root.",
+        [PATH_FIELD]: "folders",
+        ...(browsable ? { [ASKABLE_FIELD]: true } : {}),
+      },
+      [FOLDER_ARGUMENT]: FOLDER_MODE,
+    },
+  };
+}
+
 export function capabilitiesFor({
   accepts,
   browsable,
@@ -166,6 +193,11 @@ export function capabilitiesFor({
       accepts,
       argumentsSchema: appendToFileArguments(browsable),
     },
+    {
+      name: PLACE_ASSETS,
+      accepts,
+      argumentsSchema: placeAssetsArguments(browsable),
+    },
   ];
 }
 
@@ -181,6 +213,12 @@ export type CreateFileArguments = {
 export type AppendToFileArguments = {
   readonly path: string;
   readonly heading?: string;
+  readonly folder: FolderMode;
+};
+
+export type PlaceAssetsArguments = {
+  /** Empty names the root itself. */
+  readonly directory: string;
   readonly folder: FolderMode;
 };
 
@@ -252,4 +290,45 @@ export function asAppendToFileArguments(
   if (folder === undefined) return undefined;
 
   return { path, ...(heading === undefined ? {} : { heading }), folder };
+}
+
+export function asPlaceAssetsArguments(
+  args: JsonObject,
+): PlaceAssetsArguments | undefined {
+  const directory = args["directory"];
+  if (directory !== undefined && typeof directory !== "string") {
+    return undefined;
+  }
+
+  const folder = folderModeOf(args);
+  if (folder === undefined) return undefined;
+
+  return { directory: directory ?? "", folder };
+}
+
+/** What browsing a field offers: folders alone, or folders and the notes in them. */
+export type Browsed = "directory" | "file";
+
+/**
+ * Read off the capability's own schema rather than a list beside it, so a
+ * capability that marks a field askable is browsed without anything else to
+ * remember. A field holding folders offers folders; one holding a whole path
+ * offers folders and the notes in them.
+ */
+export function browsedBy(
+  capability: CapabilityName,
+  field: string,
+): Browsed | undefined {
+  const declared = capabilitiesFor({ accepts: [], browsable: true }).find(
+    (one) => one.name === capability,
+  );
+  const properties = declared?.argumentsSchema["properties"];
+  if (properties === undefined || properties === null) return undefined;
+
+  const held = (properties as Readonly<Record<string, JsonObject>>)[field];
+  if (held?.[ASKABLE_FIELD] !== true) return undefined;
+
+  if (held[PATH_FIELD] === "folders") return "directory";
+  if (held[PATH_FIELD] === true) return "file";
+  return undefined;
 }

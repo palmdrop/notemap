@@ -5,7 +5,7 @@ import {
   type CandidatesRequest,
   type Destination,
 } from "@notemap/core";
-import { APPEND, CREATE, CREATE_OR_APPEND } from "@notemap/output-markdown";
+import { browsedBy, type Browsed } from "@notemap/output-markdown";
 
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Child } from "./dav";
@@ -15,23 +15,6 @@ import { asWebdavSettings } from "./settings";
 
 /** The same cap the filesystem kind browses under: past this it is a search problem. */
 const LIMIT = 500;
-
-/** What the field may hold. A collection is walked through either way. */
-type Offered = "directory" | "file";
-
-/** Which fields offer anything, and which of the two things they offer. Nothing else does. */
-function offered(request: CandidatesRequest): Offered | undefined {
-  if (request.capability === CREATE && request.field === "directory") {
-    return "directory";
-  }
-  if (request.capability === APPEND && request.field === "path") {
-    return "file";
-  }
-  if (request.capability === CREATE_OR_APPEND && request.field === "path") {
-    return "file";
-  }
-  return undefined;
-}
 
 /**
  * One `PROPFIND` at `Depth: 1` per scope, which is the same one round trip per
@@ -45,7 +28,7 @@ export function webdavCandidates(credentials: CredentialResolver) {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer> => {
-    const kind = offered(request);
+    const kind = browsedBy(request.capability, request.field);
     if (kind === undefined) {
       throw new NotOffered(
         `${request.capability} has no candidates for its ${request.field} field`,
@@ -75,7 +58,7 @@ export function webdavCandidates(credentials: CredentialResolver) {
  * notes would otherwise bury the handful of ways down through it.
  */
 function page(
-  kind: Offered,
+  kind: Browsed,
   prefix: string,
   children: readonly Child[],
 ): CandidatesAnswer {

@@ -3,7 +3,10 @@ import {
   capabilitiesFor,
   CREATE,
   CREATE_OR_APPEND,
+  folderPointer,
   markdownOutput,
+  placedOutput,
+  PLACE_ASSETS,
   type Renderers,
 } from "@notemap/output-markdown";
 import {
@@ -29,6 +32,12 @@ import {
   type Wiring,
 } from "./notes";
 import { contain } from "./paths";
+import {
+  carryOutPlacing,
+  composePlacing,
+  makePlacingFolder,
+  requirePlacingFolder,
+} from "./placing";
 import {
   asWebdavSettings,
   WEBDAV,
@@ -113,6 +122,26 @@ export function createWebdavDestination(
       }
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(
+            dav,
+            settings.root,
+            delivery,
+            { exact: true },
+            signal,
+          );
+          await requirePlacingFolder(dav, placing, delivery, signal);
+          await makePlacingFolder(dav, placing, signal);
+          await carryOutPlacing(dav, placing, signal);
+
+          const pointer = folderPointer(placing.folder.relative);
+          return {
+            kind: "delivered",
+            ...(pointer === undefined ? {} : { pointer }),
+            output: placedOutput(placing.placed, placing.folder.relative),
+          };
+        }
+
         const landed = await carryOut(
           wiringFor(dav, renderers, settings),
           delivery,
@@ -139,6 +168,17 @@ export function createWebdavDestination(
       const dav = createDav(await config.credentials(settings.account));
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(
+            dav,
+            settings.root,
+            delivery,
+            { exact: false },
+            signal,
+          );
+          return placedOutput(placing.placed, placing.folder.relative);
+        }
+
         const previewed = await previewNote(
           wiringFor(dav, renderers, settings),
           delivery,

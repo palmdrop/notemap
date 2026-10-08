@@ -4,6 +4,7 @@ export * from "./frontmatter";
 export * from "./names";
 export * from "./note";
 export * from "./place";
+export * from "./placing";
 export * from "./renderers";
 export { insertUnder } from "./sections";
 export * from "./tags";

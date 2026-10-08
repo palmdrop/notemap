@@ -3602,3 +3602,302 @@ test("says where the item has gone already, on one line under its stamp", async 
   expect(within(line).getByText("Vault").className).toContain("font-semibold");
   expect(line.getAttribute("title")).toBe("journal/deep/2026-09-13.md");
 });
+
+/** As the file kinds declare it: a folder and nothing a note is shaped by. */
+const PLACE_ASSETS = {
+  name: "place-assets",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    additionalProperties: false,
+    "x-notemap-carries": "assets",
+    properties: {
+      directory: {
+        type: "string",
+        title: "Folder",
+        "x-notemap-candidates": true,
+        "x-notemap-path": "folders",
+      },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+  },
+};
+
+/** The markdown kinds' `create`, split into folders and a leaf, with its folder mode. */
+const CREATE_SPLIT = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      directory: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-path": "folders",
+      },
+      filename: { type: "string", "x-notemap-path": "leaf" },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+  },
+};
+
+/** A capture carrying a PDF, which is what "attachments only" is about. */
+function aPaper() {
+  return aCapture({
+    payload: {
+      type: "text",
+      content: { text: "a note" },
+      metadata: {},
+      assets: [{ slot: "000", asset: "paper" }],
+    },
+    assets: [
+      {
+        id: "paper",
+        filename: "paper.pdf",
+        mime: "application/pdf",
+        blob: "a".repeat(64),
+        bytes: 3,
+      },
+    ],
+  });
+}
+
+function servingCarrier(
+  template?: Record<string, unknown>,
+  resolved?: Record<string, unknown>,
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") {
+      return json(200, { values: template === undefined ? [] : [template] });
+    }
+    if (route === "GET /v1/items/one/route/resolve" && resolved !== undefined) {
+      return json(200, resolved);
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND, CREATE_SPLIT, PLACE_ASSETS],
+      });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+test("offers attachments only where the item has attachments and the destination a carrier", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: /attachments only/ }),
+  ).toBeDefined();
+  const everything = screen.getByRole("button", { name: "everything" });
+  expect(everything.getAttribute("aria-pressed")).toBe("true");
+});
+
+test("does not offer attachments only for a capture with none", async () => {
+  servingCarrier();
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
+
+  expect(screen.queryByRole("button", { name: /attachments only/ })).toBeNull();
+});
+
+test("attachments only routes the carrier to the folder the line had typed", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "library/paper-notes.md" } });
+  await choose(/attachments only/);
+
+  const folder = (await screen.findByRole("combobox", {
+    name: "Folder",
+  })) as HTMLInputElement;
+  expect(folder.value).toBe("library");
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+});
+
+test("taking everything gives the line back as it was, in the folder as it stands", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "library/a.md" } });
+  await choose(/attachments only/);
+  await screen.findByRole("combobox", { name: "Folder" });
+  await choose("everything");
+
+  const back = (await screen.findByRole("combobox", {
+    name: "place",
+  })) as HTMLInputElement;
+  expect(back.value).toBe("library/a.md");
+});
+
+test("draws no edit while only the attachments go, and lets a rewrite go", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
+
+  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.input(screen.getByLabelText("words"), {
+    target: { value: "rewritten" },
+  });
+  await choose(/attachments only/);
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+
+  await commit();
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  const body = (await sent()).find(
+    (each) =>
+      (each as Record<string, unknown>)["capability"] === "place-assets",
+  ) as Record<string, unknown>;
+  expect(body).not.toHaveProperty("content");
+});
+
+const LIBRARY = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a81",
+  name: "library",
+  destination: VAULT,
+  capability: "place-assets",
+  arguments: { directory: "library" },
+  folder: "create",
+};
+
+const FILED = {
+  id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a82",
+  name: "filed",
+  destination: VAULT,
+  capability: "create",
+  arguments: { directory: "research", filename: "a.md" },
+  folder: "require",
+};
+
+const routeSent = async () => {
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  return sent();
+};
+
+test("a template placing the attachments alone draws attachments only taken, and commits as itself", async () => {
+  servingCarrier(LIBRARY, {
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+
+  draw(aPaper());
+  await choose("library");
+
+  const only = await screen.findByRole("button", { name: "attachments only" });
+  expect(only.getAttribute("aria-pressed")).toBe("true");
+  expect(await screen.findByText("library/")).toBeDefined();
+
+  await commit();
+  expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
+});
+
+/** Only the toggle used to let a rewrite go, so a template reached after one sent it. */
+test("a rewrite made before taking an attachments-only template is neither drawn nor sent", async () => {
+  servingCarrier(LIBRARY, {
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+
+  draw(aPaper());
+  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.input(screen.getByLabelText("words"), {
+    target: { value: "rewritten" },
+  });
+  await choose("library");
+  await screen.findByRole("button", { name: "attachments only" });
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.queryByText("rewritten")).toBeNull();
+
+  await commit();
+  const bodies = (await routeSent()) as Record<string, unknown>[];
+  expect(bodies.every((body) => !("content" in body))).toBe(true);
+});
+
+test("attachments only keeps a create template's folder and its folder mode", async () => {
+  servingCarrier(FILED, {
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research", filename: "a.md", folder: "require" },
+  });
+
+  draw(aPaper());
+  await choose("filed");
+  await choose("attachments only");
+
+  const folder = (await screen.findByRole("combobox", {
+    name: "Folder",
+  })) as HTMLInputElement;
+  expect(folder.value).toBe("research");
+
+  await commit();
+  expect(await routeSent()).toContainEqual({
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "research", folder: "require" },
+  });
+});
+
+/** Back as it was, so nothing was corrected and it commits as the template. */
+test("everything gives a create template back as itself", async () => {
+  servingCarrier(FILED, {
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research", filename: "a.md", folder: "require" },
+  });
+
+  draw(aPaper());
+  await choose("filed");
+  await choose("attachments only");
+  await screen.findByRole("combobox", { name: "Folder" });
+  await choose("everything");
+
+  await commit();
+  expect(await routeSent()).toContainEqual({ template: FILED.id });
+});

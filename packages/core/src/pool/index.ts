@@ -11,6 +11,8 @@ export { destinationRegistry } from "./destinations/registry";
 export {
   ANNOTATIONS,
   ASKABLE_FIELD,
+  CARRIES,
+  CARRIES_ASSETS,
   FOLDER_ARGUMENT,
   INHERITS_FIELD,
   OFFERED_ONLY_FIELD,

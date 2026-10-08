@@ -384,7 +384,7 @@ test("a capability with no folders is offered no folder mode", async () => {
 
   await screen.findByRole("button", { name: "reading" });
   expect(screen.queryByRole("button", { name: /^establish/ })).toBeNull();
-  expect(screen.queryByText("folder")).toBeNull();
+  expect(screen.queryByText("if missing")).toBeNull();
 });
 
 test("saves what was chosen, and says create where there are no folders", async () => {
@@ -915,4 +915,122 @@ test("a destination that cannot be asked leaves the field typable", async () => 
   const field = (await screen.findByLabelText("channel")) as HTMLInputElement;
   await fireEvent.input(field, { target: { value: "reading" } });
   expect(field.value).toBe("reading");
+});
+
+/** As the file kinds declare it, beside a capability that writes a note. */
+const PLACE_ASSETS = {
+  name: "place-assets",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    "x-notemap-carries": "assets",
+    properties: {
+      directory: { type: "string", "x-notemap-path": "folders" },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+  },
+};
+
+test("offers the attachments alone under output, not under action", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [CREATE, PLACE_ASSETS]);
+
+  render(Templates);
+  await open(/add a template/);
+
+  const everything = await screen.findByRole("button", { name: "everything" });
+  expect(everything.getAttribute("aria-pressed")).toBe("true");
+  // The action, and the folder mode of the same name.
+  expect(screen.getAllByRole("button", { name: "create" })).toHaveLength(2);
+  expect(screen.queryByRole("button", { name: "place-assets" })).toBeNull();
+
+  await open("attachments only");
+  expect(screen.queryByText("action")).toBeNull();
+  expect(screen.getAllByRole("button", { name: "create" })).toHaveLength(1);
+});
+
+test("saves a template that places the attachments alone", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [CREATE, PLACE_ASSETS]);
+
+  render(Templates);
+  await open(/add a template/);
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Library" },
+  });
+  await open("attachments only");
+  await fireEvent.input(screen.getByLabelText("directory"), {
+    target: { value: "library" },
+  });
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Library",
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+    folder: "create",
+  });
+});
+
+const APPEND_PATH = {
+  name: "append",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: { path: { type: "string", "x-notemap-path": true } },
+  },
+};
+
+test("everything gives back the action held before attachments only", async () => {
+  serving(
+    [],
+    { kind: "fits" },
+    [aDestination()],
+    [CREATE, APPEND_PATH, PLACE_ASSETS],
+  );
+
+  render(Templates);
+  await open(/add a template/);
+
+  await open("append");
+  await open("attachments only");
+  await open("everything");
+
+  const append = await screen.findByRole("button", { name: "append" });
+  expect(append.getAttribute("aria-pressed")).toBe("true");
+});
+
+test("a kind with no other capability draws no output", async () => {
+  serving([], { kind: "fits" }, [aDestination()], [PLACE_ASSETS]);
+
+  render(Templates);
+  await open(/add a template/);
+
+  await screen.findByRole("button", { name: "place-assets" });
+  expect(screen.queryByRole("button", { name: "everything" })).toBeNull();
+});
+
+test("an opened template placing the attachments alone says so under output", async () => {
+  serving(
+    [
+      aTemplate({
+        capability: "place-assets",
+        arguments: { directory: "library" },
+      }),
+    ],
+    { kind: "fits" },
+    [aDestination()],
+    [CREATE, PLACE_ASSETS],
+  );
+
+  render(Templates);
+  await open(/research/);
+
+  await vi.waitFor(async () => {
+    expect(await said("output")).toBe("attachments only");
+  });
+  expect(screen.queryByText("action")).toBeNull();
 });

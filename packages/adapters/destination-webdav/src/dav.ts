@@ -10,7 +10,12 @@ export type Conditional = "written" | "condition-failed";
 
 /** Anything a later attempt could find different is thrown as `Unreachable` instead. */
 export type Looked =
-  | { readonly kind: "there"; readonly collection: boolean }
+  | {
+      readonly kind: "there";
+      readonly collection: boolean;
+      /** Absent where the server did not say. */
+      readonly bytes?: number;
+    }
   | { readonly kind: "not-there" }
   | { readonly kind: "refused"; readonly status: number };
 
@@ -23,6 +28,11 @@ export type Child = {
 
 export type Dav = {
   get(path: string, signal?: AbortSignal): Promise<Fetched>;
+  /** `GET` as it arrives, for a file too large to hold as a string. */
+  read(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<AsyncIterable<Uint8Array> | undefined>;
   /** `PUT` that must not overwrite. */
   create(path: string, body: Body, signal?: AbortSignal): Promise<Conditional>;
   /** `PUT` that must land on exactly the note that was read. */
@@ -60,7 +70,7 @@ const RATE_LIMITED = 429;
 const SERVER_FAULT = 500;
 
 /** A body rather than none, which is allowed but which some servers refuse. */
-const RESOURCE_TYPE = `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>`;
+const RESOURCE_TYPE = `<?xml version="1.0" encoding="utf-8"?><propfind xmlns="DAV:"><prop><resourcetype/><getcontentlength/></prop></propfind>`;
 
 export function createDav(credential: WebdavCredential): Dav {
   const authorization = `Basic ${Buffer.from(
@@ -134,6 +144,18 @@ export function createDav(credential: WebdavCredential): Dav {
       };
     },
 
+    read: async (path, signal) => {
+      const response = await send("GET", path, { signal });
+      if (response.status === NOT_THERE) {
+        void response.body?.cancel();
+        return undefined;
+      }
+      await ok(response, path);
+
+      const body = response.body;
+      return body === null ? (async function* () {})() : body;
+    },
+
     create: async (path, body, signal) => {
       const response = await send("PUT", path, {
         body,
@@ -204,9 +226,12 @@ export function createDav(credential: WebdavCredential): Dav {
         signal,
       });
       if (response.ok) {
+        const answered = await response.text();
+        const bytes = lengthOf(answered);
         return {
           kind: "there",
-          collection: isCollection(await response.text()),
+          collection: isCollection(answered),
+          ...(bytes === undefined ? {} : { bytes }),
         };
       }
 
@@ -261,6 +286,13 @@ function failure(response: Response, path: string): Error {
 /** Matched rather than parsed: the deciding element may carry any prefix or none. */
 function isCollection(body: string): boolean {
   return /<[a-z0-9]*:?collection\b[^>]*\/?>/i.test(body);
+}
+
+function lengthOf(body: string): number | undefined {
+  const length = /<[a-z0-9]*:?getcontentlength\b[^>]*>\s*(\d+)\s*</i.exec(
+    body,
+  )?.[1];
+  return length === undefined ? undefined : Number(length);
 }
 
 /**

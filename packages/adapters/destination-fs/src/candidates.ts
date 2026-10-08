@@ -11,7 +11,7 @@ import {
   type Destination,
 } from "@notemap/core";
 
-import { APPEND, CREATE, CREATE_OR_APPEND } from "@notemap/output-markdown";
+import { browsedBy, type Browsed } from "@notemap/output-markdown";
 
 import { contain, realOverlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
@@ -23,31 +23,12 @@ export type CandidatesConfig = {
   readonly reserved?: readonly string[];
 };
 
-/** What the field may hold. A folder is walked through either way. */
-type Offered = "directory" | "file";
-
-/** Which fields offer anything, and which of the two things they offer. Nothing else does. */
-function offered(request: CandidatesRequest): Offered | undefined {
-  if (request.capability === CREATE && request.field === "directory") {
-    return "directory";
-  }
-  if (request.capability === APPEND && request.field === "path") {
-    return "file";
-  }
-  // The typed line reads folders and files together: one call per level draws
-  // the tree and says whether the leaf is there.
-  if (request.capability === CREATE_OR_APPEND && request.field === "path") {
-    return "file";
-  }
-  return undefined;
-}
-
 export async function filesystemCandidates(
   config: CandidatesConfig,
   destination: Destination,
   request: CandidatesRequest,
 ): Promise<CandidatesAnswer> {
-  const kind = offered(request);
+  const kind = browsedBy(request.capability, request.field);
   if (kind === undefined) {
     throw new NotOffered(
       `${request.capability} has no candidates for its ${request.field} field`,
@@ -84,7 +65,7 @@ async function resolveRoot(root: string): Promise<string> {
 /** One entry, with the question `readdir` sometimes cannot answer already settled. */
 export type Listed = {
   readonly name: string;
-  readonly kind: Offered | undefined;
+  readonly kind: Browsed | undefined;
 };
 
 async function list(directory: string): Promise<readonly Listed[]> {
@@ -138,7 +119,7 @@ export async function settle(
  * the handful of ways down through it.
  */
 function page(
-  kind: Offered,
+  kind: Browsed,
   prefix: string,
   entries: readonly Listed[],
 ): CandidatesAnswer {

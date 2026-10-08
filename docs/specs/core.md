@@ -4,11 +4,17 @@
 **Last updated**: 2026-10-08
 **Shipped**:
 
+- 2026-10-08 — **A capture can be routed as its attachments alone.** The file kinds declare
+  `place-assets`, which writes a capture's attachments into a folder with no note. Each lands under
+  its uploaded name, numbered past a file holding something else, and a retry still lands nothing
+  twice. A capability says it carries the attachments alone with `x-notemap-carries`, which core
+  never reads.
+  ([ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md),
+  [plan](../plans/attachments-only.md))
 - 2026-10-08 — **A picture's dimensions are read from its bytes.** An asset whose media type is
   `image/*` is measured as it is stored and carries `dimensions`, as it is drawn, where its bytes say;
   `maintenance.measurePictures` measures the ones stored before, and the host runs it once as it
   starts. ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))
-
 - 2026-10-02 — **A path field says which part of the path it holds.** `x-notemap-path` takes
   `true` for a whole path, `"folders"` and `"leaf"` for one split across two fields, and the
   markdown kinds' `create` declares its directory and filename that way. A `create` template that
@@ -986,7 +992,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   the adapter **could not confirm** that anything was delivered, so the job is retried with backoff.
   Whether a retry can duplicate is then **each kind's own promise**, made where it is enforced and
   stated in that kind's README: both file kinds keep the strong one — a retry cannot duplicate,
-  by a digest in an asset's filename, by `EEXIST` and by `PUT If-None-Match: *` — and a kind whose
+  by a digest in an asset's filename or, for assets placed alone, by a name walked to the same
+  bytes, by `EEXIST` and by `PUT If-None-Match: *` — and a kind whose
   protocol offers no conditional create and no idempotency key says instead that it may, and names
   the window. `rejected` is proof that the destination was reached and refused, so it is abandoned
   on the first attempt — the same call enrichment makes for a failure reported as not worth
@@ -1354,6 +1361,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   pattern vocabulary beside such a field is advice that can only ever fail. It says the field *may*
   hold only what was offered, not that a caller must refuse anything else — a browse answers one
   page of what a destination holds, so what it did not name is not thereby wrong.
+- **A capability may say it carries a capture's assets alone** (added 2026-10-08,
+  [ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md)), with
+  `x-notemap-carries: "assets"` at the root of its arguments schema. **Core never reads it**: it is
+  said for the surfaces, which offer "attachments only" wherever a destination declares one, and
+  know no capability by name to do it. The file kinds declare one, `place-assets`, whose arguments
+  are a folder and the folder mode. It writes every asset the payload references into the folder
+  and no note; a capture referencing none is **rejected**. An asset lands under the name it was
+  uploaded with, made one safe segment and with no digest. Where that name holds different bytes,
+  it walks `-1`, `-2`, … to the first name that is free or holds the same bytes, and the same bytes
+  count as landed. So a retry stops at the copy its last attempt wrote, and the file kinds' promise
+  holds: a retry cannot duplicate. A name taken between the walk and the write is retried rather
+  than rejected. A preview walks without reading, taking a file of the same size for the same
+  bytes. The pointer is the folder, absent at the root, and the output is the placed paths as
+  `text/plain`, its note naming those already there.
 - **A capability may say an argument inherits, and when a field is worth offering** (added
   2026-09-21). `x-notemap-inherits` on an argument says that, left absent, it takes the
   destination's setting of the same name — which the markdown kinds' `frontmatter` and `hashtags`

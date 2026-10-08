@@ -118,6 +118,21 @@ describe("what a webdav vault offers the typed line", () => {
     ]);
   });
 
+  it("offers place-assets' directory the collections alone", async () => {
+    const { server, candidates } = await vault();
+    server.makeCollection("V/library");
+    server.put("V/decisions.md", "a note");
+
+    expect(
+      (
+        await candidates({
+          capability: "place-assets" as CapabilityName,
+          field: "directory",
+        })
+      ).entries,
+    ).toEqual([{ label: "library", value: "library", scope: "library" }]);
+  });
+
   it("offers nothing for a heading, which is free text", async () => {
     const { candidates } = await vault();
 

@@ -18,9 +18,11 @@ export type DavServer = {
   readonly password: string;
   /** Every file, path to content, so a test reads the vault as one value. */
   files(): Record<string, string>;
+  /** One file's bytes exactly, for content that is not text. */
+  bytesOf(path: string): Uint8Array | undefined;
   collections(): readonly string[];
   /** Puts a file there without going through the API, for a vault that already had one. */
-  put(path: string, content: string): void;
+  put(path: string, content: string | Uint8Array): void;
   makeCollection(path: string): void;
   /** What arrived, in order, as `METHOD /path`. */
   requests(): readonly string[];
@@ -40,12 +42,14 @@ export type DavServer = {
    * compressing responses does. Nothing can then match `If-Match`.
    */
   weakenEtags(): void;
+  /** Answer `PROPFIND` with no `getcontentlength` from here on, as some servers do. */
+  withholdSizes(): void;
   close(): Promise<void>;
 };
 
 type Entry =
   | { readonly kind: "collection" }
-  | { kind: "file"; content: string; version: number };
+  | { kind: "file"; content: Buffer; version: number };
 
 /** One level down, which is all `Depth: 1` promises. */
 function childrenOf(tree: Map<string, Entry>, path: string): readonly string[] {
@@ -57,12 +61,20 @@ function childrenOf(tree: Map<string, Entry>, path: string): readonly string[] {
   });
 }
 
-function propfindResponse(tree: Map<string, Entry>, path: string): string {
-  const resourceType =
-    tree.get(path)?.kind === "collection" ? "<d:collection/>" : "";
+function propfindResponse(
+  tree: Map<string, Entry>,
+  path: string,
+  sized: boolean,
+): string {
+  const entry = tree.get(path);
+  const resourceType = entry?.kind === "collection" ? "<d:collection/>" : "";
+  const length =
+    sized && entry?.kind === "file"
+      ? `<d:getcontentlength>${entry.content.byteLength}</d:getcontentlength>`
+      : "";
   const href = `/${BASE}/${path.split("/").map(encodeURIComponent).join("/")}`;
 
-  return `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+  return `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:resourcetype>${resourceType}</d:resourcetype>${length}</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
 }
 
 const BASE = "dav";
@@ -79,6 +91,7 @@ export async function startDavServer(): Promise<DavServer> {
 
   let versions = 0;
   let weak = false;
+  let sized = true;
   const etagOf = (entry: Entry & { kind: "file" }): string =>
     `${weak ? "W/" : ""}"v${entry.version}"`;
 
@@ -129,7 +142,7 @@ export async function startDavServer(): Promise<DavServer> {
         .writeHead(207, { "content-type": "application/xml; charset=utf-8" })
         .end(
           `<?xml version="1.0"?><d:multistatus xmlns:d="DAV:">${listed
-            .map((each) => propfindResponse(tree, each))
+            .map((each) => propfindResponse(tree, each, sized))
             .join("")}</d:multistatus>`,
         );
       return;
@@ -190,9 +203,13 @@ export async function startDavServer(): Promise<DavServer> {
 
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 
-  const write = (path: string, content: string): void => {
+  const write = (path: string, content: string | Uint8Array): void => {
     versions += 1;
-    tree.set(trim(path), { kind: "file", content, version: versions });
+    tree.set(trim(path), {
+      kind: "file",
+      content: Buffer.from(content),
+      version: versions,
+    });
   };
 
   return {
@@ -204,11 +221,18 @@ export async function startDavServer(): Promise<DavServer> {
     files: () => {
       const held: Array<{ path: string; content: string }> = [];
       for (const [path, entry] of tree) {
-        if (entry.kind === "file") held.push({ path, content: entry.content });
+        if (entry.kind === "file") {
+          held.push({ path, content: entry.content.toString("utf8") });
+        }
       }
       held.sort((a, b) => (a.path < b.path ? -1 : 1));
 
       return Object.fromEntries(held.map((each) => [each.path, each.content]));
+    },
+
+    bytesOf: (path) => {
+      const entry = tree.get(trim(path));
+      return entry?.kind === "file" ? new Uint8Array(entry.content) : undefined;
     },
 
     collections: () =>
@@ -236,6 +260,10 @@ export async function startDavServer(): Promise<DavServer> {
 
     weakenEtags: () => {
       weak = true;
+    },
+
+    withholdSizes: () => {
+      sized = false;
     },
 
     interceptOnce: (method, run) => {
@@ -275,10 +303,10 @@ function hasParent(tree: ReadonlyMap<string, Entry>, path: string): boolean {
   return tree.get(parent)?.kind === "collection";
 }
 
-async function read(request: IncomingMessage): Promise<string> {
+async function read(request: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = [];
   for await (const chunk of request) chunks.push(chunk as Buffer);
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
 }
 
 function closed(server: Server): Promise<void> {

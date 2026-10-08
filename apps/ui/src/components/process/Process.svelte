@@ -34,7 +34,9 @@
   import Lead from "$components/primitives/text/Lead.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
+  import { folderIn, withFolder } from "$lib/output";
   import { browserFor } from "$lib/candidate-browsers";
+  import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
@@ -76,6 +78,8 @@
   const CREATE_OR_APPEND = "create-or-append";
   /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
+  /** Where a folder mode is carried, which core writes and no adapter names. */
+  const FOLDER_MODE = "folder";
 
   /** A keystroke in the decision waits this long before the preview is asked for again. */
   const SETTLING = 400;
@@ -185,6 +189,18 @@
   const chosenCapability = $derived(
     capabilities.find((one) => one.name === capability),
   );
+
+  /** The capability that carries the attachments and nothing else, where the destination has one. */
+  const carrier = $derived(capabilities.find(carriesAssets));
+  const assetsOnly = $derived(
+    chosenCapability !== undefined && carriesAssets(chosenCapability),
+  );
+
+  /**
+   * The words the head draws: a rewrite is set aside while only the
+   * attachments go, and comes back with `everything`.
+   */
+  const shownWords = $derived(assetsOnly ? captured : (words ?? captured));
   const declared = $derived(fieldsOf(chosenCapability?.argumentsSchema));
   const reading = $derived(readingOf(chosenCapability));
 
@@ -254,6 +270,65 @@
     const seeded = { ...wanted, ...held };
     if (Object.keys(seeded).length !== Object.keys(held).length) args = seeded;
   });
+
+  /**
+   * Only beside a capability the surface settles, which is what `everything`
+   * gives back; a kind that settles nothing offers the carrier under `do`.
+   */
+  const offersOutput = $derived(
+    carrier !== undefined &&
+      implied !== undefined &&
+      implied !== carrier.name &&
+      (attachments.length > 0 || assetsOnly),
+  );
+
+  /** What the decision held before `attachments only` was taken, which `everything` gives back. */
+  let before = $state<
+    { capability: string; args: Record<string, string> } | undefined
+  >(undefined);
+
+  /**
+   * Takes the carrier, or gives back what was held before it, in the folder as
+   * it now stands and keeping the folder mode, and opens the place it changed.
+   * A template's capability comes back as itself, not as the settled one.
+   */
+  function output(attachmentsOnly: boolean): void {
+    if (carrier === undefined || implied === undefined) return;
+    if (capability === undefined || attachmentsOnly === assetsOnly) return;
+    placing = true;
+    opened.place = true;
+    forecast = undefined;
+
+    const folder = folderIn(chosenCapability?.argumentsSchema, args);
+    const mode = args[FOLDER_MODE];
+    const carried = (
+      schema: Record<string, unknown> | undefined,
+      held: Record<string, string>,
+    ) => {
+      const placed = withFolder(schema, held, folder);
+      const takesMode = fieldsOf(schema).some(
+        (one) => one.name === FOLDER_MODE,
+      );
+      return mode === undefined || !takesMode
+        ? placed
+        : { ...placed, [FOLDER_MODE]: mode };
+    };
+
+    if (attachmentsOnly) {
+      before = { capability, args };
+      capability = carrier.name;
+      args = carried(carrier.argumentsSchema, {});
+      return;
+    }
+
+    const back = before ?? { capability: implied, args: {} };
+    before = undefined;
+    capability = back.capability;
+    args = carried(
+      capabilities.find((one) => one.name === back.capability)?.argumentsSchema,
+      back.args,
+    );
+  }
 
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
   const chooses = $derived(capabilities.length > 1 && implied === undefined);
@@ -338,6 +413,7 @@
     previewing = false;
     answeredFor = undefined;
     placing = true;
+    before = undefined;
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
@@ -518,7 +594,7 @@
    * content is replaced, so the assets stay the capture's.
    */
   function carried(): { content?: Record<string, unknown> } {
-    return words === undefined || words === captured
+    return assetsOnly || words === undefined || words === captured
       ? {}
       : { content: saidAs(item.payload, words).content };
   }
@@ -529,6 +605,7 @@
    * the row.
    */
   function edit(): void {
+    if (assetsOnly) return;
     words ??= captured;
     editing = true;
   }
@@ -843,7 +920,12 @@
       refusal: ready ? undefined : "nowhere to send it",
       run: () => void send(),
     },
-    { id: "edit", label: "edit", run: edit },
+    {
+      id: "edit",
+      label: "edit",
+      refusal: assetsOnly ? "only the attachments go" : undefined,
+      run: edit,
+    },
     { id: "back", label: "back", run: () => (editing ? done() : back()) },
     {
       id: "previous",
@@ -926,7 +1008,7 @@
   >
     <div class="mb-2 flex items-baseline justify-between gap-x-[2ch]">
       <Stamp at={item.createdAt} inline />
-      {#if !editing}
+      {#if !editing && !assetsOnly}
         <button
           type="button"
           onclick={edit}
@@ -946,7 +1028,7 @@
       <AttachedPictures {attachments} picture="max-h-64" />
     </div>
 
-    {#if editing}
+    {#if editing && !assetsOnly}
       <textarea
         bind:this={typing}
         bind:value={words}
@@ -974,12 +1056,12 @@
         class="min-h-0 max-w-prose overflow-auto break-words whitespace-pre-wrap"
         ondblclick={edit}
       >
-        {words ?? captured}
+        {shownWords}
       </div>
       <div class="flex-none">
-        <AttachedLines {attachments} ruled={(words ?? captured) !== ""} />
+        <AttachedLines {attachments} ruled={shownWords !== ""} />
       </div>
-      <Unfurls text={words ?? captured} />
+      <Unfurls text={shownWords} />
     {/if}
   </div>
 
@@ -1066,6 +1148,23 @@
         {/if}
       {/if}
     </Section>
+
+    {#if offersOutput}
+      <Section name="output" open ontoggle={() => undefined}>
+        <div class="flex flex-wrap gap-x-[2ch]">
+          <Option
+            label="everything"
+            chosen={!assetsOnly}
+            onchoose={() => output(false)}
+          />
+          <Option
+            label="attachments only"
+            chosen={assetsOnly}
+            onchoose={() => output(true)}
+          />
+        </div>
+      </Section>
+    {/if}
 
     <Section
       name="place"
