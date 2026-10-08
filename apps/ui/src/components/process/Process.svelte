@@ -263,10 +263,10 @@
   });
 
   /**
-   * Only beside a capability the surface settles, which is what the toggle
+   * Only beside a capability the surface settles, which is what `everything`
    * gives back; a kind that settles nothing offers the carrier under `do`.
    */
-  const offersAssetsOnly = $derived(
+  const offersOutput = $derived(
     carrier !== undefined &&
       implied !== undefined &&
       implied !== carrier.name &&
@@ -274,12 +274,15 @@
   );
 
   /**
-   * Swaps between the settled capability and the carrier, keeping the folder
-   * the one held. The words go: a delivery of the attachments alone carries
-   * none for a rewrite to replace.
+   * Takes the carrier or gives the settled capability back, keeping the folder
+   * the one held, and opens the place it changed. The words go: a delivery of
+   * the attachments alone carries none for a rewrite to replace.
    */
-  function toggleAssetsOnly(): void {
+  function output(attachmentsOnly: boolean): void {
     if (carrier === undefined || implied === undefined) return;
+    if (attachmentsOnly === assetsOnly) return;
+    placing = true;
+    opened.place = true;
     const folders = fieldsOf(carrier.argumentsSchema).find(
       (field) => field.path === "folders",
     )?.name;
@@ -1120,18 +1123,28 @@
       {/if}
     </Section>
 
+    {#if offersOutput}
+      <Section name="output" open ontoggle={() => undefined}>
+        <div class="flex flex-wrap gap-x-[2ch]">
+          <Option
+            label="everything"
+            chosen={!assetsOnly}
+            onchoose={() => output(false)}
+          />
+          <Option
+            label="attachments only"
+            chosen={assetsOnly}
+            onchoose={() => output(true)}
+          />
+        </div>
+      </Section>
+    {/if}
+
     <Section
       name="place"
       open={opened.place}
       ontoggle={() => (opened.place = !opened.place)}
     >
-      {#if offersAssetsOnly && placing}
-        <Option
-          label="attachments only"
-          chosen={assetsOnly}
-          onchoose={toggleAssetsOnly}
-        />
-      {/if}
       {#if chosen === undefined && applied !== undefined}
         <Asking />
       {:else if chosen !== undefined && described === undefined}

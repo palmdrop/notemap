@@ -146,6 +146,12 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
       on, route to `library/`, and see `library/paper.pdf` land with no note beside it.
 - [x] Commit _(2026-10-08)_
 
+- [x] *(Changed after review, 2026-10-08)* The toggle becomes an `output` section before `place`,
+      with two options, `everything` and `attachments only`, on the process surface and the
+      template form, where the carrier leaves the `action` list. `CONTEXT.md` notes the shell's
+      use of `output`.
+- [x] *(Fixed after review)* Both kinds answer candidates for `place-assets`' folder.
+
 ### Phase 6 — finishing
 
 - [x] Typecheck, lint, `pnpm -r --silent test`.

@@ -399,7 +399,10 @@ meaningful to keep, and named by the **routing record** rather than by the item,
 destinations produce two outputs from one item. Carries a media type and may carry a **note**: free
 prose about what could not be carried, which nothing parses. A destination may also be asked for
 one **before** anything is committed, which is a **preview** — indicative and never binding, since
-the delivery converts again when it runs.
+the delivery converts again when it runs. The shell spends the word on something else, on the
+same terms `discard` stands for **archive**: its `output` section is the choice of what a delivery
+carries, `everything` or `attachments only`, which is a capability and not an output. The shell
+never names an output as such; it draws one under `preview`.
 _Avoid_: rendition, artifact, receipt. Rendition collides with **Rendering**, which is the mirror's
 readable file; an **artifact** is an enrichment's output and belongs to an item; a receipt would
 imply the destination acknowledged something, which nothing here does.

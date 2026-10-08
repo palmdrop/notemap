@@ -3676,6 +3676,8 @@ test("offers attachments only where the item has attachments and the destination
   expect(
     await screen.findByRole("button", { name: /attachments only/ }),
   ).toBeDefined();
+  const everything = screen.getByRole("button", { name: "everything" });
+  expect(everything.getAttribute("aria-pressed")).toBe("true");
 });
 
 test("does not offer attachments only for a capture with none", async () => {
@@ -3716,7 +3718,7 @@ test("attachments only routes the carrier to the folder the line had typed", asy
   });
 });
 
-test("taking attachments only again gives the line back, holding the folder", async () => {
+test("taking everything gives the line back, holding the folder", async () => {
   servingCarrier();
 
   draw(aPaper());
@@ -3726,7 +3728,7 @@ test("taking attachments only again gives the line back, holding the folder", as
   await fireEvent.input(line, { target: { value: "library/a.md" } });
   await choose(/attachments only/);
   await screen.findByRole("combobox", { name: "Folder" });
-  await choose(/attachments only/);
+  await choose("everything");
 
   const back = (await screen.findByRole("combobox", {
     name: "place",

@@ -5,8 +5,9 @@
 **Shipped**:
 
 - 2026-10-08 — **Attachments only.** Where a destination can place a capture's attachments
-  alone and the item has some, `place` offers `attachments only`: the line becomes the folder
-  they go in, `edit` goes, and the preview lists the paths they would land at.
+  alone, an `output` section before `place`, on the process surface and the template form, offers
+  `everything` or `attachments only`. Taken, the place becomes the folder they go in, `edit` goes,
+  and the preview lists the paths they would land at.
   ([ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md),
   [plan](../plans/attachments-only.md))
 - 2026-10-08 — **Scrolling stops clear of the status line, and the quiet places say plainly.** A row
@@ -1074,8 +1075,8 @@ the item is never changed, words nobody changed carry nothing, and wanting the f
 wanting the row's `edit`.
 
 **The middle is ruled sections**, each a label column and a content column, the label in bold
-capitals; below `narrow` the label stacks over the content. In order: `destination`, `place`,
-`tags`, `preview`. **`place` and `preview` are drawn collapsed** — the label alone, opened by a
+capitals; below `narrow` the label stacks over the content. In order: `destination`, `output`
+where it is drawn, `place`, `tags`, `preview`. **`place` and `preview` are drawn collapsed** — the label alone, opened by a
 press or when the flow reaches them — except where they already hold something: a preview that has
 answered draws open. **`tags` is always open** *(amended 2026-09-27; it was collapsed on an item
 with no tags, which hid the `+` behind the label)*: the chooser's `+` is what the section holds.
@@ -1418,17 +1419,24 @@ its folder was there.
 **Attachments only** *(2026-10-08,
 [ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md))*. Where the chosen
 destination settles a capability and also declares one that carries a capture's assets alone, and
-the item has attachments, `place` draws `attachments only` above the line. Taking it takes that
-capability, found by its annotation and never by its name: the line gives way to the folder the
+the item has attachments, an **`output` section** is drawn between `destination` and `place`,
+always open, holding two options: `everything`, taken by default, and `attachments only`. It comes
+before the place because it decides what the place is. Two options rather than one: a lone option
+that is not taken reads as plain text. Taking `attachments only` takes that capability, found by
+its annotation and never by its name, and opens the place: the line gives way to the folder the
 files go in, drawn as any field marked `folders` is and holding the folder the line had typed.
-Taking it again gives the settled capability back, holding that folder. **While it is taken,
+Taking `everything` gives the settled capability back, holding that folder. **While it is taken,
 `edit` in the head is not drawn** and `e` says why: the delivery carries no words for a rewrite to
 replace, and words already rewritten are let go. The preview is drawn as it is for any destination,
 the attachments around what would be written, which here is the paths the files would land at —
 `library/paper-1.pdf` where `paper.pdf` already holds something else — with a note naming those
 already there. A record of one reads the folder, `→ **Vault** library/`, and its block says
-`placed`. A template carries the capability as it carries any, and taken, draws the toggle taken.
-A kind that settles nothing offers the capability among the others under `do`, with no toggle.
+`placed`. A template carries the capability as it carries any, and taken, draws `attachments only`
+taken. A kind that settles nothing offers the capability among the others under `do`, with no
+`output`. **The template form draws the same `output` row after `destination`** wherever the
+destination declares such a capability, whatever item it will meet, and leaves that capability out
+of `action`; while `attachments only` is taken, `action` is not drawn, there being nothing else it
+could be.
 
 **The words a delivery carries sit above `would write`** *(added 2026-09-10,
 [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*. A `words` row in the right column,
