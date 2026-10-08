@@ -1371,8 +1371,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   uploaded with, made one safe segment and with no digest. Where that name holds different bytes,
   it walks `-1`, `-2`, … to the first name that is free or holds the same bytes, and the same bytes
   count as landed. So a retry stops at the copy its last attempt wrote, and the file kinds' promise
-  holds: a retry cannot duplicate. The pointer is the folder, absent at the root, and the output is
-  the placed paths as `text/plain`, its note naming those already there.
+  holds: a retry cannot duplicate. A name taken between the walk and the write is retried rather
+  than rejected. A preview walks without reading, taking a file of the same size for the same
+  bytes. The pointer is the folder, absent at the root, and the output is the placed paths as
+  `text/plain`, its note naming those already there.
 - **A capability may say an argument inherits, and when a field is worth offering** (added
   2026-09-21). `x-notemap-inherits` on an argument says that, left absent, it takes the
   destination's setting of the same name — which the markdown kinds' `frontmatter` and `hashtags`

@@ -1425,9 +1425,12 @@ before the place because it decides what the place is. Two options rather than o
 that is not taken reads as plain text. Taking `attachments only` takes that capability, found by
 its annotation and never by its name, and opens the place: the line gives way to the folder the
 files go in, drawn as any field marked `folders` is and holding the folder the line had typed.
-Taking `everything` gives the settled capability back, holding that folder. **While it is taken,
-`edit` in the head is not drawn** and `e` says why: the delivery carries no words for a rewrite to
-replace, and words already rewritten are let go. The preview is drawn as it is for any destination,
+Taking `everything` gives back what was held before, the capability and its place, in the folder as
+it now stands — a template's own capability, not the settled one — or the settled capability where
+nothing was. The folder mode goes across both ways. **While it is taken, `edit` in the head is not
+drawn** and `e` says why: the delivery carries no words for a rewrite to replace. A rewrite made
+before, however `attachments only` was reached, is neither drawn nor sent, and comes back with
+`everything`. The preview is drawn as it is for any destination,
 the attachments around what would be written, which here is the paths the files would land at —
 `library/paper-1.pdf` where `paper.pdf` already holds something else — with a note naming those
 already there. A record of one reads the folder, `→ **Vault** library/`, and its block says
@@ -1436,7 +1439,7 @@ taken. A kind that settles nothing offers the capability among the others under 
 `output`. **The template form draws the same `output` row after `destination`** wherever the
 destination declares such a capability, whatever item it will meet, and leaves that capability out
 of `action`; while `attachments only` is taken, `action` is not drawn, there being nothing else it
-could be.
+could be, and `everything` gives back the action held before.
 
 **The words a delivery carries sit above `would write`** *(added 2026-09-10,
 [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*. A `words` row in the right column,

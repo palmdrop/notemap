@@ -67,18 +67,24 @@ name is free it is written. Where it holds the same bytes, the asset has already
 is written. Where it holds different bytes, the walk tries `stem-1.ext`, `stem-2.ext`, and so on.
 "The same bytes" is the asset's blob digest against the SHA-256 of the file there, read only where
 the sizes match. Two assets of one delivery that want one name walk the same chain, the second
-seeing what the first claimed.
+seeing what the first claimed. A claim is matched without case or Unicode form, as a
+case-insensitive volume matches names, so `Scan.pdf` and `scan.pdf` from one capture land as two
+files there too. A file gone between being seen and being read leaves its name free.
 
 A retry walks the same chain and stops at the copy the last attempt wrote, so it writes nothing
-twice. The kind's promise stands: **a retry cannot duplicate.** What it gives up is that a file
-between the walk and the write is refused rather than walked past: the create is still
-conditional, and losing that race is `rejected`.
+twice. The kind's promise stands: **a retry cannot duplicate.** The create is still conditional,
+so a file landing between the walk and the write loses the delivery that attempt. It is
+`unreachable` and **retried**, not `rejected`: the next attempt walks past whatever took the name,
+or finds its own copy there. Rejecting it would abandon a delivery whose earlier files had already
+landed.
 
 **The pointer is the folder**, `library/`, the path its marked field names, which is what
 `x-notemap-path` already promises. The root names no folder, and its pointer is absent. The
 **output** is the placed paths, one a line, as `text/plain`, so the record says what went under
-which name. The output note says which were already there. A preview walks without writing, so it
-answers the names a delivery would choose now, which is indicative, as every preview is.
+which name. The output note says which were already there. A preview walks without writing, and
+**without reading**: it is asked again each time a decision settles, so a file of the same size is
+taken for the same bytes and one of no known size for different ones. It answers the names a
+delivery would most likely choose, which is indicative, as every preview is.
 
 ### Consequences
 
@@ -86,10 +92,11 @@ answers the names a delivery would choose now, which is indicative, as every pre
   lands beside it rather than refusing the route.
 - **Good**: no core type and no wire shape changes. The annotation travels in the schema the
   description already answers.
-- **Bad**: a name taken by different bytes costs a read of that file in full where the sizes match.
-  On WebDAV that is a download.
-- **Bad**: the walk reads before it writes, so a file landing between the two refuses the delivery
-  rather than being walked past.
+- **Bad**: a name holding a file of the same size costs a read of that file in full, and that is
+  mostly the file being the same one: every re-route and every retry of a delivery that landed.
+  On WebDAV that is a download. A preview reads nothing, which is why it can be wrong.
+- **Neutral**: the walk reads before it writes, so a file landing between the two costs an attempt,
+  which is retried.
 - **Neutral**: `arena` declares nothing new. A block per file is its own decision, in
   `docs/todo.md`.
 

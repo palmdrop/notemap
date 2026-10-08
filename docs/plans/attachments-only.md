@@ -24,7 +24,8 @@ through an `attachments only` toggle, and a routing template can carry it.
   `webdav` declare it. `arena` does not (see the are.na entry in `docs/todo.md`).
 - **The capability says what it is through an annotation, not its name.** `x-notemap-carries:
   "assets"` sits at the root of its arguments schema, the same move ADR 55 made for path fields.
-  The shell reads the annotation and never knows `place-assets` by name. Putting it at the schema
+  The shell chooses the capability by the annotation; the past-tense verb a record reads in
+  (`placed`) is the one place it names `place-assets`, as it names the other three there. Putting it at the schema
   root rather than on core's `Capability` type changes no core type and no wire shape.
 - **Every attachment goes.** No per-delivery subset.
 - **Filenames are the uploaded name, with no digest.** `paper.pdf` lands as `paper.pdf`. Where that
@@ -46,10 +47,11 @@ through an `attachments only` toggle, and a routing template can carry it.
 - **A capture with no attachments is rejected at delivery**, and its preview is refused the same
   way. Core does not refuse it at decision time. A trigger tag that fires on such a capture gets its
   tag back through ADR 37.
-- **The shell gesture is an `attachments only` toggle in `place`.** It is drawn only where the
-  destination declares a capability carrying `assets` and the item has attachments. Turning it on
-  takes that capability, and the line becomes a folder line. While it is on, `edit` in the head is
-  unavailable: a rewrite carries words, and this delivery carries none.
+- **The shell gesture is an `output` section before `place`**, `everything` or `attachments only`,
+  on the process surface and the template form *(changed after review; it began as a toggle in
+  `place`)*. It is drawn only where the destination declares a capability carrying `assets`, and
+  on the process surface only where the item has attachments. Taking `attachments only` makes the
+  place a folder; while it is taken, `edit` in the head is unavailable and no rewrite is sent.
 - **The schema lives in `@notemap/output-markdown`** beside the other three file capabilities,
   although it renders no markdown. In practice that package is the file kinds' shared vocabulary.
 - **A new ADR, 0056**, records the capability, the annotation, the naming walk and the pointer.
@@ -61,11 +63,11 @@ through an `attachments only` toggle, and a routing template can carry it.
 - ~~**Does the line draw for a capability whose only path field is `folders`?**~~ Resolved while
   surveying: a capability the surface does not settle draws each field through `browserFor`,
   which gives any path-marked field the typed line.
-- **WebDAV has no byte read or size.** `Dav.get` answers a string, and `look` answers no size.
-  Phase 4 has `look` ask for `getcontentlength` and adds a streamed GET. If a server answers no
-  size, the walk falls back to hashing every file whose name collides.
-- **Does `schema-ajv` accept a root-level `x-notemap-carries`?** The field-level `x-notemap-*`
-  keywords pass today. If strict mode refuses the root, register the keyword in the validator.
+- ~~**WebDAV has no byte read or size.**~~ Resolved in Phase 4: `look` asks for
+  `getcontentlength` and `read` streams a `GET`. A server answering no size has every colliding
+  file hashed.
+- ~~**Does `schema-ajv` accept a root-level `x-notemap-carries`?**~~ Resolved in Phase 2: it is
+  registered with the other annotations.
 
 ---
 
@@ -156,6 +158,12 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
 - [x] *(After review)* The folder mode is titled `if missing`, on records, the template form and
       the template's facts, so it no longer reads as a second `FOLDER`.
 - [x] *(After review)* The by-hand check, done by the developer.
+- [x] *(After the subagent review, [docs/reviews/attachments-only-2026-10-08.md](../reviews/attachments-only-2026-10-08.md))*
+      A rewrite is derived away while only the attachments go; `everything` gives back what was
+      held, folder mode included; a name taken at write time is retried; claims are matched
+      case-insensitively; a preview walks without reading; WebDAV looks at the folder before the
+      names in it, and a file gone mid-walk leaves its name free; the template form gives back the
+      prior action; the fs hash honours cancellation; the fake DAV server holds bytes.
 
 ### Phase 6 — finishing
 
