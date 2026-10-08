@@ -64,6 +64,16 @@ export const INHERITS_FIELD = "x-notemap-inherits";
  */
 export const OFFERED_WHEN_FIELD = "x-notemap-when";
 
+/**
+ * Said at the root of a capability's arguments schema rather than on a field:
+ * what of the capture a delivery through it carries, where that is not the
+ * whole. `"assets"` is the attachments and nothing else. Core never reads it;
+ * a surface offering "attachments only" finds the capability by it.
+ */
+export const CARRIES = "x-notemap-carries";
+
+export const CARRIES_ASSETS = "assets";
+
 const FLAG: JsonSchema = { type: "boolean" };
 
 /**
@@ -99,6 +109,7 @@ export const ANNOTATIONS: readonly {
   readonly value: JsonSchema;
 }[] = [
   { keyword: ASKABLE_FIELD, value: FLAG },
+  { keyword: CARRIES, value: { enum: [CARRIES_ASSETS] } },
   { keyword: INHERITS_FIELD, value: FLAG },
   { keyword: OFFERED_ONLY_FIELD, value: FLAG },
   { keyword: OFFERED_WHEN_FIELD, value: CONDITIONS },

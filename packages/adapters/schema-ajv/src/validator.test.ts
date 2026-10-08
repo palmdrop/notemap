@@ -185,6 +185,17 @@ describe("a vendor keyword this validator does not interpret", () => {
     expect(() => issues(roled(false), { filename: "a.md" })).toThrow();
   });
 
+  it("is tolerated at a schema's root where it says what a capability carries", () => {
+    const carrying = (what: JsonValue): JsonSchema => ({
+      type: "object",
+      "x-notemap-carries": what,
+      properties: { directory: { type: "string" } },
+    });
+
+    expect(issues(carrying("assets"), { directory: "library" })).toEqual([]);
+    expect(() => issues(carrying("words"), { directory: "library" })).toThrow();
+  });
+
   it("is not stripped from the schema object handed in", () => {
     const withCandidates: JsonSchema = {
       type: "object",

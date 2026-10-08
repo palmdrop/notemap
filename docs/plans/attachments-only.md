@@ -96,16 +96,16 @@ Depends on nothing. Every later phase codes against it.
 
 Depends on Phase 1.
 
-- [ ] `packages/core/src/pool/destinations/vocabulary.ts`: the `x-notemap-carries` constant and its
+- [x] `packages/core/src/pool/destinations/vocabulary.ts`: the `x-notemap-carries` constant and its
       one value.
-- [ ] `@notemap/output-markdown`: `place-assets` in `capabilitiesFor`, its arguments reader, and a
+- [x] `@notemap/output-markdown`: `place-assets` in `capabilitiesFor`, its arguments reader, and a
       plain asset name without the digest, made from the same sanitising `assetName` uses.
-- [ ] The naming walk as a pure function over a "what holds this name" lookup, shared by both
+- [x] The naming walk as a pure function over a "what holds this name" lookup, shared by both
       kinds.
-- [ ] Tests beside each: the schema validates through `schema-ajv`, and the walk handles free,
+- [x] Tests beside each: the schema validates through `schema-ajv`, and the walk handles free,
       same-bytes, different-bytes and a two-step chain.
-- [ ] Verify: `pnpm --filter @notemap/core --filter @notemap/output-markdown --filter @notemap/schema-ajv test`
-- [ ] Commit
+- [x] Verify: `pnpm --filter @notemap/core --filter @notemap/output-markdown --filter @notemap/schema-ajv test`
+- [x] Commit _(2026-10-08)_
 
 ### Phase 3 — the filesystem kind
 
