@@ -111,14 +111,14 @@ Depends on Phase 1.
 
 Depends on Phase 2.
 
-- [ ] `destination-fs`: compose and deliver `place-assets` through the walk, honouring the folder
+- [x] `destination-fs`: compose and deliver `place-assets` through the walk, honouring the folder
       mode and the reserved-path check. Preview answers the walk without writing. A capture with no
       assets is `rejected`.
-- [ ] Tests: lands under the plain name; same bytes count as landed; different bytes give `-1`; a
+- [x] Tests: lands under the plain name; same bytes count as landed; different bytes give `-1`; a
       retry after a partial write lands nothing twice; `require` with a missing folder is rejected;
       no assets is rejected; the pointer is the folder; the output lists the placed paths.
-- [ ] Verify: `pnpm --filter @notemap/destination-fs test`
-- [ ] Commit
+- [x] Verify: `pnpm --filter @notemap/destination-fs test`
+- [x] Commit _(2026-10-08)_
 
 ### Phase 4 — the WebDAV kind
 

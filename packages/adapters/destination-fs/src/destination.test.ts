@@ -6,6 +6,7 @@ import {
   symlink,
   writeFile,
 } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 
 import { Rejected, Unusable } from "@notemap/core";
@@ -24,6 +25,7 @@ import {
   APPEND,
   CREATE_OR_APPEND,
   linkTo,
+  PLACE_ASSETS,
   type Renderer,
 } from "@notemap/output-markdown";
 import {
@@ -151,7 +153,7 @@ async function noVault(): Promise<Vault> {
 }
 
 describe("what it says it can do", () => {
-  it("declares all three capabilities over the payload types it was given", async () => {
+  it("declares all four capabilities over the payload types it was given", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
 
@@ -159,7 +161,11 @@ describe("what it says it can do", () => {
       "create-or-append",
       "create",
       "append",
+      "place-assets",
     ]);
+    expect(described.capabilities[3]?.argumentsSchema).toMatchObject({
+      "x-notemap-carries": "assets",
+    });
     expect(described.capabilities[0]?.accepts).toEqual([TEXT, "image"]);
     expect(described.capabilities[2]?.argumentsSchema).toMatchObject({
       required: ["path"],
@@ -1388,5 +1394,193 @@ describe("what it says it would write", () => {
         delivery({ arguments: { directory: "", filename: "a.md" } }),
       ),
     ).rejects.toThrow();
+  });
+});
+
+/** An attachment whose blob is its real digest, as the pool's would be. */
+function attachment(slot: string, filename: string, content: string) {
+  const held = bytes(content);
+  return deliveredAsset(
+    slot,
+    filename,
+    held,
+    createHash("sha256").update(held).digest("hex"),
+  );
+}
+
+function placing(
+  directory: string,
+  attached: ReturnType<typeof attachment>[],
+  folder?: "create" | "require",
+): Delivery {
+  return delivery({
+    capability: PLACE_ASSETS,
+    arguments: { directory, ...(folder === undefined ? {} : { folder }) },
+    attached,
+  });
+}
+
+describe("placing a capture's attachments alone", () => {
+  it("lands each under its uploaded name, with no note beside it", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      placing("library", [
+        attachment("000", "paper.pdf", "PDF"),
+        attachment("001", "notes.txt", "TXT"),
+      ]),
+    );
+
+    expect(await filesUnder(path)).toEqual([
+      "library/notes.txt",
+      "library/paper.pdf",
+    ]);
+    expect(await readFile(join(path, "library/paper.pdf"), "utf8")).toBe(
+      "PDF",
+    );
+    expect(delivered(outcome).pointer).toBe("library/");
+    expect(await outputOf(outcome)).toEqual({
+      mediaType: "text/plain",
+      text: "library/paper.pdf\nlibrary/notes.txt\n",
+    });
+  });
+
+  it("numbers past a file of the same name holding something else", async () => {
+    const { path, destination } = await vault();
+    await mkdir(join(path, "library"));
+    await writeFile(join(path, "library/paper.pdf"), "theirs");
+
+    await destination.deliver(
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(await readFile(join(path, "library/paper.pdf"), "utf8")).toBe(
+      "theirs",
+    );
+    expect(await readFile(join(path, "library/paper-1.pdf"), "utf8")).toBe(
+      "ours",
+    );
+  });
+
+  it("writes nothing where the same bytes are already there, and says so", async () => {
+    const { path, destination } = await vault();
+    await mkdir(join(path, "library"));
+    await writeFile(join(path, "library/paper.pdf"), "ours");
+    const paper = attachment("000", "paper.pdf", "ours");
+
+    const outcome = await destination.deliver(placing("library", [paper]));
+
+    expect(await filesUnder(path)).toEqual(["library/paper.pdf"]);
+    expect(paper.opens()).toBe(0);
+    expect(delivered(outcome).output?.note).toBe(
+      "already there: library/paper.pdf",
+    );
+  });
+
+  /** The first attempt wrote `paper-1.pdf` and was never heard back from. */
+  it("lands a retry on the copy the last attempt wrote", async () => {
+    const { path, destination } = await vault();
+    await mkdir(join(path, "library"));
+    await writeFile(join(path, "library/paper.pdf"), "theirs");
+    const wanted = placing("library", [attachment("000", "paper.pdf", "ours")]);
+
+    await destination.deliver(wanted);
+    await destination.deliver(wanted);
+
+    expect(await filesUnder(path)).toEqual([
+      "library/paper-1.pdf",
+      "library/paper.pdf",
+    ]);
+  });
+
+  it("places into the root itself, with no pointer", async () => {
+    const { path, destination } = await vault();
+
+    const outcome = await destination.deliver(
+      placing("", [attachment("000", "paper.pdf", "PDF")]),
+    );
+
+    expect(await filesUnder(path)).toEqual(["paper.pdf"]);
+    expect(delivered(outcome).pointer).toBeUndefined();
+  });
+
+  it("leaves out an asset only an artifact references", async () => {
+    const { path, destination } = await vault();
+
+    await destination.deliver(
+      delivery({
+        capability: PLACE_ASSETS,
+        arguments: { directory: "library" },
+        attached: [attachment("000", "paper.pdf", "PDF")],
+        assets: [attachment("100", "transcript.txt", "words")],
+      }),
+    );
+
+    expect(await filesUnder(path)).toEqual(["library/paper.pdf"]);
+  });
+
+  it("is rejected for a capture with no attachments", async () => {
+    const { path, destination } = await vault();
+
+    const outcome = await destination.deliver(placing("library", []));
+
+    expect(outcome).toMatchObject({
+      kind: "rejected",
+      detail: expect.stringContaining("no attachments"),
+    });
+    expect(await filesUnder(path)).toEqual([]);
+  });
+
+  it("is rejected where the folder it requires is not there", async () => {
+    const { path, destination } = await vault();
+
+    const outcome = await destination.deliver(
+      placing("library", [attachment("000", "paper.pdf", "PDF")], "require"),
+    );
+
+    expect(outcome).toEqual({
+      kind: "rejected",
+      detail: "library/ is missing",
+    });
+    expect(await filesUnder(path)).toEqual([]);
+  });
+
+  it("refuses a folder outside the root", async () => {
+    const { destination } = await vault();
+
+    const outcome = await destination.deliver(
+      placing("../elsewhere", [attachment("000", "paper.pdf", "PDF")]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+  });
+
+  it("does not read through a link of the same name", async () => {
+    const { path, destination } = await vault();
+    const outside = join(path, "..", "outside.pdf");
+    await writeFile(outside, "ours");
+    await symlink(outside, join(path, "paper.pdf"));
+
+    await destination.deliver(
+      placing("", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(await readFile(join(path, "paper-1.pdf"), "utf8")).toBe("ours");
+  });
+
+  it("previews the paths it would choose, and writes nothing", async () => {
+    const { path, destination } = await vault();
+    await mkdir(join(path, "library"));
+    await writeFile(join(path, "library/paper.pdf"), "theirs");
+
+    const shown = await destination.preview(
+      placing("library", [attachment("000", "paper.pdf", "ours")]),
+    );
+
+    expect(await textOf(shown)).toEqual({
+      mediaType: "text/plain",
+      text: "library/paper-1.pdf\n",
+    });
+    expect(await filesUnder(path)).toEqual(["library/paper.pdf"]);
   });
 });

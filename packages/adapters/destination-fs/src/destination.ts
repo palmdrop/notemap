@@ -24,8 +24,11 @@ import {
   CREATE_OR_APPEND,
   deriveFilename,
   insertUnder,
+  folderPointer,
   markdownOutput,
+  placedOutput,
   placeOf,
+  PLACE_ASSETS,
   renderNote,
   RenderingFailed,
   hashtagsOf,
@@ -37,6 +40,11 @@ import {
 import { assetNames, placeAssets } from "./assets";
 import { createFile, replaceFile } from "./atomic";
 import { filesystemCandidates } from "./candidates";
+import {
+  carryOutPlacing,
+  composePlacing,
+  placingFolderMissing,
+} from "./placing";
 import { Refused } from "./errors";
 import {
   contain,
@@ -129,6 +137,23 @@ export function createFilesystemDestination(
       }
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(reached, delivery);
+
+          const missing = await placingFolderMissing(placing, delivery);
+          if (missing !== undefined) {
+            return { kind: "rejected", detail: `${missing} is missing` };
+          }
+
+          await carryOutPlacing(placing, signal);
+          const pointer = folderPointer(placing.folder.relative);
+          return {
+            kind: "delivered",
+            ...(pointer === undefined ? {} : { pointer }),
+            output: placedOutput(placing.placed, placing.folder.relative),
+          };
+        }
+
         const composed = await compose(
           wiringFor(reached, renderers, settings),
           delivery,
@@ -169,6 +194,11 @@ export function createFilesystemDestination(
       }
 
       try {
+        if (delivery.capability === PLACE_ASSETS) {
+          const placing = await composePlacing(reached, delivery);
+          return placedOutput(placing.placed, placing.folder.relative);
+        }
+
         const composed = await compose(
           wiringFor(reached, renderers, settings),
           delivery,
