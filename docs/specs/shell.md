@@ -669,7 +669,7 @@ foot along its bottom rule carrying `attach` behind a rule of its own and the ta
 left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
 stamped when it is sent. It is no longer a row of the register, and says nothing until it fails —
 or until `capture` is taken with nothing written and nothing attached, when it says `nothing to
-capture` in its foot until something is written *(2026-10-08)*.
+capture` in its foot, plainly rather than in the accent since nothing failed, until something is written *(2026-10-08)*.
 
 A capture asks nothing — text, any number of attachments, send. Nothing waits on the pool: the client
 mints the asset id and holds the bytes, which go up with the capture when it drains
@@ -893,7 +893,7 @@ body's words stay the browser's.
 
 **The keyboard on a register** is the same keyboard on the queue and on the feed, because a
 register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
-bringing the whole of it into view, its foot included, gliding there unless motion is off *(2026-10-08)* — and off a held row, which then goes; `enter` selects the first row where
+bringing the whole of it into view, its foot included, gliding there unless motion is off *(2026-10-08)*; a row taller than the view comes into view from its head, so its stamp is what is read first whichever way it was walked to — and off a held row, which then goes; `enter` selects the first row where
 none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
 one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)); `v` turns the
 list to the other view *(2026-10-01)*. The selected row adds every command its own actions draw
@@ -2464,7 +2464,7 @@ routes, and one the browser leaves for.
 A **note** renders as CommonMark, collapsed and opened — that is what
 [standards.md](../standards.md#payload-types) says a note is. Its attachments are drawn around it
 in slot order, each by its own media type *(amended 2026-10-07; all were drawn above it until
-then)*: **the first two pictures are drawn above the words**, bounded so a tall one cannot swallow what holds it, **keeping their room before they arrive** where the pool has measured them, at their own proportions within the bound, and fading in over it *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))* — one the pool could not measure, and one this device holds the bytes of before the capture drains, still opens as it loads — and **every other attachment is a
+then)*: **the first two pictures are drawn above the words**, bounded so a tall one cannot swallow what holds it, **keeping their room before they arrive** where the pool has measured them, at their own proportions within the bound, and fading in over it *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))* — one the pool could not measure, and one this device holds the bytes of before the capture drains, still opens as it loads, and one that cannot be had gives its room back rather than holding an empty box — and **every other attachment is a
 line under the words**, before any link's block — its filename in bold, which downloads the bytes,
 then its size, and nothing between them but space. The media type is not said: the filename's own
 extension says it, in the words a person knows a file by. **A name too long for the line is cut in

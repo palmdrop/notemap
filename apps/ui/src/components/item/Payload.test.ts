@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 
 import { anItem, json } from "@notemap/client/testing";
@@ -127,4 +127,22 @@ test("keeps a measured picture's room before it arrives, and leaves an unmeasure
   expect(measured?.getAttribute("height")).toBe("900");
   expect(measured?.classList.contains("h-auto")).toBe(true);
   expect(unmeasured?.hasAttribute("width")).toBe(false);
+});
+
+test("gives a picture's room back when it cannot be had", async () => {
+  pool(() => json(200, {}));
+  const item = carrying(["gone.png", "image/png"]);
+  const [gone] = item.assets ?? [];
+
+  const { container } = render(Payload, {
+    item: anItem("one", {
+      ...item,
+      assets: [{ ...gone!, dimensions: { width: 1600, height: 900 } }],
+    }),
+  });
+
+  const picture = container.querySelector("img")!;
+  await fireEvent.error(picture);
+  expect(picture.hasAttribute("data-failed")).toBe(true);
+  expect(picture.classList.contains("data-failed:hidden")).toBe(true);
 });

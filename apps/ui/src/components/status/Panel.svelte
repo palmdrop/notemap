@@ -97,7 +97,7 @@
 
     <!-- Drawn while empty too, so the last notice cleared slides out rather than
          going with the list. -->
-    <ol aria-label="said">
+    <ol aria-label="said" aria-hidden={history.length === 0 || undefined}>
       {#each history as said (said.id)}
         <Entry
           when={at(said.at)}

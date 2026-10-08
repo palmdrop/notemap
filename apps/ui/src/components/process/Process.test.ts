@@ -3283,7 +3283,7 @@ test("opening the words and typing nothing carries nothing", async () => {
   });
 });
 
-test("keeping the capture's words draws them again and carries nothing", async () => {
+test("restoring the capture's words draws them again and carries nothing", async () => {
   serving([aDestination()]);
 
   draw();

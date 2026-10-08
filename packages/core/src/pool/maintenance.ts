@@ -1,5 +1,6 @@
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
+import type { Dimensions } from "#types/domain/asset";
 import type { ActionId, AssetId, BlobHash, Timestamp } from "#types/domain/ids";
 
 import { headOf, measure } from "./pictures";
@@ -60,9 +61,8 @@ export async function sweepUnreferencedAssets(
 /**
  * Measures every picture held without dimensions, a page at a time, each in a
  * transaction of its own so a large backlog never holds the write lock for
- * long. One whose bytes cannot say is passed over, and asked again next time:
- * a picture is never marked as unmeasurable, since a better reader might
- * manage it. Answers how many it measured.
+ * long. One whose bytes cannot say, or cannot be read, is passed over and
+ * asked again next time. Answers how many it measured, stopped or not.
  */
 export async function measurePictures(
   ports: PoolPorts,
@@ -77,9 +77,7 @@ export async function measurePictures(
 
     for (const asset of page) {
       if (signal?.aborted === true) return measured;
-      const bytes = await ports.blobs.open(asset.blob, signal);
-      const dimensions =
-        bytes === undefined ? undefined : measure(await headOf(bytes));
+      const dimensions = await read(ports, asset.blob, signal);
       if (dimensions === undefined) continue;
 
       await ports.store.transaction((tx) =>
@@ -89,5 +87,18 @@ export async function measurePictures(
     }
 
     after = page.at(-1)?.id;
+  }
+}
+
+async function read(
+  ports: PoolPorts,
+  blob: BlobHash,
+  signal: AbortSignal | undefined,
+): Promise<Dimensions | undefined> {
+  try {
+    const bytes = await ports.blobs.open(blob, signal);
+    return bytes === undefined ? undefined : measure(await headOf(bytes));
+  } catch {
+    return undefined;
   }
 }

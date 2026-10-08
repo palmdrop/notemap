@@ -97,7 +97,11 @@ describe("a picture's dimensions", () => {
         blob: "blob-3" as BlobHash,
         mime: "application/pdf",
       }),
-      asset({ id: "asset-4" as AssetId, blob: "blob-4" as BlobHash }),
+      asset({
+        id: "asset-4" as AssetId,
+        blob: "blob-4" as BlobHash,
+        mime: "Image/PNG",
+      }),
     );
 
     const ids = async (after?: string) =>
@@ -106,6 +110,18 @@ describe("a picture's dimensions", () => {
       );
     expect(await ids()).toEqual(["asset-1", "asset-4"]);
     expect(await ids("asset-1")).toEqual(["asset-4"]);
+  });
+
+  it("refuses a width without a height, or a height without a width", async () => {
+    const { pool: p, raw } = pool();
+    await putAssets(p, asset());
+
+    expect(() => raw.prepare("UPDATE assets SET width = 10").run()).toThrow(
+      /CHECK/,
+    );
+    expect(() => raw.prepare("UPDATE assets SET height = 10").run()).toThrow(
+      /CHECK/,
+    );
   });
 
   it("measures one held without them", async () => {

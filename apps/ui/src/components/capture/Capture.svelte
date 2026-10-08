@@ -293,7 +293,12 @@
 
         {#if said !== ""}
           <!-- Only a failure or an empty box reaches this: the capture itself waits on nothing. -->
-          <span role="status" class="text-alarm">{said}</span>
+          <span
+            role="status"
+            class={said === NOTHING_TO_CAPTURE ? "" : "text-alarm"}
+          >
+            {said}
+          </span>
         {/if}
       </span>
     </span>

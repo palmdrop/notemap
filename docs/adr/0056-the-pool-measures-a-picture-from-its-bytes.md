@@ -47,18 +47,21 @@ Where does a picture's size come from before its bytes do?
 ## Decision outcome
 
 **Option 1.** When an asset whose media type is `image/*` is stored, core copies the first 512 KiB
-aside as the bytes pass to the blob store and reads its size from them, the EXIF orientation
-applied, so the size is the picture's as it is drawn. The asset carries it as an optional
-`dimensions: { width, height }`, absent where the bytes could not say. The host measures the
-pictures stored without dimensions once as it starts, a page at a time; one whose bytes cannot say
-is passed over and asked again on the next start rather than marked, since a better reader may
-manage it. The shell sets `width` and `height` on the `<img>`, so the browser keeps the room at the
+aside as the bytes pass to the blob store and reads its size from them, a JPEG's EXIF orientation
+applied, so the size is the picture's as it is drawn. A HEIC or an AVIF is not measured: it keeps
+its turn in a box of its own, which `image-size` does not apply, and a portrait photograph would
+be answered on its side. The asset carries an optional `dimensions: { width, height }`, absent
+where the bytes could not say. The host measures the pictures stored without dimensions once as it
+starts, a page at a time; one whose bytes cannot say, or cannot be read, is passed over and asked
+again on the next start rather than marked, since a better reader may manage it. That costs a
+512 KiB read per such picture at every start, which is nothing at a person's scale. An upload
+repeated for an asset held without dimensions measures it then. The shell sets `width` and `height` on the `<img>`, so the browser keeps the room at the
 picture's proportions, and the shell's own bounds still decide how much room that is.
 
 - **Not compared by the conflict check.** Equal blobs agree on their dimensions, as they agree on
   their size in bytes.
-- **Not carried by the mirror.** They are read from the blob the mirror already holds, so a rebuild
-  measures again rather than trusting a record.
+- **Not carried by the mirror.** They are read from the blob the mirror already holds, so the
+  record leaves them out and a rebuild measures again rather than trusting one.
 - **Measuring a picture changes nothing an item is.** No item is touched and no action is logged; a
   client reading the item again sees them.
 
@@ -78,7 +81,8 @@ picture's proportions, and the shell's own bounds still decide how much room tha
 ### Option 1: the pool reads the size, with `image-size`
 
 - Good: every source's pictures are measured, and so are the ones already held.
-- Good: orientation and the formats a phone writes (HEIC, AVIF) come with it.
+- Good: JPEG's EXIF orientation, and every common format's size, come with it. The turn a HEIC or
+  an AVIF keeps in its own box does not, so those are left unmeasured.
 - Bad: a dependency in core, and one more read of each picture's head at store time.
 
 ### Option 2: the uploader says the size
@@ -98,6 +102,7 @@ picture's proportions, and the shell's own bounds still decide how much room tha
 
 - Good: no dependency.
 - Bad: EXIF orientation, and every format beyond PNG, JPEG, GIF and WebP, become ours to get right.
+  It would also be the place to read a HEIC's turn, which option 1 leaves out.
 
 ---
 

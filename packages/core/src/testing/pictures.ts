@@ -70,3 +70,28 @@ export function jpeg(
   ];
   return new Uint8Array([0xff, 0xd8, ...app1, ...sof, 0xff, 0xd9]);
 }
+
+/** A HEIC as far as its size: an `ftyp` box, then the `ispe` property under `meta`. */
+export function heic(width: number, height: number): Uint8Array {
+  const box = (type: string, body: readonly number[]): number[] => {
+    const size = 8 + body.length;
+    return [
+      size >> 24,
+      (size >> 16) & 0xff,
+      (size >> 8) & 0xff,
+      size & 0xff,
+      ...new TextEncoder().encode(type),
+      ...body,
+    ];
+  };
+  const u32 = (value: number): number[] => [
+    value >>> 24,
+    (value >> 16) & 0xff,
+    (value >> 8) & 0xff,
+    value & 0xff,
+  ];
+  const ispe = box("ispe", [0, 0, 0, 0, ...u32(width), ...u32(height)]);
+  const meta = box("meta", [0, 0, 0, 0, ...box("iprp", box("ipco", ispe))]);
+  const ftyp = box("ftyp", [...new TextEncoder().encode("heic"), 0, 0, 0, 0]);
+  return new Uint8Array([...ftyp, ...meta]);
+}

@@ -6,7 +6,7 @@ editing, destinations, routing to one, pool settings, unfurling and health are s
 **Shipped**:
 
 - 2026-10-08 — **An `Asset` says a picture's dimensions.** `dimensions: { width, height }`, read
-  by the pool from the bytes, upright, and absent where they could not say.
+  by the pool from the bytes as the picture is drawn, and absent where they could not say.
   ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))
 
 - 2026-10-07 — **`GET /v1/assets/limits`.** What an upload may be — `maxUpload`, the number a
@@ -603,9 +603,10 @@ archive, a capture outcome, an edit outcome:
   joins on the id it already has. What it saves is a read per attachment to answer "is this one a
   picture" — `mime` is the answer, and nothing derives that from the payload's type.
 - **`dimensions` is a picture's as it is drawn** *(2026-10-08, [ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))*: read by the
-  pool from the bytes of an asset whose media type is `image/*`, a photograph's orientation
+  pool from the bytes of an asset whose media type is `image/*`, a JPEG's EXIF orientation
   applied, so a reader can keep a picture's room before its bytes arrive. Absent where the bytes
-  could not say, and on a picture stored before the pool measured them until the host has.
+  could not say, for a HEIC or an AVIF, whose turn the pool does not read, and on a picture stored
+  before the pool measured them until the host has.
 
 ### The feed
 

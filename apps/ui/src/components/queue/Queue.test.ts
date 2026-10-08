@@ -818,6 +818,20 @@ test("j past the last row held reads the next page and steps into it", async () 
   });
 });
 
+test("brings the whole row walked to into view, its foot and all", async () => {
+  pool(queued("one", "two"));
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "j" });
+
+  await vi.waitFor(() => {
+    expect(scrolled.mock.contexts.at(-1)).toHaveProperty("dataset.row", "");
+  });
+});
+
 test("walks the rows with j and k, and acts on the one selected", async () => {
   pool(queued("one", "two"));
 

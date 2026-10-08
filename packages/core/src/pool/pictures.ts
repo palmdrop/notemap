@@ -13,19 +13,32 @@ export const HEAD_BYTES = 512 * 1024;
 const TURNED = 5;
 
 export function isPicture(mime: string): boolean {
-  return mime.startsWith("image/");
+  return mime.toLowerCase().startsWith("image/");
+}
+
+/**
+ * HEIC and AVIF keep a turn in a box of their own, which this reader does not
+ * apply, so a portrait photograph would be answered on its side.
+ */
+function isTurnedElsewhere(head: Uint8Array): boolean {
+  return new TextDecoder().decode(head.subarray(4, 8)) === "ftyp";
 }
 
 export function measure(head: Uint8Array): Dimensions | undefined {
+  if (isTurnedElsewhere(head)) return undefined;
   try {
     const { width, height, orientation } = imageSize(head);
-    if (!(width > 0 && height > 0)) return undefined;
+    if (!isSize(width) || !isSize(height)) return undefined;
     return orientation !== undefined && orientation >= TURNED
       ? { width: height, height: width }
       : { width, height };
   } catch {
     return undefined;
   }
+}
+
+function isSize(value: number): boolean {
+  return Number.isSafeInteger(value) && value > 0;
 }
 
 /**

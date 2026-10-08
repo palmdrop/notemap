@@ -121,7 +121,7 @@
 
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
-    if (row !== undefined) bringIntoView(row);
+    if (row !== undefined) bringIntoView(row, { headFirst: true });
   }
 
   // A file attached or dropped grows or shrinks the row where it stands, which
@@ -133,7 +133,11 @@
     attached = count;
     if (count === undefined || was === undefined || count === was) return;
     const moving = row?.parentElement;
-    if (moving != null) void settled(moving).then(reveal);
+    if (moving != null) {
+      void settled(moving).then(() => {
+        if (row !== undefined) bringIntoView(row);
+      });
+    }
   });
 </script>
 

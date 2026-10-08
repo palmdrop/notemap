@@ -145,6 +145,11 @@ attachment — the word is the gesture and what came of it, never the asset itse
 Avoid list is about.
 _Avoid_: attachment *for the asset*, media file
 
+**Picture**:
+An asset whose media type is `image/*`, which the shell draws rather than lists. The pool measures
+one from its bytes, so a picture carries its dimensions as it is drawn where its bytes could say.
+_Avoid_: image *for the asset*, photo
+
 **Blob**:
 The bytes an asset points at, stored once and addressed by their SHA-256. Named for a machine,
 shared by the pool and the mirror, and freed when the last asset referencing it goes. The layer

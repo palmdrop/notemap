@@ -7,7 +7,8 @@
   /**
    * The pictures an item carries that are drawn, above its words, bounded by
    * `picture` so a tall one cannot swallow what holds it. One the pool has
-   * measured keeps its room before it arrives, and fades in over it.
+   * measured keeps its room before it arrives, and fades in over it; one that
+   * cannot be had gives the room back rather than holding an empty box.
    */
   let {
     attachments,
@@ -25,6 +26,6 @@
     width={one.dimensions?.width}
     height={one.dimensions?.height}
     {@attach revealed}
-    class="mb-2 block h-auto max-w-full object-contain object-left opacity-0 transition-opacity duration-(--duration-short) ease-fade data-loaded:opacity-100 {picture}"
+    class="mb-2 block h-auto max-w-full object-contain object-left opacity-0 transition-opacity duration-(--duration-short) ease-fade data-failed:hidden data-loaded:opacity-100 {picture}"
   />
 {/each}

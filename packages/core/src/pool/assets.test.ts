@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { BlobStore, PoolPorts, PoolStore } from "#types/api/ports";
-import type { Asset, StoredBlob } from "#types/domain/asset";
+import type { Asset, Dimensions, StoredBlob } from "#types/domain/asset";
 import type { AssetId, BlobHash } from "#types/domain/ids";
 
 import { png } from "#testing/pictures";
@@ -32,6 +32,11 @@ function ports(...held: readonly Asset[]): Wired {
     insertAsset: (asset: Asset) => {
       if (assets.has(asset.id)) throw new Error(`${asset.id} is already held`);
       assets.set(asset.id, asset);
+      return Promise.resolve();
+    },
+    measureAsset: (id: AssetId, dimensions: Dimensions) => {
+      const held = assets.get(id);
+      if (held !== undefined) assets.set(id, { ...held, dimensions });
       return Promise.resolve();
     },
   };
@@ -150,6 +155,34 @@ describe("measuring a picture as it is stored", () => {
     expect(result).toMatchObject({
       kind: "ok",
       value: { asset: { dimensions: { width: 640, height: 480 } } },
+    });
+  });
+
+  it("measures one held without dimensions when it is uploaded again", async () => {
+    const unmeasured = {
+      id: PHOTO,
+      filename: "photo.png",
+      mime: "image/png",
+      blob: `blob:${new TextDecoder().decode(png(640, 480))}` as Asset["blob"],
+      bytes: 33,
+    };
+    const wired = ports(unmeasured);
+
+    const result = await store(wired, PHOTO, bytesOfPicture(), {
+      filename: "photo.png",
+      mime: "image/png",
+    });
+
+    expect(result).toMatchObject({
+      kind: "ok",
+      value: {
+        kind: "already-stored",
+        asset: { dimensions: { width: 640, height: 480 } },
+      },
+    });
+    expect(wired.held.get(PHOTO)?.dimensions).toEqual({
+      width: 640,
+      height: 480,
     });
   });
 

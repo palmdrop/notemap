@@ -46,9 +46,17 @@ export async function store(
 async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
   const held = await tx.asset(arriving.id);
   if (held !== undefined) {
-    return isSame(held, arriving)
-      ? ok({ kind: "already-stored", asset: held })
-      : refused({ kind: "asset-id-conflict", asset: arriving.id });
+    if (!isSame(held, arriving)) {
+      return refused({ kind: "asset-id-conflict", asset: arriving.id });
+    }
+    if (held.dimensions === undefined && arriving.dimensions !== undefined) {
+      await tx.measureAsset(held.id, arriving.dimensions);
+      return ok({
+        kind: "already-stored",
+        asset: { ...held, dimensions: arriving.dimensions },
+      });
+    }
+    return ok({ kind: "already-stored", asset: held });
   }
 
   await tx.insertAsset(arriving);

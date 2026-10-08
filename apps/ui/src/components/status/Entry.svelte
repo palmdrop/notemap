@@ -49,7 +49,7 @@
       <span class="font-semibold">
         {what}
         {#if subject !== undefined}
-          <span>{subject}</span>
+          {subject}
         {/if}
       </span>
       {@render mark?.()}
