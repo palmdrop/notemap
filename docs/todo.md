@@ -3,9 +3,16 @@
 ## Shell — layout and interaction
 
 - [ ] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
+    - smooth scroll with some padding?
+- [ ] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
 - [ ] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
 - [ ] trying to capture an empty capture gives no error or warning indicating why it does not work
 - [ ] destination fields should provide succinct placeholder texts
+
+- [ ] fuzzy search for captures, feed, tags, other views
+
+- [ ] "keep the capture's" in when doing routing edits reads strange, maybe just "restore"
+- [ ] tags in processing view show twice: once above the capture body and once in the composer. Lets just show in composer.
 
 - [ ] update empty lists inidcators: 
     - when no items match the tag filters, we get "Nothing tagged <tag> and <tag> is waiting." and a button for "whole queue" that reads just like text. Should say: "Nothing matches both <tag> and <tag>" and the button should read "Clear filters" and look like a button, not just text.
@@ -94,6 +101,7 @@
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
   - going back is not clearly a button
+
 - [ ] searchable files/folders in webdav/fs destinations, investigate if possible
 
 - [ ] consider source to destination auto routing: for example, I might have an inbox that I *always* want routed to a specific destination, using a template.
@@ -197,6 +205,11 @@
   accepts for one; or **the first file only, saying what was dropped**, through the output and note
   [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) already
   gives a lossy delivery. Leaning to the last, unless are.na should receive everything.
+  - *2026-10-08*: decided on **one block per file**, are.na should receive everything. Also gives
+    the arena kind the `place-assets` capability ([attachments-only](plans/attachments-only.md)):
+    one block per file and no text block. Two things to settle first: what a partial failure
+    retried does (duplicate under ADR 41, or keep track of the blocks already made), and what the
+    record's single pointer and `url` name when one delivery makes several blocks.
 
 - [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 
@@ -234,6 +247,8 @@
 - [ ] raycast extension: add command for viewing inbox
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
 - [x] in raycast, show undrained count, and/or view for outbox
+
+- [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
