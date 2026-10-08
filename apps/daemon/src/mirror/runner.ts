@@ -1,5 +1,6 @@
 import {
   asWorkOutcome,
+  type Clock,
   type JobKind,
   type Lease,
   type MirrorWriter,
@@ -24,6 +25,7 @@ export function startMirrorRunner(
   pool: Pool,
   writer: MirrorWriter,
   config: MirrorRunnerConfig,
+  clock: Clock,
   log?: Logger,
 ): MirrorRunner {
   async function perform(lease: Lease): Promise<WorkOutcome> {
@@ -45,5 +47,5 @@ export function startMirrorRunner(
     }
   }
 
-  return startRunner(pool, KINDS, perform, config, log);
+  return startRunner(pool, KINDS, perform, config, clock, log);
 }

@@ -159,7 +159,7 @@ export function daemon(
 
   const accounts = options.accounts ?? noAccounts;
 
-  const { pool, blobs, mirrorWriter, destinations } = openPool({
+  const { pool, ports, blobs, mirrorWriter, destinations } = openPool({
     file: join(stateRoot, "pool.db"),
     config,
     assetRoot,
@@ -170,17 +170,27 @@ export function daemon(
   const runner =
     mirrorWriter === undefined
       ? undefined
-      : startMirrorRunner(pool, mirrorWriter, {
-          pollIntervalMs: NEVER_POLLS,
-          leaseForMs: 60_000 as Duration,
-          batch: 16,
-        });
+      : startMirrorRunner(
+          pool,
+          mirrorWriter,
+          {
+            pollIntervalMs: NEVER_POLLS,
+            leaseForMs: 60_000 as Duration,
+            batch: 16,
+          },
+          ports.clock,
+        );
 
-  const deliveries = startDeliveryRunner(pool, destinations, {
-    pollIntervalMs: NEVER_POLLS,
-    leaseForMs: 60_000 as Duration,
-    batch: 16,
-  });
+  const deliveries = startDeliveryRunner(
+    pool,
+    destinations,
+    {
+      pollIntervalMs: NEVER_POLLS,
+      leaseForMs: 60_000 as Duration,
+      batch: 16,
+    },
+    ports.clock,
+  );
 
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 

@@ -392,9 +392,9 @@ export interface WorkApi {
    * fired template's window, a retry's backoff — so a host can wake for it
    * rather than for its next poll. Nothing where none is waiting.
    *
-   * `since` is when the host last claimed: a job that came due after it is one
-   * that claim could not have taken, and answers zero. One due by then is left
-   * out, as one the claim passed over rather than one it missed.
+   * `since` is when the host last claimed, read from the pool's clock: a job
+   * that came due after it is one that claim may have missed, and answers
+   * zero. One due by then is left out, as one the claim passed over.
    */
   dueIn(
     kinds: readonly JobKind[],

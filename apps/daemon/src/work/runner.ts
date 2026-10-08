@@ -1,4 +1,5 @@
 import type {
+  Clock,
   Duration,
   JobKind,
   Lease,
@@ -36,6 +37,7 @@ export function startRunner(
   kinds: readonly JobKind[],
   perform: Perform,
   config: RunnerConfig,
+  clock: Clock,
   log: Logger = silentLogger(),
 ): Runner {
   let inFlight: Promise<number> | undefined;
@@ -52,7 +54,7 @@ export function startRunner(
     let resolved = 0;
 
     while (true) {
-      looked = new Date().toISOString() as Timestamp;
+      looked = clock.now();
       const leases = await pool.work.claim({
         kinds,
         limit: config.batch,
@@ -106,8 +108,9 @@ export function startRunner(
    * what falls before the next poll: anything later that poll will see, and
    * look again for.
    *
-   * After a pass, `since` is its last claim: a timer can fire a moment before
-   * the job it was set for is due, and a claim that early takes nothing.
+   * After a pass, `since` is when it last claimed: a job that came due after
+   * that, whether its timer fired a moment early or its backoff ran out
+   * mid-pass, is still owed a claim.
    */
   async function wake(since?: Timestamp): Promise<void> {
     if (stopped) return;

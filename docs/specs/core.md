@@ -6,8 +6,9 @@
 
 - 2026-10-08 — **A host's wake no longer loses a job that came due during its pass.**
   `work.dueIn(kinds, since)` also answers zero for a job that came due after `since` (the host's
-  last claim) and is still unclaimed. A job that was due by then, and that the claim passed over,
-  is still left out. The daemon's runner passes in the time of each pass's last claim. A timer
+  last claim, on the pool's clock) and is still unclaimed. A job that was due by then, and that the
+  claim passed over, is still left out. The daemon's runner is handed the pool's clock and passes in
+  the time of each pass's last claim. A timer
   that fired a moment before its job was due used to leave the job waiting for the next poll, and
   a later answer no longer replaces a sooner timer.
 - 2026-10-08 — **A capture can be routed as its attachments alone.** The file kinds declare
