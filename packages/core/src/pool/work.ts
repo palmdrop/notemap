@@ -98,12 +98,13 @@ export function release(
 export async function dueIn(
   ports: PoolPorts,
   kinds: readonly JobKind[],
+  since?: Timestamp,
 ): Promise<Duration | undefined> {
   const now = ports.clock.now();
-  const due = await ports.work.nextDue(kinds, now);
+  const due = await ports.work.nextDue(kinds, since ?? now);
   return due === undefined
     ? undefined
-    : ((Date.parse(due) - Date.parse(now)) as Duration);
+    : (Math.max(Date.parse(due) - Date.parse(now), 0) as Duration);
 }
 
 export function abandoned(

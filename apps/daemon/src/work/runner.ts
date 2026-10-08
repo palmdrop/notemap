@@ -3,6 +3,7 @@ import type {
   JobKind,
   Lease,
   Pool,
+  Timestamp,
   WorkOutcome,
 } from "@notemap/core";
 
@@ -40,6 +41,8 @@ export function startRunner(
   let inFlight: Promise<number> | undefined;
   let timer: NodeJS.Timeout | undefined;
   let waking: NodeJS.Timeout | undefined;
+  let wakingAt = Infinity;
+  let looked: Timestamp | undefined;
   let stopped = false;
 
   async function runOnce(): Promise<number> {
@@ -49,6 +52,7 @@ export function startRunner(
     let resolved = 0;
 
     while (true) {
+      looked = new Date().toISOString() as Timestamp;
       const leases = await pool.work.claim({
         kinds,
         limit: config.batch,
@@ -91,7 +95,7 @@ export function startRunner(
   function next(): Promise<number> {
     inFlight ??= runOnce().finally(() => {
       inFlight = undefined;
-      void wake();
+      void wake(looked);
     });
     return inFlight;
   }
@@ -101,17 +105,27 @@ export function startRunner(
    * claimed when it comes due rather than on whichever poll follows it. Only
    * what falls before the next poll: anything later that poll will see, and
    * look again for.
+   *
+   * After a pass, `since` is its last claim: a timer can fire a moment before
+   * the job it was set for is due, and a claim that early takes nothing.
    */
-  async function wake(): Promise<void> {
+  async function wake(since?: Timestamp): Promise<void> {
     if (stopped) return;
     try {
-      const wait = await pool.work.dueIn(kinds);
+      const wait = await pool.work.dueIn(kinds, since);
       if (stopped || wait === undefined || wait >= config.pollIntervalMs) {
         return;
       }
 
+      const at = Date.now() + wait;
+      if (at >= wakingAt) return;
+
       clearTimeout(waking);
-      waking = setTimeout(tick, Math.max(wait, 0));
+      wakingAt = at;
+      waking = setTimeout(() => {
+        wakingAt = Infinity;
+        tick();
+      }, wait);
       waking.unref?.();
     } catch (cause) {
       log.error(

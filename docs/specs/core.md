@@ -4,6 +4,12 @@
 **Last updated**: 2026-10-08
 **Shipped**:
 
+- 2026-10-08 — **A host's wake no longer loses a job that came due during its pass.**
+  `work.dueIn(kinds, since)` also answers zero for a job that came due after `since` (the host's
+  last claim) and is still unclaimed. A job that was due by then, and that the claim passed over,
+  is still left out. The daemon's runner passes in the time of each pass's last claim. A timer
+  that fired a moment before its job was due used to leave the job waiting for the next poll, and
+  a later answer no longer replaces a sooner timer.
 - 2026-10-08 — **A capture can be routed as its attachments alone.** The file kinds declare
   `place-assets`, which writes a capture's attachments into a folder with no note. Each lands under
   its uploaded name, numbered past a file holding something else, and a retry still lands nothing

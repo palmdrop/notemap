@@ -138,7 +138,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       extend: (lease, by) => work.extend(ports, lease, by),
       release: (lease) => work.release(ports, lease),
       abandoned: (page) => work.abandoned(ports, page),
-      dueIn: (kinds) => work.dueIn(ports, kinds),
+      dueIn: (kinds, since) => work.dueIn(ports, kinds, since),
     },
 
     mirror: { recordFor: (subject) => mirror.recordFor(ports, subject) },

@@ -168,6 +168,27 @@ describe("a retryable failure", () => {
   });
 });
 
+describe("what comes due next", () => {
+  it("is how long a retry has left to wait", async () => {
+    const { pool: p } = await owing();
+    await p.work.complete((await claimOne(p)).id, failed(true, OFFLINE));
+
+    expect(await p.work.dueIn(["mirror"])).toBe(1_000);
+    expect(await p.work.dueIn(["delivery"])).toBeUndefined();
+  });
+
+  it("is nothing once the retry is due, unless it came due after the claim that was asked about", async () => {
+    const { pool: p, clock } = await owing();
+    await p.work.complete((await claimOne(p)).id, failed(true, OFFLINE));
+
+    clock.set(secondsIn(1.5));
+
+    expect(await p.work.dueIn(["mirror"])).toBeUndefined();
+    expect(await p.work.dueIn(["mirror"], at(secondsIn(0.5)))).toBe(0);
+    expect(await p.work.dueIn(["mirror"], at(secondsIn(1)))).toBeUndefined();
+  });
+});
+
 describe("a non-retryable failure", () => {
   it("is given up on at the first attempt", async () => {
     const { pool: p, clock, item } = await owing();
