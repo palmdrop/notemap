@@ -984,3 +984,25 @@ test("a kind with no other capability draws no output", async () => {
   await screen.findByRole("button", { name: "place-assets" });
   expect(screen.queryByRole("button", { name: "everything" })).toBeNull();
 });
+
+test("an opened template placing the attachments alone says so under output", async () => {
+  serving(
+    [
+      aTemplate({
+        capability: "place-assets",
+        arguments: { directory: "library" },
+      }),
+    ],
+    { kind: "fits" },
+    [aDestination()],
+    [CREATE, PLACE_ASSETS],
+  );
+
+  render(Templates);
+  await open(/research/);
+
+  await vi.waitFor(async () => {
+    expect(await said("output")).toBe("attachments only");
+  });
+  expect(screen.queryByText("action")).toBeNull();
+});

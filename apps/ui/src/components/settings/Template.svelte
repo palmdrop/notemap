@@ -8,6 +8,7 @@
   import Lead from "$components/primitives/text/Lead.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { carriesAssets } from "$lib/capability";
   import { argumentsOf } from "$lib/arguments";
   import {
     capabilityHeld,
@@ -202,7 +203,11 @@
           {destination.name}
         {/if}
       </Fact>
-      <Fact name="action">{one.capability}</Fact>
+      {#if capability !== undefined && carriesAssets(capability)}
+        <Fact name="output">attachments only</Fact>
+      {:else}
+        <Fact name="action">{one.capability}</Fact>
+      {/if}
       <Fact name="place">{place}</Fact>
       {#each taken as setting (setting.name)}
         <Fact name={setting.name}>{setting.said}</Fact>

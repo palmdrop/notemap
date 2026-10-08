@@ -2335,7 +2335,8 @@ of a grid.
 **Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
 template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
 after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG ·
-DESTINATION · ACTION · PLACE`, then **one fact per setting the template takes for its deliveries**
+DESTINATION · ACTION · PLACE` — `OUTPUT attachments only` in place of `ACTION` for a template that
+places the attachments alone *(2026-10-08)* — then **one fact per setting the template takes for its deliveries**
 — `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING ·
 USED` *(the folder mode, retitled from `FOLDER` 2026-10-08, which read the same as a folder
 field)*, `used` naming the count and when it last fired. The place leaves those settings out, on the
