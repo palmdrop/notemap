@@ -8,6 +8,7 @@
   import { slide } from "$lib/motion";
   import type { Said } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
+  import { NO_NOTICES } from "$lib/said";
   import type { RefusedCapture } from "$lib/refused";
   import { timeOf } from "$lib/stamp";
 
@@ -86,33 +87,32 @@
             >clear</button
           >
         {/if}
-        <a href="/log" class="underline">log</a>
         <button type="button" class="underline" onclick={onclose}>close</button>
       </span>
     </header>
 
     {#if history.length === 0 && !flying && refused.length === 0}
-      <p class="px-3 py-2">Nothing has been said yet.</p>
+      <p class="px-3 py-2" transition:slide={{ fade: true }}>{NO_NOTICES}</p>
     {/if}
 
-    {#if history.length > 0}
-      <ol aria-label="said">
-        {#each history as said (said.id)}
-          <Entry
-            when={at(said.at)}
-            what={said.what}
-            subject={said.subject}
-            why={said.why}
-            about={said.about}
-            href={said.href}
-            alarm={said.alarm === true}
-            offer={said.live && said.offer !== undefined
-              ? { label: said.offer.label, take: () => ontake(said.id) }
-              : undefined}
-          />
-        {/each}
-      </ol>
-    {/if}
+    <!-- Drawn while empty too, so the last notice cleared slides out rather than
+         going with the list. -->
+    <ol aria-label="said">
+      {#each history as said (said.id)}
+        <Entry
+          when={at(said.at)}
+          what={said.what}
+          subject={said.subject}
+          why={said.why}
+          about={said.about}
+          href={said.href}
+          alarm={said.alarm === true}
+          offer={said.live && said.offer !== undefined
+            ? { label: said.offer.label, take: () => ontake(said.id) }
+            : undefined}
+        />
+      {/each}
+    </ol>
 
     {#if refused.length > 0}
       <h2

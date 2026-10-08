@@ -4,6 +4,8 @@
     /* A page that grows past the window, or stops doing so for a frame while a
        list is read again, would otherwise move everything centred sideways. */
     scrollbar-gutter: stable;
+    /* Whatever is scrolled or focused into view stops clear of the status line. */
+    scroll-padding-bottom: calc(var(--spacing-status) + 0.75rem);
   }
 
   /* A person's own answer, where they have given one. */

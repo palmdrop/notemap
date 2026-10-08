@@ -37,7 +37,7 @@
 </script>
 
 <li
-  in:slide={{ fade: true }}
+  transition:slide={{ fade: true }}
   class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-narrow:grid-cols-1 {alarm
     ? 'text-alarm'
     : ''}"
@@ -46,10 +46,10 @@
 
   <span class="grid min-w-0 gap-0.5">
     <span class="flex items-baseline gap-2 wrap-anywhere">
-      <span>
+      <span class="font-semibold">
         {what}
         {#if subject !== undefined}
-          <span class="font-semibold">{subject}</span>
+          <span>{subject}</span>
         {/if}
       </span>
       {@render mark?.()}
@@ -66,7 +66,7 @@
     {#if href !== undefined || offer !== undefined || actions !== undefined}
       <span class="flex justify-end gap-4">
         {#if href !== undefined}
-          <a {href} class="underline">look</a>
+          <a {href} class="underline">open</a>
         {/if}
 
         {#if offer !== undefined}

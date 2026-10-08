@@ -162,6 +162,29 @@ export function arrive(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), x: -ARRIVE });
 }
 
+/** Scrolled to the nearest edge that shows it whole, gliding there unless motion is off. */
+export function bringIntoView(node: Element): void {
+  node.scrollIntoView({
+    block: "nearest",
+    behavior: duration("short") === 0 ? "instant" : "smooth",
+  });
+}
+
+/**
+ * Resolves once nothing in or on `node` moves: a frame after the change that
+ * set it moving, so what that change started is waited for too.
+ */
+export async function settled(node: Element): Promise<void> {
+  if (typeof requestAnimationFrame !== "function") return;
+  await new Promise((frame) => requestAnimationFrame(frame));
+  if (typeof node.getAnimations !== "function") return;
+  await Promise.all(
+    node
+      .getAnimations({ subtree: true })
+      .map((moving) => moving.finished.catch(() => undefined)),
+  );
+}
+
 /** Fading in from a little below where it comes to rest. */
 export function rise(node: Element, params: Moving = {}): TransitionConfig {
   return fly(node, { ...timing(params), y: RISE });

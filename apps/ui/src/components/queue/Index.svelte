@@ -8,7 +8,7 @@
   import { byDay as headed, plain } from "$lib/days";
   import { lineOf } from "$lib/excerpt";
   import { doubled, pickable } from "$lib/pick";
-  import { slide } from "$lib/motion";
+  import { bringIntoView, slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
@@ -45,7 +45,8 @@
 
   /** Brings a line into view, for the keys that walk the list. */
   export function reveal(id: string): void {
-    stamps[id]?.scrollIntoView({ block: "nearest" });
+    const stamp = stamps[id];
+    if (stamp !== undefined) bringIntoView(stamp);
   }
 
   const lines = $derived(

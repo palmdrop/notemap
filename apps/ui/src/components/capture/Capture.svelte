@@ -21,6 +21,7 @@
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
   import { slide } from "$lib/motion";
+  import { NOTHING_TO_CAPTURE } from "$lib/said";
   import { offerable, triggeredBy } from "$lib/templates";
 
   let {
@@ -166,7 +167,10 @@
   }
 
   async function capture() {
-    if (chosen.length === 0 && text.trim() === "") return;
+    if (chosen.length === 0 && text.trim() === "") {
+      said = NOTHING_TO_CAPTURE;
+      return;
+    }
 
     // The limit may have been learned since a file was picked, or a refused
     // capture put back with the file that was refused.
@@ -242,6 +246,9 @@
   <textarea
     bind:this={box}
     bind:value={text}
+    oninput={() => {
+      if (said === NOTHING_TO_CAPTURE) said = "";
+    }}
     onkeydown={(event) => {
       if (commits(event)) {
         event.preventDefault();
@@ -285,7 +292,7 @@
         </span>
 
         {#if said !== ""}
-          <!-- Only a failure reaches this: the capture itself waits on nothing. -->
+          <!-- Only a failure or an empty box reaches this: the capture itself waits on nothing. -->
           <span role="status" class="text-alarm">{said}</span>
         {/if}
       </span>

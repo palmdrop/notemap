@@ -924,15 +924,8 @@
   <div
     class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
   >
-    <div class="mb-2 flex justify-between gap-x-[2ch]">
-      <div class="flex flex-wrap items-baseline gap-x-[2ch]">
-        <Stamp at={item.createdAt} inline />
-        <span class="flex flex-wrap gap-x-[1ch]">
-          {#each tags as tag (tag)}
-            <span>{tag}</span>
-          {/each}
-        </span>
-      </div>
+    <div class="mb-2 flex items-baseline justify-between gap-x-[2ch]">
+      <Stamp at={item.createdAt} inline />
       {#if !editing}
         <button
           type="button"
@@ -962,7 +955,7 @@
       ></textarea>
       <div class="mt-2 flex justify-between">
         <button type="button" onclick={keep} class="hover:underline">
-          keep the capture's
+          restore
         </button>
         <button
           type="button"

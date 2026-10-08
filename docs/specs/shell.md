@@ -1,8 +1,18 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-07
+**Last updated**: 2026-10-08
 **Shipped**:
+
+- 2026-10-08 — **Scrolling stops clear of the status line, and the quiet places say plainly.** A row
+  walked to by `j`/`k` comes into view whole, its foot included, clear of the status line, gliding
+  there; an edit that attaches or drops a file brings its row back into view once it has settled.
+  An emptied filter says `Nothing matches both a and b.` beside a ruled `clear filters`, the drained
+  queue `Queue is empty.` at the queue's left, an empty panel `No notices.`. The panel's notices
+  lead with what happened in bold, name the capture as `<stamp>: <first words>`, go to it by
+  `open`, and slide out as `clear` lets go of them; its head no longer leads to the log. An empty
+  capture says `nothing to capture`. The process surface's head draws no tags, the composer's
+  `tags` being where they are, and `keep the capture's` is `restore`.
 
 - 2026-10-07 — **Attach anything, and as much as you like.** The capture box and an edit take any
   number of files of any kind. The first two pictures in slot order are drawn above the words;
@@ -630,7 +640,8 @@ Two columns, designed at 375px and given air on a wider screen. There is no seco
 two-pane desktop, no bottom bar, no sheet. *Amended 2026-09-30
 ([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md))*: there is one bar at the bottom,
 the **status line** ([below](#the-status-line)), fixed under every surface; a page's foot is padded
-clear of it, and the process surface fills the viewport less its height. *Amended 2026-08-24*: the second column is the metadata
+clear of it, whatever is scrolled or focused into view stops clear of it with a little room to
+spare *(2026-10-08)*, and the process surface fills the viewport less its height. *Amended 2026-08-24*: the second column is the metadata
 rail, and it survives a phone rather than collapsing into the first. *Amended 2026-09-29
 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md))*: the register has a second
 layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
@@ -655,7 +666,9 @@ settings. A refusal goes to the status line.
 one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
 foot along its bottom rule carrying `attach` behind a rule of its own and the tag chooser at the
 left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
-stamped when it is sent. It is no longer a row of the register, and says nothing until it fails.
+stamped when it is sent. It is no longer a row of the register, and says nothing until it fails —
+or until `capture` is taken with nothing written and nothing attached, when it says `nothing to
+capture` in its foot until something is written *(2026-10-08)*.
 
 A capture asks nothing — text, any number of attachments, send. Nothing waits on the pool: the client
 mints the asset id and holds the bytes, which go up with the capture when it drains
@@ -788,7 +801,7 @@ control that can be taken off.
 
 **Leaving an edit with changes asks first** *(2026-09-27)*. However it is left — `close` or `esc`,
 `j`/`k`, another row, the capture box, another page — an edit whose field holds something the item
-does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp> <first words>`, with
+does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp>: <first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
 through history, a link out of the app. `save` waits for an attachment still being attached, and an
@@ -804,7 +817,10 @@ item carries is drawn on the side of the words the row being edited drew it — 
 them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
 beside it. Opening an edit therefore moves no file across the words, though each picture shrinks
 to the box's size and gains its line, and a third picture and after, a line under the words when
-read, joins the thumbnails above them. `attach` in the foot adds files after them, and **a file
+read, joins the thumbnails above them. **A file attached or dropped brings the row back into
+view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving
+above the words or a line under them can carry the row past either edge of the screen. `attach` in
+the foot adds files after them, and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
 and is not attached. `save` sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
@@ -876,7 +892,7 @@ body's words stay the browser's.
 
 **The keyboard on a register** is the same keyboard on the queue and on the feed, because a
 register walks the same way whatever it holds. `j`/`k` walk the rows, moving the selection and
-bringing it into view — and off a held row, which then goes; `enter` selects the first row where
+bringing the whole of it into view, its foot included, gliding there unless motion is off *(2026-10-08)* — and off a held row, which then goes; `enter` selects the first row where
 none is, and opens process on the one that is; `esc` leaves the row's editable shape where there is
 one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filter)); `v` turns the
 list to the other view *(2026-10-01)*. The selected row adds every command its own actions draw
@@ -911,7 +927,7 @@ day's heading is on that line from the start** *(2026-10-02; it stood under the 
 between them, until it was scrolled to the top)*, unless a refusal is said between the two; the next
 day's heading still slides over the last, under the controls. Nothing at the head moves as a
 heading comes and goes: the controls stand at the right whether or not a date is beside them. A row
-walked to by `j`/`k` stops clear of the line, by day or not.
+walked to by `j`/`k` stops clear of the line, by day or not, and clear of the status line at the foot.
 
 #### Rows by day
 
@@ -1011,10 +1027,11 @@ address last said.
 - **A row whose filter tag is taken off leaves the filtered list** on the terms a decision takes one
   off the queue: held where it stood while it is selected, and sliding out when the selection
   leaves it.
-- **An emptied filter says so and never says the queue is drained**: `Nothing tagged kind/quote is
-  waiting.` with `whole queue` beside it, and on the feed `Nothing is tagged kind/quote.` with
-  `whole feed`. Several tags are said as a sentence says them: `Nothing tagged a, b and c is
-  waiting.`
+- **An emptied filter says so and never says the queue is drained**: `Nothing matches kind/quote.`
+  with `clear filters` beside it, on the queue and the feed alike, ruled round since it stands in a
+  sentence and would otherwise read as more of it *(amended 2026-10-08; it was `Nothing tagged
+  kind/quote is waiting.` with a plain `whole queue`)*. Several tags are said as a sentence says
+  them: `Nothing matches both a and b.`, `Nothing matches all of a, b and c.`
 - Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
   `tags ▾` panel is the one way in.
 
@@ -1036,15 +1053,16 @@ column. Below `wide` the head sits above the middle with a rule under it, capped
 of the height and scrolling within itself. Only the middle ever scrolls; the head and the foot are
 always visible.
 
-**The head is the capture, read-only until `edit`.** The stamp and the tags on one line with
-`edit` at the right; **under them, where the item has gone already** *(2026-09-27)* — one line,
+**The head is the capture, read-only until `edit`.** The stamp on one line with
+`edit` at the right *(amended 2026-10-08; the tags stood beside the stamp, and said again what the
+composer's `tags` section draws)*; **under them, where the item has gone already** *(2026-09-27)* — one line,
 `→ **Obsidian vault** …/2026-09-13.md, **manual**`, the records as a row's routing line names them, cut
 with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
 than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
 second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure, with the
 capture's attachments above them as [Content](#content) draws them. Under the words, while not editing, a block per link they name *(2026-09-24;
 [Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
-ruled box with the caret in it, `keep the capture's` puts them back and a bold `done` closes the
+ruled box with the caret in it, `restore` puts them back and a bold `done` closes the
 box, `edit` being hidden meanwhile. **The edited words are this delivery's alone** — the record's
 `content` exactly as the modal's rewrite was ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)):
 the item is never changed, words nobody changed carry nothing, and wanting the fix everywhere is
@@ -1409,7 +1427,7 @@ meaning to fix one delivery.
 It is drawn only where a **real destination** is taken. `manual` and `discard` deliver nothing, so
 there is nothing to rewrite.
 
-**`keep the capture's` is the way back, and words nobody changed carry nothing.** Opening the field
+**`restore` is the way back, and words nobody changed carry nothing.** Opening the field
 is not a decision — a person who opens it, reads what is there and types nothing has rewritten
 nothing, so a request whose words still say what the capture says carries no `content` at all. The
 presence of content on a record is the claim that somebody rewrote it, and it is a claim this
@@ -1955,14 +1973,16 @@ anywhere, and closes on `esc`, on its own `close`, or on a press anywhere outsid
 so it reads as the notices' own rather than as a sheet over the page, and spans the line below
 `narrow`. It **slides open and shut** as a section does, and stands clear of the line's rule,
 which stays drawn under it so the two never read as one box. **It is read from the bottom**: it
-opens on the newest, and a notice arriving while it is open slides in there and stays in view. Opened before anything has been said, it says so. It is the one place a
+opens on the newest, and a notice arriving while it is open slides in there and stays in view. Opened before anything has been said, it says `No notices.` It is the one place a
 notice that has gone can be read again: this session's notices, **oldest first so the newest sits
-nearest the line**, each with its time, what and why, the capture it was about, and `look`. A notice
+nearest the line**, each with its time, what happened in bold, why, the capture it was about as
+`<stamp>: <first words>`, and `open` *(amended 2026-10-08; it was `look`, and what happened was
+plain)*. A notice
 still live keeps its offer; one that has gone does not, since what it offered may no longer be true.
-`clear` lets go of what has gone. Under the notices, **in flight**: each route in flight with its
-countdown, `look` and `cancel`, and each operation this device has not sent, with its time and
-`look`. The panel's head leads
-to the log, which is where the whole of it is. It holds the last hundred notices and is the
+`clear` lets go of what has gone, each one sliding out, so the panel shrinks into what is left. Under the notices, **in flight**: each route in flight with its
+countdown, `open` and `cancel`, and each operation this device has not sent, with its time and
+`open`. The log, reached from the bar, is where the whole of it is *(2026-10-08; the panel's head
+led there too)*. It holds the last hundred notices and is the
 session's: a reload empties it, and the log is the durable account. While it is open, `esc` is its
 own before any surface's.
 
@@ -1988,7 +2008,8 @@ did not go, and the shell saying `routed` there would be inventing the one fact 
 can establish. What it landed as is said later, when the pool writes it.
 
 **A notice names the capture, not only the place** *(2026-09-03)*: what happened and where, the
-path a copy went to, and the stamp the row was read by with the capture's own first words. The line
+path a copy went to, and the stamp the row was read by with the capture's own first words, a colon
+between them *(2026-10-08)*. The line
 has room for the first two; the panel says all three. A place and a path say where something went;
 only the excerpt says *what* went, and by the time a notice is read the row it names has left the
 register. Where the notice came from the log rather than from a gesture, the item is read for it,
@@ -2169,7 +2190,8 @@ already being read rather than giving up on the step — unless the reader has m
 the meantime. `load more` stays: it is how the keyboard asks without walking, and how a read that
 failed is asked for again, since scrolling never retries one. While a page is read the foot draws
 the asking mark in the width `load more` already took. **The drained queue is one line where the rows were** —
-`Nothing left to process.` — in the body column's position, with no row drawn beside it. The empty
+`Queue is empty.` — at the queue's left, with no room above it beyond the list's own *(amended
+2026-10-08; it was `Nothing left to process.`, set in the body column's position)*. The empty
 list stays under it *(2026-10-01)*, so the last row out slides out and the first capture into it
 slides in, as any other. Reaching the end is what the queue is for, so it is said once and quietly:
 no paragraph, no `zero`, and not as a notice.

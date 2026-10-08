@@ -3136,9 +3136,7 @@ test("edit opens the capture's words in a box, and routing sends what was typed"
   expect(field.className).toContain("border");
   // Hidden meanwhile: the two words under the box are the way out.
   expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
-  expect(
-    screen.getByRole("button", { name: "keep the capture's" }),
-  ).toBeDefined();
+  expect(screen.getByRole("button", { name: "restore" })).toBeDefined();
 
   await fireEvent.input(field, { target: { value: "a note, tidied" } });
   await choose("done");
@@ -3294,7 +3292,7 @@ test("keeping the capture's words draws them again and carries nothing", async (
     target: { value: "a note, tidied" },
   });
 
-  await choose("keep the capture's");
+  await choose("restore");
 
   expect(screen.queryByLabelText("words")).toBeNull();
   expect(head()).toBeTruthy();
@@ -3488,6 +3486,16 @@ test("a browse being asked stands the mark where its entries will be", async () 
   );
   await screen.findByText("inbox");
   expect(list.querySelector("[data-asking]")).toBeNull();
+});
+
+test("draws the item's tags in the composer alone, not in the head", async () => {
+  serving([aDestination()]);
+  const tagged = aCapture({ tags: [{ name: "seedling", addedAt: WHEN }] });
+
+  draw(tagged);
+  await screen.findByRole("button", { name: "tags" });
+
+  expect(screen.getAllByText("seedling")).toHaveLength(1);
 });
 
 test("the tags section is open with no tags, its + drawn", async () => {
