@@ -8,7 +8,7 @@
   alone, an `output` section before `place`, on the process surface and the template form, offers
   `everything` or `attachments only`. Taken, the place becomes the folder they go in, `edit` goes,
   and the preview lists the paths they would land at.
-  ([ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md),
+  ([ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md),
   [plan](../plans/attachments-only.md))
 - 2026-10-08 — **Scrolling stops clear of the status line, and the quiet places say plainly.** A row
   walked to by `j`/`k` comes into view whole, its foot included, clear of the status line, gliding
@@ -1417,7 +1417,7 @@ the person's own: the record did not name the template, and an `establish` templ
 its folder was there.
 
 **Attachments only** *(2026-10-08,
-[ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md))*. Where the chosen
+[ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md))*. Where the chosen
 destination settles a capability and also declares one that carries a capture's assets alone, and
 the item has attachments, an **`output` section** is drawn between `destination` and `place`,
 always open, holding two options: `everything`, taken by default, and `attachments only`. It comes

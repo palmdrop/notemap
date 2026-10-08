@@ -9,7 +9,7 @@
   its uploaded name, numbered past a file holding something else, and a retry still lands nothing
   twice. A capability says it carries the attachments alone with `x-notemap-carries`, which core
   never reads.
-  ([ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md),
+  ([ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md),
   [plan](../plans/attachments-only.md))
 - 2026-10-08 — **A picture's dimensions are read from its bytes.** An asset whose media type is
   `image/*` is measured as it is stored and carries `dimensions`, as it is drawn, where its bytes say;
@@ -1362,7 +1362,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   hold only what was offered, not that a caller must refuse anything else — a browse answers one
   page of what a destination holds, so what it did not name is not thereby wrong.
 - **A capability may say it carries a capture's assets alone** (added 2026-10-08,
-  [ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md)), with
+  [ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md)), with
   `x-notemap-carries: "assets"` at the root of its arguments schema. **Core never reads it**: it is
   said for the surfaces, which offer "attachments only" wherever a destination declares one, and
   know no capability by name to do it. The file kinds declare one, `place-assets`, whose arguments

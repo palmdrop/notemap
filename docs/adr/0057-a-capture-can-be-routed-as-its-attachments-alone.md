@@ -1,4 +1,4 @@
-# 56. A capture can be routed as its attachments alone
+# 57. A capture can be routed as its attachments alone
 
 **Date**: 2026-10-08
 **Status**: Accepted. Narrows the asset-naming half of the retry promise

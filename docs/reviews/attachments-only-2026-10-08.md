@@ -4,7 +4,7 @@
 **Status**: Addressed
 **Scope**: `git diff main...agent/attachments-only` (PR #97): `packages/output-markdown/src/{placing,capabilities}.ts`, `packages/adapters/destination-{fs,webdav}`, `packages/core/src/pool/destinations/vocabulary.ts`, `apps/ui/src/components/{process/Process.svelte,settings/TemplateForm.svelte,settings/Template.svelte}`, `apps/ui/src/lib/capability.ts`, docs
 **Plan**: `docs/plans/attachments-only.md`
-**Spec**: `docs/specs/core.md`, `docs/specs/shell.md`, `CONTEXT.md`, ADR 0056
+**Spec**: `docs/specs/core.md`, `docs/specs/shell.md`, `CONTEXT.md`, ADR 0057
 
 ---
 
@@ -71,7 +71,7 @@ walk claims both names, because `claimed` is case-sensitive (`output-markdown/sr
 and the second `link` hits `EEXIST`. The same goes for NFC/NFD-different names on APFS. On the
 retry, `lstat` would see the first file and walk on.
 
-Fix: map the conditional-create failure in `place-assets` to `unreachable`, and amend ADR 56
+Fix: map the conditional-create failure in `place-assets` to `unreachable`, and amend ADR 57
 ("losing that race is `rejected`", `:75`) and the fs/webdav READMEs. Optionally compare
 `claimed` case-folded. There is no fs test for this path at all (WebDAV has "refuses where the
 name is taken between the walk and the write").
@@ -98,7 +98,7 @@ Size-first only spares files whose size *differs*. A file holding the same bytes
 on size and is always read in full. That is exactly the re-route and retry case, and on WebDAV it
 is a download. `preview` runs the same walk (`destination-webdav/src/destination.ts` preview
 branch), and the shell asks for a preview on every settled change to the decision. Typing a folder
-that already holds a 200 MB recording downloads it once per settle. ADR 56's Consequences
+that already holds a 200 MB recording downloads it once per settle. ADR 57's Consequences
 (`:89`, "a name taken by **different** bytes costs a read") states the opposite case, and so does
 the plan. At minimum, correct the ADR. Consider not hashing in `preview` (answer "may already be
 there" on a size match), or caching digests per `(path, etag/size)` for the life of a preview
@@ -110,14 +110,14 @@ session.
 `preview`. This PR documents the shell spending the same word on "what a delivery carries" and
 justifies it by analogy to `discard`/archive. AGENTS.md says to fix a term rather than invent a
 synonym, and the inverse (one word, two meanings) is worse. The concept already has a name in this
-PR: `x-notemap-carries`, and ADR 56's option 2 called it `carry`. A `carries` section
+PR: `x-notemap-carries`, and ADR 57's option 2 called it `carry`. A `carries` section
 (`everything` / `attachments only`) would read the same and collide with nothing. If the label
 stays, the reasoning belongs in an ADR line, not in the glossary entry for the other meaning.
 
 ### 6. Should fix. The shell does know `place-assets` by name
 
 `apps/ui/src/lib/capability.ts:14`. `"place-assets": "placed"` contradicts the plan (`:27`, "never
-knows `place-assets` by name") and the spirit of shell.md/ADR 56 ("found by its annotation and
+knows `place-assets` by name") and the spirit of shell.md/ADR 57 ("found by its annotation and
 never by its name"). The `DID` table already names the other three, so this is the existing
 pattern, but the docs now claim otherwise. Either answer `placed` from `carriesAssets` on the
 record's capability where the schema is held, or soften the doc claim to "chooses it by annotation".

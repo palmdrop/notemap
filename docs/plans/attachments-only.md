@@ -54,7 +54,7 @@ through an `attachments only` toggle, and a routing template can carry it.
   place a folder; while it is taken, `edit` in the head is unavailable and no rewrite is sent.
 - **The schema lives in `@notemap/output-markdown`** beside the other three file capabilities,
   although it renders no markdown. In practice that package is the file kinds' shared vocabulary.
-- **A new ADR, 0056**, records the capability, the annotation, the naming walk and the pointer.
+- **A new ADR, 0057 (numbered 0056 until main took that number)**, records the capability, the annotation, the naming walk and the pointer.
 
 ---
 
@@ -81,7 +81,7 @@ through an `attachments only` toggle, and a routing template can carry it.
 
 Depends on nothing. Every later phase codes against it.
 
-- [x] ADR 0056: the `place-assets` capability, the `x-notemap-carries` annotation, the naming walk,
+- [x] ADR 0057: the `place-assets` capability, the `x-notemap-carries` annotation, the naming walk,
       the folder as pointer. Weighed and rejected: a flag on `create-or-append`, and an empty
       rewrite.
 - [x] `docs/specs/core.md`: the fourth file capability, its arguments, the naming walk, the
