@@ -35,6 +35,7 @@
   import { itemHref, processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { browserFor } from "$lib/candidate-browsers";
+  import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
@@ -185,6 +186,12 @@
   const chosenCapability = $derived(
     capabilities.find((one) => one.name === capability),
   );
+
+  /** The capability that carries the attachments and nothing else, where the destination has one. */
+  const carrier = $derived(capabilities.find(carriesAssets));
+  const assetsOnly = $derived(
+    chosenCapability !== undefined && carriesAssets(chosenCapability),
+  );
   const declared = $derived(fieldsOf(chosenCapability?.argumentsSchema));
   const reading = $derived(readingOf(chosenCapability));
 
@@ -254,6 +261,46 @@
     const seeded = { ...wanted, ...held };
     if (Object.keys(seeded).length !== Object.keys(held).length) args = seeded;
   });
+
+  /**
+   * Only beside a capability the surface settles, which is what the toggle
+   * gives back; a kind that settles nothing offers the carrier under `do`.
+   */
+  const offersAssetsOnly = $derived(
+    carrier !== undefined &&
+      implied !== undefined &&
+      implied !== carrier.name &&
+      (attachments.length > 0 || assetsOnly),
+  );
+
+  /**
+   * Swaps between the settled capability and the carrier, keeping the folder
+   * the one held. The words go: a delivery of the attachments alone carries
+   * none for a rewrite to replace.
+   */
+  function toggleAssetsOnly(): void {
+    if (carrier === undefined || implied === undefined) return;
+    const folders = fieldsOf(carrier.argumentsSchema).find(
+      (field) => field.path === "folders",
+    )?.name;
+
+    forecast = undefined;
+    if (assetsOnly) {
+      const folder = (
+        folders === undefined ? "" : (args[folders] ?? "")
+      ).replace(/\/+$/, "");
+      capability = implied;
+      args = folder === "" ? {} : { [LINE_FIELD]: `${folder}/` };
+      return;
+    }
+
+    const { directory } = placeOf(args[LINE_FIELD] ?? "");
+    capability = carrier.name;
+    args =
+      folders === undefined || directory === "" ? {} : { [folders]: directory };
+    words = undefined;
+    editing = false;
+  }
 
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
   const chooses = $derived(capabilities.length > 1 && implied === undefined);
@@ -529,6 +576,7 @@
    * the row.
    */
   function edit(): void {
+    if (assetsOnly) return;
     words ??= captured;
     editing = true;
   }
@@ -843,7 +891,12 @@
       refusal: ready ? undefined : "nowhere to send it",
       run: () => void send(),
     },
-    { id: "edit", label: "edit", run: edit },
+    {
+      id: "edit",
+      label: "edit",
+      refusal: assetsOnly ? "only the attachments go" : undefined,
+      run: edit,
+    },
     { id: "back", label: "back", run: () => (editing ? done() : back()) },
     {
       id: "previous",
@@ -926,7 +979,7 @@
   >
     <div class="mb-2 flex items-baseline justify-between gap-x-[2ch]">
       <Stamp at={item.createdAt} inline />
-      {#if !editing}
+      {#if !editing && !assetsOnly}
         <button
           type="button"
           onclick={edit}
@@ -1072,6 +1125,13 @@
       open={opened.place}
       ontoggle={() => (opened.place = !opened.place)}
     >
+      {#if offersAssetsOnly && placing}
+        <Option
+          label="attachments only"
+          chosen={assetsOnly}
+          onchoose={toggleAssetsOnly}
+        />
+      {/if}
       {#if chosen === undefined && applied !== undefined}
         <Asking />
       {:else if chosen !== undefined && described === undefined}

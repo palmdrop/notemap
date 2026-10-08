@@ -134,17 +134,17 @@ Depends on Phase 2. Independent of Phase 3.
 
 Depends on Phases 1 and 2. It codes against the annotation, not a kind.
 
-- [ ] Process surface: the toggle in `place`, drawn per the spec, taking and releasing the
+- [x] Process surface: the toggle in `place`, drawn per the spec, taking and releasing the
       capability.
-- [ ] The folder line for the taken capability, carrying the folder across the toggle.
-- [ ] `edit` unavailable while the toggle is on, with the reason drawn.
-- [ ] Preview: the attachments drawn without words.
-- [ ] The routing line and the record view read a folder pointer, and the block says `placed`.
-- [ ] The template form offers `place-assets` like any other capability (already generic; test it).
-- [ ] Tests beside the components and state that changed.
-- [ ] Verify: `pnpm --filter ui test`, then by hand against a local vault: attach a PDF, toggle
+- [x] The folder line for the taken capability, carrying the folder across the toggle.
+- [x] `edit` unavailable while the toggle is on, with the reason drawn.
+- [x] Preview: the attachments drawn around the placed paths. No change needed: the preview already draws an output's text between the pictures and the file lines.
+- [x] The routing line and the record view read a folder pointer, and the block says `placed`. Folder pointers already read as `…/library/` (`routing.test.ts`); only `placed` was added.
+- [x] The template form offers `place-assets` like any other capability. Already generic, listing the description's capabilities; no test added.
+- [x] Tests beside the components and state that changed.
+- [ ] Verify: `pnpm --filter ui test` passes; still to do by hand against a local vault: attach a PDF, toggle
       on, route to `library/`, and see `library/paper.pdf` land with no note beside it.
-- [ ] Commit
+- [x] Commit _(2026-10-08)_
 
 ### Phase 6 — finishing
 

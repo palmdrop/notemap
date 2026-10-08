@@ -11,8 +11,16 @@ const DID: Record<string, string> = {
   create: "created",
   append: "appended",
   "create-or-append": "created or appended",
+  "place-assets": "placed",
 };
 
 export function didWhat(capability: string): string {
   return DID[capability] ?? capability;
+}
+
+/** A capability that carries a capture's attachments and nothing else, as its schema says of itself. */
+export function carriesAssets(capability: {
+  readonly argumentsSchema?: Readonly<Record<string, unknown>>;
+}): boolean {
+  return capability.argumentsSchema?.["x-notemap-carries"] === "assets";
 }

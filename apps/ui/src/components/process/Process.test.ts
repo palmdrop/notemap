@@ -3602,3 +3602,161 @@ test("says where the item has gone already, on one line under its stamp", async 
   expect(within(line).getByText("Vault").className).toContain("font-semibold");
   expect(line.getAttribute("title")).toBe("journal/deep/2026-09-13.md");
 });
+
+/** As the file kinds declare it: a folder and nothing a note is shaped by. */
+const PLACE_ASSETS = {
+  name: "place-assets",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    "x-notemap-carries": "assets",
+    properties: {
+      directory: {
+        type: "string",
+        title: "Folder",
+        "x-notemap-candidates": true,
+        "x-notemap-path": "folders",
+      },
+    },
+  },
+};
+
+/** A capture carrying a PDF, which is what "attachments only" is about. */
+function aPaper() {
+  return aCapture({
+    payload: {
+      type: "text",
+      content: { text: "a note" },
+      metadata: {},
+      assets: [{ slot: "000", asset: "paper" }],
+    },
+    assets: [
+      {
+        id: "paper",
+        filename: "paper.pdf",
+        mime: "application/pdf",
+        blob: "a".repeat(64),
+        bytes: 3,
+      },
+    ],
+  });
+}
+
+function servingCarrier() {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND, PLACE_ASSETS],
+      });
+    }
+    if (route.endsWith("/candidates")) return json(200, answered([]));
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+test("offers attachments only where the item has attachments and the destination a carrier", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  expect(
+    await screen.findByRole("button", { name: /attachments only/ }),
+  ).toBeDefined();
+});
+
+test("does not offer attachments only for a capture with none", async () => {
+  servingCarrier();
+
+  draw();
+  await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
+
+  expect(screen.queryByRole("button", { name: /attachments only/ })).toBeNull();
+});
+
+test("attachments only routes the carrier to the folder the line had typed", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "library/paper-notes.md" } });
+  await choose(/attachments only/);
+
+  const folder = (await screen.findByRole("combobox", {
+    name: "Folder",
+  })) as HTMLInputElement;
+  expect(folder.value).toBe("library");
+  expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
+
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+});
+
+test("taking attachments only again gives the line back, holding the folder", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "library/a.md" } });
+  await choose(/attachments only/);
+  await screen.findByRole("combobox", { name: "Folder" });
+  await choose(/attachments only/);
+
+  const back = (await screen.findByRole("combobox", {
+    name: "place",
+  })) as HTMLInputElement;
+  expect(back.value).toBe("library/");
+});
+
+test("draws no edit while only the attachments go, and lets a rewrite go", async () => {
+  servingCarrier();
+
+  draw(aPaper());
+  await choose(/Vault/);
+  await screen.findByRole("combobox", { name: "place" });
+
+  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.input(screen.getByLabelText("words"), {
+    target: { value: "rewritten" },
+  });
+  await choose(/attachments only/);
+
+  expect(screen.queryByLabelText("words")).toBeNull();
+  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+
+  await commit();
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  const body = (await sent()).find(
+    (each) =>
+      (each as Record<string, unknown>)["capability"] === "place-assets",
+  ) as Record<string, unknown>;
+  expect(body).not.toHaveProperty("content");
+});
