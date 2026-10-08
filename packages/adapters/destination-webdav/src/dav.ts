@@ -289,8 +289,9 @@ function isCollection(body: string): boolean {
 }
 
 function lengthOf(body: string): number | undefined {
-  const length =
-    /<[a-z0-9]*:?getcontentlength\b[^>]*>\s*(\d+)\s*</i.exec(body)?.[1];
+  const length = /<[a-z0-9]*:?getcontentlength\b[^>]*>\s*(\d+)\s*</i.exec(
+    body,
+  )?.[1];
   return length === undefined ? undefined : Number(length);
 }
 

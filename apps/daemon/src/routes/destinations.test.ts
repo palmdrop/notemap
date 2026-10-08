@@ -281,6 +281,7 @@ describe("GET /v1/destinations/{id}/description", () => {
       "create-or-append",
       "create",
       "append",
+      "place-assets",
     ]);
     // That the schema reaches the wire intact, annotation and all: the composer
     // reads `x-notemap-candidates` off exactly this to know what it may ask about.

@@ -4,11 +4,17 @@
 **Last updated**: 2026-10-08
 **Shipped**:
 
+- 2026-10-08 — **A capture can be routed as its attachments alone.** The file kinds declare
+  `place-assets`, which writes a capture's attachments into a folder with no note. Each lands under
+  its uploaded name, numbered past a file holding something else, and a retry still lands nothing
+  twice. A capability says it carries the attachments alone with `x-notemap-carries`, which core
+  never reads.
+  ([ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md),
+  [plan](../plans/attachments-only.md))
 - 2026-10-08 — **A picture's dimensions are read from its bytes.** An asset whose media type is
   `image/*` is measured as it is stored and carries `dimensions`, as it is drawn, where its bytes say;
   `maintenance.measurePictures` measures the ones stored before, and the host runs it once as it
   starts. ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md))
-
 - 2026-10-02 — **A path field says which part of the path it holds.** `x-notemap-path` takes
   `true` for a whole path, `"folders"` and `"leaf"` for one split across two fields, and the
   markdown kinds' `create` declares its directory and filename that way. A `create` template that

@@ -88,10 +88,13 @@ export function placedOutput(
   placed: readonly Placement[],
   directory: string,
 ): DeliveredOutput {
-  const at = (name: string) => (directory === "" ? name : `${directory}/${name}`);
+  const at = (name: string) =>
+    directory === "" ? name : `${directory}/${name}`;
   const paths = [...new Set(placed.map((each) => at(each.name)))];
   const there = [
-    ...new Set(placed.filter((each) => each.there).map((each) => at(each.name))),
+    ...new Set(
+      placed.filter((each) => each.there).map((each) => at(each.name)),
+    ),
   ];
 
   const written = new TextEncoder().encode(`${paths.join("\n")}\n`);
@@ -100,7 +103,9 @@ export function placedOutput(
       mediaType: "text/plain",
       open: () => Promise.resolve(once(written)),
     },
-    ...(there.length === 0 ? {} : { note: `already there: ${there.join(", ")}` }),
+    ...(there.length === 0
+      ? {}
+      : { note: `already there: ${there.join(", ")}` }),
   };
 }
 

@@ -1435,9 +1435,7 @@ describe("placing a capture's attachments alone", () => {
       "library/notes.txt",
       "library/paper.pdf",
     ]);
-    expect(await readFile(join(path, "library/paper.pdf"), "utf8")).toBe(
-      "PDF",
-    );
+    expect(await readFile(join(path, "library/paper.pdf"), "utf8")).toBe("PDF");
     expect(delivered(outcome).pointer).toBe("library/");
     expect(await outputOf(outcome)).toEqual({
       mediaType: "text/plain",

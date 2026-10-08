@@ -4,6 +4,11 @@
 **Last updated**: 2026-10-08
 **Shipped**:
 
+- 2026-10-08 — **Attachments only.** Where a destination can place a capture's attachments
+  alone and the item has some, `place` offers `attachments only`: the line becomes the folder
+  they go in, `edit` goes, and the preview lists the paths they would land at.
+  ([ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md),
+  [plan](../plans/attachments-only.md))
 - 2026-10-08 — **Scrolling stops clear of the status line, and the quiet places say plainly.** A row
   walked to by `j`/`k` comes into view whole, its foot included, clear of the status line, gliding
   there; an edit that attaches or drops a file brings its row back into view once it has settled.
@@ -14,7 +19,6 @@
   capture says `nothing to capture`. The process surface's head draws no tags, the composer's
   `tags` being where they are, and `keep the capture's` is `restore`. A picture the pool has
   measured keeps its room before it arrives ([ADR 56](../adr/0056-the-pool-measures-a-picture-from-its-bytes.md)).
-
 - 2026-10-07 — **Attach anything, and as much as you like.** The capture box and an edit take any
   number of files of any kind. The first two pictures in slot order are drawn above the words;
   every other attachment — a PDF, a recording, a third picture — is a line under them, its name in

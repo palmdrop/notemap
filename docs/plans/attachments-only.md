@@ -148,10 +148,10 @@ Depends on Phases 1 and 2. It codes against the annotation, not a kind.
 
 ### Phase 6 — finishing
 
-- [ ] Typecheck, lint, `pnpm -r --silent test`.
-- [ ] `pnpm test:stack`: the description a destination answers changes shape.
-- [ ] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status.
-- [ ] Commit
+- [x] Typecheck, lint, `pnpm -r --silent test`.
+- [x] `pnpm test:stack`: the description a destination answers changes shape.
+- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status. Left `In progress`: the docs await your confirmation, and the by-hand check in Phase 5 is not done.
+- [x] Commit _(2026-10-08)_
 
 ---
 

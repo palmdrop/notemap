@@ -10,11 +10,7 @@ import type {
   JsonObject,
   PayloadTypeName,
 } from "@notemap/core";
-import {
-  linkTo,
-  PLACE_ASSETS,
-  type Renderer,
-} from "@notemap/output-markdown";
+import { linkTo, PLACE_ASSETS, type Renderer } from "@notemap/output-markdown";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createWebdavDestination } from "./destination";

@@ -132,10 +132,7 @@ describe("where each attachment lands", () => {
       [asset("000", "scan.pdf"), asset("001", "scan.pdf", OTHER)],
       folder({}).occupant,
     );
-    expect(placed.map((each) => each.name)).toEqual([
-      "scan.pdf",
-      "scan-1.pdf",
-    ]);
+    expect(placed.map((each) => each.name)).toEqual(["scan.pdf", "scan-1.pdf"]);
   });
 
   it("writes the same bytes attached twice under one name once", async () => {
