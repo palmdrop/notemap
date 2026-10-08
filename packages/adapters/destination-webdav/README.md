@@ -32,10 +32,10 @@ address that is not private — not loopback, not a private or link-local addres
 name, which is what a container on the same network is called — is named on startup as one whose
 password crosses the network in the clear, and then used: the host says it, and does not decide it.
 
-## The two capabilities
+## The capabilities
 
-`create` and `append`, the filesystem kind's own names with the same argument shapes,
-from the same definition. Two kinds doing one thing under different words would make every rule and
+`create-or-append`, `create`, `append` and `place-assets`, the filesystem kind's own names with the
+same argument shapes, from the same definition. Two kinds doing one thing under different words would make every rule and
 every composer choice kind-specific for no gain.
 
 Neither field offers **candidates**: enumerating what is already in the vault is a slice of its own,
@@ -59,6 +59,12 @@ exactly as the filesystem kind does.
   silently. That is this kind's promise and not `create`'s: the capability says a new thing rather
   than an addition to one, and a kind whose protocol offers no conditional create cannot promise
   more.
+- **An asset placed alone is named on the filesystem kind's terms**: the uploaded name, then
+  `name-1`, `name-2` past a file holding different bytes, with a file holding the same bytes taken
+  as already landed. The sizes the server answers are compared first, and a file is downloaded to
+  be hashed only where they match; a server that answers no size has every colliding file
+  downloaded. The write is the same conditional `PUT`, so a file landing between the walk and the
+  write refuses the delivery rather than being written over.
 - **No append loses a concurrent write.** The note is read, its `ETag` kept, and written back with
   `If-Match`. A `412` means somebody wrote in between, so it re-reads and tries again, four times,
   and then reports contention as unreachable rather than throwing a routing decision away over

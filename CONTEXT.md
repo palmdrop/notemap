@@ -341,13 +341,16 @@ _Avoid_: plugin, connector, integration
 
 **Capability**:
 One thing an adapter can do — **create** something that was not there, **append** into something
-that was, or decide between the two at delivery. Named in words no kind owns, so a vault's note and
+that was, decide between the two at delivery, or **place** a capture's assets alone, with nothing
+of its own beside them. Named in words no kind owns, so a vault's note and
 a board's block are one capability rather than two; whether `create` refuses a name already taken is
 the kind's own promise and not the capability's. Says which payload types it accepts, and carries a
 schema for the **arguments** a delivery must supply: where it goes, and anything else that shapes
 it, such as a template or a format. It may also **annotate** a field — that this one can be browsed,
 that this one is a `/`-separated path — which is how anything that needs to know more than the shape
-asks the capability rather than knowing it by name. Core matches and refuses; it holds no list of
+asks the capability rather than knowing it by name. It may say the same of itself: that it carries
+a capture's assets and nothing else, which is how a surface finds the one to offer as
+"attachments only". Core matches and refuses; it holds no list of
 its own, so a new kind of destination needs no change in core.
 _Avoid_: verb, action, method, operation
 

@@ -1,10 +1,13 @@
 # @notemap/destination-fs
 
 A **destination** that is a folder on disk — a vault, a notes directory, a synced folder. It
-declares two capabilities, renders a delivery as CommonMark with YAML frontmatter, and writes the
-assets beside the note under the names they were uploaded with.
+renders a delivery as CommonMark with YAML frontmatter and writes the assets beside the note, or
+places a capture's assets in a folder with no note at all.
 
-## The two capabilities
+## The capabilities
+
+`create-or-append` takes one `path` and decides at delivery: a note that is there is appended to,
+and one that is not is created.
 
 `create` targets `{ directory, filename? }`.
 
@@ -29,7 +32,13 @@ An appended fragment carries **no frontmatter** — it is going into somebody el
 its own. A file this adapter creates because it was missing gets the frontmatter, since the whole
 file is then ours.
 
-Whether there is any is the `frontmatter` setting — `full` or `none`, unset meaning none — which
+`place-assets` targets `{ directory }`, and writes every asset the capture references into it
+with no note. A capture referencing none is refused. Each asset lands under the name it was
+uploaded with, with no digest in it: a file nobody links to is read by its name. Where that name
+holds different bytes the next is tried, `paper-1.pdf`, `paper-2.pdf`, and where it holds the same
+bytes the asset has already landed. The pointer is the folder.
+
+Whether a note has frontmatter is the `frontmatter` setting — `full` or `none`, unset meaning none — which
 each capability takes as an argument of the same name to override for one delivery. A note written
 without it carries no id and no `derived_from`, so nothing traces it back but the routing record.
 
@@ -43,8 +52,10 @@ without it carries no id and no `derived_from`, so nothing traces it back but th
   rather than this adapter looking first, so two creates racing leave one note and one refusal.
   That is this kind's promise and not `create`'s: the capability says a new thing rather than an
   addition to one, and a kind whose protocol offers no conditional create cannot promise more. An
-  asset whose name is taken — by another asset in the same delivery, or by a file the vault already
-  had — is written under `name-1`, `name-2`, and so on, keeping the extension. A file is created
+  asset beside a note carries its content's digest in its name, so a name that is taken holds these
+  bytes already. An asset placed alone walks `name-1`, `name-2`, and so on past a name holding
+  different bytes, keeping the extension. Either way a retry lands on the copy it wrote and never
+  beside it. A file is created
   with `link` rather than `rename` precisely because `link` refuses an existing name where `rename`
   replaces it silently.
 - **A partial file is never visible.** Everything is written to a temporary file in the target's own

@@ -1411,6 +1411,21 @@ that capability's form rather than the line. Overwriting it made the commit read
 the person's own: the record did not name the template, and an `establish` template never learnt
 its folder was there.
 
+**Attachments only** *(2026-10-08,
+[ADR 56](../adr/0056-a-capture-can-be-routed-as-its-attachments-alone.md))*. Where the chosen
+destination settles a capability and also declares one that carries a capture's assets alone, and
+the item has attachments, `place` draws `attachments only` above the line. Taking it takes that
+capability, found by its annotation and never by its name: the line gives way to the folder the
+files go in, drawn as any field marked `folders` is and holding the folder the line had typed.
+Taking it again gives the settled capability back, holding that folder. **While it is taken,
+`edit` in the head is not drawn** and `e` says why: the delivery carries no words for a rewrite to
+replace, and words already rewritten are let go. The preview is drawn as it is for any destination,
+the attachments around what would be written, which here is the paths the files would land at —
+`library/paper-1.pdf` where `paper.pdf` already holds something else — with a note naming those
+already there. A record of one reads the folder, `→ **Vault** library/`, and its block says
+`placed`. A template carries the capability as it carries any, and taken, draws the toggle taken.
+A kind that settles nothing offers the capability among the others under `do`, with no toggle.
+
 **The words a delivery carries sit above `would write`** *(added 2026-09-10,
 [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md))*. A `words` row in the right column,
 directly above the preview, so what is being sent reads above what it becomes and rewriting and
