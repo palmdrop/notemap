@@ -1,7 +1,7 @@
 import { createRoute } from "@hono/zod-openapi";
 import { z } from "zod";
 
-import { JSON_MEDIA_TYPE, MAX_LIMIT } from "../constants";
+import { JSON_MEDIA_TYPE, MAX_ITEMS_READ, MAX_LIMIT } from "../constants";
 import {
   ACCOUNT_STATUS,
   ARCHIVE_STATUS,
@@ -17,6 +17,7 @@ import {
   DESTINATION_DELETION_STATUS,
   DESTINATION_STATUS,
   EDIT_STATUS,
+  ITEMS_READ_STATUS,
   OUTPUT_STATUS,
   KIND_FILTER_STATUS,
   PARAMETER_STATUS,
@@ -509,6 +510,36 @@ export const actionsRoute = createRoute({
       422,
       PARAMETER_STATUS,
       KIND_FILTER_STATUS,
+    ),
+  },
+});
+
+export const itemsRoute = createRoute({
+  method: "get",
+  path: "/v1/items",
+  summary: "Read several items",
+  description: `Each item named by \`id\`, as \`GET /v1/items/{id}\` answers it, in the order asked. An id named twice is answered once, and one the pool does not hold is left out rather than refused. At most ${MAX_ITEMS_READ} ids.`,
+  request: {
+    query: z.object({
+      id: z
+        .array(z.string())
+        .optional()
+        .openapi({
+          param: { name: "id", in: "query", style: "form", explode: true },
+          description: `Repeated once per item; 1–${MAX_ITEMS_READ}. None is refused with \`422 id-required\`, more with \`422 limit-too-large\`.`,
+          example: ["0198f0c2-..."],
+        }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "The items the pool holds, in the order asked.",
+      content: { [JSON_MEDIA_TYPE]: { schema: itemSliceSchema } },
+    },
+    422: errorResponse(
+      "No id, or more than one read answers.",
+      422,
+      ITEMS_READ_STATUS,
     ),
   },
 });
@@ -1669,6 +1700,7 @@ export const ROUTES = [
   queueRoute,
   archivedRoute,
   countsRoute,
+  itemsRoute,
   itemRoute,
   archiveRoute,
   unarchiveRoute,

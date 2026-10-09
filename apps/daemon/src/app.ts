@@ -60,6 +60,7 @@ import {
   sessionRoute,
   tokensRoute,
   itemRoute,
+  itemsRoute,
   markProcessedRoute,
   poolSettingsRoute,
   queueRoute,
@@ -101,7 +102,7 @@ import {
 } from "./routes/templates";
 import { feedHandler } from "./routes/feed";
 import { healthHandler } from "./routes/health";
-import { itemHandler } from "./routes/items";
+import { itemHandler, itemsHandler } from "./routes/items";
 import { itemViewHandler } from "./routes/queue";
 import {
   poolSettingsHandler,
@@ -230,6 +231,7 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(queueRoute.path), itemViewHandler(pool, "queue"));
   app.get(honoPath(archivedRoute.path), itemViewHandler(pool, "archived"));
   app.get(honoPath(countsRoute.path), countsHandler(pool));
+  app.get(honoPath(itemsRoute.path), itemsHandler(pool));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
   app.post(honoPath(archiveRoute.path), archiveHandler(pool));
   app.post(honoPath(unarchiveRoute.path), unarchiveHandler(pool));

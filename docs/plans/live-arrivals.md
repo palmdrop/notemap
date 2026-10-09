@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-09
 **Status**: In progress
-**Spec**: `docs/specs/http-v1.md`, `docs/specs/core.md`, `docs/specs/client.md`, `docs/specs/shell.md`
+**Spec**: `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**:
 
 ---
@@ -98,17 +98,16 @@ What is missing:
 
 Depends on: interface confirmed.
 
-- [ ] Create branch `agent/live-arrivals`
-- [ ] Core: `PoolReads.items(ids)`, implemented in the store adapter(s), tested beside `item`
-- [ ] Daemon: the route in `apps/daemon/src/routes/definitions.ts` and `items.ts`, with route tests
+- [x] Create branch `agent/live-arrivals`
+- [x] Core: `PoolReads.items(ids)`, implemented in the store adapter(s), tested beside `item`
+- [x] Daemon: the route in `apps/daemon/src/routes/definitions.ts` and `items.ts`, with route tests
       for order, duplicates, unknown ids, the cap and a missing `id`
-- [ ] Regenerate the OpenAPI document (`pnpm --filter daemon openapi`) and the client's types
+- [x] Regenerate the OpenAPI document (`pnpm --filter daemon openapi`) and the client's types
       (`pnpm --filter client codegen`)
-- [ ] Amend http-v1.md (Items, and the errors table if `id-required` stays) and core.md where it
-      lists pool reads
-- [ ] Typecheck, lint, `pnpm -r --silent test`, then `pnpm test:stack`, since this changes the
+- [x] Amend http-v1.md (Items, and the errors table) _(2026-10-09; core.md lists no pool reads, so it is untouched)_
+- [x] Typecheck, lint, `pnpm -r --silent test`, then `pnpm test:stack`, since this changes the
       HTTP surface
-- [ ] Commit: `feat(daemon): read several items in one request`
+- [x] Commit: `feat(daemon): read several items in one request`
 
 **Verify:** route tests green. `curl '…/v1/items?id=<a>&id=<unknown>&id=<b>'` answers `a` and `b`
 in that order. 101 ids answer `422 limit-too-large`.

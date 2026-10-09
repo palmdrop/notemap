@@ -255,6 +255,12 @@ export const TAG_FILTER_STATUS = { "tag-invalid": 422 } as const;
 
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
 
+/** Reading several items, which names them rather than paging. */
+export const ITEMS_READ_STATUS = {
+  "id-required": 422,
+  "limit-too-large": 422,
+} as const;
+
 /**
  * The routes' own check on `GET /v1/destinations/{id}/candidates` and on
  * `/named`, on the same terms `capability-undeclared` is refused when routing
@@ -288,6 +294,7 @@ const DAEMON_STATUS = {
   ...TAG_FILTER_STATUS,
   ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
+  ...ITEMS_READ_STATUS,
   ...CANDIDATES_REQUEST_STATUS,
   ...ADDRESS_STATUS,
   ...AUTH_STATUS,

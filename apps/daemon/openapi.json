@@ -3789,6 +3789,76 @@
         }
       }
     },
+    "/v1/items": {
+      "get": {
+        "summary": "Read several items",
+        "description": "Each item named by `id`, as `GET /v1/items/{id}` answers it, in the order asked. An id named twice is answered once, and one the pool does not hold is left out rather than refused. At most 100 ids.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per item; 1–100. None is refused with `422 id-required`, more with `422 limit-too-large`.",
+              "example": [
+                "0198f0c2-..."
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per item; 1–100. None is refused with `422 id-required`, more with `422 limit-too-large`.",
+            "name": "id",
+            "in": "query",
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The items the pool holds, in the order asked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemSlice"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "No id, or more than one read answers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "id-required",
+                            "limit-too-large"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/items/{id}": {
       "get": {
         "summary": "Read one item",
