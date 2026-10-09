@@ -84,15 +84,15 @@ parks blob reclaiming there without the superseding note.
 
 Depends on nothing; can run beside phase 1.
 
-- [ ] `BlobStore.list()` in `packages/core/src/types/api/ports.ts:126`, yielding `{ hash, at }`.
-- [ ] `blob-fs`: walk the shard directories, skip anything that is not a hash (temporary files
+- [x] `BlobStore.list()` in `packages/core/src/types/api/ports.ts:126`, yielding `{ hash, at }`.
+- [x] `blob-fs`: walk the shard directories, skip anything that is not a hash (temporary files
   included), and take `at` from the file's mtime.
-- [ ] `blob-fs` `put`: when the target already exists, refresh its mtime. If the refresh fails
+- [x] `blob-fs` `put`: when the target already exists, refresh its mtime. If the refresh fails
   with `ENOENT` (deleted between the existence check and the refresh), rename the temporary file
   into place instead.
-- [ ] Bring the in-memory fakes (`packages/core/src/pool/assets.test.ts`,
-  `apps/daemon/src/testing/fixture.ts`) up to the port.
-- [ ] Commit
+- [-] Bring the in-memory fakes up to the port _(dropped — the core fakes are partial casts and
+  the daemon fixture uses the real driver; nothing to change)_
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/blob-fs test`. New tests: `list` yields every put blob and no
 temporary file; a second `put` of the same bytes moves `at` forward; a `put` racing a `delete`

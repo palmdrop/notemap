@@ -1,15 +1,25 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, open, rename, stat, unlink } from "node:fs/promises";
+import {
+  mkdir,
+  open,
+  readdir,
+  rename,
+  stat,
+  unlink,
+  utimes,
+} from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type {
   BlobHash,
   BlobIntegrity,
   BlobStore,
+  ListedBlob,
   StoredBlob,
+  Timestamp,
 } from "@notemap/core";
 
-import { pathFor, TEMPORARY_PREFIX } from "./paths";
+import { isBlobName, pathFor, TEMPORARY_PREFIX } from "./paths";
 
 export type FilesystemBlobConfig = {
   /** The `assets` directory itself. Created as writes land in it. */
@@ -61,7 +71,8 @@ export function createFilesystemBlobStore(
 
         // Bytes that are already there are the same bytes, by construction, so
         // the existing file is left alone rather than rewritten under a reader.
-        if (await exists(target)) await unlink(temporary);
+        // Only its time moves: that is what tells a reclaim it was just put.
+        if (await touched(target)) await unlink(temporary);
         else await rename(temporary, target);
 
         await syncDirectory(dirname(target));
@@ -71,6 +82,8 @@ export function createFilesystemBlobStore(
         throw cause;
       }
     },
+
+    list: () => listed(config.root),
 
     open: async (blob, signal) => {
       const path = at(blob);
@@ -95,6 +108,41 @@ export function createFilesystemBlobStore(
 
     pathFor: at,
   };
+}
+
+async function touched(path: string): Promise<boolean> {
+  const now = new Date();
+  try {
+    await utimes(path, now, now);
+    return true;
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw cause;
+  }
+}
+
+async function* listed(root: string): AsyncGenerator<ListedBlob> {
+  for (const shard of await entries(root)) {
+    for (const name of await entries(join(root, shard))) {
+      if (!isBlobName(name) || !name.startsWith(shard)) continue;
+      try {
+        const { mtime } = await stat(join(root, shard, name));
+        yield { hash: name, at: mtime.toISOString() as Timestamp };
+      } catch (cause) {
+        if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
+      }
+    }
+  }
+}
+
+async function entries(directory: string): Promise<readonly string[]> {
+  try {
+    return await readdir(directory);
+  } catch (cause) {
+    const code = (cause as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") return [];
+    throw cause;
+  }
 }
 
 async function exists(path: string): Promise<boolean> {

@@ -5,6 +5,7 @@ import type {
   Asset,
   BlobIntegrity,
   Dimensions,
+  ListedBlob,
   StoredBlob,
 } from "../domain/asset";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
@@ -124,15 +125,20 @@ export interface SchemaValidator {
  * that releasing an asset moves both counts in one transaction.
  */
 export interface BlobStore {
-  /** Hashes what it is given, and answers what it turned out to be. Storing the same bytes twice is one blob. */
+  /**
+   * Hashes what it is given, and answers what it turned out to be. Storing the
+   * same bytes twice is one blob, put again: its `at` moves to now.
+   */
   put(bytes: AsyncIterable<Uint8Array>): Promise<StoredBlob>;
+  /** Every blob held, in no particular order. A blob deleted while this runs may or may not appear. */
+  list(): AsyncIterable<ListedBlob>;
   /** Absent means the bytes are gone from under a row that still names them. */
   open(
     blob: BlobHash,
     signal?: AbortSignal,
   ): Promise<AsyncIterable<Uint8Array> | undefined>;
   verify(blob: BlobHash): Promise<BlobIntegrity>;
-  /** Absent already is the outcome asked for: a sweep that half-ran must be able to finish. */
+  /** Absent already is the outcome asked for: a reclaim that half-ran must be able to finish. */
   delete(blob: BlobHash): Promise<void>;
   /**
    * Where the bytes are, in whatever terms this driver stores them. The layout

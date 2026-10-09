@@ -1,4 +1,4 @@
-import type { AssetId, BlobHash, Duration } from "./ids";
+import type { AssetId, BlobHash, Duration, Timestamp } from "./ids";
 
 export type Asset = {
   readonly id: AssetId;
@@ -31,6 +31,12 @@ export type BlobIntegrity = "intact" | "drifted" | "missing";
 export type StoredBlob = {
   readonly hash: BlobHash;
   readonly bytes: number;
+};
+
+/** A blob a store holds, and when its bytes were last put. */
+export type ListedBlob = {
+  readonly hash: BlobHash;
+  readonly at: Timestamp;
 };
 
 /** How long an unreferenced asset is left alone before a sweep may take it. */

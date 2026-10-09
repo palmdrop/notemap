@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -168,6 +168,39 @@ describe("verifying", () => {
   });
 });
 
+describe("listing", () => {
+  it("answers every blob held and no temporary file", async () => {
+    const { root: at, blobs } = store();
+    const one = await blobs.put(streamOf(bytes("one")));
+    const two = await blobs.put(streamOf(bytes("two")));
+    await writeFile(join(at, ".notemap-debris"), "half a write");
+
+    const hashes = [];
+    for await (const blob of blobs.list()) hashes.push(blob.hash);
+
+    expect(hashes.sort()).toEqual([one.hash, two.hash].sort());
+  });
+
+  it("answers nothing for a root nothing was ever put in", async () => {
+    const { blobs } = store();
+    const listed = [];
+    for await (const blob of blobs.list()) listed.push(blob);
+    expect(listed).toEqual([]);
+  });
+
+  it("moves a blob's time forward when the same bytes are put again", async () => {
+    const { root: at, blobs } = store();
+    const { hash } = await blobs.put(streamOf(bytes("again")));
+    const long = new Date("2020-01-01T00:00:00Z");
+    await utimes(pathFor(at, hash), long, long);
+
+    await blobs.put(streamOf(bytes("again")));
+
+    const [listed] = await all(blobs.list());
+    expect(Date.parse(listed!.at)).toBeGreaterThan(long.getTime());
+  });
+});
+
 describe("deleting", () => {
   it("takes the file and leaves the others", async () => {
     const { root: path, blobs } = store();
@@ -209,3 +242,9 @@ describe("the layout", () => {
     expect(() => blobs.pathFor("ABC" as BlobHash)).toThrow(/not a blob hash/);
   });
 });
+
+async function all<T>(stream: AsyncIterable<T>): Promise<T[]> {
+  const held: T[] = [];
+  for await (const value of stream) held.push(value);
+  return held;
+}

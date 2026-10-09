@@ -18,6 +18,10 @@ const SHARD = 2;
  * Every component comes from the content, so the path is the same on every
  * machine, forever — which is what lets a mirror rendering point at one.
  */
+export function isBlobName(name: string): name is BlobHash {
+  return HASH.test(name);
+}
+
 export function pathFor(root: string, blob: BlobHash): string {
   if (!HASH.test(blob)) {
     throw new TypeError(`not a blob hash: ${blob}`);
