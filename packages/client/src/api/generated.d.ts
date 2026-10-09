@@ -1151,6 +1151,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read several items
+         * @description Each item named by `id`, as `GET /v1/items/{id}` answers it, in the order asked. An id named twice is answered once, and one the pool does not hold is left out rather than refused. At most 100 ids.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Repeated once per item; 1–100. None is refused with `422 id-required`, more with `422 limit-too-large`. */
+                    id?: string[];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The items the pool holds, in the order asked. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Items"];
+                    };
+                };
+                /** @description No id, or more than one read answers. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "id-required" | "limit-too-large";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items/{id}": {
         parameters: {
             query?: never;
@@ -4456,6 +4515,9 @@ export interface components {
         };
         Counts: {
             queue: number;
+        };
+        Items: {
+            values: components["schemas"]["Item"][];
         };
         ArchiveRequest: {
             reason?: string;

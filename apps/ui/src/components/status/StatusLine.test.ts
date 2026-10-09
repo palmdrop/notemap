@@ -446,6 +446,76 @@ test("does not repeat a landing this shell has already reported", async () => {
   expect(notices.said("record:r1")).toBe(true);
 });
 
+test("says what was captured elsewhere, naming it once the client holds it", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "routed", { record: "r0" })];
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged });
+    }
+    if (route === "GET /v1/items") {
+      return json(200, {
+        values: [
+          anItem("one", {
+            payload: {
+              type: "text",
+              content: { text: "from the other device" },
+              metadata: {},
+              assets: [],
+            },
+          }),
+        ],
+      });
+    }
+    return quiet();
+  });
+
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  logged = [anAction("2", "captured", {}), ...logged];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  const said = await screen.findByRole("status");
+  expect(said.textContent).toContain("captured");
+  command("notices").run();
+  await vi.waitFor(() => {
+    const panel = screen.getByRole("list", { name: "said" });
+    expect(panel.textContent).toContain("from the other device");
+  });
+});
+
+test("says nothing of arrivals in a catch-up too long to read out", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "routed", { record: "r0" })];
+  const paged: { next?: string } = {};
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged, ...paged });
+    }
+    if (route === "GET /v1/items") {
+      return json(200, { values: [anItem("one")] });
+    }
+    return quiet();
+  });
+
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  logged = [anAction("9", "captured", {})];
+  paged.next = "/v1/actions?after=2026-09-03T00%3A00%3A00.000Z%2C6";
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  await screen.findByRole("alert");
+  expect(notices.shown.map((notice) => notice.what)).toEqual([
+    "1 or more things happened",
+  ]);
+});
+
 /**
  * A read that could not reach back to its mark is somebody who has been away.
  * A page of failures is not a report of what they missed.

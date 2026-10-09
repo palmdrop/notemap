@@ -730,6 +730,24 @@ export function createSqlitePoolStore(
       item: async (id: ItemId): Promise<Item | undefined> =>
         one(itemById.get(id)),
 
+      items: async (ids: readonly ItemId[]): Promise<readonly Item[]> => {
+        const asked = [...new Set(ids)];
+        if (asked.length === 0) return [];
+
+        const rows = source
+          .query<ItemRow, Bindable[]>(
+            `SELECT ${ITEM_COLUMNS} FROM items
+             WHERE id IN (${placeholders(asked.length)})`,
+          )
+          .all(...asked);
+        const byId = new Map(hydrate(rows).map((item) => [item.id, item]));
+
+        return asked.flatMap((id) => {
+          const item = byId.get(id);
+          return item === undefined ? [] : [item];
+        });
+      },
+
       abandonedWork: async (page: Page<AbandonedPosition>) =>
         abandonedWork(source, page),
 
@@ -954,6 +972,7 @@ export function createSqlitePoolStore(
       ...notYetImplementedReads(),
 
       item: guard(uncommitted.item),
+      items: guard(uncommitted.items),
       artifacts: guard(uncommitted.artifacts),
       tagsInUse: guard(uncommitted.tagsInUse),
       sourcesInUse: guard(uncommitted.sourcesInUse),

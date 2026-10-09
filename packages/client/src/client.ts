@@ -23,7 +23,8 @@ import { createUnfurl } from "./unfurl/unfurl";
 import { createTemplates } from "./templates/templates";
 import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
-import { undrained, waiting } from "./outbox/undrained";
+import type { OperationId } from "./outbox/operations";
+import { editing, undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
@@ -41,7 +42,7 @@ import {
   processed,
   reading,
   rebuilt,
-  rerouted,
+  heard,
   sameFilter,
   settle,
   settledDestination,
@@ -190,9 +191,9 @@ export function createClient(config: ClientConfig): Client {
 
   noticeLapsed = sessions.lapsed;
 
-  // What the pool did behind the surfaces, applied to them. The queue is the
-  // one that can be wrong: an item routed by a trigger tag, or processed on
-  // another device, is a row nothing else here would take.
+  // What the pool did behind the surfaces, applied to them: an item routed by
+  // a trigger tag or processed on another device is a row nothing else here
+  // would take, and a capture made elsewhere one nothing else would place.
   const actions = createActions({
     api,
     applied: (since) => {
@@ -202,10 +203,14 @@ export function createClient(config: ClientConfig): Client {
       // An operation still to send settles its item on its own answer, and a
       // read now would overwrite the optimistic copy under it.
       const current = state.get();
-      const unsent = undrained(current.outbox);
-      for (const id of rerouted(current, since)) {
-        if (!unsent.has(id)) void reread(id).catch(() => undefined);
-      }
+      const { read, arrived } = heard(
+        current,
+        since,
+        undrained(current.outbox),
+        editing(current.outbox),
+      );
+      void rereadAll(read).catch(() => undefined);
+      return arrived;
     },
   });
 
@@ -378,12 +383,44 @@ export function createClient(config: ClientConfig): Client {
   }
 
   /**
+   * `reread` for several items in one request, settled only where nothing has
+   * moved on while it was out: an operation queued since keeps its optimistic
+   * copy, and one that landed since keeps the newer answer it brought.
+   */
+  async function rereadAll(ids: readonly ItemId[]): Promise<void> {
+    if (ids.length === 0) return;
+
+    const { values } = await answered(
+      api.GET("/v1/items", { params: { query: { id: [...ids] } } }),
+    );
+    const fresh = new Map(values.map((item) => [item.id, item]));
+
+    state.update((current) => {
+      const unsent = undrained(current.outbox);
+      let next = current;
+      for (const id of ids) {
+        if (unsent.has(id)) continue;
+        const item = fresh.get(id);
+        const held = next.items.get(id);
+        if (item === undefined) next = forget(next, id);
+        else if (held === undefined || held.modifiedAt <= item.modifiedAt)
+          next = settle(next, item);
+      }
+      return next;
+    });
+  }
+
+  /**
    * A release that fails is reported rather than thrown: the operation has left
    * the outbox whether or not the bytes went, and failing here would hand back
    * a refusal for a capture the pool took.
    */
-  async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
-    for (const asset of releasedBy(operation, state.get().outbox)) {
+  async function release(
+    operation: Parameters<typeof outbox.enqueue>[0],
+    leaving: OperationId,
+  ) {
+    const queued = state.get().outbox.filter((held) => held.id !== leaving);
+    for (const asset of releasedBy(operation, queued)) {
       state.update((current) => withHeld(current, asset, undefined));
       await store.removeBlob(asset).catch(report);
     }

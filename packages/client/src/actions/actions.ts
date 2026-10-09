@@ -1,5 +1,5 @@
 import { answered, type Api } from "#api/http";
-import type { Action } from "#api/types";
+import type { Action, ItemId } from "#api/types";
 import type {
   ActionsApi,
   ActionsPage,
@@ -11,7 +11,7 @@ import { watching, type Watching } from "./watching";
 export type ActionsDeps = {
   readonly api: Api;
   /** What the pool did, for the client to answer with before a shell hears it. */
-  readonly applied?: (actions: readonly Action[]) => void;
+  readonly applied?: (actions: readonly Action[]) => readonly ItemId[];
 };
 
 const PAGE = 25;

@@ -258,6 +258,29 @@ describe("revisions", () => {
   });
 });
 
+describe("reading several items", () => {
+  it("answers in the order asked, each once, leaving out what it does not hold", async () => {
+    const { pool: p } = pool();
+    const first = capture({ id: "item-1" });
+    const second = capture({ id: "item-2" });
+    await appendCapture(p, first);
+    await appendCapture(p, second);
+
+    const read = await p.items(
+      ["item-2", "nowhere", "item-1", "item-2"].map((id) => id as ItemId),
+    );
+
+    expect(read.map((item) => item.id)).toEqual(["item-2", "item-1"]);
+    expect(read[1]).toEqual(await p.item(first.id));
+  });
+
+  it("answers nothing for nothing asked", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.items([])).toEqual([]);
+  });
+});
+
 describe("a transaction", () => {
   it("shows core what it has written but not committed", async () => {
     const { pool: p } = pool();

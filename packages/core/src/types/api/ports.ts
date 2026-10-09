@@ -286,6 +286,8 @@ export interface ProviderAdapter {
  */
 export interface PoolReads {
   item(id: ItemId): Promise<Item | undefined>;
+  /** In the order asked, each once, leaving out an id the pool does not hold. */
+  items(ids: readonly ItemId[]): Promise<readonly Item[]>;
   /** At most one row: every item claims an identity, and no two claim the same one. */
   itemBySourceIdentity(
     source: SourceId,

@@ -52,6 +52,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/destinations/{id}/unretire",
       "/v1/feed",
       "/v1/health",
+      "/v1/items",
       "/v1/items/{id}",
       "/v1/items/{id}/archive",
       "/v1/items/{id}/edit",

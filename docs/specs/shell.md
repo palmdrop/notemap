@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-09
 **Shipped**:
+
+- 2026-10-09 — **What arrives from elsewhere shows up.** A capture from a relay, Raycast or
+  another device lands on an open feed or queue within the watcher's tempo, placed where it sorts,
+  and the status line says `captured` — once per read, however many came. The page does not
+  move under a reader scrolled into it: the shell holds the row in view where it stood, and a row
+  arriving above the reader arrives still. ([plan](../plans/live-arrivals.md))
 
 - 2026-10-08 — **Attachments only.** Where a destination can place a capture's attachments
   alone, an `output` section before `place`, on the process surface and the template form, offers
@@ -2179,6 +2185,18 @@ cannot drift. *Amended 2026-09-30*: `template-fired` is read too, but opens a ro
 status line rather than saying anything, and the kinds that end a route close it
 ([above](#the-status-line)).
 
+**What arrived from elsewhere is said too** *(added 2026-10-09)*, and it is not a kind: it is the
+captures and revisions the client reports as `arrived` ([client.md](client.md#the-action-log)),
+which leaves out this shell's own and any a read had already drawn. **One read says it once**,
+however many it holds — a relay draining forty captures is one thing that happened. One reads
+`captured`, or `revised`, and leads to the item, the panel naming it once the client's read of it
+has come — it waits five seconds for that, and goes without the words after; several read
+`<n> captured` and lead to the feed. It is a
+success, gone after four seconds, and the newest takes the place of the last still live. A read
+that did not reach back to its mark says nothing of arrivals, the count it raises standing for
+them. An item that returned is not said here: the entry that returned it already is, or was a
+person's own undo.
+
 **Nothing is said twice.** A notice is keyed by the **routing record** rather than by the log entry:
 a delivery retried four times is one thing that went wrong, and a landing this shell already
 reported when the decision was made is the same fact arriving a second time.
@@ -2233,7 +2251,14 @@ as a page reloads — appear and go without moving,
 because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
 arrives or leaves between reads slides: a capture landing — the first one into a queue the pool
 had answered empty included — an item heard about, a row let go, a row processed on another
-device. The same holds on the feed, the queue's index and the log. **A row
+device. The same holds on the feed, the queue's index and the log. **A row arriving above a
+reader scrolled into the list does not move what they are reading** *(2026-10-09)*: the status line
+is what says something came, and a reader at the head sees it slide in. **The shell holds the
+place itself** rather than leaving it to the browser, Safari not anchoring scrolling: the first row
+in view is measured before a change between reads and put back where it stood after, before the
+frame is painted, and a browser that has already anchored finds nothing to put back. A row
+arriving above the reader **arrives still**, since nobody sees it and its slide would move the page
+a frame at a time. A read places the reader on purpose and is left alone. **A row
 that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
 rather than jumping, over the short duration, and a change that lands while it is still moving is
@@ -2877,6 +2902,10 @@ view is how a reader sees more at once.
       gets one after all, in the quieter idiom. The noise argument holds for a fact true of the whole
       shell, which unreachability is and this is not: `N waiting` and the row's mark answer different
       questions, and neither answers the other's.
+- [x] 2026-10-09 — **Whether Safari holds a reader's place when a row arrives above it.** It does
+      not: tried on a phone the same day, the page moved. The shell now holds the place itself
+      ([above](#draining)), which Chromium with its anchoring turned off was measured to keep
+      still on every frame. ([plan](../plans/live-arrivals.md))
 
 ---
 

@@ -2,8 +2,11 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-09
 **Shipped**:
+
+- 2026-10-09 — **`GET /v1/items?id=…`.** Several items in one read, in the order asked, leaving
+  out what the pool does not hold; at most 100. See [live-arrivals](../plans/live-arrivals.md).
 
 - 2026-10-08 — **An `Asset` says a picture's dimensions.** `dimensions: { width, height }`, read
   by the pool from the bytes as the picture is drawn, and absent where they could not say.
@@ -554,6 +557,19 @@ passive source that is re-read rather than replayed omits `id` and supplies its 
 
 In the subset because the app needs to read back what it just wrote, and because `Location` on a
 `201` that resolves to nothing is a lie.
+
+`GET /v1/items?id=<id>&id=<id>` — `200 OK` with `{ "values": [Item] }`, each as the single read
+answers it *(added 2026-10-09)*. For a caller that heard of several items at once, from the action
+log, and would otherwise spend a request on each.
+
+- **In the order the ids were asked**, and an id named twice is answered once.
+- **An id the pool does not hold is left out, not refused.** The ids come from a log that outlives
+  what it names, so an item purged between the entry and the read is ordinary.
+- **`id` is repeated**, as `tag` is. None at all is `422 id-required`: a bare `GET /v1/items`
+  answering an empty list would read as a listing that found nothing.
+- **At most 100 ids**, counted after duplicates are dropped. More is `422 limit-too-large`, carrying
+  `limit` and `max`: refused rather than clamped, as a page's `limit` is.
+- **The answer is `{ "values": [Item] }` and nothing else** — no `next`, since nothing pages.
 
 **An `Item` carries `routing` wherever one is answered** — the item route, the feed, the queue, the
 archive, a capture outcome, an edit outcome:
@@ -1869,6 +1885,7 @@ Every error, from core or from the daemon, is one shape:
 | `413` | `asset-too-large` | `max` | daemon |
 | `415` | `unsupported-media-type` | `contentType` | daemon |
 | `422` | `limit-too-large` | `limit`, `max` | daemon |
+| `422` | `id-required` | — | daemon |
 | `422` | `bad-limit` | `limit` | daemon |
 | `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |

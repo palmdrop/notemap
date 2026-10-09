@@ -144,3 +144,7 @@ export const itemSliceSchema = z
     }),
   })
   .openapi("ItemSlice");
+
+export const itemsSchema = z
+  .object({ values: z.array(itemSchema) })
+  .openapi("Items");

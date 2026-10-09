@@ -43,6 +43,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
 
     items: {
       get: (id) => store.item(id),
+      many: (ids) => store.items(ids),
       edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
       tag: (id, name, by, signal) =>
         tags.tag(config, ports, id, name, by, signal),

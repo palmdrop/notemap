@@ -640,9 +640,8 @@ function reclassifiedBy(state: ClientState, action: Action): ClientState {
  * page about what carries its tags, which is why a tag added or taken off is
  * applied to the copy held as well.
  *
- * Nothing is put back that the client does not hold. Giving up on a delivery
- * returns an item to the queue, and an action carries no item to place there —
- * `withdrawn` is the path that has one.
+ * What arrived or returned is not placed here: an action carries no item to
+ * place, so `heard` names what to read and the read places it.
  */
 export function caughtUp(
   state: ClientState,
@@ -660,33 +659,81 @@ export function caughtUp(
 }
 
 /**
- * The kinds that change what an item's routing summary says. An action names
- * no summary, and folding counts from one would count a record twice where the
- * answer that made it was folded already, so the item is read again instead.
+ * The kinds that change what a held item's routing summary says. An action
+ * names no summary, and folding counts from one would count a record twice
+ * where the answer that made it was folded already, so the item is read again
+ * instead.
  */
-const REROUTING: ReadonlySet<string> = new Set([
-  "template-fired",
-  "routed",
+const REROUTING: ReadonlySet<string> = new Set(["template-fired", "routed"]);
+
+/**
+ * The kinds that may make an item work again, held or not, and change a held
+ * one's routing as well. Whether it is work again is the read's to say: a
+ * cancelled record may leave others standing.
+ */
+const RETURNING: ReadonlySet<string> = new Set([
+  "unarchived",
   "delivery-cancelled",
   "work-abandoned",
 ]);
 
-/** The held items whose routing these actions changed, each once. */
-export function rerouted(
+export type Heard = {
+  /** Every item to read, each once, which the reads place where they belong. */
+  readonly read: readonly ItemId[];
+  /** Of those, the captures and revisions this client neither holds nor is making. */
+  readonly arrived: readonly ItemId[];
+};
+
+/** The item a revision made, which the action names in its detail. */
+function revisionIn(action: Action): ItemId | undefined {
+  const revision = action.detail["revision"];
+  return typeof revision === "string" ? (revision as ItemId) : undefined;
+}
+
+/**
+ * What these actions leave to read. A capture or a revision the client holds
+ * is not news, being its own or one a read already drew; nor is a revision of
+ * an item it has an edit of still to send, which is that edit landing. An item
+ * that returned is read held or not, since it may belong inside a window that
+ * never had it. An item with an operation still to send is left to that
+ * operation's answer.
+ */
+export function heard(
   state: ClientState,
   actions: readonly Action[],
-): readonly ItemId[] {
-  const ids = new Set<ItemId>();
+  unsent: ReadonlySet<ItemId>,
+  editing: ReadonlySet<ItemId>,
+): Heard {
+  const read = new Set<ItemId>();
+  const arrived = new Set<ItemId>();
+
   for (const action of actions) {
-    const id = action.subject;
-    if (id === undefined || !state.items.has(id)) continue;
-    if (!REROUTING.has(action.kind)) continue;
+    const subject = action.subject;
+    if (subject === undefined) continue;
+
+    if (action.kind === "captured" || action.kind === "revised") {
+      if (action.kind === "revised" && editing.has(subject)) continue;
+      const id = action.kind === "revised" ? revisionIn(action) : subject;
+      if (id === undefined || state.items.has(id) || unsent.has(id)) continue;
+      read.add(id);
+      arrived.add(id);
+      continue;
+    }
+
+    if (unsent.has(subject)) continue;
     // Abandoned enrichment names the item too, and leaves its routing alone.
     if (action.kind === "work-abandoned" && !("record" in action.detail))
       continue;
-    ids.add(id);
+
+    if (
+      RETURNING.has(action.kind) ||
+      (REROUTING.has(action.kind) && state.items.has(subject))
+    ) {
+      read.add(subject);
+    }
   }
-  return [...ids];
+
+  return { read: [...read], arrived: [...arrived] };
 }
 
 /**

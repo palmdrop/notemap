@@ -1,6 +1,6 @@
 import type { Observable } from "rxjs";
 
-import type { Action } from "#api/types";
+import type { Action, ItemId } from "#api/types";
 import { emitter } from "../observable/observable";
 import type { ActionPosition, ActionsPage } from "../types";
 
@@ -16,6 +16,8 @@ export type ActionsSince = {
   readonly actions: readonly Action[];
   /** More happened than one read answers, so this is a page of it and not all of it. */
   readonly more: boolean;
+  /** The captures and revisions among these that were made somewhere else. */
+  readonly arrived: readonly ItemId[];
 };
 
 export type Watching = {
@@ -41,11 +43,12 @@ export function watching(
   read: () => Promise<ActionsPage>,
   gates: Gates = { watched: true, answering: true },
   /**
-   * What the pool did, before anybody is told it. Here rather than on the
-   * observable, so it runs once however many shells are listening — and not at
-   * all while nobody is, the watcher being built by the first `watch()`.
+   * What the pool did, before anybody is told it, answering which items
+   * arrived from elsewhere. Here rather than on the observable, so it runs once
+   * however many shells are listening — and not at all while nobody is, the
+   * watcher being built by the first `watch()`.
    */
-  applied?: (actions: readonly Action[]) => void,
+  applied?: (actions: readonly Action[]) => readonly ItemId[],
 ): Watching {
   const every = gates.every ?? STEADY;
 
@@ -79,7 +82,7 @@ export function watching(
    * was cleared from under the read, which is the same answer: a count, and a
    * way through to the log.
    */
-  function since(page: ActionsPage): ActionsSince {
+  function since(page: ActionsPage): Omit<ActionsSince, "arrived"> {
     const values = page.values;
     const at = values.findIndex((action) => action.id === mark?.id);
 
@@ -102,8 +105,8 @@ export function watching(
       mark = positionOf(newest);
 
       if (said !== undefined && said.actions.length > 0) {
-        applied?.(said.actions);
-        reported.next(said);
+        const arrived = applied?.(said.actions) ?? [];
+        reported.next({ ...said, arrived });
       }
     } catch {
       // A pool that did not answer says nothing rather than something wrong.

@@ -828,7 +828,7 @@ test("brings the whole row walked to into view, its foot and all", async () => {
   await fireEvent.keyDown(window, { key: "j" });
 
   await vi.waitFor(() => {
-    expect(scrolled.mock.contexts.at(-1)).toHaveProperty("dataset.row", "");
+    expect(scrolled.mock.contexts.at(-1)).toHaveProperty("dataset.row", "one");
   });
 });
 

@@ -31,8 +31,14 @@ export type OutboxDeps = {
    * and has no reversal to run.
    */
   readonly reread: (item: ItemId) => Promise<void>;
-  /** An operation that has left the outbox for good: landed, or dismissed. */
-  readonly released: (operation: Operation) => Promise<void>;
+  /**
+   * An operation leaving the outbox for good — landed, or dismissed — its own
+   * entry not yet out of it, so that entry claims nothing.
+   */
+  readonly released: (
+    operation: Operation,
+    leaving: OperationId,
+  ) => Promise<void>;
   readonly report: (error: unknown) => void;
   readonly now: () => string;
   readonly mint: () => OperationId;
@@ -150,18 +156,30 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     });
   }
 
-  async function drop(id: OperationId): Promise<void> {
+  /**
+   * Out of the outbox, applying `then` in the same update: an entry that has
+   * landed leaves as its answer is drawn, so nothing reading the state between
+   * the two finds the item neither waiting nor settled. Its bytes are let go
+   * first, so that same update is the one that stops drawing them.
+   */
+  async function drop(
+    id: OperationId,
+    then: (state: ClientState) => ClientState = (state) => state,
+  ): Promise<void> {
     const held = deps.state.get().outbox.find((entry) => entry.id === id);
     undos.delete(id);
     restored.delete(id);
-    deps.state.update((state) => ({
-      ...state,
-      outbox: state.outbox.filter((entry) => entry.id !== id),
-    }));
 
     await stored(id);
     await deps.store.removeOperation(id);
-    if (held !== undefined) await deps.released(held.operation);
+    if (held !== undefined) await deps.released(held.operation, id);
+
+    deps.state.update((state) =>
+      then({
+        ...state,
+        outbox: state.outbox.filter((entry) => entry.id !== id),
+      }),
+    );
   }
 
   async function enqueue(operation: Operation): Promise<void> {
@@ -226,10 +244,9 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       const landed = await deps.send(entry.operation);
       const revert = undos.get(entry.id) ?? ((state: ClientState) => state);
 
-      // Dropped before the settlement, so the emission that draws the pool's
-      // answer is the one that stops drawing bytes released with it.
-      await drop(entry.id);
-      deps.state.update((state) => landed.settle(state, revert));
+      // The emission that draws the pool's answer is the one that stops
+      // drawing bytes released with it.
+      await drop(entry.id, (state) => landed.settle(state, revert));
       // After the settlement, so what they draw lands on the copy it left.
       for (const next of landed.next) await enqueue(next);
     } catch (error) {

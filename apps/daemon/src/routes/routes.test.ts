@@ -259,6 +259,57 @@ describe("GET /v1/items/:id", () => {
   });
 });
 
+describe("GET /v1/items", () => {
+  it("answers each id once, in the order asked, leaving out what the pool has not got", async () => {
+    const app = serving();
+    const [first, second] = await captureMany(app, 2);
+
+    const response = await app.request(
+      `/v1/items?id=${second}&id=nothing&id=${first}&id=${second}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      values: [
+        await body(await app.request(`/v1/items/${second}`)),
+        await body(await app.request(`/v1/items/${first}`)),
+      ],
+    });
+  });
+
+  it("answers 422 id-required for no id at all", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/items");
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toEqual({ error: { code: "id-required" } });
+  });
+
+  it("refuses more ids than one read answers, rather than clamping", async () => {
+    const app = serving();
+    const query = Array.from({ length: 101 }, (_, at) => `id=item-${at}`);
+
+    const response = await app.request(`/v1/items?${query.join("&")}`);
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toEqual({
+      error: { code: "limit-too-large", limit: 101, max: 100 },
+    });
+  });
+
+  it("counts an id named twice once against the limit", async () => {
+    const app = serving();
+    const query = Array.from({ length: 101 }, (_, at) =>
+      at === 100 ? "id=item-0" : `id=item-${at}`,
+    );
+
+    const response = await app.request(`/v1/items?${query.join("&")}`);
+
+    expect(response.status).toBe(200);
+  });
+});
+
 describe("GET /v1/feed", () => {
   it("reads newest first, with no next on a single page", async () => {
     const app = serving();

@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Action } from "@notemap/client";
 
-import { firingOf, noticeOf } from "./action-log";
+import { arrivalOf, firingOf, noticeOf } from "./action-log";
 
 const reading = {
   nameOf: (id: string) => (id === "vault" ? "Vault" : "a destination"),
@@ -391,4 +391,72 @@ test("a landing from a template this shell does not hold names the destination",
 
   expect(said?.what).toBe("routed");
   expect(said?.subject).toBe("Vault");
+});
+
+const arriving = {
+  describe: (item: string) =>
+    item === "known" ? "10:00: a thought" : undefined,
+  about: (item: string) => `/items/${item}`,
+  feed: "/feed",
+};
+
+test("nothing arrived is nothing said", () => {
+  expect(
+    arrivalOf({ actions: [anAction("routed", {})], arrived: [] }, arriving),
+  ).toBeUndefined();
+});
+
+test("one capture from elsewhere is named, and leads to itself", () => {
+  const said = arrivalOf(
+    { actions: [anAction("captured", {})], arrived: ["known"] },
+    { ...arriving, described: "10:00: a thought" },
+  );
+
+  expect(said).toEqual({
+    what: "captured",
+    about: "10:00: a thought",
+    href: "/items/known",
+    only: "arrived",
+  });
+});
+
+test("a revision from elsewhere says so", () => {
+  const said = arrivalOf(
+    {
+      actions: [anAction("revised", { revision: "known" })],
+      arrived: ["known"],
+    },
+    arriving,
+  );
+
+  expect(said?.what).toBe("revised");
+});
+
+test("several arrivals are one notice, counted, leading to the feed", () => {
+  const said = arrivalOf(
+    {
+      actions: [
+        anAction("captured", {}),
+        anAction("revised", { revision: "b" }),
+        anAction("captured", {}),
+      ],
+      arrived: ["a", "b", "c"],
+    },
+    arriving,
+  );
+
+  expect(said).toEqual({ what: "3 captured", href: "/feed", only: "arrived" });
+});
+
+test("a capture whose copy did not come is still said, without its words", () => {
+  const said = arrivalOf(
+    { actions: [anAction("captured", {})], arrived: ["unknown"] },
+    arriving,
+  );
+
+  expect(said).toEqual({
+    what: "captured",
+    href: "/items/unknown",
+    only: "arrived",
+  });
 });

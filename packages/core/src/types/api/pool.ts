@@ -104,6 +104,8 @@ import type {
 
 export interface ItemsApi {
   get(id: ItemId): Promise<Item | undefined>;
+  /** In the order asked, each once, leaving out an id the pool does not hold. */
+  many(ids: readonly ItemId[]): Promise<readonly Item[]>;
   edit(
     id: ItemId,
     envelope: EditEnvelope,
