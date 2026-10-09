@@ -23,7 +23,8 @@ import { createUnfurl } from "./unfurl/unfurl";
 import { createTemplates } from "./templates/templates";
 import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
-import { undrained, waiting } from "./outbox/undrained";
+import type { OperationId } from "./outbox/operations";
+import { editing, undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
@@ -139,8 +140,6 @@ function listOf(state: ClientState, surface: Surface): ListState {
  * when another process is free to take it and send it a second time.
  */
 const TIMEOUT_MS = 30_000;
-/** As many items as the pool reads in one request. */
-const ITEMS_PER_READ = 100;
 
 function timeoutOf(config: ClientConfig): number {
   const timeout = config.timeout ?? TIMEOUT_MS;
@@ -197,7 +196,7 @@ export function createClient(config: ClientConfig): Client {
   // would take, and a capture made elsewhere one nothing else would place.
   const actions = createActions({
     api,
-    applied: async (since) => {
+    applied: (since) => {
       state.update((current) => caughtUp(current, since));
       if (since.length > 0) counts.stale();
 
@@ -208,8 +207,9 @@ export function createClient(config: ClientConfig): Client {
         current,
         since,
         undrained(current.outbox),
+        editing(current.outbox),
       );
-      await rereadAll(read).catch(() => undefined);
+      void rereadAll(read).catch(() => undefined);
       return arrived;
     },
   });
@@ -383,24 +383,31 @@ export function createClient(config: ClientConfig): Client {
   }
 
   /**
-   * `reread` for several items, a request per hundred rather than per item. One
-   * the pool left out of its answer is forgotten on the same terms.
+   * `reread` for several items in one request, settled only where nothing has
+   * moved on while it was out: an operation queued since keeps its optimistic
+   * copy, and one that landed since keeps the newer answer it brought.
    */
   async function rereadAll(ids: readonly ItemId[]): Promise<void> {
-    for (let at = 0; at < ids.length; at += ITEMS_PER_READ) {
-      const asked = ids.slice(at, at + ITEMS_PER_READ);
-      const { values } = await answered(
-        api.GET("/v1/items", { params: { query: { id: [...asked] } } }),
-      );
-      const held = new Set(values.map((item) => item.id));
+    if (ids.length === 0) return;
 
-      state.update((current) => {
-        let next = current;
-        for (const item of values) next = settle(next, item);
-        for (const id of asked) if (!held.has(id)) next = forget(next, id);
-        return next;
-      });
-    }
+    const { values } = await answered(
+      api.GET("/v1/items", { params: { query: { id: [...ids] } } }),
+    );
+    const fresh = new Map(values.map((item) => [item.id, item]));
+
+    state.update((current) => {
+      const unsent = undrained(current.outbox);
+      let next = current;
+      for (const id of ids) {
+        if (unsent.has(id)) continue;
+        const item = fresh.get(id);
+        const held = next.items.get(id);
+        if (item === undefined) next = forget(next, id);
+        else if (held === undefined || held.modifiedAt <= item.modifiedAt)
+          next = settle(next, item);
+      }
+      return next;
+    });
   }
 
   /**
@@ -408,8 +415,12 @@ export function createClient(config: ClientConfig): Client {
    * the outbox whether or not the bytes went, and failing here would hand back
    * a refusal for a capture the pool took.
    */
-  async function release(operation: Parameters<typeof outbox.enqueue>[0]) {
-    for (const asset of releasedBy(operation, state.get().outbox)) {
+  async function release(
+    operation: Parameters<typeof outbox.enqueue>[0],
+    leaving: OperationId,
+  ) {
+    const queued = state.get().outbox.filter((held) => held.id !== leaving);
+    for (const asset of releasedBy(operation, queued)) {
       state.update((current) => withHeld(current, asset, undefined));
       await store.removeBlob(asset).catch(report);
     }

@@ -159,6 +159,29 @@ describe("amend versus revise", () => {
     expect(read(client.outbox)).toEqual([]);
   });
 
+  it("is never between the outbox and the cache while the revision settles", async () => {
+    const revision: Item = {
+      ...anItem("two"),
+      payload: payload("edited"),
+      revisionOf: "one",
+    };
+    const { client } = await overOne(() =>
+      json(200, { kind: "revised", revision, revisionOf: "one" }),
+    );
+    await client.edit("one", payload("edited"), TYPED);
+
+    const lost: number[] = [];
+    const watching = client.undrained.subscribe((waiting) => {
+      if (!waiting.has("one") && read(client.held("two")) === undefined)
+        lost.push(waiting.size);
+    });
+    await client.drain();
+    watching.unsubscribe();
+
+    expect(read(client.held("two"))).toBeDefined();
+    expect(lost).toEqual([]);
+  });
+
   it("leaves the original as the pool holds it, not as the guess drew it", async () => {
     const revision: Item = {
       ...anItem("two"),

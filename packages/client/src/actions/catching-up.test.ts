@@ -293,26 +293,6 @@ describe("what arrived from elsewhere", () => {
     stop();
   });
 
-  it("tells a shell of an arrival once it already holds it", async () => {
-    vi.useFakeTimers();
-    const { client } = clientOver(
-      poolWith({
-        after: [anAction("a1", "captured", "new"), anAction("a0", "captured")],
-        items: { new: fresh("new") },
-      }),
-    );
-    await client.enter("feed");
-
-    const heldWhenTold: unknown[] = [];
-    const held = client.actions
-      .watch()
-      .subscribe(() => heldWhenTold.push(read(client.held("new"))?.id));
-    await turn();
-
-    expect(heldWhenTold).toEqual(["new"]);
-    held.unsubscribe();
-  });
-
   it("leaves a capture to the queue's next page while there is one", async () => {
     vi.useFakeTimers();
     const { client } = clientOver(
@@ -568,6 +548,139 @@ describe("what arrived from elsewhere", () => {
     expect(heard[0]?.arrived).toEqual([]);
 
     answer(json(500, {}));
+    stop();
+  });
+
+  it("keeps the optimistic copy of an item tagged while its read was out", async () => {
+    vi.useFakeTimers();
+    let answer: (response: Response) => void = () => undefined;
+    const reading = new Promise<Response>((resolve) => {
+      answer = resolve;
+    });
+    let tagging: (response: Response) => void = () => undefined;
+    const tagged = new Promise<Response>((resolve) => {
+      tagging = resolve;
+    });
+    const over = poolWith({
+      after: [anAction("a1", "unarchived", "one"), anAction("a0", "captured")],
+    });
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/items") return reading;
+      if (route === "POST /v1/items/one/tag") return tagged;
+      return over(request);
+    });
+    await client.enter("queue");
+
+    const stop = watch(client);
+    await turn();
+    await client.tag("one", "art");
+    answer(json(200, { values: [anItem("one", { tags: [] })] }));
+    await quiet();
+
+    expect(read(client.held("one"))?.tags?.map((tag) => tag.name)).toEqual([
+      "art",
+    ]);
+    tagging(json(200, anItem("one")));
+    stop();
+  });
+
+  it("keeps a newer copy over an answer read before it", async () => {
+    vi.useFakeTimers();
+    let answer: (response: Response) => void = () => undefined;
+    const reading = new Promise<Response>((resolve) => {
+      answer = resolve;
+    });
+    const over = poolWith({
+      after: [anAction("a1", "unarchived", "one"), anAction("a0", "captured")],
+    });
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/items") return reading;
+      if (route === "POST /v1/items/one/tag")
+        return json(
+          200,
+          anItem("one", {
+            modifiedAt: "2026-09-08T10:00:01.000Z",
+            tags: [{ name: "art", by: { kind: "person" }, addedAt: LATER }],
+          }),
+        );
+      return over(request);
+    });
+    await client.enter("queue");
+
+    const stop = watch(client);
+    await turn();
+    await client.tag("one", "art");
+    await quiet();
+    answer(json(200, { values: [anItem("one", { tags: [] })] }));
+    await quiet();
+
+    expect(read(client.held("one"))?.tags?.map((tag) => tag.name)).toEqual([
+      "art",
+    ]);
+    stop();
+  });
+
+  it("reads a revision made elsewhere of an item it has only a tag to send for", async () => {
+    vi.useFakeTimers();
+    const over = poolWith({
+      after: [
+        anAction("a1", "revised", "one", { revision: "one-again" }),
+        anAction("a0", "captured"),
+      ],
+      items: { "one-again": fresh("one-again", { revisionOf: "one" }) },
+    });
+    const { client, transport } = clientOver((request) =>
+      routeOf(request) === "POST /v1/items/one/tag"
+        ? new Promise<Response>(() => undefined)
+        : over(request),
+    );
+    await client.enter("queue");
+    await client.tag("one", "art");
+
+    const heard: ActionsSince[] = [];
+    const stop = watch(client, heard);
+    await turn();
+
+    expect(itemsAsked(transport.sent)).toEqual([["one-again"]]);
+    expect(heard[0]?.arrived).toEqual(["one-again"]);
+    stop();
+  });
+
+  it("lands a capture at the head of a queue read newest first", async () => {
+    vi.useFakeTimers();
+    const { client } = clientOver(
+      poolWith({
+        queue: { values: [anItem("two"), anItem("one")], next: MORE },
+        after: [anAction("a1", "captured", "new"), anAction("a0", "captured")],
+        items: { new: fresh("new") },
+      }),
+    );
+    await client.enter("queue", "newest-first");
+
+    const stop = watch(client);
+    await turn();
+
+    expect(ids(read(client.queue))).toEqual(["new", "two", "one"]);
+    stop();
+  });
+
+  it("leaves a capture to the next page of a feed read oldest first", async () => {
+    vi.useFakeTimers();
+    const { client } = clientOver(
+      poolWith({
+        feed: { values: [anItem("one"), anItem("two")], next: MORE },
+        after: [anAction("a1", "captured", "new"), anAction("a0", "captured")],
+        items: { new: fresh("new") },
+      }),
+    );
+    await client.enter("feed", "oldest-first");
+
+    const stop = watch(client);
+    await turn();
+
+    expect(ids(read(client.feed))).toEqual(["one", "two"]);
     stop();
   });
 });

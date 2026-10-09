@@ -25,7 +25,10 @@ function page(ids: readonly string[], more = false): ActionsPage {
   };
 }
 
-function over(answers: readonly ActionsPage[]) {
+function over(
+  answers: readonly ActionsPage[],
+  applied?: (actions: readonly Action[]) => readonly string[],
+) {
   let at = 0;
   const heard: ActionsSince[] = [];
   const held = watching(
@@ -35,6 +38,7 @@ function over(answers: readonly ActionsPage[]) {
       return Promise.resolve(answer as ActionsPage);
     },
     { watched: true, answering: true, every: EVERY },
+    applied,
   );
 
   const listening = held.changes.subscribe((said) => heard.push(said));
@@ -54,6 +58,29 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("watching what the pool has done", () => {
+  it("reports what the client says arrived, having applied the actions first", async () => {
+    const applied: string[][] = [];
+    const watcher = over([page(["one"]), page(["two", "one"])], (actions) => {
+      applied.push(actions.map((action) => action.id));
+      return ["an-item"];
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(EVERY);
+
+    expect(applied).toEqual([["two"]]);
+    expect(watcher.heard[0]?.arrived).toEqual(["an-item"]);
+    watcher.stop();
+  });
+
+  it("reports nothing arrived where nobody applies the actions", async () => {
+    const watcher = over([page(["one"]), page(["two", "one"])]);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(EVERY);
+
+    expect(watcher.heard[0]?.arrived).toEqual([]);
+    watcher.stop();
+  });
+
   /** Opening the shell by announcing yesterday is worse than saying nothing. */
   it("takes the first read as its mark and says nothing about it", async () => {
     const watcher = over([page(["three", "two", "one"])]);

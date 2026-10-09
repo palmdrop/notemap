@@ -1180,7 +1180,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ItemSlice"];
+                        "application/json": components["schemas"]["Items"];
                     };
                 };
                 /** @description No id, or more than one read answers. */
@@ -4515,6 +4515,9 @@ export interface components {
         };
         Counts: {
             queue: number;
+        };
+        Items: {
+            values: components["schemas"]["Item"][];
         };
         ArchiveRequest: {
             reason?: string;

@@ -659,18 +659,18 @@ export function caughtUp(
 }
 
 /**
- * The kinds that change what an item's routing summary says. An action names
- * no summary, and folding counts from one would count a record twice where the
- * answer that made it was folded already, so the item is read again instead.
+ * The kinds that change what a held item's routing summary says. An action
+ * names no summary, and folding counts from one would count a record twice
+ * where the answer that made it was folded already, so the item is read again
+ * instead.
  */
-const REROUTING: ReadonlySet<string> = new Set([
-  "template-fired",
-  "routed",
-  "delivery-cancelled",
-  "work-abandoned",
-]);
+const REROUTING: ReadonlySet<string> = new Set(["template-fired", "routed"]);
 
-/** The kinds that make an item work again, wherever it was. */
+/**
+ * The kinds that may make an item work again, held or not, and change a held
+ * one's routing as well. Whether it is work again is the read's to say: a
+ * cancelled record may leave others standing.
+ */
 const RETURNING: ReadonlySet<string> = new Set([
   "unarchived",
   "delivery-cancelled",
@@ -680,7 +680,7 @@ const RETURNING: ReadonlySet<string> = new Set([
 export type Heard = {
   /** Every item to read, each once, which the reads place where they belong. */
   readonly read: readonly ItemId[];
-  /** Of those, the captures and revisions this client did not make. */
+  /** Of those, the captures and revisions this client neither holds nor is making. */
   readonly arrived: readonly ItemId[];
 };
 
@@ -691,32 +691,36 @@ function revisionIn(action: Action): ItemId | undefined {
 }
 
 /**
- * What these actions leave to read. A capture or a revision this client does
- * not hold arrived from elsewhere; one it does hold is its own. An item that
- * returned is read held or not, since it may belong inside a window that never
- * had it. An item with an operation still to send is left to that operation's
- * answer, and so is a revision of one: the edit that made it is this client's.
+ * What these actions leave to read. A capture or a revision the client holds
+ * is not news, being its own or one a read already drew; nor is a revision of
+ * an item it has an edit of still to send, which is that edit landing. An item
+ * that returned is read held or not, since it may belong inside a window that
+ * never had it. An item with an operation still to send is left to that
+ * operation's answer.
  */
 export function heard(
   state: ClientState,
   actions: readonly Action[],
   unsent: ReadonlySet<ItemId>,
+  editing: ReadonlySet<ItemId>,
 ): Heard {
   const read = new Set<ItemId>();
   const arrived = new Set<ItemId>();
 
   for (const action of actions) {
     const subject = action.subject;
-    if (subject === undefined || unsent.has(subject)) continue;
+    if (subject === undefined) continue;
 
     if (action.kind === "captured" || action.kind === "revised") {
+      if (action.kind === "revised" && editing.has(subject)) continue;
       const id = action.kind === "revised" ? revisionIn(action) : subject;
-      if (id === undefined || state.items.has(id)) continue;
+      if (id === undefined || state.items.has(id) || unsent.has(id)) continue;
       read.add(id);
       arrived.add(id);
       continue;
     }
 
+    if (unsent.has(subject)) continue;
     // Abandoned enrichment names the item too, and leaves its routing alone.
     if (action.kind === "work-abandoned" && !("record" in action.detail))
       continue;

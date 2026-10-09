@@ -43,13 +43,12 @@ export function watching(
   read: () => Promise<ActionsPage>,
   gates: Gates = { watched: true, answering: true },
   /**
-   * What the pool did, before anybody is told it — the items it names read and
-   * placed, so a shell told of an arrival already holds it — answering which
+   * What the pool did, before anybody is told it, answering which items
    * arrived from elsewhere. Here rather than on the observable, so it runs once
    * however many shells are listening — and not at all while nobody is, the
    * watcher being built by the first `watch()`.
    */
-  applied?: (actions: readonly Action[]) => Promise<readonly ItemId[]>,
+  applied?: (actions: readonly Action[]) => readonly ItemId[],
 ): Watching {
   const every = gates.every ?? STEADY;
 
@@ -106,7 +105,7 @@ export function watching(
       mark = positionOf(newest);
 
       if (said !== undefined && said.actions.length > 0) {
-        const arrived = (await applied?.(said.actions)) ?? [];
+        const arrived = applied?.(said.actions) ?? [];
         reported.next({ ...said, arrived });
       }
     } catch {
