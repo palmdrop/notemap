@@ -197,7 +197,7 @@ export function createClient(config: ClientConfig): Client {
   // would take, and a capture made elsewhere one nothing else would place.
   const actions = createActions({
     api,
-    applied: (since) => {
+    applied: async (since) => {
       state.update((current) => caughtUp(current, since));
       if (since.length > 0) counts.stale();
 
@@ -209,7 +209,7 @@ export function createClient(config: ClientConfig): Client {
         since,
         undrained(current.outbox),
       );
-      void rereadAll(read).catch(() => undefined);
+      await rereadAll(read).catch(() => undefined);
       return arrived;
     },
   });

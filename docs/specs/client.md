@@ -634,7 +634,8 @@ from its first read.
   answer settles it. An item the pool leaves out of its answer is forgotten, as a single read
   answered `no-such-item` forgets one.
 - **It says which items arrived from elsewhere** *(added 2026-10-09)*. A report carries `arrived`
-  beside `actions`: the captures and revisions it is reading because this client did not make them.
+  beside `actions`: the captures and revisions it read because this client did not make them. A
+  report waits for those reads, so a shell told of an arrival already holds it.
   It is the shell's way to tell another device's capture from its own without reaching into the
   cache, and it says nothing about returns, which the entries already describe.
 

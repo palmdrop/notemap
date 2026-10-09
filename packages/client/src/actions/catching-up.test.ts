@@ -293,6 +293,26 @@ describe("what arrived from elsewhere", () => {
     stop();
   });
 
+  it("tells a shell of an arrival once it already holds it", async () => {
+    vi.useFakeTimers();
+    const { client } = clientOver(
+      poolWith({
+        after: [anAction("a1", "captured", "new"), anAction("a0", "captured")],
+        items: { new: fresh("new") },
+      }),
+    );
+    await client.enter("feed");
+
+    const heldWhenTold: unknown[] = [];
+    const held = client.actions
+      .watch()
+      .subscribe(() => heldWhenTold.push(read(client.held("new"))?.id));
+    await turn();
+
+    expect(heldWhenTold).toEqual(["new"]);
+    held.unsubscribe();
+  });
+
   it("leaves a capture to the queue's next page while there is one", async () => {
     vi.useFakeTimers();
     const { client } = clientOver(

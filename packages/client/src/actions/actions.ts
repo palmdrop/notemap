@@ -11,7 +11,7 @@ import { watching, type Watching } from "./watching";
 export type ActionsDeps = {
   readonly api: Api;
   /** What the pool did, for the client to answer with before a shell hears it. */
-  readonly applied?: (actions: readonly Action[]) => readonly ItemId[];
+  readonly applied?: (actions: readonly Action[]) => Promise<readonly ItemId[]>;
 };
 
 const PAGE = 25;
