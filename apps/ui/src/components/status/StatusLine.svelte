@@ -3,7 +3,7 @@
 
   import { resolve } from "$app/paths";
 
-  import type { Action, PendingOperation } from "@notemap/client";
+  import type { Action, ActionsSince, PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
@@ -38,6 +38,9 @@
   const pool = reachable();
   const outbox = client.outbox;
   const queue = client.counts.queue;
+
+  /** How long an arrival's notice waits for its copy before it goes without its words. */
+  const ARRIVING = 5_000;
 
   let open = $state(false);
   let line = $state<HTMLElement | undefined>(undefined);
@@ -205,16 +208,38 @@
     else firings.closed(firing.closed);
   }
 
-  /** The client reads an arrival before it reports one, so it is held by now. */
-  function heldCapture(item: string): string | undefined {
-    let about: string | undefined;
-    client
-      .held(item)
-      .subscribe((held) => {
-        about = held === undefined ? undefined : aboutItem(held);
-      })
-      .unsubscribe();
-    return about;
+  /**
+   * The client reads an arrival as it reports it, so its copy is a moment
+   * away. One the read never brought is said without its words.
+   */
+  function arrivedCapture(item: string): Promise<string | undefined> {
+    return new Promise((done) => {
+      const timer = setTimeout(() => finish(undefined), ARRIVING);
+      const watching = client.held(item).subscribe((held) => {
+        if (held !== undefined) finish(aboutItem(held));
+      });
+
+      function finish(about: string | undefined): void {
+        clearTimeout(timer);
+        queueMicrotask(() => watching.unsubscribe());
+        done(about);
+      }
+    });
+  }
+
+  async function sayArrived(since: ActionsSince): Promise<void> {
+    const [only, ...rest] = since.arrived;
+    const described =
+      only === undefined || rest.length > 0
+        ? undefined
+        : await arrivedCapture(only);
+
+    const arrival = arrivalOf(since, {
+      ...(described === undefined ? {} : { described }),
+      about: itemHref,
+      feed: resolve("/feed"),
+    });
+    if (arrival !== undefined) notices.raise(arrival);
   }
 
   async function hear(actions: readonly Action[]) {
@@ -246,13 +271,7 @@
         return;
       }
 
-      const arrival = arrivalOf(since, {
-        describe: heldCapture,
-        about: itemHref,
-        feed: resolve("/feed"),
-      });
-      if (arrival !== undefined) notices.raise(arrival);
-
+      void sayArrived(since);
       void hear(since.actions);
     });
     firings.asks(() => client.actions.ask());

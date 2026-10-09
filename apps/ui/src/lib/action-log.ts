@@ -267,8 +267,8 @@ export function noticeOf(
 export function arrivalOf(
   since: Pick<ActionsSince, "actions" | "arrived">,
   said: {
-    /** The capture as a person recognises it, where it is held. */
-    describe: (item: string) => string | undefined;
+    /** The one capture as a person recognises it, where its copy came in time. */
+    described?: string;
     about: (item: string) => string;
     feed: string;
   },
@@ -289,11 +289,10 @@ export function arrivalOf(
       action.kind === "revised" &&
       stringAt(action.detail as Record<string, unknown>, "revision") === first,
   );
-  const about = said.describe(first);
 
   return {
     what: revision ? "revised" : "captured",
-    ...(about === undefined ? {} : { about }),
+    ...(said.described === undefined ? {} : { about: said.described }),
     href: said.about(first),
     only: "arrived",
   };

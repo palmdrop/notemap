@@ -409,7 +409,7 @@ test("nothing arrived is nothing said", () => {
 test("one capture from elsewhere is named, and leads to itself", () => {
   const said = arrivalOf(
     { actions: [anAction("captured", {})], arrived: ["known"] },
-    arriving,
+    { ...arriving, described: "10:00: a thought" },
   );
 
   expect(said).toEqual({
@@ -448,7 +448,7 @@ test("several arrivals are one notice, counted, leading to the feed", () => {
   expect(said).toEqual({ what: "3 captured", href: "/feed", only: "arrived" });
 });
 
-test("a capture not held is still said, without its words", () => {
+test("a capture whose copy did not come is still said, without its words", () => {
   const said = arrivalOf(
     { actions: [anAction("captured", {})], arrived: ["unknown"] },
     arriving,
