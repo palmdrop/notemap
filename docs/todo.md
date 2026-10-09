@@ -2,19 +2,19 @@
 
 ## Shell — layout and interaction
 
-- [ ] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
+- [x] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
     - smooth scroll with some padding?
-- [ ] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
+- [x] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
 - [ ] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
 - [ ] trying to capture an empty capture gives no error or warning indicating why it does not work
 - [ ] destination fields should provide succinct placeholder texts
 
 - [ ] fuzzy search for captures, feed, tags, other views
 
-- [ ] "keep the capture's" in when doing routing edits reads strange, maybe just "restore"
-- [ ] tags in processing view show twice: once above the capture body and once in the composer. Lets just show in composer.
+- [x] "keep the capture's" in when doing routing edits reads strange, maybe just "restore"
+- [x] tags in processing view show twice: once above the capture body and once in the composer. Lets just show in composer.
 
-- [ ] update empty lists inidcators: 
+- [x] update empty lists inidcators: 
     - when no items match the tag filters, we get "Nothing tagged <tag> and <tag> is waiting." and a button for "whole queue" that reads just like text. Should say: "Nothing matches both <tag> and <tag>" and the button should read "Clear filters" and look like a button, not just text.
     - empty queue reads like "Nothing left to process", should say "Queue is empty
     - when the notices expandable is empty, it says "Nothing has been said yet" but it should say "No notices".
