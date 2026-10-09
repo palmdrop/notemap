@@ -5,7 +5,7 @@ import {
   destinationDetail,
   templateDetail,
 } from "./routing/delivery";
-import { landingFor, type Landed } from "./routing/output";
+import { landingFor, stillHeld, type Landed } from "./routing/output";
 import { established } from "./templates/establish";
 import { releaseTriggerTag } from "./templates/fire";
 import { later } from "#utils/time";
@@ -143,7 +143,12 @@ export async function complete(
 
     if (outcome.kind === "succeeded" || outcome.kind === "delivered") {
       if (held.job.subject.kind === "routing-record") {
-        await land(ports, tx, held.job.subject.record, landed);
+        await land(
+          ports,
+          tx,
+          held.job.subject.record,
+          await stillHeld(ports, landed),
+        );
       }
 
       await tx.resolveJob(lease, { kind: "done" });

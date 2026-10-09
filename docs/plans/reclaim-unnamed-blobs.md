@@ -102,14 +102,14 @@ of the same hash ends with the file present.
 
 Depends on phase 2 (fakes).
 
-- [ ] `assets.store` (`packages/core/src/pool/assets.ts:44`): inside the insert transaction,
+- [x] `assets.store` (`packages/core/src/pool/assets.ts:44`): inside the insert transaction,
   confirm the blob exists (`ports.blobs.open` answers `undefined` without opening a descriptor).
   If it is gone, throw rather than refuse. Fix the comment at `assets.ts:19`.
-- [ ] The two transactions that record a landing (`packages/core/src/pool/routing/route.ts:81`
+- [x] The two transactions that record a landing (`packages/core/src/pool/routing/route.ts:81`
   and `packages/core/src/pool/work.ts:129`): if the output's blob is gone, record the landing
   without its output and with `outputLost`.
-- [ ] Confirm the daemon answers that throw with a 5xx and not a refusal status.
-- [ ] Commit
+- [x] Confirm the daemon answers that throw with a 5xx and not a refusal status.
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/core test`. New tests, using a fake whose blob disappears
 between `put` and the transaction: the upload throws and no asset row exists; a re-upload then
@@ -163,10 +163,9 @@ in-flight run). Then `pnpm test:stack`, since this touches the config file and t
 
 ## Unknowns
 
-- **Uploaders that are not the client.** The outbox retries on a 5xx, but the relays and the
-  Raycast extension may not go through it. Check each one's upload path in phase 3. Fallback: a
-  relay that does not retry re-sends on its next poll, because the item never landed. If one
-  does neither, note it in the todo; do not widen this plan.
+- [x] **Uploaders that are not the client.** _(2026-10-09)_ Raycast attaches through the client, so
+  its outbox retries. The relays read a 5xx as `notThisItem` (`packages/relay/src/pool/pool.ts:74`)
+  and stop the scan without marking the item done, so the next scan sends it again.
 - **Size of the walk.** It is one transaction per candidate blob, and listing scales with the
   blob count. That is fine for a personal pool. If a test with tens of thousands of blobs shows
   the write lock starving captures, batch the transaction per shard directory.

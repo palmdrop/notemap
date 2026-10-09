@@ -48,6 +48,27 @@ export async function landingFor(
   return { landing: { ...where, ...(output === undefined ? {} : { output }) } };
 }
 
+/**
+ * Asked inside the transaction that records the landing: bytes already held
+ * are reused rather than written, and a reclaim may have taken them since.
+ * What is gone is lost evidence, as a write that failed is.
+ */
+export async function stillHeld(
+  ports: PoolPorts,
+  landed: Landed | undefined,
+): Promise<Landed | undefined> {
+  const content = landed?.landing.output?.content;
+  if (landed === undefined || content === undefined) return landed;
+  if ((await ports.blobs.open(content.blob)) !== undefined) return landed;
+
+  const { output, ...where } = landed.landing;
+  const note = output?.note;
+  return {
+    landing: { ...where, ...(note === undefined ? {} : { output: { note } }) },
+    outputLost: `the output's blob ${content.blob} was reclaimed before it was recorded`,
+  };
+}
+
 /** An output that is neither content nor note is nothing, and the record keeps nothing. */
 async function storeOutput(
   ports: PoolPorts,
