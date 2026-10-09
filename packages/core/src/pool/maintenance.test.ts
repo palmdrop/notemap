@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
 import type { Asset, Dimensions } from "#types/domain/asset";
-import type { AssetId, BlobHash } from "#types/domain/ids";
+import type { AssetId, BlobHash, Timestamp } from "#types/domain/ids";
 import { png } from "#testing/pictures";
 
-import { measurePictures } from "./maintenance";
+import { measurePictures, reclaimUnnamedBlobs } from "./maintenance";
 
 function picture(id: string, blob = `blob:${id}`): Asset {
   return {
@@ -103,5 +104,94 @@ describe("measuring the pictures held without dimensions", () => {
     });
 
     await expect(measurePictures(wired, stopping.signal)).resolves.toBe(0);
+  });
+});
+
+const NOW = "2026-10-09T12:00:00.000Z" as Timestamp;
+const DAY = 86_400_000;
+const config = { sweep: { grace: DAY } } as unknown as PoolConfig;
+
+function ago(ms: number): Timestamp {
+  return new Date(Date.parse(NOW) - ms).toISOString() as Timestamp;
+}
+
+/** `named` is read at the moment the transaction asks, so a test can name a blob mid-walk. */
+function reclaiming(
+  held: Record<string, Timestamp>,
+  named: Set<string>,
+  onList?: (hash: string) => void,
+) {
+  const kept = new Map(Object.entries(held));
+  let locked = false;
+  const wired = {
+    clock: { now: () => NOW },
+    store: {
+      transaction: async <T>(work: (tx: unknown) => Promise<T>) => {
+        if (locked) throw new Error("transactions overlapped");
+        locked = true;
+        try {
+          return await work({
+            blobNamed: (blob: BlobHash) => Promise.resolve(named.has(blob)),
+          });
+        } finally {
+          locked = false;
+        }
+      },
+    },
+    blobs: {
+      list: async function* () {
+        for (const [hash, at] of [...kept]) {
+          onList?.(hash);
+          yield { hash: hash as BlobHash, at };
+        }
+      },
+      delete: (blob: BlobHash) => {
+        if (!locked) throw new Error("deleted outside a transaction");
+        kept.delete(blob);
+        return Promise.resolve();
+      },
+    },
+  } as unknown as PoolPorts;
+  return { wired, kept };
+}
+
+describe("reclaiming blobs nothing names", () => {
+  it("takes an unnamed blob past the grace window, and keeps one within it", async () => {
+    const { wired, kept } = reclaiming(
+      { old: ago(DAY + 1), fresh: ago(DAY - 1) },
+      new Set(),
+    );
+
+    expect(await reclaimUnnamedBlobs(config, wired)).toBe(1);
+    expect([...kept.keys()]).toEqual(["fresh"]);
+  });
+
+  it("keeps an old blob something names", async () => {
+    const { wired, kept } = reclaiming({ old: ago(2 * DAY) }, new Set(["old"]));
+
+    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect([...kept.keys()]).toEqual(["old"]);
+  });
+
+  it("asks again under the lock, so a blob named after it was listed is kept", async () => {
+    const named = new Set<string>();
+    const { wired, kept } = reclaiming({ old: ago(2 * DAY) }, named, (hash) =>
+      named.add(hash),
+    );
+
+    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect([...kept.keys()]).toEqual(["old"]);
+  });
+
+  it("stops where it stands when told to", async () => {
+    const stopping = new AbortController();
+    const { wired, kept } = reclaiming(
+      { a: ago(2 * DAY), b: ago(2 * DAY) },
+      new Set(),
+      () => stopping.abort(),
+    );
+
+    expect(await reclaimUnnamedBlobs(config, wired, stopping.signal)).toBe(0);
+    expect(kept.size).toBe(2);
   });
 });

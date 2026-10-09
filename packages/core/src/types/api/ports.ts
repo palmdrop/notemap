@@ -447,15 +447,13 @@ export interface PoolTx extends PoolReads {
   measureAsset(id: AssetId, dimensions: Dimensions): Promise<void>;
 
   /**
-   * Releases assets, and answers the blobs that lost their last one — which are
-   * then the caller's to delete, outside this transaction. Releasing an asset an
+   * Releases assets and leaves their blobs where they are. Releasing an asset an
    * item still references fails rather than succeeding quietly.
-   *
-   * A blob a routing record names as its output is never answered, however few
-   * assets are left naming it: an output is named by a record rather than by an
-   * asset, and the two may be the same bytes.
    */
-  deleteAssets(assets: readonly AssetId[]): Promise<readonly BlobHash[]>;
+  deleteAssets(assets: readonly AssetId[]): Promise<void>;
+
+  /** Whether an asset or a routing record's output names the blob: either keeps it. */
+  blobNamed(blob: BlobHash): Promise<boolean>;
 
   /** The job a lease still holds, or nothing if the lease has been taken over. */
   leasedJob(lease: LeaseId): Promise<Lease | undefined>;

@@ -39,7 +39,7 @@ export type ListedBlob = {
   readonly at: Timestamp;
 };
 
-/** How long an unreferenced asset is left alone before a sweep may take it. */
+/** How long an unreferenced asset is left alone before a sweep may take it, and an unnamed blob before a reclaim may. */
 export type SweepPolicy = {
   readonly grace: Duration;
 };

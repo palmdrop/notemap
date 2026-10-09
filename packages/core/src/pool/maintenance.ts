@@ -16,27 +16,21 @@ const PER_RUN = 500;
  * The list is read inside the transaction that deletes it. Read outside, a
  * capture arriving in between would make the delete fail against the foreign
  * key and take the whole run with it.
- *
- * **This never takes an output.** An output is named by a routing record rather
- * than by an asset, so the store withholds a blob a record names even where its
- * last asset has gone.
  */
 export async function sweepUnreferencedAssets(
   config: PoolConfig,
   ports: PoolPorts,
 ): Promise<readonly AssetId[]> {
   const at = ports.clock.now();
-  const olderThan = new Date(
-    Date.parse(at) - config.sweep.grace,
-  ).toISOString() as Timestamp;
 
-  const swept = await ports.store.transaction(async (tx) => {
-    const assets = await tx.unreferencedAssets(olderThan, PER_RUN);
-    if (assets.length === 0) {
-      return { assets, blobs: [] as readonly BlobHash[] };
-    }
+  return ports.store.transaction(async (tx) => {
+    const assets = await tx.unreferencedAssets(
+      graceBefore(config, at),
+      PER_RUN,
+    );
+    if (assets.length === 0) return assets;
 
-    const blobs = await tx.deleteAssets(assets);
+    await tx.deleteAssets(assets);
 
     // One entry per run, not per asset: a large sweep must not bury the log it
     // shares with captures.
@@ -45,17 +39,47 @@ export async function sweepUnreferencedAssets(
       kind: "assets-released",
       by: { kind: "notemap" },
       at,
-      detail: { assets: [...assets], blobs: [...blobs] },
+      detail: { assets: [...assets] },
     });
 
-    return { assets, blobs };
+    return assets;
   });
+}
 
-  // Outside the transaction, and after it: a crash here leaks a file, where the
-  // other order would take bytes an asset still names.
-  for (const blob of swept.blobs) await ports.blobs.delete(blob);
+/**
+ * Each blob is asked about and deleted in a transaction of its own, so the
+ * write lock is held for one `unlink` at a time. Held across both, nothing can
+ * name the blob between the question and the delete, and whatever names it
+ * afterwards finds it gone under the same lock. Answers how many it took,
+ * stopped or not.
+ */
+export async function reclaimUnnamedBlobs(
+  config: PoolConfig,
+  ports: PoolPorts,
+  signal?: AbortSignal,
+): Promise<number> {
+  const olderThan = Date.parse(graceBefore(config, ports.clock.now()));
+  let taken = 0;
 
-  return swept.assets;
+  for await (const blob of ports.blobs.list()) {
+    if (signal?.aborted === true) return taken;
+    if (Date.parse(blob.at) > olderThan) continue;
+
+    const took = await ports.store.transaction(async (tx) => {
+      if (await tx.blobNamed(blob.hash)) return false;
+      await ports.blobs.delete(blob.hash);
+      return true;
+    });
+    if (took) taken += 1;
+  }
+
+  return taken;
+}
+
+function graceBefore(config: PoolConfig, at: Timestamp): Timestamp {
+  return new Date(
+    Date.parse(at) - config.sweep.grace,
+  ).toISOString() as Timestamp;
 }
 
 /**

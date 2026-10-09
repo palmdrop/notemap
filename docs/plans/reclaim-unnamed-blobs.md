@@ -119,16 +119,16 @@ stores. A landing whose output vanished records `outputLost` and the record stil
 
 Depends on phases 2 and 3.
 
-- [ ] Store: a transaction read for whether any asset or routing record names a hash, reusing
+- [x] Store: a transaction read for whether any asset or routing record names a hash, reusing
   `stillNamed` and `namedAsOutput` (`packages/adapters/store-sqlite/src/pool-store.ts:342`).
-- [ ] `deleteAssets` (`pool-store.ts:1230`) stops answering blobs. `sweepUnreferencedAssets`
+- [x] `deleteAssets` (`pool-store.ts:1230`) stops answering blobs. `sweepUnreferencedAssets`
   (`packages/core/src/pool/maintenance.ts:24`) stops deleting them, and drops `blobs` from the
   `assets-released` detail.
-- [ ] `maintenance.reclaimUnnamedBlobs()`: list the blobs; for each one older than
+- [x] `maintenance.reclaimUnnamedBlobs()`: list the blobs; for each one older than
   `config.sweep.grace`, check whether it is named and unlink it in one transaction. Answer how
   many it took. Append no action.
-- [ ] Expose it on `pool.maintenance` beside the sweep.
-- [ ] Commit
+- [x] Expose it on `pool.maintenance` beside the sweep.
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/core test` and the store-sqlite tests. Cases: an unnamed blob
 past grace is taken; one within grace is kept; one named only by an asset is kept; one named only

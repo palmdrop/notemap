@@ -142,47 +142,16 @@ describe("a picture's dimensions", () => {
 });
 
 describe("releasing assets", () => {
-  it("answers the blob that lost its last asset", async () => {
+  it("takes the asset and leaves its blob named by nothing", async () => {
     const { pool: p } = pool();
     await putAssets(p, asset({ id: "asset-1" as AssetId }));
 
-    const orphaned = await p.transaction((tx) =>
-      tx.deleteAssets(["asset-1" as AssetId]),
-    );
+    await p.transaction((tx) => tx.deleteAssets(["asset-1" as AssetId]));
 
-    expect(orphaned).toEqual(["blob-abc"]);
     expect(await p.asset("asset-1" as AssetId)).toBeUndefined();
-  });
-
-  it("keeps a blob two assets share when only one of them goes", async () => {
-    const { pool: p } = pool();
-    await putAssets(
-      p,
-      asset({ id: "asset-1" as AssetId }),
-      asset({ id: "asset-2" as AssetId }),
-    );
-
-    const orphaned = await p.transaction((tx) =>
-      tx.deleteAssets(["asset-1" as AssetId]),
-    );
-
-    expect(orphaned).toEqual([]);
-    expect(await p.asset("asset-2" as AssetId)).toBeDefined();
-  });
-
-  it("orphans the blob once its second asset goes too", async () => {
-    const { pool: p } = pool();
-    await putAssets(
-      p,
-      asset({ id: "asset-1" as AssetId }),
-      asset({ id: "asset-2" as AssetId }),
-    );
-
-    const orphaned = await p.transaction((tx) =>
-      tx.deleteAssets(["asset-1" as AssetId, "asset-2" as AssetId]),
-    );
-
-    expect(orphaned).toEqual(["blob-abc"]);
+    expect(
+      await p.transaction((tx) => tx.blobNamed("blob-abc" as BlobHash)),
+    ).toBe(false);
   });
 
   it("refuses an asset an item still references, rather than losing its bytes", async () => {
@@ -211,7 +180,31 @@ describe("releasing assets", () => {
     ).rejects.toThrow(/constraint/i);
   });
 
-  it("withholds a blob a routing record names as its output", async () => {
+  it("takes nothing when asked for nothing", async () => {
+    const { pool: p } = pool();
+
+    await p.transaction((tx) => tx.deleteAssets([]));
+  });
+});
+
+describe("whether a blob is named", () => {
+  it("is named while one asset of two sharing it is left", async () => {
+    const { pool: p } = pool();
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId }),
+      asset({ id: "asset-2" as AssetId }),
+    );
+
+    const named = await p.transaction(async (tx) => {
+      await tx.deleteAssets(["asset-1" as AssetId]);
+      return tx.blobNamed("blob-abc" as BlobHash);
+    });
+
+    expect(named).toBe(true);
+  });
+
+  it("is named by a routing record's output once no asset names it", async () => {
     const { pool: p } = pool();
     await putAssets(p, asset({ id: "asset-1" as AssetId }));
     await putDestinations(p, destination());
@@ -228,17 +221,20 @@ describe("releasing assets", () => {
       });
     });
 
-    const orphaned = await p.transaction((tx) =>
-      tx.deleteAssets(["asset-1" as AssetId]),
-    );
+    const named = await p.transaction(async (tx) => {
+      await tx.deleteAssets(["asset-1" as AssetId]);
+      return tx.blobNamed("blob-abc" as BlobHash);
+    });
 
-    expect(orphaned).toEqual([]);
+    expect(named).toBe(true);
   });
 
-  it("takes nothing when asked for nothing", async () => {
+  it("is not named when nothing ever named it", async () => {
     const { pool: p } = pool();
 
-    expect(await p.transaction((tx) => tx.deleteAssets([]))).toEqual([]);
+    expect(
+      await p.transaction((tx) => tx.blobNamed("blob-nobody" as BlobHash)),
+    ).toBe(false);
   });
 });
 

@@ -339,13 +339,13 @@ export function createSqlitePoolStore(
   const deleteAsset = write.query<never, [string]>(
     `DELETE FROM assets WHERE id = ?`,
   );
-  const stillNamed = write.query<{ blob: string }, [string]>(
+  const namedByAsset = write.query<{ blob: string }, [string]>(
     `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
   );
   /**
    * An output is named by a routing record rather than by an asset, and the two
    * may be the same bytes — so releasing the last asset that named a blob does
-   * not make it the sweep's to take.
+   * not make it the reclaim's to take.
    */
   const namedAsOutput = write.query<{ output_blob: string }, [string]>(
     `SELECT output_blob FROM routing_records WHERE output_blob = ? LIMIT 1`,
@@ -1223,32 +1223,14 @@ export function createSqlitePoolStore(
         },
       ),
 
-      /**
-       * The blobs, read before the deletes rather than after: afterwards there
-       * is nothing left to say which blobs the departing assets named.
-       */
-      deleteAssets: guard(
-        async (assets: readonly AssetId[]): Promise<readonly BlobHash[]> => {
-          if (assets.length === 0) return [];
+      deleteAssets: guard(async (assets: readonly AssetId[]): Promise<void> => {
+        for (const asset of assets) deleteAsset.run(asset);
+      }),
 
-          const slots = placeholders(assets.length);
-          const named = write
-            .query<{ blob: string }, Bindable[]>(
-              `SELECT DISTINCT blob FROM assets WHERE id IN (${slots})`,
-            )
-            .all(...assets);
-
-          for (const asset of assets) deleteAsset.run(asset);
-
-          return named
-            .map((row) => row.blob)
-            .filter(
-              (blob) =>
-                stillNamed.get(blob) === undefined &&
-                namedAsOutput.get(blob) === undefined,
-            )
-            .map((blob) => blob as BlobHash);
-        },
+      blobNamed: guard(
+        async (blob: BlobHash): Promise<boolean> =>
+          namedByAsset.get(blob) !== undefined ||
+          namedAsOutput.get(blob) !== undefined,
       ),
 
       leasedJob: guard(async (lease: LeaseId) => jobs.leasedJob(lease)),
