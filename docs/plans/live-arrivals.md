@@ -1,9 +1,9 @@
 # Live arrivals on the queue and the feed
 
 **Date**: 2026-10-09
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-09
 
 ---
 
@@ -171,11 +171,11 @@ the foot. Filtered by a tag it doesn't carry, it does not appear, and clearing t
 Depends on: Phase 3. Watcher behaviour crosses client transport and daemon, so the stack suite earns
 a case here.
 
-- [ ] Stack test: two clients on one daemon. One captures; the other, watching, holds the item on
+- [x] Stack test: two clients on one daemon. One captures; the other, watching, holds the item on
       its feed after an `ask()`
-- [ ] `pnpm test:stack`
-- [ ] Tick the todo line in `docs/todo.md`
-- [ ] Commit: `test(stack): a capture from one client reaches another's feed`
+- [x] `pnpm test:stack`
+- [x] Tick the todo line in `docs/todo.md`
+- [x] Commit: `test(stack): a capture from one client reaches another's feed`
 
 **Verify:** `pnpm test:stack` green.
 
@@ -183,7 +183,7 @@ a case here.
 
 ## Unknowns
 
-- **Scroll anchoring on Safari.** The page scrolls the document, and Chrome and Firefox anchor it
+- **Scroll anchoring on Safari** — *still open after implementation.* The page scrolls the document, and Chrome and Firefox anchor it
   natively (`overflow-anchor: auto`). I don't know which Safari versions do, and the phone is
   mostly Safari. Rows also slide in by animating their height, so anchoring has to hold through
   every frame. Fallback: a row placed while out of view arrives still rather than sliding, and the

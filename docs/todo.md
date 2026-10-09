@@ -33,7 +33,8 @@
 
 - [x] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
 
-- [ ] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
+- [x] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
+  - polled on the action log's ten-second tempo since 2026-10-09 ([live-arrivals](plans/live-arrivals.md))
 
 - [ ] feed, filter on routed and non-routed
 
