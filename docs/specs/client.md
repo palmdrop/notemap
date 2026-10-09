@@ -7,7 +7,7 @@
 - 2026-10-09 — **What arrives from elsewhere shows up.** The watcher reads a capture, a revision or
   a returned item it heard of and places it by rank, in one request for everything one read of the
   log names, and its report carries `arrived` — the captures and revisions this client did not
-  make. ([plan](../plans/live-arrivals.md))
+  hold. ([plan](../plans/live-arrivals.md))
 
 - 2026-10-07 — **Any number of attachments, of any kind.** `attachments(item)` answers everything
   an item carries in slot order, with its URL, filename, media type and size wherever the pool or the
@@ -479,8 +479,10 @@ processed — routed or archived — which the pool decides, not the scroll.
   covers the stretch a paused watcher missed, rather than the only thing that keeps the queue true.
 - **And one arrives or returns without the reader asking** *(added 2026-10-09)*. A capture made
   elsewhere, a revision, an unarchive or a delivery given up on is heard from the same log, the item
-  read, and placed by rank as a returned one is: on the feed's head, and on the queue only once it
-  has been read to its end, the pool's next page carrying it otherwise.
+  read, and placed by rank inside the window a page has read, as a returned item is placed. A
+  capture is the newest thing there is, so it lands at the head of a surface read newest first, and
+  at the far end of one read oldest first only once that has been read to its end — the pool's next
+  page carries it otherwise. A returned item keeps its capture time and lands wherever that sorts.
 - **Arriving at the queue reads it again** *(added 2026-09-08, amended 2026-09-09)*. A surface a
   reader returns to is not a surface that stopped changing while they were away: a trigger tag
   fires, another device processes something, and the queue then holds rows the pool no longer names.
@@ -625,19 +627,23 @@ from its first read.
   ([http-v1.md](http-v1.md#items)) — and placed by rank on every page whose window reaches it, a
   [filtered](#a-filtered-surface) one only where it carries the filter's tags. What it reads:
   - a `captured` subject and the revision a `revised` entry names in its detail, **where the
-    client does not already hold the item**. One it holds is its own, applied by the outbox before
-    the pool heard of it.
+    client does not already hold the item**. One it holds is not news: its own, applied by the
+    outbox before the pool heard of it — an outbox entry leaves in the same change that draws its
+    answer, so there is no moment it is neither — or one a read already drew.
   - an `unarchived`, `delivery-cancelled` or abandoned delivery's subject, held or not, since it
-    may now belong in a window that never had it.
+    may now belong in a window that never had it. Whether it is work again is the read's to say.
 
-  Not where an operation on the item is still to send, nor a revision of one: the operation's own
-  answer settles it. An item the pool leaves out of its answer is forgotten, as a single read
-  answered `no-such-item` forgets one.
+  Not where an operation on the item is still to send, nor a revision of an item with an edit still
+  to send, that revision being the edit landing. **The answer is applied only where nothing moved
+  on while the read was out**: an item with an operation queued since keeps its optimistic copy,
+  and one whose held copy is newer than the answer keeps it. An item the pool leaves out of its
+  answer is forgotten, as a single read answered `no-such-item` forgets one.
 - **It says which items arrived from elsewhere** *(added 2026-10-09)*. A report carries `arrived`
-  beside `actions`: the captures and revisions it read because this client did not make them. A
-  report waits for those reads, so a shell told of an arrival already holds it.
+  beside `actions`: the captures and revisions it is reading because this client did not hold them.
   It is the shell's way to tell another device's capture from its own without reaching into the
-  cache, and it says nothing about returns, which the entries already describe.
+  cache, and it says nothing about returns, which the entries already describe. **A report does
+  not wait for those reads**, which go on beside it — a shell that wants the item watches for it,
+  and one whose read failed never comes.
 
 ### The outbox
 

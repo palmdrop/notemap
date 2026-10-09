@@ -568,7 +568,8 @@ log, and would otherwise spend a request on each.
 - **`id` is repeated**, as `tag` is. None at all is `422 id-required`: a bare `GET /v1/items`
   answering an empty list would read as a listing that found nothing.
 - **At most 100 ids**, counted after duplicates are dropped. More is `422 limit-too-large`, carrying
-  `limit` and `max`, refused rather than clamped as a page's `limit` is.
+  `limit` and `max`: refused rather than clamped, as a page's `limit` is.
+- **The answer is `{ "values": [Item] }` and nothing else** — no `next`, since nothing pages.
 
 **An `Item` carries `routing` wherever one is answered** — the item route, the feed, the queue, the
 archive, a capture outcome, an edit outcome:

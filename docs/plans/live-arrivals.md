@@ -1,9 +1,9 @@
 # Live arrivals on the queue and the feed
 
 **Date**: 2026-10-09
-**Status**: Done
+**Status**: In progress
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: 2026-10-09
+**Closed**:
 
 ---
 
@@ -180,6 +180,29 @@ a case here.
 **Verify:** `pnpm test:stack` green.
 
 ---
+
+## Phase 5 — review fixes
+
+From [the review](../reviews/live-arrivals-2026-10-09.md). Depends on: Phase 4.
+
+- [x] An outbox entry leaves in the same state change that draws its answer, its bytes released
+      before it, so an edit landing here is never read as a revision from elsewhere _(2026-10-09)_
+- [x] The batch read is applied only where nothing moved on: an operation queued during the read
+      keeps its optimistic copy, a newer held copy keeps it _(2026-10-09)_
+- [x] The watcher reports without waiting for its reads, so `ask()` is not dropped; the shell
+      waits up to five seconds for the arrival's copy to name it _(2026-10-09)_
+- [x] `REROUTING` and `RETURNING` no longer overlap; a revision is skipped only for an unsent edit
+      of its original, not any operation _(2026-10-09)_
+- [x] Chunking dropped: one read of the log names at most a page of 25 actions _(2026-10-09)_
+- [x] The route answers its own `Items` schema, without `next` _(2026-10-09)_
+- [x] Specs say what the code does: placement wording, "held" rather than "made here", the
+      report not waiting, scroll anchoring left to the browser with Safari an open question
+      _(2026-10-09)_
+- [x] Tests for each of the above, the watcher's `arrived`, a newest-first queue, an oldest-first
+      feed, and no arrival notice on a long-absence read _(2026-10-09)_
+- [-] A read answered after sign-out repopulating the cache _(not addressed — predates this
+      work, and wants a generation on the state rather than a guard in one reader)_
+- [ ] Check Safari on a phone; the plan closes with that
 
 ## Unknowns
 

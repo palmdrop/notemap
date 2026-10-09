@@ -764,6 +764,20 @@
           "queue"
         ]
       },
+      "Items": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Item"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
       "ArchiveRequest": {
         "type": "object",
         "properties": {
@@ -3819,7 +3833,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemSlice"
+                  "$ref": "#/components/schemas/Items"
                 }
               }
             }

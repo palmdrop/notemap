@@ -80,6 +80,7 @@ import {
   editEnvelopeSchema,
   itemSchema,
   itemSliceSchema,
+  itemsSchema,
 } from "../schemas/item";
 import {
   markProcessedRequestSchema,
@@ -534,7 +535,7 @@ export const itemsRoute = createRoute({
   responses: {
     200: {
       description: "The items the pool holds, in the order asked.",
-      content: { [JSON_MEDIA_TYPE]: { schema: itemSliceSchema } },
+      content: { [JSON_MEDIA_TYPE]: { schema: itemsSchema } },
     },
     422: errorResponse(
       "No id, or more than one read answers.",
