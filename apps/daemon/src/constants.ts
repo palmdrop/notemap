@@ -25,6 +25,7 @@ export const DEFAULT_RETRY = {
 export const DEFAULT_SWEEP = {
   graceMs: 86_400_000,
   intervalMs: 3_600_000,
+  reclaimMs: 86_400_000,
 };
 
 /**

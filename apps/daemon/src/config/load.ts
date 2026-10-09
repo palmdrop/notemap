@@ -46,6 +46,7 @@ export type AssetsConfig = {
 
 export type SweepConfig = {
   readonly intervalMs: number;
+  readonly reclaimIntervalMs: number;
 };
 
 /**
@@ -128,6 +129,7 @@ const fileSchema = z.object({
     .object({
       grace: z.number().int().nonnegative().optional(),
       interval: z.number().int().positive().optional(),
+      reclaim: z.number().int().positive().optional(),
     })
     .optional(),
   capture: z
@@ -453,7 +455,10 @@ export function parseConfig(source: string, from: string): LoadedConfig {
       root: resolve(expandHome(file.assets?.root ?? defaultAssetRoot())),
       maxUploadBytes: file.assets?.maxUpload ?? DEFAULT_MAX_UPLOAD_BYTES,
     },
-    sweep: { intervalMs: file.sweep?.interval ?? DEFAULT_SWEEP.intervalMs },
+    sweep: {
+      intervalMs: file.sweep?.interval ?? DEFAULT_SWEEP.intervalMs,
+      reclaimIntervalMs: file.sweep?.reclaim ?? DEFAULT_SWEEP.reclaimMs,
+    },
     delivery: {
       pollIntervalMs: file.delivery?.pollInterval ?? DEFAULT_DELIVERY.pollMs,
       leaseForMs: (file.delivery?.leaseFor ??

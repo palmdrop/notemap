@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
+import { utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -609,5 +610,28 @@ describe("the sweep loop", () => {
     expect((await started.app.request(`/v1/assets/${asset.id}`)).status).toBe(
       200,
     );
+  });
+});
+
+describe("the reclaim", () => {
+  it("takes bytes nothing names once the grace has passed, and keeps an upload within it", async () => {
+    const started = host();
+    const asset = await upload(started, "a picture", {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    });
+    const orphan = await started.blobs.put(
+      (async function* () {
+        yield new TextEncoder().encode("bytes no asset ever named");
+      })(),
+    );
+    const long = new Date("2020-01-01T00:00:00Z");
+    await utimes(started.blobs.pathFor(orphan.hash), long, long);
+
+    expect(await started.reclaim()).toBe(1);
+    expect(await started.blobs.verify(orphan.hash)).toBe("missing");
+    expect(
+      (await started.app.request(`/v1/assets/${asset.id}/content`)).status,
+    ).toBe(200);
   });
 });

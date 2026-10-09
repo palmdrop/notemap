@@ -86,13 +86,14 @@ maxBackoff = 60000
 root = "~/.local/share/notemap/assets"
 maxUpload = 268435456 # bytes — 256 MiB
 
-# An upload whose capture never arrives is eventually swept, along with the blob
-# it was the last asset of. `grace` is how long "just uploaded" is left alone:
-# to a sweep running at the wrong instant, referenced and about-to-be-referenced
-# look identical.
+# An upload whose capture never arrives is eventually swept, and the reclaim
+# deletes bytes nothing names any more. `grace` is how long "just uploaded" is
+# left alone: to either running at the wrong instant, referenced and
+# about-to-be-referenced look identical. The reclaim also runs at startup.
 [sweep]
 grace = 86400000   # milliseconds — one day
 interval = 3600000 # milliseconds between sweeps
+reclaim = 86400000 # milliseconds between reclaims
 
 # How often deliveries that could not be carried out inline are retried. Slower
 # than the mirror, and with a longer lease: a delivery is waiting on something

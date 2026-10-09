@@ -139,13 +139,13 @@ the sweep; an upload that commits between the walk's listing and its transaction
 
 Depends on phase 4.
 
-- [ ] `config.toml`: `[sweep] reclaim`, the reclaim's interval, with a default in `apps/daemon/src/constants.ts` (a day,
+- [x] `config.toml`: `[sweep] reclaim`, the reclaim's interval, with a default in `apps/daemon/src/constants.ts` (a day,
   unless decided otherwise), parsed in `apps/daemon/src/config/load.ts`.
-- [ ] A timer beside the sweeper (`apps/daemon/src/assets/sweeper.ts`), with the same
+- [x] A timer beside the sweeper (`apps/daemon/src/assets/sweeper.ts`), with the same
   skip-if-in-flight and stop-before-close behaviour. It runs once at startup without blocking
   `listen`. Log what it took, at the levels `http-v1.md` gives a sweep.
-- [ ] Stop it in `apps/daemon/src/main.ts` before the pool closes, as the sweeper is stopped.
-- [ ] Commit
+- [x] Stop it in `apps/daemon/src/main.ts` before the pool closes, as the sweeper is stopped.
+- [x] Commit
 
 **Verify:** daemon tests (startup run fires and does not delay readiness; stop waits for an
 in-flight run). Then `pnpm test:stack`, since this touches the config file and the host's wiring.
