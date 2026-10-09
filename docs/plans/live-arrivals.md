@@ -1,9 +1,9 @@
 # Live arrivals on the queue and the feed
 
 **Date**: 2026-10-09
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-09
 
 ---
 
@@ -216,11 +216,11 @@ Depends on: Phase 5.
       in view drifted over 95 frames as the arrival slid in, with it no frame moved; with anchoring
       on, no frame moved either way _(2026-10-09)_
 - [x] shell.md: the motion paragraph, the shipped entry, the open question answered _(2026-10-09)_
-- [ ] Confirm on the phone; the plan closes with that
+- [x] Confirm on the phone _(2026-10-09: confirmed by the developer)_
 
 ## Unknowns
 
-- **Scroll anchoring on Safari** — *still open after implementation.* The page scrolls the document, and Chrome and Firefox anchor it
+- **Scroll anchoring on Safari** — *answered: it does not; Phase 6 holds the place.* The page scrolls the document, and Chrome and Firefox anchor it
   natively (`overflow-anchor: auto`). I don't know which Safari versions do, and the phone is
   mostly Safari. Rows also slide in by animating their height, so anchoring has to hold through
   every frame. Fallback: a row placed while out of view arrives still rather than sliding, and the
