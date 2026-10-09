@@ -1,9 +1,9 @@
 # Reclaim unnamed blobs
 
 **Date**: 2026-10-09
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`
-**Closed**:
+**Closed**: 2026-10-09
 
 ---
 
@@ -152,12 +152,12 @@ in-flight run). Then `pnpm test:stack`, since this touches the config file and t
 
 ### Phase 6 — Close out
 
-- [ ] `docs/todo.md`: tick the two *Pool, store and correctness* items (the sweep race and blobs
+- [x] `docs/todo.md`: tick the two *Pool, store and correctness* items (the sweep race and blobs
   nothing reclaims) and the stale "trying to capture an empty capture gives no error" item
   (shipped in #96, `shell.md:26`).
-- [ ] `Shipped:` entry in `core.md`.
-- [ ] Typecheck, `pnpm -r --silent test`, lint.
-- [ ] Commit
+- [x] `Shipped:` entry in `core.md`.
+- [x] Typecheck, `pnpm -r --silent test`, lint.
+- [x] Commit
 
 ---
 
@@ -171,6 +171,12 @@ in-flight run). Then `pnpm test:stack`, since this touches the config file and t
   the write lock starving captures, batch the transaction per shard directory.
 
 ---
+
+- **Found in phase 6: two clocks.** A blob's `at` is the filesystem's wall-clock mtime, and the
+  reclaim compares it with the pool's injected clock. They agree in a running daemon. The
+  integration harness freezes its clock in August 2026, so every blob read as freshly put until
+  the tests backdated the files (`backdate` in `tests/integration/src/fixture.ts`). Nothing ships
+  with a clock that is not the wall clock.
 
 ## Testing
 

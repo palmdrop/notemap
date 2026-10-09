@@ -4,6 +4,15 @@
 **Last updated**: 2026-10-08
 **Shipped**:
 
+- 2026-10-09 — **Blobs nothing names are reclaimed, and the sweep can no longer delete bytes an
+  upload just claimed.** The sweep releases assets and leaves their blobs; a reclaim walks the blob
+  store at startup and on an interval of its own, and deletes each blob no asset and no routing
+  record names once it has gone unput for the grace window — what a sweep released, a crash or a
+  refused upload left behind, or an output nothing recorded. The question and the delete share a
+  transaction, and a transaction naming a blob checks it is still there, so an upload racing a
+  reclaim is failed and sent again rather than stored over nothing.
+  ([plan](../plans/reclaim-unnamed-blobs.md),
+  [ADR 58](../adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md))
 - 2026-10-08 — **A host's wake no longer loses a job that came due during its pass.**
   `work.dueIn(kinds, since)` also answers zero for a job that came due after `since` (the host's
   last claim, on the pool's clock) and is still unclaimed. A job that was due by then, and that the
@@ -1647,7 +1656,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   providers and destinations are all ports. *Amended 2026-08-11*: the media port is a **blob
   store** — `put`, `open`, `verify`, `delete` and the path a blob is at — keyed by hash and
   holding no names, because which assets exist is pool state
-  ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). *Clarified 2026-08-04*: this is a rule about
+  ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). *Amended 2026-10-09*: it also
+  lists what it holds, with when each blob was last put, for the reclaim
+  ([ADR 58](../adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)). *Clarified 2026-08-04*: this is a rule about
   **reaching the outside world**, not a dependency count. Pure computational libraries — a
   schema validator, an id generator — are fine, and core carries `@types/node` so that runtime
   types such as `AbortSignal` are available. **`fs` is therefore importable and is avoided by
@@ -1975,6 +1986,9 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - An upload whose capture never arrives leaves an unreferenced asset that is eventually swept,
   and never a reference that outlives the item.
 - Purging one of two items that share an asset leaves the asset and its blob intact.
+- A blob no asset and no routing record names is deleted once it has gone unput for the grace
+  window, and no interleaving of an upload with a reclaim leaves an asset naming bytes that are
+  gone.
 - With no providers configured, every enrichment reports unavailable, and items remain
   fully classifiable, archivable and routable.
 - An enrichment interrupted mid-run becomes eligible again and does not produce a duplicate

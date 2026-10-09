@@ -9,6 +9,7 @@ import {
   bytes,
   collect,
   envelope,
+  backdate,
   filesUnder,
   harness,
   itemRecord,
@@ -387,11 +388,9 @@ describe("the blobs on disk", () => {
 describe("where the bytes land", () => {
   /**
    * The bytes are hashed before the row is read, so a refused upload leaves a
-   * blob nothing names. Deleting it would be wrong — another asset may name the
-   * same content — so it is space, and asserted here rather than left to be
-   * discovered.
+   * blob nothing names, and the reclaim is what takes it.
    */
-  it("keeps the blob a refused upload wrote, and no sweep takes it", async () => {
+  it("leaves the blob a refused upload wrote for the reclaim, which takes it with the swept one", async () => {
     const started = pool();
     const id = "minted-once" as AssetId;
     const meta = { filename: "photo.png", mime: "image/png" };
@@ -410,13 +409,15 @@ describe("where the bytes land", () => {
     );
     expect(orphaned).toHaveLength(1);
 
-    // The sweep reads the asset table, so it takes the asset and the blob that
-    // asset named, and walks past the one the refusal left.
     pastTheGrace(started);
     expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
       id,
     ]);
-    expect(await filesUnder(started.assetRoot)).toEqual(orphaned);
+    expect(await filesUnder(started.assetRoot)).toHaveLength(2);
+
+    await backdate(started.assetRoot);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(2);
+    expect(await filesUnder(started.assetRoot)).toEqual([]);
   });
 
   it("is findable from the record alone, without notemap", async () => {

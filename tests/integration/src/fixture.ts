@@ -1,5 +1,5 @@
 import { mkdtempSync, rmSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -387,6 +387,15 @@ export async function filesUnder(root: string): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+/**
+ * A blob's age is its file's, on the wall clock, while the pool's clock is
+ * frozen in the past; this puts every file under the root before both.
+ */
+export async function backdate(root: string): Promise<void> {
+  const long = new Date("2020-01-01T00:00:00.000Z");
+  for (const file of await filesUnder(root)) await utimes(file, long, long);
 }
 
 /**

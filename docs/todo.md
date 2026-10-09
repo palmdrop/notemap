@@ -6,7 +6,7 @@
     - smooth scroll with some padding?
 - [x] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
 - [ ] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
-- [ ] trying to capture an empty capture gives no error or warning indicating why it does not work
+- [x] trying to capture an empty capture gives no error or warning indicating why it does not work
 - [ ] destination fields should provide succinct placeholder texts
 
 - [ ] fuzzy search for captures, feed, tags, other views
@@ -271,7 +271,7 @@
 - [ ] add a way to edit tags, remove tags, rename tags, see tag statistics, etc
 
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
-- [ ] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
+- [x] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
   output**: a delivery's output is a blob named by a routing record rather than by an asset, so a
   reclaim that reasons from the `assets` table alone would delete the evidence of what was sent
   (2026-09-04). An output also *adds* to what this entry owes: the blob is written before the
@@ -286,12 +286,16 @@
   hashes no asset names, behind the same grace window the asset sweep already uses for the same
   reason. Raised reviewing [client-minted assets](plans/client-minted-assets-and-health.md), where
   a refused upload made this reachable rather than only a crash window.
-- [ ] The sweep deletes a blob after its transaction commits, and the other order would be worse
+- [x] The sweep deletes a blob after its transaction commits, and the other order would be worse
   — but an upload of that same content committing in the window between the two ends up naming a
   file the sweep then deletes, so an asset that landed reads `blob-missing`. Pre-existing and
   unrelated to who mints the id; found reviewing
   [client-minted assets](plans/client-minted-assets-and-health.md). Wants either a delete that
   re-checks the asset table under the write lock, or a grace on the blob as well as the asset.
+  - Both closed 2026-10-09 ([reclaim-unnamed-blobs](plans/reclaim-unnamed-blobs.md),
+    [ADR 58](adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)):
+    the sweep no longer deletes blobs, and a reclaim takes any blob nothing names under the write
+    lock, while a transaction naming a blob checks it is still there.
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.)
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.

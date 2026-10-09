@@ -5,6 +5,7 @@ import type { BlobHash, Duration, PoolConfig } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  backdate,
   bytes,
   CONFIG,
   drainWith,
@@ -106,7 +107,7 @@ describe("upload, capture, drain", () => {
 });
 
 describe("an upload whose capture never arrives", () => {
-  it("is gone after a sweep, and its blob with it", async () => {
+  it("is gone after a sweep, and its blob after the reclaim that follows", async () => {
     const started = pool(IMPATIENT);
     const asset = await upload(started.pool, "abandoned.png", bytes("orphan"));
     const path = blobAt(started.assetRoot, asset.blob);
@@ -119,7 +120,20 @@ describe("an upload whose capture never arrives", () => {
     ]);
 
     expect(await started.pool.assets.get(asset.id)).toBeUndefined();
+    expect(await present(path)).toBe(true);
+
+    await backdate(started.assetRoot);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
     expect(await present(path)).toBe(false);
+  });
+
+  it("keeps a blob the reclaim finds put within the grace window", async () => {
+    const started = pool();
+    const asset = await upload(started.pool, "abandoned.png", bytes("orphan"));
+
+    // The pool's clock is in the past, so a file written now is never old enough.
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
+    expect(await present(blobAt(started.assetRoot, asset.blob))).toBe(true);
   });
 
   it("takes nothing from an item that arrived in time", async () => {
@@ -136,6 +150,8 @@ describe("an upload whose capture never arrives", () => {
     expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
       dropped.id,
     ]);
+    await backdate(started.assetRoot);
+    await started.pool.maintenance.reclaimUnnamedBlobs();
 
     // The mirror still points at a file that is there.
     const record = await storedRecord(started.mirrorRoot);
