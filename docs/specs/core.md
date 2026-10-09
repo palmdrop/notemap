@@ -721,17 +721,31 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   takes an asset whose capture is in flight, since "referenced" and "about to be referenced"
   look identical to a sweep running at the wrong instant — `git gc`'s reasoning for
   `gc.pruneExpire`.
-- **Sweeping appends one action, storing appends none.** An asset before its capture belongs to
-  no item, and the capture that references it is the event worth tracing; a sweep is the
-  opposite, and appends a single `assets-released` per run — by agent `notemap`, since nobody
-  asked for it — rather than one per asset. A sweep collecting four hundred orphans must not
-  bury the log it shares with captures.
-- **The sweep reaches assets, and blobs only through them.** `assets.store` writes the bytes
-  before the transaction that mints the row, so a crash between the two leaves a blob no asset
-  ever named — and the sweep enumerates the `assets` table, so nothing it does will ever find
-  one. The same is true of a driver's own debris, such as a temporary file left by a killed
-  write. Both are space rather than loss, and both are **deep verify's** to reclaim, not the
-  sweep's; until that exists, the only thing that reuses those bytes is an identical upload.
+- **Sweeping appends one action, storing and reclaiming append none.** An asset before its
+  capture belongs to no item, and the capture that references it is the event worth tracing; a
+  sweep is the opposite, and appends a single `assets-released` per run — by agent `notemap`,
+  since nobody asked for it — naming the assets it released rather than one action per asset. A
+  sweep collecting four hundred orphans must not bury the log it shares with captures. A reclaim
+  deletes bytes nothing names, which no item and no person ever saw.
+- **The sweep releases assets; the reclaim takes blobs** (decided 2026-10-09,
+  [ADR 58](../adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)).
+  *Until then* the sweep deleted each blob that lost its last asset, after its transaction
+  committed, and left every blob no asset ever named to a deep verify that does not exist. Bytes
+  are written before the transaction that names them, so an upload of the same bytes between the
+  sweep's commit and its delete named a file the sweep then removed. Now
+  `maintenance.reclaimUnnamedBlobs` lists the blob store and, for each blob not put within the
+  sweep's grace window, asks in one transaction whether an asset or a routing record's output
+  names it and deletes it there if nothing does. It takes what the sweep released, a blob a crash
+  or a refused upload left behind, and an output whose route was refused or whose lease was lost.
+- **A transaction that names a blob checks it is there.** An asset's insert and a landing that
+  keeps an output each confirm, under the write lock, that the blob still exists. The bytes are
+  consumed by then: an upload finding its blob gone **throws**, which a host answers as a failure
+  rather than a refusal and a client sends again; a landing finding its output gone is recorded
+  without it and says why, as for an output that could not be written. Putting bytes already held
+  refreshes when they were last put, so a re-upload of old orphaned bytes reads as fresh and the
+  reclaim passes it over.
+- **A driver's own debris is not a blob.** A temporary file left by a killed write is not listed,
+  and nothing reclaims it.
 - Purge leaves a record of the identity and time of the deletion, and nothing else, so that
   anything holding a copy learns it is gone. That record is itself removed after a retention
   window.
@@ -1154,10 +1168,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   person recognises, and a destination that can offer a link offers one. The filesystem kind
   answers a path and no URL, permanently: a path on the daemon's host is not reachable from the
   phone reading the shell. Both are best-effort and both may be stale.
-- **The sweep never takes an output.** It reclaims blobs no *asset* names, and an output is named
-  by a routing record rather than by an asset — the two may be the same bytes, so releasing the
-  last asset that named a blob does not make it the sweep's. Nothing releases an output today:
-  only a delivered record carries one, and a delivered record is never removed.
+- **The reclaim never takes an output a record names.** An output is named by a routing record
+  rather than by an asset — the two may be the same bytes, so releasing the last asset that named a
+  blob does not make it the reclaim's. Nothing releases a named output today: only a delivered
+  record carries one, and a delivered record is never removed. An output no record names — written
+  for a route that was then refused, or a completion whose lease was lost — is debris like any
+  other, and the reclaim takes it.
 - **A destination can be asked what it would write** (added 2026-09-04), through a fourth method,
   **`preview`**. It takes what a delivery takes, answers an output, and touches nothing at the
   destination beyond whatever it had to read to answer. Core builds the delivery and **reserves

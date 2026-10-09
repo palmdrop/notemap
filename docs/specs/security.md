@@ -504,9 +504,10 @@ What that leaves:
 
 - **The only limit is the upload size cap.** There is no cap on the number of assets, the number
   of items, or the total size of the pool. A client that can reach the daemon can fill the disk.
-- The sweep reclaims assets no capture ever referenced, after a grace window
-  ([core.md](core.md#archive-and-purge)), so unclaimed uploads are self-limiting over time — but
-  not within the window, and not at all for uploads a capture *does* claim.
+- The sweep releases assets no capture ever referenced, after a grace window, and the reclaim
+  deletes the blobs nothing names ([core.md](core.md#archive-and-purge)), so unclaimed uploads are
+  self-limiting over time — but not within the window, and not at all for uploads a capture *does*
+  claim.
 - There is no rate limiting anywhere **except failed sign-ins** (below), and the pool holds a
   write lock for the duration of a transaction, so a caller issuing writes in a loop degrades
   every other caller.
