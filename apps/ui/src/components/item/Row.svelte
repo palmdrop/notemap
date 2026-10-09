@@ -193,7 +193,7 @@
 >
   <div
     bind:this={row}
-    data-row
+    data-row={item.id}
     data-opens={opens ? "" : undefined}
     data-headed={headed ? "" : undefined}
     class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed

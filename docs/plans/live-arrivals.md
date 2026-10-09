@@ -202,7 +202,21 @@ From [the review](../reviews/live-arrivals-2026-10-09.md). Depends on: Phase 4.
       feed, and no arrival notice on a long-absence read _(2026-10-09)_
 - [-] A read answered after sign-out repopulating the cache _(not addressed — predates this
       work, and wants a generation on the state rather than a guard in one reader)_
-- [ ] Check Safari on a phone; the plan closes with that
+- [x] Check Safari on a phone _(2026-10-09: the page moved — Safari does not anchor)_
+
+## Phase 6 — holding the reader's place in Safari
+
+Depends on: Phase 5.
+
+- [x] `lib/anchored.svelte.ts`: before a change between reads, the first row in view and where it
+      stands; after, put back before paint. A row arriving above the reader arrives still
+      _(2026-10-09)_
+- [x] Feed and queue draw through it; a row's box names its item in `data-row` _(2026-10-09)_
+- [x] Tests for the helper; measured in Chromium with anchoring off — without the helper the row
+      in view drifted over 95 frames as the arrival slid in, with it no frame moved; with anchoring
+      on, no frame moved either way _(2026-10-09)_
+- [x] shell.md: the motion paragraph, the shipped entry, the open question answered _(2026-10-09)_
+- [ ] Confirm on the phone; the plan closes with that
 
 ## Unknowns
 

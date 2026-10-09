@@ -28,6 +28,7 @@
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
+  import { anchored } from "$lib/anchored.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -84,7 +85,7 @@
       !($queue.fromCache && $queue.loading && $queue.items.length > 0),
   );
 
-  const motion = moving(
+  const moved = moving(
     () => $queue.loading,
     () => $queue.items.length,
     () => !$queue.loading && !$queue.fromCache && $queue.failure === undefined,
@@ -210,6 +211,8 @@
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
   const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+
+  const motion = anchored(() => rows.map((row) => row.id), moved);
 
   function reveal(id: string) {
     drawn[id]?.reveal();

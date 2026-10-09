@@ -6,9 +6,9 @@
 
 - 2026-10-09 — **What arrives from elsewhere shows up.** A capture from a relay, Raycast or
   another device lands on an open feed or queue within the watcher's tempo, placed where it sorts,
-  and the status line says `captured` — once per read, however many came. Where the browser
-  anchors scrolling, the page does not move under a reader scrolled into it; Safari is unchecked.
-  ([plan](../plans/live-arrivals.md))
+  and the status line says `captured` — once per read, however many came. The page does not
+  move under a reader scrolled into it: the shell holds the row in view where it stood, and a row
+  arriving above the reader arrives still. ([plan](../plans/live-arrivals.md))
 
 - 2026-10-08 — **Attachments only.** Where a destination can place a capture's attachments
   alone, an `output` section before `place`, on the process surface and the template form, offers
@@ -2252,10 +2252,13 @@ because a scroll that slid fifty rows in at its foot would be motion about nothi
 arrives or leaves between reads slides: a capture landing — the first one into a queue the pool
 had answered empty included — an item heard about, a row let go, a row processed on another
 device. The same holds on the feed, the queue's index and the log. **A row arriving above a
-reader scrolled into the list is meant not to move what they are reading** *(2026-10-09)*: the
-status line is what says something came, and a reader at the head sees it slide in. Nothing in the
-shell holds the rows in view; the browser's own scroll anchoring does, which Chromium was seen to
-do and Safari has not been checked for ([open questions](#open-questions)). **A row
+reader scrolled into the list does not move what they are reading** *(2026-10-09)*: the status line
+is what says something came, and a reader at the head sees it slide in. **The shell holds the
+place itself** rather than leaving it to the browser, Safari not anchoring scrolling: the first row
+in view is measured before a change between reads and put back where it stood after, before the
+frame is painted, and a browser that has already anchored finds nothing to put back. A row
+arriving above the reader **arrives still**, since nobody sees it and its slide would move the page
+a frame at a time. A read places the reader on purpose and is left alone. **A row
 that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
 rather than jumping, over the short duration, and a change that lands while it is still moving is
@@ -2899,10 +2902,10 @@ view is how a reader sees more at once.
       gets one after all, in the quieter idiom. The noise argument holds for a fact true of the whole
       shell, which unreachability is and this is not: `N waiting` and the row's mark answer different
       questions, and neither answers the other's.
-- [ ] 2026-10-09 — **Whether Safari holds a reader's place when a row arrives above it.** The shell
-      leaves it to the browser's scroll anchoring, which Chromium does. If Safari does not, the
-      shell measures the first row in view before a placement and puts it back after, once.
-      ([plan](../plans/live-arrivals.md))
+- [x] 2026-10-09 — **Whether Safari holds a reader's place when a row arrives above it.** It does
+      not: tried on a phone the same day, the page moved. The shell now holds the place itself
+      ([above](#draining)), which Chromium with its anchoring turned off was measured to keep
+      still on every frame. ([plan](../plans/live-arrivals.md))
 
 ---
 
