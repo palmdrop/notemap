@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-07
+**Last updated**: 2026-10-09
 **Shipped**:
+
+- 2026-10-09 — **What arrives from elsewhere shows up.** The watcher reads a capture, a revision or
+  a returned item it heard of and places it by rank, in one request for everything one read of the
+  log names, and its report carries `arrived` — the captures and revisions this client did not
+  make. ([plan](../plans/live-arrivals.md))
 
 - 2026-10-07 — **Any number of attachments, of any kind.** `attachments(item)` answers everything
   an item carries in slot order, with its URL, filename, media type and size wherever the pool or the
@@ -472,6 +477,10 @@ processed — routed or archived — which the pool decides, not the scroll.
   its own tempo is where it learns that something processed an item it holds — a trigger tag, or
   another device — and the row goes then ([the action log](#the-action-log)). Arriving is what
   covers the stretch a paused watcher missed, rather than the only thing that keeps the queue true.
+- **And one arrives or returns without the reader asking** *(added 2026-10-09)*. A capture made
+  elsewhere, a revision, an unarchive or a delivery given up on is heard from the same log, the item
+  read, and placed by rank as a returned one is: on the feed's head, and on the queue only once it
+  has been read to its end, the pool's next page carrying it otherwise.
 - **Arriving at the queue reads it again** *(added 2026-09-08, amended 2026-09-09)*. A surface a
   reader returns to is not a surface that stopped changing while they were away: a trigger tag
   fires, another device processes something, and the queue then holds rows the pool no longer names.
@@ -535,8 +544,8 @@ has walked, so a filtered reading made from them would be silently short of what
   page reaches, on the terms a returned item is placed ([the queue](#the-queue)).
 - **The watcher applies tags as well as processing** ([the action log](#the-action-log)): an
   action saying a tag was added or taken off changes the copy held of its item, and the pages follow
-  by the rule above. An item the client does not hold is not placed — an action carries an id, not
-  the item — and is on the next read, the rule an unarchive already lives by. Nor is a tag this
+  by the rule above. An item the client does not hold is not read for a tag, and is on the next
+  read. Nor is a tag this
   client has its own change to still unsent: the copy already says what the person did last, and
   an older action from the log would undo it until the change settled.
 - **A filtered page is not persisted**, and neither are the whole pages; a reload arrives through
@@ -610,9 +619,24 @@ from its first read.
   that operation's own answer settles it, and a read now would overwrite the optimistic copy. A
   cached copy that said an item was work after the pool had filed it was persisted, and outlived
   the session that drew it.
-- **Nothing is put back this way that the client does not hold.** Giving up on a delivery returns
-  an item to the queue, and an action names an id rather than carrying the item there would be to
-  place. That is `withdrawn`'s path, which has one.
+- **It reads what arrived or returned, held or not** *(2026-10-09; until then nothing was put back
+  this way that the client did not hold)*. An action names an id and carries no item to place, so
+  the item is read — every one a read of the log names in one request
+  ([http-v1.md](http-v1.md#items)) — and placed by rank on every page whose window reaches it, a
+  [filtered](#a-filtered-surface) one only where it carries the filter's tags. What it reads:
+  - a `captured` subject and the revision a `revised` entry names in its detail, **where the
+    client does not already hold the item**. One it holds is its own, applied by the outbox before
+    the pool heard of it.
+  - an `unarchived`, `delivery-cancelled` or abandoned delivery's subject, held or not, since it
+    may now belong in a window that never had it.
+
+  Not where an operation on the item is still to send, nor a revision of one: the operation's own
+  answer settles it. An item the pool leaves out of its answer is forgotten, as a single read
+  answered `no-such-item` forgets one.
+- **It says which items arrived from elsewhere** *(added 2026-10-09)*. A report carries `arrived`
+  beside `actions`: the captures and revisions it is reading because this client did not make them.
+  It is the shell's way to tell another device's capture from its own without reaching into the
+  cache, and it says nothing about returns, which the entries already describe.
 
 ### The outbox
 

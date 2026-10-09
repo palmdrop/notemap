@@ -41,7 +41,7 @@ import {
   processed,
   reading,
   rebuilt,
-  rerouted,
+  heard,
   sameFilter,
   settle,
   settledDestination,
@@ -139,6 +139,8 @@ function listOf(state: ClientState, surface: Surface): ListState {
  * when another process is free to take it and send it a second time.
  */
 const TIMEOUT_MS = 30_000;
+/** As many items as the pool reads in one request. */
+const ITEMS_PER_READ = 100;
 
 function timeoutOf(config: ClientConfig): number {
   const timeout = config.timeout ?? TIMEOUT_MS;
@@ -190,9 +192,9 @@ export function createClient(config: ClientConfig): Client {
 
   noticeLapsed = sessions.lapsed;
 
-  // What the pool did behind the surfaces, applied to them. The queue is the
-  // one that can be wrong: an item routed by a trigger tag, or processed on
-  // another device, is a row nothing else here would take.
+  // What the pool did behind the surfaces, applied to them: an item routed by
+  // a trigger tag or processed on another device is a row nothing else here
+  // would take, and a capture made elsewhere one nothing else would place.
   const actions = createActions({
     api,
     applied: (since) => {
@@ -202,10 +204,13 @@ export function createClient(config: ClientConfig): Client {
       // An operation still to send settles its item on its own answer, and a
       // read now would overwrite the optimistic copy under it.
       const current = state.get();
-      const unsent = undrained(current.outbox);
-      for (const id of rerouted(current, since)) {
-        if (!unsent.has(id)) void reread(id).catch(() => undefined);
-      }
+      const { read, arrived } = heard(
+        current,
+        since,
+        undrained(current.outbox),
+      );
+      void rereadAll(read).catch(() => undefined);
+      return arrived;
     },
   });
 
@@ -375,6 +380,27 @@ export function createClient(config: ClientConfig): Client {
     state.update((current) =>
       item === undefined ? forget(current, id) : settle(current, item),
     );
+  }
+
+  /**
+   * `reread` for several items, a request per hundred rather than per item. One
+   * the pool left out of its answer is forgotten on the same terms.
+   */
+  async function rereadAll(ids: readonly ItemId[]): Promise<void> {
+    for (let at = 0; at < ids.length; at += ITEMS_PER_READ) {
+      const asked = ids.slice(at, at + ITEMS_PER_READ);
+      const { values } = await answered(
+        api.GET("/v1/items", { params: { query: { id: [...asked] } } }),
+      );
+      const held = new Set(values.map((item) => item.id));
+
+      state.update((current) => {
+        let next = current;
+        for (const item of values) next = settle(next, item);
+        for (const id of asked) if (!held.has(id)) next = forget(next, id);
+        return next;
+      });
+    }
   }
 
   /**

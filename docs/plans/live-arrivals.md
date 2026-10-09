@@ -116,13 +116,13 @@ in that order. 101 ids answer `422 limit-too-large`.
 
 Depends on: Phase 1.
 
-- [ ] Replace `rerouted` with the read-set function above; drop the held-only guard
-- [ ] Read the set through the new route, in chunks of the cap, settling each answered item and
+- [x] Replace `rerouted` with the read-set function above; drop the held-only guard
+- [x] Read the set through the new route, in chunks of the cap, settling each answered item and
       forgetting each missing one
-- [ ] Add `unarchived` to what is read
-- [ ] Carry `arrived` on `ActionsSince` (`packages/client/src/actions/watching.ts`); the client
+- [x] Add `unarchived` to what is read
+- [x] Carry `arrived` on `ActionsSince` (`packages/client/src/actions/watching.ts`); the client
       works it out in `applied`, before anything is reported
-- [ ] Tests in `packages/client/src/actions/catching-up.test.ts` and `client.test.ts`:
+- [x] Tests in `packages/client/src/actions/catching-up.test.ts` and `client.test.ts`:
   - an unheld capture lands at the feed's head
   - it lands at the queue's end only when that page is exhausted, otherwise not at all
   - a filtered page takes it only when the tags match, and the whole page beside it takes it
@@ -133,10 +133,10 @@ Depends on: Phase 1.
   - an id the batch answer leaves out is forgotten
   - an own capture is not in `arrived`
   - a capture whose template fired in the same transaction lands on the feed and not the queue
-- [ ] Amend client.md: the action log section ("Nothing is put back…" becomes what is read and
+- [x] Amend client.md: the action log section ("Nothing is put back…" becomes what is read and
       placed), and the queue's "A row also leaves without a read" bullet gains its counterpart
-- [ ] Typecheck, lint, `pnpm -r --silent test`
-- [ ] Commit: `feat(client): place items heard from the action log that the client does not hold`
+- [x] Typecheck, lint, `pnpm -r --silent test`
+- [x] Commit: `feat(client): place items heard from the action log that the client does not hold`
 
 **Verify:** client tests green. Placement goes through `reconciled`, so the rank rule is covered by
 the tests that already exist.
