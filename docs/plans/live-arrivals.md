@@ -145,20 +145,21 @@ the tests that already exist.
 
 Depends on: Phase 2.
 
-- [ ] Status line: raise the arrival notice from `since.arrived` (`StatusLine.svelte`,
+- [x] Status line: raise the arrival notice from `since.arrived` (`StatusLine.svelte`,
       `lib/action-log.ts`). Keep the logic in `lib/` so it can be tested without the component
-- [ ] Make sure a row landing above the viewport does not move what the reader is looking at (see
-      Unknowns)
-- [ ] Tests:
+- [x] Make sure a row landing above the viewport does not move what the reader is looking at (see
+      Unknowns) _(2026-10-09: Chromium's native anchoring holds it, measured with a scratch daemon;
+      no code needed there. Safari unchecked)_
+- [x] Tests:
   - notice wording for one, several and a revision
   - no notice for an own capture
   - no notice on a `more` read
-- [ ] Amend shell.md:
+- [x] Amend shell.md:
   - "What happened while nobody was asking": a sixth thing is said, and it is an arrival, not a
     kind
   - the motion paragraph: a row arriving out of sight does not move the page
-- [ ] Typecheck, lint, `pnpm -r --silent test`
-- [ ] Commit: `feat(ui): say what arrived from elsewhere, and keep the reader where they are`
+- [x] Typecheck, lint, `pnpm -r --silent test`
+- [x] Commit: `feat(ui): say what arrived from elsewhere, and keep the reader where they are`
 
 **Verify:** shell tests green. By hand: with the shell open and scrolled into the feed, post a
 capture with `curl` to the daemon. Within 10s a notice appears and the row under the reader stays

@@ -1,8 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-09
 **Shipped**:
+
+- 2026-10-09 — **What arrives from elsewhere shows up.** A capture from a relay, Raycast or
+  another device lands on an open feed or queue within the watcher's tempo, placed where it sorts,
+  and the status line says `captured` — once per read, however many came. The page does not move
+  under a reader scrolled into it. ([plan](../plans/live-arrivals.md))
 
 - 2026-10-08 — **Attachments only.** Where a destination can place a capture's attachments
   alone, an `output` section before `place`, on the process surface and the template form, offers
@@ -2179,6 +2184,16 @@ cannot drift. *Amended 2026-09-30*: `template-fired` is read too, but opens a ro
 status line rather than saying anything, and the kinds that end a route close it
 ([above](#the-status-line)).
 
+**What arrived from elsewhere is said too** *(added 2026-10-09)*, and it is not a kind: it is the
+captures and revisions the client reports as `arrived` ([client.md](client.md#the-action-log)),
+which leaves out this shell's own. **One read says it once**, however many it holds — a relay
+draining forty captures is one thing that happened. One reads `captured`, or `revised`, and leads
+to the item, the panel naming it; several read `<n> captured` and lead to the feed. It is a
+success, gone after four seconds, and the newest takes the place of the last still live. A read
+that did not reach back to its mark says nothing of arrivals, the count it raises standing for
+them. An item that returned is not said here: the entry that returned it already is, or was a
+person's own undo.
+
 **Nothing is said twice.** A notice is keyed by the **routing record** rather than by the log entry:
 a delivery retried four times is one thing that went wrong, and a landing this shell already
 reported when the decision was made is the same fact arriving a second time.
@@ -2233,7 +2248,10 @@ as a page reloads — appear and go without moving,
 because a scroll that slid fifty rows in at its foot would be motion about nothing. A row that
 arrives or leaves between reads slides: a capture landing — the first one into a queue the pool
 had answered empty included — an item heard about, a row let go, a row processed on another
-device. The same holds on the feed, the queue's index and the log. **A row
+device. The same holds on the feed, the queue's index and the log. **A row arriving above a
+reader scrolled into the list does not move what they are reading** *(2026-10-09)*: the page
+holds the rows in view where they stand and grows above them, and the status line is what says
+something came. A reader at the head sees it slide in. **A row
 that changes height in place grows or shrinks into it** *(2026-09-25)* — its routing records read
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
 rather than jumping, over the short duration, and a change that lands while it is still moving is

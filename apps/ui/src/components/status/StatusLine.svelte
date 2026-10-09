@@ -1,12 +1,14 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import { resolve } from "$app/paths";
+
   import type { Action, PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
   import { SHOWN_AFTER } from "$components/primitives/marks/Asking.svelte";
-  import { firingOf, noticeOf } from "$lib/action-log";
+  import { arrivalOf, firingOf, noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
@@ -203,6 +205,18 @@
     else firings.closed(firing.closed);
   }
 
+  /** The client reads an arrival before it reports one, so it is held by now. */
+  function heldCapture(item: string): string | undefined {
+    let about: string | undefined;
+    client
+      .held(item)
+      .subscribe((held) => {
+        about = held === undefined ? undefined : aboutItem(held);
+      })
+      .unsubscribe();
+    return about;
+  }
+
   async function hear(actions: readonly Action[]) {
     for (const action of actions) {
       follow(action);
@@ -231,6 +245,13 @@
         tooMuch(since.actions.length);
         return;
       }
+
+      const arrival = arrivalOf(since, {
+        describe: heldCapture,
+        about: itemHref,
+        feed: resolve("/feed"),
+      });
+      if (arrival !== undefined) notices.raise(arrival);
 
       void hear(since.actions);
     });

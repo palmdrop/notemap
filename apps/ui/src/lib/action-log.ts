@@ -1,4 +1,4 @@
-import type { Action } from "@notemap/client";
+import type { Action, ActionsSince } from "@notemap/client";
 
 import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
@@ -256,5 +256,45 @@ export function noticeOf(
     ...where,
     alarm: true,
     key: `work:${action.id}`,
+  };
+}
+
+/**
+ * What arrived from elsewhere in one read, said once however much it was: a
+ * relay draining forty captures is one thing that happened. One is named, and
+ * leads to itself; several are counted, and lead to the feed they landed on.
+ */
+export function arrivalOf(
+  since: Pick<ActionsSince, "actions" | "arrived">,
+  said: {
+    /** The capture as a person recognises it, where it is held. */
+    describe: (item: string) => string | undefined;
+    about: (item: string) => string;
+    feed: string;
+  },
+): Raised | undefined {
+  const [first, ...rest] = since.arrived;
+  if (first === undefined) return undefined;
+
+  if (rest.length > 0) {
+    return {
+      what: `${String(since.arrived.length)} captured`,
+      href: said.feed,
+      only: "arrived",
+    };
+  }
+
+  const revision = since.actions.some(
+    (action) =>
+      action.kind === "revised" &&
+      stringAt(action.detail as Record<string, unknown>, "revision") === first,
+  );
+  const about = said.describe(first);
+
+  return {
+    what: revision ? "revised" : "captured",
+    ...(about === undefined ? {} : { about }),
+    href: said.about(first),
+    only: "arrived",
   };
 }
