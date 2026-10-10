@@ -10,7 +10,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { openClient, openReader } from "./lib/client";
-import { attaching, chosen, excerpt, landing } from "./lib/note";
+import { capturing, chosen, excerpt, landing } from "./lib/note";
 
 type Values = {
   readonly text: string;
@@ -24,6 +24,16 @@ const SETTLE_MS = 2_000;
 
 const pause = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** What the HUD says of a capture that was made, whole or in part. */
+function hudFor(
+  kind: "captured" | "partly",
+  landed: boolean | undefined,
+  said: string,
+): string {
+  if (kind === "partly") return `Captured, but not all of it — ${said}`;
+  return landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`;
+}
 
 /**
  * Captures through a whole client, so a note made while the daemon is
@@ -75,27 +85,33 @@ export default function Command() {
       message: said,
     });
 
-    // What the notice may claim: past this, the note is in the outbox and safe,
-    // and a failure after it is no longer a failure to capture.
-    let captured = false;
-
     try {
-      const asset = await attaching(client, files);
-      const item = await client.capture({
+      const captured = await capturing(client, {
         channel: "raycast",
         text,
-        ...(asset === undefined ? {} : { asset }),
+        files,
+        tags: chosen(tags, newTags),
       });
-      captured = true;
 
-      for (const tag of chosen(tags, newTags)) await client.tag(item.id, tag);
+      if (captured.kind === "refused") {
+        // Stays on the form, which still holds the words: a notice would close
+        // it and take them with it, and there is nothing captured to close over.
+        const { error } = captured;
+        toast.style = Toast.Style.Failure;
+        toast.title = "Nothing was captured";
+        toast.message = error instanceof Error ? error.message : said;
+        return;
+      }
 
       // Whichever comes first: a pool that answered, or a wait worth no more of
       // the person's time. What is still waiting, the drain command sends.
-      const landed = await Promise.race([
-        landing(client),
-        pause(SETTLE_MS).then(() => undefined),
-      ]);
+      const landed =
+        captured.kind === "partly"
+          ? undefined
+          : await Promise.race([
+              landing(client),
+              pause(SETTLE_MS).then(() => undefined),
+            ]);
 
       // Popping to root ends this process, so whatever is still on the wire is
       // abandoned and written back first rather than left leased.
@@ -103,25 +119,18 @@ export default function Command() {
       await toast.hide();
       // The form is left behind as well as closed: without this the next launch
       // comes back to it, still holding the note that has already been sent.
-      await showHUD(
-        landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`,
-        { clearRootSearch: true, popToRootType: PopToRootType.Immediate },
-      );
-    } catch (error) {
-      if (captured) {
-        await client.close();
-        await toast.hide();
-        await showHUD(`Captured, but not all of it — ${said}`, {
-          clearRootSearch: true,
-          popToRootType: PopToRootType.Immediate,
-        });
-      } else {
-        // Stays on the form, which still holds the words: a notice would close
-        // it and take them with it, and there is nothing captured to close over.
-        toast.style = Toast.Style.Failure;
-        toast.title = "Nothing was captured";
-        toast.message = error instanceof Error ? error.message : said;
-      }
+      await showHUD(hudFor(captured.kind, landed, said), {
+        clearRootSearch: true,
+        popToRootType: PopToRootType.Immediate,
+      });
+    } catch {
+      // Past the capture the note is in the outbox and safe, so anything that
+      // fails here is no longer a failure to capture.
+      await toast.hide();
+      await showHUD(hudFor("partly", undefined, said), {
+        clearRootSearch: true,
+        popToRootType: PopToRootType.Immediate,
+      });
     } finally {
       await client.close();
     }
