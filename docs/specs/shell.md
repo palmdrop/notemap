@@ -822,12 +822,12 @@ control that can be taken off.
 does not say, or holding a trigger tag waiting for the save, stops, and a **dialog** asks: `unsaved changes to <stamp>: <first words>`, with
 `keep editing`, `revert` and a bold `save`, `save` taking the focus. `save` and `revert` answer and
 go on with whatever was asked, the way it was asked — the other row, the page, back or forward
-through history, a link out of the app. `save` waits for an attachment still being attached, and an
-attachment on its way counts as a change. `keep editing`, `esc`, a press outside it or the dialog
+through history, a link out of the app. `save` attaches what has been picked before it sends, and a
+picked file counts as a change. `keep editing`, `esc`, a press outside it or the dialog
 closing any other way goes back into the field, the row brought into view. It is a dialog rather than a line in the
 row's foot because the question arrives wherever the person has scrolled to, often far from the
 row. An edit left with nothing changed closes without asking. Nothing an edit holds outlives it,
-and the row always draws what the item says: `copy`, the process surface and a route all read the
+picked files included *(2026-10-10)*, and the row always draws what the item says: `copy`, the process surface and a route all read the
 saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
@@ -840,7 +840,11 @@ view** once it has grown or shrunk into its new height *(2026-10-08)*, since a p
 above the words or a line under them can carry the row past either edge of the screen. `attach` in
 the foot adds files after them, and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
-and is not attached. `save` sends the edit naming what the
+and is not taken. **What is picked is held and attached as the edit is saved** *(2026-10-10)*, the
+way the capture box attaches at its button and for the reason given there — and an edit has four
+ways of never being saved, where the box has one. So the `×` on a picked file takes the file and
+nothing else, and a picked picture is drawn through the browser's own handle on it rather than
+through the client. `save` attaches what is picked and sends the edit naming what the
 edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
 and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
