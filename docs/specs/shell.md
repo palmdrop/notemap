@@ -1442,7 +1442,11 @@ the attachments around what would be written, which here is the paths the files 
 already there. A record of one reads the folder, `→ **Vault** library/`, and its block says
 `placed`. A template carries the capability as it carries any, and taken, draws `attachments only`
 taken. A kind that settles nothing offers the capability among the others under `do`, with no
-`output`. **The template form draws the same `output` row after `destination`** wherever the
+`output` — and **not at all where the item has no attachments** *(added 2026-10-10)*, which is the
+condition the section itself is drawn under: a capability that carries the attachments alone has
+nothing to carry there, and delivery would reject it. Reached by the arena kind declaring one
+([ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)), which is
+also what makes `do` a question on a board at all — one capability was never asked about. **The template form draws the same `output` row after `destination`** wherever the
 destination declares such a capability, whatever item it will meet, and leaves that capability out
 of `action`; while `attachments only` is taken, `action` is not drawn, there being nothing else it
 could be, and `everything` gives back the action held before.

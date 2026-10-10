@@ -196,7 +196,7 @@
 
 ## Destinations and adapters
 
-- [ ] **are.na refuses a capture carrying more than one file.** A block holds one thing, so the
+- [x] **are.na refuses a capture carrying more than one file.** A block holds one thing, so the
   arena kind refuses any capture whose payload names more than one asset — reachable from the shell
   since 2026-10-07, when a capture began carrying any number of files
   ([attachments-of-any-kind](plans/attachments-of-any-kind.md)). Routing by hand hears it in the
@@ -212,6 +212,11 @@
     one block per file and no text block. Two things to settle first: what a partial failure
     retried does (duplicate under ADR 41, or keep track of the blocks already made), and what the
     record's single pointer and `url` name when one delivery makes several blocks.
+  - Closed 2026-10-10 ([arena-takes-every-file](plans/arena-takes-every-file.md),
+    [ADR 59](adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)): one
+    block per file with the words on the first, `place-assets` on the kind taking a channel alone,
+    a multi-block delivery naming the channel and listing the blocks in its output, and a partial
+    failure retried duplicating, which the kind's README says.
 
 - [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 

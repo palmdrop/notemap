@@ -1402,16 +1402,30 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 57](../adr/0057-a-capture-can-be-routed-as-its-attachments-alone.md)), with
   `x-notemap-carries: "assets"` at the root of its arguments schema. **Core never reads it**: it is
   said for the surfaces, which offer "attachments only" wherever a destination declares one, and
-  know no capability by name to do it. The file kinds declare one, `place-assets`, whose arguments
-  are a folder and the folder mode. It writes every asset the payload references into the folder
-  and no note; a capture referencing none is **rejected**. An asset lands under the name it was
+  know no capability by name to do it. Three kinds declare one, `place-assets`, and **what its
+  arguments are is the kind's** (amended 2026-10-10): the file kinds take a folder and the folder
+  mode, the arena kind takes a channel and nothing else, a channel being joined rather than made.
+  It carries every asset the payload references and nothing else of the capture; a capture
+  referencing none is **rejected**. On the file kinds an asset lands under the name it was
   uploaded with, made one safe segment and with no digest. Where that name holds different bytes,
   it walks `-1`, `-2`, … to the first name that is free or holds the same bytes, and the same bytes
   count as landed. So a retry stops at the copy its last attempt wrote, and the file kinds' promise
   holds: a retry cannot duplicate. A name taken between the walk and the write is retried rather
   than rejected. A preview walks without reading, taking a file of the same size for the same
   bytes. The pointer is the folder, absent at the root, and the output is the placed paths as
-  `text/plain`, its note naming those already there.
+  `text/plain`, its note naming those already there. On the arena kind every asset becomes its own
+  block, uncaptioned, which is one block per file and no text block.
+- **The arena kind makes one block per file, and names the channel where it made several**
+  (added 2026-10-10,
+  [ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)). A block
+  holds one thing, so a capture carrying three files becomes three blocks in slot order rather than
+  a refusal, the capture's words captioning the first and no other. One delivery still answers one
+  outcome: where it made **one** block the pointer is that block and the `url` follows it, and where
+  it made **several** the pointer is the channel, the `url` is absent — a channel has no address the
+  adapter can compose — and every block's URL is in the output. The kind makes no promise that a
+  retry cannot duplicate and now cannot: a delivery that landed some of its blocks and failed on a
+  later one posts the landed ones again when it is retried
+  ([ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)).
 - **A capability may say an argument inherits, and when a field is worth offering** (added
   2026-09-21). `x-notemap-inherits` on an argument says that, left absent, it takes the
   destination's setting of the same name — which the markdown kinds' `frontmatter` and `hashtags`
