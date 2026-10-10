@@ -4,6 +4,15 @@
 **Last updated**: 2026-10-10
 **Shipped**:
 
+- 2026-10-10 — **An edit holds what is picked and attaches it as it saves.** A file picked in an
+  edit went into the client's store at once, where `drop`, `revert` and closing without saving left
+  its bytes held with no operation to release them. The edit now holds the file itself, draws it
+  through the browser's own handle on it, refuses one too large as it is picked, and attaches at
+  `save` — the shape the capture box has always had. The Raycast form's capture, which named its
+  asset wrongly and so both lost the attachment and left its bytes behind, names it properly and
+  lets go of what a capture that never happened had attached.
+  ([plan](../plans/an-edit-lets-go-of-its-bytes.md))
+
 - 2026-10-10 — **A capability that carries the attachments alone is offered only where there are
   some.** Reached by a board declaring one beside its `create`: the process surface asks which,
   where it asked nothing before, and leaves the carrier out for a capture with no attachment — so a

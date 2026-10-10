@@ -1,9 +1,9 @@
 # An edit lets go of its bytes
 
 **Date**: 2026-10-10
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-10
 
 ---
 
@@ -35,6 +35,11 @@ Settled with the developer on 2026-10-10, from the pitch:
 5. **The Raycast capture detaches in its failure branch**, in this same branch, since there the
    capture *is* the save. `client.detach` already leaves alone bytes an outbox operation names
    (`client.ts:684`), so the branch that captured-but-did-not-tag can call it without a flag.
+   *Amended while implementing*: the detach is the smaller half. The form passed `asset` where
+   `CaptureInput` names `assets`, which a spread hides from the excess-property check, so the
+   client dropped it: the attachment never reached the pool and its bytes were orphaned on
+   **every** capture rather than on a failing one. The field is the fix; the detach covers only
+   the window where the capture throws before the outbox has taken it.
 6. **Nothing migrates bytes already leaked.** Instead the only user gets a sweep to run: a script
    for a filesystem store, and a console snippet for the browser. `state.held` is memory-only
    (`packages/client/src/state/state.ts:142`) and `ClientStore` has no blob lister, so an in-client
@@ -48,23 +53,23 @@ Settled with the developer on 2026-10-10, from the pitch:
 
 ## Tasks
 
-- [ ] Create branch `agent/an-edit-lets-go-of-its-bytes`
+- [x] Create branch `agent/an-edit-lets-go-of-its-bytes`
 
 ### Phase 1 — Docs
 
 Depends on nothing.
 
-- [ ] `shell.md`: the edit's attachment paragraph (≈ lines 833-845). Say that the edit holds what is
+- [x] `shell.md`: the edit's attachment paragraph (≈ lines 833-845). Say that the edit holds what is
   picked and attaches it as the edit is saved, that a file is refused as it is picked, and that the
   `×` on a picked file takes the file and nothing else. State that the bytes are what
   "nothing an edit holds outlives it" (≈ line 829) now covers, and keep the box's sentence at
   ≈ line 748 as the one place the rule is argued rather than restating it.
-- [ ] `shell.md`: `save` no longer "waits for an attachment still being attached" (≈ line 825) —
+- [x] `shell.md`: `save` no longer "waits for an attachment still being attached" (≈ line 825) —
   it is what does the attaching. Say what `save` waits for instead, and keep the fact that a file
   on its way counts as a change.
-- [ ] `client.md` needs no change: `detach`'s sentence (≈ line 1001) already describes exactly what
+- [x] `client.md` needs no change: `detach`'s sentence (≈ line 1001) already describes exactly what
   the Raycast form will do with it. Confirm that by reading it, and leave it alone.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** `grep -n "still being attached" docs/specs/shell.md` finds nothing that describes the
 old shape, and the edit's paragraph names `refuses` rather than an attach at pick time.
@@ -73,24 +78,25 @@ old shape, and the edit's paragraph names `refuses` rather than an attach at pic
 
 Depends on phase 1.
 
-- [ ] Lift `sorted` out of `Capture.svelte:139` into `$lib/attachments.ts` and have the box and the
-  edit use the one copy. It is the whole of "refuse as it is picked".
-- [ ] `Editing` (`apps/ui/src/components/item/editing.svelte.ts`): the attachment list becomes
+- [x] Lift `sorted` out of `Capture.svelte:139` and have the box and the edit use the one copy. It
+  is the whole of "refuse as it is picked". _(landed in `$lib/picking.ts` rather than
+  `$lib/attachments.ts`, which is pure and would have gained the client singleton)_
+- [x] `Editing` (`apps/ui/src/components/item/editing.svelte.ts`): the attachment list becomes
   carried-or-picked. `pick` sorts through the lifted helper, says what was refused on the status
   line and holds the rest, awaiting nothing; `drop` takes either kind out; `revert` goes back to
-  what the item carries and lets every picked file go; `#rewritten` reads the carried ids and
-  whether anything is picked; `save` attaches the picked files in list order and sends the payload
-  with the slots in that same order; `busy` means saving.
-- [ ] `#uploading` and the `await this.#uploading` in `save` go, there being no pick in flight to
+  what the item carries and lets every picked file go; `#rewritten` compares the list against the
+  objects the constructor made, so anything else in it is an edit; `save` attaches the picked files
+  in list order and sends the payload with the slots in that same order; `busy` means saving.
+- [x] `#uploading` and the `await this.#uploading` in `save` go, there being no pick in flight to
   wait for. `close`, `abandon` and the leaving dialog need no byte handling at all — which is the
   point of the shape.
-- [ ] `Edit.svelte`: key the two `{#each}` blocks on something a picked file has — the box keys on
+- [x] `Edit.svelte`: key the two `{#each}` blocks on something a picked file has — the box keys on
   the `File` itself (`Capture.svelte:234`) — and draw a picked file's thumbnail from an object URL
   held in a map created and revoked as the box's is. `HeldAttachment` already takes `name`, `url`
   and `bytes` and needs no change.
-- [ ] `EditFoot.svelte`: `attach` is no longer disabled by `busy` while a file uploads, since
-  picking no longer uploads. Decide what it is disabled by while saving.
-- [ ] Commit
+- [x] `EditFoot.svelte`: `attach` stays disabled by `busy`, which now means the save is going out
+  rather than a pick is uploading — nothing to pick in that window either way.
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/ui test`. The fixture (`apps/ui/src/testing/pool.ts`) wraps its
 memory store in one that records `writeBlob` and `removeBlob`, so the tests can say:
@@ -103,36 +109,39 @@ memory store in one that records `writeBlob` and `removeBlob`, so the tests can 
   becomes a test that `save` finishes its attaching before it sends — its old premise is gone;
 - a file larger than the limit is still refused at pick (`Edit.test.ts:172`), unchanged.
 
-### Phase 3 — The Raycast capture lets go of what it failed to send
+### Phase 3 — The Raycast capture names its file, and lets go of what it failed to send
 
 Depends on nothing; can run beside phase 2.
 
-- [ ] Move the attach-capture-tag sequence out of the view into `apps/raycast-extension/src/lib/note.ts`,
+- [x] Move the attach-capture-tag sequence out of the view into `apps/raycast-extension/src/lib/note.ts`,
   so it is reachable from `note.test.ts`; `capture.tsx` keeps the form, the toast and the HUD.
-- [ ] The failure path detaches what `attaching` attached, awaited before `client.close()` in the
-  `finally`. Both branches may call it — the captured-but-not-tagged one is a no-op, since the
-  operation names the bytes.
-- [ ] Fix `note.ts:48`: "One file, because that is what a capture carries" stopped being true on
+- [x] `capturing` sends `assets: [asset]`, so the file goes with the words and an operation names
+  the bytes. This, not the detach, is what was leaking on every Raycast capture carrying a file.
+- [x] The failure path detaches what `attaching` attached, before `client.close()`. Only the
+  pre-outbox window needs it: a capture the pool **refuses** stays in the outbox naming its bytes,
+  which is why `detach` declines those and why the words can be sent again.
+- [x] Fix `note.ts:48`: "One file, because that is what a capture carries" stopped being true on
   2026-10-07. The picker is still single-select, so say that instead.
-- [ ] Commit
+- [x] Commit
 
-**Verify:** `pnpm --filter @notemap/raycast-extension test`. New tests over the lifted function,
-against a client with a memory store: a capture the pool refuses leaves no blob behind, a second
-attempt after a failure leaves one copy rather than two, and a capture that lands keeps its bytes
-for the drain.
+**Verify:** `pnpm --filter notemap test` (the extension's package is named for the store). New
+tests over the lifted function, against a real client on a memory store: a capture carrying a file
+sends an envelope naming one asset and uploads it once — which fails on the old field; the tags it
+was given are applied after the capture; and a capture the pool refuses keeps its bytes, the outbox
+entry being the only copy of what it carried.
 
 ### Phase 4 — A sweep for what is already held
 
 Depends on nothing.
 
-- [ ] `scripts/sweep-held-blobs.ts`, run as `pnpm sweep <directory>`: the blob directories of a
+- [x] `scripts/sweep-held-blobs.ts`, run as `pnpm sweep <directory>`: the blob directories of a
   filesystem store (`<dir>/blobs/<asset>/`) that no persisted operation names (`<dir>/outbox/*.json`),
   listed with their sizes. Dry run unless `--delete`.
-- [ ] `docs/running.md`: a short section saying where the two client stores are, how to run the
+- [x] `docs/running.md`: a short section saying where the two client stores are, how to run the
   script against Raycast's support path, and the console snippet for the browser — the `notemap`
   database's `blobs` keys less every asset named by an entry of `outbox`. Say plainly that clearing
   site data instead takes the outbox and the cache with it.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** run the script against a copy of a real Raycast support directory and see it name
 nothing that the outbox names; run it with `--delete` on that copy and see the directory shrink.
@@ -142,13 +151,13 @@ Paste the snippet into the shell's console and read the count it reports.
 
 Depends on every phase above.
 
-- [ ] Tick `docs/todo.md:85` with the date, and say where the Raycast half landed, that entry
+- [x] Tick `docs/todo.md:85` with the date, and say where the Raycast half landed, that entry
   having never named it.
-- [ ] `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`.
-- [ ] `pnpm test:stack` — the edit's save path crosses the client's transport and the upload route,
+- [x] `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`.
+- [x] `pnpm test:stack` — the edit's save path crosses the client's transport and the upload route,
   which is what that suite is for.
-- [ ] Status to `Done`, and a dated `Shipped:` entry in `docs/specs/shell.md`.
-- [ ] Commit
+- [x] Status to `Done`, and a dated `Shipped:` entry in `docs/specs/shell.md`.
+- [x] Commit
 
 **Verify:** all four commands clean.
 
@@ -173,6 +182,14 @@ Depends on every phase above.
   `docs/running.md` is about operating an install, which is nearly the same audience. If the
   developer would rather have it outside the repo, it is a `oneshot save scripts/sweep-held-blobs.ts`
   and the section in `running.md` keeps the snippet alone.
+- **Found in phase 3: the Raycast attachment never arrived.** Written up under decision 5. Nothing
+  tested the extension's capture end to end, and the one place the field is named is a spread,
+  where TypeScript checks no excess property. The new test names the asset count, which is what
+  would have caught it.
+- **Found in phase 3: a refused capture keeps its bytes on purpose.** The pitch said each failed
+  press left another copy. It does not: the refused operation stays in the outbox naming them, so
+  `detach` declines and the words can be sent again. What the window the detach covers really is:
+  a capture that throws before the outbox has recorded it.
 - **Pictures the pool has measured.** An edit draws a carried picture at the proportions the pool
   measured (`shell.md:2536`); a picked one has no measurement and is drawn from its object URL at
   the box's size. The box already lives with that, so the expectation is nothing to do — but it is
