@@ -114,7 +114,9 @@ Depends on Phase 1.
 - [x] `destination.ts`: `wanting` carries the blocks and refuses nothing for their number; `deliver`
       uploads and posts each in slot order; the outcome names the channel where it made several and
       the block where it made one; the output lists what went.
-- [x] `preview` answers the same list without uploading anything.
+- [x] `preview` answers what it can without uploading anything: the captions, and no address — an
+      unposted block has none. So a preview of three pictures reads as a preview of one, and the
+      attachments the surface draws around it are what say how many go.
 - [x] Tests: three assets make three blocks in slot order; the words caption the first and nothing
       else; one asset and no asset are unchanged; the output lists every block URL; the pointer is
       the channel for several and the block for one; a failure on the second block is `unreachable`
@@ -149,9 +151,9 @@ Depends on Phases 1 and 3. Codes against the annotation, not the kind.
       form keeps offering it: what item a template will meet is not known.
 - [x] Tests beside it: a kind that settles nothing offers both capabilities for an item with
       attachments and only the other for an item without.
-- [ ] Verify: `pnpm --filter @notemap/ui test` passes; **by hand against a real board, for the
-      developer** — attach two — attach two
-      pictures, route to a channel, see two blocks with the words on the first.
+- [ ] Verify: `pnpm --filter @notemap/ui test` passes; **by hand against a real board, left for the
+      developer** — attach two pictures, route to a channel, see two blocks with the words on the
+      first.
 - [x] Commit _(2026-10-10)_
 
 ### Phase 5 — finishing

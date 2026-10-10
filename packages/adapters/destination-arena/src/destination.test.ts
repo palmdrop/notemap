@@ -211,13 +211,13 @@ describe("a capture carrying several files", () => {
     delivery({
       content: { text: "notes from the show" },
       assets: [
-        deliveredAsset("one", "a.png", bytes("a")),
-        deliveredAsset("two", "b.png", bytes("b")),
-        deliveredAsset("three", "c.png", bytes("c")),
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
+        deliveredAsset("002", "c.png", bytes("c")),
       ],
     });
 
-  it("makes one block per file, in slot order, each from its own upload", async () => {
+  it("makes one block per file, each from its own upload", async () => {
     await adapter().deliver(row(), three());
 
     expect(server.uploads()).toEqual({
@@ -251,8 +251,8 @@ describe("a capture carrying several files", () => {
         delivery({
           arguments: { channel: "reading" },
           assets: [
-            deliveredAsset("one", "a.png", bytes("a")),
-            deliveredAsset("two", "b.png", bytes("b")),
+            deliveredAsset("000", "a.png", bytes("a")),
+            deliveredAsset("001", "b.png", bytes("b")),
           ],
         }),
       ),
@@ -270,7 +270,7 @@ describe("a capture carrying several files", () => {
     const outcome = delivered(
       await adapter().deliver(
         row(),
-        delivery({ assets: [deliveredAsset("one", "a.png", bytes("a"))] }),
+        delivery({ assets: [deliveredAsset("000", "a.png", bytes("a"))] }),
       ),
     );
 
@@ -292,7 +292,8 @@ describe("a capture carrying several files", () => {
     expect(server.blocks()).toHaveLength(1);
   });
 
-  it("says what three blocks would read as before any of them is made", async () => {
+  /** No block has an address before it is posted, so a preview has only the caption to show. */
+  it("shows the caption and no address, reaching nothing", async () => {
     const shown = await adapter().preview?.(row(), three());
 
     expect(await textOf(shown)).toBe(`notes from the show\n`);
@@ -307,8 +308,8 @@ describe("the attachments alone", () => {
       arguments: args,
       content: { text: "notes from the show" },
       assets: [
-        deliveredAsset("one", "a.png", bytes("a")),
-        deliveredAsset("two", "b.png", bytes("b")),
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
       ],
     });
 
@@ -348,6 +349,48 @@ describe("the attachments alone", () => {
     await expect(
       adapter().preview?.(row(), delivery({ capability: "place-assets" })),
     ).rejects.toBeInstanceOf(Rejected);
+  });
+
+  /** One file is still one block, so the record names it as any single block is named. */
+  it("names the block itself where one file went alone", async () => {
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({
+          capability: "place-assets",
+          assets: [deliveredAsset("000", "a.png", bytes("a"))],
+        }),
+      ),
+    );
+
+    expect(outcome.pointer).toBe("1001");
+    expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
+
+  /** Both capabilities name the channel in the same field, so both are browsable. */
+  it("answers channels for its channel field too", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 7 }]);
+
+    const answer = await adapter().candidates?.(row(), {
+      capability: "place-assets" as CapabilityName,
+      field: "channel",
+    });
+
+    expect(answer?.entries).toEqual([
+      { label: "Reading", value: "reading", durable: "7" },
+    ]);
+  });
+
+  it("names one channel back for its channel field too", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 7 }]);
+
+    const answer = await adapter().naming?.(row(), {
+      capability: "place-assets" as CapabilityName,
+      field: "channel",
+      value: "reading",
+    });
+
+    expect(answer?.entry).toMatchObject({ label: "Reading" });
   });
 });
 

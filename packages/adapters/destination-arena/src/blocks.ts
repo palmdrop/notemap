@@ -1,5 +1,9 @@
-import type { Delivery } from "@notemap/core";
-import { carriedTags, fixedFrontmatter } from "@notemap/output-markdown";
+import type { DeliveredAsset, Delivery } from "@notemap/core";
+import {
+  attachedAssets,
+  carriedTags,
+  fixedFrontmatter,
+} from "@notemap/output-markdown";
 
 /**
  * What a delivery becomes on a board. Not markdown, and not
@@ -14,8 +18,13 @@ export type ArenaBlock = {
   readonly description?: string;
   /** Where the value is an image, what it shows. */
   readonly altText?: string;
-  /** The asset whose bytes have to be uploaded before the block is made. */
-  readonly asset?: { readonly slot: string };
+  /**
+   * The asset whose bytes have to be uploaded before the block is made,
+   * resolved here rather than looked up when it is: a reference the pool could
+   * not resolve has to refuse the delivery before any block is posted, nothing
+   * being able to take a posted one back.
+   */
+  readonly asset?: DeliveredAsset;
 };
 
 /** By payload type, exactly as the markdown renderers are wired. */
@@ -24,8 +33,8 @@ export type ArenaRenderer = (delivery: Delivery) => readonly ArenaBlock[];
 export type ArenaRenderers = Readonly<Record<string, ArenaRenderer>>;
 
 /**
- * A capture with assets is one block per asset, the words captioning the
- * **first** and no other; a capture with none is its prose. A capture whose
+ * A capture with assets is one block per asset **in slot order**, the words
+ * captioning the first and no other; a capture with none is its prose. A capture whose
  * prose **begins with a URL** sends the URL as the value and the rest as the
  * caption, so a pasted link arrives as a Link block rather than as a line of
  * text — are.na infers the type from the value, and this is the only place the
@@ -33,13 +42,13 @@ export type ArenaRenderers = Readonly<Record<string, ArenaRenderer>>;
  */
 export function renderNote(delivery: Delivery): readonly ArenaBlock[] {
   const text = textIn(delivery);
-  const assets = delivery.payload.assets;
+  const assets = attachedAssets(delivery);
 
   if (assets.length > 0) {
     return assets.map((asset, at) => ({
       value: "",
       ...(text === "" || at > 0 ? {} : { description: text, altText: text }),
-      asset: { slot: asset.slot },
+      asset,
     }));
   }
 
@@ -56,10 +65,7 @@ export function renderNote(delivery: Delivery): readonly ArenaBlock[] {
  * was asked for without them.
  */
 export function renderAssets(delivery: Delivery): readonly ArenaBlock[] {
-  return delivery.payload.assets.map((asset) => ({
-    value: "",
-    asset: { slot: asset.slot },
-  }));
+  return attachedAssets(delivery).map((asset) => ({ value: "", asset }));
 }
 
 export function arenaRenderers(): ArenaRenderers {

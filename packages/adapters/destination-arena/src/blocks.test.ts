@@ -63,7 +63,7 @@ describe("a capture carrying an asset", () => {
         value: "",
         description: "mum, 1994",
         altText: "mum, 1994",
-        asset: { slot: "main" },
+        asset: expect.objectContaining({ slot: "main" }),
       },
     ]);
   });
@@ -72,50 +72,78 @@ describe("a capture carrying an asset", () => {
     const asset = deliveredAsset("main", "mum.png", bytes("png"));
 
     expect(renderNote(delivery({ content: {}, assets: [asset] }))).toEqual([
-      { value: "", asset: { slot: "main" } },
+      { value: "", asset: expect.objectContaining({ slot: "main" }) },
     ]);
   });
 });
 
 describe("a capture carrying several assets", () => {
+  /** Attached `002`, `000`, `001`, so reading the payload's own order would show. */
   const three = () =>
     delivery({
       content: { text: "notes from the show" },
       assets: [
-        deliveredAsset("one", "a.png", bytes("a")),
-        deliveredAsset("two", "b.png", bytes("b")),
-        deliveredAsset("three", "c.png", bytes("c")),
+        deliveredAsset("002", "c.png", bytes("c")),
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
       ],
     });
 
-  it("makes one block per asset, in slot order", () => {
-    expect(renderNote(three()).map((block) => block.asset?.slot)).toEqual([
-      "one",
-      "two",
-      "three",
-    ]);
+  const slots = (blocks: readonly { asset?: { slot: string } }[]) =>
+    blocks.map((block) => block.asset?.slot);
+
+  it("makes one block per asset, in slot order rather than the order attached", () => {
+    expect(slots(renderNote(three()))).toEqual(["000", "001", "002"]);
   });
 
   /** A caption repeated on each would read as three captions rather than one. */
-  it("captions the first and no other", () => {
+  it("captions the asset in the first slot and no other", () => {
     const [first, ...rest] = renderNote(three());
 
+    expect(first?.asset?.asset.filename).toBe("a.png");
     expect(first).toMatchObject({
       description: "notes from the show",
       altText: "notes from the show",
     });
     for (const block of rest) {
-      expect(block).toEqual({ value: "", asset: { slot: block.asset?.slot } });
+      expect(block.description).toBeUndefined();
+      expect(block.altText).toBeUndefined();
     }
   });
 
   /** The words were not asked for, so no block carries them. */
   it("captions nothing where the assets go alone", () => {
-    expect(renderAssets(three())).toEqual([
-      { value: "", asset: { slot: "one" } },
-      { value: "", asset: { slot: "two" } },
-      { value: "", asset: { slot: "three" } },
-    ]);
+    const blocks = renderAssets(three());
+
+    expect(slots(blocks)).toEqual(["000", "001", "002"]);
+    for (const block of blocks) {
+      expect(block.value).toBe("");
+      expect(block.description).toBeUndefined();
+    }
+  });
+
+  /**
+   * A reference the pool could not resolve is not a block: `attachedAssets`
+   * reads what the delivery carries, so nothing downstream has to look one up
+   * after a block has already been posted.
+   */
+  it("makes a block only for an asset the delivery carries", () => {
+    const each = delivery({
+      assets: [deliveredAsset("000", "a.png", bytes("a"))],
+    });
+    const short = {
+      ...each,
+      payload: {
+        ...each.payload,
+        assets: [
+          ...each.payload.assets,
+          { slot: "001", asset: "gone" as never },
+        ],
+      },
+    };
+
+    expect(slots(renderNote(short))).toEqual(["000"]);
+    expect(renderAssets(short)).toHaveLength(1);
   });
 });
 

@@ -101,7 +101,7 @@ export function createArenaDestination(
       const posted: Posted[] = [];
       try {
         for (const block of wanted.blocks) {
-          const value = await valueFor(arena, block, delivery, signal);
+          const value = await valueFor(arena, block, signal);
           const created = await arena.createBlock(
             wanted.args.channel,
             inputFor(block, value, delivery),
@@ -216,21 +216,16 @@ function wanting(
   }
 
   if (delivery.capability === PLACE_ASSETS) {
+    const blocks = renderAssets(delivery);
     // Nothing to deliver, and no later attempt finds more.
-    if (delivery.payload.assets.length === 0) {
+    if (blocks.length === 0) {
       return {
         kind: "refused",
         detail: "this capture carries no attachment to make a block from",
       };
     }
 
-    return {
-      kind: "wanted",
-      settings,
-      args,
-      blocks: renderAssets(delivery),
-      carrying: "assets",
-    };
+    return { kind: "wanted", settings, args, blocks, carrying: "assets" };
   }
 
   const renderer = renderers[delivery.payload.type];
@@ -260,18 +255,10 @@ function wanting(
 async function valueFor(
   arena: Arena,
   block: ArenaBlock,
-  delivery: Delivery,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (block.asset === undefined) return block.value;
-
-  const slot = block.asset.slot;
-  const delivered = delivery.assets.find((each) => each.slot === slot);
-  if (delivered === undefined) {
-    throw new Refused(
-      `the capture references an asset in ${slot} that is not there`,
-    );
-  }
+  const delivered = block.asset;
+  if (delivered === undefined) return block.value;
 
   const presigned = await arena.presign(
     delivered.asset.filename,

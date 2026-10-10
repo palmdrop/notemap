@@ -113,7 +113,13 @@ type DeliveryOverrides = {
 
 export function delivery(overrides: DeliveryOverrides = {}): Delivery {
   const createdAt = at(overrides.createdAt ?? "2026-09-08T14:23:05.000Z");
-  const assets = overrides.assets ?? [];
+  const attached = overrides.assets ?? [];
+  // Core sorts `assets` by slot and leaves the payload's references in the
+  // order they were attached, so anything that means slot order has to read
+  // this one. The two differ here on purpose.
+  const assets = [...attached].sort((one, two) =>
+    one.slot < two.slot ? -1 : 1,
+  );
 
   return {
     item: (overrides.item ?? "item-1") as ItemId,
@@ -125,7 +131,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       type: overrides.type ?? NOTE,
       content: overrides.content ?? { text: "a thought" },
       metadata: {},
-      assets: assets.map((each): AssetRef => ({
+      assets: attached.map((each): AssetRef => ({
         slot: each.slot,
         asset: each.asset.id,
       })),

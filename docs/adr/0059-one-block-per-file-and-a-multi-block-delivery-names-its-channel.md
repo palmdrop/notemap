@@ -105,9 +105,14 @@ strong promise to.
 
 ### Consequences
 
-- **Good** — three pictures reach a board as three blocks, by hand or through a trigger tag, and
-  `attachments only` works on a board as it does on a vault. Nothing in the shell changes to know
-  it: the gesture finds the capability by `x-notemap-carries`.
+- **Good** — three pictures reach a board as three blocks, by hand or through a trigger tag, and a
+  board can be asked for the attachments alone. No shell code knows this kind by name: the carrier
+  is found by `x-notemap-carries` wherever it is offered.
+- **Neutral** — a board is reached through `do` rather than through the `attachments only` switch,
+  that switch belonging to a kind whose other capability the surface *settles* and this kind
+  settling none. Declaring a second capability therefore makes `do` a question on a board, where
+  one capability was never asked about; and it cost the shell one rule, that a carrier is not
+  offered for an item with no attachment ([shell.md](../specs/shell.md#the-process-surface)).
 - **Good** — every arena record made before this reads as it did, and the common case keeps a link
   a person can follow.
 - **Bad** — a record of a multi-block delivery has no `url`, so a person follows one of the block
