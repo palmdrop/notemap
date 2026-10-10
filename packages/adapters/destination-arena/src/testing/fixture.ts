@@ -1,8 +1,11 @@
 import type {
+  Artifact,
+  ArtifactId,
   Asset,
   AssetId,
   AssetRef,
   CapabilityName,
+  EnrichmentName,
   DeliveredAsset,
   Delivery,
   Destination,
@@ -83,6 +86,18 @@ export function deliveredAsset(
   };
 }
 
+function artifact(at: number, item: string, createdAt: Timestamp): Artifact {
+  return {
+    id: `artifact-${at}` as ArtifactId,
+    item: item as ItemId,
+    enrichment: "summary" as EnrichmentName,
+    by: { kind: "notemap" },
+    createdAt,
+    content: {},
+    assets: [],
+  };
+}
+
 type DeliveryOverrides = {
   readonly capability?: string;
   readonly arguments?: JsonObject;
@@ -92,6 +107,8 @@ type DeliveryOverrides = {
   readonly assets?: readonly DeliveredAsset[];
   readonly createdAt?: string;
   readonly item?: string;
+  /** How many an enrichment left on the item. A block carries none of them. */
+  readonly artifacts?: number;
 };
 
 export function delivery(overrides: DeliveryOverrides = {}): Delivery {
@@ -119,7 +136,9 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       addedAt: createdAt,
     })),
     createdAt,
-    artifacts: [],
+    artifacts: Array.from({ length: overrides.artifacts ?? 0 }, (_, at) =>
+      artifact(at, overrides.item ?? "item-1", createdAt),
+    ),
     assets,
   };
 }

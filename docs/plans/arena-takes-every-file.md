@@ -109,35 +109,36 @@ Depends on nothing. Every later phase codes against it.
 
 Depends on Phase 1.
 
-- [ ] `blocks.ts`: a renderer answers blocks rather than one block, the words captioning the first
+- [x] `blocks.ts`: a renderer answers blocks rather than one block, the words captioning the first
       asset block and no other. A capture with no asset answers one block, as now.
-- [ ] `destination.ts`: `wanting` carries the blocks and refuses nothing for their number; `deliver`
+- [x] `destination.ts`: `wanting` carries the blocks and refuses nothing for their number; `deliver`
       uploads and posts each in slot order; the outcome names the channel where it made several and
       the block where it made one; the output lists what went.
-- [ ] `preview` answers the same list without uploading anything.
-- [ ] Tests: three assets make three blocks in slot order; the words caption the first and nothing
+- [x] `preview` answers the same list without uploading anything.
+- [x] Tests: three assets make three blocks in slot order; the words caption the first and nothing
       else; one asset and no asset are unchanged; the output lists every block URL; the pointer is
       the channel for several and the block for one; a failure on the second block is `unreachable`
       with the first left where it landed.
-- [ ] Verify: `pnpm --filter @notemap/destination-arena test`
-- [ ] Commit
+- [x] Verify: `pnpm --filter @notemap/destination-arena test`
+- [x] Commit _(2026-10-10)_
 
 ### Phase 3 — `place-assets` on arena
 
-Depends on Phase 2.
+Depends on Phase 2. *Landed in Phase 2's commit: both capabilities are declared in one function and
+decided in one `wanting`, so splitting the commit would have split a file in half.*
 
-- [ ] `capabilities.ts`: the second capability, its channel field, `x-notemap-carries: "assets"` at
+- [x] `capabilities.ts`: the second capability, its channel field, `x-notemap-carries: "assets"` at
       its root, and its arguments reader.
-- [ ] `destination.ts`: `place-assets` makes one block per asset with no caption and no text block,
+- [x] `destination.ts`: `place-assets` makes one block per asset with no caption and no text block,
       and `rejected` where the payload references none. The output's note says only what the tags
       did.
-- [ ] `candidates.ts`: both the browse and the naming answer for either capability's channel field
+- [x] `candidates.ts`: both the browse and the naming answer for either capability's channel field
       instead of `create`'s alone.
-- [ ] Tests: the description carries both capabilities and the annotation; two assets make two
+- [x] Tests: the description carries both capabilities and the annotation; two assets make two
       uncaptioned blocks; no asset is rejected, and its preview is refused the same way; the browse
       answers channels for the new capability.
-- [ ] Verify: `pnpm --filter @notemap/destination-arena test`
-- [ ] Commit
+- [x] Verify: `pnpm --filter @notemap/destination-arena test`
+- [x] Commit — with Phase 2 _(2026-10-10)_
 
 ### Phase 4 — the shell offers no capability that cannot work
 

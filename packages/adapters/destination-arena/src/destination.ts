@@ -8,7 +8,7 @@ import {
   type DestinationKindAdapter,
   type PayloadTypeName,
 } from "@notemap/core";
-import { CREATE, markdownOutput } from "@notemap/output-markdown";
+import { CREATE, PLACE_ASSETS, markdownOutput } from "@notemap/output-markdown";
 
 import { createArena, type Arena, type BlockInput } from "./api";
 import {
@@ -22,8 +22,10 @@ import { Refused, TokenRefused, Unreachable } from "./errors";
 import {
   droppedBy,
   provenanceOf,
+  renderAssets,
   type ArenaBlock,
   type ArenaRenderers,
+  type Carrying,
 } from "./blocks";
 import { arenaSettings, asArenaSettings, ARENA } from "./settings";
 
@@ -93,23 +95,36 @@ export function createArenaDestination(
         return { kind: "unreachable", detail: why(cause) };
       }
 
+      // One block at a time, each one's bytes going up before it is made. A
+      // block that landed before a later one failed stays where it is: nothing
+      // here can ask are.na what it already holds, so a retry makes it again.
+      const posted: Posted[] = [];
       try {
-        const value = await valueFor(arena, wanted.block, delivery, signal);
-        const created = await arena.createBlock(
-          wanted.args.channel,
-          inputFor(wanted.block, value, delivery),
-          signal,
-        );
-
-        return {
-          kind: "delivered",
-          pointer: String(created.id),
-          url: `${webUrl}/block/${created.id}`,
-          output: outputOf(wanted.block, value, delivery),
-        };
+        for (const block of wanted.blocks) {
+          const value = await valueFor(arena, block, delivery, signal);
+          const created = await arena.createBlock(
+            wanted.args.channel,
+            inputFor(block, value, delivery),
+            signal,
+          );
+          posted.push({ block, value, id: created.id });
+        }
       } catch (cause) {
         return failure(cause);
       }
+
+      const one = posted.length === 1 ? posted[0]?.id : undefined;
+
+      return {
+        kind: "delivered",
+        // A channel has no address this adapter can compose, so a delivery
+        // that made several blocks names the channel and lists them in its
+        // output instead.
+        ...(one === undefined
+          ? { pointer: wanted.args.channel }
+          : { pointer: String(one), url: blockUrl(webUrl, one) }),
+        output: outputOf(posted, wanted.carrying, delivery, webUrl),
+      };
     },
 
     /** Converts and reaches nothing: what a block will read as is known without asking. */
@@ -117,9 +132,15 @@ export function createArenaDestination(
       const wanted = wanting(config.renderers, destination, delivery);
       if (wanted.kind === "refused") throw new Rejected(wanted.detail);
 
-      // The bytes are not uploaded to show a preview, so the value is the one
-      // thing a preview cannot know; the caption and what was dropped are.
-      return outputOf(wanted.block, wanted.block.value, delivery);
+      // The bytes are not uploaded to show a preview, so neither a block's
+      // value nor its address is a thing a preview can know; the captions and
+      // what was dropped are.
+      return outputOf(
+        wanted.blocks.map((block) => ({ block, value: block.value })),
+        wanted.carrying,
+        delivery,
+        webUrl,
+      );
     },
 
     candidates: arenaCandidates(reach),
@@ -162,7 +183,9 @@ type Wanted =
       readonly kind: "wanted";
       readonly settings: { readonly account: string };
       readonly args: ArenaArguments;
-      readonly block: ArenaBlock;
+      /** One per block the delivery will make, in slot order. */
+      readonly blocks: readonly ArenaBlock[];
+      readonly carrying: Carrying;
     }
   | { readonly kind: "refused"; readonly detail: string };
 
@@ -177,7 +200,7 @@ function wanting(
     return { kind: "refused", detail: why(unreadable(destination)) };
   }
 
-  if (delivery.capability !== CREATE) {
+  if (delivery.capability !== CREATE && delivery.capability !== PLACE_ASSETS) {
     return {
       kind: "refused",
       detail: `no capability named ${delivery.capability}`,
@@ -186,17 +209,27 @@ function wanting(
 
   const args = asArenaArguments(delivery.arguments);
   if (args === undefined) {
-    return { kind: "refused", detail: "that is not a create argument set" };
-  }
-
-  // A capture may carry any number of files and a block holds one. The preview
-  // asks this too, so routing by hand hears it before deciding; a trigger tag
-  // hears it at delivery.
-  if (delivery.payload.assets.length > 1) {
     return {
       kind: "refused",
-      detail:
-        "a block holds one thing, and this capture carries more than one asset",
+      detail: `that is not a ${delivery.capability} argument set`,
+    };
+  }
+
+  if (delivery.capability === PLACE_ASSETS) {
+    // Nothing to deliver, and no later attempt finds more.
+    if (delivery.payload.assets.length === 0) {
+      return {
+        kind: "refused",
+        detail: "this capture carries no attachment to make a block from",
+      };
+    }
+
+    return {
+      kind: "wanted",
+      settings,
+      args,
+      blocks: renderAssets(delivery),
+      carrying: "assets",
     };
   }
 
@@ -210,7 +243,13 @@ function wanting(
     };
   }
 
-  return { kind: "wanted", settings, args, block: renderer(delivery) };
+  return {
+    kind: "wanted",
+    settings,
+    args,
+    blocks: renderer(delivery),
+    carrying: "everything",
+  };
 }
 
 /**
@@ -270,24 +309,52 @@ function inputFor(
   };
 }
 
-/** The block as a person would read it back, and what a block could not carry. */
+/** One block, with the value it was posted under and the id it came back with. */
+type Posted = {
+  readonly block: ArenaBlock;
+  readonly value: string;
+  readonly id?: number;
+};
+
+/** The blocks as a person would read them back, and what a block could not carry. */
 function outputOf(
-  block: ArenaBlock,
-  value: string,
+  posted: readonly Posted[],
+  carrying: Carrying,
   delivery: Delivery,
+  webUrl: string,
 ): DeliveredOutput {
-  // An empty value is left out rather than drawn as a blank line: a preview of
-  // an image has none, the bytes not having been uploaded to show one.
-  const lines = [
-    ...(value === "" ? [] : [value]),
-    ...(block.description === undefined ? [] : [block.description]),
-  ];
-  const note = droppedBy(delivery);
+  const note = droppedBy(delivery, carrying);
 
   return {
-    ...markdownOutput(`${lines.join("\n\n")}\n`),
+    ...markdownOutput(bodyOf(posted, webUrl)),
     ...(note === undefined ? {} : { note }),
   };
+}
+
+/**
+ * Where a delivery made several blocks, the addresses it made, one a line:
+ * the record's pointer names the channel, so this is the only place that says
+ * which blocks went. One block reads as itself instead, and so does a preview,
+ * which knows no address at all.
+ */
+function bodyOf(posted: readonly Posted[], webUrl: string): string {
+  const made = posted.flatMap(({ id }) =>
+    id === undefined ? [] : [blockUrl(webUrl, id)],
+  );
+  if (posted.length > 1 && made.length > 0) return `${made.join("\n")}\n`;
+
+  // An empty value is left out rather than drawn as a blank line: a preview of
+  // an image has none, the bytes not having been uploaded to show one.
+  const lines = posted.flatMap(({ block, value }) => [
+    ...(value === "" ? [] : [value]),
+    ...(block.description === undefined ? [] : [block.description]),
+  ]);
+
+  return `${lines.join("\n\n")}\n`;
+}
+
+function blockUrl(webUrl: string, id: number): string {
+  return `${webUrl}/block/${id}`;
 }
 
 /** Core checks settings against the schema first, so this is the two disagreeing. */

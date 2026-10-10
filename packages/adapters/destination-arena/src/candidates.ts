@@ -6,13 +6,28 @@ import {
   type NamingAnswer,
   type NamingRequest,
 } from "@notemap/core";
-import { CREATE } from "@notemap/output-markdown";
+import { CREATE, PLACE_ASSETS } from "@notemap/output-markdown";
 
 import type { Arena } from "./api";
 import { CHANNEL_FIELD } from "./capabilities";
 import { asArenaSettings } from "./settings";
 
 export type Reach = (account: string) => Promise<Arena>;
+
+/**
+ * Both capabilities name the channel in the same field, so both are answered
+ * here: a browse and a remembered place are keyed on a capability and a field,
+ * and the attachments going alone does not change what a channel is.
+ */
+function channelOf(request: {
+  readonly capability: string;
+  readonly field: string;
+}): boolean {
+  return (
+    (request.capability === CREATE || request.capability === PLACE_ASSETS) &&
+    request.field === CHANNEL_FIELD
+  );
+}
 
 /**
  * The channels the token's own user made, most recently updated first, and one
@@ -33,7 +48,7 @@ export function arenaCandidates(reach: Reach) {
     request: CandidatesRequest,
     signal?: AbortSignal,
   ): Promise<CandidatesAnswer> => {
-    if (request.capability !== CREATE || request.field !== CHANNEL_FIELD) {
+    if (!channelOf(request)) {
       throw new NotOffered(
         `${request.capability} has no candidates for its ${request.field} field`,
       );
@@ -74,7 +89,7 @@ export function arenaNaming(reach: Reach) {
     request: NamingRequest,
     signal?: AbortSignal,
   ): Promise<NamingAnswer> => {
-    if (request.capability !== CREATE || request.field !== CHANNEL_FIELD) {
+    if (!channelOf(request)) {
       throw new NotOffered(
         `${request.capability} has no candidates for its ${request.field} field`,
       );
