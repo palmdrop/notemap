@@ -1,8 +1,11 @@
 import type {
+  Artifact,
+  ArtifactId,
   Asset,
   AssetId,
   AssetRef,
   CapabilityName,
+  EnrichmentName,
   DeliveredAsset,
   Delivery,
   Destination,
@@ -83,6 +86,18 @@ export function deliveredAsset(
   };
 }
 
+function artifact(at: number, item: string, createdAt: Timestamp): Artifact {
+  return {
+    id: `artifact-${at}` as ArtifactId,
+    item: item as ItemId,
+    enrichment: "summary" as EnrichmentName,
+    by: { kind: "notemap" },
+    createdAt,
+    content: {},
+    assets: [],
+  };
+}
+
 type DeliveryOverrides = {
   readonly capability?: string;
   readonly arguments?: JsonObject;
@@ -92,11 +107,19 @@ type DeliveryOverrides = {
   readonly assets?: readonly DeliveredAsset[];
   readonly createdAt?: string;
   readonly item?: string;
+  /** How many an enrichment left on the item. A block carries none of them. */
+  readonly artifacts?: number;
 };
 
 export function delivery(overrides: DeliveryOverrides = {}): Delivery {
   const createdAt = at(overrides.createdAt ?? "2026-09-08T14:23:05.000Z");
-  const assets = overrides.assets ?? [];
+  const attached = overrides.assets ?? [];
+  // Core sorts `assets` by slot and leaves the payload's references in the
+  // order they were attached, so anything that means slot order has to read
+  // this one. The two differ here on purpose.
+  const assets = [...attached].sort((one, two) =>
+    one.slot < two.slot ? -1 : 1,
+  );
 
   return {
     item: (overrides.item ?? "item-1") as ItemId,
@@ -108,7 +131,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       type: overrides.type ?? NOTE,
       content: overrides.content ?? { text: "a thought" },
       metadata: {},
-      assets: assets.map((each): AssetRef => ({
+      assets: attached.map((each): AssetRef => ({
         slot: each.slot,
         asset: each.asset.id,
       })),
@@ -119,7 +142,9 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       addedAt: createdAt,
     })),
     createdAt,
-    artifacts: [],
+    artifacts: Array.from({ length: overrides.artifacts ?? 0 }, (_, at) =>
+      artifact(at, overrides.item ?? "item-1", createdAt),
+    ),
     assets,
   };
 }

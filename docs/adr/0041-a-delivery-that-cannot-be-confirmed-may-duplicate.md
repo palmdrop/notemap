@@ -1,7 +1,10 @@
 # 41. A delivery that cannot be confirmed may duplicate, and the kind says so
 
 **Date**: 2026-09-07
-**Status**: Accepted — narrows [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)
+**Status**: Accepted — narrows [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md).
+Widened for the arena kind by
+[ADR 59](0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md), which makes one
+delivery post several blocks.
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -71,6 +74,13 @@ Chosen: **option 1**.
 - **Nothing else moves.** Retry with backoff, bounded attempts, `rejected` abandoned on the first
   attempt, and a lease that expired with no outcome reported abandoned rather than retried are all
   still ADR 17's, unchanged.
+
+*Amended 2026-10-10* by
+[ADR 59](0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md): one arena
+delivery may now post several blocks, one per file. The window above is then no longer the only
+way a duplicate happens — a delivery that landed some of its blocks and failed on a later one
+duplicates everything that landed, deterministically, on every retry. The answer is the same and
+for the same reasons; what changes is how often it can be reached, which the kind's README says.
 
 ### Consequences
 

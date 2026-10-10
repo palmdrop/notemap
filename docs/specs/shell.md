@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-10
 **Shipped**:
+
+- 2026-10-10 — **A capability that carries the attachments alone is offered only where there are
+  some.** Reached by a board declaring one beside its `create`: the process surface asks which,
+  where it asked nothing before, and leaves the carrier out for a capture with no attachment — so a
+  kind whose other capability is then its only one settles that one again and asks nothing.
+  ([plan](../plans/arena-takes-every-file.md))
 
 - 2026-10-09 — **What arrives from elsewhere shows up.** A capture from a relay, Raycast or
   another device lands on an open feed or queue within the watcher's tempo, placed where it sorts,
@@ -1442,7 +1448,13 @@ the attachments around what would be written, which here is the paths the files 
 already there. A record of one reads the folder, `→ **Vault** library/`, and its block says
 `placed`. A template carries the capability as it carries any, and taken, draws `attachments only`
 taken. A kind that settles nothing offers the capability among the others under `do`, with no
-`output`. **The template form draws the same `output` row after `destination`** wherever the
+`output` — and **not at all where the item has no attachments** *(added 2026-10-10)*, which is the
+condition the section itself is drawn under: a capability that carries the attachments alone has
+nothing to carry there, and delivery would reject it. Reached by the arena kind declaring one
+([ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)), which is
+also what makes `do` a question on a board at all — one capability was never asked about. One
+already taken stays offered, a template having taken it. **The template form draws the same
+`output` row after `destination`** wherever the
 destination declares such a capability, whatever item it will meet, and leaves that capability out
 of `action`; while `attachments only` is taken, `action` is not drawn, there being nothing else it
 could be, and `everything` gives back the action held before.

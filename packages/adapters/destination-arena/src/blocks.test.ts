@@ -1,7 +1,13 @@
 import { fixedFrontmatter } from "@notemap/output-markdown";
 import { describe, expect, it } from "vitest";
 
-import { arenaRenderers, droppedBy, provenanceOf, renderNote } from "./blocks";
+import {
+  arenaRenderers,
+  droppedBy,
+  provenanceOf,
+  renderAssets,
+  renderNote,
+} from "./blocks";
 import { delivery, deliveredAsset, bytes, NOTE } from "./testing/fixture";
 
 const said = (text: string) => renderNote(delivery({ content: { text } }));
@@ -13,36 +19,37 @@ const said = (text: string) => renderNote(delivery({ content: { text } }));
  */
 describe("where the prose ends and the link begins", () => {
   it("sends a bare URL as the value, so the block is a link", () => {
-    expect(said("https://example.com/a")).toEqual({
-      value: "https://example.com/a",
-    });
+    expect(said("https://example.com/a")).toEqual([
+      { value: "https://example.com/a" },
+    ]);
   });
 
   it("keeps the prose under it as the caption", () => {
-    expect(said("https://example.com/a\n\nwhy it matters")).toEqual({
-      value: "https://example.com/a",
-      description: "why it matters",
-    });
+    expect(said("https://example.com/a\n\nwhy it matters")).toEqual([
+      { value: "https://example.com/a", description: "why it matters" },
+    ]);
   });
 
   it("is prose where the URL shares its line with anything else", () => {
     const text = "see https://example.com/a for the argument";
-    expect(said(text)).toEqual({ value: text });
+    expect(said(text)).toEqual([{ value: text }]);
   });
 
   it("is prose where the first line is not a URL at all", () => {
-    expect(said("a thought\n\nhttps://example.com/a")).toEqual({
-      value: "a thought\n\nhttps://example.com/a",
-    });
+    expect(said("a thought\n\nhttps://example.com/a")).toEqual([
+      { value: "a thought\n\nhttps://example.com/a" },
+    ]);
   });
 
   /** A `file:` or a `mailto:` is not something are.na can fetch. */
   it("is prose where the scheme is not one a browser follows", () => {
-    expect(said("file:///etc/passwd")).toEqual({ value: "file:///etc/passwd" });
+    expect(said("file:///etc/passwd")).toEqual([
+      { value: "file:///etc/passwd" },
+    ]);
   });
 
   it("carries a capture with nothing in it as an empty value", () => {
-    expect(renderNote(delivery({ content: {} }))).toEqual({ value: "" });
+    expect(renderNote(delivery({ content: {} }))).toEqual([{ value: "" }]);
   });
 });
 
@@ -51,21 +58,92 @@ describe("a capture carrying an asset", () => {
     const asset = deliveredAsset("main", "mum.png", bytes("png"));
     const each = delivery({ content: { text: "mum, 1994" }, assets: [asset] });
 
-    expect(renderNote(each)).toEqual({
-      value: "",
-      description: "mum, 1994",
-      altText: "mum, 1994",
-      asset: { slot: "main" },
-    });
+    expect(renderNote(each)).toEqual([
+      {
+        value: "",
+        description: "mum, 1994",
+        altText: "mum, 1994",
+        asset: expect.objectContaining({ slot: "main" }),
+      },
+    ]);
   });
 
   it("says nothing about it where the capture said nothing", () => {
     const asset = deliveredAsset("main", "mum.png", bytes("png"));
 
-    expect(renderNote(delivery({ content: {}, assets: [asset] }))).toEqual({
-      value: "",
-      asset: { slot: "main" },
+    expect(renderNote(delivery({ content: {}, assets: [asset] }))).toEqual([
+      { value: "", asset: expect.objectContaining({ slot: "main" }) },
+    ]);
+  });
+});
+
+describe("a capture carrying several assets", () => {
+  /** Attached `002`, `000`, `001`, so reading the payload's own order would show. */
+  const three = () =>
+    delivery({
+      content: { text: "notes from the show" },
+      assets: [
+        deliveredAsset("002", "c.png", bytes("c")),
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
+      ],
     });
+
+  const slots = (blocks: readonly { asset?: { slot: string } }[]) =>
+    blocks.map((block) => block.asset?.slot);
+
+  it("makes one block per asset, in slot order rather than the order attached", () => {
+    expect(slots(renderNote(three()))).toEqual(["000", "001", "002"]);
+  });
+
+  /** A caption repeated on each would read as three captions rather than one. */
+  it("captions the asset in the first slot and no other", () => {
+    const [first, ...rest] = renderNote(three());
+
+    expect(first?.asset?.asset.filename).toBe("a.png");
+    expect(first).toMatchObject({
+      description: "notes from the show",
+      altText: "notes from the show",
+    });
+    for (const block of rest) {
+      expect(block.description).toBeUndefined();
+      expect(block.altText).toBeUndefined();
+    }
+  });
+
+  /** The words were not asked for, so no block carries them. */
+  it("captions nothing where the assets go alone", () => {
+    const blocks = renderAssets(three());
+
+    expect(slots(blocks)).toEqual(["000", "001", "002"]);
+    for (const block of blocks) {
+      expect(block.value).toBe("");
+      expect(block.description).toBeUndefined();
+    }
+  });
+
+  /**
+   * A reference the pool could not resolve is not a block: `attachedAssets`
+   * reads what the delivery carries, so nothing downstream has to look one up
+   * after a block has already been posted.
+   */
+  it("makes a block only for an asset the delivery carries", () => {
+    const each = delivery({
+      assets: [deliveredAsset("000", "a.png", bytes("a"))],
+    });
+    const short = {
+      ...each,
+      payload: {
+        ...each.payload,
+        assets: [
+          ...each.payload.assets,
+          { slot: "001", asset: "gone" as never },
+        ],
+      },
+    };
+
+    expect(slots(renderNote(short))).toEqual(["000"]);
+    expect(renderAssets(short)).toHaveLength(1);
   });
 });
 
@@ -129,6 +207,20 @@ describe("what a block could not carry", () => {
     expect(droppedBy(delivery({ tags: ["kind/quote"] }))).toBe(
       "tags are added as metadata",
     );
+  });
+
+  it("says the artifacts are left out, where there were any", () => {
+    expect(droppedBy(delivery({ artifacts: 1 }))).toBe(
+      "artifacts are left out",
+    );
+  });
+
+  /** Leaving the words and the artifacts out is what a delivery of the assets alone was asked for. */
+  it("confesses nothing but the tags where the assets go alone", () => {
+    expect(
+      droppedBy(delivery({ tags: ["kind/quote"], artifacts: 1 }), "assets"),
+    ).toBe("tags are added as metadata");
+    expect(droppedBy(delivery({ artifacts: 1 }), "assets")).toBeUndefined();
   });
 });
 

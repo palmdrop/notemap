@@ -19,10 +19,17 @@ the difference: `GET /v3/me` does not carry the token's scope, and the OAuth exc
 not something a pasted personal access token ever produces. So a read-only token passes the check
 on the settings page and then fails every delivery with a `403`, whose detail says so.
 
-## The one capability
+## The two capabilities
 
-`create`, taking a `channel`. A block is always new: there is nothing here to append into, so there
-is nothing for `append` or `create-or-append` to mean.
+`create` and `place-assets`, both taking a `channel` and nothing else. A block is always new: there
+is nothing here to append into, so there is nothing for `append` or `create-or-append` to mean, and
+nothing for a folder mode to decide — a channel is joined, not made.
+
+`place-assets` carries the capture's attachments and nothing else: one block per file, uncaptioned,
+and no text block. It says so of itself with `x-notemap-carries: "assets"` at the root of its
+arguments, which is how a surface offers it as "attachments only" without knowing this kind by name.
+A capture referencing no asset is `rejected` — there is nothing to deliver and no later attempt
+finds more.
 
 The field is declared as one that holds **only something are.na already has** — a channel is
 joined, not made — which is why a routing template offers no `{{captured_at}}` beside it. Nothing
@@ -53,7 +60,10 @@ A `404` at delivery says a rename is the likely cause and points back at the bro
   and makes the block from where they landed. The caption becomes both the description and the alt
   text. Presigned URLs expire within the hour, so presigning and uploading belong to one attempt and
   a retry presigns again.
-- A capture carrying **more than one asset** is refused. A block holds one thing.
+- A capture carrying **more than one asset** becomes one block per asset, in slot order. A block
+  holds one thing, so three pictures are three blocks, and the capture's words caption the **first**
+  of them and no other: that is what filing a set by hand looks like, where a caption repeated on
+  each would read as three captions. Under `place-assets` none of them is captioned.
 
 Where the block came from is written into the block's own **metadata** — the item, the source, the
 capture time, the `derived_from` URN, and the tags flattened into one string. The words are the ones
@@ -67,6 +77,12 @@ The routing record carries a `url` as well as a pointer, which no other kind doe
 `_links.self` is an API address a person cannot follow. If are.na ever changes that form, the record
 carries a broken link rather than none.
 
+**One delivery that made several blocks names the channel instead.** The pointer is the channel as
+the decision named it, the `url` is absent — a channel's address needs the owner's slug, which a
+delivery never asks for — and every block's URL is in the delivery's **output**, one a line. One
+block still names that block, so a record made before this reads as it did, and the common case
+keeps a link to follow.
+
 ## What it will not do
 
 - **It does not promise a retry cannot duplicate.** are.na offers no conditional create and no
@@ -77,6 +93,17 @@ carries a broken link rather than none.
   strong promise, by `EEXIST` and by `PUT If-None-Match: *`; this one cannot. A duplicate block sits
   visibly in the channel and can be deleted, which is the trade: the alternative is throwing away a
   routing decision that probably landed.
+
+  **A delivery of several files makes that ordinary rather than rare.** Blocks are posted one at a
+  time, so one that lands and a later one that does not leaves the first where it is, and the retry
+  posts it again: four files landed and a fifth unreachable means four duplicates when the delivery
+  is retried. Nothing can look at what landed — are.na offers no conditional create and `/v3/search`
+  is Premium-only — so there is nothing to resume from. A block **refused** part way through is a
+  different thing: there the delivery answers `delivered` with the blocks that landed and a note
+  saying how many of how many went, which file did not, and why, because `rejected` would be
+  abandoned at once and leave those blocks with nothing naming them. Accepted deliberately, for the
+  same reason as the window above and recorded in
+  [ADR 59](../../../docs/adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md).
 - **It does not enumerate the account.** Browsing answers one page of the channels the token's own
   user made, most recently updated first, and says when there were more. Paging the whole account is
   what are.na's own guidance asks callers not to do.
@@ -93,10 +120,11 @@ carries a broken link rather than none.
 | `401` — the token was refused | `unreachable` to a delivery, `rejected` to a check |
 | `403` — most often a token with `read` scope, or a channel you cannot add to | `rejected` |
 | `404` — the channel is gone, most often renamed | `rejected` |
-| `422` — are.na would not take the block | `rejected` |
+| `422` — are.na would not take the block | `rejected`, or `delivered` saying what did not go where an earlier block of the same delivery landed |
 | `408`, `429`, `5xx` — busy, rate-limited or broken | `unreachable` |
 | A presigned upload refused | `unreachable` |
-| The capture carries more than one asset, or no channel was named | `rejected` |
+| No channel was named, or `place-assets` met a capture carrying no asset | `rejected` |
+| A later block refused, earlier ones having landed | `delivered`, its note naming what did not go |
 | The network could not be reached at all | `unreachable` |
 
 Two rows are asymmetric, both for the same reason and both the WebDAV kind's: a delivery is right to

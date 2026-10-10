@@ -60,11 +60,28 @@ function delivered(outcome: DeliveryOutcome) {
 }
 
 describe("what it says it can do", () => {
-  it("declares one capability, over the types it has a block form for", async () => {
+  it("declares both capabilities, over the types it has a block form for", async () => {
     const described = await adapter().describe(row());
 
-    expect(described.capabilities.map((each) => each.name)).toEqual(["create"]);
+    expect(described.capabilities.map((each) => each.name)).toEqual([
+      "create",
+      "place-assets",
+    ]);
     expect(described.capabilities[0]?.accepts).toEqual(["note"]);
+  });
+
+  /** Found by the annotation and never by name, which is what lets a surface offer it. */
+  it("says of the second that it carries the attachments alone", async () => {
+    const described = await adapter().describe(row());
+    const schemas = described.capabilities.map(
+      (each) => each.argumentsSchema as Record<string, unknown>,
+    );
+
+    expect(schemas[1]?.["x-notemap-carries"]).toBe("assets");
+    expect(schemas[0]).not.toHaveProperty("x-notemap-carries");
+    expect(Object.keys(schemas[1]?.["properties"] as object)).toEqual([
+      "channel",
+    ]);
   });
 
   /**
@@ -187,26 +204,275 @@ describe("creating a block", () => {
 
     expect(outcome.kind).toBe("rejected");
   });
+});
+
+describe("a capture carrying several files", () => {
+  const three = () =>
+    delivery({
+      content: { text: "notes from the show" },
+      assets: [
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
+        deliveredAsset("002", "c.png", bytes("c")),
+      ],
+    });
+
+  it("makes one block per file, each from its own upload", async () => {
+    await adapter().deliver(row(), three());
+
+    expect(server.uploads()).toEqual({
+      "uploads/0-a.png": "a",
+      "uploads/1-b.png": "b",
+      "uploads/2-c.png": "c",
+    });
+    expect(server.blocks().map((block) => block["value"])).toEqual([
+      `${server.uploadsUrl}/uploads/0-a.png`,
+      `${server.uploadsUrl}/uploads/1-b.png`,
+      `${server.uploadsUrl}/uploads/2-c.png`,
+    ]);
+  });
+
+  it("captions the first block and no other", async () => {
+    await adapter().deliver(row(), three());
+
+    expect(server.blocks()[0]).toMatchObject({
+      description: "notes from the show",
+      alt_text: "notes from the show",
+    });
+    expect(server.blocks()[1]).not.toHaveProperty("description");
+    expect(server.blocks()[2]).not.toHaveProperty("description");
+  });
+
+  /** A channel has no address this adapter can compose, so the blocks are listed instead. */
+  it("names the channel and lists the blocks it made", async () => {
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({
+          arguments: { channel: "reading" },
+          assets: [
+            deliveredAsset("000", "a.png", bytes("a")),
+            deliveredAsset("001", "b.png", bytes("b")),
+          ],
+        }),
+      ),
+    );
+
+    expect(outcome.pointer).toBe("reading");
+    expect(outcome.url).toBeUndefined();
+    expect(await textOf(outcome.output)).toBe(
+      `https://www.are.na/block/1001\nhttps://www.are.na/block/1002\n`,
+    );
+  });
+
+  /** Where it made one, the record reads as every record made before this did. */
+  it("still names the block itself where it made one", async () => {
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({ assets: [deliveredAsset("000", "a.png", bytes("a"))] }),
+      ),
+    );
+
+    expect(outcome.pointer).toBe("1001");
+    expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
 
   /**
-   * A guard rather than a case: the client builds `assets` as zero-or-one, so
-   * only a direct `/v1` caller trips it.
+   * Nothing here can ask are.na what it already holds, so the block that landed
+   * is left where it is and the retry makes it again
+   * ([ADR 59](../../../../docs/adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)).
    */
-  it("refuses a capture carrying more than one asset", async () => {
+  it("reports a failure after the first block as unreachable, leaving it where it landed", async () => {
+    server.answerOnce("/uploads/uploads/1-b.png", 403);
+
+    const outcome = await adapter().deliver(row(), three());
+
+    expect(outcome.kind).toBe("unreachable");
+    expect(server.blocks()).toHaveLength(1);
+  });
+
+  /**
+   * `rejected` asserts nothing was delivered and is abandoned on the first
+   * attempt, which would leave the blocks that landed with nothing naming
+   * them. So this carried part of the capture and says so.
+   */
+  it("carries what landed and says what did not, where a later block is refused", async () => {
+    server.refusesBlocksAfter(2);
+
+    const outcome = delivered(await adapter().deliver(row(), three()));
+
+    expect(server.blocks()).toHaveLength(2);
+    expect(outcome.pointer).toBe("a-channel");
+    expect(await textOf(outcome.output)).toBe(
+      `https://www.are.na/block/1001\nhttps://www.are.na/block/1002\n`,
+    );
+    expect(outcome.output?.note).toContain("2 of 3 blocks went; c.png did not");
+    expect(outcome.output?.note).toContain("would not take");
+  });
+
+  /** Nothing landed, so the refusal is the whole delivery's and is right to be abandoned. */
+  it("is rejected where the first block is refused", async () => {
+    server.refusesBlocksAfter(0);
+
+    const outcome = await adapter().deliver(row(), three());
+
+    expect(outcome.kind).toBe("rejected");
+    expect(server.blocks()).toEqual([]);
+  });
+
+  it("says what a shortfall dropped beside where the tags went", async () => {
+    server.refusesBlocksAfter(1);
+
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({
+          tags: ["kind/quote"],
+          assets: [
+            deliveredAsset("000", "a.png", bytes("a")),
+            deliveredAsset("001", "b.png", bytes("b")),
+          ],
+        }),
+      ),
+    );
+
+    expect(outcome.output?.note).toBe(
+      "1 of 2 blocks went; b.png did not: are.na would not take it: are.na would not take that block; tags are added as metadata",
+    );
+    // One block landed, so the record names it as any single block is named.
+    expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
+
+  /**
+   * The duplication the kind's README promises in so many words: nothing can
+   * ask are.na what it already holds, so a second attempt makes the blocks
+   * that landed all over again.
+   */
+  it("makes the blocks that landed again when the delivery is attempted afresh", async () => {
+    server.answerOnce("/uploads/uploads/1-b.png", 403);
+    expect((await adapter().deliver(row(), three())).kind).toBe("unreachable");
+    expect(server.blocks()).toHaveLength(1);
+
+    delivered(await adapter().deliver(row(), three()));
+
+    expect(server.blocks()).toHaveLength(4);
+    expect(server.blocks().map((block) => block["value"])).toEqual([
+      `${server.uploadsUrl}/uploads/0-a.png`,
+      `${server.uploadsUrl}/uploads/1-a.png`,
+      `${server.uploadsUrl}/uploads/2-b.png`,
+      `${server.uploadsUrl}/uploads/3-c.png`,
+    ]);
+  });
+
+  /** No block has an address before it is posted, so a preview has only the caption to show. */
+  it("shows the caption and no address, reaching nothing", async () => {
+    const shown = await adapter().preview?.(row(), three());
+
+    expect(await textOf(shown)).toBe(`notes from the show\n`);
+    expect(server.requests()).toEqual([]);
+  });
+});
+
+describe("the attachments alone", () => {
+  const twoFiles = (args: Record<string, string> = { channel: "a-channel" }) =>
+    delivery({
+      capability: "place-assets",
+      arguments: args,
+      content: { text: "notes from the show" },
+      assets: [
+        deliveredAsset("000", "a.png", bytes("a")),
+        deliveredAsset("001", "b.png", bytes("b")),
+      ],
+    });
+
+  it("makes one uncaptioned block per file and no text block", async () => {
+    await adapter().deliver(row(), twoFiles());
+
+    expect(server.blocks()).toHaveLength(2);
+    for (const block of server.blocks()) {
+      expect(block).not.toHaveProperty("description");
+      expect(block).not.toHaveProperty("alt_text");
+    }
+  });
+
+  /** Where a block came from is not what the capture said, so it still goes. */
+  it("still writes where the blocks came from", async () => {
+    await adapter().deliver(row(), twoFiles());
+
+    expect(server.blocks()[0]).toMatchObject({
+      metadata: expect.objectContaining({ id: "item-1" }),
+    });
+  });
+
+  it("rejects a capture carrying no attachment at all", async () => {
     const outcome = await adapter().deliver(
       row(),
-      delivery({
-        assets: [
-          deliveredAsset("a", "one.png", bytes("one")),
-          deliveredAsset("b", "two.png", bytes("two")),
-        ],
-      }),
+      delivery({ capability: "place-assets" }),
     );
 
     expect(outcome).toEqual({
       kind: "rejected",
-      detail: expect.stringContaining("more than one asset"),
+      detail: expect.stringContaining("no attachment"),
     });
+    expect(server.blocks()).toEqual([]);
+  });
+
+  it("refuses the same preview a delivery would refuse", async () => {
+    await expect(
+      adapter().preview?.(row(), delivery({ capability: "place-assets" })),
+    ).rejects.toBeInstanceOf(Rejected);
+  });
+
+  /** One file is still one block, so the record names it as any single block is named. */
+  it("names the block itself where one file went alone", async () => {
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({
+          capability: "place-assets",
+          assets: [deliveredAsset("000", "a.png", bytes("a"))],
+        }),
+      ),
+    );
+
+    expect(outcome.pointer).toBe("1001");
+    expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
+
+  /** What #4 of the review names: an unposted block has no address, and an asset block no value. */
+  it("previews as nothing at all, having neither an address nor a value to show", async () => {
+    const shown = await adapter().preview?.(row(), twoFiles());
+
+    expect(await textOf(shown)).toBe("\n");
+    expect(shown?.note).toBeUndefined();
+    expect(server.requests()).toEqual([]);
+  });
+
+  /** Both capabilities name the channel in the same field, so both are browsable. */
+  it("answers channels for its channel field too", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 7 }]);
+
+    const answer = await adapter().candidates?.(row(), {
+      capability: "place-assets" as CapabilityName,
+      field: "channel",
+    });
+
+    expect(answer?.entries).toEqual([
+      { label: "Reading", value: "reading", durable: "7" },
+    ]);
+  });
+
+  it("names one channel back for its channel field too", async () => {
+    server.holds([{ slug: "reading", title: "Reading", id: 7 }]);
+
+    const answer = await adapter().naming?.(row(), {
+      capability: "place-assets" as CapabilityName,
+      field: "channel",
+      value: "reading",
+    });
+
+    expect(answer?.entry).toMatchObject({ label: "Reading" });
   });
 });
 
