@@ -799,6 +799,50 @@ describe("a pool that did not decide", () => {
     expect(read(client.outbox)).toEqual([]);
   });
 
+  it("keeps the pool reached through a 503 it wrote itself, and sends again", async () => {
+    let reclaimed = true;
+    const { client } = clientOver(async (request) => {
+      if (reclaimed) return json(503, { error: { code: "blob-reclaimed" } });
+
+      const body = (await request.json()) as { id: string };
+      return captured(anItem(body.id));
+    });
+    const reaches: boolean[] = [];
+    const watched = client.reachable.subscribe((reach) =>
+      reaches.push(reach.yes),
+    );
+
+    await client.capture({ channel: "web", text: "held" });
+    await client.drain();
+
+    expect(read(client.outbox)[0]?.state).toBe("unreachable");
+    expect(read(client.outbox)[0]?.failure).toBe(
+      "the file was cleared away as it arrived; it will be sent again",
+    );
+    expect(reaches).not.toContain(false);
+
+    reclaimed = false;
+    await client.drain();
+    expect(read(client.outbox)).toEqual([]);
+    watched.unsubscribe();
+  });
+
+  it("reads a 503 nobody wrote in its grammar as the pool out of reach", async () => {
+    const { client } = clientOver(
+      async () => new Response("Service Unavailable", { status: 503 }),
+    );
+    const reaches: boolean[] = [];
+    const watched = client.reachable.subscribe((reach) =>
+      reaches.push(reach.yes),
+    );
+
+    await client.capture({ channel: "web", text: "held" });
+    await client.drain();
+
+    expect(reaches.at(-1)).toBe(false);
+    watched.unsubscribe();
+  });
+
   it("still rolls back a 4xx, which is the pool saying no", async () => {
     const { client } = clientOver(() => refusal(409, "capture-id-conflict"));
 

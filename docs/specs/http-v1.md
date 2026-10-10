@@ -1612,10 +1612,13 @@ asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
   still two assets and one blob — that is two ids, and neither conflicts with the other.
 - A conflicting upload still writes its blob, since the bytes are hashed before the row is read.
   Space rather than loss, and the reclaim's to take once nothing has put it for the grace window.
-- **An upload whose bytes were reclaimed under it answers `500`**, not a refusal. Bytes already
-  held are reused rather than written again, and the reclaim may delete them between the write and
-  the insert; the insert sees it and nothing is stored. The pool did not say no, so a client sends
-  the upload again, and the second write lands.
+- **An upload whose bytes were reclaimed under it answers `503 blob-reclaimed`**, with
+  `Retry-After: 1`. Bytes already held are reused rather than written again, and the reclaim may
+  delete them between the write and the insert; the insert sees it and nothing is stored. The
+  pool did not say no, so it answers outside the `4xx` a client settles on: the client reads a
+  `5xx` as unanswered and sends the upload again, and the second write lands. A `503` carrying the
+  daemon's own error body is the one `5xx` the client still counts as reaching the daemon, since
+  no proxy in front of it writes that body.
 - **A raw body rather than multipart**, because Hono buffers a multipart body in order to parse
   it, and filename encoding in multipart is a swamp — where `Content-Disposition` has `filename*`
   for anything outside ASCII and the body streams straight into the hash. The cost is that a

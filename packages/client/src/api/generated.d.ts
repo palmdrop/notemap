@@ -3967,6 +3967,24 @@ export interface paths {
                         };
                     };
                 };
+                /** @description The bytes matched a blob already held, which was reclaimed before the asset could name it. Nothing was stored; send the same upload again. */
+                503: {
+                    headers: {
+                        "Retry-After": string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "blob-reclaimed";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
             };
         };
         post?: never;

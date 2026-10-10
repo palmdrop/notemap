@@ -127,11 +127,14 @@ export interface SchemaValidator {
 export interface BlobStore {
   /**
    * Hashes what it is given, and answers what it turned out to be. Storing the
-   * same bytes twice is one blob, put again: its `at` moves to now.
+   * same bytes twice is one blob, put again: when it was last put moves to now.
+   * Nothing holds the bytes once this answers, so they may already be gone.
    */
   put(bytes: AsyncIterable<Uint8Array>): Promise<StoredBlob>;
   /** Every blob held, in no particular order. A blob deleted while this runs may or may not appear. */
   list(): AsyncIterable<ListedBlob>;
+  /** When the blob was last put, on the wall clock; absent if it is not held. */
+  lastPut(blob: BlobHash): Promise<Timestamp | undefined>;
   /** Absent means the bytes are gone from under a row that still names them. */
   open(
     blob: BlobHash,
@@ -371,6 +374,9 @@ export interface PoolReads {
     limit: number,
   ): Promise<readonly AssetId[]>;
 
+  /** Whether an asset or a routing record's output names the blob: either keeps it. */
+  blobNamed(blob: BlobHash): Promise<boolean>;
+
   actions(query: ActionQuery, page: OrderedPage): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
@@ -451,9 +457,6 @@ export interface PoolTx extends PoolReads {
    * item still references fails rather than succeeding quietly.
    */
   deleteAssets(assets: readonly AssetId[]): Promise<void>;
-
-  /** Whether an asset or a routing record's output names the blob: either keeps it. */
-  blobNamed(blob: BlobHash): Promise<boolean>;
 
   /** The job a lease still holds, or nothing if the lease has been taken over. */
   leasedJob(lease: LeaseId): Promise<Lease | undefined>;

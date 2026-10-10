@@ -1,7 +1,7 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-08
+**Last updated**: 2026-10-10
 **Shipped**:
 
 - 2026-10-09 — **Blobs nothing names are reclaimed, and the sweep can no longer delete bytes an
@@ -742,17 +742,22 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   committed, and left every blob no asset ever named to a deep verify that does not exist. Bytes
   are written before the transaction that names them, so an upload of the same bytes between the
   sweep's commit and its delete named a file the sweep then removed. Now
-  `maintenance.reclaimUnnamedBlobs` lists the blob store and, for each blob not put within the
-  sweep's grace window, asks in one transaction whether an asset or a routing record's output
-  names it and deletes it there if nothing does. It takes what the sweep released, a blob a crash
-  or a refused upload left behind, and an output whose route was refused or whose lease was lost.
+  `maintenance.reclaimUnnamedBlobs` lists the blob store and passes over, without the write lock,
+  each blob put within the sweep's grace window or named by an asset or a routing record's
+  output. The rest it asks about again in a transaction of its own — named, and when it was last
+  put — and deletes there if nothing names it and it is still old. It takes what the sweep
+  released, a blob a crash or a refused upload left behind, and an output whose route was refused
+  or whose lease was lost.
 - **A transaction that names a blob checks it is there.** An asset's insert and a landing that
   keeps an output each confirm, under the write lock, that the blob still exists. The bytes are
-  consumed by then: an upload finding its blob gone **throws**, which a host answers as a failure
-  rather than a refusal and a client sends again; a landing finding its output gone is recorded
-  without it and says why, as for an output that could not be written. Putting bytes already held
-  refreshes when they were last put, so a re-upload of old orphaned bytes reads as fresh and the
-  reclaim passes it over.
+  consumed by then: an upload finding its blob gone is refused as **`blob-reclaimed`**, the one
+  asset refusal that is not a no — sending the same bytes again stores them — and a landing
+  finding its output gone is recorded without it and says why, as for an output that could not be
+  written. Putting bytes already held refreshes when they were last put, and the reclaim reads that
+  again under the lock, so a re-upload of old orphaned bytes is passed over unless the refresh
+  lands between that read and the delete.
+- **A blob's age is the blob store's**, on the wall clock, and the reclaim compares it with the
+  pool's clock. They are the same clock in a running host.
 - **A driver's own debris is not a blob.** A temporary file left by a killed write is not listed,
   and nothing reclaims it.
 - Purge leaves a record of the identity and time of the deletion, and nothing else, so that

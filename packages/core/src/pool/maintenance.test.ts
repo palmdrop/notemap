@@ -115,20 +115,27 @@ function ago(ms: number): Timestamp {
   return new Date(Date.parse(NOW) - ms).toISOString() as Timestamp;
 }
 
-/** `named` is read at the moment the transaction asks, so a test can name a blob mid-walk. */
+/**
+ * `named` and `held` are read when asked, so a test can name or put a blob
+ * again mid-walk; `onList` runs as each blob is listed, before anything is asked.
+ */
 function reclaiming(
   held: Record<string, Timestamp>,
   named: Set<string>,
-  onList?: (hash: string) => void,
+  onList?: (hash: string, kept: Map<string, Timestamp>) => void,
+  committed: Set<string> = named,
 ) {
   const kept = new Map(Object.entries(held));
   let locked = false;
+  let transactions = 0;
   const wired = {
     clock: { now: () => NOW },
     store: {
+      blobNamed: (blob: BlobHash) => Promise.resolve(committed.has(blob)),
       transaction: async <T>(work: (tx: unknown) => Promise<T>) => {
         if (locked) throw new Error("transactions overlapped");
         locked = true;
+        transactions += 1;
         try {
           return await work({
             blobNamed: (blob: BlobHash) => Promise.resolve(named.has(blob)),
@@ -141,10 +148,11 @@ function reclaiming(
     blobs: {
       list: async function* () {
         for (const [hash, at] of [...kept]) {
-          onList?.(hash);
+          onList?.(hash, kept);
           yield { hash: hash as BlobHash, at };
         }
       },
+      lastPut: (blob: BlobHash) => Promise.resolve(kept.get(blob)),
       delete: (blob: BlobHash) => {
         if (!locked) throw new Error("deleted outside a transaction");
         kept.delete(blob);
@@ -152,7 +160,7 @@ function reclaiming(
       },
     },
   } as unknown as PoolPorts;
-  return { wired, kept };
+  return { wired, kept, transactions: () => transactions };
 }
 
 describe("reclaiming blobs nothing names", () => {
@@ -166,21 +174,39 @@ describe("reclaiming blobs nothing names", () => {
     expect([...kept.keys()]).toEqual(["fresh"]);
   });
 
-  it("keeps an old blob something names", async () => {
-    const { wired, kept } = reclaiming({ old: ago(2 * DAY) }, new Set(["old"]));
+  it("keeps an old blob something names, without taking the write lock", async () => {
+    const { wired, kept, transactions } = reclaiming(
+      { old: ago(2 * DAY) },
+      new Set(["old"]),
+    );
+
+    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect([...kept.keys()]).toEqual(["old"]);
+    expect(transactions()).toBe(0);
+  });
+
+  it("asks the blob's age again under the lock, so one put after it was listed is kept", async () => {
+    const { wired, kept } = reclaiming(
+      { old: ago(2 * DAY) },
+      new Set(),
+      (hash, held) => held.set(hash, NOW),
+    );
 
     expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
     expect([...kept.keys()]).toEqual(["old"]);
   });
 
-  it("asks again under the lock, so a blob named after it was listed is kept", async () => {
-    const named = new Set<string>();
-    const { wired, kept } = reclaiming({ old: ago(2 * DAY) }, named, (hash) =>
-      named.add(hash),
+  it("asks again under the lock, so a blob named after the unlocked read is kept", async () => {
+    const { wired, kept, transactions } = reclaiming(
+      { old: ago(2 * DAY) },
+      new Set(["old"]),
+      undefined,
+      new Set(),
     );
 
     expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
     expect([...kept.keys()]).toEqual(["old"]);
+    expect(transactions()).toBe(1);
   });
 
   it("stops where it stands when told to", async () => {

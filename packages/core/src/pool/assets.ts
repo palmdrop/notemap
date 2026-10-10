@@ -65,10 +65,8 @@ async function insert(
 
   // Bytes already held were reused rather than written, and a reclaim may have
   // taken them since. The stream is spent, so the uploader has to send it again.
-  if ((await ports.blobs.open(arriving.blob)) === undefined) {
-    throw new Error(
-      `blob ${arriving.blob} was reclaimed while ${arriving.id} was being stored`,
-    );
+  if ((await ports.blobs.lastPut(arriving.blob)) === undefined) {
+    return refused({ kind: "blob-reclaimed", blob: arriving.blob });
   }
 
   await tx.insertAsset(arriving);

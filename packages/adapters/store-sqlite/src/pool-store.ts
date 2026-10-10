@@ -339,17 +339,6 @@ export function createSqlitePoolStore(
   const deleteAsset = write.query<never, [string]>(
     `DELETE FROM assets WHERE id = ?`,
   );
-  const namedByAsset = write.query<{ blob: string }, [string]>(
-    `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
-  );
-  /**
-   * An output is named by a routing record rather than by an asset, and the two
-   * may be the same bytes — so releasing the last asset that named a blob does
-   * not make it the reclaim's to take.
-   */
-  const namedAsOutput = write.query<{ output_blob: string }, [string]>(
-    `SELECT output_blob FROM routing_records WHERE output_blob = ? LIMIT 1`,
-  );
   const insertDestination = write.query<
     never,
     ReturnType<typeof destinationParams>
@@ -489,6 +478,12 @@ export function createSqlitePoolStore(
       ORDER BY stored_at, id
       LIMIT ?
     `);
+    const namedByAsset = source.query<{ blob: string }, [string]>(
+      `SELECT blob FROM assets WHERE blob = ? LIMIT 1`,
+    );
+    const namedAsOutput = source.query<{ output_blob: string }, [string]>(
+      `SELECT output_blob FROM routing_records WHERE output_blob = ? LIMIT 1`,
+    );
     const unmeasured = source.query<AssetRow, [string, number]>(`
       SELECT ${ASSET_COLUMNS} FROM assets
       WHERE mime LIKE 'image/%' AND width IS NULL AND id > ?
@@ -859,6 +854,10 @@ export function createSqlitePoolStore(
           .all(toMillis(olderThan), limit)
           .map((row) => row.id as AssetId),
 
+      blobNamed: async (blob: BlobHash): Promise<boolean> =>
+        namedByAsset.get(blob) !== undefined ||
+        namedAsOutput.get(blob) !== undefined,
+
       itemBySourceIdentity: async (
         sourceId: SourceId,
         sourceItemId: string,
@@ -997,6 +996,7 @@ export function createSqlitePoolStore(
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
+      blobNamed: guard(uncommitted.blobNamed),
       unmeasuredPictures: guard(uncommitted.unmeasuredPictures),
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
@@ -1226,12 +1226,6 @@ export function createSqlitePoolStore(
       deleteAssets: guard(async (assets: readonly AssetId[]): Promise<void> => {
         for (const asset of assets) deleteAsset.run(asset);
       }),
-
-      blobNamed: guard(
-        async (blob: BlobHash): Promise<boolean> =>
-          namedByAsset.get(blob) !== undefined ||
-          namedAsOutput.get(blob) !== undefined,
-      ),
 
       leasedJob: guard(async (lease: LeaseId) => jobs.leasedJob(lease)),
 

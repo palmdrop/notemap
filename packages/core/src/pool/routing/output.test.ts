@@ -10,13 +10,9 @@ const BLOB = "blob:output" as BlobHash;
 function ports(...kept: readonly BlobHash[]): PoolPorts {
   return {
     blobs: {
-      open: (blob: BlobHash) =>
+      lastPut: (blob: BlobHash) =>
         Promise.resolve(
-          kept.includes(blob)
-            ? (async function* () {
-                yield new Uint8Array();
-              })()
-            : undefined,
+          kept.includes(blob) ? "2026-10-09T12:00:00.000Z" : undefined,
         ),
     },
   } as unknown as PoolPorts;

@@ -229,6 +229,15 @@ describe("whether a blob is named", () => {
     expect(named).toBe(true);
   });
 
+  it("answers outside a transaction from what has committed", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId }));
+
+    expect(await p.blobNamed("blob-abc" as BlobHash)).toBe(true);
+    await p.transaction((tx) => tx.deleteAssets(["asset-1" as AssetId]));
+    expect(await p.blobNamed("blob-abc" as BlobHash)).toBe(false);
+  });
+
   it("is not named when nothing ever named it", async () => {
     const { pool: p } = pool();
 

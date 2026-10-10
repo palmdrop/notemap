@@ -84,9 +84,12 @@ function undecided(answer: Answer<unknown>): void {
   if (status === 401) throw new Unauthenticated();
 
   if (status >= 500) {
+    const asked = status === 503 ? readRefusal(answer.error) : undefined;
     throw new Unreachable(
       new Error(`the daemon answered ${String(status)}`),
-      "the daemon is having trouble; this will be tried again",
+      asked === undefined || asked.code === "unknown"
+        ? "the daemon is having trouble; this will be tried again"
+        : asked.message,
     );
   }
 }

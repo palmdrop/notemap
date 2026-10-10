@@ -420,6 +420,38 @@ describe("where the bytes land", () => {
     expect(await filesUnder(started.assetRoot)).toEqual([]);
   });
 
+  it("asks for an upload again when a reclaim takes its bytes before the asset names them, and stores it the second time", async () => {
+    const started = pool();
+    const id = "raced" as AssetId;
+    const meta = { filename: "photo.png", mime: "image/png" };
+    started.racing(async () => {
+      await backdate(started.assetRoot);
+      await started.pool.maintenance.reclaimUnnamedBlobs();
+    });
+
+    const raced = await started.pool.assets.store(
+      id,
+      streamOf(bytes("a picture")),
+      meta,
+    );
+
+    expect(raced).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "blob-reclaimed" },
+    });
+    expect(await started.pool.assets.get(id)).toBeUndefined();
+    expect(await filesUnder(started.assetRoot)).toEqual([]);
+
+    started.racing();
+    const again = await started.pool.assets.store(
+      id,
+      streamOf(bytes("a picture")),
+      meta,
+    );
+    expect(again).toMatchObject({ kind: "ok", value: { kind: "stored" } });
+    expect(await started.pool.assets.verify(id)).toBe("intact");
+  });
+
   it("is findable from the record alone, without notemap", async () => {
     const { pool: p, assetRoot } = pool();
     const asset = await upload(p, "photo.png", bytes("a picture"));

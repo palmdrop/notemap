@@ -50,22 +50,24 @@ Chosen: **option 3**, because it is the only one that closes the race and reache
 asset ever named.
 
 The sweep releases assets and no longer deletes blobs. A **reclaim** lists the blob store — the port
-answers each hash with when it was last put — and for each one older than the sweep's grace window
-asks, in one store transaction, whether an asset or a routing record's output names it, and
-deletes it there if nothing does. It appends no action. It runs on an interval of its own, longer
-than the sweep's, and once when the daemon starts.
+answers each hash with when it was last put — and passes over, without the lock, each one put
+within the sweep's grace window or named by an asset or a routing record's output. The rest it asks
+about again in one store transaction, whether anything names it and when it was last put, and
+deletes it there if it is unnamed and still old. It appends no action. It runs on an interval of its
+own, longer than the sweep's, and once when the daemon starts.
 
 The transactions that name a blob — an asset's insert and a landing that keeps an output — check
 that it is still there. The bytes have been consumed by then and cannot be put again from inside,
 so each answers with what it already has for a lost write:
 
-- **An upload** fails as a 5xx rather than a refusal, which a client reads as unanswered and sends
-  again, bytes and all.
+- **An upload** is refused as `blob-reclaimed`, which the daemon answers as a `503` rather than a
+  `4xx`: a client reads it as unanswered and sends again, bytes and all.
 - **A landing** is recorded without its output, saying why. The delivery landed.
 
-`put` refreshes when bytes were last put when they are already held, so a re-upload of old
-orphaned bytes reads as fresh and the reclaim passes it over. That makes both fallbacks rare; the
-check under the lock is what makes them unnecessary to trust.
+`put` refreshes when bytes were last put when they are already held, and the reclaim reads that
+again under the lock, so a re-upload of old orphaned bytes is passed over unless the refresh lands
+between that read and the delete. That makes both fallbacks rare; the check in the naming
+transaction is what makes them unnecessary to trust.
 
 ### Consequences
 
@@ -75,7 +77,10 @@ check under the lock is what makes them unnecessary to trust.
   one question.
 - **Bad** — a `stat` and an `unlink` now run under the write lock, which `assets.store` was written
   to avoid. Accepted: both are metadata calls, and the write that lock was kept free of is a
-  stream.
+  stream. The reclaim takes the lock only for a blob that is old and unnamed by the committed
+  state, so a run over a store of named blobs takes it not at all.
+- **Bad** — a blob's age is the store's wall clock, compared with the pool's injected clock. The
+  same clock in a running host; a test that freezes the pool's clock has to age the files too.
 - **Bad** — `BlobStore` grows `list`, and listing scales with how many blobs the pool holds rather
   than with how much is debris.
 - **Neutral** — a driver's temporary files are still not reclaimed; they are not blobs, and `list`

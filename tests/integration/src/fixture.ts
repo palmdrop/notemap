@@ -155,6 +155,11 @@ export type Harness = {
   readonly assetRoot: string;
   /** How many blob streams have been opened, which a lazy opener leaves at zero. */
   readonly blobOpens: () => number;
+  /**
+   * Runs after every `put` has written its bytes and before it answers, which
+   * is where a reclaim racing a write lands. Absent stops it.
+   */
+  readonly racing: (afterPut?: () => Promise<void>) => void;
   /** Closes this pool and opens another over the same files, as a restart does. */
   readonly reopen: () => Promise<Harness>;
   /** Writes a destination row, which is what a routing record refers to. */
@@ -255,6 +260,7 @@ function over(
     mirrorRoot,
     assetRoot,
     blobOpens: blobs.opens,
+    racing: blobs.racing,
     reopen: async () => {
       await pool.close();
       handedOver = true;
@@ -281,16 +287,28 @@ function over(
   };
 }
 
-/** Wraps a blob store so a test can see whether anything read the bytes. */
-function counting(blobs: BlobStore): BlobStore & { opens: () => number } {
+/** Wraps a blob store so a test can see whether anything read the bytes, and race a write. */
+function counting(blobs: BlobStore): BlobStore & {
+  opens: () => number;
+  racing: (afterPut?: () => Promise<void>) => void;
+} {
   let opens = 0;
+  let afterPut: (() => Promise<void>) | undefined;
   return {
     ...blobs,
+    put: async (bytes) => {
+      const stored = await blobs.put(bytes);
+      await afterPut?.();
+      return stored;
+    },
     open: (blob, signal) => {
       opens += 1;
       return blobs.open(blob, signal);
     },
     opens: () => opens,
+    racing: (racer) => {
+      afterPut = racer;
+    },
   };
 }
 

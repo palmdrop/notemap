@@ -161,6 +161,18 @@ in-flight run). Then `pnpm test:stack`, since this touches the config file and t
 
 ---
 
+### Review fixes (2026-10-10)
+
+From [the review](../reviews/reclaim-unnamed-blobs-2026-10-10.md).
+
+- [x] The upload race is the refusal `blob-reclaimed`, answered `503` with `Retry-After`; the
+  client counts a `503` in the daemon's own error body as reached.
+- [x] The reclaim reads `blobNamed` without the lock first, and `lastPut` again under it.
+- [x] End-to-end race tests over real sqlite and blob-fs, through a `racing` hook on the harness.
+- [x] Minor fixes: a misplaced doc comment, README and example config wording, the grace test on
+  the wall clock, `ListedBlob.at` documented, a stale UI test fixture, `core.md`'s date.
+- [x] Commit
+
 ## Unknowns
 
 - [x] **Uploaders that are not the client.** _(2026-10-09)_ Raycast attaches through the client, so

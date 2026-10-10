@@ -57,7 +57,12 @@ export function assetUploadHandler(pool: Pool, limits: UploadLimits) {
     }
 
     if (stored.kind === "refused") {
-      return json(errorBody(stored.refusal), assetStoreStatus(stored.refusal));
+      const status = assetStoreStatus(stored.refusal);
+      return json(
+        errorBody(stored.refusal),
+        status,
+        status === 503 ? { "retry-after": "1" } : undefined,
+      );
     }
 
     const { asset } = stored.value;

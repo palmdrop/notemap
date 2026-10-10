@@ -59,7 +59,7 @@ export async function stillHeld(
 ): Promise<Landed | undefined> {
   const content = landed?.landing.output?.content;
   if (landed === undefined || content === undefined) return landed;
-  if ((await ports.blobs.open(content.blob)) !== undefined) return landed;
+  if ((await ports.blobs.lastPut(content.blob)) !== undefined) return landed;
 
   const { output, ...where } = landed.landing;
   const note = output?.note;

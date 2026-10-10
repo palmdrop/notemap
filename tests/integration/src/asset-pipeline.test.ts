@@ -29,6 +29,8 @@ afterEach(async () => {
   await Promise.all(open.splice(0).map((started) => started.cleanup()));
 });
 
+const DAY = 86_400_000;
+
 /** No grace at all, so a sweep takes anything unreferenced that is not brand new. */
 const IMPATIENT: PoolConfig = { ...CONFIG, sweep: { grace: 0 as Duration } };
 
@@ -127,13 +129,24 @@ describe("an upload whose capture never arrives", () => {
     expect(await present(path)).toBe(false);
   });
 
-  it("keeps a blob the reclaim finds put within the grace window", async () => {
+  it("keeps a blob put within the grace window, and takes it once the window has passed", async () => {
     const started = pool();
     const asset = await upload(started.pool, "abandoned.png", bytes("orphan"));
+    const path = blobAt(started.assetRoot, asset.blob);
+    const now = Date.now();
 
-    // The pool's clock is in the past, so a file written now is never old enough.
+    // On the wall clock, which is the one a blob's age is read from. The asset
+    // was stored on the frozen clock, months before, so the sweep releases it.
+    started.clock.set(new Date(now).toISOString());
+    expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
+      asset.id,
+    ]);
     expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
-    expect(await present(blobAt(started.assetRoot, asset.blob))).toBe(true);
+    expect(await present(path)).toBe(true);
+
+    started.clock.set(new Date(now + 2 * DAY).toISOString());
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
+    expect(await present(path)).toBe(false);
   });
 
   it("takes nothing from an item that arrived in time", async () => {

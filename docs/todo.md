@@ -5,7 +5,8 @@
 - [x] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
     - smooth scroll with some padding?
 - [x] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
-- [ ] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
+- [x] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
+  - the newest notice arrives from the left (`in:arrive`, `apps/ui/src/components/status/Message.svelte`) since #90
 - [x] trying to capture an empty capture gives no error or warning indicating why it does not work
 - [ ] destination fields should provide succinct placeholder texts
 

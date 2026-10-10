@@ -22,8 +22,8 @@ function fakeBlobs(kept: Set<BlobHash>): BlobStore {
       kept.add(hash);
       return { hash, bytes: content.length };
     },
-    open: (blob: BlobHash) =>
-      Promise.resolve(kept.has(blob) ? bytesOf(blob) : undefined),
+    lastPut: (blob: BlobHash) =>
+      Promise.resolve(kept.has(blob) ? "2026-10-09T12:00:00.000Z" : undefined),
   } as unknown as BlobStore;
 }
 
@@ -84,11 +84,14 @@ function upload(
 }
 
 describe("storing an asset under an id the uploader minted", () => {
-  it("stores nothing, and throws, when a reclaim takes the bytes before the asset names them", async () => {
+  it("stores nothing, and asks for the bytes again, when a reclaim takes them before the asset names them", async () => {
     const wired = ports();
     wired.between = (kept) => kept.clear();
 
-    await expect(upload(wired)).rejects.toThrow(/reclaimed/);
+    expect(await upload(wired)).toEqual({
+      kind: "refused",
+      refusal: { kind: "blob-reclaimed", blob: "blob:a picture" },
+    });
     expect(wired.held.size).toBe(0);
 
     await expect(upload(wired)).resolves.toMatchObject({

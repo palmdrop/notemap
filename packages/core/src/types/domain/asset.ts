@@ -36,6 +36,7 @@ export type StoredBlob = {
 /** A blob a store holds, and when its bytes were last put. */
 export type ListedBlob = {
   readonly hash: BlobHash;
+  /** The wall clock's, since the store keeps it: a pool given another clock compares the two. */
   readonly at: Timestamp;
 };
 

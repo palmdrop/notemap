@@ -58,9 +58,14 @@ export const ASSET_STATUS = {
   "blob-missing": 404,
 } as const satisfies Record<AssetRefusal["kind"], number>;
 
-/** `409` by the rule: the id is a conflict with something the pool already holds. */
+/**
+ * `409` by the rule: the id is a conflict with something the pool already
+ * holds. `503` because the pool did not say no: a client reads a `5xx` as
+ * unanswered, and sends the bytes again.
+ */
 export const ASSET_STORE_STATUS = {
   "asset-id-conflict": 409,
+  "blob-reclaimed": 503,
 } as const satisfies Record<AssetStoreRefusal["kind"], number>;
 
 /** `item-purged` is part of the refusal a client parses; purge is not built. */

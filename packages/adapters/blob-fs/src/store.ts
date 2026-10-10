@@ -71,7 +71,7 @@ export function createFilesystemBlobStore(
 
         // Bytes that are already there are the same bytes, by construction, so
         // the existing file is left alone rather than rewritten under a reader.
-        // Only its time moves: that is what tells a reclaim it was just put.
+        // Only its time moves, which a reclaim reads as just put.
         if (await touched(target)) await unlink(temporary);
         else await rename(temporary, target);
 
@@ -84,6 +84,8 @@ export function createFilesystemBlobStore(
     },
 
     list: () => listed(config.root),
+
+    lastPut: (blob) => lastPutAt(at(blob)),
 
     open: async (blob, signal) => {
       const path = at(blob);
@@ -125,13 +127,18 @@ async function* listed(root: string): AsyncGenerator<ListedBlob> {
   for (const shard of await entries(root)) {
     for (const name of await entries(join(root, shard))) {
       if (!isBlobName(name) || !name.startsWith(shard)) continue;
-      try {
-        const { mtime } = await stat(join(root, shard, name));
-        yield { hash: name, at: mtime.toISOString() as Timestamp };
-      } catch (cause) {
-        if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
-      }
+      const at = await lastPutAt(join(root, shard, name));
+      if (at !== undefined) yield { hash: name, at };
     }
+  }
+}
+
+async function lastPutAt(path: string): Promise<Timestamp | undefined> {
+  try {
+    return (await stat(path)).mtime.toISOString() as Timestamp;
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw cause;
   }
 }
 

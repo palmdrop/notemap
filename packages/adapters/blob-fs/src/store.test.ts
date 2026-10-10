@@ -188,6 +188,17 @@ describe("listing", () => {
     expect(listed).toEqual([]);
   });
 
+  it("answers when a blob was last put, and nothing for one it does not hold", async () => {
+    const { root: at, blobs } = store();
+    const { hash } = await blobs.put(streamOf(bytes("dated")));
+    const long = new Date("2020-01-01T00:00:00.000Z");
+    await utimes(pathFor(at, hash), long, long);
+
+    expect(await blobs.lastPut(hash)).toBe(long.toISOString());
+    await blobs.delete(hash);
+    expect(await blobs.lastPut(hash)).toBeUndefined();
+  });
+
   it("moves a blob's time forward when the same bytes are put again", async () => {
     const { root: at, blobs } = store();
     const { hash } = await blobs.put(streamOf(bytes("again")));

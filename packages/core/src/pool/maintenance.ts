@@ -47,11 +47,12 @@ export async function sweepUnreferencedAssets(
 }
 
 /**
- * Each blob is asked about and deleted in a transaction of its own, so the
- * write lock is held for one `unlink` at a time. Held across both, nothing can
- * name the blob between the question and the delete, and whatever names it
- * afterwards finds it gone under the same lock. Answers how many it took,
- * stopped or not.
+ * A blob that is named, or was put within the grace window, is passed over
+ * without the write lock; the rest are asked again under it, each in a
+ * transaction of its own, so the lock is held for one `unlink` at a time.
+ * Nothing can name a blob between that question and the delete, and whatever
+ * names it afterwards finds it gone under the same lock. Answers how many it
+ * took, stopped or not.
  */
 export async function reclaimUnnamedBlobs(
   config: PoolConfig,
@@ -59,14 +60,17 @@ export async function reclaimUnnamedBlobs(
   signal?: AbortSignal,
 ): Promise<number> {
   const olderThan = Date.parse(graceBefore(config, ports.clock.now()));
+  const old = (at: Timestamp | undefined) =>
+    at !== undefined && Date.parse(at) <= olderThan;
   let taken = 0;
 
   for await (const blob of ports.blobs.list()) {
     if (signal?.aborted === true) return taken;
-    if (Date.parse(blob.at) > olderThan) continue;
+    if (!old(blob.at) || (await ports.store.blobNamed(blob.hash))) continue;
 
     const took = await ports.store.transaction(async (tx) => {
       if (await tx.blobNamed(blob.hash)) return false;
+      if (!old(await ports.blobs.lastPut(blob.hash))) return false;
       await ports.blobs.delete(blob.hash);
       return true;
     });

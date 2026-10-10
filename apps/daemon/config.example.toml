@@ -88,8 +88,9 @@ maxUpload = 268435456 # bytes — 256 MiB
 
 # An upload whose capture never arrives is eventually swept, and the reclaim
 # deletes bytes nothing names any more. `grace` is how long "just uploaded" is
-# left alone: to either running at the wrong instant, referenced and
-# about-to-be-referenced look identical. The reclaim also runs at startup.
+# left alone: to a sweep running at the wrong instant, referenced and
+# about-to-be-referenced look identical. The reclaim waits it out too, so fresh
+# bytes are rarely sent twice; it also runs at startup.
 [sweep]
 grace = 86400000   # milliseconds — one day
 interval = 3600000 # milliseconds between sweeps

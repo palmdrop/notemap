@@ -82,9 +82,10 @@ function sameList(one: ListState, other: ListState): boolean {
 
 /**
  * A 5xx is not evidence of reach: `undecided` reads one as a socket that never
- * opened. A 401 is the opposite — the daemon is plainly there — and it is the
- * only notice a client gets that a credential lapsed, since nothing announces
- * an expiry.
+ * opened. Except a 503 in the daemon's own error grammar, which only the daemon
+ * writes: it is there, asking for the request again. A 401 is the opposite of
+ * a 5xx — the daemon is plainly there — and it is the only notice a client gets
+ * that a credential lapsed, since nothing announces an expiry.
  */
 function watching(
   transport: Transport,
@@ -96,7 +97,7 @@ function watching(
     async fetch(request) {
       try {
         const response = await transport.fetch(request);
-        answered(response.status < 500);
+        answered(response.status < 500 || (await askedAgain(response)));
         if (response.status === 401) lapsed();
         return response;
       } catch (error) {
@@ -105,6 +106,18 @@ function watching(
       }
     },
   };
+}
+
+async function askedAgain(response: Response): Promise<boolean> {
+  if (response.status !== 503) return false;
+  try {
+    const body = (await response.clone().json()) as {
+      error?: { code?: unknown };
+    };
+    return typeof body.error?.code === "string";
+  } catch {
+    return false;
+  }
 }
 
 /** A set is rebuilt on every state change, so identity alone never matches. */

@@ -98,6 +98,8 @@ const SAID: {
   "bad-position": "the app lost its place in the list; reload",
   "bad-url": "that is not a link this daemon will read",
   "blob-missing": "the stored file is gone from this daemon's disk",
+  "blob-reclaimed":
+    "the file was cleared away as it arrived; it will be sent again",
   "capability-undeclared": "that destination cannot do this",
   "capture-id-conflict": "that capture already exists, with different content",
   "delivery-in-flight":
