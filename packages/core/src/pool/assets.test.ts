@@ -11,21 +11,30 @@ import { store } from "./assets";
 const PHOTO = "photo" as AssetId;
 
 /** Content-addressed the way a real one is, without a hash function to keep in step. */
-function fakeBlobs(): BlobStore {
+function fakeBlobs(kept: Set<BlobHash>): BlobStore {
   return {
     put: async (bytes: AsyncIterable<Uint8Array>): Promise<StoredBlob> => {
       let content = "";
       for await (const chunk of bytes) {
         content += new TextDecoder().decode(chunk);
       }
-      return { hash: `blob:${content}` as BlobHash, bytes: content.length };
+      const hash = `blob:${content}` as BlobHash;
+      kept.add(hash);
+      return { hash, bytes: content.length };
     },
+    lastPut: (blob: BlobHash) =>
+      Promise.resolve(kept.has(blob) ? "2026-10-09T12:00:00.000Z" : undefined),
   } as unknown as BlobStore;
 }
 
-type Wired = PoolPorts & { readonly held: ReadonlyMap<AssetId, Asset> };
+type Wired = PoolPorts & {
+  readonly held: ReadonlyMap<AssetId, Asset>;
+  /** Runs once, between the bytes being put and the transaction opening. */
+  between?: ((kept: Set<BlobHash>) => void) | undefined;
+};
 
 function ports(...held: readonly Asset[]): Wired {
+  const kept = new Set<BlobHash>();
   const assets = new Map(held.map((asset) => [asset.id, asset]));
   const tx = {
     asset: (id: AssetId) => Promise.resolve(assets.get(id)),
@@ -47,10 +56,19 @@ function ports(...held: readonly Asset[]): Wired {
     asset: () => {
       throw new Error("read an asset outside the transaction");
     },
-    transaction: <T>(work: (transaction: typeof tx) => Promise<T>) => work(tx),
+    transaction: <T>(work: (transaction: typeof tx) => Promise<T>) => {
+      wired.between?.(kept);
+      wired.between = undefined;
+      return work(tx);
+    },
   } as unknown as PoolStore;
 
-  return { store: pool, blobs: fakeBlobs(), held: assets } as unknown as Wired;
+  const wired = {
+    store: pool,
+    blobs: fakeBlobs(kept),
+    held: assets,
+  } as unknown as Wired;
+  return wired;
 }
 
 async function* bytesOf(content: string): AsyncIterable<Uint8Array> {
@@ -66,6 +84,22 @@ function upload(
 }
 
 describe("storing an asset under an id the uploader minted", () => {
+  it("stores nothing, and asks for the bytes again, when a reclaim takes them before the asset names them", async () => {
+    const wired = ports();
+    wired.between = (kept) => kept.clear();
+
+    expect(await upload(wired)).toEqual({
+      kind: "refused",
+      refusal: { kind: "blob-reclaimed", blob: "blob:a picture" },
+    });
+    expect(wired.held.size).toBe(0);
+
+    await expect(upload(wired)).resolves.toMatchObject({
+      kind: "ok",
+      value: { kind: "stored" },
+    });
+  });
+
   it("takes the id it was given rather than minting one", async () => {
     const wired = ports();
 

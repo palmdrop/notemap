@@ -1440,6 +1440,16 @@ export const assetUploadRoute = createRoute({
       422,
       UPLOAD_STATUS,
     ),
+    503: {
+      ...errorResponse(
+        "The bytes matched a blob already held, which was reclaimed before the asset could name it. Nothing was stored; send the same upload again.",
+        503,
+        ASSET_STORE_STATUS,
+      ),
+      headers: z.object({
+        "Retry-After": z.string().openapi({ example: "1" }),
+      }),
+    },
   },
 });
 

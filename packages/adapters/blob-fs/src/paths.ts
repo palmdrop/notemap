@@ -10,6 +10,10 @@ const HASH = /^[0-9a-f]{64}$/;
 
 const SHARD = 2;
 
+export function isBlobName(name: string): name is BlobHash {
+  return HASH.test(name);
+}
+
 /**
  * `<root>/<first two characters>/<the whole hash>`, following git's object
  * layout: a flat directory of a hundred thousand files is slow to list on every

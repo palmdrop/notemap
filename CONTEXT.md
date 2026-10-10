@@ -152,17 +152,24 @@ _Avoid_: image *for the asset*, photo
 
 **Blob**:
 The bytes an asset points at, stored once and addressed by their SHA-256. Named for a machine,
-shared by the pool and the mirror, and freed when the last asset referencing it goes. The layer
+shared by the pool and the mirror, and freed by the reclaim once nothing names it. The layer
 where deduplication happens; a filename never reaches it, and neither does the store beneath it,
 which knows hashes and bytes and nothing else.
 _Avoid_: object, binary, content
 
 **Sweep**:
-The periodic release of assets no item ever referenced, together with the blobs that lose their
-last asset. Its subject is the upload whose capture never arrived, so it waits out a grace window
-first: to a sweep running at the wrong instant, "referenced" and "about to be referenced" look
-identical. Purge is what releases an asset whose items *went*; the two never overlap. It reaches
-blobs only through the assets that name one, so bytes no asset ever named are deep verify's.
+The periodic release of assets no item ever referenced. Its subject is the upload whose capture
+never arrived, so it waits out a grace window first: to a sweep running at the wrong instant,
+"referenced" and "about to be referenced" look identical. Purge is what releases an asset whose
+items *went*; the two never overlap. It deletes no blob; the bytes an asset leaves behind are the
+reclaim's.
+_Avoid_: garbage collection, cleanup, prune, reap
+
+**Reclaim**:
+The periodic walk over the blob store that deletes each blob no asset and no routing record names,
+once it has gone unput for the sweep's grace window. It takes what the sweep released and what no
+asset ever named alike — a crash between write and insert, a refused upload, an output whose route
+never recorded it.
 _Avoid_: garbage collection, cleanup, prune, reap
 
 ### Processing

@@ -277,15 +277,15 @@ export type AssetRefusal =
   | { readonly kind: "no-such-asset"; readonly asset: AssetId }
   | { readonly kind: "blob-missing"; readonly blob: BlobHash };
 
-/**
- * The id is the uploader's, so two uploads can claim one. Refused only where
- * they disagree: identical bytes under the same name and media type are the
- * same asset arriving twice.
- */
-export type AssetStoreRefusal = {
-  readonly kind: "asset-id-conflict";
-  readonly asset: AssetId;
-};
+export type AssetStoreRefusal =
+  /**
+   * The id is the uploader's, so two uploads can claim one. Refused only where
+   * they disagree: identical bytes under the same name and media type are the
+   * same asset arriving twice.
+   */
+  | { readonly kind: "asset-id-conflict"; readonly asset: AssetId }
+  /** Not a no: the bytes were reused, a reclaim took them, and sending them again stores them. */
+  | { readonly kind: "blob-reclaimed"; readonly blob: BlobHash };
 
 export type LeaseRefusal = {
   readonly kind: "lease-lost";

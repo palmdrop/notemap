@@ -143,9 +143,7 @@ describe("the fact a row carries", () => {
         naming,
       ),
     ).toEqual({ said: "unreachable", alarm: true });
-    expect(
-      factOf("assets-released", { assets: ["a", "b"], blobs: [] }, naming),
-    ).toEqual({
+    expect(factOf("assets-released", { assets: ["a", "b"] }, naming)).toEqual({
       said: "2 released",
     });
   });

@@ -45,6 +45,7 @@ maxBackoff = 60000
 [sweep]
 grace = 86400000   # milliseconds — one day
 interval = 3600000
+reclaim = 86400000
 
 [delivery]
 pollInterval = 5000 # milliseconds between claims

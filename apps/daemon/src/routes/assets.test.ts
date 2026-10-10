@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
+import { utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -59,6 +60,34 @@ async function upload(
 }
 
 describe("PUT /v1/assets/{id}", () => {
+  it("answers 503 and asks again when a reclaim takes the bytes before the asset names them", async () => {
+    const started = host();
+    const writing = started.blobs.put;
+    (started.blobs as { put: typeof writing }).put = async (bytes) => {
+      const stored = await writing(bytes);
+      await started.blobs.delete(stored.hash);
+      return stored;
+    };
+    const headers = {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    };
+
+    const raced = await put(started.app, "a picture", headers, "raced");
+
+    expect(raced.status).toBe(503);
+    expect(raced.headers.get("retry-after")).toBe("1");
+    expect(((await raced.json()) as ErrorResponse).error.code).toBe(
+      "blob-reclaimed",
+    );
+    expect((await started.app.request("/v1/assets/raced")).status).toBe(404);
+
+    (started.blobs as { put: typeof writing }).put = writing;
+    expect((await put(started.app, "a picture", headers, "raced")).status).toBe(
+      201,
+    );
+  });
+
   it("stores the bytes under the id the caller minted", async () => {
     const started = host();
 
@@ -609,5 +638,28 @@ describe("the sweep loop", () => {
     expect((await started.app.request(`/v1/assets/${asset.id}`)).status).toBe(
       200,
     );
+  });
+});
+
+describe("the reclaim", () => {
+  it("takes bytes nothing names once the grace has passed, and keeps an upload within it", async () => {
+    const started = host();
+    const asset = await upload(started, "a picture", {
+      "content-type": "image/png",
+      "content-disposition": attachment("photo.png"),
+    });
+    const orphan = await started.blobs.put(
+      (async function* () {
+        yield new TextEncoder().encode("bytes no asset ever named");
+      })(),
+    );
+    const long = new Date("2020-01-01T00:00:00Z");
+    await utimes(started.blobs.pathFor(orphan.hash), long, long);
+
+    expect(await started.reclaim()).toBe(1);
+    expect(await started.blobs.verify(orphan.hash)).toBe("missing");
+    expect(
+      (await started.app.request(`/v1/assets/${asset.id}/content`)).status,
+    ).toBe(200);
   });
 });

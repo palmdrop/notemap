@@ -54,7 +54,10 @@ describe("the example config", () => {
       root: join(homedir(), ".local/share/notemap/assets"),
       maxUploadBytes: 268_435_456,
     });
-    expect(config.sweep).toEqual({ intervalMs: 3_600_000 });
+    expect(config.sweep).toEqual({
+      intervalMs: 3_600_000,
+      reclaimIntervalMs: 86_400_000,
+    });
     expect(config.delivery).toEqual({
       pollIntervalMs: 5_000,
       leaseForMs: 300_000,
@@ -142,6 +145,19 @@ describe("what a config may leave out", () => {
   it("takes the pool settings from core rather than from the file", () => {
     expect(parse("").poolConfig.poolSettings).toBe(POOL_SETTINGS);
     expect(POOL_SETTINGS.map((setting) => setting.name)).toEqual(["unfurl"]);
+  });
+});
+
+describe("how often the sweep and the reclaim run", () => {
+  it("takes each interval from the file", () => {
+    expect(parse("[sweep]\ninterval = 60000\nreclaim = 600000").sweep).toEqual({
+      intervalMs: 60_000,
+      reclaimIntervalMs: 600_000,
+    });
+  });
+
+  it("refuses a reclaim interval that is not a positive whole number", () => {
+    expect(() => parse("[sweep]\nreclaim = 0")).toThrow(/sweep\.reclaim/);
   });
 });
 

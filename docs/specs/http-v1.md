@@ -493,14 +493,14 @@ person reading `docker logs` (added 2026-09-20, [plan](../plans/daemon-logging.m
   log holds — template firings, deferred deliveries and abandonments included, which no route
   ever sees. The line carries the kind, the item, the agent and the action's own facts.
 - **Four levels.** `error` is a throw nobody expected — a request that threw, a runner's pass
-  that threw, a sweep that failed — with its stack. `warn` is a fact the admin should act on: an
+  that threw, a sweep or a reclaim that failed — with its stack. `warn` is a fact the admin should act on: an
   unknown config key, a plain-HTTP origin, an adapter's account warning, a sign-in that arrived
   for a host `daemon.origin` does not name, a refused sign-in, and the actions that say work went
   wrong — `delivery-failed`, `work-failed`, `work-abandoned`. `info` is what happened: every
   other action, the startup facts, a session opened or ended, a token minted or revoked, a sweep
-  that released something, shutdown. `debug` is every request — method, path, status, duration,
-  whether a session, a token or nobody asked, and a refusal's `code` — plus a job resolved and a
-  sweep that released nothing.
+  that released something or a reclaim that took something, shutdown. `debug` is every request —
+  method, path, status, duration, whether a session, a token or nobody asked, and a refusal's
+  `code` — plus a job resolved and a sweep or a reclaim that took nothing.
 - **Requests are `debug` rather than `info`** because the shell polls the action log on its own
   tempo ([ADR 32](../adr/0032-a-shell-learns-what-happened-by-reading-the-log.md)) and the
   container's healthcheck asks `/v1/health`; at `info` the log would be mostly that.
@@ -1611,7 +1611,14 @@ asset and no `Location`; an id naming something else is `409 asset-id-conflict`.
   changed either would rewrite what an existing capture points at. Two names over one content are
   still two assets and one blob — that is two ids, and neither conflicts with the other.
 - A conflicting upload still writes its blob, since the bytes are hashed before the row is read.
-  Space rather than loss, and deep verify's to reclaim.
+  Space rather than loss, and the reclaim's to take once nothing has put it for the grace window.
+- **An upload whose bytes were reclaimed under it answers `503 blob-reclaimed`**, with
+  `Retry-After: 1`. Bytes already held are reused rather than written again, and the reclaim may
+  delete them between the write and the insert; the insert sees it and nothing is stored. The
+  pool did not say no, so it answers outside the `4xx` a client settles on: the client reads a
+  `5xx` as unanswered and sends the upload again, and the second write lands. A `503` carrying the
+  daemon's own error body is the one `5xx` the client still counts as reaching the daemon, since
+  no proxy in front of it writes that body.
 - **A raw body rather than multipart**, because Hono buffers a multipart body in order to parse
   it, and filename encoding in multipart is a swamp — where `Content-Disposition` has `filename*`
   for anything outside ASCII and the body streams straight into the hash. The cost is that a

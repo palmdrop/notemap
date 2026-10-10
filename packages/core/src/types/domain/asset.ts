@@ -1,4 +1,4 @@
-import type { AssetId, BlobHash, Duration } from "./ids";
+import type { AssetId, BlobHash, Duration, Timestamp } from "./ids";
 
 export type Asset = {
   readonly id: AssetId;
@@ -33,7 +33,14 @@ export type StoredBlob = {
   readonly bytes: number;
 };
 
-/** How long an unreferenced asset is left alone before a sweep may take it. */
+/** A blob a store holds, and when its bytes were last put. */
+export type ListedBlob = {
+  readonly hash: BlobHash;
+  /** The wall clock's, since the store keeps it: a pool given another clock compares the two. */
+  readonly at: Timestamp;
+};
+
+/** How long an unreferenced asset is left alone before a sweep may take it, and an unnamed blob before a reclaim may. */
 export type SweepPolicy = {
   readonly grace: Duration;
 };

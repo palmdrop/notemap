@@ -78,6 +78,8 @@ export type Daemon = {
   readonly deliver: () => Promise<number>;
   /** Runs a sweep now, whatever the timer would have done. */
   readonly sweep: () => Promise<readonly AssetId[]>;
+  /** Runs a reclaim now. No timer drives one here. */
+  readonly reclaim: () => Promise<number>;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -218,6 +220,7 @@ export function daemon(
     drain: async () => (await runner?.drain()) ?? 0,
     deliver: () => deliveries.drain(),
     sweep: () => sweeper.run(),
+    reclaim: () => pool.maintenance.reclaimUnnamedBlobs(),
     cleanup: async () => {
       await answered.close();
       await runner?.stop();

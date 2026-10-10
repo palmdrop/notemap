@@ -138,7 +138,7 @@ describe("GET /v1/openapi.json", () => {
       Object.keys(
         document.paths["/v1/assets/{id}"]?.put?.responses ?? {},
       ).sort(),
-    ).toEqual(["200", "201", "409", "413", "415", "422"]);
+    ).toEqual(["200", "201", "409", "413", "415", "422", "503"]);
     expect(
       Object.keys(
         document.paths["/v1/assets/{id}"]?.get?.responses ?? {},

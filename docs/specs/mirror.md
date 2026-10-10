@@ -383,8 +383,8 @@ It inherits leasing, retry, abandonment and the abandoned-work surface: a purge 
 not be deleted is visible rather than silent, which is what [ADR
 4](../adr/0004-purge-leaves-a-minimal-tombstone.md) demands of the one destructive operation.
 
-Blobs are not the mirror's to free. An asset is released when its last item goes and a blob when
-its last asset does, by the asset store.
+Blobs are not the mirror's to free. An asset is released when its last item goes, and a blob by
+the reclaim once nothing names it.
 
 ### Layout — the local filesystem driver
 

@@ -15,10 +15,10 @@ import { isPicture, keepingHead, measure } from "./pictures";
 type StoreResult = Result<AssetOutcome, AssetStoreRefusal>;
 
 /**
- * The bytes are written before the transaction opens, so nothing awaits a disk
- * while the store holds its write lock. A crash between the two — or a refused
- * id — leaves a blob no asset names: space, which no sweep reclaims and the
- * next identical upload reuses.
+ * The bytes are written before the transaction opens, so nothing awaits a
+ * stream while the store holds its write lock. A crash between the two — or a
+ * refused id — leaves a blob no asset names, which the reclaim takes once the
+ * grace window has passed.
  */
 export async function store(
   ports: PoolPorts,
@@ -40,10 +40,14 @@ export async function store(
     ...(dimensions === undefined ? {} : { dimensions }),
   };
 
-  return ports.store.transaction((tx) => insert(tx, arriving));
+  return ports.store.transaction((tx) => insert(ports, tx, arriving));
 }
 
-async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
+async function insert(
+  ports: PoolPorts,
+  tx: PoolTx,
+  arriving: Asset,
+): Promise<StoreResult> {
   const held = await tx.asset(arriving.id);
   if (held !== undefined) {
     if (!isSame(held, arriving)) {
@@ -57,6 +61,12 @@ async function insert(tx: PoolTx, arriving: Asset): Promise<StoreResult> {
       });
     }
     return ok({ kind: "already-stored", asset: held });
+  }
+
+  // Bytes already held were reused rather than written, and a reclaim may have
+  // taken them since. The stream is spent, so the uploader has to send it again.
+  if ((await ports.blobs.lastPut(arriving.blob)) === undefined) {
+    return refused({ kind: "blob-reclaimed", blob: arriving.blob });
   }
 
   await tx.insertAsset(arriving);

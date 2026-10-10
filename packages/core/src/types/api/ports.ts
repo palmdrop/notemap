@@ -5,6 +5,7 @@ import type {
   Asset,
   BlobIntegrity,
   Dimensions,
+  ListedBlob,
   StoredBlob,
 } from "../domain/asset";
 import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
@@ -124,15 +125,23 @@ export interface SchemaValidator {
  * that releasing an asset moves both counts in one transaction.
  */
 export interface BlobStore {
-  /** Hashes what it is given, and answers what it turned out to be. Storing the same bytes twice is one blob. */
+  /**
+   * Hashes what it is given, and answers what it turned out to be. Storing the
+   * same bytes twice is one blob, put again: when it was last put moves to now.
+   * Nothing holds the bytes once this answers, so they may already be gone.
+   */
   put(bytes: AsyncIterable<Uint8Array>): Promise<StoredBlob>;
+  /** Every blob held, in no particular order. A blob deleted while this runs may or may not appear. */
+  list(): AsyncIterable<ListedBlob>;
+  /** When the blob was last put, on the wall clock; absent if it is not held. */
+  lastPut(blob: BlobHash): Promise<Timestamp | undefined>;
   /** Absent means the bytes are gone from under a row that still names them. */
   open(
     blob: BlobHash,
     signal?: AbortSignal,
   ): Promise<AsyncIterable<Uint8Array> | undefined>;
   verify(blob: BlobHash): Promise<BlobIntegrity>;
-  /** Absent already is the outcome asked for: a sweep that half-ran must be able to finish. */
+  /** Absent already is the outcome asked for: a reclaim that half-ran must be able to finish. */
   delete(blob: BlobHash): Promise<void>;
   /**
    * Where the bytes are, in whatever terms this driver stores them. The layout
@@ -365,6 +374,9 @@ export interface PoolReads {
     limit: number,
   ): Promise<readonly AssetId[]>;
 
+  /** Whether an asset or a routing record's output names the blob: either keeps it. */
+  blobNamed(blob: BlobHash): Promise<boolean>;
+
   actions(query: ActionQuery, page: OrderedPage): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
 }
@@ -441,15 +453,10 @@ export interface PoolTx extends PoolReads {
   measureAsset(id: AssetId, dimensions: Dimensions): Promise<void>;
 
   /**
-   * Releases assets, and answers the blobs that lost their last one — which are
-   * then the caller's to delete, outside this transaction. Releasing an asset an
+   * Releases assets and leaves their blobs where they are. Releasing an asset an
    * item still references fails rather than succeeding quietly.
-   *
-   * A blob a routing record names as its output is never answered, however few
-   * assets are left naming it: an output is named by a record rather than by an
-   * asset, and the two may be the same bytes.
    */
-  deleteAssets(assets: readonly AssetId[]): Promise<readonly BlobHash[]>;
+  deleteAssets(assets: readonly AssetId[]): Promise<void>;
 
   /** The job a lease still holds, or nothing if the lease has been taken over. */
   leasedJob(lease: LeaseId): Promise<Lease | undefined>;

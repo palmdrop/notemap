@@ -5,6 +5,7 @@ import type { BlobHash, Duration, PoolConfig } from "@notemap/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  backdate,
   bytes,
   CONFIG,
   drainWith,
@@ -27,6 +28,8 @@ function pool(config: PoolConfig = CONFIG): Harness {
 afterEach(async () => {
   await Promise.all(open.splice(0).map((started) => started.cleanup()));
 });
+
+const DAY = 86_400_000;
 
 /** No grace at all, so a sweep takes anything unreferenced that is not brand new. */
 const IMPATIENT: PoolConfig = { ...CONFIG, sweep: { grace: 0 as Duration } };
@@ -106,7 +109,7 @@ describe("upload, capture, drain", () => {
 });
 
 describe("an upload whose capture never arrives", () => {
-  it("is gone after a sweep, and its blob with it", async () => {
+  it("is gone after a sweep, and its blob after the reclaim that follows", async () => {
     const started = pool(IMPATIENT);
     const asset = await upload(started.pool, "abandoned.png", bytes("orphan"));
     const path = blobAt(started.assetRoot, asset.blob);
@@ -119,6 +122,30 @@ describe("an upload whose capture never arrives", () => {
     ]);
 
     expect(await started.pool.assets.get(asset.id)).toBeUndefined();
+    expect(await present(path)).toBe(true);
+
+    await backdate(started.assetRoot);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
+    expect(await present(path)).toBe(false);
+  });
+
+  it("keeps a blob put within the grace window, and takes it once the window has passed", async () => {
+    const started = pool();
+    const asset = await upload(started.pool, "abandoned.png", bytes("orphan"));
+    const path = blobAt(started.assetRoot, asset.blob);
+    const now = Date.now();
+
+    // On the wall clock, which is the one a blob's age is read from. The asset
+    // was stored on the frozen clock, months before, so the sweep releases it.
+    started.clock.set(new Date(now).toISOString());
+    expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
+      asset.id,
+    ]);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
+    expect(await present(path)).toBe(true);
+
+    started.clock.set(new Date(now + 2 * DAY).toISOString());
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
     expect(await present(path)).toBe(false);
   });
 
@@ -136,6 +163,8 @@ describe("an upload whose capture never arrives", () => {
     expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
       dropped.id,
     ]);
+    await backdate(started.assetRoot);
+    await started.pool.maintenance.reclaimUnnamedBlobs();
 
     // The mirror still points at a file that is there.
     const record = await storedRecord(started.mirrorRoot);

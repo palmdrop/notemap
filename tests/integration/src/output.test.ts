@@ -11,6 +11,7 @@ import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  backdate,
   bytes,
   collect,
   deliverWith,
@@ -230,8 +231,8 @@ describe("the mirror and the output", () => {
   });
 });
 
-describe("the sweep and the output", () => {
-  it("leaves an output's blob alone", async () => {
+describe("the sweep, the reclaim and the output", () => {
+  it("leave an output's blob alone", async () => {
     const opened = await pooled();
     const { pool, clock } = opened;
     opened.destination.answers(delivered("# a thought\n"));
@@ -240,6 +241,62 @@ describe("the sweep and the output", () => {
 
     clock.set("2026-08-08T09:00:00.000Z");
     expect(await pool.maintenance.sweepUnreferencedAssets()).toEqual([]);
+    await backdate(opened.assetRoot);
+    expect(await pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
     expect(await filesUnder(opened.assetRoot)).toHaveLength(1);
+  });
+});
+
+/** A reclaim landing between the output's write and the transaction recording it. */
+function reclaimingAsWritten(opened: Harness): void {
+  opened.racing(async () => {
+    await backdate(opened.assetRoot);
+    await opened.pool.maintenance.reclaimUnnamedBlobs();
+  });
+}
+
+describe("an output reclaimed before it is recorded", () => {
+  it("lands the route without it, keeping the note and saying the output was lost", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    opened.destination.answers(delivered("# a thought\n", "no pictures"));
+    const item = await capture(pool);
+    reclaimingAsWritten(opened);
+
+    const record = routed(await pool.routing.route(item, request()));
+
+    expect(record.state).toBe("delivered");
+    expect(record.output).toEqual({ note: "no pictures" });
+    const logged = await pool.actions.read(
+      { item },
+      { limit: 50, order: "newest-first" },
+    );
+    expect(logged.values[0]).toMatchObject({
+      kind: "routed",
+      detail: {
+        record: record.id,
+        outputLost: expect.stringMatching(/reclaimed/),
+      },
+    });
+  });
+
+  it("lands a deferred delivery without it, the same way", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    opened.destination.answers({ kind: "unreachable", detail: "asleep" });
+    const item = await capture(pool);
+    const reservation = routed(await pool.routing.route(item, request()));
+
+    opened.destination.answers(delivered("# later\n", "no pictures"));
+    reclaimingAsWritten(opened);
+    expect(await deliverWith(opened, opened.destination)()).toBe(1);
+
+    const [record] = await pool.routing.recordsFor(item);
+    expect(record).toMatchObject({
+      id: reservation.id,
+      state: "delivered",
+      output: { note: "no pictures" },
+    });
+    expect(record?.output?.content).toBeUndefined();
   });
 });

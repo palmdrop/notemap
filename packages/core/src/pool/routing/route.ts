@@ -27,7 +27,7 @@ import {
 } from "./delivery";
 import { established } from "../templates/establish";
 import { releaseTriggerTag } from "../templates/fire";
-import { landingFor, type Landed } from "./output";
+import { landingFor, stillHeld, type Landed } from "./output";
 import { prepare } from "./prepare";
 
 type Routed = Result<RoutingRecord, DeliveryRefusal>;
@@ -82,13 +82,14 @@ export async function route(
       : undefined;
 
   return ports.store.transaction(async (tx) => {
+    const kept = await stillHeld(ports, landed);
     // Read back while the adapter had the bytes: the record cannot be written
     // without either of them, but the entry saying bytes left the machine
     // outlives both.
     const present = (await tx.item(item)) !== undefined;
     const held = await tx.destination(request.destination);
 
-    await trace(ports, tx, record, outcome, landed);
+    await trace(ports, tx, record, outcome, kept);
     if (!present) {
       return refused<RoutingRecord, DeliveryRefusal>({
         kind: "item-purged",
@@ -105,7 +106,7 @@ export async function route(
 
     switch (outcome.kind) {
       case "delivered":
-        return deliver(ports, tx, record, landed?.landing ?? {});
+        return deliver(ports, tx, record, kept?.landing ?? {});
       case "unreachable":
         return reserve(ports, tx, record);
       case "rejected":

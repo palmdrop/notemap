@@ -57,8 +57,9 @@ root = "~/.local/share/notemap/assets"
 maxUpload = 268435456 # bytes — enforced against the stream, not against Content-Length
 
 [sweep]
-grace = 86400000   # how long an unreferenced asset is left alone
+grace = 86400000   # how long an unreferenced asset, or an unnamed blob, is left alone
 interval = 3600000 # milliseconds between sweeps
+reclaim = 86400000 # milliseconds between reclaims, which also run at startup
 ```
 
 Unlike the mirror, the blob store is **not optional**: a pool that cannot store bytes cannot
@@ -66,9 +67,14 @@ capture an image at all.
 
 An asset's reference is taken when the capture naming it commits, so an upload whose capture
 never arrives is unreferenced — wasted space rather than a reference to something that does not
-exist. The sweeper takes those, and any blob that loses its last asset with them, once `grace`
-has passed. The window exists because to a sweep running at the wrong instant, "referenced" and
-"about to be referenced" look identical.
+exist. The sweeper releases those once `grace` has passed. The window exists because to a sweep
+running at the wrong instant, "referenced" and "about to be referenced" look identical.
+
+The reclaim deletes any blob no asset and no routing record names once it has gone `grace`
+without being put — what a sweep released, and what a crash or a refused upload left behind. It
+runs at startup and every `reclaim`. What keeps it from taking bytes an upload is about to name is
+a check under the pool's write lock, not the window: an upload whose bytes were taken in between
+is answered `503 blob-reclaimed` and sent again. The window only makes that rare.
 
 **Anything may be uploaded; only inert things render.** On the way out, an allowlist decides
 `inline` versus `attachment` — images, audio, video and `text/plain` render in place, and

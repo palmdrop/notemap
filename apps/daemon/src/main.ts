@@ -6,6 +6,7 @@ import { serve } from "@hono/node-server";
 
 import { createApp } from "./app";
 import { startMeasuring } from "./assets/measuring";
+import { startReclaiming } from "./assets/reclaiming";
 import { startSweeper } from "./assets/sweeper";
 import { cookieOptionsFor, loadConfig } from "./config/load";
 import { SHUTDOWN_GRACE_MS } from "./constants";
@@ -134,6 +135,7 @@ async function start(): Promise<void> {
   runners.delivery = delivery;
 
   const sweeper = startSweeper(pool, config.sweep, log);
+  const reclaiming = startReclaiming(pool, config.sweep, log);
   const measuring = startMeasuring(pool, log);
 
   /** A runner holds a lease while it works; stopping it first gives it back. */
@@ -142,6 +144,7 @@ async function start(): Promise<void> {
     await mirror?.stop();
     await delivery.stop();
     await sweeper.stop();
+    await reclaiming.stop();
     await measuring.stop();
     await pool.close();
     await auth.close();

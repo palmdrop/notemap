@@ -1,7 +1,7 @@
 # 22. The uploader mints the asset id
 
 **Date**: 2026-08-25
-**Status**: Accepted
+**Status**: Accepted. Superseded in part by [ADR 58](0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)
 **Deciders**: palmdrop
 
 ---
@@ -82,6 +82,12 @@ upload as `already-stored`.
 - **Bad** — a refused `PUT` has already written the blob, since the bytes are hashed before the
   transaction opens. Space rather than loss, no worse than the crash window that was there before,
   and deep verify's to reclaim rather than the sweep's ([core.md](../specs/core.md#archive-and-purge)).
+
+  > **Superseded in part 2026-10-09 by
+  > [ADR 58](0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md).**
+  > Deep verify was never built, and a refused `PUT`'s blob is now the reclaim's: a walk over the
+  > blob store that takes any blob nothing names once the grace window has passed. The rest of
+  > this bullet stands.
 - **Neutral** — the payload's asset reference still names a slot and an asset and nothing else. A
   client that mints the id now also knows the bytes, so it *could* carry the hash, but every
   failure that would catch still resolves elsewhere and the argument of 2026-08-11 is unchanged.
