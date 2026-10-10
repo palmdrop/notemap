@@ -98,8 +98,11 @@ keeps a link to follow.
   time, so one that lands and a later one that does not leaves the first where it is, and the retry
   posts it again: four files landed and a fifth unreachable means four duplicates when the delivery
   is retried. Nothing can look at what landed — are.na offers no conditional create and `/v3/search`
-  is Premium-only — so there is nothing to resume from. Accepted deliberately, for the same reason
-  as the window above and recorded in
+  is Premium-only — so there is nothing to resume from. A block **refused** part way through is a
+  different thing: there the delivery answers `delivered` with the blocks that landed and a note
+  saying how many of how many went, which file did not, and why, because `rejected` would be
+  abandoned at once and leave those blocks with nothing naming them. Accepted deliberately, for the
+  same reason as the window above and recorded in
   [ADR 59](../../../docs/adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md).
 - **It does not enumerate the account.** Browsing answers one page of the channels the token's own
   user made, most recently updated first, and says when there were more. Paging the whole account is
@@ -117,10 +120,11 @@ keeps a link to follow.
 | `401` — the token was refused | `unreachable` to a delivery, `rejected` to a check |
 | `403` — most often a token with `read` scope, or a channel you cannot add to | `rejected` |
 | `404` — the channel is gone, most often renamed | `rejected` |
-| `422` — are.na would not take the block | `rejected` |
+| `422` — are.na would not take the block | `rejected`, or `delivered` saying what did not go where an earlier block of the same delivery landed |
 | `408`, `429`, `5xx` — busy, rate-limited or broken | `unreachable` |
 | A presigned upload refused | `unreachable` |
 | No channel was named, or `place-assets` met a capture carrying no asset | `rejected` |
+| A later block refused, earlier ones having landed | `delivered`, its note naming what did not go |
 | The network could not be reached at all | `unreachable` |
 
 Two rows are asymmetric, both for the same reason and both the WebDAV kind's: a delivery is right to

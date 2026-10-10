@@ -292,6 +292,58 @@ describe("a capture carrying several files", () => {
     expect(server.blocks()).toHaveLength(1);
   });
 
+  /**
+   * `rejected` asserts nothing was delivered and is abandoned on the first
+   * attempt, which would leave the blocks that landed with nothing naming
+   * them. So this carried part of the capture and says so.
+   */
+  it("carries what landed and says what did not, where a later block is refused", async () => {
+    server.refusesBlocksAfter(2);
+
+    const outcome = delivered(await adapter().deliver(row(), three()));
+
+    expect(server.blocks()).toHaveLength(2);
+    expect(outcome.pointer).toBe("a-channel");
+    expect(await textOf(outcome.output)).toBe(
+      `https://www.are.na/block/1001\nhttps://www.are.na/block/1002\n`,
+    );
+    expect(outcome.output?.note).toContain("2 of 3 blocks went; c.png did not");
+    expect(outcome.output?.note).toContain("would not take");
+  });
+
+  /** Nothing landed, so the refusal is the whole delivery's and is right to be abandoned. */
+  it("is rejected where the first block is refused", async () => {
+    server.refusesBlocksAfter(0);
+
+    const outcome = await adapter().deliver(row(), three());
+
+    expect(outcome.kind).toBe("rejected");
+    expect(server.blocks()).toEqual([]);
+  });
+
+  it("says what a shortfall dropped beside where the tags went", async () => {
+    server.refusesBlocksAfter(1);
+
+    const outcome = delivered(
+      await adapter().deliver(
+        row(),
+        delivery({
+          tags: ["kind/quote"],
+          assets: [
+            deliveredAsset("000", "a.png", bytes("a")),
+            deliveredAsset("001", "b.png", bytes("b")),
+          ],
+        }),
+      ),
+    );
+
+    expect(outcome.output?.note).toBe(
+      "1 of 2 blocks went; b.png did not: are.na would not take it: are.na would not take that block; tags are added as metadata",
+    );
+    // One block landed, so the record names it as any single block is named.
+    expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
+
   /** No block has an address before it is posted, so a preview has only the caption to show. */
   it("shows the caption and no address, reaching nothing", async () => {
     const shown = await adapter().preview?.(row(), three());

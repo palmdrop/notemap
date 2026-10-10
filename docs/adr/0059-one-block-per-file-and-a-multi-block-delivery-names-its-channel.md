@@ -60,6 +60,12 @@ For a partial failure retried:
 - **ii.** Keep track of the blocks already made, so a retry resumes.
 - **iii.** One delivery per file, so each has its own record and its own retry.
 
+And for a partial failure that is a **refusal** rather than something a retry could fix:
+
+- **p.** `rejected`, as one block would answer.
+- **q.** `unreachable`, so the decision survives and is retried.
+- **r.** `delivered`, carrying the blocks that landed, with a note saying what did not go.
+
 For the pointer:
 
 - **x.** The channel the decision named, with every block's URL in the output.
@@ -103,6 +109,16 @@ no longer only the narrow window of an unconfirmed POST: it is deterministic, ev
 everything that already landed. The kind's README says that, as ADR 41 requires a kind with no
 strong promise to.
 
+**A later block refused is a delivery that carried part of the capture** (by **r**). Where are.na
+refuses a block, or its bytes have gone, and earlier blocks have already landed, the outcome is
+`delivered`: the record names the blocks that went and the output's note says how many of how many,
+which file did not go, and why. `rejected` cannot stand there — it asserts that nothing was
+delivered and core abandons it on the first attempt, so the blocks that landed would sit in the
+channel with nothing in notemap naming them, which is the one failure the record exists to prevent.
+`unreachable` cannot either: a refusal is not something a retry fixes, so it would duplicate what
+landed on every attempt and be abandoned anyway. **Where nothing has landed yet, a refusal is still
+`rejected`** and a failure a retry could fix is still `unreachable`, duplicating as above.
+
 ### Consequences
 
 - **Good** — three pictures reach a board as three blocks, by hand or through a trigger tag, and a
@@ -121,6 +137,9 @@ strong promise to.
 - **Bad** — a delivery of five files that fails on the fifth and is retried leaves four duplicate
   blocks. Accepted, as rare, visible and reversible by hand, against a decision abandoned silently;
   and it is the honest cost of a protocol with no conditional create.
+- **Bad** — a delivery that carried four of five files reads as delivered, so a trigger tag counts
+  the item routed and the fifth file needs a person to notice the note and route it again. Accepted
+  against the alternative, which is blocks in a channel that no record names.
 - **Bad** — the pointer means two things by number. Accepted: the alternative is either a wrong
   pointer for every existing record or a pointer naming one of several blocks arbitrarily.
 - **Neutral** — option ii stays available and this decision is what would justify it. If partial

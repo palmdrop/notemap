@@ -156,6 +156,30 @@ Depends on Phases 1 and 3. Codes against the annotation, not the kind.
       first.
 - [x] Commit _(2026-10-10)_
 
+### After review
+
+[arena-takes-every-file-2026-10-10](../reviews/arena-takes-every-file-2026-10-10.md).
+
+- [x] **Blocks in slot order.** Core sorts `delivery.assets` and leaves the payload's references in
+      the order they were attached; both renderers read the payload, so neither the block order nor
+      which file got the caption was the slot order four places claimed. Both now read
+      `attachedAssets`, as the file kinds' `place-assets` does, and the fixture sorts as core does
+      so a test that says slot order tests it _(2026-10-10)_.
+- [x] **Every asset resolved before the first block is posted.** The slot lookup inside `valueFor`
+      threw `Refused`, which is `rejected`, which core abandons at once — so a reference the pool
+      could not resolve could answer "nothing was delivered" with blocks already in the channel. A
+      block carries its resolved asset, and `place-assets` refuses on what actually resolved
+      _(2026-10-10)_.
+- [x] **A later block refused is a delivery that carried part of the capture**, settled with the
+      developer: `delivered`, the blocks that landed named, and a note saying how many of how many
+      went and which file did not. `rejected` only where nothing landed; `unreachable` still retries
+      and still duplicates. ADR 59, `core.md` and the README all say so _(2026-10-10)_.
+- [x] ADR 59's consequences no longer claim nothing in the shell changed, a board being reached
+      through `do` rather than through the `attachments only` switch _(2026-10-10)_.
+- [x] The browse and the naming for `place-assets`' channel field are tested, which the plan had
+      ticked without _(2026-10-10)_.
+- [x] Commit _(2026-10-10)_
+
 ### Phase 5 — finishing
 
 - [x] Typecheck, lint, `pnpm -r --silent test`.

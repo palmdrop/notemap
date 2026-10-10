@@ -8,7 +8,8 @@
   file rather than a refusal, the words captioning the first, and the arena kind declares
   `place-assets` — a channel and nothing else, one uncaptioned block per file. A delivery that made
   several blocks names the channel and lists them in its output; one that made a single block names
-  it as before. What a `place-assets` argument set holds is the declaring kind's rather than always
+  it as before. A later block refused, where earlier ones landed, is a delivery that says what did
+  not go rather than a refusal of the whole. What a `place-assets` argument set holds is the declaring kind's rather than always
   a folder, and the kind still promises nothing about a retry duplicating.
   ([plan](../plans/arena-takes-every-file.md),
   [ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md))
@@ -1433,7 +1434,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   adapter can compose — and every block's URL is in the output. The kind makes no promise that a
   retry cannot duplicate and now cannot: a delivery that landed some of its blocks and failed on a
   later one posts the landed ones again when it is retried
-  ([ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)).
+  ([ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)). A later block
+  **refused**, where earlier ones landed, is `delivered` rather than `rejected`: the record names
+  the blocks that went and the output's note says what did not and why. A refusal before anything
+  lands is `rejected` as any other is.
 - **A capability may say an argument inherits, and when a field is worth offering** (added
   2026-09-21). `x-notemap-inherits` on an argument says that, left absent, it takes the
   destination's setting of the same name — which the markdown kinds' `frontmatter` and `hashtags`

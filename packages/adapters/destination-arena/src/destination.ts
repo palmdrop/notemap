@@ -99,8 +99,10 @@ export function createArenaDestination(
       // block that landed before a later one failed stays where it is: nothing
       // here can ask are.na what it already holds, so a retry makes it again.
       const posted: Posted[] = [];
-      try {
-        for (const block of wanted.blocks) {
+      let short: string | undefined;
+
+      for (const block of wanted.blocks) {
+        try {
           const value = await valueFor(arena, block, signal);
           const created = await arena.createBlock(
             wanted.args.channel,
@@ -108,9 +110,21 @@ export function createArenaDestination(
             signal,
           );
           posted.push({ block, value, id: created.id });
+        } catch (cause) {
+          const failed = failure(cause);
+          // Nothing landed, or a failure a retry is right to take up again —
+          // which duplicates whatever landed, deliberately. Either way the
+          // whole delivery failed.
+          if (posted.length === 0 || failed.kind !== "rejected") return failed;
+
+          // A refusal cannot stand for a delivery with blocks already in the
+          // channel: `rejected` asserts nothing was delivered and is abandoned
+          // at once, which would leave them with nothing naming them. So this
+          // is a delivery that carried part of the capture and says what did
+          // not go.
+          short = shortfall(wanted.blocks, posted.length, failed.detail);
+          break;
         }
-      } catch (cause) {
-        return failure(cause);
       }
 
       const one = posted.length === 1 ? posted[0]?.id : undefined;
@@ -123,7 +137,7 @@ export function createArenaDestination(
         ...(one === undefined
           ? { pointer: wanted.args.channel }
           : { pointer: String(one), url: blockUrl(webUrl, one) }),
-        output: outputOf(posted, wanted.carrying, delivery, webUrl),
+        output: outputOf(posted, wanted.carrying, delivery, webUrl, short),
       };
     },
 
@@ -309,13 +323,28 @@ function outputOf(
   carrying: Carrying,
   delivery: Delivery,
   webUrl: string,
+  short?: string,
 ): DeliveredOutput {
-  const note = droppedBy(delivery, carrying);
+  const dropped = droppedBy(delivery, carrying);
+  const said = [
+    ...(short === undefined ? [] : [short]),
+    ...(dropped === undefined ? [] : [dropped]),
+  ];
 
   return {
     ...markdownOutput(bodyOf(posted, webUrl)),
-    ...(note === undefined ? {} : { note }),
+    ...(said.length === 0 ? {} : { note: said.join("; ") }),
   };
+}
+
+/** What did not go, for the note of a delivery that carried part of a capture. */
+function shortfall(
+  blocks: readonly ArenaBlock[],
+  went: number,
+  detail: string,
+): string {
+  const name = blocks[went]?.asset?.asset.filename;
+  return `${went} of ${blocks.length} blocks went; ${name ?? "the next"} did not: ${detail}`;
 }
 
 /**

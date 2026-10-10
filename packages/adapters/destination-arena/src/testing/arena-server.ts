@@ -27,6 +27,12 @@ export type ArenaServer = {
   holds(channels: readonly ChannelRow[], more?: boolean): void;
   /** Answer the next request to that path with this status, once. */
   answerOnce(path: string, status: number, body?: unknown): void;
+  /**
+   * Refuse a block once this many have been made, so a delivery making several
+   * can be failed part way through. `422`, as are.na refuses a block it will
+   * not take.
+   */
+  refusesBlocksAfter(made: number): void;
   /** Whether the bytes at that key arrived chunked rather than under a `Content-Length`. */
   arrivedChunked(key: string): boolean;
   close(): Promise<void>;
@@ -50,6 +56,7 @@ export async function startArenaServer(): Promise<ArenaServer> {
 
   let channels: readonly ChannelRow[] = [];
   let more = false;
+  let refuseAfter: number | undefined;
 
   const created: Record<string, unknown>[] = [];
   const uploaded = new Map<string, string>();
@@ -148,6 +155,12 @@ export async function startArenaServer(): Promise<ArenaServer> {
     }
 
     if (request.method === "POST" && path === "/v3/blocks") {
+      if (refuseAfter !== undefined && created.length >= refuseAfter) {
+        return send(response, 422, {
+          error: { message: "are.na would not take that block" },
+        });
+      }
+
       return read(request, (body) => {
         const block = JSON.parse(body) as Record<string, unknown>;
         created.push(block);
@@ -173,6 +186,7 @@ export async function startArenaServer(): Promise<ArenaServer> {
       more = hasMore;
     },
     answerOnce: (path, status, body) => answers.set(path, { status, body }),
+    refusesBlocksAfter: (made) => void (refuseAfter = made),
     arrivedChunked: (key) => chunked.has(key),
     close: () =>
       new Promise<void>((resolve, reject) =>
