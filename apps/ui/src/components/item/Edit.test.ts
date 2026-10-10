@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import {
@@ -10,7 +10,7 @@ import {
 } from "@notemap/client/testing";
 
 import { notices } from "$lib/notices.svelte";
-import { client, pool } from "$testing/pool";
+import { client, heldBlobs, pool } from "$testing/pool";
 import Edit from "./Edit.fixture.svelte";
 
 type Envelope = {
@@ -135,8 +135,8 @@ test("attaching adds after what the item carries, and the edit names every slot 
   expect(edit?.source).toBe("web");
 });
 
-/** An attachment on its way counts as a change, and `save` waits for it to go with the words. */
-test("save waits for an attachment still being attached", async () => {
+/** A picked file counts as a change, and the bytes go up before the words. */
+test("save attaches what is picked, and the words wait for the bytes", async () => {
   stubObjectUrls();
   let release!: () => void;
   const held = new Promise<void>((resolve) => (release = resolve));
@@ -153,10 +153,14 @@ test("save waits for an attachment still being attached", async () => {
       files: [new File(["bytes"], "shot.png", { type: "image/png" })],
     },
   });
-  // The button is working meanwhile; the chord still asks for a save.
+  // The chord asks for the save; the button is working meanwhile.
   await fireEvent.keyDown(screen.getByLabelText("What it says"), {
     key: "Enter",
     metaKey: true,
+  });
+
+  await vi.waitFor(() => {
+    expect(heldBlobs()).toHaveLength(1);
   });
   expect(await edits(transport)).toHaveLength(0);
 
@@ -167,6 +171,58 @@ test("save waits for an attachment still being attached", async () => {
   const [edit] = await edits(transport);
   expect(edit?.payload.assets).toHaveLength(1);
   expect(closed).toHaveBeenCalled();
+  // The operation has left the outbox, and the bytes left with it.
+  await vi.waitFor(() => {
+    expect(heldBlobs()).toEqual([]);
+  });
+});
+
+test("holds a picked file and leaves no bytes behind where the edit is never saved", async () => {
+  stubObjectUrls();
+  const transport = pool(accepting());
+  const closed = vi.fn();
+
+  render(Edit, { item: anItem("one"), onclose: closed });
+
+  const picker = screen.getByLabelText("Files to carry");
+  await fireEvent.change(picker, {
+    target: {
+      files: [
+        new File(["one"], "first.png", { type: "image/png" }),
+        new File(["%PDF"], "paper.pdf", { type: "application/pdf" }),
+      ],
+    },
+  });
+
+  await screen.findByText("paper.pdf");
+  // Drawn, and nothing of it written: a picked file is the edit's until it saves.
+  expect(heldBlobs()).toEqual([]);
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove paper.pdf" }),
+  );
+  expect(screen.queryByText("paper.pdf")).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  expect(screen.queryByText("first.png")).toBeNull();
+
+  await fireEvent.change(picker, {
+    target: { files: [new File(["two"], "second.png", { type: "image/png" })] },
+  });
+  await screen.findByText("second.png");
+
+  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  const dialog = await screen.findByRole("dialog", { name: "Unsaved changes" });
+  await fireEvent.click(within(dialog).getByRole("button", { name: "revert" }));
+
+  expect(closed).toHaveBeenCalled();
+  expect(heldBlobs()).toEqual([]);
+  expect(await edits(transport)).toHaveLength(0);
+  expect(
+    asked(transport)
+      .map(routeOf)
+      .filter((route) => route.startsWith(UPLOAD)),
+  ).toEqual([]);
 });
 
 test("refuses a file larger than the pool takes as it is picked, in the status line", async () => {

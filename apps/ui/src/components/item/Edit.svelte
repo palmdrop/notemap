@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import Action from "$components/primitives/controls/Action.svelte";
   import { commits } from "$lib/command/keys";
@@ -9,7 +10,7 @@
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
 
   import HeldAttachment from "./HeldAttachment.svelte";
-  import type { Editing } from "./editing.svelte";
+  import { isPicked, type Editing, type Held } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
 
@@ -17,6 +18,42 @@
 
   const pictures = $derived(editing.attachments.filter((held) => held.image));
   const files = $derived(editing.attachments.filter((held) => !held.image));
+
+  /**
+   * The bytes of a picked file as the browser can draw them, the client holding
+   * none of them until the edit is saved. One URL per file for as long as the
+   * file is held, so adding or dropping one leaves every other thumbnail where
+   * it is.
+   */
+  const previews = new SvelteMap<File, string>();
+
+  $effect(() => {
+    const held = editing.attachments;
+    untrack(() => {
+      const picked = held.filter(isPicked).map((each) => each.file);
+      for (const file of picked) {
+        if (!previews.has(file)) previews.set(file, URL.createObjectURL(file));
+      }
+      for (const [file, url] of previews) {
+        if (picked.includes(file)) continue;
+        URL.revokeObjectURL(url);
+        previews.delete(file);
+      }
+    });
+  });
+
+  onDestroy(() => {
+    for (const url of previews.values()) URL.revokeObjectURL(url);
+  });
+
+  /** Stable for as long as the thing is held, which is what the lists are keyed on. */
+  function keyOf(held: Held): string | File {
+    return isPicked(held) ? held.file : held.asset;
+  }
+
+  function urlOf(held: Held): string | undefined {
+    return isPicked(held) ? previews.get(held.file) : held.url;
+  }
 
   let field = $state<HTMLTextAreaElement | undefined>(undefined);
 
@@ -58,13 +95,13 @@
      is the row's, drawn by `EditFoot` in place of the actions. -->
 {#if pictures.length > 0}
   <div class="flex flex-col" transition:slide={{ fade: true }}>
-    {#each pictures as held (held.asset)}
+    {#each pictures as held (keyOf(held))}
       <HeldAttachment
         name={held.name}
-        url={held.url}
+        url={urlOf(held)}
         bytes={held.bytes}
         picture
-        ondrop={() => editing.drop(held.asset)}
+        ondrop={() => editing.drop(held)}
       />
     {/each}
   </div>
@@ -89,12 +126,12 @@
 {#if files.length > 0}
   <div class="mt-2 flex flex-col" transition:slide={{ fade: true }}>
     <div class="mb-1 w-12 border-t border-ink"></div>
-    {#each files as held (held.asset)}
+    {#each files as held (keyOf(held))}
       <HeldAttachment
         name={held.name}
-        url={held.url}
+        url={urlOf(held)}
         bytes={held.bytes}
-        ondrop={() => editing.drop(held.asset)}
+        ondrop={() => editing.drop(held)}
       />
     {/each}
   </div>

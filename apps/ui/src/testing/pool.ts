@@ -1,6 +1,11 @@
 import { afterEach } from "vitest";
 
-import { createClient, createMemoryStore, type Client } from "@notemap/client";
+import {
+  createClient,
+  createMemoryStore,
+  type Client,
+  type ClientStore,
+} from "@notemap/client";
 import {
   asked as sentTo,
   json,
@@ -16,6 +21,36 @@ function unanswered(): Response {
 
 let transport = mockTransport(unanswered);
 
+let blobs = new Set<string>();
+
+/**
+ * A store that says which assets it is holding bytes for, which the port has no
+ * way to ask: the tests about held bytes would otherwise have to settle for
+ * what a surface draws, and a surface drew the right thing throughout the life
+ * of the leak this answers.
+ */
+function recording(store: ClientStore): ClientStore {
+  const held = new Set<string>();
+  blobs = held;
+
+  return {
+    ...store,
+    async writeBlob(asset, blob) {
+      await store.writeBlob(asset, blob);
+      held.add(asset);
+    },
+    async removeBlob(asset) {
+      await store.removeBlob(asset);
+      held.delete(asset);
+    },
+  };
+}
+
+/** The assets whose bytes the store holds, in the order they were written. */
+export function heldBlobs(): readonly string[] {
+  return [...blobs];
+}
+
 /**
  * Stands in for `$lib/client`, whose export is a singleton built at import
  * time: a test replaces the module and `pool()` rebuilds what it hands out, so
@@ -23,14 +58,14 @@ let transport = mockTransport(unanswered);
  */
 export let client: Client = createClient({
   transport,
-  store: createMemoryStore(),
+  store: recording(createMemoryStore()),
 });
 
 export function pool(handler: Handler): MockTransport {
   // The one it replaces holds a running probe, and nothing else will stop it.
   client.close();
   transport = mockTransport(handler);
-  client = createClient({ transport, store: createMemoryStore() });
+  client = createClient({ transport, store: recording(createMemoryStore()) });
   return transport;
 }
 

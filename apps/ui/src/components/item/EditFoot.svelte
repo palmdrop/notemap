@@ -9,10 +9,10 @@
 
   let picker: HTMLInputElement;
 
-  async function pick(event: Event) {
+  function pick(event: Event) {
     const files = [...((event.currentTarget as HTMLInputElement).files ?? [])];
     picker.value = "";
-    if (files.length > 0) await editing.pick(files);
+    if (files.length > 0) editing.pick(files);
   }
 </script>
 
