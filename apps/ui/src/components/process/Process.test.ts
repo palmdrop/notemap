@@ -3958,3 +3958,26 @@ test("a capability carrying the attachments alone is not offered for a capture w
   expect(screen.queryByRole("button", { name: "place-assets" })).toBeNull();
   expect(screen.queryByRole("button", { name: "create" })).toBeNull();
 });
+
+/**
+ * The one thing keeping the carrier in the list for an item with no
+ * attachment: a template took it, so the form has fields to draw and the
+ * decision commits as the template rather than as nothing.
+ */
+test("a template that placed the attachments alone still draws for a capture with none", async () => {
+  servingCarrier(LIBRARY, {
+    destination: VAULT,
+    capability: "place-assets",
+    arguments: { directory: "library" },
+  });
+
+  draw();
+  await choose("library");
+
+  const only = await screen.findByRole("button", { name: "attachments only" });
+  expect(only.getAttribute("aria-pressed")).toBe("true");
+  expect(await screen.findByText("library/")).toBeDefined();
+
+  await commit();
+  expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
+});

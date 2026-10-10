@@ -344,6 +344,27 @@ describe("a capture carrying several files", () => {
     expect(outcome.url).toBe("https://www.are.na/block/1001");
   });
 
+  /**
+   * The duplication the kind's README promises in so many words: nothing can
+   * ask are.na what it already holds, so a second attempt makes the blocks
+   * that landed all over again.
+   */
+  it("makes the blocks that landed again when the delivery is attempted afresh", async () => {
+    server.answerOnce("/uploads/uploads/1-b.png", 403);
+    expect((await adapter().deliver(row(), three())).kind).toBe("unreachable");
+    expect(server.blocks()).toHaveLength(1);
+
+    delivered(await adapter().deliver(row(), three()));
+
+    expect(server.blocks()).toHaveLength(4);
+    expect(server.blocks().map((block) => block["value"])).toEqual([
+      `${server.uploadsUrl}/uploads/0-a.png`,
+      `${server.uploadsUrl}/uploads/1-a.png`,
+      `${server.uploadsUrl}/uploads/2-b.png`,
+      `${server.uploadsUrl}/uploads/3-c.png`,
+    ]);
+  });
+
   /** No block has an address before it is posted, so a preview has only the caption to show. */
   it("shows the caption and no address, reaching nothing", async () => {
     const shown = await adapter().preview?.(row(), three());
@@ -417,6 +438,15 @@ describe("the attachments alone", () => {
 
     expect(outcome.pointer).toBe("1001");
     expect(outcome.url).toBe("https://www.are.na/block/1001");
+  });
+
+  /** What #4 of the review names: an unposted block has no address, and an asset block no value. */
+  it("previews as nothing at all, having neither an address nor a value to show", async () => {
+    const shown = await adapter().preview?.(row(), twoFiles());
+
+    expect(await textOf(shown)).toBe("\n");
+    expect(shown?.note).toBeUndefined();
+    expect(server.requests()).toEqual([]);
   });
 
   /** Both capabilities name the channel in the same field, so both are browsable. */

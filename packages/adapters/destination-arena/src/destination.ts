@@ -100,13 +100,16 @@ export function createArenaDestination(
       // here can ask are.na what it already holds, so a retry makes it again.
       const posted: Posted[] = [];
       let short: string | undefined;
+      // Where the whole delivery came from, which every block it makes says
+      // the same way.
+      const metadata = provenanceOf(delivery);
 
       for (const block of wanted.blocks) {
         try {
           const value = await valueFor(arena, block, signal);
           const created = await arena.createBlock(
             wanted.args.channel,
-            inputFor(block, value, delivery),
+            inputFor(block, value, metadata),
             signal,
           );
           posted.push({ block, value, id: created.id });
@@ -292,10 +295,8 @@ async function valueFor(
 function inputFor(
   block: ArenaBlock,
   value: string,
-  delivery: Delivery,
+  metadata: Record<string, string> | undefined,
 ): BlockInput {
-  const metadata = provenanceOf(delivery);
-
   return {
     value,
     ...(block.description === undefined

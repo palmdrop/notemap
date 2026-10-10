@@ -1452,7 +1452,9 @@ taken. A kind that settles nothing offers the capability among the others under 
 condition the section itself is drawn under: a capability that carries the attachments alone has
 nothing to carry there, and delivery would reject it. Reached by the arena kind declaring one
 ([ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)), which is
-also what makes `do` a question on a board at all — one capability was never asked about. **The template form draws the same `output` row after `destination`** wherever the
+also what makes `do` a question on a board at all — one capability was never asked about. One
+already taken stays offered, a template having taken it. **The template form draws the same
+`output` row after `destination`** wherever the
 destination declares such a capability, whatever item it will meet, and leaves that capability out
 of `action`; while `attachments only` is taken, `action` is not drawn, there being nothing else it
 could be, and `everything` gives back the action held before.

@@ -243,8 +243,9 @@
 
   /**
    * A kind that can do one thing is not offering a choice, so it is not asked
-   * to be made: are.na declares `create` and nothing else, and a step whose
-   * every path is the same step is one press spent saying yes.
+   * to be made: a step whose every path is the same step is one press spent
+   * saying yes. Which is also what a board falls back to for a capture with no
+   * attachment, its carrier being left out of the list above.
    */
   const only = $derived(
     capabilities.length === 1 ? capabilities[0]?.name : undefined,

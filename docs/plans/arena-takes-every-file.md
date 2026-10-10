@@ -178,6 +178,15 @@ Depends on Phases 1 and 3. Codes against the annotation, not the kind.
       through `do` rather than through the `attachments only` switch _(2026-10-10)_.
 - [x] The browse and the naming for `place-assets`' channel field are tested, which the plan had
       ticked without _(2026-10-10)_.
+- [x] The rest of the review's list, after the developer asked whether all of it was done: the
+      comment in `Process.svelte` that leant on are.na having one capability, the provenance
+      metadata built once per delivery rather than once per block, a spec line rewrapped, and the
+      four test gaps — `place-assets` with one file and its preview, the carrier a template took
+      for a capture with none, and the duplication a second attempt makes, which the README
+      promises in so many words. The slot-only lookup went with the resolved asset above
+      _(2026-10-10)_.
+- [x] Left deliberately: the preview says nothing about how many blocks it would make, the
+      developer having chosen to leave it and the claims about it corrected instead.
 - [x] Commit _(2026-10-10)_
 
 ### Phase 5 — finishing

@@ -9,8 +9,9 @@
   `place-assets` — a channel and nothing else, one uncaptioned block per file. A delivery that made
   several blocks names the channel and lists them in its output; one that made a single block names
   it as before. A later block refused, where earlier ones landed, is a delivery that says what did
-  not go rather than a refusal of the whole. What a `place-assets` argument set holds is the declaring kind's rather than always
-  a folder, and the kind still promises nothing about a retry duplicating.
+  not go rather than a refusal of the whole. What a `place-assets` argument set holds is the
+  declaring kind's rather than always a folder, and the kind still promises nothing about a retry
+  duplicating.
   ([plan](../plans/arena-takes-every-file.md),
   [ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md))
 - 2026-10-09 — **Blobs nothing names are reclaimed, and the sweep can no longer delete bytes an
