@@ -239,6 +239,56 @@ docker run --rm -v notemap_state:/state -v "$PWD:/out" alpine \
 docker compose start
 ```
 
+## Bytes a shell is holding
+
+A shell holds a picked file's bytes from the moment a capture or an edit is sent until the drain
+has uploaded them, so an interrupted send still has its attachment. Those bytes are let go of as
+the operation leaves the outbox. Versions before 2026-10-10 attached in an edit as the file was
+picked, and in the Raycast extension named the asset wrongly, so both could leave bytes behind
+that nothing would ever claim. Nothing in the daemon can see them — they are the shell's, not the
+pool's.
+
+The Raycast extension's store is a directory, so it can be swept:
+
+```sh
+pnpm sweep ~/Library/Application\ Support/com.raycast.macos/extensions/notemap
+pnpm sweep <that path> --delete      # once you have read what it names
+```
+
+It lists every blob no operation in that outbox names, and deletes them only when asked.
+
+The web shell's store is IndexedDB, which nothing outside the browser can open. Run this in the
+shell's console — it reports the same thing, and deletes when called with `true`:
+
+```js
+await (async (del = false) => {
+  const db = await new Promise((ok, no) => {
+    const ask = indexedDB.open("notemap");
+    ask.onsuccess = () => ok(ask.result);
+    ask.onerror = () => no(ask.error);
+  });
+  const read = (store, how) =>
+    new Promise((ok) => {
+      const ask = db.transaction(store).objectStore(store)[how]();
+      ask.onsuccess = () => ok(ask.result);
+    });
+  const named = new Set(
+    (await read("outbox", "getAll")).flatMap((held) =>
+      (held.operation?.envelope?.payload?.assets ?? []).map((each) => each.asset),
+    ),
+  );
+  const unnamed = (await read("blobs", "getAllKeys")).filter((key) => !named.has(key));
+  if (del) {
+    const tx = db.transaction("blobs", "readwrite");
+    for (const key of unnamed) tx.objectStore("blobs").delete(key);
+  }
+  return { unnamed, deleted: del };
+})();
+```
+
+Clearing site data instead works, and takes the outbox and the cache with it — anything captured
+while the pool was unreachable goes too.
+
 ## The config
 
 `config.toml` is mounted read-only at `/etc/notemap/config.toml`, which is where the image's own
