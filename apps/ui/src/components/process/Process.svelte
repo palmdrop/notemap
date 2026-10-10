@@ -177,8 +177,20 @@
   /** Which sections are open. `destination` and `tags` always are; the rest open on a press or when the flow reaches them. */
   let opened = $state({ place: false, preview: false });
 
+  /**
+   * What this item could be done with. A capability that carries the
+   * attachments alone is left out where the item has none: there is nothing for
+   * it to carry, so offering it would offer a delivery bound to be rejected —
+   * and a kind whose other capability is its only one then settles that one
+   * again, asking nothing. One already taken stays, a template having taken it.
+   */
   const capabilities = $derived<readonly Capability[]>(
-    described?.kind === "described" ? described.capabilities : [],
+    (described?.kind === "described" ? described.capabilities : []).filter(
+      (one) =>
+        !carriesAssets(one) ||
+        attachments.length > 0 ||
+        one.name === capability,
+    ),
   );
 
   /** What an argument left unset falls back to, where the kind says it inherits one. */

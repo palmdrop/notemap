@@ -144,14 +144,15 @@ decided in one `wanting`, so splitting the commit would have split a file in hal
 
 Depends on Phases 1 and 3. Codes against the annotation, not the kind.
 
-- [ ] A capability carrying the assets alone is left out of the `do` list where the item has no
+- [x] A capability carrying the assets alone is left out of the `do` list where the item has no
       attachments, which is the same condition the `output` section already applies. The template
       form keeps offering it: what item a template will meet is not known.
-- [ ] Tests beside it: a kind that settles nothing offers both capabilities for an item with
+- [x] Tests beside it: a kind that settles nothing offers both capabilities for an item with
       attachments and only the other for an item without.
-- [ ] Verify: `pnpm --filter @notemap/ui test`, and by hand against a real board — attach two
+- [ ] Verify: `pnpm --filter @notemap/ui test` passes; **by hand against a real board, for the
+      developer** — attach two — attach two
       pictures, route to a channel, see two blocks with the words on the first.
-- [ ] Commit
+- [x] Commit _(2026-10-10)_
 
 ### Phase 5 — finishing
 

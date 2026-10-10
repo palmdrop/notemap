@@ -3901,3 +3901,60 @@ test("everything gives a create template back as itself", async () => {
   await commit();
   expect(await routeSent()).toContainEqual({ template: FILED.id });
 });
+
+/** A board's two: both take the channel, and neither is a path, so the surface settles nothing. */
+const BOARD_CREATE = {
+  name: "create",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["channel"],
+    properties: {
+      channel: { type: "string", title: "Channel" },
+    },
+  },
+};
+
+const BOARD_PLACE_ASSETS = {
+  ...BOARD_CREATE,
+  name: "place-assets",
+  argumentsSchema: {
+    ...BOARD_CREATE.argumentsSchema,
+    "x-notemap-carries": "assets",
+  },
+};
+
+function servingBoard() {
+  return serving([aDestination({ id: BOARD, name: "Board", kind: "arena" })], {
+    kind: "described",
+    capabilities: [BOARD_CREATE, BOARD_PLACE_ASSETS],
+  });
+}
+
+/** A kind that settles nothing offers the carrier under `do` rather than as a switch. */
+test("a kind that settles nothing offers both capabilities for a capture with attachments", async () => {
+  servingBoard();
+
+  draw(aPaper());
+  await choose(/Board/);
+
+  expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "place-assets" })).toBeDefined();
+  // The switch belongs to a kind that settles one; this one asks instead.
+  expect(screen.queryByRole("button", { name: /attachments only/ })).toBeNull();
+});
+
+/**
+ * Nothing for it to carry, so it is not a choice: with the other capability
+ * alone the kind settles that one, and the place is asked at once.
+ */
+test("a capability carrying the attachments alone is not offered for a capture with none", async () => {
+  servingBoard();
+
+  draw();
+  await choose(/Board/);
+
+  expect(await screen.findByLabelText("Channel")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "place-assets" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+});
