@@ -4,6 +4,14 @@
 **Last updated**: 2026-10-10
 **Shipped**:
 
+- 2026-10-10 — **are.na takes every file.** A capture carrying several files becomes one block per
+  file rather than a refusal, the words captioning the first, and the arena kind declares
+  `place-assets` — a channel and nothing else, one uncaptioned block per file. A delivery that made
+  several blocks names the channel and lists them in its output; one that made a single block names
+  it as before. What a `place-assets` argument set holds is the declaring kind's rather than always
+  a folder, and the kind still promises nothing about a retry duplicating.
+  ([plan](../plans/arena-takes-every-file.md),
+  [ADR 59](../adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md))
 - 2026-10-09 — **Blobs nothing names are reclaimed, and the sweep can no longer delete bytes an
   upload just claimed.** The sweep releases assets and leaves their blobs; a reclaim walks the blob
   store at startup and on an interval of its own, and deletes each blob no asset and no routing

@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-10
 **Shipped**:
+
+- 2026-10-10 — **A capability that carries the attachments alone is offered only where there are
+  some.** Reached by a board declaring one beside its `create`: the process surface asks which,
+  where it asked nothing before, and leaves the carrier out for a capture with no attachment — so a
+  kind whose other capability is then its only one settles that one again and asks nothing.
+  ([plan](../plans/arena-takes-every-file.md))
 
 - 2026-10-09 — **What arrives from elsewhere shows up.** A capture from a relay, Raycast or
   another device lands on an open feed or queue within the watcher's tempo, placed where it sorts,

@@ -1,9 +1,9 @@
 # are.na takes every file
 
 **Date**: 2026-10-10
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-10
 
 ---
 
@@ -156,10 +156,10 @@ Depends on Phases 1 and 3. Codes against the annotation, not the kind.
 
 ### Phase 5 — finishing
 
-- [ ] Typecheck, lint, `pnpm -r --silent test`.
-- [ ] `pnpm test:stack`: a destination's description answers a second capability.
-- [ ] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status.
-- [ ] Commit
+- [x] Typecheck, lint, `pnpm -r --silent test`.
+- [x] `pnpm test:stack`: a destination's description answers a second capability — 88 passed.
+- [x] Add a `Shipped:` entry to `core.md` and `shell.md`, and set this plan's status.
+- [x] Commit _(2026-10-10)_
 
 ---
 
