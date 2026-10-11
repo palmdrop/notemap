@@ -25,15 +25,10 @@ const SETTLE_MS = 2_000;
 const pause = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-/** What the HUD says of a capture that was made, whole or in part. */
-function hudFor(
-  kind: "captured" | "partly",
-  landed: boolean | undefined,
-  said: string,
-): string {
-  if (kind === "partly") return `Captured, but not all of it — ${said}`;
-  return landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`;
-}
+/** What the HUD says of a capture that reached the outbox, whole or in part. */
+const whole = (landed: boolean | undefined, said: string) =>
+  landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`;
+const partly = (said: string) => `Captured, but not all of it — ${said}`;
 
 /**
  * Captures through a whole client, so a note made while the daemon is
@@ -119,15 +114,17 @@ export default function Command() {
       await toast.hide();
       // The form is left behind as well as closed: without this the next launch
       // comes back to it, still holding the note that has already been sent.
-      await showHUD(hudFor(captured.kind, landed, said), {
-        clearRootSearch: true,
-        popToRootType: PopToRootType.Immediate,
-      });
+      await showHUD(
+        captured.kind === "partly" ? partly(said) : whole(landed, said),
+        { clearRootSearch: true, popToRootType: PopToRootType.Immediate },
+      );
     } catch {
       // Past the capture the note is in the outbox and safe, so anything that
-      // fails here is no longer a failure to capture.
+      // fails here is no longer a failure to capture — and the close comes
+      // first here too, the HUD ending this process before it could return.
+      await client.close();
       await toast.hide();
-      await showHUD(hudFor("partly", undefined, said), {
+      await showHUD(partly(said), {
         clearRootSearch: true,
         popToRootType: PopToRootType.Immediate,
       });

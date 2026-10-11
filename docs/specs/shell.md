@@ -8,9 +8,11 @@
   edit went into the client's store at once, where `drop`, `revert` and closing without saving left
   its bytes held with no operation to release them. The edit now holds the file itself, draws it
   through the browser's own handle on it, refuses one too large as it is picked, and attaches at
-  `save` — the shape the capture box has always had. The Raycast form's capture, which named its
-  asset wrongly and so both lost the attachment and left its bytes behind, names it properly and
-  lets go of what a capture that never happened had attached.
+  `save` — the shape the capture box has always had. A save that cannot be made now says so and
+  leaves the edit open rather than closing over the words. The Raycast form's capture, which named
+  its asset wrongly and so both lost the attachment and left its bytes behind, names it properly
+  and lets go of what a capture that never happened had attached, and `pnpm reclaim` takes the
+  bytes either of them left ([running.md](../running.md#bytes-a-shell-is-holding)).
   ([plan](../plans/an-edit-lets-go-of-its-bytes.md))
 
 - 2026-10-10 — **A capability that carries the attachments alone is offered only where there are
@@ -836,8 +838,9 @@ picked file counts as a change. `keep editing`, `esc`, a press outside it or the
 closing any other way goes back into the field, the row brought into view. It is a dialog rather than a line in the
 row's foot because the question arrives wherever the person has scrolled to, often far from the
 row. An edit left with nothing changed closes without asking. Nothing an edit holds outlives it,
-picked files included *(2026-10-10)*, and the row always draws what the item says: `copy`, the process surface and a route all read the
-saved words, and a row drawing unsaved ones would show one text and send another. Leaving the tab
+picked files included *(2026-10-10)*, and the row always draws what the item says: `copy`, the
+process surface and a route all read the saved words, and a row drawing unsaved ones would show one
+text and send another. Leaving the tab
 or reloading is the browser's own question, the only one a page may ask then. **An edit closed from under the person** — its capture processed, on this device or another, or gone from the list — closes quietly: processing it was the person's own doing. **The attachments are
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
 item carries is drawn on the side of the words the row being edited drew it — every picture above
@@ -850,12 +853,17 @@ above the words or a line under them can carry the row past either edge of the s
 the foot adds files after them, and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
 and is not taken. **What is picked is held and attached as the edit is saved** *(2026-10-10)*, the
-way the capture box attaches at its button and for the reason given there — and an edit has four
-ways of never being saved, where the box has one. So the `×` on a picked file takes the file and
-nothing else, and a picked picture is drawn through the browser's own handle on it rather than
-through the client. `save` attaches what is picked and sends the edit naming what the
-edit then holds, in that order and every slot numbered afresh, uploading any fresh file on the way,
-and stamps it `web`. The item's own surface edits the same way, its actions giving way to the same foot. The
+way the capture box attaches at its button and for the reason given there — and where the box has
+one way of never being sent, an edit has a drop, a revert, a discard and a close. So the `×` on a
+picked file takes the file and nothing else, and a picked picture is drawn through the browser's
+own handle on it rather than through the client. `save` attaches what is picked and sends the edit
+naming what the edit then holds, in that order and every slot numbered afresh, uploading any fresh
+file on the way, and stamps it `web`. **A save that could not be made leaves the edit open**,
+holding the words, and says why on the status line: a file the pool would now refuse is dropped
+and named, bytes that could not be held are let go of again, and an operation that could not be
+recorded takes its bytes with it. A save asked for from the leaving dialog and not made leaves that
+question unanswered: the edit stays where it is, and nothing goes on towards wherever the person
+was leaving. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
 opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move

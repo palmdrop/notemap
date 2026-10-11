@@ -21,34 +21,46 @@ function unanswered(): Response {
 
 let transport = mockTransport(unanswered);
 
-let blobs = new Set<string>();
-
 /**
  * A store that says which assets it is holding bytes for, which the port has no
  * way to ask: the tests about held bytes would otherwise have to settle for
  * what a surface draws, and a surface drew the right thing throughout the life
  * of the leak this answers.
  */
-function recording(store: ClientStore): ClientStore {
+function recording(store: ClientStore): {
+  readonly store: ClientStore;
+  readonly held: ReadonlySet<string>;
+} {
   const held = new Set<string>();
-  blobs = held;
 
   return {
-    ...store,
-    async writeBlob(asset, blob) {
-      await store.writeBlob(asset, blob);
-      held.add(asset);
-    },
-    async removeBlob(asset) {
-      await store.removeBlob(asset);
-      held.delete(asset);
+    held,
+    store: {
+      ...store,
+      async writeBlob(asset, blob) {
+        await store.writeBlob(asset, blob);
+        held.add(asset);
+      },
+      async removeBlob(asset) {
+        await store.removeBlob(asset);
+        held.delete(asset);
+      },
     },
   };
 }
 
-/** The assets whose bytes the store holds, in the order they were written. */
+let blobs: ReadonlySet<string>;
+
+/** The assets whose bytes the store this test built is holding. */
 export function heldBlobs(): readonly string[] {
   return [...blobs];
+}
+
+/** A fresh store per client, and the one `heldBlobs` answers for. */
+function recorded(): ClientStore {
+  const store = recording(createMemoryStore());
+  blobs = store.held;
+  return store.store;
 }
 
 /**
@@ -56,16 +68,13 @@ export function heldBlobs(): readonly string[] {
  * time: a test replaces the module and `pool()` rebuilds what it hands out, so
  * a component reads the live binding rather than a client another test left.
  */
-export let client: Client = createClient({
-  transport,
-  store: recording(createMemoryStore()),
-});
+export let client: Client = createClient({ transport, store: recorded() });
 
 export function pool(handler: Handler): MockTransport {
   // The one it replaces holds a running probe, and nothing else will stop it.
   client.close();
   transport = mockTransport(handler);
-  client = createClient({ transport, store: recording(createMemoryStore()) });
+  client = createClient({ transport, store: recorded() });
   return transport;
 }
 

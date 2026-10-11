@@ -1,4 +1,4 @@
-import type { Item } from "@notemap/client";
+import type { Item, ItemId } from "@notemap/client";
 import { saidBy } from "@notemap/client";
 
 import { isImage, nameOf } from "$lib/attachments";
@@ -33,6 +33,18 @@ export type Held = Carried | Picked;
 
 export function isPicked(held: Held): held is Picked {
   return held.kind === "picked";
+}
+
+/**
+ * Whether two entries are the same attachment. By asset and by file rather
+ * than by identity: the list is `$state`, which hands out a proxy of each
+ * entry, and a proxy never equals the object it proxies.
+ */
+function same(one: Held, other: Held | undefined): boolean {
+  if (other === undefined || one.kind !== other.kind) return false;
+  return isPicked(one) && isPicked(other)
+    ? one.file === other.file
+    : !isPicked(one) && !isPicked(other) && one.asset === other.asset;
 }
 
 /**
@@ -72,13 +84,11 @@ export class Editing {
     return this.waiting.length > 0 || this.#rewritten;
   }
 
-  // What the item carries is held as the objects the constructor made, so a
-  // list holding anything else is a list that has been edited.
   get #rewritten(): boolean {
     return (
       this.text !== this.#says ||
       this.attachments.length !== this.#carries.length ||
-      this.attachments.some((held, at) => held !== this.#carries[at])
+      this.attachments.some((held, at) => !same(held, this.#carries[at]))
     );
   }
 
@@ -100,7 +110,7 @@ export class Editing {
   }
 
   drop(held: Held): void {
-    this.attachments = this.attachments.filter((each) => each !== held);
+    this.attachments = this.attachments.filter((each) => !same(each, held));
   }
 
   /** Back to what the item says, the edit still open. */
@@ -121,48 +131,81 @@ export class Editing {
     this.#close();
   }
 
-  /** Attaches what is picked, in the order the edit draws it, and sends the words with it. */
-  async save(): Promise<void> {
-    if (this.#saving) return;
-
-    const { taken, said } = sorted(
-      this.attachments.filter(isPicked).map((held) => held.file),
-    );
-    if (said !== "") {
-      this.attachments = this.attachments.filter(
-        (held) => !isPicked(held) || taken.includes(held.file),
-      );
-      notices.raise({ what: said, alarm: true });
-      return;
-    }
+  /**
+   * Attaches what is picked, in the order the edit draws it, and sends the
+   * words with it. Answers whether it saved: a file the pool has since begun
+   * refusing, bytes that could not be held and an operation that could not be
+   * recorded all leave the edit open, holding the words, for whoever asked to
+   * decide what to do instead.
+   */
+  async save(): Promise<boolean> {
+    if (this.#saving) return false;
+    if (this.#refuses()) return false;
 
     this.#saving = true;
     this.busy = true;
+    try {
+      const id = this.item.id;
+      const waiting = this.waiting;
 
-    const named = await this.#attached();
-    if (named === undefined) {
+      // Read before anything is attached: an edit that says nothing new sends
+      // its waiting tags and names no asset, so there is nothing to hold.
+      if (!this.#rewritten) {
+        for (const tag of waiting) await client.tag(id, tag);
+        this.#sent(id, waiting);
+        return true;
+      }
+
+      const attached = await this.#attached();
+      if (attached === undefined) return false;
+
+      try {
+        await client.edit(
+          id,
+          client.attached(client.saying(this.item, this.text), attached.named),
+          WEB,
+          waiting,
+        );
+      } catch (error) {
+        notices.raise({ what: saidBy(error), alarm: true });
+        await this.#letGo(attached.fresh);
+        return false;
+      }
+
+      this.#sent(id, waiting);
+      return true;
+    } finally {
       this.busy = false;
       this.#saving = false;
-      return;
     }
+  }
 
-    const payload = client.attached(client.saying(this.item, this.text), named);
-    const id = this.item.id;
-    const waiting = this.waiting;
-    const rewritten = this.#rewritten;
-    this.#close();
+  /**
+   * What the pool would now refuse, dropped and said: a file picked while the
+   * limit was unknown, or before a refused capture taught the client what it
+   * is, is refused here rather than at the pool.
+   */
+  #refuses(): boolean {
+    const { taken, said } = sorted(
+      this.attachments.filter(isPicked).map((held) => held.file),
+    );
+    if (said === "") return false;
 
-    if (rewritten) await client.edit(id, payload, WEB, waiting);
-    else for (const tag of waiting) await client.tag(id, tag);
-    for (const tag of waiting) void sayItFired(id, tag);
+    this.attachments = this.attachments.filter(
+      (held) => !isPicked(held) || taken.includes(held.file),
+    );
+    notices.raise({ what: said, alarm: true });
+    return true;
   }
 
   /**
    * Every attachment as an asset, holding the bytes of the ones that were
-   * picked. Nothing is kept where one of them fails: the words have not been
-   * sent, so the bytes already held are bytes nothing would claim.
+   * picked, and what was freshly held — which nothing names until the
+   * operation that does has been recorded.
    */
-  async #attached(): Promise<string[] | undefined> {
+  async #attached(): Promise<
+    { readonly named: string[]; readonly fresh: string[] } | undefined
+  > {
     const named: string[] = [];
     const fresh: string[] = [];
 
@@ -178,12 +221,22 @@ export class Editing {
         fresh.push(asset);
       } catch (error) {
         notices.raise({ what: `${held.name}: ${saidBy(error)}`, alarm: true });
-        for (const asset of fresh) await client.detach(asset).catch(() => {});
+        await this.#letGo(fresh);
         return undefined;
       }
     }
 
-    return named;
+    return { named, fresh };
+  }
+
+  /** Bytes held for an edit that was not sent, which an operation that names them keeps. */
+  async #letGo(fresh: readonly string[]): Promise<void> {
+    for (const asset of fresh) await client.detach(asset).catch(() => {});
+  }
+
+  #sent(id: ItemId, waiting: readonly string[]): void {
+    this.#close();
+    for (const tag of waiting) void sayItFired(id, tag);
   }
 }
 

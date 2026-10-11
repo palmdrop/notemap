@@ -147,6 +147,27 @@ Depends on nothing.
 nothing that the outbox names; run it with `--delete` on that copy and see the directory shrink.
 Paste the snippet into the shell's console and read the count it reports.
 
+### Review fixes (2026-10-11)
+
+From [the review](../reviews/an-edit-lets-go-of-its-bytes-2026-10-11.md), whose Resolution section
+is the finding-by-finding account.
+
+- [x] `save` answers whether it saved, and the leaving dialog stays put where it did not — the one
+  data-loss path this branch had introduced.
+- [x] A rejecting `client.edit` lets go of the bytes it had just held, and the edit closes after the
+  operation is recorded rather than before.
+- [x] The Raycast `catch` closes the client before the HUD pops to root.
+- [x] The walk is a **reclaim**, in `CONTEXT.md`'s words, with a grace window and a refusal to
+  delete where it meets an operation kind it does not know.
+- [x] `$state` had made `#rewritten`'s identity comparison wrong rather than merely fragile; it
+  compares by asset and by file now.
+- [x] Tests for the rollback, the save-time refusal, object-URL revocation, `capturing`'s detach
+  path and a `partly` capture; `capture.tsx` itself stays untested.
+- [x] The documentation findings, 12 through 21.
+- [x] Commit
+
+**Verify:** `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, `pnpm test:stack`.
+
 ### Phase 5 — Close out
 
 Depends on every phase above.
@@ -190,6 +211,10 @@ Depends on every phase above.
   press left another copy. It does not: the refused operation stays in the outbox naming them, so
   `detach` declines and the words can be sent again. What the window the detach covers really is:
   a capture that throws before the outbox has recorded it.
+- **Found in the review: `$state` proxies and identity.** `attachments` is reactive state, so an
+  entry read out of it is a proxy and never equals the raw object `#carries` holds. The comparison
+  has to be by asset and by file. The cost of getting it wrong was invisible to the whole suite,
+  because the one test for an unchanged edit uses an item with no attachments.
 - **Pictures the pool has measured.** An edit draws a carried picture at the proportions the pool
   measured (`shell.md:2536`); a picked one has no measurement and is drawn from its object URL at
   the box's size. The box already lives with that, so the expectation is nothing to do — but it is

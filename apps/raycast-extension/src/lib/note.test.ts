@@ -217,6 +217,59 @@ describe("a capture made from the form", () => {
     await client.close();
   });
 
+  /** A client that answers what each test needs of it, and records what it was asked. */
+  function stub(answers: Partial<Client>): {
+    readonly client: Client;
+    readonly detached: readonly string[];
+  } {
+    const detached: string[] = [];
+    const client = {
+      attach: () => Promise.resolve("asset-1"),
+      capture: () => Promise.resolve({ id: "item-1" }),
+      tag: () => Promise.resolve(),
+      detach: (asset: string) => {
+        detached.push(asset);
+        return Promise.resolve();
+      },
+      ...answers,
+    } as unknown as Client;
+
+    return { client, detached };
+  }
+
+  it("lets go of the bytes where the capture never reached the outbox", async () => {
+    const { client, detached } = stub({
+      capture: () => Promise.reject(new Error("the store would not write")),
+    });
+
+    const captured = await capturing(client, {
+      channel: "raycast",
+      text: "a note",
+      files: [await aFile("shot.png")],
+      tags: [],
+    });
+
+    expect(captured.kind).toBe("refused");
+    expect(detached).toEqual(["asset-1"]);
+  });
+
+  it("says a capture was made in part where a tag could not be applied", async () => {
+    const { client, detached } = stub({
+      tag: () => Promise.reject(new Error("no such tag")),
+    });
+
+    const captured = await capturing(client, {
+      channel: "raycast",
+      text: "a note",
+      files: [await aFile("shot.png")],
+      tags: ["reading"],
+    });
+
+    expect(captured.kind).toBe("partly");
+    // The capture names the bytes, so they are not this to let go of.
+    expect(detached).toEqual([]);
+  });
+
   it("keeps the bytes of a capture the pool refused, which still names them", async () => {
     const { store, held } = recording(createMemoryStore());
     const transport = mockTransport((request) =>
@@ -226,12 +279,13 @@ describe("a capture made from the form", () => {
     );
     const client = createClient({ transport, store });
 
-    await capturing(client, {
+    const captured = await capturing(client, {
       channel: "raycast",
       text: "a note",
       files: [await aFile("shot.png")],
       tags: [],
     });
+    expect(captured.kind).toBe("captured");
 
     // The refused capture is the only copy of what it carried, so the bytes are
     // its until it is sent again or let go of.

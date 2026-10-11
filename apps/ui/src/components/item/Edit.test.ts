@@ -9,6 +9,7 @@ import {
   type MockTransport,
 } from "@notemap/client/testing";
 
+import { unsaved } from "$lib/leaving.svelte";
 import { notices } from "$lib/notices.svelte";
 import { client, heldBlobs, pool } from "$testing/pool";
 import Edit from "./Edit.fixture.svelte";
@@ -83,11 +84,12 @@ test("draws the picture the item carries, and dropping it saves the item without
   expect(screen.queryByAltText("shot.png")).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "save" }));
-  expect(done).toHaveBeenCalled();
 
+  // Closes once the operation has been recorded, not before it.
   await vi.waitFor(async () => {
     expect(await edits(transport)).toHaveLength(1);
   });
+  expect(done).toHaveBeenCalled();
   const [edit] = await edits(transport);
   expect(edit?.payload.assets).toEqual([]);
   expect(edit?.source).toBe("web");
@@ -153,6 +155,10 @@ test("save attaches what is picked, and the words wait for the bytes", async () 
       files: [new File(["bytes"], "shot.png", { type: "image/png" })],
     },
   });
+  // Nothing is held until the save asks for it, which is the whole of the fix.
+  await screen.findByText("shot.png");
+  expect(heldBlobs()).toEqual([]);
+
   // The chord asks for the save; the button is working meanwhile.
   await fireEvent.keyDown(screen.getByLabelText("What it says"), {
     key: "Enter",
@@ -249,4 +255,111 @@ test("refuses a file larger than the pool takes as it is picked, in the status l
     expect(notices.latest?.what).toContain("huge.bin: that file is larger");
   });
   expect(screen.queryByText("huge.bin")).toBeNull();
+});
+
+test("a save whose attach fails lets go of what it held, and keeps the edit open", async () => {
+  stubObjectUrls();
+  let written = 0;
+  const transport = pool(accepting());
+  const store = client.attach.bind(client);
+  // The second file is the one that cannot be held, so the first is already
+  // written when it fails.
+  client.attach = async (file: File) => {
+    written += 1;
+    if (written === 2) throw new Error("no room");
+    return store(file);
+  };
+  const closed = vi.fn();
+
+  render(Edit, { item: anItem("one"), onclose: closed });
+
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
+    target: {
+      files: [
+        new File(["one"], "first.png", { type: "image/png" }),
+        new File(["two"], "second.png", { type: "image/png" }),
+      ],
+    },
+  });
+  await screen.findByText("second.png");
+
+  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toContain("second.png: no room");
+  });
+  // The words are still there to try again with, and nothing was left held.
+  expect(closed).not.toHaveBeenCalled();
+  expect(screen.getByText("first.png")).toBeDefined();
+  expect(heldBlobs()).toEqual([]);
+  expect(await edits(transport)).toHaveLength(0);
+});
+
+test("a save the pool would now refuse drops the file, says so, and does not save", async () => {
+  stubObjectUrls();
+  const transport = pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: false });
+    }
+    if (route === "GET /v1/assets/limits") return json(200, { maxUpload: 8 });
+    return accepting()(request);
+  });
+  const closed = vi.fn();
+
+  render(Edit, { item: anItem("one"), onclose: closed });
+  // Picked before the limit is known, which is the only way into this branch.
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
+    target: { files: [new File(["far too many bytes"], "huge.bin")] },
+  });
+  await screen.findByText("huge.bin");
+
+  await client.askSession();
+  await vi.waitFor(() => {
+    expect(
+      client.refuses(new File(["far too many bytes"], "probe")),
+    ).toBeDefined();
+  });
+
+  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toContain("huge.bin: that file is larger");
+  });
+  expect(screen.queryByText("huge.bin")).toBeNull();
+  expect(closed).not.toHaveBeenCalled();
+  expect(heldBlobs()).toEqual([]);
+  expect(await edits(transport)).toHaveLength(0);
+});
+
+test("dropping a picked file revokes the handle its thumbnail was drawn through", async () => {
+  stubObjectUrls();
+  pool(accepting());
+
+  render(Edit, { item: anItem("one"), onclose: vi.fn() });
+
+  await fireEvent.change(screen.getByLabelText("Files to carry"), {
+    target: { files: [new File(["one"], "shot.png", { type: "image/png" })] },
+  });
+  await screen.findByText("shot.png");
+  expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove shot.png" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:held");
+  });
+});
+
+/** An attachment the item carries is drawn from a list that is `$state`, so it is compared by asset. */
+test("an edit of a capture that carries a file holds nothing the item does not say", async () => {
+  pool(accepting());
+
+  render(Edit, { item: pictured("one"), onclose: vi.fn() });
+  await screen.findByText("shot.png");
+
+  expect(unsaved()).toBe(false);
+  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
 });

@@ -11,7 +11,7 @@
     "dev": "node scripts/dev.ts",
     "release": "node scripts/release.ts",
     "seed": "node scripts/seed.ts",
-    "sweep": "node scripts/sweep-held-blobs.ts",
+    "reclaim": "node scripts/reclaim-held-blobs.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "test": "pnpm -r test",

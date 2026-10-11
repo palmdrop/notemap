@@ -241,6 +241,9 @@ docker compose start
 
 ## Bytes a shell is holding
 
+From a clone, on the machine you capture from — the rest of this document needs no toolchain, and
+this part does.
+
 A shell holds a picked file's bytes from the moment a capture or an edit is sent until the drain
 has uploaded them, so an interrupted send still has its attachment. Those bytes are let go of as
 the operation leaves the outbox. Versions before 2026-10-10 attached in an edit as the file was
@@ -248,17 +251,26 @@ picked, and in the Raycast extension named the asset wrongly, so both could leav
 that nothing would ever claim. Nothing in the daemon can see them — they are the shell's, not the
 pool's.
 
-The Raycast extension's store is a directory, so it can be swept:
+**Have nothing capturing while you do this.** The bytes are written before the operation that
+names them, so to anything walking the store at that instant, named and about to be named look
+alike — the same reason the pool's own reclaim waits out a grace window
+([CONTEXT.md](../CONTEXT.md)). Quit the extension, and close the tab.
+
+The Raycast extension's store is a directory, so it can be walked:
 
 ```sh
-pnpm sweep ~/Library/Application\ Support/com.raycast.macos/extensions/notemap
-pnpm sweep <that path> --delete      # once you have read what it names
+pnpm reclaim ~/Library/Application\ Support/com.raycast.macos/extensions/notemap
+pnpm reclaim <that path> --delete      # once you have read what it names
 ```
 
-It lists every blob no operation in that outbox names, and deletes them only when asked.
+It lists every blob no operation in that outbox names, with its size, holds back anything written
+in the last ten minutes, and deletes only when asked. An outbox holding an operation it does not
+know is a refusal to delete anything, since an operation it cannot read may name bytes it would
+otherwise call an orphan.
 
-The web shell's store is IndexedDB, which nothing outside the browser can open. Run this in the
-shell's console — it reports the same thing, and deletes when called with `true`:
+The web shell's store is IndexedDB, which nothing outside the browser can open, and which records
+no write time for a grace window to read — so here the only protection is that nothing else is
+capturing. Run this in the shell's console; it reports the ids and deletes when called with `true`:
 
 ```js
 await (async (del = false) => {
@@ -268,9 +280,10 @@ await (async (del = false) => {
     ask.onerror = () => no(ask.error);
   });
   const read = (store, how) =>
-    new Promise((ok) => {
+    new Promise((ok, no) => {
       const ask = db.transaction(store).objectStore(store)[how]();
       ask.onsuccess = () => ok(ask.result);
+      ask.onerror = () => no(ask.error);
     });
   const named = new Set(
     (await read("outbox", "getAll")).flatMap((held) =>
@@ -278,11 +291,15 @@ await (async (del = false) => {
     ),
   );
   const unnamed = (await read("blobs", "getAllKeys")).filter((key) => !named.has(key));
-  if (del) {
-    const tx = db.transaction("blobs", "readwrite");
-    for (const key of unnamed) tx.objectStore("blobs").delete(key);
-  }
-  return { unnamed, deleted: del };
+  if (!del) return { unnamed, deleted: 0 };
+
+  const tx = db.transaction("blobs", "readwrite");
+  for (const key of unnamed) tx.objectStore("blobs").delete(key);
+  await new Promise((ok, no) => {
+    tx.oncomplete = () => ok();
+    tx.onabort = tx.onerror = () => no(tx.error);
+  });
+  return { unnamed, deleted: unnamed.length };
 })();
 ```
 
