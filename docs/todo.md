@@ -260,6 +260,7 @@
 - [ ] raycast extension: add command for viewing inbox
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
 - [x] in raycast, show undrained count, and/or view for outbox
+- [x] raycast capture takes any number of attachments, as a capture has since 2026-10-07 _(2026-10-11)_
 
 - [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 

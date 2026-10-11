@@ -20,8 +20,7 @@ type Answers = {
   readonly tag?: () => Promise<void>;
   /** How many operations are still waiting when the form asks. */
   readonly waiting?: number;
-  /** What leaving the form does, for the one line out of a process that is ending. */
-  readonly leaving?: (line: string) => Promise<void>;
+  readonly drain?: () => Promise<void>;
 };
 
 /** What the form did, in the order it did it, which is half of what is asserted here. */
@@ -45,7 +44,7 @@ function watching(answers: Answers = {}): Watched {
       return (answers.tag ?? (() => Promise.resolve()))();
     },
     detach: () => Promise.resolve(),
-    drain: () => Promise.resolve(),
+    drain: answers.drain ?? (() => Promise.resolve()),
     waiting: {
       subscribe: (to: (count: number) => void) => {
         to(answers.waiting ?? 0);
@@ -69,7 +68,7 @@ function watching(answers: Answers = {}): Watched {
       },
       leaving: (line) => {
         done.push(line);
-        return (answers.leaving ?? (() => Promise.resolve()))(line);
+        return Promise.resolve();
       },
       // Short enough that a test waiting it out is not a test anybody waits for.
       settleMs: 20,
@@ -137,26 +136,18 @@ describe("what the capture form does with what it holds", () => {
   });
 
   it("says as much where the capture landed and something after it threw", async () => {
-    // The line out of a process that is ending can fail; what was captured is
-    // in the outbox either way.
     const watched = watching({
       waiting: 0,
-      leaving: (line) =>
-        line.startsWith("Captured, but")
-          ? Promise.resolve()
-          : Promise.reject(new Error("the HUD went nowhere")),
+      // What `landing` asks of a client that is already closing.
+      drain: () => Promise.reject(new Error("the drain went nowhere")),
     });
 
     await submitting(watched.form, typed());
 
-    expect(watched.done.filter((each) => each !== "closed")).toEqual([
-      "Captured — a note",
+    expect(watched.done).toEqual([
+      "closed",
       "Captured, but not all of it — a note",
     ]);
-    // Every line that leaves the form has a close in front of it.
-    for (const [at, each] of watched.done.entries()) {
-      if (each !== "closed") expect(watched.done[at - 1]).toBe("closed");
-    }
   });
 
   it("applies the tags it was picked and the tags that were typed, once each", async () => {

@@ -37,13 +37,14 @@ const pause = (ms: number) =>
  * for the drain command rather than being lost, and says which of the two
  * happened.
  *
- * The client is closed before anything that leaves the form, every time:
- * leaving ends this process, so whatever is still on the wire has to be
- * abandoned and written back first rather than left leased.
+ * The client is closed before anything that leaves the form: leaving ends this
+ * process, so whatever is still on the wire has to be abandoned and written
+ * back first rather than left leased.
  */
 export async function submitting(form: Form, values: Values): Promise<void> {
   const said = excerpt(values.text);
   const client = form.open();
+  let line: string | undefined;
 
   try {
     const captured = await capturing(client, {
@@ -74,16 +75,14 @@ export async function submitting(form: Form, values: Values): Promise<void> {
             pause(form.settleMs).then(() => undefined),
           ]);
 
-    await client.close();
-    await form.leaving(
-      captured.kind === "partly" ? partly(said) : whole(landed, said),
-    );
+    line = captured.kind === "partly" ? partly(said) : whole(landed, said);
   } catch {
     // Past the capture the note is in the outbox and safe, so anything that
     // fails here is no longer a failure to capture.
-    await client.close();
-    await form.leaving(partly(said));
+    line = partly(said);
   } finally {
     await client.close();
   }
+
+  if (line !== undefined) await form.leaving(line);
 }

@@ -111,11 +111,7 @@ export default function Command() {
         title="New tags"
         placeholder="Comma separated"
       />
-      <Form.FilePicker
-        id="files"
-        title="Attachment"
-        allowMultipleSelection={false}
-      />
+      <Form.FilePicker id="files" title="Attachments" />
     </Form>
   );
 }

@@ -19,7 +19,7 @@ import {
 } from "@notemap/client/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { attaching, capturing, chosen, excerpt } from "./note";
+import { attached, capturing, chosen, excerpt } from "./note";
 
 const UPLOAD = "PUT /v1/assets/";
 const CAPTURE = "POST /v1/captures";
@@ -87,19 +87,12 @@ describe("an attachment", () => {
     return { client, held: () => seen };
   }
 
-  it("is nothing where no file was picked", async () => {
-    const { client, held } = attaches();
-
-    expect(await attaching(client, [])).toBeUndefined();
-    expect(held()).toBeUndefined();
-  });
-
   it("carries the file's own name and the type its suffix reads as", async () => {
     const path = join(directory, "a-screenshot.PNG");
     await writeFile(path, "bytes");
     const { client, held } = attaches();
 
-    await attaching(client, [path]);
+    await attached(client, path);
 
     expect(held()?.name).toBe("a-screenshot.PNG");
     expect(held()?.type).toBe("image/png");
@@ -110,7 +103,7 @@ describe("an attachment", () => {
     await writeFile(path, "bytes");
     const { client, held } = attaches();
 
-    await attaching(client, [path]);
+    await attached(client, path);
 
     expect(held()?.type).toBe("");
   });
@@ -172,6 +165,49 @@ describe("a capture made from the form", () => {
     await writeFile(path, "bytes");
     return path;
   }
+
+  it("names every file it attached, in the order they were picked", async () => {
+    const transport = mockTransport(taking());
+    const client = createClient({ transport, store: createMemoryStore() });
+
+    const captured = await capturing(client, {
+      channel: "raycast",
+      text: "a note",
+      files: [await aFile("first.png"), await aFile("second.pdf")],
+      tags: [],
+    });
+    expect(captured.kind).toBe("captured");
+
+    await vi.waitFor(async () => {
+      expect(await envelopes(transport)).toHaveLength(1);
+    });
+    await client.close();
+
+    const [envelope] = await envelopes(transport);
+    expect(envelope?.payload.assets).toHaveLength(2);
+    expect(uploads(transport)).toHaveLength(2);
+  });
+
+  it("lets go of the files it held where a later one cannot be", async () => {
+    let attaching = 0;
+    const { client, detached } = stub({
+      attach: () => {
+        attaching += 1;
+        if (attaching === 2) return Promise.reject(new Error("no room"));
+        return Promise.resolve(`asset-${String(attaching)}`);
+      },
+    });
+
+    const captured = await capturing(client, {
+      channel: "raycast",
+      text: "a note",
+      files: [await aFile("first.png"), await aFile("second.pdf")],
+      tags: [],
+    });
+
+    expect(captured.kind).toBe("refused");
+    expect(detached).toEqual(["asset-1"]);
+  });
 
   it("names the asset it attached, so the file goes with the words", async () => {
     const transport = mockTransport(taking());
