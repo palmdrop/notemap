@@ -1,6 +1,10 @@
 # Developer TODOs
 
+- [ ] storage space, mirror + db size, asset sizes - give the user a way to inspect the storage used, the size the mirror takes on disk, the size an asset takes, etc. BOth stats page and useful insights wherever relevant in the app
+
 ## Shell — layout and interaction
+
+- [ ] add ability to order feed by order of processing, which is more intuitive since the user might expect the capture they processed latest to appear on top
 
 - [x] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
     - smooth scroll with some padding?
@@ -257,8 +261,8 @@
   [a-pool-holds-settings](plans/a-pool-holds-settings.md)).
 
 ## Inboxes
-- [ ] raycast extension: add command for viewing inbox
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
+- [ ] raycast extension need to support empty note bodies, just attachments. Move attachments above tags
 - [x] in raycast, show undrained count, and/or view for outbox
 - [x] raycast capture takes any number of attachments, as a capture has since 2026-10-07 _(2026-10-11)_
 
