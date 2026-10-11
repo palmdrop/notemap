@@ -4,6 +4,7 @@ import { createMemoryStore } from "./adapters/memory-store";
 import { saidBy } from "./errors";
 import type { Item } from "./api/types";
 import { createClient } from "./client";
+import { envelopeFor } from "./capture/envelope";
 import type { PendingOperation } from "./outbox/operations";
 import type { ClientStore } from "./ports/store";
 import type { Client } from "./types";
@@ -79,18 +80,12 @@ describe("the bytes a store was left holding", () => {
     await store.writeOperation(
       anOperation("op-1", {
         kind: "capture",
-        envelope: {
-          source: "web",
-          sourceItemId: "one",
-          capturedAt: AT,
-          payload: {
-            type: "note",
-            content: { text: "words" },
-            metadata: {},
-            assets: [{ slot: "000", asset: "asset-named" }],
-          },
-        },
-      } as PendingOperation["operation"]),
+        envelope: envelopeFor(
+          { channel: "web", text: "words", assets: ["asset-named"] },
+          "one",
+          AT,
+        ),
+      }),
     );
 
     const { client, transport } = clientOver(store, unreachable);

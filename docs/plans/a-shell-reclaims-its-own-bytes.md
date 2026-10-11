@@ -1,9 +1,9 @@
 # A shell reclaims its own bytes
 
 **Date**: 2026-10-11
-**Status**: Todo
+**Status**: Done
 **Spec**: `docs/specs/client.md`
-**Closed**:
+**Closed**: 2026-10-11
 
 ---
 
@@ -40,20 +40,21 @@ Settled with the developer on 2026-10-11, from the questions the
 
 ## Tasks
 
-- [ ] Create branch `agent/a-shell-reclaims-its-own-bytes`
+- [x] Create branch `agent/a-shell-reclaims-its-own-bytes`
 
 ### Phase 1 — The store says what it holds
 
 Depends on nothing.
 
-- [ ] `ClientStore.blobs()` in `packages/client/src/ports/store.ts`, answering
+- [x] `ClientStore.blobs()` in `packages/client/src/ports/store.ts`, answering
       `readonly { asset: AssetId; at: string }[]`.
-- [ ] The filesystem adapter walks `blobs/`, reading `at` from the bytes file's mtime, and skips a
+- [x] The filesystem adapter walks `blobs/`, reading `at` from the bytes file's mtime, and skips a
       directory holding no record.
-- [ ] The IndexedDB adapter stores `{ file, at }` under version 4, reads the file back out of it,
+- [x] The IndexedDB adapter stores `{ file, at }` under version 4, reads the file back out of it,
       and treats a value an older version wrote as a bare file written long ago.
-- [ ] The memory adapter records when it wrote.
-- [ ] Commit
+- [x] The memory adapter records when it wrote, off a clock a test can drive — a grace window
+      cannot be tested against an adapter whose write time is the wall clock's.
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/client test`. Each adapter answers what it was given, with an
 `at` that moves forward on a second write of the same asset; the IndexedDB one reads a bare file
@@ -63,11 +64,12 @@ back and answers an `at` in the distant past for it.
 
 Depends on phase 1.
 
-- [ ] A grace window beside `HISTORY` in `packages/client/src/state/retention.ts`.
-- [ ] After hydration, the client lists the store's blobs, drops every one its outbox names and
+- [x] A grace window, beside the walk that reads it in `packages/client/src/assets/reclaim.ts`
+      rather than beside `HISTORY`: it bounds held bytes, not what the cache keeps.
+- [x] After hydration, the client lists the store's blobs, drops every one its outbox names and
       every one inside the grace window, and removes the rest — reported through `onError` rather
       than thrown, and never delaying what `ready` resolves.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/client test`. A client built over a store holding one blob an
 operation names, one orphan written long ago and one orphan written now keeps the first and the
@@ -77,13 +79,13 @@ third and takes the second; a store whose `blobs()` throws leaves a working clie
 
 Depends on phases 1 and 2.
 
-- [ ] `client.md`: the store's answers gain `blobs()`, and a `Shipped:` entry says a client lets go
+- [x] `client.md`: the store's answers gain `blobs()`, and a `Shipped:` entry says a client lets go
       of what nothing names.
-- [ ] `running.md`: the browser no longer needs the console snippet — opening the shell is what
+- [x] `running.md`: the browser no longer needs the console snippet — opening the shell is what
       reclaims. Say what the script is still for, which is a store whose shell you would rather not
       start.
-- [ ] `docs/todo.md`: the line about bytes earlier versions left, closed.
-- [ ] Commit
+- [x] `docs/todo.md`: the line about bytes earlier versions left, closed.
+- [x] Commit
 
 **Verify:** `grep -n "blobs()" docs/specs/client.md` finds the port's new answer described.
 
@@ -91,9 +93,9 @@ Depends on phases 1 and 2.
 
 Depends on every phase above.
 
-- [ ] `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, `pnpm test:stack`.
-- [ ] Status to `Done`, and the `Shipped:` entry dated.
-- [ ] Commit
+- [x] `pnpm typecheck`, `pnpm -r --silent test`, `pnpm lint`, `pnpm test:stack`.
+- [x] Status to `Done`, and the `Shipped:` entry dated.
+- [x] Commit
 
 **Verify:** all four clean.
 
@@ -110,6 +112,11 @@ Depends on every phase above.
   at once both walk. Removing a blob the other has already removed is `force: true` on one side and
   a `delete` of a missing key on the other; neither is an error. Nothing holds a lock, which is the
   same stance the outbox's lease takes about files rather than about blobs.
+- **Found in phase 2: two clocks, again.** The client reads `now` off its injected clock and the
+  memory store was writing the wall clock's, so a stopped-clock test saw every blob as written in
+  its future and reclaimed nothing. `createMemoryStore` takes a clock now. The filesystem adapter
+  still answers the filesystem's, which is the same thing the daemon's reclaim had to backdate
+  files for.
 - **Whether `openReader` should reclaim at all.** It is over a memory store, so its walk finds
   nothing. If it ever moves to the extension's directory, this becomes a question.
 
