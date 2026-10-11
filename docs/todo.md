@@ -98,8 +98,10 @@
     ([an-edit-lets-go-of-its-bytes](plans/an-edit-lets-go-of-its-bytes.md)). The same plan found the
     Raycast capture passing `asset` where a capture input names `assets`, so its attachment never
     reached the pool and its bytes were orphaned every time; it captures through `capturing` in
-    `apps/raycast-extension/src/lib/note.ts` now, and `pnpm reclaim` takes the bytes either shell
-    left ([running.md](running.md#bytes-a-shell-is-holding)).
+    `apps/raycast-extension/src/lib/note.ts` now. What either shell had already left is taken by the
+    shell itself on its next start, past a grace window
+    ([a-shell-reclaims-its-own-bytes](plans/a-shell-reclaims-its-own-bytes.md)), and `pnpm reclaim`
+    is for looking ([running.md](running.md#bytes-a-shell-is-holding)).
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
