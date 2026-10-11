@@ -55,6 +55,71 @@ beforeEach(() => {
   clock.set("2026-08-17T12:00:00.000Z");
 });
 
+describe("the bytes a store was left holding", () => {
+  const AT = "2026-08-17T12:00:00.000Z";
+  const LONG_AGO = "2026-08-17T11:00:00.000Z";
+
+  function held(at: () => string) {
+    return createMemoryStore({ now: at });
+  }
+
+  function aFile(name: string) {
+    return new File(["bytes"], name, { type: "image/png" });
+  }
+
+  it("lets go of what no operation names, once it is past the grace window", async () => {
+    let written = LONG_AGO;
+    const store = held(() => written);
+    await store.writeBlob("asset-left", aFile("left.png"));
+
+    written = AT;
+    await store.writeBlob("asset-just-now", aFile("fresh.png"));
+
+    await store.writeBlob("asset-named", aFile("named.png"));
+    await store.writeOperation(
+      anOperation("op-1", {
+        kind: "capture",
+        envelope: {
+          source: "web",
+          sourceItemId: "one",
+          capturedAt: AT,
+          payload: {
+            type: "note",
+            content: { text: "words" },
+            metadata: {},
+            assets: [{ slot: "000", asset: "asset-named" }],
+          },
+        },
+      } as PendingOperation["operation"]),
+    );
+
+    const { client, transport } = clientOver(store, unreachable);
+    // Left unreachable, so the operation stays in the outbox naming its bytes.
+    transport.unreachable(true);
+    await client.askSession().catch(() => undefined);
+
+    // The one nothing names and nothing is about to name.
+    await until(async () => (await store.readBlob("asset-left")) === undefined);
+    expect(await store.readBlob("asset-named")).toBeDefined();
+    expect(await store.readBlob("asset-just-now")).toBeDefined();
+  });
+
+  it("stays a working client where the store cannot say what it holds", async () => {
+    const store = held(() => AT);
+    const refused = {
+      ...store,
+      blobs: () => Promise.reject(new Error("no answer")),
+    };
+
+    const { client, reported } = clientOver(refused, unreachable);
+
+    await until(() => reported.length > 0);
+    expect(saidBy(reported[0])).toContain("no answer");
+    // Still a client: it answers for the outbox it read.
+    expect(read(client.outbox)).toEqual([]);
+  });
+});
+
 describe("hydration", () => {
   it("comes up holding the outbox and the items the store was left with", async () => {
     const store = createMemoryStore();

@@ -16,7 +16,15 @@ import {
 import type { ClientStore } from "#ports/store";
 import { localUrls } from "./local-urls";
 
-export function createMemoryStore(): ClientStore {
+export type MemoryStoreOptions = {
+  /** The clock a write time is read off, for a test that drives one. */
+  readonly now?: () => string;
+};
+
+export function createMemoryStore(
+  options: MemoryStoreOptions = {},
+): ClientStore {
+  const now = options.now ?? (() => new Date().toISOString());
   const operations = new Map<OperationId, PendingOperation>();
   const items = new Map<ItemId, Item>();
   const blobs = new Map<
@@ -93,7 +101,7 @@ export function createMemoryStore(): ClientStore {
 
     async writeBlob(asset, blob) {
       urls.release(asset);
-      blobs.set(asset, { file: blob, at: new Date().toISOString() });
+      blobs.set(asset, { file: blob, at: now() });
     },
 
     async removeBlob(asset) {
