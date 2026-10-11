@@ -1,7 +1,7 @@
 # Review: An edit lets go of its bytes
 
 **Date**: 2026-10-11
-**Status**: Resolved — 8 and 9 answered rather than taken, 10 holds a named gap
+**Status**: Resolved — 8 and 9 answered rather than taken
 **Scope**: `origin/main..HEAD` — `apps/ui/src/components/item/`, `apps/ui/src/lib/picking.ts`, `apps/raycast-extension/src/`, `scripts/reclaim-held-blobs.ts`, `docs/`
 **Plan**: `docs/plans/an-edit-lets-go-of-its-bytes.md`
 **Spec**: `docs/specs/shell.md`
@@ -395,11 +395,13 @@ _2026-10-11, in the same branch._
    of proportion — so instead the walk refuses to delete anything when it meets an operation kind it
    does not know (`reclaim-held-blobs.ts:126`), which turns the drift this finding describes into a
    stop rather than a silent deletion.
-10. **Fixed, except the view.** Added: the rollback, the save-time refusal, object-URL revocation on
-    drop, `heldBlobs()` empty *before* the save chord, `capturing`'s detach path, a `partly` tag
-    failure, and `captured.kind` asserted in the refusal test. `capture.tsx` still has no test —
-    the package has no renderer or `@raycast/api` double, and that is more than this branch should
-    grow; it stays worth doing.
+10. **Fixed.** Added: the rollback, the save-time refusal, object-URL revocation on drop,
+    `heldBlobs()` empty *before* the save chord, `capturing`'s detach path, a `partly` tag failure,
+    and `captured.kind` asserted in the refusal test. The view's own wiring followed, as
+    `lib/submitting.ts`: what the form does with what it holds, taking Raycast's part as three
+    functions, so the HUD branching, the close-before-leaving ordering and the tag wiring are all
+    asserted without a renderer. `capture.tsx` is the fields, the toast and the notice, and the one
+    branch left in it is an empty note.
 11. **Fixed.** `recording` returns `{ store, held }` and `pool()` is what points `heldBlobs` at the
     store it just built. The order comment is gone.
 12. **Fixed.** The `Shipped:` entry names the reclaim and links `running.md`.

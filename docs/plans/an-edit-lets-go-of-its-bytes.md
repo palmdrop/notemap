@@ -162,7 +162,10 @@ is the finding-by-finding account.
 - [x] `$state` had made `#rewritten`'s identity comparison wrong rather than merely fragile; it
   compares by asset and by file now.
 - [x] Tests for the rollback, the save-time refusal, object-URL revocation, `capturing`'s detach
-  path and a `partly` capture; `capture.tsx` itself stays untested.
+  path and a `partly` capture.
+- [x] What the Raycast form does with what it holds becomes `lib/submitting.ts`, taking Raycast's
+  part as three functions, so the HUD branching and the close-before-leaving ordering are tested
+  without a renderer. The view keeps the fields, the toast and the notice.
 - [x] The documentation findings, 12 through 21.
 - [x] Commit
 

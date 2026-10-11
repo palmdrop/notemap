@@ -10,30 +10,15 @@ import {
 import { useEffect, useState } from "react";
 
 import { openClient, openReader } from "./lib/client";
-import { capturing, chosen, excerpt, landing } from "./lib/note";
-
-type Values = {
-  readonly text: string;
-  readonly tags: string[];
-  readonly newTags: string;
-  readonly files: string[];
-};
+import { excerpt } from "./lib/note";
+import { submitting, type Values } from "./lib/submitting";
 
 /** Long enough for a pool that answers to answer, short enough not to hold the form. */
 const SETTLE_MS = 2_000;
 
-const pause = (ms: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, ms));
-
-/** What the HUD says of a capture that reached the outbox, whole or in part. */
-const whole = (landed: boolean | undefined, said: string) =>
-  landed === true ? `Captured — ${said}` : `Waiting to send — ${said}`;
-const partly = (said: string) => `Captured, but not all of it — ${said}`;
-
 /**
- * Captures through a whole client, so a note made while the daemon is
- * unreachable waits in the outbox for the drain command rather than being
- * lost. The notice says which of the two happened.
+ * The capture form. What it does with what it holds is `submitting`; this is
+ * the fields, the toast and the notice it leaves behind.
  */
 export default function Command() {
   const [known, setKnown] = useState<readonly string[]>([]);
@@ -61,8 +46,8 @@ export default function Command() {
     };
   }, []);
 
-  async function submit({ text, tags, newTags, files }: Values) {
-    if (text.trim() === "") {
+  async function submit(values: Values) {
+    if (values.text.trim() === "") {
       await showToast({
         style: Toast.Style.Failure,
         title: "Nothing to capture",
@@ -70,67 +55,36 @@ export default function Command() {
       return;
     }
 
-    const said = excerpt(text);
-    // Built here rather than with the view: a client closed once sends nothing
-    // further, and this one is closed as soon as the capture has been seen to.
-    const client = openClient();
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Capturing",
-      message: said,
+      message: excerpt(values.text),
     });
 
-    try {
-      const captured = await capturing(client, {
-        channel: "raycast",
-        text,
-        files,
-        tags: chosen(tags, newTags),
-      });
-
-      if (captured.kind === "refused") {
-        // Stays on the form, which still holds the words: a notice would close
-        // it and take them with it, and there is nothing captured to close over.
-        const { error } = captured;
-        toast.style = Toast.Style.Failure;
-        toast.title = "Nothing was captured";
-        toast.message = error instanceof Error ? error.message : said;
-        return;
-      }
-
-      // Whichever comes first: a pool that answered, or a wait worth no more of
-      // the person's time. What is still waiting, the drain command sends.
-      const landed =
-        captured.kind === "partly"
-          ? undefined
-          : await Promise.race([
-              landing(client),
-              pause(SETTLE_MS).then(() => undefined),
-            ]);
-
-      // Popping to root ends this process, so whatever is still on the wire is
-      // abandoned and written back first rather than left leased.
-      await client.close();
-      await toast.hide();
-      // The form is left behind as well as closed: without this the next launch
-      // comes back to it, still holding the note that has already been sent.
-      await showHUD(
-        captured.kind === "partly" ? partly(said) : whole(landed, said),
-        { clearRootSearch: true, popToRootType: PopToRootType.Immediate },
-      );
-    } catch {
-      // Past the capture the note is in the outbox and safe, so anything that
-      // fails here is no longer a failure to capture — and the close comes
-      // first here too, the HUD ending this process before it could return.
-      await client.close();
-      await toast.hide();
-      await showHUD(partly(said), {
-        clearRootSearch: true,
-        popToRootType: PopToRootType.Immediate,
-      });
-    } finally {
-      await client.close();
-    }
+    await submitting(
+      {
+        // Built per capture rather than with the view: a client closed once
+        // sends nothing further, and this one is closed as soon as the capture
+        // has been seen to.
+        open: openClient,
+        failing: (title, message) => {
+          toast.style = Toast.Style.Failure;
+          toast.title = title;
+          toast.message = message;
+        },
+        leaving: async (said) => {
+          await toast.hide();
+          // The form is left behind as well as closed: without this the next
+          // launch comes back to it, still holding the note already sent.
+          await showHUD(said, {
+            clearRootSearch: true,
+            popToRootType: PopToRootType.Immediate,
+          });
+        },
+        settleMs: SETTLE_MS,
+      },
+      values,
+    );
   }
 
   return (
