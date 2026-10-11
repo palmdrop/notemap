@@ -21,6 +21,7 @@
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
   import { slide } from "$lib/motion";
+  import { sorted } from "$lib/picking";
   import { NOTHING_TO_CAPTURE } from "$lib/said";
   import { offerable, triggeredBy } from "$lib/templates";
 
@@ -135,24 +136,6 @@
     ),
   );
 
-  /** The files the pool would take, and what it would say of the ones it would not, by name. */
-  function sorted(offered: readonly File[]): {
-    readonly taken: readonly File[];
-    readonly said: string;
-  } {
-    const refusals = offered
-      .map((file) => ({ file, refusal: client.refuses(file) }))
-      .filter((each) => each.refusal !== undefined);
-    const [first] = refusals;
-    return {
-      taken: offered.filter((file) => client.refuses(file) === undefined),
-      said:
-        first?.refusal === undefined
-          ? ""
-          : `${refusals.map((each) => each.file.name).join(", ")}: ${saidBy(first.refusal)}`,
-    };
-  }
-
   function pick(event: Event) {
     const picked = [...((event.currentTarget as HTMLInputElement).files ?? [])];
     picker.value = "";
@@ -172,8 +155,6 @@
       return;
     }
 
-    // The limit may have been learned since a file was picked, or a refused
-    // capture put back with the file that was refused.
     const { taken, said: refused } = sorted(chosen);
     if (refused !== "") {
       chosen = taken;

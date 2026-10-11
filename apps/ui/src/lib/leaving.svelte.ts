@@ -10,8 +10,11 @@ export type Open = {
   /** Which capture it is, for a question asked wherever the row has scrolled to. */
   readonly about: string;
   readonly changed: () => boolean;
-  /** Settles once whatever was being attached has gone up with it. */
-  readonly save: () => Promise<void>;
+  /**
+   * Attaches what the edit holds and sends it, answering whether it saved. A
+   * `false` is an edit still open holding the words, having said why.
+   */
+  readonly save: () => Promise<boolean>;
   /** Lets the changes go and closes the edit. */
   readonly revert: () => void;
   /** Back into the field, the row brought into view. */
@@ -79,9 +82,19 @@ export async function answer(
       return;
     }
 
+    if (choice === "save") {
+      // An edit that could not be saved is not left behind: going on would
+      // take the words with it, and the notice naming the file is not an
+      // answer to what was asked here.
+      if (!(await edit.save())) {
+        edit.resume();
+        return;
+      }
+    } else {
+      edit.revert();
+    }
+
     if (open === edit) open = undefined;
-    if (choice === "save") await edit.save();
-    else edit.revert();
     then();
   } finally {
     settling = false;

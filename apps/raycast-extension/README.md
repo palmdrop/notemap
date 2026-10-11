@@ -6,8 +6,8 @@ background every ten minutes and can be run by hand.
 
 ## Commands
 
-- **Capture** — a note, tags already in use or new ones, and one attachment. The notice says
-  whether it reached the pool or is waiting to be sent.
+- **Capture** — a note, tags already in use or new ones, and any number of attachments. The notice
+  says whether it reached the pool or is waiting to be sent.
 - **Drain Outbox** — sends what is waiting. Run by hand, it says how much is left.
 
 ## Preferences
