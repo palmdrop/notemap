@@ -19,7 +19,10 @@ import { localUrls } from "./local-urls";
 export function createMemoryStore(): ClientStore {
   const operations = new Map<OperationId, PendingOperation>();
   const items = new Map<ItemId, Item>();
-  const blobs = new Map<AssetId, File>();
+  const blobs = new Map<
+    AssetId,
+    { readonly file: File; readonly at: string }
+  >();
   const urls = localUrls();
 
   let tags: readonly TagUse[] = [];
@@ -86,11 +89,11 @@ export function createMemoryStore(): ClientStore {
       pool = identity;
     },
 
-    readBlob: async (asset) => blobs.get(asset),
+    readBlob: async (asset) => blobs.get(asset)?.file,
 
     async writeBlob(asset, blob) {
       urls.release(asset);
-      blobs.set(asset, blob);
+      blobs.set(asset, { file: blob, at: new Date().toISOString() });
     },
 
     async removeBlob(asset) {
@@ -98,6 +101,9 @@ export function createMemoryStore(): ClientStore {
       blobs.delete(asset);
     },
 
-    blobUrl: async (asset) => urls.of(asset, blobs.get(asset)),
+    blobs: async () =>
+      [...blobs].map(([asset, held]) => ({ asset, at: held.at })),
+
+    blobUrl: async (asset) => urls.of(asset, blobs.get(asset)?.file),
   };
 }
