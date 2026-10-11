@@ -101,6 +101,12 @@
 
 <svelte:window {onkeydown} />
 
+<svelte:head>
+  <title>
+    Notemap
+  </title>
+</svelte:head>
+
 <Sheet {fills}>
   <Column {fills}>
     <Bar>

@@ -9,6 +9,12 @@
   const atMenu = $derived(page.route.id === "/settings");
 </script>
 
+<svelte:head>
+  <title>
+    Settings | Notemap
+  </title>
+</svelte:head>
+
 <div
   class="grid grid-cols-[var(--spacing-rail)_1fr] max-narrow:grid-cols-1 max-narrow:gap-0"
 >

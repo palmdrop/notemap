@@ -47,6 +47,8 @@
   const pool = reachable();
   const undrained = pending();
 
+  const queueCount = client.counts.queue;
+
   /** Processing starts on the row, and one row is selected at a time. */
   let selected = $state<string | undefined>(undefined);
 
@@ -305,6 +307,12 @@
     },
   ]);
 </script>
+
+<svelte:head>
+  <title>
+    Queue ({$queueCount}) | Notemap
+  </title>
+</svelte:head>
 
 <Capture
   bind:this={capture}
