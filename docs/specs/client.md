@@ -4,6 +4,12 @@
 **Last updated**: 2026-10-09
 **Shipped**:
 
+- 2026-10-11 — **A shell reclaims its own bytes.** `ClientStore` says which blobs it holds and when
+  it wrote them, and a client started against a store holding blobs no operation names lets them go
+  itself, past a grace window — so neither shell needs a script to tidy up after a bug that left
+  some. The browser's adapter records the write time under a new schema version, reading a blob an
+  older one wrote as written long ago. ([plan](../plans/a-shell-reclaims-its-own-bytes.md))
+
 - 2026-10-09 — **What arrives from elsewhere shows up.** The watcher reads a capture, a revision or
   a returned item it heard of and places it by rank, in one request for everything one read of the
   log names, and its report carries `arrived` — the captures and revisions this client did not
@@ -1081,6 +1087,11 @@ adapter mints an object URL and owns revoking it; a shell that is not a browser 
 differently. Every method is asynchronous even where an in-memory adapter answers instantly, so a
 durable one is a drop-in.
 
+**It also says which blobs it holds, and when it wrote them** *(2026-10-11)*: `blobs()`, for the
+one reader that reasons about bytes nothing names. The write time is the store's own and never the
+file's, whose mtime belongs to whatever was picked; an adapter that recorded none before answers
+one in the distant past, which is the safe reading for a blob written before anything asked.
+
 **The store follows the cache, written as the cache changes**, rather than something each
 path that touches an item remembers to write. Those writes are ordered, and one that fails does not
 stop the ones after it — what it was following is a cache, and losing it costs a re-read, though it
@@ -1092,6 +1103,15 @@ copy of something the pool holds.
 start. *Amended 2026-08-26*: the attachment landed with it — bytes held in the store for a capture
 that has not drained, and resolved in place of a URL ([below](#an-attachment-made-offline)). The
 surfaces and reachability are described above.
+
+**A client lets go of the bytes nothing names, once per start** *(2026-10-11)*. After hydration it
+walks what the store holds, drops every blob its outbox names and every one written inside a grace
+window, and removes the rest — reported through `onError` rather than thrown, and never delaying
+what a caller is waiting on. A client holds bytes for exactly as long as an operation names them,
+so anything else in there is what a bug or a crash left and nothing will ever claim it; the grace
+window is there because the bytes are written before the operation that names them, and two shells
+can share one store. Nothing walks periodically: a start is often enough for debris that should not
+recur.
 
 **A shell outside a browser wires a directory** (2026-09-17, `@notemap/client/filesystem`). The
 adapter takes the directory and names no platform: where it is, is the shell's question. Each read

@@ -20,18 +20,33 @@ import { localUrls } from "./local-urls";
 
 const DATABASE = "notemap";
 /**
- * Bumped when a store is added. The upgrade makes only what is missing, so a
- * browser holding version 1 gains `templates` and keeps everything it had.
+ * Bumped when a store is added, or when what one holds changes shape. The
+ * upgrade makes only what is missing, so a browser holding version 1 gains
+ * `templates` and keeps everything it had.
  */
-const VERSION = 3;
+const VERSION = 4;
 
 /** The one key of every store holding a single whole value rather than rows. */
 const HELD = "held";
 
+/**
+ * The bytes with when they were put here, which the `File` itself cannot say —
+ * its own mtime is the picked file's. A bare `File` is what version 3 wrote.
+ */
+type HeldBlob = { readonly file: File; readonly at: string };
+
+/** Older than any grace window, for a row written before one was recorded. */
+const BEFORE = new Date(0).toISOString();
+
+function fileIn(held: HeldBlob | File | undefined): File | undefined {
+  if (held === undefined) return undefined;
+  return held instanceof File ? held : held.file;
+}
+
 interface Notemap extends DBSchema {
   outbox: { key: OperationId; value: PendingOperation };
   items: { key: ItemId; value: Item };
-  blobs: { key: AssetId; value: File };
+  blobs: { key: AssetId; value: HeldBlob | File };
   tags: { key: typeof HELD; value: readonly TagUse[] };
   destinations: { key: typeof HELD; value: readonly Destination[] };
   templates: { key: typeof HELD; value: readonly RoutingTemplate[] };
@@ -188,12 +203,14 @@ export function createIndexedDbStore(
     },
 
     async readBlob(asset) {
-      return (await open()).get("blobs", asset);
+      return fileIn(await (await open()).get("blobs", asset));
     },
 
     async writeBlob(asset, blob) {
       urls.release(asset);
-      await (await open()).put("blobs", blob, asset);
+      await (
+        await open()
+      ).put("blobs", { file: blob, at: new Date().toISOString() }, asset);
     },
 
     async removeBlob(asset) {
@@ -201,8 +218,23 @@ export function createIndexedDbStore(
       await (await open()).delete("blobs", asset);
     },
 
+    async blobs() {
+      const database = await open();
+      const assets = await database.getAllKeys("blobs");
+
+      return Promise.all(
+        assets.map(async (asset) => {
+          const held = await database.get("blobs", asset);
+          return {
+            asset,
+            at: held === undefined || held instanceof File ? BEFORE : held.at,
+          };
+        }),
+      );
+    },
+
     async blobUrl(asset) {
-      return urls.of(asset, await (await open()).get("blobs", asset));
+      return urls.of(asset, fileIn(await (await open()).get("blobs", asset)));
     },
   };
 }

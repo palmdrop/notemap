@@ -6,6 +6,7 @@ import { createCounts } from "./counts/counts";
 import { createApi, answered } from "./api/http";
 import type { AssetId, Item, ItemId, PoolIdentity } from "./api/types";
 import { namedBy, releasedBy } from "./assets/assets";
+import { reclaim } from "./assets/reclaim";
 import { envelopeFor, optimisticItem } from "./capture/envelope";
 import { attached, attachmentsIn } from "./capture/attachments";
 import { saidAs, saidIn } from "./capture/says";
@@ -309,6 +310,9 @@ export function createClient(config: ClientConfig): Client {
     .then((hydrated) => {
       outbox.restored(hydrated.outbox.map((held) => held.id));
       persist(state, store, hydrated, report);
+      // Not waited on: a client whose store cannot be walked is a client, and
+      // nothing a caller does next depends on the bytes being gone.
+      void reclaim(store, hydrated.outbox, Date.parse(now())).catch(report);
     });
 
   function after<T>(work: () => T | Promise<T>): Promise<T> {

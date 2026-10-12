@@ -10,6 +10,12 @@ import type {
 } from "#api/types";
 import type { OperationId, PendingOperation } from "#outbox/operations";
 
+/** A blob the store is holding, and when the store wrote it. */
+export type HeldAsset = {
+  readonly asset: AssetId;
+  readonly at: string;
+};
+
 /**
  * Where the outbox and the cache live. Every method is asynchronous even though
  * the in-memory pair answers instantly, so that a durable adapter — browser
@@ -60,6 +66,13 @@ export interface ClientStore {
   readBlob(asset: AssetId): Promise<File | undefined>;
   writeBlob(asset: AssetId, blob: File): Promise<void>;
   removeBlob(asset: AssetId): Promise<void>;
+  /**
+   * Every blob it holds, with when **it** wrote them — not what the file says
+   * about itself, which is the mtime of whatever was picked. It is asked by the
+   * one reader that has to reason about bytes nothing names, and that reader
+   * needs a write time to tell those from bytes about to be named.
+   */
+  blobs(): Promise<readonly HeldAsset[]>;
   /**
    * Where a shell's own renderer reaches bytes the store holds, for a capture
    * that has not landed. The adapter owns the URL and its revocation: a browser

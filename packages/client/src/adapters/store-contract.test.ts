@@ -194,4 +194,52 @@ export function storeContract(open: () => Promise<ClientStore>): void {
     expect(await store.blobUrl("asset-1")).toBe(url);
     expect(await store.blobUrl("asset-2")).toBeUndefined();
   });
+
+  it("says which blobs it holds, and nothing of the ones it was asked to forget", async () => {
+    const store = await open();
+
+    expect(await store.blobs()).toEqual([]);
+
+    await store.writeBlob("asset-1", aFile());
+    await store.writeBlob("asset-2", aFile());
+    await store.removeBlob("asset-1");
+
+    const held = await store.blobs();
+    expect(held.map((each) => each.asset)).toEqual(["asset-2"]);
+    expect(Date.parse(held[0]?.at ?? "")).not.toBeNaN();
+  });
+
+  it("says when it wrote the bytes, not what the file says of itself", async () => {
+    const store = await open();
+    const before = new Date(Date.now() - 60_000).toISOString();
+    // A file whose own mtime is long ago, written here and now.
+    const old = new File(["bytes"], "old.png", {
+      type: "image/png",
+      lastModified: Date.parse("2020-01-01T00:00:00.000Z"),
+    });
+
+    await store.writeBlob("asset-1", old);
+
+    const [held] = await store.blobs();
+    expect(Date.parse(held?.at ?? "")).toBeGreaterThan(Date.parse(before));
+  });
+
+  it("moves the write time forward where the same asset is written again", async () => {
+    const store = await open();
+
+    await store.writeBlob("asset-1", aFile());
+    const [first] = await store.blobs();
+    await pause();
+    await store.writeBlob("asset-1", aFile());
+
+    const [again] = await store.blobs();
+    expect(Date.parse(again?.at ?? "")).toBeGreaterThan(
+      Date.parse(first?.at ?? ""),
+    );
+  });
+}
+
+/** Long enough that two writes do not share a timestamp, whatever the clock's resolution. */
+function pause(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 15));
 }

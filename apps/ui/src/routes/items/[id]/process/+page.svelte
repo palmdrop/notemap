@@ -5,9 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>
-    Processing item | Notemap
-  </title>
+  <title>Processing item | Notemap</title>
 </svelte:head>
 
 <ProcessPage id={data.id} />

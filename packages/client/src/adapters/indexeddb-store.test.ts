@@ -60,6 +60,37 @@ describe("the IndexedDB store", () => {
     expect(await second.readOutbox()).toEqual([]);
   });
 
+  it("reads a blob a version that recorded no write time wrote, as written long ago", async () => {
+    // Version 3 put the `File` itself under the asset's id.
+    await new Promise<void>((ok, no) => {
+      const ask = indexedDB.open(database, 3);
+      ask.onupgradeneeded = () => {
+        ask.result.createObjectStore("blobs");
+      };
+      ask.onsuccess = () => {
+        const held = ask.result;
+        const tx = held.transaction("blobs", "readwrite");
+        tx.objectStore("blobs").put(aFile(), "asset-old");
+        tx.oncomplete = () => {
+          held.close();
+          ok();
+        };
+        tx.onerror = () => no(tx.error);
+      };
+      ask.onerror = () => no(ask.error);
+    });
+
+    const store = reopen();
+
+    const held = await store.readBlob("asset-old");
+    expect(await held?.text()).toBe("bytes");
+    expect(held?.name).toBe("a photo.png");
+    expect(await store.blobUrl("asset-old")).toBeTypeOf("string");
+    expect(await store.blobs()).toEqual([
+      { asset: "asset-old", at: "1970-01-01T00:00:00.000Z" },
+    ]);
+  });
+
   it("does not open the database until something is asked of it", async () => {
     createIndexedDbStore({ database });
 

@@ -5,9 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>
-    Item records | Notemap 
-  </title>
+  <title>Item records | Notemap</title>
 </svelte:head>
 
 <Record item={data.id} record={data.record} />

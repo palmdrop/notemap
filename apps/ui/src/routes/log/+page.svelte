@@ -25,9 +25,7 @@
 </script>
 
 <svelte:head>
-  <title>
-    Log | Notemap
-  </title>
+  <title>Log | Notemap</title>
 </svelte:head>
 
 <Log />

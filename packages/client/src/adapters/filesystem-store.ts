@@ -27,7 +27,7 @@ import {
   type OperationId,
   type PendingOperation,
 } from "#outbox/operations";
-import type { ClientStore } from "#ports/store";
+import type { ClientStore, HeldAsset } from "#ports/store";
 import { Unreadable } from "../errors";
 
 export type FilesystemStoreOptions = {
@@ -312,6 +312,38 @@ export function createFilesystemStore(
       return serialised(`blob/${asset}`, () =>
         rm(blobDirectory(asset), { recursive: true, force: true }),
       );
+    },
+
+    /**
+     * The record is what says a blob is there, so a directory without one is a
+     * write that did not finish and is left where it is. `at` is the bytes'
+     * own mtime, which is when this store put them.
+     */
+    async blobs() {
+      let assets: string[];
+      try {
+        assets = await readdir(blobsDirectory);
+      } catch (error) {
+        if (isMissing(error)) return [];
+        throw error;
+      }
+
+      const held = await Promise.all(
+        assets.map(async (name) => {
+          const asset = name as AssetId;
+          if ((await readRecord(asset)) === undefined) return undefined;
+
+          try {
+            const { mtime } = await stat(bytesPath(asset));
+            return { asset, at: mtime.toISOString() };
+          } catch (error) {
+            if (isMissing(error)) return undefined;
+            throw error;
+          }
+        }),
+      );
+
+      return held.filter((each): each is HeldAsset => each !== undefined);
     },
 
     async blobUrl(asset) {
