@@ -248,6 +248,16 @@ The driver decides where the bytes go: paths, layout, atomicity, and the entire 
 rendering. A different driver could put the same records in object storage without touching the
 domain.
 
+So the driver also answers **how much it holds** *(added 2026-10-12,
+[ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))*:
+`MirrorWriter.footprint()` answers **records, files and bytes**, walked when asked. Records and
+files are apart because an item is a `.json` and a `.md` beside it — `1,204 records, 2,408 files`
+says the pairs are whole, and any other ratio surfaces a rendering that never landed, which nothing
+else notices while verify is unbuilt. Everything the mirror holds counts as a file, the non-item
+records included; what a crashed write left behind does not, being the driver's own debris under
+its temporary prefix rather than something the mirror holds. Where the root is is not answered: the
+host handed it over, and it is the host that asks the filesystem how much room is left there.
+
 Because a job carries no snapshot, core also answers **the record for an item as it stands now**,
 which is what whatever performs a write asks for at the moment it writes. That is a read of the
 pool, not of the mirror; nothing about it can reach a mirror file, and nothing in it can fail —

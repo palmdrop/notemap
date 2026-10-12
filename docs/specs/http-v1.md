@@ -738,6 +738,103 @@ second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editabl
 - **Only what a client reads is here.** A field is added when something draws it — a count of
   deliveries still pending is the likely next one — rather than guessed at.
 
+### Storage
+
+`GET /v1/storage` — what notemap has taken on this machine, and how much room is left where it took
+it *(added 2026-10-12, [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))*.
+
+```json
+{
+  "pool": {
+    "path": "/var/lib/notemap/state/notemap.db",
+    "bytes": 4296704,
+    "unused": 65536,
+    "free": 52123456789
+  },
+  "assets": {
+    "path": "/var/lib/notemap/assets",
+    "count": 142,
+    "bytes": 88214016,
+    "free": 52123456789
+  },
+  "mirror": { "path": "/var/lib/notemap/pool-mirror", "free": 52123456789 },
+  "auth": { "path": "/var/lib/notemap/state/auth.db", "bytes": 32768 },
+  "deployment": "docker",
+  "measured": {
+    "at": "2026-10-12T09:14:02.000Z",
+    "blobs": { "count": 140, "bytes": 87500000 },
+    "reclaimable": { "count": 2, "bytes": 714016 },
+    "withinGrace": { "count": 1, "bytes": 1024 },
+    "mirror": { "records": 1204, "files": 2408, "bytes": 3512000 }
+  }
+}
+```
+
+- **Everything outside `measured` is read on the spot and walks nothing.** The pool's bytes are a
+  pragma, the asset count and their summed bytes are one query, the auth database is one `stat`, and
+  `free` is one `statfs` per root. A route that walked would be a route no surface could afford to
+  ask on sight, and a later caller that wants free space alone would be buying a walk it has no use
+  for.
+- **`measured` is a remembered measurement, not a fact.** It is what the last
+  `POST /v1/storage/measure` found, with the instant it found it at, and it is **absent on a daemon
+  that has never measured** — never zeroes, which would be a claim. The daemon holds it in memory, so
+  a restart forgets it. Nothing ages it out: a figure from an hour ago is a figure from an hour ago,
+  which is what `at` is for.
+- **One row per root** *(decided 2026-10-12)*. `pool`, `assets` and `mirror` each carry where they
+  are and the space free where they live. They default to siblings under one volume but config can
+  put the mirror on a mount of its own, and a `statfs` answers no filesystem id to deduplicate on —
+  so the figure is answered per root and repeats where they share a disk, which reads as *same
+  disk*. `free` is what is available to the user the daemon runs as, and is **absent** where the
+  path does not exist yet and has no existing parent to answer for it.
+- **`mirror` is absent where no mirror is configured**, as everything else about the mirror already
+  is. `auth` carries no `free`: it is not one of the three roots, and in every layout the image ships
+  it sits beside the pool.
+- **`unused` is bytes the database holds and is not using** — SQLite's free pages. It is the only
+  thing that explains why a pool that lost items did not shrink.
+- **`count` and `bytes` under `assets` are the registry's**, summed over every asset the pool holds,
+  so two assets naming one blob are counted twice. `measured.blobs` counts the bytes once. Both are
+  answered rather than reconciled: the difference is what content addressing saved.
+- **`deployment` is a claim this daemon makes about itself, never an inference.** The image declares
+  it, and `"container"` is what a container somebody else built looks like from inside. It is
+  **absent where nothing says**, because absence proves nothing — and where it is there, it is also
+  what says the paths above are the container's and not the operator's. The host path behind a volume
+  is not discoverable from inside a container, so it is never guessed at.
+- It takes no parameters and is not paginated. It has no refusals.
+
+`POST /v1/storage/measure` — walks the blob store and the mirror, and answers the whole document
+above with `measured` filled in. It takes no body.
+
+- **A measurement already in flight is joined rather than started again.** Two callers asking at
+  once wait on one walk and get one answer, which is what keeps a section that asks as it opens from
+  starting a second walk on every visit.
+- **It deletes nothing.** It is a read that happens to be expensive, and the blobs it counts as
+  reclaimable are still there when it answers.
+- **It is a `POST` because it costs something**, not because it changes state. A `GET` that walked
+  thousands of files would be cached, prefetched and retried by things that assume a `GET` is cheap.
+
+`POST /v1/reclaim` — takes every blob nothing names that is past the sweep's grace window, and
+answers what it took. It takes no body.
+
+```json
+{ "blobs": 2, "bytes": 714016 }
+```
+
+- **It is the same reclaim the daemon runs on its own**, on its own interval and once at startup
+  ([core.md](core.md#archive-and-purge)) — no more than what the daemon already does to itself every
+  day, fired at a moment a person chose rather than waited for. So it is **token-allowed**, like the
+  rest of `/v1`, rather than held back for a session: a session is what guards the door to
+  credentials and accounts, and this is not that.
+- **It takes exactly the blobs `measured.reclaimable` named**, because the figure and the operation
+  read one rule over one grace window
+  ([ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md)). A blob
+  still within the window is in `withinGrace` and survives.
+- **The next `GET` answers the same remembered measurement**, which is now stale: the figures it
+  carries describe the moment before the reclaim. A caller that fired one measures again.
+- **It is not under `/v1/storage`**, which is a read. The reclaim is the pool's own operation
+  ([CONTEXT.md](../../CONTEXT.md)), and the only thing storage has to do with it is that it is where
+  a person finds out it is worth firing.
+- It has no refusals. A reclaim with nothing to take answers zeroes.
+
 ### Archiving
 
 `POST /v1/items/{id}/archive` — hides an item from the queue. The body is optional and carries

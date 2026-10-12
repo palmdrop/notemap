@@ -166,11 +166,20 @@ reclaim's.
 _Avoid_: garbage collection, cleanup, prune, reap
 
 **Reclaim**:
-The periodic walk over the blob store that deletes each blob no asset and no routing record names,
-once it has gone unput for the sweep's grace window. It takes what the sweep released and what no
-asset ever named alike — a crash between write and insert, a refused upload, an output whose route
-never recorded it.
+The walk over the blob store that deletes each blob no asset and no routing record names, once it
+has gone unput for the sweep's grace window. It takes what the sweep released and what no asset ever
+named alike — a crash between write and insert, a refused upload, an output whose route never
+recorded it. It runs on an interval of its own and once as the host starts, and a person can fire
+one from settings rather than waiting the interval out; it is the same walk either way.
 _Avoid_: garbage collection, cleanup, prune, reap
+
+**Footprint**:
+How much of a disk one part of a pool takes, answered by whatever wrote it — the store's bytes, the
+mirror's records and files, the bytes a blob holds. A driver answers its own, since only its layout
+knows what sits beside what. Distinct from **free space**, which is about the machine and is the
+host's to ask, and from the **recorded** figures, which are what the pool has written down rather
+than what a walk found.
+_Avoid_: size, usage, disk space
 
 ### Processing
 

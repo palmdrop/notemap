@@ -2326,7 +2326,7 @@ timeline.
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
-access | server | appearance | pool}`; `/settings` itself redirects to `destinations` from
+access | server | storage | appearance | pool}`; `/settings` itself redirects to `destinations` from
 `--breakpoint-narrow` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
@@ -2433,6 +2433,34 @@ settles the same mark. `daemon` is not said anywhere; `log` is not offered here 
 already carries it. **Sources**, folded under its sub-head with `show`/`hide`, is otherwise
 unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
 comes back into reach and held nowhere.
+
+**Storage** sits under Server *(added 2026-10-12,
+[what-notemap-takes-on-disk](../plans/what-notemap-takes-on-disk.md))*: what notemap has taken on
+the machine, on the same facts grid, in the same voice as Server's own rows. **One row per root** —
+`POOL`, `ASSETS` and `MIRROR` — each carrying where it is, then what it takes in bold with what that
+is made of beside it and **the space free where it lives in parentheses**: `4.2 MB 65 KB unused (52
+GB free)`. Nothing between the figures but a space; the row is a fact and what qualifies it, which
+is the weight this shell already tells apart with. The free figure repeats where two roots share a
+disk, which is what says they do, and is left out rather than guessed at where the daemon could not
+say. Under them `AUTH`, the daemon's own database, with no free figure — it sits beside the pool —
+and `DEPLOYMENT` **only where the daemon says**, which is also what says the paths above are inside
+a container rather than on the machine a person is reading from.
+
+**The shell says `unused` where SQLite says free pages** *(2026-10-12)*, on the terms `retired` reads
+`disabled`: it is the one figure that explains why a pool that lost items did not shrink, and *free*
+beside *free space* would read as the opposite of what it is. The assets row says how many assets
+the pool holds beside the blobs they are stored as, and what holding identical bytes once saved,
+where that is anything. The mirror row says `1,204 records, 2,408 files` — the pair per item, so any
+other ratio is a rendering that never landed. `reclaim now` sits under the assets row with what
+nothing names, **inert where there is nothing to take** and saying what it took when it has run;
+the blob figures are stale until the section asks again, which it does immediately.
+
+**The expensive half is asked for as the section opens, and nowhere else.** The daemon walks the
+blob store and the mirror on request and remembers what it found, so the section reads the live
+facts and asks for a measurement in the same moment, drawing the remembered figures under the asking
+mark until the fresh ones land — never a layout shift, and never a figure where nothing is held.
+Unavailable rather than guessing while the pool is out of reach, on Pool settings' own terms: a cold
+client has no measurement to draw and says so.
 
 **Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS auto · by

@@ -839,6 +839,15 @@ asked again.
 where a remembered answer would be worse than none: what a settings screen asks it for is whether
 a source has gone quiet, and a list from an hour ago cannot say.
 
+**What the pool takes on disk is not cached either** *(2026-10-12)*. `storage.read()` is a plain
+read of `GET /v1/storage` every time, `storage.measure()` asks the daemon to walk, and
+`storage.reclaim()` fires the reclaim; none of the three is an outbox operation and none holds
+anything. The daemon already remembers the measurement and says when it took it, so a copy here
+would be a third answer to one question — and the cheap half is a fact about a disk this moment,
+which nothing can be remembered about. A pool out of reach answers nothing rather than a figure from
+before: a measurement is reported with its instant or not at all. Firing a reclaim is a decision
+about now, like routing, and cannot be replayed from an outbox later.
+
 **The read caches are read back on start** (2026-08-25, extended 2026-09-07). The store holds the
 tags, the destinations and the routing templates as it holds the items and the outbox, written
 whole as each list is answered, so a client opened cold against an unreachable pool completes from
