@@ -133,16 +133,16 @@ describes a route or a method a later phase does not build.
 
 Depends on phase 1 only for the names.
 
-- [ ] `PoolStore` gains a footprint read in `packages/core/src/types/api/ports.ts`: the database's
+- [x] `PoolStore` gains a footprint read in `packages/core/src/types/api/ports.ts`: the database's
   bytes and its slack.
-- [ ] `store-sqlite`: `page_count * page_size` and `freelist_count * page_size`, plus `-wal` and
+- [x] `store-sqlite`: `page_count * page_size` and `freelist_count * page_size`, plus `-wal` and
   `-shm` where the store has a file rather than `:memory:`.
-- [ ] `ListedBlob` gains `bytes`. `blob-fs`'s `list()` already stats each file for its mtime
+- [x] `ListedBlob` gains `bytes`. `blob-fs`'s `list()` already stats each file for its mtime
   (`packages/adapters/blob-fs/src/store.ts:138`), so this is the same `stat`.
-- [ ] `MirrorWriter` gains a footprint method: records, files and bytes. `mirror-fs` walks `root`,
+- [x] `MirrorWriter` gains a footprint method: records, files and bytes. `mirror-fs` walks `root`,
   counting `.json` as records and everything it holds as files, skipping its temporary prefix
   (`packages/adapters/mirror-fs/src/atomic.ts`).
-- [ ] Commit
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/store-sqlite --filter @notemap/blob-fs --filter @notemap/mirror-fs test`.
 New tests: a store's bytes rise after a write and a `:memory:` store answers without a path; `list`

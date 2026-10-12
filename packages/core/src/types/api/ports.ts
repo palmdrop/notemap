@@ -46,6 +46,7 @@ import type {
 } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
+import type { MirrorFootprint, StoreFootprint } from "../domain/storage";
 import type { PoolSettingRecord } from "../domain/pool-setting";
 import type {
   RoutingTemplate,
@@ -159,6 +160,12 @@ export interface MirrorWriter {
   write(record: MirrorRecord): Promise<void>;
   /** What it names may already be gone, so this is given a bare subject. */
   remove(subject: MirrorSubject): Promise<void>;
+  /**
+   * How much the mirror holds, walked when asked. Records and files are apart
+   * because only this driver knows a record has a rendering beside it; its own
+   * debris is in neither.
+   */
+  footprint(signal?: AbortSignal): Promise<MirrorFootprint>;
 }
 
 /**
@@ -470,6 +477,13 @@ export interface PoolStore extends PoolReads {
    * would tell a client its whole cache belongs to somewhere else.
    */
   identity(): Promise<PoolIdentity>;
+
+  /**
+   * How much disk the store takes. The layout is the driver's — what it keeps
+   * beside its own file, and whether it has a file at all — so only it can
+   * answer this, and the host never walks the path it handed over.
+   */
+  footprint(): Promise<StoreFootprint>;
 
   /**
    * Applies `work` all-or-nothing: the store commits what it wrote when the

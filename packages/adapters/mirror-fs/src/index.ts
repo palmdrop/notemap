@@ -1,3 +1,4 @@
+export * from "./footprint";
 export * from "./frontmatter";
 export * from "./paths";
 export * from "./renderers";

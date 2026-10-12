@@ -128,6 +128,7 @@ function absent(port: string): never {
 const noMirrorWriter: MirrorWriter = {
   write: () => absent("mirror writer"),
   remove: () => absent("mirror writer"),
+  footprint: () => absent("mirror writer"),
 };
 
 /** A pool that can hold destinations and reach none: nothing speaks any kind. */

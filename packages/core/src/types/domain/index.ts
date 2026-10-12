@@ -13,6 +13,7 @@ export * from "./pool-setting";
 export * from "./position";
 export * from "./routing";
 export * from "./source";
+export * from "./storage";
 export * from "./suggestion";
 export * from "./sync";
 export * from "./template";

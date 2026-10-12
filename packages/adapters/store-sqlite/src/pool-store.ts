@@ -73,6 +73,7 @@ import {
   toRoutingTemplate,
   toTimestamp,
 } from "./mapping";
+import { storeFootprint } from "./footprint";
 import { poolIdentity } from "./identity";
 import { abandonedWork, jobQueue, nextDue } from "./jobs";
 import { LAST_MODIFIED_AT, MIGRATIONS } from "./migrations";
@@ -1242,6 +1243,8 @@ export function createSqlitePoolStore(
     ...notYetImplementedReads(),
 
     identity: () => Promise.resolve(identity),
+
+    footprint: storeFootprint(reader, config.file),
 
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
       writes.transact((fence) => work(poolTx(fence))),
