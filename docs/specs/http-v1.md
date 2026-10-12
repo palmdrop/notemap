@@ -787,8 +787,9 @@ it *(added 2026-10-12, [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-a
   disk*. `free` is what is available to the user the daemon runs as, and is **absent** where the
   path does not exist yet and has no existing parent to answer for it.
 - **`mirror` is absent where no mirror is configured**, as everything else about the mirror already
-  is. `auth` carries no `free`: it is not one of the three roots, and in every layout the image ships
-  it sits beside the pool.
+  is. `auth` carries no `free` — it is not one of the three roots, and in every layout the image
+  ships it sits beside the pool — and is itself absent where the daemon holds no database of its
+  own, or has not written one yet.
 - **`unused` is bytes the database holds and is not using** — SQLite's free pages. It is the only
   thing that explains why a pool that lost items did not shrink.
 - **`count` and `bytes` under `assets` are the registry's**, summed over every asset the pool holds,

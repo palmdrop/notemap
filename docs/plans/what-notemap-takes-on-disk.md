@@ -177,23 +177,23 @@ names is in neither; the walk honours its signal and deletes nothing.
 
 Depends on phase 3.
 
-- [ ] A storage service beside `apps/daemon/src/assets/reclaiming.ts`: the live facts on every ask,
+- [x] A storage service beside `apps/daemon/src/assets/reclaiming.ts`: the live facts on every ask,
   the walk behind a skip-if-in-flight guard and a remembered answer with when it was measured,
   built on `startReclaiming`'s shape (`reclaiming.ts:30`).
-- [ ] Free space per root: `statfs` from `node:fs/promises` over the pool's directory, the mirror's
+- [x] Free space per root: `statfs` from `node:fs/promises` over the pool's directory, the mirror's
   root and the assets' root. Built in, and the engine is already `node >=26` — nothing to install.
-- [ ] The auth database's bytes, from `config.auth`. Absent where there is no file, which the test
+- [x] The auth database's bytes, from `config.auth`. Absent where there is no file, which the test
   fixture's in-memory auth is.
-- [ ] The deployment: a new `ENV` in the `Dockerfile`'s runtime stage beside `NOTEMAP_CONFIG`,
+- [x] The deployment: a new `ENV` in the `Dockerfile`'s runtime stage beside `NOTEMAP_CONFIG`,
   `/.dockerenv` as the fallback, and nothing claimed where neither says so.
-- [ ] `GET /v1/storage`, `POST /v1/storage/measure`, `POST /v1/reclaim` — handlers in
+- [x] `GET /v1/storage`, `POST /v1/storage/measure`, `POST /v1/reclaim` — handlers in
   `apps/daemon/src/routes/`, definitions beside `countsRoute`
   (`apps/daemon/src/routes/definitions.ts:455`), registered in `apps/daemon/src/app.ts` under
   `/v1/*` with no `requireSession`. The reclaim answers how many blobs and how many bytes it took.
-- [ ] `AppOptions` grows the service; `apps/daemon/src/testing/fixture.ts:199` builds one.
-- [ ] Regenerate `apps/daemon/openapi.json` (`pnpm --filter @notemap/daemon openapi`) and add the
+- [x] `AppOptions` grows the service; `apps/daemon/src/testing/fixture.ts:199` builds one.
+- [x] Regenerate `apps/daemon/openapi.json` (`pnpm --filter @notemap/daemon openapi`) and add the
   three paths to the inventory in `apps/daemon/src/openapi.test.ts:75`.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** daemon tests. `GET` on a daemon that has never measured answers the live facts and no
 measurement; `POST …/measure` fills it and a second one during the first joins rather than starting

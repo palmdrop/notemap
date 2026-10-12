@@ -73,6 +73,7 @@ import {
   tokensSchema,
 } from "../schemas/token";
 import { healthSchema } from "../schemas/health";
+import { reclaimedSchema, storageSchema } from "../schemas/storage";
 import {
   assetSchema,
   captureOutcomeSchema,
@@ -462,6 +463,48 @@ export const countsRoute = createRoute({
     200: {
       description: "The counts.",
       content: { [JSON_MEDIA_TYPE]: { schema: countsSchema } },
+    },
+  },
+});
+
+export const storageRoute = createRoute({
+  method: "get",
+  path: "/v1/storage",
+  summary: "Read what notemap has taken on disk",
+  description:
+    "Where the pool, the blobs, the mirror and the daemon's own database are, what each takes, and how much room is left where each lives. Everything outside `measured` is read on the spot and walks nothing: the pool's bytes are a pragma, the assets are one query, and free space is one `statfs` per root. `measured` is what the last `POST /v1/storage/measure` found, with the instant it found it at, and is absent on a daemon that has never measured.",
+  responses: {
+    200: {
+      description: "What it takes, and the last measurement if there is one.",
+      content: { [JSON_MEDIA_TYPE]: { schema: storageSchema } },
+    },
+  },
+});
+
+export const measureStorageRoute = createRoute({
+  method: "post",
+  path: "/v1/storage/measure",
+  summary: "Walk the blob store and the mirror",
+  description:
+    "Counts every blob and every mirror file, and answers the whole of `GET /v1/storage` with the fresh measurement in it. A walk already in flight is joined rather than started again, so two callers asking at once wait on one. It deletes nothing. A `POST` because it costs something, not because it changes state: a `GET` that walked thousands of files would be cached, prefetched and retried by things that assume a `GET` is cheap.",
+  responses: {
+    200: {
+      description: "What it takes, measured just now.",
+      content: { [JSON_MEDIA_TYPE]: { schema: storageSchema } },
+    },
+  },
+});
+
+export const reclaimRoute = createRoute({
+  method: "post",
+  path: "/v1/reclaim",
+  summary: "Take the blobs nothing names",
+  description:
+    "Deletes every blob no asset and no routing record names, once it has gone unput for the sweep's grace window, and answers what it took. The same reclaim the daemon runs on its own interval and once at startup — fired at a moment a person chose rather than waited for — so a token reaches it like the rest of `/v1`. It takes exactly the blobs `measured.reclaimable` named, that figure and this operation reading one rule; a blob still inside the window is in `withinGrace` and survives. The remembered measurement is stale afterwards until one is taken again.",
+  responses: {
+    200: {
+      description: "What it took. Zeroes where there was nothing to take.",
+      content: { [JSON_MEDIA_TYPE]: { schema: reclaimedSchema } },
     },
   },
 });
@@ -1711,6 +1754,9 @@ export const ROUTES = [
   queueRoute,
   archivedRoute,
   countsRoute,
+  storageRoute,
+  measureStorageRoute,
+  reclaimRoute,
   itemsRoute,
   itemRoute,
   archiveRoute,

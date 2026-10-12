@@ -30,6 +30,7 @@ import { startMirrorRunner } from "../mirror/runner";
 import { silentLogger } from "@notemap/log";
 import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
+import { createStorage, type Storage } from "../storage";
 import { createUnfurler, type Unfurler } from "../unfurl";
 
 export const WEB = "web" as SourceId;
@@ -81,6 +82,8 @@ export type Daemon = {
   readonly sweep: () => Promise<readonly AssetId[]>;
   /** Runs a reclaim now, and answers what it took. No timer drives one here. */
   readonly reclaim: () => Promise<ReclaimOutcome>;
+  /** What the app was given, so a test can measure without going through a route. */
+  readonly storage: Storage;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -137,6 +140,11 @@ export type DaemonOptions = {
   readonly vault?: "ready" | "missing";
   /** Absent is one that can reach nothing: every name fails to resolve. */
   readonly unfurler?: Unfurler;
+  /**
+   * What the daemon says it is deployed as. Absent is the honest default here:
+   * what the machine running the tests is must not reach an assertion.
+   */
+  readonly deployment?: string;
 };
 
 const unreachable: Unfurler = createUnfurler({
@@ -197,6 +205,20 @@ export function daemon(
 
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 
+  const storage = createStorage(
+    pool,
+    {
+      pool: join(stateRoot, "pool.db"),
+      assets: assetRoot,
+      ...(options.mirroring === true ? { mirror: mirrorRoot } : {}),
+      ...(options.deployment === undefined
+        ? {}
+        : { deployment: options.deployment }),
+      clock: ports.clock,
+    },
+    () => pool.maintenance.reclaimUnnamedBlobs(),
+  );
+
   const app = createApp(pool, {
     limits: {
       maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
@@ -207,6 +229,7 @@ export function daemon(
     ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
     log: silentLogger(),
+    storage,
     unfurler: options.unfurler ?? unreachable,
   });
   const answered = trackResponses(app);
@@ -222,6 +245,7 @@ export function daemon(
     deliver: () => deliveries.drain(),
     sweep: () => sweeper.run(),
     reclaim: () => pool.maintenance.reclaimUnnamedBlobs(),
+    storage,
     cleanup: async () => {
       await answered.close();
       await runner?.stop();

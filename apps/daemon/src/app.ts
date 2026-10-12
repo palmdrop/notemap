@@ -65,6 +65,9 @@ import {
   poolSettingsRoute,
   queueRoute,
   countsRoute,
+  storageRoute,
+  measureStorageRoute,
+  reclaimRoute,
   retireDestinationRoute,
   previewRouteRoute,
   routeItemRoute,
@@ -111,6 +114,11 @@ import {
 import { unfurlHandler } from "./routes/unfurl";
 import type { Unfurler } from "./unfurl";
 import { countsHandler } from "./routes/counts";
+import {
+  measureStorageHandler,
+  reclaimHandler,
+  storageHandler,
+} from "./routes/storage";
 import { sourcesInUseHandler } from "./routes/sources";
 import { tagHandler, tagsInUseHandler } from "./routes/tags";
 import {
@@ -154,6 +162,7 @@ import {
   removeAccountHandler,
 } from "./routes/accounts";
 import type { Logger } from "@notemap/log";
+import type { Storage } from "./storage";
 
 export type AppOptions = {
   readonly limits: UploadLimits;
@@ -165,6 +174,8 @@ export type AppOptions = {
   readonly throttle: Throttle;
   readonly log: Logger;
   readonly unfurler: Unfurler;
+  /** What the pool and its neighbours take on disk, and the reclaim a person can fire. */
+  readonly storage: Storage;
 };
 
 export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
@@ -231,6 +242,12 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   app.get(honoPath(queueRoute.path), itemViewHandler(pool, "queue"));
   app.get(honoPath(archivedRoute.path), itemViewHandler(pool, "archived"));
   app.get(honoPath(countsRoute.path), countsHandler(pool));
+  app.get(honoPath(storageRoute.path), storageHandler(options.storage));
+  app.post(
+    honoPath(measureStorageRoute.path),
+    measureStorageHandler(options.storage),
+  );
+  app.post(honoPath(reclaimRoute.path), reclaimHandler(options.storage));
   app.get(honoPath(itemsRoute.path), itemsHandler(pool));
   app.get(honoPath(itemRoute.path), itemHandler(pool));
   app.post(honoPath(archiveRoute.path), archiveHandler(pool));
