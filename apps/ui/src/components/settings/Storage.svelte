@@ -84,14 +84,6 @@
   const count = (many: number, one: string) =>
     `${many.toLocaleString("en-GB")} ${one}${many === 1 ? "" : "s"}`;
 
-  const poolSays = $derived(
-    held === undefined
-      ? undefined
-      : [`${sizeOf(held.pool.unused)} unused`, free(held.pool.free)]
-          .filter((part) => part !== undefined)
-          .join(" "),
-  );
-
   /** What content addressing saved: the same bytes under two names cost once. */
   const saved = $derived(
     held === undefined || walked === undefined
@@ -135,7 +127,7 @@
   {:else}
     <Fact name="pool">
       <span class="block break-all">{held.pool.path}</span>
-      <Lead lead={sizeOf(held.pool.bytes)} rest={poolSays} />
+      <Lead lead={sizeOf(held.pool.bytes)} rest={free(held.pool.free)} />
     </Fact>
 
     <Fact name="assets">
@@ -161,8 +153,8 @@
         <span class="flex flex-wrap items-baseline gap-x-[1ch]">
           <span>
             {reclaimable.count === 0
-              ? "nothing unnamed to take"
-              : `${count(reclaimable.count, "blob")} nothing names, ${sizeOf(reclaimable.bytes)}`}
+              ? "no unused blobs"
+              : `${count(reclaimable.count, "unused blob")}, ${sizeOf(reclaimable.bytes)}`}
           </span>
           <Action
             disabled={reclaimable.count === 0}

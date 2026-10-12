@@ -796,8 +796,11 @@ it *(added 2026-10-12, [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-a
   is. `auth` carries no `free` — it is not one of the three roots, and in every layout the image
   ships it sits beside the pool — and is itself absent where the daemon holds no database of its
   own, or has not written one yet.
-- **`unused` is bytes the database holds and is not using** — SQLite's free pages. It is the only
-  thing that explains why a pool that lost items did not shrink.
+- **`unused` is bytes the database holds and is not using** — SQLite's free pages, which explain why
+  a pool that lost items did not shrink. Answered and **drawn by nothing**: no operation returns
+  them to the disk, so a surface stating them beside a figure a person can act on would read as a
+  second thing to reclaim ([shell.md](shell.md#settings)). It is here for whoever is diagnosing
+  rather than for whoever is reading a screen.
 - **`count` and `bytes` under `assets` are the registry's**, summed over every asset the pool holds,
   so two assets naming one blob are counted twice. `measured.blobs` counts the bytes once. Both are
   answered rather than reconciled: the difference is what content addressing saved.

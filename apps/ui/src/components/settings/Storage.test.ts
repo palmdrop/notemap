@@ -61,7 +61,10 @@ test("draws every figure from one answer", async () => {
 
   await screen.findByText("/var/lib/notemap/state/notemap.db");
   await screen.findByText("4.3 MB");
-  await screen.findByText(/66 KB unused \(52 GB free\)/);
+  await screen.findByText(/^\(52 GB free\)$/);
+  // The database's free pages are answered on the wire and drawn nowhere:
+  // nothing a person can press returns them to the disk.
+  expect(screen.queryByText(/66 KB/)).toBeNull();
 
   // The assets row's footprint is the blobs the walk found, not the sum of the
   // assets naming them.
@@ -121,7 +124,7 @@ test("the reclaim is inert where there is nothing to take", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/nothing unnamed to take/);
+  await screen.findByText(/no unused blobs/);
   const button = await screen.findByRole<HTMLButtonElement>("button", {
     name: "reclaim now",
   });
@@ -148,12 +151,12 @@ test("the reclaim fires, says what it took, and asks again", async () => {
   );
 
   render(StorageSection);
-  await screen.findByText(/2 blobs nothing names, 714 KB/);
+  await screen.findByText(/2 unused blobs, 714 KB/);
 
   await press("reclaim now");
 
   await screen.findByText(/took 2 blobs, 714 KB/);
-  await screen.findByText(/nothing unnamed to take/);
+  await screen.findByText(/no unused blobs/);
   expect(asked().filter((route) => route === "POST /v1/reclaim")).toHaveLength(
     1,
   );

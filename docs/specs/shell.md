@@ -5,10 +5,11 @@
 **Shipped**:
 
 - 2026-10-12 — **A Storage section says what notemap has taken.** The eighth settings section, after
-  Server: a row per root with its path, what it takes and the space free where it lives, the pool's
-  `unused` bytes, the assets beside the blobs they are stored as and what holding identical bytes
-  once saved, the mirror's records and files, the daemon's own database, and the deployment where
-  the daemon declares one. It reads the live facts and asks for a measurement in the same moment,
+  Server: a row per root with its path, what it takes and the space free where it lives, the assets
+  beside the blobs they are stored as and what holding identical bytes once saved, the mirror's
+  records and files, the daemon's own database, and the deployment where the daemon declares one.
+  `unused` is the shell's word for a blob nothing names; the database's own free pages are answered
+  on the wire and drawn nowhere, nobody being able to act on them. It reads the live facts and asks for a measurement in the same moment,
   drawing the remembered one until the fresh lands, and `reclaim now` is inert until there is
   something to take. Elsewhere: a capture carrying more than one attachment totals them, and a
   record says how much the delivery wrote. ([plan](../plans/what-notemap-takes-on-disk.md))
@@ -2450,22 +2451,30 @@ comes back into reach and held nowhere.
 [what-notemap-takes-on-disk](../plans/what-notemap-takes-on-disk.md))*: what notemap has taken on
 the machine, on the same facts grid, in the same voice as Server's own rows. **One row per root** —
 `POOL`, `ASSETS` and `MIRROR` — each carrying where it is, then what it takes in bold with what that
-is made of beside it and **the space free where it lives in parentheses**: `4.2 MB 65 KB unused (52
-GB free)`. Nothing between the figures but a space; the row is a fact and what qualifies it, which
+is made of beside it and **the space free where it lives in parentheses**: `70 MB 140 blobs (52 GB
+free)`. Nothing between the figures but a space; the row is a fact and what qualifies it, which
 is the weight this shell already tells apart with. The free figure repeats where two roots share a
 disk, which is what says they do, and is left out rather than guessed at where the daemon could not
 say. Under them `AUTH`, the daemon's own database, with no free figure — it sits beside the pool —
 and `DEPLOYMENT` **only where the daemon says**, which is also what says the paths above are inside
 a container rather than on the machine a person is reading from.
 
-**The shell says `unused` where SQLite says free pages** *(2026-10-12)*, on the terms `retired` reads
-`disabled`: it is the one figure that explains why a pool that lost items did not shrink, and *free*
-beside *free space* would read as the opposite of what it is. The assets row says how many assets
-the pool holds beside the blobs they are stored as, and what holding identical bytes once saved,
-where that is anything. The mirror row says `1,204 records, 2,408 files` — the pair per item, so any
-other ratio is a rendering that never landed. `reclaim now` sits under the assets row with what
-nothing names, **inert where there is nothing to take** and saying what it took when it has run;
-the blob figures are stale until the section asks again, which it does immediately.
+**The database's free pages are not drawn** *(2026-10-12)*. `GET /v1/storage` answers them, and they
+do explain why a pool that lost items did not shrink — but nothing a person can press returns them
+to the disk, and a figure nobody can act on sitting beside one they can is read as a second thing to
+reclaim. *Slack*, *unused* and *free* were each tried as its word; the figure was the problem rather
+than the word. The assets row says how many assets the pool holds beside the blobs they are stored
+as, and what holding identical bytes once saved, where that is anything. The mirror row says `1,204
+records, 2,408 files` — the pair per item, so any other ratio is a rendering that never landed.
+
+**`reclaim now` sits under the assets row with what is unused** — `2 unused blobs, 714 KB`, which is
+what a reclaim would take now, and `no unused blobs` where there is nothing. The action is drawn
+either way and **inert where there is nothing to take**, so a person meets it before the day the
+figure is large rather than only on it. **`unused` is the shell's word for a blob no asset and no
+routing record names** *(2026-10-12)*, on the terms `retired` reads `disabled`: *nothing names it*
+is the pool's own reading of the rule and says nothing to a person, and this is the word every other
+interface uses for bytes held for no reason. It says what it took when it has run; the blob figures
+are stale until the section asks again, which it does immediately.
 
 **The expensive half is asked for as the section opens, and nowhere else.** The daemon walks the
 blob store and the mirror on request and remembers what it found, so the section reads the live

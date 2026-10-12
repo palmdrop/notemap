@@ -69,10 +69,13 @@ Settled with the developer on 2026-10-12.
 
 ### Settled while implementing, 2026-10-12
 
-10. **`unused`, never `slack`.** The figure is drawn, per unknown 5 — it is the only thing that
-    explains why a pool that lost items did not shrink — but *slack* says nothing to a person, and
-    the wire and the shell both say `unused`.
-11. **No separators between figures on a row.** `4.2 MB 65 KB unused (52 GB free)`: the bold value,
+10. **The database's free pages are answered and not drawn.** *Slack*, then *unused*, then
+    *reclaimable* were each tried as the word; the figure was the problem. Nothing a person can
+    press returns those bytes to the disk, and one they cannot act on beside one they can — the
+    blobs under `reclaim now` — reads as a second thing to reclaim. `GET /v1/storage` still carries
+    it as `unused`, for whoever is diagnosing. This reverses unknown 5's first answer, taken before
+    the section was drawn beside the button.
+11. **No separators between figures on a row.** `70 MB 140 blobs (52 GB free)`: the bold value,
     then what it is made of, then the free figure in parentheses. The shell's `Lead` already draws
     exactly that, and a `·` between them would read as a list of equals.
 12. **`storage` sits after `server`**, pool settings staying last. Confirmed with the developer.
@@ -230,7 +233,9 @@ Depends on phase 5.
   drawing the remembered figure under `Asking` until the fresh one lands — never a layout shift,
   per the shell's own rule, and never a guess where nothing is cached.
 - [x] `reclaim now` under the blob facts, active only where the past-grace figure is non-zero, and
-  saying what it took. Re-reads afterwards; the blob figures are stale until it does.
+  saying what it took. Re-reads afterwards; the blob figures are stale until it does. **The shell
+  says `unused`** for a blob nothing names: *nothing names it* is the pool's reading of the rule and
+  says nothing to a person.
 - [x] Unavailable rather than guessing while the pool is out of reach, on Pool settings' terms.
 - [x] Format with `sizeOf` (`apps/ui/src/lib/attachments.ts:41`).
 - [x] Commit
@@ -278,8 +283,9 @@ Depends on phase 6 for `sizeOf` usage only. Deliberately small.
 - **Whether the daemon's startup reclaim should fill the measurement cache.** It already walks the
   blob store, so the figures are nearly free there — but it does not total bytes and coupling the
   two makes the reclaim own a cache. Left alone unless a cold section feels slow.
-- [x] **Whether `freelist_count` is worth drawing.** _(2026-10-12)_ Drawn, as **`unused`** — see
-  decision 10. *Slack* was the word that was wrong, not the figure.
+- [x] **Whether `freelist_count` is worth drawing.** _(2026-10-12)_ Not drawn; answered on the wire,
+  which was this unknown's own fallback. Drawn first, under three words in turn, until it was clear
+  the figure cannot be acted on and sits beside one that can — see decision 10.
 
 ---
 
