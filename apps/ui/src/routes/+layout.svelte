@@ -102,9 +102,7 @@
 <svelte:window {onkeydown} />
 
 <svelte:head>
-  <title>
-    Notemap
-  </title>
+  <title>Notemap</title>
 </svelte:head>
 
 <Sheet {fills}>

@@ -3,9 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>
-    Feed | Notemap
-  </title>
+  <title>Feed | Notemap</title>
 </svelte:head>
 
 <Feed />

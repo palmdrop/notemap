@@ -10,9 +10,7 @@
 </script>
 
 <svelte:head>
-  <title>
-    Settings | Notemap
-  </title>
+  <title>Settings | Notemap</title>
 </svelte:head>
 
 <div
