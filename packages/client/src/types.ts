@@ -35,7 +35,9 @@ import type {
   RoutingTemplateId,
   RoutingTemplateReport,
   CreateRoutingTemplateRequest,
+  Reclaimed,
   SourceUse,
+  Storage,
   TagUse,
   Token,
   UpdateDestinationRequest,
@@ -257,6 +259,29 @@ export interface CountsApi {
 export interface SourcesApi {
   /** Most recently captured first, whole and unnarrowed, as tags are. */
   inUse(): Promise<readonly SourceUse[]>;
+}
+
+/**
+ * What the pool and its neighbours take on disk. Nothing here is cached and
+ * none of it is an outbox operation: the cheap half is a fact about a disk this
+ * moment, the daemon holds the measurement and says when it took it, and firing
+ * a reclaim is a decision about now, which cannot be replayed later.
+ */
+export interface StorageApi {
+  /** Read fresh every time. The daemon walks nothing answering this. */
+  read(): Promise<Storage>;
+  /**
+   * Asks the daemon to walk the blob store and the mirror, and answers the same
+   * reading with the fresh measurement in it. A walk already in flight there is
+   * joined rather than started again.
+   */
+  measure(): Promise<Storage>;
+  /**
+   * Takes every blob nothing names past the grace window, and answers what it
+   * took — exactly what the last measurement called reclaimable. The figures a
+   * caller holds are stale afterwards until it measures again.
+   */
+  reclaim(): Promise<Reclaimed>;
 }
 
 /** Where a read of the log continues from: the sort key of the last row it handed out. */
@@ -495,6 +520,7 @@ export interface Client {
   readonly tags: TagsApi;
   readonly counts: CountsApi;
   readonly sources: SourcesApi;
+  readonly storage: StorageApi;
   readonly actions: ActionsApi;
 
   /** Called on every mutation, and again to retry what is still pending. */

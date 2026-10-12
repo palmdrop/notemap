@@ -205,12 +205,12 @@ Then `pnpm test:stack` — this crosses the HTTP surface, the host's wiring and 
 
 Depends on phase 4.
 
-- [ ] `pnpm --filter @notemap/client codegen` against the regenerated `openapi.json`.
-- [ ] A storage module on `createSources`' pattern (`packages/client/src/sources/sources.ts`): a
+- [x] `pnpm --filter @notemap/client codegen` against the regenerated `openapi.json`.
+- [x] A storage module on `createSources`' pattern (`packages/client/src/sources/sources.ts`): a
   plain read every time, nothing cached, since the daemon holds the measurement.
-- [ ] Reads for the live facts, for asking a measurement, and for firing the reclaim, on
+- [x] Reads for the live facts, for asking a measurement, and for firing the reclaim, on
   `ClientApi` beside `sources`.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/client test`. Cases: each read answers what the daemon said; an
 unreachable pool throws what the transport throws rather than answering zeroes.

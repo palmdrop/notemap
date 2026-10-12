@@ -102,6 +102,13 @@ export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
 export type SourceUse = components["schemas"]["SourceUse"];
 
+/** What notemap has taken on the machine the pool is on. */
+export type Storage = components["schemas"]["Storage"];
+/** The last walk of the blob store and the mirror, and when it was taken. */
+export type Measurement = NonNullable<Storage["measured"]>;
+/** What a reclaim took. */
+export type Reclaimed = components["schemas"]["Reclaimed"];
+
 /** Which pool this is: opaque, and stable for as long as the pool exists. */
 export type PoolIdentity = components["schemas"]["Health"]["pool"];
 
