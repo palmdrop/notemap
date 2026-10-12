@@ -1,0 +1,174 @@
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { expect, test } from "vitest";
+
+import type { Storage } from "@notemap/client";
+import { json, routeOf } from "@notemap/client/testing";
+
+import { asked, pool } from "$testing/pool";
+import StorageSection from "./Storage.svelte";
+
+const press = async (name: string | RegExp) =>
+  fireEvent.click(await screen.findByRole("button", { name }));
+
+const REPORT: Storage = {
+  pool: {
+    path: "/var/lib/notemap/state/notemap.db",
+    bytes: 4_300_000,
+    unused: 65_536,
+    free: 52_000_000_000,
+  },
+  assets: {
+    path: "/var/lib/notemap/assets",
+    count: 142,
+    bytes: 88_200_000,
+    free: 52_000_000_000,
+  },
+  mirror: { path: "/var/lib/notemap/pool-mirror", free: 52_000_000_000 },
+  auth: { path: "/var/lib/notemap/state/auth.db", bytes: 32_768 },
+  deployment: "docker",
+};
+
+const MEASURED: NonNullable<Storage["measured"]> = {
+  at: "2026-10-12T09:14:02.000Z",
+  blobs: { count: 140, bytes: 70_000_000 },
+  reclaimable: { count: 2, bytes: 714_016 },
+  withinGrace: { count: 1, bytes: 1_024 },
+  mirror: { records: 1_204, files: 2_408, bytes: 3_500_000 },
+};
+
+/** The daemon's two halves, each answered by whatever a test hands in. */
+function serving(
+  read: () => Response,
+  measure: () => Response | Promise<Response>,
+  reclaim: () => Response = () => json(200, { blobs: 0, bytes: 0 }),
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/storage") return read();
+    if (route === "POST /v1/storage/measure") return measure();
+    if (route === "POST /v1/reclaim") return reclaim();
+    return json(200, {});
+  });
+}
+
+test("draws every figure from one answer", async () => {
+  serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+
+  await screen.findByText("/var/lib/notemap/state/notemap.db");
+  await screen.findByText("4.3 MB");
+  await screen.findByText(/66 KB unused \(52 GB free\)/);
+
+  // The assets row's footprint is the blobs the walk found, not the sum of the
+  // assets naming them.
+  await screen.findByText("70 MB");
+  await screen.findByText(/140 blobs \(52 GB free\)/);
+  await screen.findByText(/142 assets, 18 MB saved/);
+
+  await screen.findByText("3.5 MB");
+  await screen.findByText(/1,204 records, 2,408 files/);
+  await screen.findByText("33 KB");
+  await screen.findByText("docker");
+  await screen.findByText(/1 blob waiting out the grace window/);
+
+  expect(asked()).toContain("GET /v1/storage");
+  expect(asked()).toContain("POST /v1/storage/measure");
+});
+
+test("draws the remembered figures and the ask while a measurement is out, never nothing", async () => {
+  let release: ((response: Response) => void) | undefined;
+  serving(
+    () => json(200, { ...REPORT, measured: MEASURED }),
+    () =>
+      new Promise<Response>((resolve) => {
+        release = resolve;
+      }),
+  );
+
+  render(StorageSection);
+
+  // The remembered walk, drawn from the cheap read while the fresh one is out.
+  await screen.findByText(/140 blobs/);
+  expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
+
+  release?.(
+    json(200, {
+      ...REPORT,
+      measured: { ...MEASURED, blobs: { count: 7, bytes: 1_000 } },
+    }),
+  );
+
+  await screen.findByText(/7 blobs/);
+});
+
+test("the reclaim is inert where there is nothing to take", async () => {
+  serving(
+    () => json(200, REPORT),
+    () =>
+      json(200, {
+        ...REPORT,
+        measured: {
+          ...MEASURED,
+          reclaimable: { count: 0, bytes: 0 },
+          withinGrace: { count: 0, bytes: 0 },
+        },
+      }),
+  );
+
+  render(StorageSection);
+
+  await screen.findByText(/nothing unnamed to take/);
+  const button = await screen.findByRole<HTMLButtonElement>("button", {
+    name: "reclaim now",
+  });
+  expect(button.disabled).toBe(true);
+});
+
+test("the reclaim fires, says what it took, and asks again", async () => {
+  const measured = [
+    { ...REPORT, measured: MEASURED },
+    {
+      ...REPORT,
+      measured: {
+        ...MEASURED,
+        blobs: { count: 138, bytes: 69_285_984 },
+        reclaimable: { count: 0, bytes: 0 },
+      },
+    },
+  ];
+  let walks = 0;
+  serving(
+    () => json(200, REPORT),
+    () => json(200, measured[Math.min(walks++, 1)]),
+    () => json(200, { blobs: 2, bytes: 714_016 }),
+  );
+
+  render(StorageSection);
+  await screen.findByText(/2 blobs nothing names, 714 KB/);
+
+  await press("reclaim now");
+
+  await screen.findByText(/took 2 blobs, 714 KB/);
+  await screen.findByText(/nothing unnamed to take/);
+  expect(asked().filter((route) => route === "POST /v1/reclaim")).toHaveLength(
+    1,
+  );
+});
+
+test("says it is unavailable rather than guessing while the pool is out of reach", async () => {
+  const transport = serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+  transport.unreachable(true);
+
+  render(StorageSection);
+
+  await screen.findByText(/unavailable while the pool is unreachable/);
+  // No figure is drawn from nothing: there is nothing cached to draw.
+  expect(screen.queryByText(/blobs/)).toBeNull();
+});

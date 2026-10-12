@@ -1,0 +1,229 @@
+<script lang="ts">
+  import { saidBy, type Reclaimed, type Storage } from "@notemap/client";
+
+  import Fact from "$components/settings/Fact.svelte";
+  import Section from "$components/settings/Section.svelte";
+  import Action from "$components/primitives/controls/Action.svelte";
+  import Asking from "$components/primitives/marks/Asking.svelte";
+  import Lead from "$components/primitives/text/Lead.svelte";
+  import { client } from "$lib/client";
+  import { reachable } from "$lib/reachable.svelte";
+  import { sizeOf } from "$lib/attachments";
+
+  const pool = reachable();
+
+  let held = $state<Storage | undefined>(undefined);
+  let said = $state("");
+  let walking = $state(false);
+  let reclaiming = $state(false);
+  let took = $state<Reclaimed | undefined>(undefined);
+  let asked = $state(false);
+
+  /**
+   * Which look the answers belong to. A walk outstanding when the section
+   * looks again would otherwise land on top of the fresher reading.
+   */
+  let look = 0;
+
+  const walked = $derived(held?.measured);
+
+  /**
+   * The cheap half and the walk are asked for in the same moment: the first
+   * draws everything but the blobs, and the walk replaces it when it answers.
+   * The daemon holds the last measurement, so what the read answers is a figure
+   * from whenever it was taken rather than nothing.
+   */
+  async function reread() {
+    const mine = (look += 1);
+    said = "";
+    walking = true;
+
+    void client.storage.read().then(
+      (answer) => {
+        if (mine === look && held === undefined) held = answer;
+      },
+      () => undefined,
+    );
+
+    try {
+      const answer = await client.storage.measure();
+      if (mine === look) held = answer;
+    } catch (error) {
+      if (mine === look) said = saidBy(error);
+    } finally {
+      if (mine === look) walking = false;
+    }
+  }
+
+  async function reclaim() {
+    reclaiming = true;
+    said = "";
+    try {
+      took = await client.storage.reclaim();
+      await reread();
+    } catch (error) {
+      said = saidBy(error);
+    } finally {
+      reclaiming = false;
+    }
+  }
+
+  // Nothing is cached, so the section asks as it opens, and again whenever the
+  // pool comes back into reach.
+  $effect(() => {
+    if (pool.yes && !asked) {
+      asked = true;
+      void reread();
+    }
+    if (!pool.yes) asked = false;
+  });
+
+  const free = (bytes: number | undefined) =>
+    bytes === undefined ? undefined : `(${sizeOf(bytes)} free)`;
+
+  const count = (many: number, one: string) =>
+    `${many.toLocaleString("en-GB")} ${one}${many === 1 ? "" : "s"}`;
+
+  const poolSays = $derived(
+    held === undefined
+      ? undefined
+      : [`${sizeOf(held.pool.unused)} unused`, free(held.pool.free)]
+          .filter((part) => part !== undefined)
+          .join(" "),
+  );
+
+  /** What content addressing saved: the same bytes under two names cost once. */
+  const saved = $derived(
+    held === undefined || walked === undefined
+      ? undefined
+      : held.assets.bytes - walked.blobs.bytes,
+  );
+
+  const assetsSays = $derived(
+    held === undefined
+      ? ""
+      : [
+          count(held.assets.count, "asset"),
+          saved !== undefined && saved > 0
+            ? `${sizeOf(saved)} saved by holding identical bytes once`
+            : undefined,
+        ]
+          .filter((part) => part !== undefined)
+          .join(", "),
+  );
+
+  const mirrorSays = $derived(
+    walked?.mirror === undefined
+      ? undefined
+      : `${count(walked.mirror.records, "record")}, ${count(walked.mirror.files, "file")}`,
+  );
+
+  const reclaimable = $derived(walked?.reclaimable);
+  const grace = $derived(walked?.withinGrace);
+</script>
+
+<Section name="storage">
+  {#if held === undefined}
+    <!-- Nothing is cached, so there is no older figure to draw instead. -->
+    <p role="status" class="mt-4">
+      {#if pool.yes}
+        <Asking subject="storage" />
+      {:else}
+        unavailable while the pool is unreachable
+      {/if}
+    </p>
+  {:else}
+    <Fact name="pool">
+      <span class="block break-all">{held.pool.path}</span>
+      <Lead lead={sizeOf(held.pool.bytes)} rest={poolSays} />
+    </Fact>
+
+    <Fact name="assets">
+      <span class="block break-all">{held.assets.path}</span>
+      <span class="block">
+        {#if walked === undefined}
+          <Asking />
+        {:else}
+          <Lead
+            lead={sizeOf(walked.blobs.bytes)}
+            rest={[count(walked.blobs.count, "blob"), free(held.assets.free)]
+              .filter((part) => part !== undefined)
+              .join(" ")}
+          />
+        {/if}
+        {#if walking && walked !== undefined}
+          <Asking />
+        {/if}
+      </span>
+      <span class="block">{assetsSays}</span>
+
+      {#if reclaimable !== undefined}
+        <span class="flex flex-wrap items-baseline gap-x-[1ch]">
+          <span>
+            {reclaimable.count === 0
+              ? "nothing unnamed to take"
+              : `${count(reclaimable.count, "blob")} nothing names, ${sizeOf(reclaimable.bytes)}`}
+          </span>
+          <Action
+            disabled={reclaimable.count === 0}
+            working={reclaiming}
+            title={reclaimable.count === 0
+              ? "there is nothing to reclaim"
+              : undefined}
+            onclick={() => void reclaim()}
+          >
+            reclaim now
+          </Action>
+        </span>
+        {#if grace !== undefined && grace.count > 0}
+          <span class="block">
+            {count(grace.count, "blob")} waiting out the grace window
+          </span>
+        {/if}
+        {#if took !== undefined}
+          <span class="block">
+            took {count(took.blobs, "blob")}, {sizeOf(took.bytes)}
+          </span>
+        {/if}
+      {/if}
+    </Fact>
+
+    {#if held.mirror !== undefined}
+      <Fact name="mirror">
+        <span class="block break-all">{held.mirror.path}</span>
+        <span class="block">
+          {#if walked?.mirror === undefined}
+            <Asking />
+          {:else}
+            <Lead
+              lead={sizeOf(walked.mirror.bytes)}
+              rest={[mirrorSays, free(held.mirror.free)]
+                .filter((part) => part !== undefined)
+                .join(" ")}
+            />
+          {/if}
+        </span>
+      </Fact>
+    {/if}
+
+    {#if held.auth !== undefined}
+      <Fact name="auth">
+        <span class="block break-all">{held.auth.path}</span>
+        <Lead lead={sizeOf(held.auth.bytes)} />
+      </Fact>
+    {/if}
+
+    {#if held.deployment !== undefined}
+      <Fact name="deployment">
+        <Lead
+          lead={held.deployment}
+          rest="the paths above are inside the container"
+        />
+      </Fact>
+    {/if}
+  {/if}
+
+  {#if said !== ""}
+    <p role="status" class="mt-4 text-alarm">{said}</p>
+  {/if}
+</Section>

@@ -6,6 +6,7 @@ export const SECTIONS = [
   { slug: "templates", label: "Templates" },
   { slug: "access", label: "Access" },
   { slug: "server", label: "Server" },
+  { slug: "storage", label: "Storage" },
   { slug: "appearance", label: "Appearance" },
   { slug: "pool", label: "Pool settings" },
 ] as const;

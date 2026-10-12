@@ -219,21 +219,21 @@ unreachable pool throws what the transport throws rather than answering zeroes.
 
 Depends on phase 5.
 
-- [ ] `storage` in `SECTIONS` (`apps/ui/src/components/settings/href.ts:3`). Placed after `server`,
-  pool settings staying last — confirm with the developer.
-- [ ] `Storage.svelte` on the facts grid, drawn with `Section`, `Fact`, `Lead`, `Action` and
+- [x] `storage` in `SECTIONS` (`apps/ui/src/components/settings/href.ts:3`). Placed after `server`,
+  pool settings staying last — confirmed with the developer.
+- [x] `Storage.svelte` on the facts grid, drawn with `Section`, `Fact`, `Lead`, `Action` and
   `Asking`, wired in `apps/ui/src/routes/settings/[section]/+page.svelte`.
-- [ ] A row per root: its path, its footprint, the space free where it lives. The pool's slack, the
+- [x] A row per root: its path, its footprint, the space free where it lives. The pool's slack, the
   asset count and what deduplication saved. The mirror's records and files. The auth database. The
   deployment where it is known.
-- [ ] Reads the live facts as the section opens and asks for a measurement at the same moment,
+- [x] Reads the live facts as the section opens and asks for a measurement at the same moment,
   drawing the remembered figure under `Asking` until the fresh one lands — never a layout shift,
   per the shell's own rule, and never a guess where nothing is cached.
-- [ ] `reclaim now` under the blob facts, active only where the past-grace figure is non-zero, and
+- [x] `reclaim now` under the blob facts, active only where the past-grace figure is non-zero, and
   saying what it took. Re-reads afterwards; the blob figures are stale until it does.
-- [ ] Unavailable rather than guessing while the pool is out of reach, on Pool settings' terms.
-- [ ] Format with `sizeOf` (`apps/ui/src/lib/attachments.ts:41`).
-- [ ] Commit
+- [x] Unavailable rather than guessing while the pool is out of reach, on Pool settings' terms.
+- [x] Format with `sizeOf` (`apps/ui/src/lib/attachments.ts:41`).
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/ui test`. Cases: the section draws every figure from one
 answer; the button is inert at zero and fires at one; a measurement in flight draws the remembered
