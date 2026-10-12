@@ -243,10 +243,10 @@ figure and the ask, never nothing; an unreachable pool draws unavailable.
 
 Depends on phase 6 for `sizeOf` usage only. Deliberately small.
 
-- [ ] An item's total attachment bytes where it carries more than one
+- [x] An item's total attachment bytes where it carries more than one
   (`apps/ui/src/components/item/AttachedLines.svelte:27` already draws each).
-- [ ] A delivery's output bytes in the record view (`apps/ui/src/components/record/Block.svelte`).
-- [ ] Commit
+- [x] A delivery's output bytes in the record view (`apps/ui/src/components/record/Block.svelte`).
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/ui test`. One attachment draws no total; two draw one.
 

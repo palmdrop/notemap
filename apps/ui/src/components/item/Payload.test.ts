@@ -146,3 +146,37 @@ test("gives a picture's room back when it cannot be had", async () => {
   expect(picture.hasAttribute("data-failed")).toBe(true);
   expect(picture.classList.contains("data-failed:hidden")).toBe(true);
 });
+
+test("totals the attachments where an item carries more than one, and not where it carries one", () => {
+  pool(() => json(200, {}));
+
+  const alone = render(Payload, {
+    item: carrying(["paper.pdf", "application/pdf"]),
+  });
+  expect(alone.container.querySelector("[data-total]")).toBeNull();
+  alone.unmount();
+
+  render(Payload, {
+    item: carrying(
+      ["paper.pdf", "application/pdf"],
+      ["recording.m4a", "audio/mp4"],
+    ),
+  });
+
+  // 517 KB each, summed over everything the item carries.
+  expect(screen.getByText(/2 attachments, 1\.0 MB/)).toBeDefined();
+});
+
+test("counts a picture nobody listed into the total", () => {
+  pool(() => json(200, {}));
+
+  render(Payload, {
+    item: carrying(
+      ["whiteboard.png", "image/png"],
+      ["paper.pdf", "application/pdf"],
+    ),
+  });
+
+  // The picture is drawn above as a picture and says no size of its own.
+  expect(screen.getByText(/2 attachments, 1\.0 MB/)).toBeDefined();
+});

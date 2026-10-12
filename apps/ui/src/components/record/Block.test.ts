@@ -490,3 +490,31 @@ test("the log asks nothing of a decision made by hand, which never sends anythin
   await screen.findByText("by hand");
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
 });
+
+test("says how much the delivery wrote, and nothing for words no output kept", async () => {
+  await named();
+
+  render(Block, { record: KEPT });
+
+  await screen.findByText(/# a thought/);
+  // The bytes of the copy it just read, which is the only size anything holds.
+  expect(
+    screen.getByText(
+      `${String(new TextEncoder().encode(NOTE).byteLength)} bytes written`,
+    ),
+  ).toBeDefined();
+});
+
+test("says nothing about size where the words are the delivery's own and nothing was kept", async () => {
+  await named();
+
+  render(Block, {
+    record: {
+      ...RECORD,
+      target: { ...TARGET, content: { type: "text", text: "what went" } },
+    },
+  });
+
+  await screen.findByText("what went");
+  expect(screen.queryByText(/written/)).toBeNull();
+});

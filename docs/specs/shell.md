@@ -1656,7 +1656,10 @@ and nowhere here, so rendering it drew a broken picture beside the real one. Tru
 the honest reading; the capture itself is rendered where it is a capture, on the queue, the feed
 and the item's own row. **The item's attachments are drawn above the words** as the preview of
 what went with them; where the assets landed is not on the record and is not drawn. The
-destination's **note** about what it could not carry is on the record and is drawn beneath. A
+destination's **note** about what it could not carry is on the record and is drawn beneath. **How
+much it wrote is said under the words** *(2026-10-12)* — `4.2 KB written` — measured off the copy
+this read, since the record keeps no size; a delivery whose words are its own and whose copy was
+never kept says nothing about size, there being nothing written anywhere this can speak for. A
 delivery that kept no copy says `nothing kept`, in two words, since that is ordinary; a delivery
 that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
@@ -2590,7 +2593,11 @@ the middle** *(2026-10-07)*, its last dozen characters kept whole so the extensi
 size stays on the line beside it, and the whole name is the link's title, which the browser says on
 hover. Where a file is being put in — the capture box and an edit — the name is whole instead,
 wrapping, with the size following its last fragment rather than taking a line of its own. A third picture is a line too, so a
-capture of twenty photographs does not become twenty screens. **A short rule sets the lines off
+capture of twenty photographs does not become twenty screens. **Where a capture carries more than
+one attachment, a last line totals them** *(2026-10-12)* — `3 attachments, 4.2 MB` — over
+everything it carries rather than only the lines, since one line says its own size already and a
+picture above says none; with one attachment there is nothing to total, and the line is left out
+where nothing could say its size. **A short rule sets the lines off
 from the words above them**, a few characters wide at the left, the way a footnote is set off —
 not the full width, since a rule across the column is what a selected row's box draws and nothing
 else does. With no words above, there is no rule. The record's block and the process surface read
