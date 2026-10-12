@@ -1,8 +1,14 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-09-24
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **The writer says how much the mirror holds.** `MirrorWriter.footprint()` walks the
+  tree and answers records, files and bytes — records and files apart, since an item is a `.json`
+  and a `.md` beside it, so any other ratio surfaces a rendering that never landed. A crashed
+  write's temporary is in neither, and where the root is stays the host's.
+  ([plan](../plans/what-notemap-takes-on-disk.md), [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))
 
 - 2026-09-24 — **The mirror carries pool settings, its fourth unit and third non-item one.** A pool
   setting is a value someone changed about the pool itself, and writing always writes a row — a

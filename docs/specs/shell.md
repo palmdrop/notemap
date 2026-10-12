@@ -1,8 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **A Storage section says what notemap has taken.** The eighth settings section, after
+  Server: a row per root with its path, what it takes and the space free where it lives, the pool's
+  `unused` bytes, the assets beside the blobs they are stored as and what holding identical bytes
+  once saved, the mirror's records and files, the daemon's own database, and the deployment where
+  the daemon declares one. It reads the live facts and asks for a measurement in the same moment,
+  drawing the remembered one until the fresh lands, and `reclaim now` is inert until there is
+  something to take. Elsewhere: a capture carrying more than one attachment totals them, and a
+  record says how much the delivery wrote. ([plan](../plans/what-notemap-takes-on-disk.md))
 
 - 2026-10-10 — **An edit holds what is picked and attaches it as it saves.** A file picked in an
   edit went into the client's store at once, where `drop`, `revert` and closing without saving left

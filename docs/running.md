@@ -218,7 +218,7 @@ first, and take the backup below.
 
 ## The volume, and what to back up
 
-The named volume `notemap_state` holds all three of these under `/var/lib/notemap`:
+The named volume `notemap_state` holds all four of these under `/var/lib/notemap`:
 
 | | |
 |---|---|
@@ -229,6 +229,14 @@ The named volume `notemap_state` holds all three of these under `/var/lib/notema
 
 **Back them up as one unit.** A rebuild reads the mirror, and the mirror's records point at blobs,
 so a mirror without its assets rebuilds a pool full of dangling references.
+
+**Settings → Storage** says what each of the four takes and how much room is left where each of
+them lives, so you need no shell in the container to find out. The paths it draws are the
+container's own — the host directory behind the volume is not discoverable from inside one, which
+is why nothing claims to know it. It also says how much a **reclaim** would take: the blobs no
+asset and no routing record names, which the daemon takes on its own interval and once as it
+starts. `reclaim now` fires that same walk at a moment you chose rather than waiting the interval
+out, and says what it took.
 
 SQLite is being written to while the daemon runs, so stop it first:
 

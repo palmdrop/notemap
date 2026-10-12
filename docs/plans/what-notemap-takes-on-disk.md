@@ -1,9 +1,9 @@
 # What notemap takes on disk
 
 **Date**: 2026-10-12
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-10-12
 
 ---
 
@@ -252,13 +252,13 @@ Depends on phase 6 for `sizeOf` usage only. Deliberately small.
 
 ### Phase 8 — Close out
 
-- [ ] `running.md`: the volume table (≈ line 219) gains the pointer that the section says what each
+- [x] `running.md`: the volume table (≈ line 219) gains the pointer that the section says what each
   of the four takes and what is free; the reclaim paragraph (≈ line 242) says a person can fire the
   pool's reclaim from settings rather than waiting out the day.
-- [ ] `todo.md`: tick the top item.
-- [ ] `Shipped:` entry in each of the five specs.
-- [ ] Typecheck, `pnpm -r --silent test`, lint, `pnpm test:stack`.
-- [ ] Commit
+- [x] `todo.md`: tick the top item.
+- [x] `Shipped:` entry in each of the five specs.
+- [x] Typecheck, `pnpm -r --silent test`, lint, `pnpm test:stack`.
+- [x] Commit
 
 ---
 

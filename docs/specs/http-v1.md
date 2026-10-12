@@ -1,9 +1,15 @@
 # Spec: HTTP API (`/v1`)
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
-editing, destinations, routing to one, pool settings, unfurling and health are settled; the rest is stub
-**Last updated**: 2026-10-09
+editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **`GET /v1/storage`, `POST /v1/storage/measure` and `POST /v1/reclaim`.** Where the
+  pool, the blobs, the mirror and the daemon's own database are, what each takes, and the space free
+  per root — read on the spot, walking nothing. A measurement is asked for, remembered with the
+  instant it was taken, and absent until one is; the reclaim is token-allowed, takes exactly what
+  the measurement called reclaimable, and says what it took. ([plan](../plans/what-notemap-takes-on-disk.md), [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))
 
 - 2026-10-09 — **`GET /v1/items?id=…`.** Several items in one read, in the order asked, leaving
   out what the pool does not hold; at most 100. See [live-arrivals](../plans/live-arrivals.md).

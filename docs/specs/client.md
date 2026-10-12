@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **A client reads what the pool takes on disk.** `storage.read()`, `.measure()` and
+  `.reclaim()`, none of them an outbox operation and none of them cached: the daemon holds the
+  measurement and says when it took it, so a copy here would be a third answer, and a pool out of
+  reach answers nothing rather than a figure from before. ([plan](../plans/what-notemap-takes-on-disk.md))
 
 - 2026-10-11 — **A shell reclaims its own bytes.** `ClientStore` says which blobs it holds and when
   it wrote them, and a client started against a store holding blobs no operation names lets them go

@@ -1,8 +1,17 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **The pool answers how much it has taken.** `pool.storage.recorded()` reads what the
+  pool has written down — the store's bytes and how many of them it holds and is not using, and
+  every asset the registry holds with their sizes summed — and walks nothing. `storage.measure()`
+  walks the blob store and the mirror, splitting the blobs nothing names into what a reclaim would
+  take now and what it would pass over; that split and the reclaim read one grace predicate, so the
+  figure and the operation cannot drift apart. How much a driver holds is the driver's own answer —
+  `PoolStore.footprint`, `MirrorWriter.footprint`, and a listed blob's bytes — and a reclaim now
+  answers what it took rather than a count. ([plan](../plans/what-notemap-takes-on-disk.md), [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))
 
 - 2026-10-10 — **are.na takes every file.** A capture carrying several files becomes one block per
   file rather than a refusal, the words captioning the first, and the arena kind declares
