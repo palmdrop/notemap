@@ -47,6 +47,7 @@ import type {
   SourceId,
   SourceUse,
   Tag,
+  Tally,
   TagFilter,
   TagName,
   TagUse,
@@ -494,6 +495,9 @@ export function createSqlitePoolStore(
     const queueCount = source.query<{ count: number }, []>(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
+    const assetsHeld = source.query<{ count: number; bytes: number }, []>(
+      `SELECT COUNT(*) AS count, COALESCE(SUM(bytes), 0) AS bytes FROM assets`,
+    );
     const tagsInUse = source.query<TagUseRow, []>(`
       SELECT tag.name AS name, COUNT(*) AS items,
              SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
@@ -884,6 +888,9 @@ export function createSqlitePoolStore(
         queue: queueCount.get()?.count ?? 0,
       }),
 
+      assetsHeld: async (): Promise<Tally> =>
+        assetsHeld.get() ?? { count: 0, bytes: 0 },
+
       actions: async (
         query: ActionQuery,
         page: OrderedPage,
@@ -994,6 +1001,7 @@ export function createSqlitePoolStore(
       queue: guard(uncommitted.queue),
       archived: guard(uncommitted.archived),
       counts: guard(uncommitted.counts),
+      assetsHeld: guard(uncommitted.assetsHeld),
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),

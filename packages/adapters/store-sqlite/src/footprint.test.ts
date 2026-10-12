@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { AssetId } from "@notemap/core";
+import type { AssetId, BlobHash } from "@notemap/core";
 
 import { createSqlitePoolStore } from "./pool-store";
 import { appendCapture, asset, capture, store } from "./testing/fixture";
@@ -69,7 +69,7 @@ describe("how much the store says it holds", () => {
 
     await pool.transaction(async (tx) => {
       for (const id of assets) {
-        await tx.insertAsset(asset({ id, blob: `blob-${id}` }));
+        await tx.insertAsset(asset({ id, blob: `blob-${id}` as BlobHash }));
       }
     });
     expect((await pool.footprint()).unused).toBe(0);

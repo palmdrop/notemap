@@ -293,3 +293,38 @@ describe("the sweep's list", () => {
     ]);
   });
 });
+
+describe("every asset the pool holds", () => {
+  it("answers zeroes for a pool holding none", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.assetsHeld()).toEqual({ count: 0, bytes: 0 });
+  });
+
+  /** Two assets over one blob are two assets: what the bytes are stored as is the blob store's. */
+  it("counts each asset and sums their sizes, deduplication and all", async () => {
+    const { pool: p } = pool();
+    const shared = "blob-shared" as BlobHash;
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, blob: shared, bytes: 100 }),
+      asset({ id: "asset-2" as AssetId, blob: shared, bytes: 100 }),
+      asset({
+        id: "asset-3" as AssetId,
+        blob: "blob-own" as BlobHash,
+        bytes: 7,
+      }),
+    );
+
+    expect(await p.assetsHeld()).toEqual({ count: 3, bytes: 207 });
+  });
+
+  it("drops what a release took", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId, bytes: 42 }));
+
+    await p.transaction((tx) => tx.deleteAssets(["asset-1" as AssetId]));
+
+    expect(await p.assetsHeld()).toEqual({ count: 0, bytes: 0 });
+  });
+});

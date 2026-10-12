@@ -656,7 +656,10 @@ describe("the reclaim", () => {
     const long = new Date("2020-01-01T00:00:00Z");
     await utimes(started.blobs.pathFor(orphan.hash), long, long);
 
-    expect(await started.reclaim()).toBe(1);
+    expect(await started.reclaim()).toEqual({
+      blobs: 1,
+      bytes: orphan.bytes,
+    });
     expect(await started.blobs.verify(orphan.hash)).toBe("missing");
     expect(
       (await started.app.request(`/v1/assets/${asset.id}/content`)).status,

@@ -153,20 +153,20 @@ is missing as one record and one file, and ignores a temporary left mid-write.
 
 Depends on phase 2.
 
-- [ ] `StorageApi` on `Pool` beside `maintenance`, per decision 5.
-- [ ] `storage.recorded()`: the database's bytes and slack, and the asset count and summed `bytes`
+- [x] `StorageApi` on `Pool` beside `maintenance`, per decision 5.
+- [x] `storage.recorded()`: the database's bytes and slack, and the asset count and summed `bytes`
   from one query over the `assets` table
   (`packages/adapters/store-sqlite/src/migrations.ts:220`), on the prepared-statement pattern
   `counts` uses (`pool-store.ts:882`). Walks nothing.
-- [ ] `storage.measure(signal?)`: blob count and bytes, and the blobs nothing names split into
+- [x] `storage.measure(signal?)`: blob count and bytes, and the blobs nothing names split into
   **past grace** and **still in grace**. Abortable, deleting nothing.
-- [ ] Lift the grace predicate out of `reclaimUnnamedBlobs`
+- [x] Lift the grace predicate out of `reclaimUnnamedBlobs`
   (`packages/core/src/pool/maintenance.ts:57`) so the walk and the reclaim read one function over
   `config.sweep.grace`. This is decision 4's whole guarantee, so it is the edit to make first and
   the one the tests aim at.
-- [ ] The summed asset bytes and the blob total are both answered rather than reconciled: two
+- [x] The summed asset bytes and the blob total are both answered rather than reconciled: two
   assets naming one blob are counted twice, and the difference is what deduplication saved.
-- [ ] Commit
+- [x] Commit
 
 **Verify:** `pnpm --filter @notemap/core test`. Cases: a pool with no assets answers zeroes rather
 than absent; two assets over one blob sum twice and count the blob once; an unnamed blob past grace

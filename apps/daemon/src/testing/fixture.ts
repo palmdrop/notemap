@@ -14,6 +14,7 @@ import type {
   PayloadTypeName,
   Pool,
   PoolConfig,
+  ReclaimOutcome,
   SourceId,
 } from "@notemap/core";
 
@@ -78,8 +79,8 @@ export type Daemon = {
   readonly deliver: () => Promise<number>;
   /** Runs a sweep now, whatever the timer would have done. */
   readonly sweep: () => Promise<readonly AssetId[]>;
-  /** Runs a reclaim now. No timer drives one here. */
-  readonly reclaim: () => Promise<number>;
+  /** Runs a reclaim now, and answers what it took. No timer drives one here. */
+  readonly reclaim: () => Promise<ReclaimOutcome>;
   readonly cleanup: () => Promise<void>;
 };
 

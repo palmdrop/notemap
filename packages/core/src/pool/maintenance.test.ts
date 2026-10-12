@@ -115,6 +115,9 @@ function ago(ms: number): Timestamp {
   return new Date(Date.parse(NOW) - ms).toISOString() as Timestamp;
 }
 
+/** Every blob in these tests is the same size, so a sum says how many went. */
+const BYTES = 10;
+
 /**
  * `named` and `held` are read when asked, so a test can name or put a blob
  * again mid-walk; `onList` runs as each blob is listed, before anything is asked.
@@ -149,7 +152,7 @@ function reclaiming(
       list: async function* () {
         for (const [hash, at] of [...kept]) {
           onList?.(hash, kept);
-          yield { hash: hash as BlobHash, at };
+          yield { hash: hash as BlobHash, bytes: BYTES, at };
         }
       },
       lastPut: (blob: BlobHash) => Promise.resolve(kept.get(blob)),
@@ -170,7 +173,10 @@ describe("reclaiming blobs nothing names", () => {
       new Set(),
     );
 
-    expect(await reclaimUnnamedBlobs(config, wired)).toBe(1);
+    expect(await reclaimUnnamedBlobs(config, wired)).toEqual({
+      blobs: 1,
+      bytes: BYTES,
+    });
     expect([...kept.keys()]).toEqual(["fresh"]);
   });
 
@@ -180,7 +186,10 @@ describe("reclaiming blobs nothing names", () => {
       new Set(["old"]),
     );
 
-    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect(await reclaimUnnamedBlobs(config, wired)).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect([...kept.keys()]).toEqual(["old"]);
     expect(transactions()).toBe(0);
   });
@@ -192,7 +201,10 @@ describe("reclaiming blobs nothing names", () => {
       (hash, held) => held.set(hash, NOW),
     );
 
-    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect(await reclaimUnnamedBlobs(config, wired)).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect([...kept.keys()]).toEqual(["old"]);
   });
 
@@ -204,7 +216,10 @@ describe("reclaiming blobs nothing names", () => {
       new Set(),
     );
 
-    expect(await reclaimUnnamedBlobs(config, wired)).toBe(0);
+    expect(await reclaimUnnamedBlobs(config, wired)).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect([...kept.keys()]).toEqual(["old"]);
     expect(transactions()).toBe(1);
   });
@@ -217,7 +232,10 @@ describe("reclaiming blobs nothing names", () => {
       () => stopping.abort(),
     );
 
-    expect(await reclaimUnnamedBlobs(config, wired, stopping.signal)).toBe(0);
+    expect(await reclaimUnnamedBlobs(config, wired, stopping.signal)).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect(kept.size).toBe(2);
   });
 });

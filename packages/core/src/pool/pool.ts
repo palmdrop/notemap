@@ -14,6 +14,7 @@ import * as mirror from "./mirror";
 import { observed } from "./observe";
 import * as routing from "./routing";
 import * as settings from "./settings";
+import * as storage from "./storage";
 import * as tags from "./tags";
 import * as work from "./work";
 
@@ -151,6 +152,11 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
     },
 
     sync: { changesSince: notImplemented("sync.changesSince") },
+
+    storage: {
+      recorded: () => storage.recorded(ports),
+      measure: (signal) => storage.measure(config, ports, signal),
+    },
 
     maintenance: {
       verifyMirror: notImplemented("maintenance.verifyMirror"),

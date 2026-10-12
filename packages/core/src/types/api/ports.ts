@@ -46,7 +46,7 @@ import type {
 } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
-import type { MirrorFootprint, StoreFootprint } from "../domain/storage";
+import type { MirrorFootprint, StoreFootprint, Tally } from "../domain/storage";
 import type { PoolSettingRecord } from "../domain/pool-setting";
 import type {
   RoutingTemplate,
@@ -383,6 +383,13 @@ export interface PoolReads {
 
   /** Whether an asset or a routing record's output names the blob: either keeps it. */
   blobNamed(blob: BlobHash): Promise<boolean>;
+
+  /**
+   * Every asset the pool holds, counted with their sizes summed. Two assets
+   * naming one blob are two assets here: what the bytes are stored as is the
+   * blob store's to answer.
+   */
+  assetsHeld(): Promise<Tally>;
 
   actions(query: ActionQuery, page: OrderedPage): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;
