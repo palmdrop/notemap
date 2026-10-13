@@ -13,6 +13,9 @@ import StorageSection from "./Storage.svelte";
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+const pressNth = async (name: string, nth: number) =>
+  fireEvent.click((await screen.findAllByRole("button", { name }))[nth]!);
+
 const REPORT: Storage = {
   pool: {
     path: "/var/lib/notemap/state/notemap.db",
@@ -74,8 +77,6 @@ test("draws a size for every root, what it holds, and the total they come to", a
   // Everything notemap holds on this machine, the daemon's database included.
   await screen.findByText("78 MB");
 
-  await screen.findByText(/142 assets in 140 files/);
-  await screen.findByText(/1,204 records in 2,408 files/);
   await screen.findByText(/1 file waiting out the grace window/);
 
   // The database's free pages are answered on the wire and drawn nowhere:
@@ -141,12 +142,29 @@ test("folds the paths away, and gives them up on asking", async () => {
   // Reference material, not a figure anyone scans: it does not crowd the rows.
   expect(screen.queryByText("/var/lib/notemap/state/notemap.db")).toBeNull();
 
-  await press("show");
+  await pressNth("show", 1);
 
   await screen.findByText("/var/lib/notemap/state/notemap.db");
   await screen.findByText("/var/lib/notemap/assets");
   await screen.findByText("/var/lib/notemap/pool-mirror");
   await screen.findByText("/var/lib/notemap/state/auth.db");
+});
+
+test("folds what the roots hold away, and says it with each root's size", async () => {
+  serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+  await screen.findByText("78 MB");
+
+  expect(screen.queryByText(/142 assets/)).toBeNull();
+
+  await pressNth("show", 0);
+
+  await screen.findByText("142 assets / 140 files (70 MB)");
+  await screen.findByText("1,204 records / 2,408 files (3.5 MB)");
 });
 
 test("draws the remembered figures and the ask while a measurement is out, never nothing", async () => {
@@ -162,7 +180,7 @@ test("draws the remembered figures and the ask while a measurement is out, never
   render(StorageSection);
 
   // The remembered walk, drawn from the cheap read while the fresh one is out.
-  await screen.findByText(/140 files/);
+  await screen.findByText("70 MB");
   expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
 
   release?.(
@@ -172,7 +190,7 @@ test("draws the remembered figures and the ask while a measurement is out, never
     }),
   );
 
-  await screen.findByText(/7 files/);
+  await screen.findByText("1.0 KB");
 });
 
 test("the reclaim is inert where there is nothing to take", async () => {

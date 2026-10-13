@@ -19,6 +19,7 @@
   let reclaiming = $state(false);
   let took = $state<Reclaimed | undefined>(undefined);
   let asked = $state(false);
+  let showStats = $state(false);
   let showPaths = $state(false);
 
   /**
@@ -167,16 +168,23 @@
         ],
   );
 
-  const assetsHold = $derived(
+  const stats = $derived(
     held === undefined || walked === undefined
-      ? undefined
-      : `${count(held.assets.count, "asset")} in ${count(walked.blobs.count, "file")}`,
-  );
-
-  const mirrorHolds = $derived(
-    walked?.mirror === undefined
-      ? undefined
-      : `${count(walked.mirror.records, "record")} in ${count(walked.mirror.files, "file")}`,
+      ? []
+      : [
+          [
+            "assets",
+            `${count(held.assets.count, "asset")} / ${count(walked.blobs.count, "file")} (${sizeOf(walked.blobs.bytes)})`,
+          ],
+          ...(walked.mirror === undefined
+            ? []
+            : [
+                [
+                  "mirror",
+                  `${count(walked.mirror.records, "record")} / ${count(walked.mirror.files, "file")} (${sizeOf(walked.mirror.bytes)})`,
+                ] as const,
+              ]),
+        ],
   );
 
   const reclaimable = $derived(walked?.reclaimable);
@@ -184,11 +192,11 @@
 
   /**
    * The label column `Fact` uses, then the figures right-aligned in a column of
-   * their own. Below `narrow` the label gives up its fixed width and the figure
-   * follows it on the line.
+   * their own, with whatever qualifies a figure right-aligned beneath it. Below
+   * `narrow` the label gives up its fixed width.
    */
   const GRID =
-    "grid grid-cols-[9rem_6rem_1fr] gap-x-2.5 max-narrow:grid-cols-[1fr_auto] max-narrow:gap-x-[1ch]";
+    "grid grid-cols-[9rem_28ch] gap-x-2.5 max-narrow:grid-cols-[1fr_min(28ch,60%)]";
 </script>
 
 {#snippet row(
@@ -198,7 +206,7 @@
   asking?: boolean,
 )}
   <span class="tracking-caps uppercase">{name}</span>
-  <span class="text-right tabular-nums max-narrow:text-left">
+  <span class="text-right tabular-nums">
     {#if size === undefined}
       <Asking />
     {:else}
@@ -206,14 +214,10 @@
     {/if}
   </span>
 
-  <!-- What the size is made of takes a line of its own at every width rather
-       than a column beside the figure: a third column is squeezed to nothing
-       the moment the window is less than wide, and these are two facts in
-       sequence rather than two columns to compare down. -->
+  <!-- What the size is made of takes a line of its own under the
+       figure, at every width, rather than a column beside it. -->
   {#if detail !== undefined || asking === true}
-    <span
-      class="col-span-2 col-start-2 min-w-0 break-words max-narrow:col-start-1"
-    >
+    <span class="col-start-2 min-w-0 text-right break-words">
       {#if asking === true}
         <!-- A walk already answered once and running again: the remembered
              figures stand, and the mark says a fresher set is coming. -->
@@ -239,15 +243,12 @@
     <div class={GRID}>
       <!-- One head, over the one column that is read down. -->
       <span></span>
-      <span class="text-right tracking-caps uppercase max-narrow:text-left">
-        size
-      </span>
+      <span class="text-right tracking-caps uppercase"> size </span>
 
       {@render row("pool", sizeOf(held.pool.bytes))}
       {@render row(
         "assets",
         walked === undefined ? undefined : sizeOf(walked.blobs.bytes),
-        assetsHold,
       )}
       {#if held.mirror !== undefined}
         {@render row(
@@ -255,7 +256,6 @@
           walked?.mirror === undefined
             ? undefined
             : sizeOf(walked.mirror.bytes),
-          mirrorHolds,
         )}
       {/if}
       {#if held.auth !== undefined}
@@ -289,7 +289,7 @@
         )}
 
         <span></span>
-        <span class="col-span-2 col-start-2 max-narrow:col-start-1">
+        <span class="col-start-2 text-right">
           <Action
             disabled={reclaimable.count === 0}
             working={reclaiming}
@@ -309,7 +309,7 @@
 
         {#if grace !== undefined && grace.count > 0}
           <span></span>
-          <span class="col-span-2 col-start-2 max-narrow:col-start-1">
+          <span class="col-start-2 text-right">
             {count(grace.count, "file")} waiting out the grace window
           </span>
         {/if}
@@ -325,6 +325,24 @@
     {/if}
 
     <div class="mt-5">
+      <Fact name="stats">
+        <Action onclick={() => (showStats = !showStats)}>
+          {showStats ? "hide" : "show"}
+        </Action>
+      </Fact>
+
+      {#if showStats}
+        <div transition:slide={{ magnitude: "short" }}>
+          {#each stats as [name, line] (name)}
+            <Fact {name}>{line}</Fact>
+          {:else}
+            <Fact name="">
+              <Asking />
+            </Fact>
+          {/each}
+        </div>
+      {/if}
+
       <Fact name="paths">
         <Action onclick={() => (showPaths = !showPaths)}>
           {showPaths ? "hide" : "show"}
