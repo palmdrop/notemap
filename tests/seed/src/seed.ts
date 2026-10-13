@@ -1,9 +1,11 @@
+import { layOut, type Fixture } from "./fixtures.ts";
 import { httpAt, HttpFailure, type Http } from "./http.ts";
 import type {
   CaptureOutcome,
   DestinationDescription,
   Destinations,
   RoutingRecords,
+  Template,
 } from "./types.ts";
 
 export type SeedOptions = {
@@ -16,6 +18,16 @@ export type SeedOptions = {
   readonly directory?: string;
   /** Shifts every id and time, so a second seeding adds instead of matching. */
   readonly offset?: number;
+  /** Signs in first, for a daemon that holds a credential. Absent sends no credential at all. */
+  readonly password?: string;
+  /** Who signs in. The daemon's own default where absent. */
+  readonly name?: string;
+  /**
+   * Destinations and templates to make before seeding. Where one is given,
+   * routing is by trigger tag, one capture per template, rather than one item
+   * per destination the pool already held.
+   */
+  readonly fixture?: Fixture;
   readonly fetch?: typeof globalThis.fetch;
 };
 
@@ -35,7 +47,10 @@ type Payload = {
   readonly type: string;
   readonly content: Record<string, unknown>;
   readonly assets?: readonly { slot: string; asset: string }[];
+  readonly tags?: readonly string[];
 };
+
+const DEFAULT_NAME = "admin";
 
 const SAID = [
   "the reading list is a graveyard, not a plan",
@@ -97,6 +112,18 @@ export async function seed(
 ): Promise<Seeded> {
   const http = httpAt(baseUrl, options.fetch);
   const offset = options.offset ?? 0;
+  const fixture = options.fixture;
+
+  if (options.password !== undefined) {
+    await http.signIn(options.name ?? DEFAULT_NAME, options.password);
+  }
+  const templates =
+    fixture === undefined ? undefined : await layOut(http, fixture);
+
+  const linked = (text: string, index: number): string =>
+    fixture?.links === undefined
+      ? text
+      : `${text} ${fixture.links.replace(/\/+$/, "")}/${index + offset}`;
 
   const capture = async (
     index: number,
@@ -115,14 +142,16 @@ export async function seed(
         metadata: {},
         assets: payload.assets ?? [],
       },
+      ...(payload.tags === undefined ? {} : { tags: payload.tags }),
     });
     return outcome.item.id;
   };
 
-  const said = (index: number): Promise<string> =>
+  const said = (index: number, tags?: readonly string[]): Promise<string> =>
     capture(index, {
       type: options.payloadType ?? "note",
-      content: { text: SAID[index - 1] ?? SAID[0] },
+      content: { text: linked(SAID[index - 1] ?? SAID[0] ?? "", index) },
+      ...(tags === undefined ? {} : { tags }),
     });
 
   const queued = [await said(1), await said(2)];
@@ -141,15 +170,38 @@ export async function seed(
     }),
   );
 
-  const forDestinations = [await said(5), await said(6)];
+  const withImage = await captureAnImage(http, capture, options, 7);
 
   return {
     queued,
     processed: [processed],
     archived: [archived],
-    withImage: await captureAnImage(http, capture, options, 7),
-    routed: await routeEach(http, forDestinations, options),
+    withImage,
+    routed:
+      templates === undefined
+        ? await routeEach(http, [await said(5), await said(6)], options)
+        : await fireEach(said, templates, 8),
   };
+}
+
+/**
+ * One capture per template, carrying its trigger tag, so the pool routes it.
+ * A capture already made matches rather than firing a second time.
+ */
+async function fireEach(
+  said: (index: number, tags?: readonly string[]) => Promise<string>,
+  templates: readonly Template[],
+  from: number,
+): Promise<readonly { item: string; destination: string }[]> {
+  const sent: { item: string; destination: string }[] = [];
+
+  for (const [at, template] of templates.entries()) {
+    if (template.triggerTag === undefined) continue;
+    const item = await said(from + at, [template.triggerTag]);
+    sent.push({ item, destination: template.destination });
+  }
+
+  return sent;
 }
 
 /** The id is the seeder's, so a second seeding replays the same upload rather than making a second asset. */

@@ -137,15 +137,15 @@ deliver to their own servers. With no `baseUrl`, the existing tests pass unchang
 
 Depends on phase 1 (an are.na destination must be able to point at the fake).
 
-- [ ] `@notemap/seed` and `pnpm seed` take a password (`--password-file`, or `NOTEMAP_PASSWORD`)
+- [x] `@notemap/seed` and `pnpm seed` take a password (`--password-file`, or `NOTEMAP_PASSWORD`)
       and sign in through the same route the client uses, so a stage behind a password can be
       seeded. Without one, the behaviour is unchanged.
-- [ ] Seed takes a fixture file (`--fixtures <file>`): destinations by kind and account (a
+- [x] Seed takes a fixture file (`--fixtures <file>`): destinations by kind and account (a
       filesystem vault, a WebDAV account and folder, an are.na account and channel) and templates
       with trigger tags. It creates them before seeding, and tags captures so that at least one
       routes to each destination. The fixture can also name a base URL for links, so captures link
       to the page server.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** `tests/seed` drives a password-protected daemon with a fixture naming all three kinds,
 against `dav-server.ts` and `arena-server.ts`. Every destination ends up with a delivered item,

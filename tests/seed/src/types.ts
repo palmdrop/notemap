@@ -46,3 +46,14 @@ export type DestinationDescription =
 export type RoutingRecords = {
   readonly values: readonly { readonly id: string; readonly state: string }[];
 };
+
+export type Template = {
+  readonly id: string;
+  readonly name: string;
+  readonly destination: string;
+  readonly triggerTag?: string;
+};
+
+export type Templates = {
+  readonly values: readonly Template[];
+};
