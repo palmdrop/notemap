@@ -1,15 +1,40 @@
-import { seed } from "@notemap/seed";
+import { readFileSync } from "node:fs";
+
+import { readFixture, seed } from "@notemap/seed";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
-const at = args.indexOf("--url");
-const url = at === -1 ? "http://127.0.0.1:4747" : args[at + 1];
 
-if (url === undefined) {
-  console.error("notemap: --url takes an address");
-  process.exit(1);
+/** The value after a flag, `undefined` where the flag is absent, and a refusal where it has none. */
+function flag(name: string): string | undefined {
+  const at = args.indexOf(name);
+  if (at === -1) return undefined;
+
+  const value = args[at + 1];
+  if (value === undefined || value.startsWith("--")) {
+    console.error(`notemap: ${name} takes a value`);
+    process.exit(1);
+  }
+  return value;
 }
 
-const seeded = await seed(url);
+/** A file written by `echo` or mounted as a secret ends in a newline, which no password does. */
+const unterminated = (contents: string) => contents.replace(/\r?\n$/, "");
+
+const url = flag("--url") ?? "http://127.0.0.1:4747";
+const passwordFile = flag("--password-file");
+const fixtures = flag("--fixtures");
+
+const password =
+  passwordFile === undefined
+    ? process.env["NOTEMAP_PASSWORD"]
+    : unterminated(readFileSync(passwordFile, "utf8"));
+
+const seeded = await seed(url, {
+  ...(password === undefined ? {} : { password }),
+  ...(fixtures === undefined
+    ? {}
+    : { fixture: readFixture(JSON.parse(readFileSync(fixtures, "utf8"))) }),
+});
 
 console.log(`notemap: seeded ${url}`);
 console.log(`  queued     ${seeded.queued.join(", ")}`);

@@ -7,10 +7,16 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@notemap/core": "workspace:*",
+    "@notemap/daemon": "workspace:*",
+    "@notemap/destination-arena": "workspace:*",
+    "@notemap/destination-webdav": "workspace:*",
     "@types/node": "^26.6.4",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

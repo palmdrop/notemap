@@ -1,0 +1,41 @@
+{
+  "links": "http://pages:8080/",
+  "destinations": [
+    {
+      "name": "Vault",
+      "kind": "filesystem",
+      "settings": { "root": "/var/lib/notemap/vaults/stage" }
+    },
+    {
+      "name": "Cloud",
+      "kind": "webdav",
+      "settings": { "account": "webdav", "root": "" }
+    },
+    { "name": "Board", "kind": "arena", "settings": { "account": "arena" } }
+  ],
+  "templates": [
+    {
+      "name": "To the vault",
+      "destination": "Vault",
+      "capability": "create",
+      "arguments": { "directory": "seeded", "filename": "{{item}}.md" },
+      "folder": "create",
+      "triggerTag": "route/vault"
+    },
+    {
+      "name": "To the cloud",
+      "destination": "Cloud",
+      "capability": "create",
+      "arguments": { "directory": "seeded", "filename": "{{item}}.md" },
+      "folder": "create",
+      "triggerTag": "route/cloud"
+    },
+    {
+      "name": "To the board",
+      "destination": "Board",
+      "capability": "create",
+      "arguments": { "channel": "seeded" },
+      "triggerTag": "route/board"
+    }
+  ]
+}

@@ -183,9 +183,13 @@ format = "text" # text | json
 #
 # ## arena
 #
-# are.na has no username and its address is a constant of the service, so an
-# account is a name and a token and nothing else. A destination of this kind
-# *is* the account; the channel is chosen per capture.
+# are.na has no username, so an account is a name and a token. A destination of
+# this kind *is* the account; the channel is chosen per capture.
+#
+# `baseUrl` is optional and absent means `https://api.are.na`. It exists to
+# point an account at something standing in for are.na, such as a fake in a
+# test stack. The token is sent there, so treat the address as you would the
+# token.
 #
 # **Mint the token with `write` scope.** are.na issues `read` by default, and
 # nothing notemap can ask reveals a token's scope — `GET /v3/me` does not carry

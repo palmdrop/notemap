@@ -40,6 +40,8 @@ Verification
 - `pnpm test:stack` is not part of finishing a feature. Run it after a change that crosses the
   layers — the HTTP surface, the host's wiring, the client's transport, the config file.
 - Resolve every issue before you commit or state that you are done.
+- A branch can be staged with `agent stage <branch>`: the daemon built from it, with a destination
+  of every kind behind it, seeded. See `.claude/stage/README.md`.
 
 ---
 

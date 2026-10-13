@@ -41,7 +41,6 @@ export type ArenaDestinationConfig = {
   /** Names only: a token here is one `/v1` would answer with. */
   readonly accounts?: () => readonly string[];
   /** Host-wired, so the suite can point at a fake. Never config and never a setting. */
-  readonly baseUrl?: string;
   readonly uploadsUrl?: string;
   readonly webUrl?: string;
 };
@@ -55,7 +54,6 @@ export function createArenaDestination(
   const reach = async (account: string): Promise<Arena> =>
     createArena({
       credential: await config.credentials(account),
-      ...(config.baseUrl === undefined ? {} : { baseUrl: config.baseUrl }),
       ...(config.uploadsUrl === undefined
         ? {}
         : { uploadsUrl: config.uploadsUrl }),

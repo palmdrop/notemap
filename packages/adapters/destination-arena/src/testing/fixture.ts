@@ -49,7 +49,7 @@ export function destinationRow(
 export function resolverFor(server: ArenaServer): CredentialResolver {
   return (account) =>
     account === ACCOUNT
-      ? Promise.resolve({ token: server.token })
+      ? Promise.resolve({ token: server.token, baseUrl: server.url })
       : Promise.reject(new Error(`no arena account named ${account}`));
 }
 

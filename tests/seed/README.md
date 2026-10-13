@@ -9,13 +9,50 @@ same function against the same surface a client would.
 ```sh
 pnpm seed                          # http://127.0.0.1:4747
 pnpm seed --url http://host:4748
+pnpm seed --password-file ~/.config/notemap/password --fixtures stage.json
 ```
+
+## A daemon behind a password
+
+`password` (`--password-file`, or `NOTEMAP_PASSWORD` in the environment) signs in through
+`POST /v1/session`, as the shell does, and sends the session cookie with everything after. `name`
+defaults to the daemon's own default. Without a password nothing is sent, and a daemon holding a
+credential refuses the first capture.
+
+## A fixture
+
+`fixture` (`--fixtures <file>`, JSON) names destinations and routing templates to make before
+seeding. Each is matched by name, so seeding twice makes each once.
+
+```json
+{
+  "links": "http://pages/",
+  "destinations": [
+    { "name": "Vault", "kind": "filesystem", "settings": { "root": "/data/vault" } },
+    { "name": "Board", "kind": "arena", "settings": { "account": "arena" } }
+  ],
+  "templates": [
+    {
+      "name": "To the board",
+      "destination": "Board",
+      "capability": "create",
+      "arguments": { "channel": "seeded" },
+      "triggerTag": "route/board"
+    }
+  ]
+}
+```
+
+With a fixture, routing is by trigger tag: one capture per template, carrying its tag, so the pool
+routes it after the trigger window. The one-item-per-destination routing below does not run.
+`links` puts a link under that address into each text capture, so a stage's page server has
+something to preview.
 
 ## What it leaves behind
 
 Seven captures, deterministic: fixed ids, fixed times, fixed words. Two sit in the queue, one is
 marked processed, one is archived, one is an image with an uploaded asset attached, and two are
-routed — one per destination the daemon reports.
+routed — one per destination the daemon reports, or one per fixture template instead.
 
 `seed()` answers with the ids it used, by the state each was left in, so a test can assert on them
 without reading the pool back.

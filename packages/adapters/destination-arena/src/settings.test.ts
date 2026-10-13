@@ -2,7 +2,7 @@ import type { JsonObject } from "@notemap/core";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
 import { describe, expect, it } from "vitest";
 
-import { ARENA_ACCOUNT } from "./credentials";
+import { ARENA_ACCOUNT, asArenaCredential } from "./credentials";
 import { arenaSettings, asArenaSettings } from "./settings";
 
 const validator = createAjvSchemaValidator();
@@ -54,9 +54,13 @@ describe("the account this kind needs", () => {
     expect(account({})).toEqual([]);
   });
 
-  /** None of ADR 28's three fields fits: no username, and the address is the service's. */
-  it("has nowhere to put a base URL or a username", () => {
-    expect(account({ baseUrl: "https://elsewhere.example" })).not.toEqual([]);
+  it("takes an address over HTTP and nothing else", () => {
+    expect(account({ baseUrl: "https://elsewhere.example" })).toEqual([]);
+    expect(account({ baseUrl: "http://arena:8080" })).toEqual([]);
+    expect(account({ baseUrl: "ftp://elsewhere.example" })).not.toEqual([]);
+  });
+
+  it("has nowhere to put a username", () => {
     expect(account({ username: "alice" })).not.toEqual([]);
   });
 
@@ -64,5 +68,17 @@ describe("the account this kind needs", () => {
   it("has nowhere to say where a secret is read from", () => {
     expect(account({ secretFile: "~/.are-na" })).not.toEqual([]);
     expect(account({ secretEnv: "ARENA_TOKEN" })).not.toEqual([]);
+  });
+});
+
+describe("the credential an account is read into", () => {
+  it("carries the token, and no address where the account names none", () => {
+    expect(asArenaCredential({ secret: "t" })).toEqual({ token: "t" });
+  });
+
+  it("carries the account's address without a trailing slash", () => {
+    expect(
+      asArenaCredential({ secret: "t", baseUrl: "http://arena:8080//" }),
+    ).toEqual({ token: "t", baseUrl: "http://arena:8080" });
   });
 });

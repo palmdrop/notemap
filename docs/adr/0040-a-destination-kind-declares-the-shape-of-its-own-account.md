@@ -1,7 +1,7 @@
 # 40. A destination kind declares the shape of its own account
 
 **Date**: 2026-09-07
-**Status**: Accepted — narrows [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md). Amended by [ADR 49](0049-an-account-may-be-held-by-the-daemon.md): the schema covers only the fields beside the secret
+**Status**: Accepted — narrows [ADR 28](0028-a-remote-destination-names-a-credential-profile-not-a-url.md). Amended by [ADR 49](0049-an-account-may-be-held-by-the-daemon.md): the schema covers only the fields beside the secret. Amended 2026-10-13: an are.na account may name its own `baseUrl`
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -76,6 +76,13 @@ Chosen: **option 3**.
   `ResolvedAccount` retires.
 - **Core is untouched.** No `accountSchema` on `DestinationKindAdapter`, and nothing about accounts
   reaches `/v1`.
+
+*Amended 2026-10-13*: an are.na account takes an optional `baseUrl`, absent meaning
+`https://api.are.na`. The address was a constant because nothing but are.na answered there; a test
+stack running a fake beside the daemon needs each account to say where its fake is, and the adapter
+already took an address, per instance rather than per account. Moving it onto the account puts it
+where ADR 28 put WebDAV's: beside the secret it is sent with, so it is exactly as trusted as that
+secret. The account schema stays closed — `additionalProperties: false` — and gains the one field.
 
 This **narrows ADR 28 without reversing it**, and is the revisit that decision asked for in its own
 closing line: *"Revisit if a second kind wants profiles shaped differently enough that one config

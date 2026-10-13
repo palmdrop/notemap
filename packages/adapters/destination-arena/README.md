@@ -11,8 +11,9 @@ channels on one account are one destination, not two.
 ## The account
 
 `[[accounts]]` with a `kind = "arena"`, a `name`, and `secretFile` or `secretEnv` — exactly one.
-No base URL: `https://api.are.na` is a constant of the service and nothing in config or in a
-destination's settings can move it. No username: a bearer token is who you are.
+An optional `baseUrl`, absent meaning `https://api.are.na`, points the account at a stand-in; the
+token goes there, so it is as trusted as the token. A destination's settings cannot move it. No
+username: a bearer token is who you are.
 
 **Mint the token with `write` scope.** are.na issues `read` by default, and nothing here can tell
 the difference: `GET /v3/me` does not carry the token's scope, and the OAuth exchange that does is
