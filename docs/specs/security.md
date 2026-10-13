@@ -1,7 +1,7 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-09-24
+**Last updated**: 2026-10-13
 **Shipped**:
 
 - 2026-09-24 — **The one outbound request a caller chooses the address of.** `GET /v1/unfurl`
@@ -349,12 +349,18 @@ the secret and the address are the host's and never a destination's.
 **What an account of a given kind must carry is that kind's own** (narrowed 2026-09-08,
 [ADR 40](../adr/0040-a-destination-kind-declares-the-shape-of-its-own-account.md)). The three
 fields above are Basic authentication's shape, and are.na has none of them: a bearer token, no
-username, and an address that is a constant of the service. So each adapter publishes an account
+username, and an address that was then a constant of the service. So each adapter publishes an account
 schema, the daemon validates every block against its kind's at startup and refuses to run on one
 that fails, and the checks left in the config reader are the ones that hold for every kind — no
 inline secret, exactly one source for it, no two accounts under one kind and name. Nothing about
 the property changes: neither core nor the pool ever holds a secret, and an account schema is not
 published over `/v1` (until 2026-09-23, below).
+
+**An are.na account may name its own address** (added 2026-10-13). An optional `baseUrl`, absent
+meaning `https://api.are.na`, so an account can point at a stand-in. The token goes to that address
+and nowhere else, so the field is as trusted as the secret beside it, and it lives where the secret
+does: on the account, set in the config file or by a signed-in person, never on a destination.
+The plain-HTTP warning above is WebDAV's and does not cover it.
 
 **An account may also be stored by the daemon** (added 2026-09-23,
 [ADR 49](../adr/0049-an-account-may-be-held-by-the-daemon.md)). A signed-in person can set one

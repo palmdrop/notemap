@@ -1,7 +1,7 @@
 import type { ArenaCredential } from "./credentials";
 import { Refused, TokenRefused, Unreachable } from "./errors";
 
-/** The service, not a deployment: nothing in config or in a setting can move it. */
+/** Where an account that names no address of its own is reached. */
 export const ARENA_API = "https://api.are.na";
 
 /** Where an uploaded object ends up, as `/v3/uploads/presign` documents the flow. */
@@ -93,12 +93,11 @@ const PER_PAGE = 100;
 export type ArenaConfig = {
   readonly credential: ArenaCredential;
   /** Host-wired, so the suite can point at a fake. Never a setting and never config. */
-  readonly baseUrl?: string;
   readonly uploadsUrl?: string;
 };
 
 export function createArena(config: ArenaConfig): Arena {
-  const baseUrl = (config.baseUrl ?? ARENA_API).replace(/\/+$/, "");
+  const baseUrl = (config.credential.baseUrl ?? ARENA_API).replace(/\/+$/, "");
   const uploadsUrl = (config.uploadsUrl ?? ARENA_UPLOADS).replace(/\/+$/, "");
 
   const send = async (

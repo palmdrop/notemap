@@ -1,7 +1,7 @@
 # A staging stack per branch
 
 **Date**: 2026-10-13
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/security.md`
 **Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
 
@@ -107,22 +107,22 @@ Settled 2026-10-12/13 with the developer, except where marked.
 
 ### Phase 0
 
-- [ ] Create branch `agent/staging-environment`, and commit this plan on it.
+- [x] Create branch `agent/staging-environment`, and commit this plan on it.
 
 ### Phase 1: an are.na account names its own `baseUrl`
 
 Depends on nothing.
 
-- [ ] An optional `baseUrl` on an are.na account: in the account's fields, through
+- [x] An optional `baseUrl` on an are.na account: in the account's fields, through
       `asArenaCredential`, and onto every API call the destination makes for that account. The
       per-instance `baseUrl` on `createArenaDestination` goes, unless something besides tests uses
       it.
-- [ ] Wherever the WebDAV `baseUrl` is accepted, the are.na one is too: config `[[accounts]]`, the
+- [x] Wherever the WebDAV `baseUrl` is accepted, the are.na one is too: config `[[accounts]]`, the
       account routes and the settings form.
-- [ ] `config.example.toml`, ADR 40's account shape (a superseding note if the ADR states the shape
+- [x] `config.example.toml`, ADR 40's account shape (a superseding note if the ADR states the shape
       as closed), and `docs/specs/security.md`: the token goes to the account's `baseUrl`, so that
       field is as trusted as the secret beside it.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** a daemon test routes an item to an are.na destination whose account `baseUrl` points
 at `arena-server.ts`, and the block lands in the fake. Two accounts with different `baseUrl`s

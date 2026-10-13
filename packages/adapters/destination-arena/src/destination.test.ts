@@ -35,7 +35,6 @@ function adapter(): DestinationKindAdapter {
   return createArenaDestination({
     renderers: arenaRenderers(),
     credentials: resolverFor(server),
-    baseUrl: server.url,
     uploadsUrl: server.uploadsUrl,
     webUrl: "https://www.are.na",
   });
@@ -111,7 +110,6 @@ describe("what it says it can do", () => {
     const bare = createArenaDestination({
       renderers: {},
       credentials: resolverFor(server),
-      baseUrl: server.url,
     });
 
     expect((await bare.describe(row())).capabilities[0]?.accepts).toEqual([]);
@@ -203,6 +201,38 @@ describe("creating a block", () => {
     const outcome = await adapter().deliver(row(), delivery({ arguments: {} }));
 
     expect(outcome.kind).toBe("rejected");
+  });
+});
+
+describe("the address an account names", () => {
+  it("is where that account's blocks go, and not another's", async () => {
+    const other = await startArenaServer();
+    try {
+      const two = createArenaDestination({
+        renderers: arenaRenderers(),
+        credentials: (account) =>
+          Promise.resolve(
+            account === "elsewhere"
+              ? { token: other.token, baseUrl: other.url }
+              : { token: server.token, baseUrl: server.url },
+          ),
+      });
+
+      await two.deliver(row(), delivery({ content: { text: "here" } }));
+      await two.deliver(
+        destinationRow({ account: "elsewhere" }),
+        delivery({ content: { text: "there" } }),
+      );
+
+      expect(server.blocks()).toEqual([
+        expect.objectContaining({ value: "here" }),
+      ]);
+      expect(other.blocks()).toEqual([
+        expect.objectContaining({ value: "there" }),
+      ]);
+    } finally {
+      await other.close();
+    }
   });
 });
 
