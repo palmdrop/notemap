@@ -111,6 +111,15 @@ Settled with the developer on 2026-10-12.
     total of the cheap half alone would be the largest number on the screen and wrong. It draws under
     the asking mark instead, which is one row and shifts nothing.
 
+18. **Second pass, from the browser: one figure per row.** The `HOLDS` column had no room at any
+    width settings actually draws into, so what a size is made of moved to a line of its own under
+    it — which also retired the `·` separator introduced one decision earlier, no line now carrying
+    two figures. The rule above `TOTAL` went, `TOTAL` and `FREE` were grouped under a space, the
+    free figure stopped naming its roots where there is only one of them, `BLOBS` became `ASSETS`
+    and `UNUSED` became `RECLAIMABLE`. The two words were the substance of it: a blob is named for a
+    machine by the glossary's own entry, and `UNUSED` two rows under `FREE` read as a second kind of
+    free space.
+
 ### Deviation from the brief, and why
 
 The brief had each port also answer **where it is**, as an optional opaque string. Dropped: the

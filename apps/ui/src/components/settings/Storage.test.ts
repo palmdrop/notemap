@@ -74,8 +74,9 @@ test("draws a size for every root, what it holds, and the total they come to", a
   // Everything notemap holds on this machine, the daemon's database included.
   await screen.findByText("78 MB");
 
-  await screen.findByText(/140 blobs · 142 assets/);
-  await screen.findByText(/1,204 records · 2,408 files/);
+  await screen.findByText(/142 assets in 140 files/);
+  await screen.findByText(/1,204 records in 2,408 files/);
+  await screen.findByText(/1 file waiting out the grace window/);
 
   // The database's free pages are answered on the wire and drawn nowhere:
   // nothing a person can press returns them to the disk.
@@ -85,7 +86,7 @@ test("draws a size for every root, what it holds, and the total they come to", a
   expect(asked()).toContain("POST /v1/storage/measure");
 });
 
-test("says the free figure once for the roots that share it", async () => {
+test("says the free figure once for the roots that share it, and says no more", async () => {
   serving(
     () => json(200, REPORT),
     () => json(200, { ...REPORT, measured: MEASURED }),
@@ -93,8 +94,10 @@ test("says the free figure once for the roots that share it", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/where the pool, the blobs and the mirror live/);
+  await screen.findByText("78 MB");
   expect(screen.queryAllByText("52 GB")).toHaveLength(1);
+  // One row is every root there is, which the row being alone already says.
+  expect(screen.queryByText(/where/)).toBeNull();
 });
 
 test("says it twice where a root is on a mount of its own", async () => {
@@ -109,7 +112,7 @@ test("says it twice where a root is on a mount of its own", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/where the pool and the blobs live/);
+  await screen.findByText(/where the pool and the assets live/);
   await screen.findByText(/where the mirror lives/);
   await screen.findByText("210 GB");
 });
@@ -159,7 +162,7 @@ test("draws the remembered figures and the ask while a measurement is out, never
   render(StorageSection);
 
   // The remembered walk, drawn from the cheap read while the fresh one is out.
-  await screen.findByText(/140 blobs/);
+  await screen.findByText(/140 files/);
   expect(screen.getAllByRole("status").length).toBeGreaterThan(0);
 
   release?.(
@@ -169,7 +172,7 @@ test("draws the remembered figures and the ask while a measurement is out, never
     }),
   );
 
-  await screen.findByText(/7 blobs/);
+  await screen.findByText(/7 files/);
 });
 
 test("the reclaim is inert where there is nothing to take", async () => {
@@ -188,7 +191,8 @@ test("the reclaim is inert where there is nothing to take", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/no blob is held for nothing/);
+  // The figure says it: a label naming the action needs no sentence beside it.
+  await screen.findByText("0 bytes");
   const button = await screen.findByRole<HTMLButtonElement>("button", {
     name: "reclaim now",
   });
@@ -212,13 +216,13 @@ test("the reclaim fires, says what it took, and asks again", async () => {
   );
 
   render(StorageSection);
-  await screen.findByText(/2 blobs nothing names/);
+  await screen.findByText(/2 files left behind/);
   await screen.findByText("714 KB");
 
   await press("reclaim now");
 
-  await screen.findByText(/took 2 blobs, 714 KB/);
-  await screen.findByText(/no blob is held for nothing/);
+  await screen.findByText(/took 2 files, 714 KB/);
+  await screen.findByText("0 bytes");
   expect(asked().filter((route) => route === "POST /v1/reclaim")).toHaveLength(
     1,
   );
@@ -238,10 +242,10 @@ test("drops what a reclaim took once the section looks again", async () => {
   );
 
   render(StorageSection);
-  await screen.findByText(/2 blobs nothing names/);
+  await screen.findByText(/2 files left behind/);
 
   await press("reclaim now");
-  await screen.findByText(/took 2 blobs, 714 KB/);
+  await screen.findByText(/took 2 files, 714 KB/);
 
   transport.unreachable(true);
   online(false);
@@ -249,7 +253,7 @@ test("drops what a reclaim took once the section looks again", async () => {
   transport.unreachable(false);
   online(true);
 
-  await vi.waitFor(() => expect(screen.queryByText(/took 2 blobs/)).toBeNull());
+  await vi.waitFor(() => expect(screen.queryByText(/took 2 files/)).toBeNull());
 });
 
 test("says it is unavailable rather than guessing while the pool is out of reach", async () => {
@@ -263,5 +267,5 @@ test("says it is unavailable rather than guessing while the pool is out of reach
 
   await screen.findByText(/unavailable while the pool is unreachable/);
   // No figure is drawn from nothing: there is nothing cached to draw.
-  expect(screen.queryByText(/blobs/)).toBeNull();
+  expect(screen.queryByText(/files/)).toBeNull();
 });

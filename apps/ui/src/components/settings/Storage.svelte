@@ -93,9 +93,6 @@
   const count = (many: number, one: string) =>
     `${many.toLocaleString("en-GB")} ${one}${many === 1 ? "" : "s"}`;
 
-  const joined = (parts: readonly (string | undefined)[]) =>
-    parts.filter((part) => part !== undefined).join(" · ");
-
   /** `a`, `a and b`, `a, b and c` — the shell says no serial comma. */
   function listed(names: readonly string[]): string {
     if (names.length < 2) return names[0] ?? "";
@@ -105,8 +102,8 @@
   /**
    * Everything notemap holds on this machine, the daemon's own database
    * included: the section is about what it has taken, and that is one of the
-   * things it took. Nothing until the walk lands — the blobs and the mirror are
-   * the two largest figures in it, and a total missing them would be the
+   * things it took. Nothing until the walk lands — the assets and the mirror
+   * are the two largest figures in it, and a total missing them would be the
    * biggest number here and wrong.
    */
   const total = $derived(
@@ -123,6 +120,10 @@
    * mount of its own, and two rows is what says it did. Saying 52 GB three
    * times says nothing three times — and `statfs` answers no filesystem id, so
    * roots are grouped by the figure itself rather than by a disk.
+   *
+   * Which roots a figure covers is said only where there is more than one of
+   * them. With a single row it is every root there is, which the row being
+   * alone already says.
    */
   const free = $derived.by(() => {
     const roots: readonly [string, number | undefined][] =
@@ -130,7 +131,7 @@
         ? []
         : [
             ["the pool", held.pool.free],
-            ["the blobs", held.assets.free],
+            ["the assets", held.assets.free],
             ["the mirror", held.mirror?.free],
           ];
 
@@ -144,7 +145,10 @@
 
     return grouped.map(({ bytes, names }) => ({
       bytes,
-      where: `where ${listed(names)} ${names.length === 1 ? "lives" : "live"}`,
+      where:
+        grouped.length < 2
+          ? undefined
+          : `where ${listed(names)} ${names.length === 1 ? "lives" : "live"}`,
     }));
   });
 
@@ -153,7 +157,7 @@
       ? []
       : [
           ["pool", held.pool.path],
-          ["blobs", held.assets.path],
+          ["assets", held.assets.path],
           ...(held.mirror === undefined
             ? []
             : [["mirror", held.mirror.path] as const]),
@@ -163,32 +167,34 @@
         ],
   );
 
-  const blobsHold = $derived(
+  const assetsHold = $derived(
     held === undefined || walked === undefined
       ? undefined
-      : joined([
-          count(walked.blobs.count, "blob"),
-          count(held.assets.count, "asset"),
-        ]),
+      : `${count(held.assets.count, "asset")} in ${count(walked.blobs.count, "file")}`,
   );
 
   const mirrorHolds = $derived(
     walked?.mirror === undefined
       ? undefined
-      : joined([
-          count(walked.mirror.records, "record"),
-          count(walked.mirror.files, "file"),
-        ]),
+      : `${count(walked.mirror.records, "record")} in ${count(walked.mirror.files, "file")}`,
   );
 
   const reclaimable = $derived(walked?.reclaimable);
   const grace = $derived(walked?.withinGrace);
+
+  /**
+   * The label column `Fact` uses, then the figures right-aligned in a column of
+   * their own. Below `narrow` the label gives up its fixed width and the figure
+   * follows it on the line.
+   */
+  const GRID =
+    "grid grid-cols-[9rem_6rem_1fr] gap-x-2.5 max-narrow:grid-cols-[1fr_auto] max-narrow:gap-x-[1ch]";
 </script>
 
 {#snippet row(
   name: string,
   size: string | undefined,
-  holds?: string,
+  detail?: string,
   asking?: boolean,
 )}
   <span class="tracking-caps uppercase">{name}</span>
@@ -199,15 +205,24 @@
       <span class="font-semibold">{size}</span>
     {/if}
   </span>
-  <span class="min-w-0 break-words max-narrow:col-span-2">
-    {#if asking === true}
-      <!-- A walk already answered once and running again: the remembered
-           figures stand, and the mark says a fresher set is coming. -->
-      <Asking />
-    {:else}
-      {holds ?? ""}
-    {/if}
-  </span>
+
+  <!-- What the size is made of takes a line of its own at every width rather
+       than a column beside the figure: a third column is squeezed to nothing
+       the moment the window is less than wide, and these are two facts in
+       sequence rather than two columns to compare down. -->
+  {#if detail !== undefined || asking === true}
+    <span
+      class="col-span-2 col-start-2 min-w-0 break-words max-narrow:col-start-1"
+    >
+      {#if asking === true}
+        <!-- A walk already answered once and running again: the remembered
+             figures stand, and the mark says a fresher set is coming. -->
+        <Asking />
+      {:else}
+        {detail}
+      {/if}
+    </span>
+  {/if}
 {/snippet}
 
 <Section name="storage">
@@ -221,22 +236,18 @@
       {/if}
     </p>
   {:else}
-    <div
-      class="mt-1 grid grid-cols-[9rem_6rem_1fr] gap-x-2.5 max-narrow:grid-cols-[1fr_auto] max-narrow:gap-x-[1ch]"
-    >
-      <!-- The columns are named because there are two of figures: nothing else
-           in settings holds enough of them to need saying which is which. -->
+    <div class={GRID}>
+      <!-- One head, over the one column that is read down. -->
       <span></span>
       <span class="text-right tracking-caps uppercase max-narrow:text-left">
         size
       </span>
-      <span class="tracking-caps uppercase max-narrow:col-span-2">holds</span>
 
       {@render row("pool", sizeOf(held.pool.bytes))}
       {@render row(
-        "blobs",
+        "assets",
         walked === undefined ? undefined : sizeOf(walked.blobs.bytes),
-        blobsHold,
+        assetsHold,
       )}
       {#if held.mirror !== undefined}
         {@render row(
@@ -248,41 +259,37 @@
         )}
       {/if}
       {#if held.auth !== undefined}
-        <!-- Nothing in `holds`: what a database holds is not a figure, and a
-             filler to fill the column would be one more thing to read. -->
         {@render row("auth", sizeOf(held.auth.bytes))}
       {/if}
+    </div>
 
-      <span></span>
-      <span class="my-1 border-t border-ink"></span>
-      <span class="max-narrow:col-span-2"></span>
-
+    <!-- What the rows above come to, and what is left where they live: the two
+         figures a person reads together, set apart by space rather than ruled
+         off from what they are a sum of. -->
+    <div class="{GRID} mt-5">
       {@render row(
         "total",
         total === undefined ? undefined : sizeOf(total),
         undefined,
         walking && total !== undefined,
       )}
+      {#each free as where (where.bytes)}
+        {@render row("free", sizeOf(where.bytes), where.where)}
+      {/each}
     </div>
 
-    <div
-      class="mt-5 grid grid-cols-[9rem_6rem_1fr] gap-x-2.5 max-narrow:grid-cols-[1fr_auto] max-narrow:gap-x-[1ch]"
-    >
-      {#each free as where, at (where.bytes)}
-        {@render row(at === 0 ? "free" : "", sizeOf(where.bytes), where.where)}
-      {/each}
-
-      {#if reclaimable !== undefined}
+    {#if reclaimable !== undefined}
+      <div class="{GRID} mt-5">
         {@render row(
-          "unused",
+          "reclaimable",
           sizeOf(reclaimable.bytes),
           reclaimable.count === 0
-            ? "no blob is held for nothing"
-            : `${count(reclaimable.count, "blob")} nothing names`,
+            ? undefined
+            : `${count(reclaimable.count, "file")} left behind`,
         )}
+
         <span></span>
-        <span></span>
-        <span class="max-narrow:col-span-2">
+        <span class="col-span-2 col-start-2 max-narrow:col-start-1">
           <Action
             disabled={reclaimable.count === 0}
             working={reclaiming}
@@ -293,27 +300,29 @@
           >
             reclaim now
           </Action>
-          {#if grace !== undefined && grace.count > 0}
-            <span class="ml-[1ch]">
-              {count(grace.count, "blob")} waiting out the grace window
-            </span>
-          {/if}
           {#if took !== undefined}
             <span class="ml-[1ch]">
-              took {count(took.blobs, "blob")}, {sizeOf(took.bytes)}
+              took {count(took.blobs, "file")}, {sizeOf(took.bytes)}
             </span>
           {/if}
         </span>
-      {/if}
 
-      {#if held.assets.saved > 0}
-        {@render row(
-          "saved",
-          sizeOf(held.assets.saved),
-          "identical bytes held once",
-        )}
-      {/if}
-    </div>
+        {#if grace !== undefined && grace.count > 0}
+          <span></span>
+          <span class="col-span-2 col-start-2 max-narrow:col-start-1">
+            {count(grace.count, "file")} waiting out the grace window
+          </span>
+        {/if}
+
+        {#if held.assets.saved > 0}
+          {@render row(
+            "saved",
+            sizeOf(held.assets.saved),
+            "identical bytes held once",
+          )}
+        {/if}
+      </div>
+    {/if}
 
     <div class="mt-5">
       <Fact name="paths">
