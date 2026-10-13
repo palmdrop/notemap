@@ -802,13 +802,19 @@ it *(added 2026-10-12, [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-a
   second thing to reclaim ([shell.md](shell.md#settings)). It is here for whoever is diagnosing
   rather than for whoever is reading a screen.
 - **`count` and `bytes` under `assets` are the registry's**, summed over every asset the pool holds,
-  so two assets naming one blob are counted twice. `measured.blobs` counts the bytes once. Both are
-  answered rather than reconciled: the difference is what content addressing saved.
-- **`deployment` is a claim this daemon makes about itself, never an inference.** The image declares
-  it, and `"container"` is what a container somebody else built looks like from inside. It is
-  **absent where nothing says**, because absence proves nothing — and where it is there, it is also
-  what says the paths above are the container's and not the operator's. The host path behind a volume
-  is not discoverable from inside a container, so it is never guessed at.
+  so two assets naming one blob are counted twice. **`saved` is what holding them once saved** — the
+  registry's own figure, its summed bytes less the bytes of the blobs it names counted once. It is
+  not `assets.bytes` less `measured.blobs.bytes`: the walk also counts the outputs routing records
+  name and the blobs nothing names, so that difference understates the saving by whatever else is on
+  the disk. The two totals are answered rather than reconciled, and neither explains the other.
+- **`deployment` is a claim this daemon makes about itself, never an inference.** `name` is what the
+  image declares, or `"container"` where only the marker a container somebody else built leaves
+  behind says so. The whole object is **absent where nothing says**, because absence proves nothing.
+- **`deployment.contained` is the only part of it a daemon can check**, and is what says the paths
+  above are the container's and not the operator's. A declared `name` is free text and is evidence
+  of nothing, so an operator labelling a bare-metal daemon gets the label with `contained: false`
+  rather than a claim about where its paths are. The host path behind a volume is not discoverable
+  from inside a container, so it is never guessed at.
 - It takes no parameters and is not paginated. It has no refusals.
 
 `POST /v1/storage/measure` — walks the blob store and the mirror, and answers the whole document

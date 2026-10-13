@@ -1,4 +1,11 @@
-import type { Duration, PoolConfig } from "@notemap/core";
+import type {
+  CapabilityName,
+  DestinationId,
+  Duration,
+  Item,
+  PoolConfig,
+} from "@notemap/core";
+import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -8,6 +15,7 @@ import {
   drainWith,
   envelope,
   harness,
+  streamOf,
   upload,
   type Harness,
 } from "./fixture";
@@ -17,6 +25,30 @@ const open: Harness[] = [];
 function pool(config: PoolConfig = CONFIG): Harness {
   const started = harness(config, "filesystem");
   open.push(started);
+  return started;
+}
+
+const VAULT = "vault" as DestinationId;
+
+/** A pool that can take a delivery, so an output's blob reaches the store. */
+async function delivering(wrote: string) {
+  const destinations = fakeDestinations({
+    capabilities: [fakeCapability({ name: "create-note" })],
+  });
+  destinations.answers({
+    kind: "delivered",
+    pointer: "vault/inbox/a-thought.md",
+    output: {
+      content: {
+        mediaType: "text/markdown",
+        open: () => Promise.resolve(streamOf(bytes(wrote))),
+      },
+    },
+  });
+
+  const started = harness(CONFIG, "filesystem", destinations);
+  open.push(started);
+  await started.putDestination({ id: VAULT });
   return started;
 }
 
@@ -38,7 +70,11 @@ describe("what the pool says it takes", () => {
 
     const held = await started.pool.storage.recorded();
 
-    expect(held.assets).toEqual({ count: 1, bytes: picture.byteLength });
+    expect(held.assets).toEqual({
+      count: 1,
+      bytes: picture.byteLength,
+      saved: 0,
+    });
     expect(held.store.bytes).toBeGreaterThan(0);
     expect(started.blobOpens()).toBe(0);
   });
@@ -55,8 +91,46 @@ describe("what the pool says it takes", () => {
     const recorded = await started.pool.storage.recorded();
     const measured = await started.pool.storage.measure();
 
-    expect(recorded.assets).toEqual({ count: 2, bytes: same.byteLength * 2 });
+    expect(recorded.assets).toEqual({
+      count: 2,
+      bytes: same.byteLength * 2,
+      saved: same.byteLength,
+    });
     expect(measured.blobs).toEqual({ count: 1, bytes: same.byteLength });
+  });
+
+  /**
+   * The blob store holds the outputs routing records name as well as the blobs
+   * assets do, so the difference between the registry's bytes and the store's
+   * is not the saving and never was. The registry answers it alone.
+   */
+  it("says what identical bytes saved even where the store holds an output no asset names", async () => {
+    const started = await delivering("# a thought\n");
+    const same = bytes("identical bytes");
+    await upload(started.pool, "one.png", same);
+    const second = await upload(started.pool, "two.png", same);
+    const captured = await started.pool.capture(
+      envelope({ assets: [{ slot: "image", asset: second.id }] }),
+    );
+    if (captured.kind === "refused") throw new Error("capture refused");
+    const routed = await started.pool.routing.route(
+      (captured.value.item as Item).id,
+      {
+        destination: VAULT,
+        capability: "create-note" as CapabilityName,
+        arguments: {},
+      },
+    );
+    if (routed.kind === "refused") throw new Error("route refused");
+
+    const recorded = await started.pool.storage.recorded();
+    const measured = await started.pool.storage.measure();
+
+    expect(recorded.assets.saved).toBe(same.byteLength);
+    expect(measured.blobs.count).toBe(2);
+    expect(recorded.assets.bytes - measured.blobs.bytes).not.toBe(
+      recorded.assets.saved,
+    );
   });
 
   it("says what the mirror holds, a pair per item", async () => {

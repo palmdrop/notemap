@@ -30,7 +30,7 @@ function scratch(): string {
 
 const RECORDED: RecordedStorage = {
   store: { bytes: 4096, unused: 0 },
-  assets: { count: 2, bytes: 300 },
+  assets: { count: 2, bytes: 300, saved: 100 },
 };
 
 const MEASURED: MeasuredStorage = {
@@ -132,11 +132,30 @@ describe("reading what notemap takes", () => {
     ).toBeUndefined();
   });
 
+  /**
+   * Absence is the shape reserved for a daemon that holds no database, so
+   * anything other than the file not being there is thrown: a path that cannot
+   * hold one at all is a misconfiguration, and answering absence hides it.
+   */
+  it("throws rather than answering no database where the path cannot hold one", async () => {
+    const directory = scratch();
+    const file = join(directory, "not-a-directory");
+    writeFileSync(file, "x");
+
+    await expect(
+      wired({ auth: join(file, "auth.db") }).read(),
+    ).rejects.toThrow();
+  });
+
   it("claims a deployment only where it was told one", async () => {
     expect((await wired().read()).deployment).toBeUndefined();
-    expect((await wired({ deployment: "docker" }).read()).deployment).toBe(
-      "docker",
-    );
+    expect(
+      (
+        await wired({
+          deployment: { name: "docker", contained: true },
+        }).read()
+      ).deployment,
+    ).toEqual({ name: "docker", contained: true });
   });
 
   it("holds no measurement until one is taken", async () => {

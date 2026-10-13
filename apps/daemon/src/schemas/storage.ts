@@ -24,6 +24,8 @@ export const storageSchema = z
       path: z.string(),
       /** Every asset the registry holds, so two naming one blob are counted twice. */
       ...tally,
+      /** Of those bytes, how many the same bytes under two names saved. */
+      saved: bytes,
       free,
     }),
     /** Absent where no mirror is configured. */
@@ -31,7 +33,13 @@ export const storageSchema = z
     /** The daemon's own database, which is no part of the pool. */
     auth: z.object({ path: z.string(), bytes }).optional(),
     /** What this daemon says it is deployed as. Absent claims nothing. */
-    deployment: z.string().optional(),
+    deployment: z
+      .object({
+        name: z.string(),
+        /** Whether the paths above are a container's rather than the operator's. */
+        contained: z.boolean(),
+      })
+      .optional(),
     /** The last measurement taken, with when it was taken. Absent until one is. */
     measured: z
       .object({

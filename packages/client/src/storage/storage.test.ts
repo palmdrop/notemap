@@ -23,11 +23,12 @@ const REPORT: Storage = {
     path: "/var/lib/notemap/assets",
     count: 142,
     bytes: 88_214_016,
+    saved: 18_874_368,
     free: 52_123_456_789,
   },
   mirror: { path: "/var/lib/notemap/pool-mirror", free: 52_123_456_789 },
   auth: { path: "/var/lib/notemap/state/auth.db", bytes: 32_768 },
-  deployment: "docker",
+  deployment: { name: "docker", contained: true },
 };
 
 const MEASURED: Storage = {

@@ -1,9 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import type { Storage } from "@notemap/client";
 import { json, routeOf } from "@notemap/client/testing";
 
+import { tick } from "svelte";
+
+import { online } from "$testing/dom";
 import { asked, pool } from "$testing/pool";
 import StorageSection from "./Storage.svelte";
 
@@ -18,14 +21,18 @@ const REPORT: Storage = {
     free: 52_000_000_000,
   },
   assets: {
+    // `saved` is the registry's own answer and deliberately not the difference
+    // between these bytes and the blobs below: the store also holds the outputs
+    // routing records name, which no asset does.
     path: "/var/lib/notemap/assets",
     count: 142,
     bytes: 88_200_000,
+    saved: 23_600_000,
     free: 52_000_000_000,
   },
   mirror: { path: "/var/lib/notemap/pool-mirror", free: 52_000_000_000 },
   auth: { path: "/var/lib/notemap/state/auth.db", bytes: 32_768 },
-  deployment: "docker",
+  deployment: { name: "docker", contained: true },
 };
 
 const MEASURED: NonNullable<Storage["measured"]> = {
@@ -70,7 +77,7 @@ test("draws every figure from one answer", async () => {
   // assets naming them.
   await screen.findByText("70 MB");
   await screen.findByText(/140 blobs \(52 GB free\)/);
-  await screen.findByText(/142 assets, 18 MB saved/);
+  await screen.findByText(/142 assets, 24 MB saved/);
 
   await screen.findByText("3.5 MB");
   await screen.findByText(/1,204 records, 2,408 files/);
@@ -160,6 +167,34 @@ test("the reclaim fires, says what it took, and asks again", async () => {
   expect(asked().filter((route) => route === "POST /v1/reclaim")).toHaveLength(
     1,
   );
+});
+
+/** What a reclaim took explains the figures beside it, and only those. */
+test("drops what a reclaim took once the section looks again", async () => {
+  const taken = {
+    ...REPORT,
+    measured: { ...MEASURED, reclaimable: { count: 0, bytes: 0 } },
+  };
+  let walks = 0;
+  const transport = serving(
+    () => json(200, REPORT),
+    () => json(200, walks++ === 0 ? { ...REPORT, measured: MEASURED } : taken),
+    () => json(200, { blobs: 2, bytes: 714_016 }),
+  );
+
+  render(StorageSection);
+  await screen.findByText(/2 unused blobs, 714 KB/);
+
+  await press("reclaim now");
+  await screen.findByText(/took 2 blobs, 714 KB/);
+
+  transport.unreachable(true);
+  online(false);
+  await tick();
+  transport.unreachable(false);
+  online(true);
+
+  await vi.waitFor(() => expect(screen.queryByText(/took 2 blobs/)).toBeNull());
 });
 
 test("says it is unavailable rather than guessing while the pool is out of reach", async () => {

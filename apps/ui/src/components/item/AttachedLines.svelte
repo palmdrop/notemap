@@ -20,10 +20,11 @@
   /**
    * What the item costs, over every attachment it carries rather than only the
    * lines: one of them says its own size already, and the pictures above say
-   * none. Nothing where no attachment could say.
+   * none. Nothing unless every one of them can say, so the count and the figure
+   * are always about the same attachments.
    */
   const total = $derived(
-    attachments.length < 2
+    attachments.length < 2 || attachments.some((one) => one.bytes === undefined)
       ? 0
       : attachments.reduce((sum, one) => sum + (one.bytes ?? 0), 0),
   );

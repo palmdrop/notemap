@@ -2456,16 +2456,22 @@ free)`. Nothing between the figures but a space; the row is a fact and what qual
 is the weight this shell already tells apart with. The free figure repeats where two roots share a
 disk, which is what says they do, and is left out rather than guessed at where the daemon could not
 say. Under them `AUTH`, the daemon's own database, with no free figure — it sits beside the pool —
-and `DEPLOYMENT` **only where the daemon says**, which is also what says the paths above are inside
-a container rather than on the machine a person is reading from.
+and `DEPLOYMENT` **only where the daemon says**. Where the daemon also says it is contained, the
+line adds that the paths above are inside a container rather than on the machine a person is reading
+from — **and only then** *(2026-10-12)*: the deployment's name is whatever an image declared, so
+drawing that sentence beside any name would tell an operator who labelled a bare-metal daemon
+something untrue about their own paths.
 
 **The database's free pages are not drawn** *(2026-10-12)*. `GET /v1/storage` answers them, and they
 do explain why a pool that lost items did not shrink — but nothing a person can press returns them
 to the disk, and a figure nobody can act on sitting beside one they can is read as a second thing to
 reclaim. *Slack*, *unused* and *free* were each tried as its word; the figure was the problem rather
 than the word. The assets row says how many assets the pool holds beside the blobs they are stored
-as, and what holding identical bytes once saved, where that is anything. The mirror row says `1,204
-records, 2,408 files` — the pair per item, so any other ratio is a rendering that never landed.
+as, and what holding identical bytes once saved, where that is anything — **the registry's own
+figure** *(2026-10-12)*, so it is drawn with the cheap read rather than waiting out the walk, and
+never the difference between the two totals: the store also holds what deliveries wrote. The mirror
+row says `1,204 records, 2,408 files` — the pair per item, so any other ratio is a rendering that
+never landed.
 
 **`reclaim now` sits under the assets row with what is unused** — `2 unused blobs, 714 KB`, which is
 what a reclaim would take now, and `no unused blobs` where there is nothing. The action is drawn
@@ -2473,8 +2479,10 @@ either way and **inert where there is nothing to take**, so a person meets it be
 figure is large rather than only on it. **`unused` is the shell's word for a blob no asset and no
 routing record names** *(2026-10-12)*, on the terms `retired` reads `disabled`: *nothing names it*
 is the pool's own reading of the rule and says nothing to a person, and this is the word every other
-interface uses for bytes held for no reason. It says what it took when it has run; the blob figures
-are stale until the section asks again, which it does immediately.
+interface uses for bytes held for no reason. It says what it took when it has run, arriving with the figures
+that reclaim produced rather than ahead of them, and **a later look drops the line** *(2026-10-12)*,
+by which point it would be about blobs nobody is being shown; the blob figures are stale until the
+section asks again, which it does immediately.
 
 **The expensive half is asked for as the section opens, and nowhere else.** The daemon walks the
 blob store and the mirror on request and remembers what it found, so the section reads the live
@@ -2615,7 +2623,8 @@ capture of twenty photographs does not become twenty screens. **Where a capture 
 one attachment, a last line totals them** *(2026-10-12)* — `3 attachments, 4.2 MB` — over
 everything it carries rather than only the lines, since one line says its own size already and a
 picture above says none; with one attachment there is nothing to total, and the line is left out
-where nothing could say its size. **A short rule sets the lines off
+**unless every attachment can say its size** *(2026-10-12)* — a figure over the ones that can,
+counted as though it covered them all, would be a total that is quietly short. **A short rule sets the lines off
 from the words above them**, a few characters wide at the left, the way a footnote is set off —
 not the full width, since a rule across the column is what a selected row's box draws and nothing
 else does. With no words above, there is no rule. The record's block and the process surface read

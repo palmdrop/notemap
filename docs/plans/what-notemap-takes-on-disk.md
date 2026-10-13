@@ -83,6 +83,21 @@ Settled with the developer on 2026-10-12.
     the two walks are one cost, so there is one call, one signal and one cached answer — rather than
     the daemon asking the writer beside core, which phase 2's and 4's split would also have allowed.
 
+### Corrected after review, 2026-10-12
+
+14. **The difference between the two totals is not what deduplication saved**, so the registry
+    answers the saving itself. Phase 3's "both answered rather than reconciled: the difference is
+    what deduplication saved" was wrong: the blob store also holds the outputs routing records name
+    and the blobs nothing names, neither of which the `assets` table has a row for, so the
+    subtraction understates the saving by whatever else is on the disk and goes negative on a pool
+    with deliveries and no duplicates. `assetsHeld` now answers `saved` in the same cheap query —
+    its summed bytes less the bytes of the blobs it names counted once — and the section draws that.
+    See [the review](../reviews/storage-2026-10-12.md).
+15. **The daemon answers whether it is contained, and the shell says so only then.** The deployment
+    is a free-text name an image declares, and the section was asserting *the paths above are inside
+    the container* beside any of them. `deployment` is now `{ name, contained }`, the marker being
+    the only part a daemon can check.
+
 ### Deviation from the brief, and why
 
 The brief had each port also answer **where it is**, as an optional opaque string. Dropped: the

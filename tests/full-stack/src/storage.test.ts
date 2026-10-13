@@ -8,10 +8,16 @@ type Tally = { count: number; bytes: number };
 
 type Report = {
   pool: { path: string; bytes: number; unused: number; free?: number };
-  assets: { path: string; count: number; bytes: number; free?: number };
+  assets: {
+    path: string;
+    count: number;
+    bytes: number;
+    saved: number;
+    free?: number;
+  };
   mirror?: { path: string; free?: number };
   auth?: { path: string; bytes: number };
-  deployment?: string;
+  deployment?: { name: string; contained: boolean };
   measured?: {
     at: string;
     blobs: Tally;
@@ -51,16 +57,20 @@ describe("what a running daemon says it takes", () => {
     expect(report.measured).toBeUndefined();
   });
 
-  it("claims the deployment its image declares, and none where nothing says", async () => {
+  it("claims the deployment its image declares, and invents none where nothing says", async () => {
     const declared = await daemon(undefined, {
       NOTEMAP_DEPLOYMENT: "docker",
     });
 
-    expect((await storage(declared.url)).deployment).toBe("docker");
+    expect((await storage(declared.url)).deployment?.name).toBe("docker");
     expect(await declared.stop()).toBe(0);
 
     const plain = await daemon();
-    expect((await storage(plain.url)).deployment).toBeUndefined();
+    const said = (await storage(plain.url)).deployment;
+    // Undeclared, the only thing a daemon may say is what the container marker
+    // says — and whether that file is there belongs to the machine running the
+    // suite, so it is the name that is asserted rather than the absence.
+    expect(said === undefined || said.name === "container").toBe(true);
   });
 
   it("measures the blob store on request, and a reclaim takes nothing of it", async () => {

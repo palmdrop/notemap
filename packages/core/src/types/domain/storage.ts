@@ -23,14 +23,25 @@ export type Tally = {
   readonly bytes: number;
 };
 
+/**
+ * Every asset the pool holds, with their sizes summed — so two assets naming
+ * one blob are counted twice — and how much of that sum the disk never paid
+ * for, the same bytes under two names being stored once.
+ */
+export type AssetsHeld = Tally & {
+  readonly saved: number;
+};
+
 /** What the pool has written down about its own bytes. Nothing here is walked. */
 export type RecordedStorage = {
   readonly store: StoreFootprint;
   /**
-   * Every asset the pool holds, with their sizes summed — so two assets naming
-   * one blob are counted twice. What `measure` counts once is the blob.
+   * The registry's own figures. What `measure` counts is every blob on the
+   * disk, assets' and routing records' outputs alike, so the two totals are
+   * about different populations and neither explains the other: what content
+   * addressing saved is answered here rather than left to a subtraction.
    */
-  readonly assets: Tally;
+  readonly assets: AssetsHeld;
 };
 
 /** What a walk over the blob store and the mirror found. */

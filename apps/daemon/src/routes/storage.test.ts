@@ -96,10 +96,12 @@ describe("GET /v1/storage", () => {
     expect((await read(host.app)).assets.count).toBe(1);
   });
 
-  it("says what the daemon was told it is deployed as", async () => {
-    const report = await read(serving({ deployment: "docker" }).app);
+  it("says what the daemon was told it is deployed as, and whether that contains it", async () => {
+    const report = await read(
+      serving({ deployment: { name: "docker", contained: true } }).app,
+    );
 
-    expect(report.deployment).toBe("docker");
+    expect(report.deployment).toEqual({ name: "docker", contained: true });
   });
 });
 

@@ -46,7 +46,11 @@ import type {
 } from "../domain/item";
 import type { TagFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
-import type { MirrorFootprint, StoreFootprint, Tally } from "../domain/storage";
+import type {
+  AssetsHeld,
+  MirrorFootprint,
+  StoreFootprint,
+} from "../domain/storage";
 import type { PoolSettingRecord } from "../domain/pool-setting";
 import type {
   RoutingTemplate,
@@ -385,11 +389,13 @@ export interface PoolReads {
   blobNamed(blob: BlobHash): Promise<boolean>;
 
   /**
-   * Every asset the pool holds, counted with their sizes summed. Two assets
-   * naming one blob are two assets here: what the bytes are stored as is the
-   * blob store's to answer.
+   * Every asset the pool holds, counted with their sizes summed, and how much
+   * of that sum the same bytes under two names saved. Two assets naming one
+   * blob are two assets here; the saving is what the registry itself says
+   * about them, since a blob store holds outputs no asset names and so can
+   * never be subtracted from this.
    */
-  assetsHeld(): Promise<Tally>;
+  assetsHeld(): Promise<AssetsHeld>;
 
   actions(query: ActionQuery, page: OrderedPage): Promise<Slice<Action>>;
   changesSince(cursor: SyncCursor | undefined, limit: number): Promise<Delta>;

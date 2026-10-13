@@ -23,7 +23,7 @@ type Wiring = {
   readonly blobs?: Record<string, Blob>;
   readonly named?: readonly string[];
   readonly store?: { bytes: number; unused: number };
-  readonly assets?: { count: number; bytes: number };
+  readonly assets?: { count: number; bytes: number; saved: number };
   readonly mirror?: MirrorFootprint;
   readonly onList?: (hash: string) => void;
 };
@@ -38,7 +38,7 @@ function ports(wiring: Wiring = {}) {
     store: {
       footprint: () => Promise.resolve(wiring.store ?? { bytes: 0, unused: 0 }),
       assetsHeld: () =>
-        Promise.resolve(wiring.assets ?? { count: 0, bytes: 0 }),
+        Promise.resolve(wiring.assets ?? { count: 0, bytes: 0, saved: 0 }),
       blobNamed: (blob: BlobHash) => Promise.resolve(named.has(blob)),
       transaction: <T>(work: (tx: unknown) => Promise<T>) =>
         work({
@@ -73,7 +73,7 @@ describe("what the pool has written down", () => {
 
     expect(await recorded(wired)).toEqual({
       store: { bytes: 0, unused: 0 },
-      assets: { count: 0, bytes: 0 },
+      assets: { count: 0, bytes: 0, saved: 0 },
     });
   });
 
@@ -81,7 +81,7 @@ describe("what the pool has written down", () => {
     const { wired, listed } = ports({
       blobs: { a: { bytes: 10, at: NOW } },
       store: { bytes: 4096, unused: 0 },
-      assets: { count: 1, bytes: 10 },
+      assets: { count: 1, bytes: 10, saved: 0 },
     });
 
     await recorded(wired);
@@ -91,19 +91,25 @@ describe("what the pool has written down", () => {
 
   /**
    * Two assets over one blob are summed twice here and counted once by the
-   * walk, and the difference is what content addressing saved.
+   * walk. What the second one saved is the registry's own answer and passes
+   * through untouched: the walk counts outputs no asset names, so the two
+   * totals are about different populations and core reconciles neither.
    */
-  it("sums the assets as the registry holds them", async () => {
+  it("sums the assets as the registry holds them, saving and all", async () => {
     const { wired } = ports({
-      blobs: { shared: { bytes: 100, at: NOW } },
-      named: ["shared"],
-      assets: { count: 2, bytes: 200 },
+      blobs: { shared: { bytes: 100, at: NOW }, output: { bytes: 7, at: NOW } },
+      named: ["shared", "output"],
+      assets: { count: 2, bytes: 200, saved: 100 },
     });
 
-    expect((await recorded(wired)).assets).toEqual({ count: 2, bytes: 200 });
+    expect((await recorded(wired)).assets).toEqual({
+      count: 2,
+      bytes: 200,
+      saved: 100,
+    });
     expect((await measure(config, wired)).blobs).toEqual({
-      count: 1,
-      bytes: 100,
+      count: 2,
+      bytes: 107,
     });
   });
 });

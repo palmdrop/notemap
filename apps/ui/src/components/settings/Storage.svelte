@@ -33,17 +33,22 @@
    * The daemon holds the last measurement, so what the read answers is a figure
    * from whenever it was taken rather than nothing.
    */
-  async function reread() {
+  async function reread(after?: Reclaimed) {
     const mine = (look += 1);
     said = "";
+    took = after;
     walking = true;
 
-    void client.storage.read().then(
-      (answer) => {
-        if (mine === look && held === undefined) held = answer;
-      },
-      () => undefined,
-    );
+    // Only where there is nothing drawn yet: a later look already has figures
+    // to stand on, and this answer could not replace them.
+    if (held === undefined) {
+      void client.storage.read().then(
+        (answer) => {
+          if (mine === look && held === undefined) held = answer;
+        },
+        () => undefined,
+      );
+    }
 
     try {
       const answer = await client.storage.measure();
@@ -55,12 +60,17 @@
     }
   }
 
+  /**
+   * What it took is handed to the look that follows it, so the figures and the
+   * line explaining them arrive together — and any later look drops the line,
+   * which by then is about blobs nobody is being shown.
+   */
   async function reclaim() {
     reclaiming = true;
     said = "";
+    took = undefined;
     try {
-      took = await client.storage.reclaim();
-      await reread();
+      await reread(await client.storage.reclaim());
     } catch (error) {
       said = saidBy(error);
     } finally {
@@ -84,20 +94,13 @@
   const count = (many: number, one: string) =>
     `${many.toLocaleString("en-GB")} ${one}${many === 1 ? "" : "s"}`;
 
-  /** What content addressing saved: the same bytes under two names cost once. */
-  const saved = $derived(
-    held === undefined || walked === undefined
-      ? undefined
-      : held.assets.bytes - walked.blobs.bytes,
-  );
-
   const assetsSays = $derived(
     held === undefined
       ? ""
       : [
           count(held.assets.count, "asset"),
-          saved !== undefined && saved > 0
-            ? `${sizeOf(saved)} saved by holding identical bytes once`
+          held.assets.saved > 0
+            ? `${sizeOf(held.assets.saved)} saved by holding identical bytes once`
             : undefined,
         ]
           .filter((part) => part !== undefined)
@@ -208,8 +211,10 @@
     {#if held.deployment !== undefined}
       <Fact name="deployment">
         <Lead
-          lead={held.deployment}
-          rest="the paths above are inside the container"
+          lead={held.deployment.name}
+          rest={held.deployment.contained
+            ? "the paths above are inside the container"
+            : undefined}
         />
       </Fact>
     {/if}

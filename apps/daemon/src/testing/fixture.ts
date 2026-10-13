@@ -30,7 +30,7 @@ import { startMirrorRunner } from "../mirror/runner";
 import { silentLogger } from "@notemap/log";
 import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
-import { createStorage, type Storage } from "../storage";
+import { createStorage, type Deployment, type Storage } from "../storage";
 import { createUnfurler, type Unfurler } from "../unfurl";
 
 export const WEB = "web" as SourceId;
@@ -144,7 +144,7 @@ export type DaemonOptions = {
    * What the daemon says it is deployed as. Absent is the honest default here:
    * what the machine running the tests is must not reach an assertion.
    */
-  readonly deployment?: string;
+  readonly deployment?: Deployment;
 };
 
 const unreachable: Unfurler = createUnfurler({
@@ -162,6 +162,7 @@ export function daemon(
   // rather than its parent — otherwise every vault a test points at is nested
   // under `dirname(pool.db)` and refused as overlapping notemap's own state.
   const stateRoot = join(directory, "state");
+  const poolFile = join(stateRoot, "pool.db");
   const mirrorRoot = join(stateRoot, "pool-mirror");
   const assetRoot = join(stateRoot, "assets");
   const vaultRoot = join(directory, "vault");
@@ -171,7 +172,7 @@ export function daemon(
   const accounts = options.accounts ?? noAccounts;
 
   const { pool, ports, blobs, mirrorWriter, destinations } = openPool({
-    file: join(stateRoot, "pool.db"),
+    file: poolFile,
     config,
     assetRoot,
     accounts,
@@ -208,7 +209,7 @@ export function daemon(
   const storage = createStorage(
     pool,
     {
-      pool: join(stateRoot, "pool.db"),
+      pool: poolFile,
       assets: assetRoot,
       ...(options.mirroring === true ? { mirror: mirrorRoot } : {}),
       ...(options.deployment === undefined

@@ -167,6 +167,26 @@ test("totals the attachments where an item carries more than one, and not where 
   expect(screen.getByText(/2 attachments, 1\.0 MB/)).toBeDefined();
 });
 
+test("says no total where an attachment cannot say its size", () => {
+  pool(() => json(200, {}));
+
+  const item = carrying(
+    ["paper.pdf", "application/pdf"],
+    ["recording.m4a", "audio/mp4"],
+  );
+
+  const { container } = render(Payload, {
+    item: {
+      ...item,
+      // The pool has not answered for the second yet, so a figure over the
+      // rest would be a total of two attachments that counted one.
+      assets: [item.assets![0]!],
+    },
+  });
+
+  expect(container.querySelector("[data-total]")).toBeNull();
+});
+
 test("counts a picture nobody listed into the total", () => {
   pool(() => json(200, {}));
 

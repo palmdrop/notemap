@@ -4662,6 +4662,7 @@ export interface components {
                 path: string;
                 count: number;
                 bytes: number;
+                saved: number;
                 free?: number;
             };
             mirror?: {
@@ -4672,7 +4673,10 @@ export interface components {
                 path: string;
                 bytes: number;
             };
-            deployment?: string;
+            deployment?: {
+                name: string;
+                contained: boolean;
+            };
             measured?: {
                 at: string;
                 blobs: {

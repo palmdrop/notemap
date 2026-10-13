@@ -1,9 +1,11 @@
 import type {
+  AssetsHeld,
   MeasuredStorage,
   StoreFootprint,
-  Tally,
   Timestamp,
 } from "@notemap/core";
+
+import type { Deployment } from "./deployment";
 
 /** Where something is, and how much room is left where it lives. */
 export type Root = {
@@ -21,13 +23,13 @@ export type Measurement = MeasuredStorage & { readonly at: Timestamp };
  */
 export type StorageReport = {
   readonly pool: Root & StoreFootprint;
-  readonly assets: Root & Tally;
+  readonly assets: Root & AssetsHeld;
   /** Absent where no mirror is configured. */
   readonly mirror?: Root;
   /** The daemon's own database, which is no part of the pool. Absent where it holds none. */
   readonly auth?: { readonly path: string; readonly bytes: number };
   /** What this daemon says it is deployed as. Absent claims nothing. */
-  readonly deployment?: string;
+  readonly deployment?: Deployment;
   /** Absent on a daemon that has never measured. Never zeroes in its place. */
   readonly measured?: Measurement;
 };

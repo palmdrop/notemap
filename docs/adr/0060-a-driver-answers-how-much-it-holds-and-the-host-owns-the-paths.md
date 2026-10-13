@@ -89,8 +89,13 @@ old enough" is how the two come to lie about each other.
 - **Neutral** — the mirror's footprint is answered by `pool.storage.measure()` rather than asked of
   the writer by the host, since core holds that port and the two walks are one cost.
 - **Neutral** — two assets naming one blob are counted twice in the recorded sum and once in the
-  walk. Both figures are answered rather than reconciled; the difference is what content addressing
-  saved, and only something holding both can say it.
+  walk. Both figures are answered rather than reconciled.
+  *Amended 2026-10-12 — the difference between them is not what content addressing saved.* The blob
+  store also holds the outputs routing records name, which no asset does, and the blobs nothing
+  names yet, so the walk's total is a different population and subtracting it understates the
+  saving by whatever else is on the disk. The registry answers the saving itself, against its own
+  rows, in the same cheap read: `assetsHeld` sums every asset and sums the blobs they name once,
+  and `saved` is the difference. Nothing reconciles the two totals.
 
 ---
 

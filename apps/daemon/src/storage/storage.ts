@@ -3,6 +3,7 @@ import { dirname } from "node:path";
 
 import type { Clock, Pool, ReclaimOutcome } from "@notemap/core";
 
+import type { Deployment } from "./deployment";
 import { freeAt } from "./free";
 import type { Measurement, StorageReport } from "./types";
 
@@ -15,7 +16,7 @@ export type StorageConfig = {
   /** The daemon's own database. Absent is one that holds none. */
   readonly auth?: string;
   /** What this daemon says it is deployed as. Absent claims nothing. */
-  readonly deployment?: string;
+  readonly deployment?: Deployment;
   /** The host's own, so a measurement is stamped on the same timeline as everything else. */
   readonly clock: Clock;
 };
@@ -27,8 +28,8 @@ export type Storage = {
   measure(): Promise<StorageReport>;
   /** Takes every blob nothing names past the grace window, and answers what it took. */
   reclaim(): Promise<ReclaimOutcome>;
-  /** Lets go of a measurement where it stands. */
-  stop(): void;
+  /** Lets go of a measurement where it stands, and waits for it to have. */
+  stop(): Promise<void>;
 };
 
 /**
@@ -101,7 +102,10 @@ export function createStorage(
       return live();
     },
     reclaim,
-    stop: () => stopping.abort(),
+    stop: async () => {
+      stopping.abort();
+      await inFlight?.catch(() => undefined);
+    },
   };
 }
 
@@ -109,12 +113,17 @@ function maybeFree(free: number | undefined): { free?: number } {
   return free === undefined ? {} : { free };
 }
 
-/** A database the daemon has not written yet takes nothing a person can see. */
+/**
+ * A database the daemon has not written yet takes nothing a person can see.
+ * Anything other than its absence is thrown rather than answered as absence,
+ * which is the shape reserved for a daemon that holds no database at all.
+ */
 async function bytesOf(file: string | undefined): Promise<number | undefined> {
   if (file === undefined) return undefined;
   try {
     return (await stat(file)).size;
-  } catch {
-    return undefined;
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw cause;
   }
 }

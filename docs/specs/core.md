@@ -6,7 +6,8 @@
 
 - 2026-10-12 — **The pool answers how much it has taken.** `pool.storage.recorded()` reads what the
   pool has written down — the store's bytes and how many of them it holds and is not using, and
-  every asset the registry holds with their sizes summed — and walks nothing. `storage.measure()`
+  every asset the registry holds with their sizes summed and what holding identical bytes once
+  saved — and walks nothing. `storage.measure()`
   walks the blob store and the mirror, splitting the blobs nothing names into what a reclaim would
   take now and what it would pass over; that split and the reclaim read one grace predicate, so the
   figure and the operation cannot drift apart. How much a driver holds is the driver's own answer —
@@ -1538,7 +1539,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 
 - **`pool.storage` answers how much the pool has taken**, in two methods split by what they cost.
   `recorded()` reads what the pool has written down — the store's footprint, and how many assets it
-  holds with their bytes summed — and walks nothing, so a caller may ask on every read.
+  holds with their bytes summed and what the same bytes under two names saved — and walks nothing,
+  so a caller may ask on every read.
   `measure(signal)` walks the blob store and the mirror. Both are reads: neither deletes anything,
   and `measure` is abortable because a walk over years of captures is thousands of `stat` calls.
 - **A driver answers how much it holds**, because the layout is the driver's: only a sqlite store
@@ -1563,9 +1565,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A measurement is not state.** Nothing is remembered: core walks when asked and answers what it
   found. Whether to hold that answer, and how to say when it was taken, is the host's
   ([http-v1.md](http-v1.md)).
-- **The recorded sum and the walked total are both answered rather than reconciled.** Two assets
-  naming one blob are summed twice in `recorded()` and counted once by `measure()`; the difference
-  is what content addressing saved, and only something holding both figures can say it.
+- **The recorded sum and the walked total are both answered rather than reconciled**, and neither
+  explains the other. Two assets naming one blob are summed twice in `recorded()` and counted once
+  by `measure()`, but the walk also counts the blobs routing records' outputs name and the blobs
+  nothing names, which the registry never held a row for — so the difference between the two is not
+  a saving and nothing may draw it as one.
+- **What content addressing saved is the registry's own answer** *(2026-10-12)*. `recorded().assets`
+  carries `saved` beside its count and its summed bytes: the sum over every asset less the sum over
+  the blobs they name, each counted once. It is one query over the `assets` table, costs no walk,
+  and is the only figure that is about those rows alone.
 - **A reclaim says what it took** — how many blobs and how many bytes — rather than a count alone,
   so the figure a person was shown and the figure they got back are the same kind of thing.
 

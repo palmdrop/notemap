@@ -161,7 +161,7 @@ async function start(): Promise<void> {
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
     clearInterval(forgetting);
-    storage.stop();
+    await storage.stop();
     await mirror?.stop();
     await delivery.stop();
     await sweeper.stop();
