@@ -1,29 +1,28 @@
 # A staging stack per branch
 
 **Date**: 2026-10-13
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/security.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-10-13
 
 ---
 
 ## Where this stands
 
-As of 2026-10-13. Read this first when picking the work up.
+As of 2026-10-13.
 
-- **Not started.** Nothing in this plan is implemented, and the plan itself is uncommitted on
-  `main`. Commit it on `agent/staging-environment` as the first step.
-- **The agents half is in progress** on branch `agent/agent-stage`, in the worktree
-  `~/.local/share/agents/worktrees/agents/agent-stage`. Its plan,
-  `docs/plans/agent-stage.md` on that branch, carries its own state. This plan only needs that
-  plan's *contract* (the `STAGE_*` variables, `.claude/stage/` on `main`, and the network rule in
-  its phase 5) and is verified without it.
-- **Rootless podman bridge networks were broken** on 2026-10-13: the kernel was upgraded without a
-  reboot, so `/lib/modules/$(uname -r)` was missing and netavark's nftables setup failed with
-  `Could not process rule: No such file or directory`. A reboot fixes it. If compose still fails
-  that way, check `uname -r` against `ls /lib/modules` before suspecting this stack.
-- **No decisions are open.** Phase 2 was dropped on 2026-10-13 (see its note), and the phase
-  numbers were kept rather than renumbered.
+- **Done**, on `agent/staging-environment`. Every phase is committed. The stack was brought up by
+  hand with `podman compose` and the `STAGE_*` variables set, and every item of phase 5's verify
+  held: password, seeded queue, a delivery to each of the three destinations, previews, the
+  arrivals at each inspect URL, and no route out from any branch-built container. The host's own
+  route to `44.128.0.0/24` was untouched, and the definition passes `agent stage`'s network rule
+  run by hand.
+- **Not yet tried through `agent stage` itself**, which needs the agents plan landed and this
+  definition on `main`.
+- **`up --wait` and the one-shot seed.** Compose's `--wait` fails on a container that exits, even
+  with status 0, unless something depends on it with `service_completed_successfully`. `edge` does,
+  which also means the URL answers only once the pool is seeded.
+- **No `~/.config/agents/notemap.stage.env` exists yet.** The live check used a throwaway one.
 
 ---
 
@@ -219,10 +218,10 @@ Depends on phase 4.
 
 Depends on phase 5.
 
-- [ ] `AGENTS.md`: one line under Verification saying a branch can be staged with `agent stage`,
+- [x] `AGENTS.md`: one line under Verification saying a branch can be staged with `agent stage`,
       pointing at `.claude/stage/README.md`.
-- [ ] Propose a README addition to the developer. Do not write it.
-- [ ] Commit.
+- [x] Propose a README addition to the developer. Do not write it.
+- [x] Commit.
 
 **Verify:** the docs name the secrets file, the inspect URLs, the network layout and the build
 egress, and say nothing the stack does not do.

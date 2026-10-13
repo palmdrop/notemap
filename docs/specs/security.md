@@ -4,6 +4,12 @@
 **Last updated**: 2026-10-13
 **Shipped**:
 
+- 2026-10-13 — **A stage per branch, and an are.na account that names its own address.** A
+  branch can be run as a containerised stack beside a real WebDAV server and fakes for are.na and
+  link previews. Everything built from the branch sits on a network with no route out, and one
+  pinned proxy publishes on loopback. The unfurl guard is unchanged: the stack's network uses a
+  publicly routable subnet rather than an exception. An are.na account may carry a `baseUrl`,
+  trusted as its token is. See [staging-environment](../plans/staging-environment.md).
 - 2026-09-24 — **The one outbound request a caller chooses the address of.** `GET /v1/unfurl`
   fetches only public addresses — every hop checked, the checked address the one connected to, no
   allowlist — behind the door and behind the pool setting `unfurl`; what it still does not close is
