@@ -1,0 +1,33 @@
+# The daemon's config in a stage. `@STAGE_URL@` is filled in when the container
+# starts; everything else is fixed.
+
+[daemon]
+pool = "/var/lib/notemap/state/notemap.db"
+auth = "/var/lib/notemap/state/auth.db"
+host = "0.0.0.0"
+port = 4747
+origin = "@STAGE_URL@"
+
+[mirror]
+root = "/var/lib/notemap/pool-mirror"
+
+[assets]
+root = "/var/lib/notemap/assets"
+
+[log]
+level = "info"
+format = "text"
+
+# Single-label names, so plain HTTP draws no warning.
+[[accounts]]
+kind = "webdav"
+name = "webdav"
+baseUrl = "http://webdav:8080/"
+username = "stage"
+passwordEnv = "NOTEMAP_STAGE_WEBDAV_PASSWORD"
+
+[[accounts]]
+kind = "arena"
+name = "arena"
+baseUrl = "http://arena:8080"
+secretEnv = "NOTEMAP_STAGE_ARENA_TOKEN"

@@ -1,0 +1,148 @@
+# A stage: notemap built from one branch, with something real or fake at every
+# destination, seeded. `agent stage` runs it; see README.md.
+#
+# Everything built from the branch is on `stack` alone, which is internal, so
+# none of it has a route out. `edge` is the one service on a routed network,
+# and it is built from nothing but a pinned image and the Caddyfile beside this.
+
+networks:
+  stack:
+    internal: true
+    # Publicly routable on purpose: the unfurl guard refuses every private and
+    # reserved range, so `pages` has to sit somewhere it reads as public for a
+    # link to it to have a preview. Nothing routes this range to the host, the
+    # bridge lives in podman's rootless namespace, and the network has no route
+    # out, so the only addresses it shadows are the range's real ones, and only
+    # from containers that cannot reach them anyway.
+    ipam:
+      config:
+        - subnet: 44.128.0.0/24
+
+volumes:
+  state:
+  webdav:
+
+x-branch: &branch
+  context: ${STAGE_CONTEXT:?}
+  dockerfile: Dockerfile.stage
+
+services:
+  notemap:
+    build:
+      context: ${STAGE_CONTEXT:?}
+      dockerfile: Dockerfile
+    networks: [stack]
+    # `NOTEMAP_PASSWORD`, which the daemon provisions from on an empty auth db.
+    env_file: ${STAGE_SECRETS:?}
+    environment:
+      NOTEMAP_STAGE_WEBDAV_PASSWORD: stage
+      NOTEMAP_STAGE_ARENA_TOKEN: stage-arena-token
+    volumes:
+      - state:/var/lib/notemap
+      - ${STAGE_DEFINITION:?}/config.toml:/etc/notemap/config.template.toml:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mkdir -p /var/lib/notemap/vaults/stage &&
+        sed 's|@STAGE_URL@|${STAGE_URL:?}|' /etc/notemap/config.template.toml > /tmp/config.toml &&
+        exec node /app/dist/main.js --config /tmp/config.toml
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:4747/v1/health",
+        ]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 6
+
+  webdav:
+    image: docker.io/rclone/rclone:1.75.2@sha256:5a25abdcf2f2f093a03e1e6a13caddeb5fae3cd07ae6c699768e6f1917a5d3ce
+    networks: [stack]
+    command:
+      [
+        "serve",
+        "webdav",
+        "/data",
+        "--addr",
+        ":8080",
+        "--user",
+        "stage",
+        "--pass",
+        "stage",
+      ]
+    volumes:
+      - webdav:/data
+
+  arena:
+    build:
+      <<: *branch
+      target: arena
+    networks: [stack]
+    environment:
+      ARENA_URL: http://arena:8080
+      ARENA_TOKEN: stage-arena-token
+      FIXTURES: /stage/fixtures.json
+    volumes:
+      - ${STAGE_DEFINITION:?}/fixtures.json:/stage/fixtures.json:ro
+
+  pages:
+    build:
+      <<: *branch
+      target: pages
+    networks: [stack]
+    environment:
+      PAGES_IMAGE_URL: ${STAGE_URL:?}/_stage/placeholder.png
+
+  seed:
+    build:
+      <<: *branch
+      target: seed
+    networks: [stack]
+    env_file: ${STAGE_SECRETS:?}
+    command:
+      ["--url", "http://notemap:4747", "--fixtures", "/stage/fixtures.json"]
+    volumes:
+      - ${STAGE_DEFINITION:?}/fixtures.json:/stage/fixtures.json:ro
+    depends_on:
+      notemap:
+        condition: service_healthy
+      webdav:
+        condition: service_started
+      arena:
+        condition: service_started
+      pages:
+        condition: service_started
+    restart: "no"
+
+  edge:
+    image: docker.io/library/caddy:2.11.7-alpine@sha256:173b26306d711395accaeba8b67afcaad2a085ccb1e6bf26010bfe8c095a5229
+    networks: [stack, default]
+    ports:
+      - "127.0.0.1:${STAGE_PORT_APP:?}:8000"
+      - "127.0.0.1:${STAGE_PORT_WEBDAV:?}:8001"
+      - "127.0.0.1:${STAGE_PORT_ARENA:?}:8002"
+    volumes:
+      - ${STAGE_DEFINITION:?}/Caddyfile:/etc/caddy/Caddyfile:ro
+    # Seeded before the URL answers, so nobody signs in to an empty pool.
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "-O",
+          "/dev/null",
+          "http://127.0.0.1:8000/v1/health",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 6

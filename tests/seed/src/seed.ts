@@ -150,7 +150,7 @@ export async function seed(
   const said = (index: number, tags?: readonly string[]): Promise<string> =>
     capture(index, {
       type: options.payloadType ?? "note",
-      content: { text: linked(SAID[index - 1] ?? SAID[0] ?? "", index) },
+      content: { text: linked(SAID[(index - 1) % SAID.length] ?? "", index) },
       ...(tags === undefined ? {} : { tags }),
     });
 

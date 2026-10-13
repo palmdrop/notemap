@@ -1,0 +1,30 @@
+{
+	admin off
+	auto_https off
+}
+
+# The app, and the page server's image under it, because a browser loads a
+# preview's image itself and reaches nothing but these ports.
+:8000 {
+	handle /_stage/* {
+		reverse_proxy pages:8080
+	}
+	handle {
+		reverse_proxy notemap:4747
+	}
+}
+
+# The WebDAV server, for browsing what landed.
+:8001 {
+	reverse_proxy webdav:8080
+}
+
+# What the fake are.na holds, and nothing else of it.
+:8002 {
+	handle /_inspect {
+		reverse_proxy arena:8080
+	}
+	handle {
+		respond "only /_inspect is served here" 404
+	}
+}

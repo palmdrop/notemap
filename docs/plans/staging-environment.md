@@ -174,7 +174,7 @@ placeholder.
 
 Depends on phase 4.
 
-- [ ] `compose.yaml`:
+- [x] `compose.yaml`:
   - Two networks: `stack` (`internal: true`, with an explicit subnet from publicly routable
     space, so the unfurl guard reads `pages` as public) and the default. Choose the subnet outside
     every range `guard.ts` refuses, and say why in a comment.
@@ -188,20 +188,20 @@ Depends on phase 4.
     `$STAGE_PORT_WEBDAV` and `$STAGE_PORT_ARENA`, and proxying them to `notemap`, `webdav` (for
     browsing what landed) and `arena` (for `/_inspect`).
   - A volume per stage.
-- [ ] `Caddyfile` for `edge`.
-- [ ] `config.toml` template:
+- [x] `Caddyfile` for `edge`.
+- [x] `config.toml` template:
   - Pool, auth, mirror and assets under the volume.
   - `[[accounts]]` for `webdav` (`http://webdav:<port>/`, a single-label name, so plain HTTP is
     accepted) and for `arena` (`baseUrl = "http://arena:<port>"`).
   - `origin` filled from `$STAGE_URL`.
-- [ ] `ports` (`app`, `webdav`, `arena`), `fixtures.json`, and a `README.md`. The README covers
+- [x] `ports` (`app`, `webdav`, `arena`), `fixtures.json`, and a `README.md`. The README covers
       what a stage holds, where the password goes and that it must not be a real one, how to
       inspect arrivals, the network layout including why `stack` has a public subnet, and the
       accepted build-time egress.
-- [ ] `tests/integration/src/compose.test.ts` gains the stage file: published on loopback and
+- [x] `tests/integration/src/compose.test.ts` gains the stage file: published on loopback and
       nowhere else, as it already checks for `docker/compose/`, and every service but `edge` on
       `stack` alone.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:**
 - With the `STAGE_*` variables set by hand, `podman compose -f .claude/stage/compose.yaml up
