@@ -85,6 +85,8 @@ jobs:
             dockerfile: Dockerfile.relay-arena
           - name: notemap-relay-memos
             dockerfile: Dockerfile.relay-memos
+          - name: notemap-stage
+            dockerfile: Dockerfile.stage
 
     steps:
       - name: Checkout

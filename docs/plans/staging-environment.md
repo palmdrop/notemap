@@ -155,16 +155,16 @@ and `seed` reports a route to each.
 
 Depends on phase 3 (the image carries the seed).
 
-- [ ] A standalone entry for `arena-server.ts`. It takes its listen port and the URL presigned
+- [x] A standalone entry for `arena-server.ts`. It takes its listen port and the URL presigned
       uploads should name from the environment, preloads the channels a fixture names, and answers
       `GET /_inspect` with the blocks and uploads it holds.
-- [ ] A page server: every path answers the same HTML page with OpenGraph title, description and
+- [x] A page server: every path answers the same HTML page with OpenGraph title, description and
       image, and the image it names.
-- [ ] `Dockerfile.stage` with three targets, `arena`, `pages` and `seed`, built from the workspace
+- [x] `Dockerfile.stage` with three targets, `arena`, `pages` and `seed`, built from the workspace
       the way `Dockerfile` builds it. The production `Dockerfile` is untouched.
-- [ ] `Dockerfile.stage` in `verify.yml`'s image matrix, so a stage that cannot build shows up on
+- [x] `Dockerfile.stage` in `verify.yml`'s image matrix, so a stage that cannot build shows up on
       the PR that broke it.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** all three targets build. `podman run` of `arena` answers `GET /v3/me` with the token
 and refuses without it, and `/_inspect` starts empty. `pages` answers any path with the

@@ -1,0 +1,59 @@
+# syntax=docker/dockerfile:1
+#
+# What a stage runs beside the daemon, which is built from `Dockerfile` itself:
+# a fake are.na, a page server for link previews, and the seed. Three targets
+# from one build, each one bundled file.
+#
+#   docker build -f Dockerfile.stage --target arena .
+#
+# `.claude/stage/` is what runs them.
+
+FROM node:26-alpine AS build
+
+WORKDIR /src
+
+# Node stopped shipping corepack in 25.
+RUN npm install -g corepack && corepack enable
+
+# The lockfile is what populates the store, and the root manifest comes with it
+# only so that corepack reads the pnpm version from `packageManager`.
+COPY pnpm-lock.yaml package.json ./
+RUN pnpm fetch
+
+COPY . .
+
+RUN pnpm install --offline --frozen-lockfile
+
+RUN pnpm --filter @notemap/stage build
+
+
+FROM node:26-alpine AS runtime
+
+ENV NODE_ENV=production
+
+USER node
+
+
+FROM runtime AS arena
+
+COPY --from=build /src/tests/stage/dist/arena.js /app/main.js
+
+EXPOSE 8080
+
+ENTRYPOINT ["node", "/app/main.js"]
+
+
+FROM runtime AS pages
+
+COPY --from=build /src/tests/stage/dist/pages.js /app/main.js
+
+EXPOSE 8080
+
+ENTRYPOINT ["node", "/app/main.js"]
+
+
+FROM runtime AS seed
+
+COPY --from=build /src/tests/stage/dist/seed.js /app/main.js
+
+ENTRYPOINT ["node", "/app/main.js"]

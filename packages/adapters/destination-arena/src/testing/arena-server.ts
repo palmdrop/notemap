@@ -14,6 +14,8 @@ import type { AddressInfo } from "node:net";
 export type ArenaServer = {
   /** What the adapter is pointed at, in place of `https://api.are.na`. */
   readonly url: string;
+  /** Where it listens, which is `url` unless it was told it is reached elsewhere. */
+  readonly listening: string;
   /** Where a presigned upload lands, in place of the S3 bucket. */
   readonly uploadsUrl: string;
   readonly token: string;
@@ -38,6 +40,16 @@ export type ArenaServer = {
   close(): Promise<void>;
 };
 
+export type ArenaServerOptions = {
+  /** Absent is one the operating system picks. */
+  readonly port?: number;
+  /** Absent is loopback alone. */
+  readonly host?: string;
+  /** Where whoever asks reaches it, which a presigned upload names. Absent is the address it listens on. */
+  readonly url?: string;
+  readonly token?: string;
+};
+
 /** A channel as the contents endpoint answers one, down to what is read. */
 export type ChannelRow = {
   readonly slug: string;
@@ -50,8 +62,10 @@ export type ChannelRow = {
 
 const USER = 42;
 
-export async function startArenaServer(): Promise<ArenaServer> {
-  const token = "an-are-na-token";
+export async function startArenaServer(
+  options: ArenaServerOptions = {},
+): Promise<ArenaServer> {
+  const token = options.token ?? "an-are-na-token";
   const expected = `Bearer ${token}`;
 
   let channels: readonly ChannelRow[] = [];
@@ -63,11 +77,25 @@ export async function startArenaServer(): Promise<ArenaServer> {
   const seen: string[] = [];
   const chunked = new Set<string>();
   const answers = new Map<string, { status: number; body: unknown }>();
+  let uploadsUrl = "";
 
   const server: Server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
     const path = url.pathname;
     seen.push(`${request.method} ${path}`);
+
+    // What landed, for a person looking in. Holds nothing a token guards.
+    if (request.method === "GET" && path === "/_inspect") {
+      return send(response, 200, {
+        blocks: created,
+        uploads: Object.fromEntries(
+          [...uploaded].map(([key, body]) => [
+            key,
+            { bytes: Buffer.byteLength(body) },
+          ]),
+        ),
+      });
+    }
 
     const answered = answers.get(path);
     if (answered !== undefined) {
@@ -144,7 +172,7 @@ export async function startArenaServer(): Promise<ArenaServer> {
         send(response, 201, {
           files: [
             {
-              upload_url: `${uploadsAt(server)}/${key}`,
+              upload_url: `${uploadsUrl}/${key}`,
               key,
               content_type: first.content_type,
             },
@@ -171,12 +199,16 @@ export async function startArenaServer(): Promise<ArenaServer> {
     send(response, 404, { error: { message: "no such route" } });
   });
 
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const url = addressOf(server);
+  await new Promise<void>((resolve) =>
+    server.listen(options.port ?? 0, options.host ?? "127.0.0.1", resolve),
+  );
+  const url = (options.url ?? addressOf(server)).replace(/\/+$/, "");
+  uploadsUrl = `${url}/uploads`;
 
   return {
     url,
-    uploadsUrl: `${url}/uploads`,
+    listening: addressOf(server),
+    uploadsUrl,
     token,
     blocks: () => [...created],
     uploads: () => Object.fromEntries(uploaded),
@@ -198,10 +230,6 @@ export async function startArenaServer(): Promise<ArenaServer> {
 function addressOf(server: Server): string {
   const address = server.address() as AddressInfo;
   return `http://127.0.0.1:${address.port}`;
-}
-
-function uploadsAt(server: Server): string {
-  return `${addressOf(server)}/uploads`;
 }
 
 function read(request: IncomingMessage, then: (body: string) => void): void {
