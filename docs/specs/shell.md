@@ -1,11 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-13
 **Shipped**:
 
+- 2026-10-13 — **The Storage section is a table.** Sizes share one right-aligned column with a
+  total under a rule, what each root holds reads beside it with `·` between figures, the paths fold
+  away behind `show`, and the free figure is said once per figure rather than once per root. This
+  reverses the first attempt's row-per-root layout and its no-separators rule, both of which left a
+  reader unable to find a figure. ([plan](../plans/what-notemap-takes-on-disk.md))
+
 - 2026-10-12 — **A Storage section says what notemap has taken.** The eighth settings section, after
-  Server: a row per root with its path, what it takes and the space free where it lives, the assets
+  Server: a row per root with what it takes and the space free where it lives, the assets
   beside the blobs they are stored as and what holding identical bytes once saved, the mirror's
   records and files, the daemon's own database, and the deployment where the daemon declares one.
   `unused` is the shell's word for a blob nothing names; the database's own free pages are answered
@@ -2449,14 +2455,33 @@ comes back into reach and held nowhere.
 
 **Storage** sits under Server *(added 2026-10-12,
 [what-notemap-takes-on-disk](../plans/what-notemap-takes-on-disk.md))*: what notemap has taken on
-the machine, on the same facts grid, in the same voice as Server's own rows. **One row per root** —
-`POOL`, `ASSETS` and `MIRROR` — each carrying where it is, then what it takes in bold with what that
-is made of beside it and **the space free where it lives in parentheses**: `70 MB 140 blobs (52 GB
-free)`. Nothing between the figures but a space; the row is a fact and what qualifies it, which
-is the weight this shell already tells apart with. The free figure repeats where two roots share a
-disk, which is what says they do, and is left out rather than guessed at where the daemon could not
-say. Under them `AUTH`, the daemon's own database, with no free figure — it sits beside the pool —
-and `DEPLOYMENT` **only where the daemon says**. Where the daemon also says it is contained, the
+the machine, in the same voice as Server's own rows. **It is a table rather than the facts grid**
+*(redesigned 2026-10-13)* — the one surface in settings that holds enough figures to need columns.
+Two of them, named `SIZE` and `HOLDS`, which nothing else in settings does because nothing else has
+two kinds of figure to tell apart. A row per root — `POOL`, `BLOBS`, `MIRROR`, `AUTH` — its size
+bold, right-aligned and in tabular figures, then what that size is made of: `140 blobs · 142 assets`,
+`1,204 records · 2,408 files`. **`HOLDS` is empty where a root holds no figure** — the pool and the
+daemon's database are bytes and nothing else, and a filler put there to square the column would be
+one more thing to read. A rule, and then **`TOTAL`**, everything notemap holds here including
+the daemon's own database, because that is the question the section's name asks.
+
+**The redesign reverses two of the first attempt's decisions**, both for the same reason: a reader
+could not find a figure. The first had a row per root carrying its path, then its size, what it held
+and the free space all on one line, told apart by weight alone. **Sizes now share a column** —
+behind a path of its own length, every size sat at a different place on the line, and which of these
+is big is the question the section exists to answer. **And figures on a line are separated by `·`**:
+weight tells a fact from its qualifier, as `available checked 2m ago` still does, but three figures
+of different kinds need more than boldness, and this is the mark the shell already lists with.
+
+**The paths fold away behind `PATHS show`**, on `sources`' own terms — they are reference material a
+person wants once, not a figure anyone scans, and four absolute paths at full width were most of
+what the section looked like. **`FREE` is said once per figure, not once per root**: the three roots
+default to siblings under one volume, and repeating `52 GB` three times says nothing three times.
+One row naming which roots it covers — `where the pool, the blobs and the mirror live` — and a
+second only where config has put one on a mount of its own, which is then what says it did. A root
+the daemon could not answer for is left out rather than guessed at.
+
+`DEPLOYMENT` is drawn **only where the daemon says**. Where the daemon also says it is contained, the
 line adds that the paths above are inside a container rather than on the machine a person is reading
 from — **and only then** *(2026-10-12)*: the deployment's name is whatever an image declared, so
 drawing that sentence beside any name would tell an operator who labelled a bare-metal daemon
@@ -2466,15 +2491,16 @@ something untrue about their own paths.
 do explain why a pool that lost items did not shrink — but nothing a person can press returns them
 to the disk, and a figure nobody can act on sitting beside one they can is read as a second thing to
 reclaim. *Slack*, *unused* and *free* were each tried as its word; the figure was the problem rather
-than the word. The assets row says how many assets the pool holds beside the blobs they are stored
-as, and what holding identical bytes once saved, where that is anything — **the registry's own
-figure** *(2026-10-12)*, so it is drawn with the cheap read rather than waiting out the walk, and
-never the difference between the two totals: the store also holds what deliveries wrote. The mirror
-row says `1,204 records, 2,408 files` — the pair per item, so any other ratio is a rendering that
-never landed.
+than the word. The blobs row says how many assets the pool holds beside the blobs they are stored
+as, and `SAVED` says what holding identical bytes once saved, where that is anything — **the
+registry's own figure** *(2026-10-12)*, so it is drawn with the cheap read rather than waiting out
+the walk, and never the difference between the two totals: the store also holds what deliveries
+wrote. The mirror row says `1,204 records · 2,408 files` — the pair per item, so any other ratio is
+a rendering that never landed.
 
-**`reclaim now` sits under the assets row with what is unused** — `2 unused blobs, 714 KB`, which is
-what a reclaim would take now, and `no unused blobs` where there is nothing. The action is drawn
+**`UNUSED` carries what a reclaim would take now** — its bytes in the size column, `2 blobs nothing
+names` beside them and `reclaim now` on the line under, or `no blob is held for nothing` where there
+is nothing to take. The action is drawn
 either way and **inert where there is nothing to take**, so a person meets it before the day the
 figure is large rather than only on it. **`unused` is the shell's word for a blob no asset and no
 routing record names** *(2026-10-12)*, on the terms `retired` reads `disabled`: *nothing names it*
@@ -2487,7 +2513,11 @@ section asks again, which it does immediately.
 **The expensive half is asked for as the section opens, and nowhere else.** The daemon walks the
 blob store and the mirror on request and remembers what it found, so the section reads the live
 facts and asks for a measurement in the same moment, drawing the remembered figures under the asking
-mark until the fresh ones land — never a layout shift, and never a figure where nothing is held.
+mark until the fresh ones land — never a layout shift, and never a figure where nothing is held. The
+asking mark takes the size cell of each row the walk answers for, and the `HOLDS` cell of `TOTAL`
+where a second walk is running over figures already drawn. **`TOTAL` waits for the walk** rather than
+totalling the cheap half *(2026-10-13)*: the blobs and the mirror are the two largest figures in it,
+and a sum missing them would be the largest number on the screen and wrong.
 Unavailable rather than guessing while the pool is out of reach, on Pool settings' own terms: a cold
 client has no measurement to draw and says so.
 

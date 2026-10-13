@@ -98,6 +98,19 @@ Settled with the developer on 2026-10-12.
     the container* beside any of them. `deployment` is now `{ name, contained }`, the marker being
     the only part a daemon can check.
 
+### Redesigned after looking at it, 2026-10-13
+
+16. **The section is a table, and decisions 9 and 11 are reversed.** Drawn and read, a row per root
+    carrying its path, its size, what it held and the free space on one line could not be scanned:
+    only the top line of each row was labelled, every size sat behind a path of a different length,
+    and three figures told apart by weight alone did not read as three figures. So sizes share one
+    right-aligned column under a `SIZE` head with a `TOTAL` under a rule, `·` separates figures on a
+    line, the paths fold away behind `show` on `sources`' terms, and the free figure is said once per
+    figure rather than once per root. Settled with the developer from three drawn alternatives.
+17. **`TOTAL` waits for the walk.** The blobs and the mirror are the two largest figures in it, so a
+    total of the cheap half alone would be the largest number on the screen and wrong. It draws under
+    the asking mark instead, which is one row and shifts nothing.
+
 ### Deviation from the brief, and why
 
 The brief had each port also answer **where it is**, as an optional opaque string. Dropped: the

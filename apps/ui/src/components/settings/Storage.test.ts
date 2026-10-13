@@ -58,7 +58,7 @@ function serving(
   });
 }
 
-test("draws every figure from one answer", async () => {
+test("draws a size for every root, what it holds, and the total they come to", async () => {
   serving(
     () => json(200, REPORT),
     () => json(200, { ...REPORT, measured: MEASURED }),
@@ -66,27 +66,84 @@ test("draws every figure from one answer", async () => {
 
   render(StorageSection);
 
-  await screen.findByText("/var/lib/notemap/state/notemap.db");
+  // One size column, in the order the rows are drawn.
   await screen.findByText("4.3 MB");
-  await screen.findByText(/^\(52 GB free\)$/);
+  await screen.findByText("70 MB");
+  await screen.findByText("3.5 MB");
+  await screen.findByText("33 KB");
+  // Everything notemap holds on this machine, the daemon's database included.
+  await screen.findByText("78 MB");
+
+  await screen.findByText(/140 blobs · 142 assets/);
+  await screen.findByText(/1,204 records · 2,408 files/);
+
   // The database's free pages are answered on the wire and drawn nowhere:
   // nothing a person can press returns them to the disk.
   expect(screen.queryByText(/66 KB/)).toBeNull();
 
-  // The assets row's footprint is the blobs the walk found, not the sum of the
-  // assets naming them.
-  await screen.findByText("70 MB");
-  await screen.findByText(/140 blobs \(52 GB free\)/);
-  await screen.findByText(/142 assets, 24 MB saved/);
-
-  await screen.findByText("3.5 MB");
-  await screen.findByText(/1,204 records, 2,408 files/);
-  await screen.findByText("33 KB");
-  await screen.findByText("docker");
-  await screen.findByText(/1 blob waiting out the grace window/);
-
   expect(asked()).toContain("GET /v1/storage");
   expect(asked()).toContain("POST /v1/storage/measure");
+});
+
+test("says the free figure once for the roots that share it", async () => {
+  serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+
+  await screen.findByText(/where the pool, the blobs and the mirror live/);
+  expect(screen.queryAllByText("52 GB")).toHaveLength(1);
+});
+
+test("says it twice where a root is on a mount of its own", async () => {
+  const elsewhere = {
+    ...REPORT,
+    mirror: { ...REPORT.mirror!, free: 210_000_000_000 },
+  };
+  serving(
+    () => json(200, elsewhere),
+    () => json(200, { ...elsewhere, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+
+  await screen.findByText(/where the pool and the blobs live/);
+  await screen.findByText(/where the mirror lives/);
+  await screen.findByText("210 GB");
+});
+
+test("says what identical bytes saved, which is the registry's own figure", async () => {
+  serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+
+  await screen.findByText("24 MB");
+  await screen.findByText(/identical bytes held once/);
+});
+
+test("folds the paths away, and gives them up on asking", async () => {
+  serving(
+    () => json(200, REPORT),
+    () => json(200, { ...REPORT, measured: MEASURED }),
+  );
+
+  render(StorageSection);
+  await screen.findByText("4.3 MB");
+
+  // Reference material, not a figure anyone scans: it does not crowd the rows.
+  expect(screen.queryByText("/var/lib/notemap/state/notemap.db")).toBeNull();
+
+  await press("show");
+
+  await screen.findByText("/var/lib/notemap/state/notemap.db");
+  await screen.findByText("/var/lib/notemap/assets");
+  await screen.findByText("/var/lib/notemap/pool-mirror");
+  await screen.findByText("/var/lib/notemap/state/auth.db");
 });
 
 test("draws the remembered figures and the ask while a measurement is out, never nothing", async () => {
@@ -131,7 +188,7 @@ test("the reclaim is inert where there is nothing to take", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/no unused blobs/);
+  await screen.findByText(/no blob is held for nothing/);
   const button = await screen.findByRole<HTMLButtonElement>("button", {
     name: "reclaim now",
   });
@@ -139,31 +196,29 @@ test("the reclaim is inert where there is nothing to take", async () => {
 });
 
 test("the reclaim fires, says what it took, and asks again", async () => {
-  const measured = [
-    { ...REPORT, measured: MEASURED },
-    {
-      ...REPORT,
-      measured: {
-        ...MEASURED,
-        blobs: { count: 138, bytes: 69_285_984 },
-        reclaimable: { count: 0, bytes: 0 },
-      },
+  const taken = {
+    ...REPORT,
+    measured: {
+      ...MEASURED,
+      blobs: { count: 138, bytes: 69_285_984 },
+      reclaimable: { count: 0, bytes: 0 },
     },
-  ];
+  };
   let walks = 0;
   serving(
     () => json(200, REPORT),
-    () => json(200, measured[Math.min(walks++, 1)]),
+    () => json(200, walks++ === 0 ? { ...REPORT, measured: MEASURED } : taken),
     () => json(200, { blobs: 2, bytes: 714_016 }),
   );
 
   render(StorageSection);
-  await screen.findByText(/2 unused blobs, 714 KB/);
+  await screen.findByText(/2 blobs nothing names/);
+  await screen.findByText("714 KB");
 
   await press("reclaim now");
 
   await screen.findByText(/took 2 blobs, 714 KB/);
-  await screen.findByText(/no unused blobs/);
+  await screen.findByText(/no blob is held for nothing/);
   expect(asked().filter((route) => route === "POST /v1/reclaim")).toHaveLength(
     1,
   );
@@ -183,7 +238,7 @@ test("drops what a reclaim took once the section looks again", async () => {
   );
 
   render(StorageSection);
-  await screen.findByText(/2 unused blobs, 714 KB/);
+  await screen.findByText(/2 blobs nothing names/);
 
   await press("reclaim now");
   await screen.findByText(/took 2 blobs, 714 KB/);
