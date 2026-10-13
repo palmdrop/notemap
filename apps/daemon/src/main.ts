@@ -22,6 +22,7 @@ import { provisionCredential } from "./auth/provision";
 import { createLoginThrottle } from "./auth/throttle";
 import { createLogger } from "@notemap/log";
 import { createUnfurler, pinnedFetch, systemResolve } from "./unfurl";
+import { createStorage, deploymentOf } from "./storage";
 
 async function start(): Promise<void> {
   const { values } = parseArgs({
@@ -138,9 +139,29 @@ async function start(): Promise<void> {
   const reclaiming = startReclaiming(pool, config.sweep, log);
   const measuring = startMeasuring(pool, log);
 
+  // Declared rather than inferred, and read once: what a daemon is deployed as
+  // does not change while it runs.
+  const deployment = deploymentOf();
+
+  // The reclaim a person fires from settings is this one, so two at once join
+  // rather than walking the same blob store twice.
+  const storage = createStorage(
+    pool,
+    {
+      pool: config.pool,
+      assets: config.assets.root,
+      ...(config.mirror === undefined ? {} : { mirror: config.mirror.root }),
+      auth: config.auth,
+      ...(deployment === undefined ? {} : { deployment }),
+      clock: ports.clock,
+    },
+    () => reclaiming.run(),
+  );
+
   /** A runner holds a lease while it works; stopping it first gives it back. */
   const close = async () => {
     clearInterval(forgetting);
+    await storage.stop();
     await mirror?.stop();
     await delivery.stop();
     await sweeper.stop();
@@ -160,6 +181,7 @@ async function start(): Promise<void> {
         ...(config.origin === undefined ? {} : { origin: config.origin }),
         throttle: createLoginThrottle({ clock: ports.clock }),
         log,
+        storage,
         unfurler: createUnfurler({
           resolve: systemResolve,
           fetch: pinnedFetch,

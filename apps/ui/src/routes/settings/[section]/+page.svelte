@@ -5,6 +5,7 @@
   import Destinations from "$components/settings/Destinations.svelte";
   import PoolSettings from "$components/settings/PoolSettings.svelte";
   import Server from "$components/settings/Server.svelte";
+  import Storage from "$components/settings/Storage.svelte";
   import Templates from "$components/settings/Templates.svelte";
   import type { Section } from "$components/settings/href";
 
@@ -21,6 +22,8 @@
   <Access />
 {:else if data.section === "server"}
   <Server />
+{:else if data.section === "storage"}
+  <Storage />
 {:else if data.section === "pool"}
   <PoolSettings />
 {:else}

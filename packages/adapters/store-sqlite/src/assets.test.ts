@@ -293,3 +293,53 @@ describe("the sweep's list", () => {
     ]);
   });
 });
+
+describe("every asset the pool holds", () => {
+  it("answers zeroes for a pool holding none", async () => {
+    const { pool: p } = pool();
+
+    expect(await p.assetsHeld()).toEqual({ count: 0, bytes: 0, saved: 0 });
+  });
+
+  /**
+   * Two assets over one blob are two assets, and the second's bytes are what
+   * holding them once saved — answered here rather than left to a subtraction
+   * from the blob store, which also holds the outputs no asset names.
+   */
+  it("counts each asset, sums their sizes, and says what one blob under two names saved", async () => {
+    const { pool: p } = pool();
+    const shared = "blob-shared" as BlobHash;
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, blob: shared, bytes: 100 }),
+      asset({ id: "asset-2" as AssetId, blob: shared, bytes: 100 }),
+      asset({
+        id: "asset-3" as AssetId,
+        blob: "blob-own" as BlobHash,
+        bytes: 7,
+      }),
+    );
+
+    expect(await p.assetsHeld()).toEqual({ count: 3, bytes: 207, saved: 100 });
+  });
+
+  it("says nothing was saved where every asset names its own blob", async () => {
+    const { pool: p } = pool();
+    await putAssets(
+      p,
+      asset({ id: "asset-1" as AssetId, blob: "blob-1" as BlobHash, bytes: 9 }),
+      asset({ id: "asset-2" as AssetId, blob: "blob-2" as BlobHash, bytes: 4 }),
+    );
+
+    expect(await p.assetsHeld()).toEqual({ count: 2, bytes: 13, saved: 0 });
+  });
+
+  it("drops what a release took", async () => {
+    const { pool: p } = pool();
+    await putAssets(p, asset({ id: "asset-1" as AssetId, bytes: 42 }));
+
+    await p.transaction((tx) => tx.deleteAssets(["asset-1" as AssetId]));
+
+    expect(await p.assetsHeld()).toEqual({ count: 0, bytes: 0, saved: 0 });
+  });
+});

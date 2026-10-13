@@ -26,6 +26,12 @@ FROM node:26-alpine
 ENV NODE_ENV=production
 ENV NOTEMAP_CONFIG=/etc/notemap/config.toml
 
+# What the settings section says this daemon is, and so that the paths it shows
+# are read as the container's rather than the operator's. An exact claim about
+# this image, which is why it is declared here and never guessed at: what a
+# volume is mounted from is not discoverable from inside the container.
+ENV NOTEMAP_DEPLOYMENT=docker
+
 # `paths.ts` resolves `public/` as a sibling of the directory the bundle sits
 # in, so these two must land beside each other exactly as they do in the
 # workspace. Nothing else comes over: the bundle holds every workspace package,

@@ -1,8 +1,18 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **The pool answers how much it has taken.** `pool.storage.recorded()` reads what the
+  pool has written down — the store's bytes and how many of them it holds and is not using, and
+  every asset the registry holds with their sizes summed and what holding identical bytes once
+  saved — and walks nothing. `storage.measure()`
+  walks the blob store and the mirror, splitting the blobs nothing names into what a reclaim would
+  take now and what it would pass over; that split and the reclaim read one grace predicate, so the
+  figure and the operation cannot drift apart. How much a driver holds is the driver's own answer —
+  `PoolStore.footprint`, `MirrorWriter.footprint`, and a listed blob's bytes — and a reclaim now
+  answers what it took rather than a count. ([plan](../plans/what-notemap-takes-on-disk.md), [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md))
 
 - 2026-10-10 — **are.na takes every file.** A capture carrying several files becomes one block per
   file rather than a refusal, the words captioning the first, and the arena kind declares
@@ -438,6 +448,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   expansion of its patterns, and the trigger tag that applies it.
 - **The mirror** — lossless write-only mirroring, and rebuild of a pool from mirror + assets.
   On-disk format: [mirror.md](mirror.md).
+- **What it takes on disk** — what the pool has written down about its own bytes, and a walk over
+  the blob store and the mirror that says how much they hold and how much a reclaim would take.
 - **The action log** — an append-only trace of every mutation, read newest first and paginated.
   Clearing it is its own operation; retention is undecided.
 - **Intake** — the capture envelope, with stable source identity and source-supplied capture
@@ -1521,6 +1533,50 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - `unknown-pool-setting` and `pool-setting-invalid` are the two refusals, facts and no sentence, on
   the status table [http-v1.md](http-v1.md) states.
 
+### What the pool takes on disk
+
+*Added 2026-10-12, [ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md).*
+
+- **`pool.storage` answers how much the pool has taken**, in two methods split by what they cost.
+  `recorded()` reads what the pool has written down — the store's footprint, and how many assets it
+  holds with their bytes summed and what the same bytes under two names saved — and walks nothing,
+  so a caller may ask on every read.
+  `measure(signal)` walks the blob store and the mirror. Both are reads: neither deletes anything,
+  and `measure` is abortable because a walk over years of captures is thousands of `stat` calls.
+- **A driver answers how much it holds**, because the layout is the driver's: only a sqlite store
+  knows a `-wal` sits beside its file, only a blob store knows it shards by hash prefix, only a
+  mirror writer knows a record has a rendering beside it. So `PoolStore.footprint()` answers the
+  database's bytes and how many of them it holds and is not using; `BlobStore.list()` answers each
+  blob's `bytes` beside its hash and when it was last put; `MirrorWriter.footprint()` answers
+  records, files and bytes. **Where any of them is is not core's**: the host authored those paths
+  and handed them over, and free space is a question about the machine rather than about the pool.
+- **A driver's debris is in none of these figures.** `list` does not answer a temporary file, and
+  the mirror's walk skips its own temporary prefix, so neither is counted as something the pool
+  holds — on the same terms that keep the reclaim from taking either.
+- **The mirror's figures carry records and files apart**, since an item is a `.json` and a `.md`
+  beside it: a count of files that is not twice the records is a rendering that never landed, which
+  nothing else notices while verify is unbuilt.
+- **The reclaimable figure is the reclaim's own rule, not a second reading of it.** `measure` splits
+  the blobs nothing names into those **past the grace window** — what a reclaim would take if it ran
+  now — and those **still within it**, which it would pass over. That split and
+  `maintenance.reclaimUnnamedBlobs` read one predicate over `config.sweep.grace` in one function. A
+  second implementation of "nothing names this, and it is old enough" is how a figure and the
+  operation it describes come to disagree.
+- **A measurement is not state.** Nothing is remembered: core walks when asked and answers what it
+  found. Whether to hold that answer, and how to say when it was taken, is the host's
+  ([http-v1.md](http-v1.md)).
+- **The recorded sum and the walked total are both answered rather than reconciled**, and neither
+  explains the other. Two assets naming one blob are summed twice in `recorded()` and counted once
+  by `measure()`, but the walk also counts the blobs routing records' outputs name and the blobs
+  nothing names, which the registry never held a row for — so the difference between the two is not
+  a saving and nothing may draw it as one.
+- **What content addressing saved is the registry's own answer** *(2026-10-12)*. `recorded().assets`
+  carries `saved` beside its count and its summed bytes: the sum over every asset less the sum over
+  the blobs they name, each counted once. It is one query over the `assets` table, costs no walk,
+  and is the only figure that is about those rows alone.
+- **A reclaim says what it took** — how many blobs and how many bytes — rather than a count alone,
+  so the figure a person was shown and the figure they got back are the same kind of thing.
+
 ### The mirror
 
 - Every capture is written to disk and never read back during normal operation. **Every mutation
@@ -1690,7 +1746,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   holding no names, because which assets exist is pool state
   ([ADR 16](../adr/0016-the-asset-registry-is-pool-state.md)). *Amended 2026-10-09*: it also
   lists what it holds, with when each blob was last put, for the reclaim
-  ([ADR 58](../adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)). *Clarified 2026-08-04*: this is a rule about
+  ([ADR 58](../adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)).
+  *Amended 2026-10-12*: a listed blob also carries its **bytes**, and the store and the mirror
+  writer each answer their own **footprint**, because how much a driver holds is a fact only its own
+  layout can be right about
+  ([ADR 60](../adr/0060-a-driver-answers-how-much-it-holds-and-the-host-owns-the-paths.md)). Where
+  any of them is, and how much room is left there, stay the host's. *Clarified 2026-08-04*: this is a rule about
   **reaching the outside world**, not a dependency count. Pure computational libraries — a
   schema validator, an id generator — are fine, and core carries `@types/node` so that runtime
   types such as `AbortSignal` are available. **`fs` is therefore importable and is avoided by

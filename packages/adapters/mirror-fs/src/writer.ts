@@ -13,6 +13,7 @@ import {
 } from "@notemap/core";
 
 import { removeIfPresent, TEMPORARY_PREFIX, writeAtomically } from "./atomic";
+import { mirrorFootprint } from "./footprint";
 import {
   FIXED_KEYS,
   fixedFrontmatter,
@@ -105,6 +106,8 @@ export function createFilesystemMirrorWriter(
         await removeIfPresent(record);
       }
     },
+
+    footprint: (signal) => mirrorFootprint(config.root, signal),
   };
 }
 

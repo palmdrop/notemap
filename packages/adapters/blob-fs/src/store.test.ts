@@ -181,6 +181,19 @@ describe("listing", () => {
     expect(hashes.sort()).toEqual([one.hash, two.hash].sort());
   });
 
+  it("answers how much each blob takes", async () => {
+    const { root: at, blobs } = store();
+    const content = bytes("measured");
+    const { hash } = await blobs.put(streamOf(content));
+    await writeFile(join(at, ".notemap-debris"), "half a write");
+
+    const listed = await all(blobs.list());
+
+    expect(listed).toEqual([
+      { hash, bytes: content.byteLength, at: expect.any(String) },
+    ]);
+  });
+
   it("answers nothing for a root nothing was ever put in", async () => {
     const { blobs } = store();
     const listed = [];

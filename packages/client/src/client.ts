@@ -55,6 +55,7 @@ import {
 } from "./state/state";
 import { createSessions } from "./session/session";
 import { createSources } from "./sources/sources";
+import { createStorage } from "./storage/storage";
 import { createTags } from "./tags/tags";
 import { createAccounts } from "./accounts/accounts";
 import { createTokens } from "./tokens/tokens";
@@ -701,6 +702,7 @@ export function createClient(config: ClientConfig): Client {
     says: (item) => saidIn(item.payload),
 
     sources: createSources(api),
+    storage: createStorage(api),
 
     routing: createRouting({
       api,

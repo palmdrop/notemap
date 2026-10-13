@@ -242,7 +242,10 @@ describe("the sweep, the reclaim and the output", () => {
     clock.set("2026-08-08T09:00:00.000Z");
     expect(await pool.maintenance.sweepUnreferencedAssets()).toEqual([]);
     await backdate(opened.assetRoot);
-    expect(await pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
+    expect(await pool.maintenance.reclaimUnnamedBlobs()).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect(await filesUnder(opened.assetRoot)).toHaveLength(1);
   });
 });

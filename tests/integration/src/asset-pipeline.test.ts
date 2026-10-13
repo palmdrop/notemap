@@ -125,7 +125,9 @@ describe("an upload whose capture never arrives", () => {
     expect(await present(path)).toBe(true);
 
     await backdate(started.assetRoot);
-    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toMatchObject({
+      blobs: 1,
+    });
     expect(await present(path)).toBe(false);
   });
 
@@ -141,11 +143,16 @@ describe("an upload whose capture never arrives", () => {
     expect(await started.pool.maintenance.sweepUnreferencedAssets()).toEqual([
       asset.id,
     ]);
-    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(0);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toEqual({
+      blobs: 0,
+      bytes: 0,
+    });
     expect(await present(path)).toBe(true);
 
     started.clock.set(new Date(now + 2 * DAY).toISOString());
-    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(1);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toMatchObject({
+      blobs: 1,
+    });
     expect(await present(path)).toBe(false);
   });
 

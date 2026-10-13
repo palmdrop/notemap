@@ -9,6 +9,7 @@ import type {
   Counts,
   Asset,
   AssetId,
+  AssetsHeld,
   Dimensions,
   BlobHash,
   ClaimRequest,
@@ -73,6 +74,7 @@ import {
   toRoutingTemplate,
   toTimestamp,
 } from "./mapping";
+import { storeFootprint } from "./footprint";
 import { poolIdentity } from "./identity";
 import { abandonedWork, jobQueue, nextDue } from "./jobs";
 import { LAST_MODIFIED_AT, MIGRATIONS } from "./migrations";
@@ -493,6 +495,23 @@ export function createSqlitePoolStore(
     const queueCount = source.query<{ count: number }, []>(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
+    // `saved` is the registry against itself: the sum over every asset less the
+    // sum over the blobs they name, each counted once. It is not the blob
+    // store's total — that also holds the outputs routing records name, which
+    // no asset ever does.
+    const assetsHeld = source.query<
+      { count: number; bytes: number; saved: number },
+      []
+    >(`
+      SELECT COUNT(*) AS count,
+             COALESCE(SUM(bytes), 0) AS bytes,
+             COALESCE(SUM(bytes), 0) - COALESCE((
+               SELECT SUM(once) FROM (
+                 SELECT MAX(bytes) AS once FROM assets GROUP BY blob
+               )
+             ), 0) AS saved
+      FROM assets
+    `);
     const tagsInUse = source.query<TagUseRow, []>(`
       SELECT tag.name AS name, COUNT(*) AS items,
              SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
@@ -883,6 +902,9 @@ export function createSqlitePoolStore(
         queue: queueCount.get()?.count ?? 0,
       }),
 
+      assetsHeld: async (): Promise<AssetsHeld> =>
+        assetsHeld.get() ?? { count: 0, bytes: 0, saved: 0 },
+
       actions: async (
         query: ActionQuery,
         page: OrderedPage,
@@ -993,6 +1015,7 @@ export function createSqlitePoolStore(
       queue: guard(uncommitted.queue),
       archived: guard(uncommitted.archived),
       counts: guard(uncommitted.counts),
+      assetsHeld: guard(uncommitted.assetsHeld),
       actions: guard(uncommitted.actions),
       asset: guard(uncommitted.asset),
       unreferencedAssets: guard(uncommitted.unreferencedAssets),
@@ -1242,6 +1265,8 @@ export function createSqlitePoolStore(
     ...notYetImplementedReads(),
 
     identity: () => Promise.resolve(identity),
+
+    footprint: storeFootprint(reader, config.file),
 
     transaction: <T>(work: (handle: PoolTx) => Promise<T>): Promise<T> =>
       writes.transact((fence) => work(poolTx(fence))),

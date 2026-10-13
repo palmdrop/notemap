@@ -14,6 +14,7 @@ import type {
   PayloadTypeName,
   Pool,
   PoolConfig,
+  ReclaimOutcome,
   SourceId,
 } from "@notemap/core";
 
@@ -29,6 +30,7 @@ import { startMirrorRunner } from "../mirror/runner";
 import { silentLogger } from "@notemap/log";
 import type { Accounts } from "../accounts";
 import { openPool, systemClock } from "../ports";
+import { createStorage, type Deployment, type Storage } from "../storage";
 import { createUnfurler, type Unfurler } from "../unfurl";
 
 export const WEB = "web" as SourceId;
@@ -78,8 +80,10 @@ export type Daemon = {
   readonly deliver: () => Promise<number>;
   /** Runs a sweep now, whatever the timer would have done. */
   readonly sweep: () => Promise<readonly AssetId[]>;
-  /** Runs a reclaim now. No timer drives one here. */
-  readonly reclaim: () => Promise<number>;
+  /** Runs a reclaim now, and answers what it took. No timer drives one here. */
+  readonly reclaim: () => Promise<ReclaimOutcome>;
+  /** What the app was given, so a test can measure without going through a route. */
+  readonly storage: Storage;
   readonly cleanup: () => Promise<void>;
 };
 
@@ -136,6 +140,11 @@ export type DaemonOptions = {
   readonly vault?: "ready" | "missing";
   /** Absent is one that can reach nothing: every name fails to resolve. */
   readonly unfurler?: Unfurler;
+  /**
+   * What the daemon says it is deployed as. Absent is the honest default here:
+   * what the machine running the tests is must not reach an assertion.
+   */
+  readonly deployment?: Deployment;
 };
 
 const unreachable: Unfurler = createUnfurler({
@@ -153,6 +162,7 @@ export function daemon(
   // rather than its parent — otherwise every vault a test points at is nested
   // under `dirname(pool.db)` and refused as overlapping notemap's own state.
   const stateRoot = join(directory, "state");
+  const poolFile = join(stateRoot, "pool.db");
   const mirrorRoot = join(stateRoot, "pool-mirror");
   const assetRoot = join(stateRoot, "assets");
   const vaultRoot = join(directory, "vault");
@@ -162,7 +172,7 @@ export function daemon(
   const accounts = options.accounts ?? noAccounts;
 
   const { pool, ports, blobs, mirrorWriter, destinations } = openPool({
-    file: join(stateRoot, "pool.db"),
+    file: poolFile,
     config,
     assetRoot,
     accounts,
@@ -196,6 +206,20 @@ export function daemon(
 
   const sweeper = startSweeper(pool, { intervalMs: NEVER_POLLS });
 
+  const storage = createStorage(
+    pool,
+    {
+      pool: poolFile,
+      assets: assetRoot,
+      ...(options.mirroring === true ? { mirror: mirrorRoot } : {}),
+      ...(options.deployment === undefined
+        ? {}
+        : { deployment: options.deployment }),
+      clock: ports.clock,
+    },
+    () => pool.maintenance.reclaimUnnamedBlobs(),
+  );
+
   const app = createApp(pool, {
     limits: {
       maxUploadBytes: options.maxUploadBytes ?? DEFAULT_MAX_UPLOAD_BYTES,
@@ -206,6 +230,7 @@ export function daemon(
     ...(options.origin === undefined ? {} : { origin: options.origin }),
     throttle: options.throttle ?? createLoginThrottle({ clock: systemClock }),
     log: silentLogger(),
+    storage,
     unfurler: options.unfurler ?? unreachable,
   });
   const answered = trackResponses(app);
@@ -221,6 +246,7 @@ export function daemon(
     deliver: () => deliveries.drain(),
     sweep: () => sweeper.run(),
     reclaim: () => pool.maintenance.reclaimUnnamedBlobs(),
+    storage,
     cleanup: async () => {
       await answered.close();
       await runner?.stop();

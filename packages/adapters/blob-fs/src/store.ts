@@ -8,6 +8,7 @@ import {
   unlink,
   utimes,
 } from "node:fs/promises";
+import type { Stats } from "node:fs";
 import { dirname, join } from "node:path";
 
 import type {
@@ -127,15 +128,27 @@ async function* listed(root: string): AsyncGenerator<ListedBlob> {
   for (const shard of await entries(root)) {
     for (const name of await entries(join(root, shard))) {
       if (!isBlobName(name) || !name.startsWith(shard)) continue;
-      const at = await lastPutAt(join(root, shard, name));
-      if (at !== undefined) yield { hash: name, at };
+      const held = await statOf(join(root, shard, name));
+      if (held !== undefined) {
+        yield { hash: name, bytes: held.size, at: when(held) };
+      }
     }
   }
 }
 
 async function lastPutAt(path: string): Promise<Timestamp | undefined> {
+  const held = await statOf(path);
+  return held === undefined ? undefined : when(held);
+}
+
+function when(held: Stats): Timestamp {
+  return held.mtime.toISOString() as Timestamp;
+}
+
+/** A blob deleted while a walk runs may or may not appear, which is absence here. */
+async function statOf(path: string): Promise<Stats | undefined> {
   try {
-    return (await stat(path)).mtime.toISOString() as Timestamp;
+    return await stat(path);
   } catch (cause) {
     if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw cause;

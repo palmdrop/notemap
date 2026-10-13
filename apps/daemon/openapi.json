@@ -764,6 +764,220 @@
           "queue"
         ]
       },
+      "Storage": {
+        "type": "object",
+        "properties": {
+          "pool": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "unused": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "free": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path",
+              "bytes",
+              "unused"
+            ]
+          },
+          "assets": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "saved": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "free": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path",
+              "count",
+              "bytes",
+              "saved"
+            ]
+          },
+          "mirror": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "free": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path"
+            ]
+          },
+          "auth": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path",
+              "bytes"
+            ]
+          },
+          "deployment": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "contained": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "contained"
+            ]
+          },
+          "measured": {
+            "type": "object",
+            "properties": {
+              "at": {
+                "type": "string"
+              },
+              "blobs": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "count",
+                  "bytes"
+                ]
+              },
+              "reclaimable": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "count",
+                  "bytes"
+                ]
+              },
+              "withinGrace": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "count",
+                  "bytes"
+                ]
+              },
+              "mirror": {
+                "type": "object",
+                "properties": {
+                  "records": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "files": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "records",
+                  "files",
+                  "bytes"
+                ]
+              }
+            },
+            "required": [
+              "at",
+              "blobs",
+              "reclaimable",
+              "withinGrace"
+            ]
+          }
+        },
+        "required": [
+          "pool",
+          "assets"
+        ]
+      },
+      "Reclaimed": {
+        "type": "object",
+        "properties": {
+          "blobs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "blobs",
+          "bytes"
+        ]
+      },
       "Items": {
         "type": "object",
         "properties": {
@@ -3796,6 +4010,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Counts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/storage": {
+      "get": {
+        "summary": "Read what notemap has taken on disk",
+        "description": "Where the pool, the blobs, the mirror and the daemon's own database are, what each takes, and how much room is left where each lives. Everything outside `measured` is read on the spot and walks nothing: the pool's bytes are a pragma, the assets are one query, and free space is one `statfs` per root. `measured` is what the last `POST /v1/storage/measure` found, with the instant it found it at, and is absent on a daemon that has never measured.",
+        "responses": {
+          "200": {
+            "description": "What it takes, and the last measurement if there is one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/storage/measure": {
+      "post": {
+        "summary": "Walk the blob store and the mirror",
+        "description": "Counts every blob and every mirror file, and answers the whole of `GET /v1/storage` with the fresh measurement in it. A walk already in flight is joined rather than started again, so two callers asking at once wait on one. It deletes nothing. A `POST` because it costs something, not because it changes state: a `GET` that walked thousands of files would be cached, prefetched and retried by things that assume a `GET` is cheap.",
+        "responses": {
+          "200": {
+            "description": "What it takes, measured just now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Storage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reclaim": {
+      "post": {
+        "summary": "Take the blobs nothing names",
+        "description": "Deletes every blob no asset and no routing record names, once it has gone unput for the sweep's grace window, and answers what it took. The same reclaim the daemon runs on its own interval and once at startup — fired at a moment a person chose rather than waited for — so a token reaches it like the rest of `/v1`. It takes exactly the blobs `measured.reclaimable` named, that figure and this operation reading one rule; a blob still inside the window is in `withinGrace` and survives. The remembered measurement is stale afterwards until one is taken again.",
+        "responses": {
+          "200": {
+            "description": "What it took. Zeroes where there was nothing to take.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reclaimed"
                 }
               }
             }

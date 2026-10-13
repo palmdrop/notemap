@@ -1151,6 +1151,123 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what notemap has taken on disk
+         * @description Where the pool, the blobs, the mirror and the daemon's own database are, what each takes, and how much room is left where each lives. Everything outside `measured` is read on the spot and walks nothing: the pool's bytes are a pragma, the assets are one query, and free space is one `statfs` per root. `measured` is what the last `POST /v1/storage/measure` found, with the instant it found it at, and is absent on a daemon that has never measured.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it takes, and the last measurement if there is one. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Storage"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/storage/measure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Walk the blob store and the mirror
+         * @description Counts every blob and every mirror file, and answers the whole of `GET /v1/storage` with the fresh measurement in it. A walk already in flight is joined rather than started again, so two callers asking at once wait on one. It deletes nothing. A `POST` because it costs something, not because it changes state: a `GET` that walked thousands of files would be cached, prefetched and retried by things that assume a `GET` is cheap.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it takes, measured just now. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Storage"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/reclaim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take the blobs nothing names
+         * @description Deletes every blob no asset and no routing record names, once it has gone unput for the sweep's grace window, and answers what it took. The same reclaim the daemon runs on its own interval and once at startup — fired at a moment a person chose rather than waited for — so a token reaches it like the rest of `/v1`. It takes exactly the blobs `measured.reclaimable` named, that figure and this operation reading one rule; a blob still inside the window is in `withinGrace` and survives. The remembered measurement is stale afterwards until one is taken again.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description What it took. Zeroes where there was nothing to take. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Reclaimed"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/items": {
         parameters: {
             query?: never;
@@ -4533,6 +4650,57 @@ export interface components {
         };
         Counts: {
             queue: number;
+        };
+        Storage: {
+            pool: {
+                path: string;
+                bytes: number;
+                unused: number;
+                free?: number;
+            };
+            assets: {
+                path: string;
+                count: number;
+                bytes: number;
+                saved: number;
+                free?: number;
+            };
+            mirror?: {
+                path: string;
+                free?: number;
+            };
+            auth?: {
+                path: string;
+                bytes: number;
+            };
+            deployment?: {
+                name: string;
+                contained: boolean;
+            };
+            measured?: {
+                at: string;
+                blobs: {
+                    count: number;
+                    bytes: number;
+                };
+                reclaimable: {
+                    count: number;
+                    bytes: number;
+                };
+                withinGrace: {
+                    count: number;
+                    bytes: number;
+                };
+                mirror?: {
+                    records: number;
+                    files: number;
+                    bytes: number;
+                };
+            };
+        };
+        Reclaimed: {
+            blobs: number;
+            bytes: number;
         };
         Items: {
             values: components["schemas"]["Item"][];

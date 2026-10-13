@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-09
+**Last updated**: 2026-10-12
 **Shipped**:
+
+- 2026-10-12 — **A client reads what the pool takes on disk.** `storage.read()`, `.measure()` and
+  `.reclaim()`, none of them an outbox operation and none of them cached: the daemon holds the
+  measurement and says when it took it, so a copy here would be a third answer, and a pool out of
+  reach answers nothing rather than a figure from before. ([plan](../plans/what-notemap-takes-on-disk.md))
 
 - 2026-10-11 — **A shell reclaims its own bytes.** `ClientStore` says which blobs it holds and when
   it wrote them, and a client started against a store holding blobs no operation names lets them go
@@ -838,6 +843,15 @@ asked again.
 `GET /v1/sources` every time, answering nothing when the pool is out of reach. It is the one read
 where a remembered answer would be worse than none: what a settings screen asks it for is whether
 a source has gone quiet, and a list from an hour ago cannot say.
+
+**What the pool takes on disk is not cached either** *(2026-10-12)*. `storage.read()` is a plain
+read of `GET /v1/storage` every time, `storage.measure()` asks the daemon to walk, and
+`storage.reclaim()` fires the reclaim; none of the three is an outbox operation and none holds
+anything. The daemon already remembers the measurement and says when it took it, so a copy here
+would be a third answer to one question — and the cheap half is a fact about a disk this moment,
+which nothing can be remembered about. A pool out of reach answers nothing rather than a figure from
+before: a measurement is reported with its instant or not at all. Firing a reclaim is a decision
+about now, like routing, and cannot be replayed from an outbox later.
 
 **The read caches are read back on start** (2026-08-25, extended 2026-09-07). The store holds the
 tags, the destinations and the routing templates as it holds the items and the outbox, written

@@ -1,8 +1,26 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-13
 **Shipped**:
+
+- 2026-10-13 — **The Storage section is one figure per row, under a column of sizes.** Sizes share
+  one right-aligned column; what each root holds takes a line of its own beneath it rather than a
+  column beside it, which no narrow window had room for; `TOTAL` and `FREE` sit together under a
+  space; the paths fold away behind `show`; and the free figure is said once per figure rather than
+  once per root. `ASSETS` replaces `BLOBS` and `RECLAIMABLE` replaces `UNUSED`, neither of the old
+  words meaning anything to a person reading a screen.
+  ([plan](../plans/what-notemap-takes-on-disk.md))
+
+- 2026-10-12 — **A Storage section says what notemap has taken.** The eighth settings section, after
+  Server: a row per root with what it takes and the space free where it lives, the assets
+  beside the blobs they are stored as and what holding identical bytes once saved, the mirror's
+  records and files, the daemon's own database, and the deployment where the daemon declares one.
+  `unused` is the shell's word for a blob nothing names; the database's own free pages are answered
+  on the wire and drawn nowhere, nobody being able to act on them. It reads the live facts and asks for a measurement in the same moment,
+  drawing the remembered one until the fresh lands, and `reclaim now` is inert until there is
+  something to take. Elsewhere: a capture carrying more than one attachment totals them, and a
+  record says how much the delivery wrote. ([plan](../plans/what-notemap-takes-on-disk.md))
 
 - 2026-10-10 — **An edit holds what is picked and attaches it as it saves.** A file picked in an
   edit went into the client's store at once, where `drop`, `revert` and closing without saving left
@@ -1656,7 +1674,10 @@ and nowhere here, so rendering it drew a broken picture beside the real one. Tru
 the honest reading; the capture itself is rendered where it is a capture, on the queue, the feed
 and the item's own row. **The item's attachments are drawn above the words** as the preview of
 what went with them; where the assets landed is not on the record and is not drawn. The
-destination's **note** about what it could not carry is on the record and is drawn beneath. A
+destination's **note** about what it could not carry is on the record and is drawn beneath. **How
+much it wrote is said under the words** *(2026-10-12)* — `4.2 KB written` — measured off the copy
+this read, since the record keeps no size; a delivery whose words are its own and whose copy was
+never kept says nothing about size, there being nothing written anywhere this can speak for. A
 delivery that kept no copy says `nothing kept`, in two words, since that is ordinary; a delivery
 that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
@@ -2326,7 +2347,7 @@ timeline.
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
-access | server | appearance | pool}`; `/settings` itself redirects to `destinations` from
+access | server | storage | appearance | pool}`; `/settings` itself redirects to `destinations` from
 `--breakpoint-narrow` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
@@ -2433,6 +2454,83 @@ settles the same mark. `daemon` is not said anywhere; `log` is not offered here 
 already carries it. **Sources**, folded under its sub-head with `show`/`hide`, is otherwise
 unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
 comes back into reach and held nowhere.
+
+**Storage** sits under Server *(added 2026-10-12,
+[what-notemap-takes-on-disk](../plans/what-notemap-takes-on-disk.md))*: what notemap has taken on
+the machine, in the same voice as Server's own rows. **One figure per row, and the sizes
+share a column** *(redesigned 2026-10-13)*. A row per root — `POOL`, `ASSETS`, `MIRROR`, `AUTH` —
+its size bold, right-aligned and in tabular figures under a single `SIZE` head, since that column is
+the one thing here that is read downwards. **What a size is made of takes a line of its own**
+beneath it: `142 assets in 140 files`, `1,204 records in 2,408 files`. The pool and the daemon's
+database say nothing there, holding bytes and nothing else, and no filler is invented to square
+them.
+
+**A figure beside its row rather than under it was tried first and does not survive a narrow
+window.** A third column for it is squeezed to nothing well before the shell's own `narrow` breaks,
+because settings draws into a column the menu has already taken from — so these are two facts in
+sequence, not two columns to compare down. **Nothing separates two figures on a line**, because no
+line carries two: `in` joins them where both belong to one row, and the `·` the first attempt
+reached for is gone with the column that needed it.
+
+**`TOTAL` and `FREE` sit together under a space**, not under a rule: what notemap has taken and what
+is left where it took it are the two figures a person reads as a pair, and a rule would have ruled
+them off from the rows they are a sum of. The total counts the daemon's own database, because what
+notemap has taken on this machine is what the section's name asks.
+
+**The paths fold away behind `PATHS show`**, on `sources`' own terms — they are reference material a
+person wants once, not a figure anyone scans, and four absolute paths at full width were most of
+what the section looked like. **`FREE` is said once per figure, not once per root**: the three roots
+default to siblings under one volume, and repeating `52 GB` three times says nothing three times. A
+single row is every root there is and says no more than its figure; a second row appears only where
+config has put one on a mount of its own, and then each says which roots it covers — `where the pool
+and the assets live`. A root the daemon could not answer for is left out rather than guessed at.
+
+**`ASSETS` rather than `BLOBS`, and `files` for what it holds** *(2026-10-13)*. A blob is
+"named for a machine" by [CONTEXT.md](../../CONTEXT.md)'s own entry for it, and a person reading a
+settings screen has never met one; `attachment` is the gesture rather than the thing, which that
+glossary is equally clear about. So the row takes the name of the root it is — the assets — and what
+lies in it is counted in **files**, the one honest unit for all three rows that have one.
+
+`DEPLOYMENT` is drawn **only where the daemon says**. Where the daemon also says it is contained, the
+line adds that the paths above are inside a container rather than on the machine a person is reading
+from — **and only then** *(2026-10-12)*: the deployment's name is whatever an image declared, so
+drawing that sentence beside any name would tell an operator who labelled a bare-metal daemon
+something untrue about their own paths.
+
+**The database's free pages are not drawn** *(2026-10-12)*. `GET /v1/storage` answers them, and they
+do explain why a pool that lost items did not shrink — but nothing a person can press returns them
+to the disk, and a figure nobody can act on sitting beside one they can is read as a second thing to
+reclaim. *Slack*, *unused* and *free* were each tried as its word; the figure was the problem rather
+than the word. The blobs row says how many assets the pool holds beside the blobs they are stored
+as, and `SAVED` says what holding identical bytes once saved, where that is anything — **the
+registry's own figure** *(2026-10-12)*, so it is drawn with the cheap read rather than waiting out
+the walk, and never the difference between the two totals: the store also holds what deliveries
+wrote. The mirror row says `1,204 records · 2,408 files` — the pair per item, so any other ratio is
+a rendering that never landed.
+
+**`RECLAIMABLE` carries what a reclaim would take now** — its bytes in the size column, `2 files
+left behind` under them and `reclaim now` on the line below. The action is drawn
+either way and **inert where there is nothing to take**, so a person meets it before the day the
+figure is large rather than only on it. At zero the figure says it alone and no sentence is written
+beside it. **`reclaimable` is the shell's word, and is the word on the button** *(2026-10-13)*: it
+reverses `unused`, which read as a second kind of `FREE` two rows above it and said nothing about
+bytes being held for no reason. A label that names the action it sits beside cannot be read as
+anything else, and *nothing names it* is the pool's own reading of the rule and says nothing to a
+person. It says what it took when it has run, arriving with the figures
+that reclaim produced rather than ahead of them, and **a later look drops the line** *(2026-10-12)*,
+by which point it would be about blobs nobody is being shown; the blob figures are stale until the
+section asks again, which it does immediately.
+
+**The expensive half is asked for as the section opens, and nowhere else.** The daemon walks the
+blob store and the mirror on request and remembers what it found, so the section reads the live
+facts and asks for a measurement in the same moment, drawing the remembered figures under the asking
+mark until the fresh ones land — never a layout shift, and never a figure where nothing is held. The
+asking mark takes the size cell of each row the walk answers for, and the line under `TOTAL` where a
+second walk is running over figures already drawn. **`TOTAL` waits for the walk** rather than
+totalling the cheap half *(2026-10-13)*: the blobs and the mirror are the two largest figures in it,
+and a sum missing them would be the largest number on the screen and wrong.
+Unavailable rather than guessing while the pool is out of reach, on Pool settings' own terms: a cold
+client has no measurement to draw and says so.
 
 **Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS auto · by
@@ -2562,7 +2660,12 @@ the middle** *(2026-10-07)*, its last dozen characters kept whole so the extensi
 size stays on the line beside it, and the whole name is the link's title, which the browser says on
 hover. Where a file is being put in — the capture box and an edit — the name is whole instead,
 wrapping, with the size following its last fragment rather than taking a line of its own. A third picture is a line too, so a
-capture of twenty photographs does not become twenty screens. **A short rule sets the lines off
+capture of twenty photographs does not become twenty screens. **Where a capture carries more than
+one attachment, a last line totals them** *(2026-10-12)* — `3 attachments, 4.2 MB` — over
+everything it carries rather than only the lines, since one line says its own size already and a
+picture above says none; with one attachment there is nothing to total, and the line is left out
+**unless every attachment can say its size** *(2026-10-12)* — a figure over the ones that can,
+counted as though it covered them all, would be a total that is quietly short. **A short rule sets the lines off
 from the words above them**, a few characters wide at the left, the way a footnote is set off —
 not the full width, since a rule across the column is what a selected row's box draws and nothing
 else does. With no words above, there is no rule. The record's block and the process surface read

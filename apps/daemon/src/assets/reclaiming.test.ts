@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Pool } from "@notemap/core";
+import type { Pool, ReclaimOutcome } from "@notemap/core";
 
 import { startReclaiming } from "./reclaiming";
 
@@ -9,20 +9,22 @@ function stubPool(): {
   pool: Pool;
   runs: () => number;
   signal: () => AbortSignal | undefined;
-  finish: (taken: number) => void;
+  finish: (blobs: number) => void;
 } {
   let count = 0;
   let given: AbortSignal | undefined;
-  let release: ((taken: number) => void) | undefined;
+  let release: ((took: ReclaimOutcome) => void) | undefined;
 
   const pool = {
     maintenance: {
       reclaimUnnamedBlobs: (signal?: AbortSignal) => {
         count += 1;
         given = signal;
-        return new Promise<number>((resolve) => {
+        return new Promise<ReclaimOutcome>((resolve) => {
           release = resolve;
-          signal?.addEventListener("abort", () => resolve(0));
+          signal?.addEventListener("abort", () =>
+            resolve({ blobs: 0, bytes: 0 }),
+          );
         });
       },
     },
@@ -32,7 +34,7 @@ function stubPool(): {
     pool,
     runs: () => count,
     signal: () => given,
-    finish: (taken) => release?.(taken),
+    finish: (blobs) => release?.({ blobs, bytes: blobs * 10 }),
   };
 }
 
@@ -58,7 +60,7 @@ describe("reclaiming", () => {
     const again = reclaiming.run();
     stub.finish(2);
 
-    expect(await again).toBe(2);
+    expect(await again).toEqual({ blobs: 2, bytes: 20 });
     expect(stub.runs()).toBe(1);
     await reclaiming.stop();
   });
@@ -72,7 +74,7 @@ describe("reclaiming", () => {
     await reclaiming.stop();
 
     expect(stub.signal()?.aborted).toBe(true);
-    expect(await reclaiming.run()).toBe(0);
+    expect(await reclaiming.run()).toEqual({ blobs: 0, bytes: 0 });
     expect(stub.runs()).toBe(1);
   });
 });

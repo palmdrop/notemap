@@ -1,6 +1,7 @@
 # Developer TODOs
 
-- [ ] storage space, mirror + db size, asset sizes - give the user a way to inspect the storage used, the size the mirror takes on disk, the size an asset takes, etc. BOth stats page and useful insights wherever relevant in the app
+- [x] storage space, mirror + db size, asset sizes - give the user a way to inspect the storage used, the size the mirror takes on disk, the size an asset takes, etc. BOth stats page and useful insights wherever relevant in the app
+    - a Storage section in settings rather than a stats page: a stats surface — tag statistics, capture rates — is its own question ([plan](plans/what-notemap-takes-on-disk.md))
 
 ## Shell — layout and interaction
 

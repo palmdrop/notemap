@@ -23,6 +23,7 @@
   import { notices } from "$lib/notices.svelte";
   import { keepOutput, outputOf } from "$lib/outputs";
   import { described, readingHeld } from "$lib/described.svelte";
+  import { sizeOf } from "$lib/attachments";
   import { cancelledKey, keyFor, placeIn } from "$lib/routing";
   import {
     BY_HAND,
@@ -207,6 +208,18 @@
   );
   const delivered = $derived(record.state === "delivered");
 
+  /**
+   * How much the delivery wrote, measured off the copy this read rather than
+   * taken from the record, which keeps no size. Only for an output that was
+   * really read: words a delivery carried in place of the capture's were never
+   * written anywhere this can speak for.
+   */
+  const wrote = $derived(
+    output === undefined
+      ? undefined
+      : new TextEncoder().encode(output).byteLength,
+  );
+
   /** The arguments named against the capability's schema, asked for on the press and kept. */
   let named = $state<readonly Argument[] | undefined>(undefined);
   let naming = $state(false);
@@ -284,6 +297,9 @@
         <AttachedPictures {attachments} picture="max-h-48" />
         {#if body !== undefined}
           <pre class="break-words whitespace-pre-wrap">{body}</pre>
+          {#if wrote !== undefined}
+            <div data-wrote class="mt-1">{sizeOf(wrote)} written</div>
+          {/if}
         {:else if !kept && !byHand}
           <div>{NOTHING_KEPT}</div>
         {:else if kept && !blind && unreadable === ""}

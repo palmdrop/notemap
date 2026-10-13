@@ -2,6 +2,7 @@ import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
 import type { Dimensions } from "#types/domain/asset";
 import type { ActionId, AssetId, BlobHash, Timestamp } from "#types/domain/ids";
+import type { ReclaimOutcome } from "#types/domain/storage";
 
 import { headOf, measure } from "./pictures";
 
@@ -47,25 +48,38 @@ export async function sweepUnreferencedAssets(
 }
 
 /**
+ * Whether a blob has gone unput long enough for a reclaim to take it. The one
+ * reading of the grace window: what `storage.measure` calls reclaimable and
+ * what a reclaim takes have to be the same blobs, and two implementations of
+ * this is how they come to disagree.
+ */
+export function pastGrace(
+  config: PoolConfig,
+  now: Timestamp,
+): (at: Timestamp | undefined) => boolean {
+  const olderThan = Date.parse(graceBefore(config, now));
+  return (at) => at !== undefined && Date.parse(at) <= olderThan;
+}
+
+/**
  * A blob that is named, or was put within the grace window, is passed over
  * without the write lock; the rest are asked again under it, each in a
  * transaction of its own, so the lock is held for one `unlink` at a time.
  * Nothing can name a blob between that question and the delete, and whatever
- * names it afterwards finds it gone under the same lock. Answers how many it
- * took, stopped or not.
+ * names it afterwards finds it gone under the same lock. Answers what it took,
+ * stopped or not.
  */
 export async function reclaimUnnamedBlobs(
   config: PoolConfig,
   ports: PoolPorts,
   signal?: AbortSignal,
-): Promise<number> {
-  const olderThan = Date.parse(graceBefore(config, ports.clock.now()));
-  const old = (at: Timestamp | undefined) =>
-    at !== undefined && Date.parse(at) <= olderThan;
-  let taken = 0;
+): Promise<ReclaimOutcome> {
+  const old = pastGrace(config, ports.clock.now());
+  let blobs = 0;
+  let bytes = 0;
 
   for await (const blob of ports.blobs.list()) {
-    if (signal?.aborted === true) return taken;
+    if (signal?.aborted === true) return { blobs, bytes };
     if (!old(blob.at) || (await ports.store.blobNamed(blob.hash))) continue;
 
     const took = await ports.store.transaction(async (tx) => {
@@ -74,10 +88,13 @@ export async function reclaimUnnamedBlobs(
       await ports.blobs.delete(blob.hash);
       return true;
     });
-    if (took) taken += 1;
+    if (took) {
+      blobs += 1;
+      bytes += blob.bytes;
+    }
   }
 
-  return taken;
+  return { blobs, bytes };
 }
 
 function graceBefore(config: PoolConfig, at: Timestamp): Timestamp {

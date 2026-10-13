@@ -416,7 +416,9 @@ describe("where the bytes land", () => {
     expect(await filesUnder(started.assetRoot)).toHaveLength(2);
 
     await backdate(started.assetRoot);
-    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toBe(2);
+    expect(await started.pool.maintenance.reclaimUnnamedBlobs()).toMatchObject({
+      blobs: 2,
+    });
     expect(await filesUnder(started.assetRoot)).toEqual([]);
   });
 

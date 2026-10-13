@@ -1,4 +1,4 @@
-import type { Pool } from "@notemap/core";
+import type { Pool, ReclaimOutcome } from "@notemap/core";
 
 import { silentLogger, type Logger } from "@notemap/log";
 
@@ -7,8 +7,8 @@ export type ReclaimingConfig = {
 };
 
 export type Reclaiming = {
-  /** Runs a reclaim now, and answers how many blobs it took. */
-  run(): Promise<number>;
+  /** Runs a reclaim now, and answers what it took. Joins one already in flight. */
+  run(): Promise<ReclaimOutcome>;
   /** Lets go of a run where it stands, and waits for it to have. */
   stop(): Promise<void>;
 };
@@ -24,19 +24,20 @@ export function startReclaiming(
   log: Logger = silentLogger(),
 ): Reclaiming {
   const stopping = new AbortController();
-  let inFlight: Promise<number> | undefined;
+  let inFlight: Promise<ReclaimOutcome> | undefined;
+  const nothing: ReclaimOutcome = { blobs: 0, bytes: 0 };
 
-  function run(): Promise<number> {
-    if (stopping.signal.aborted) return Promise.resolve(0);
+  function run(): Promise<ReclaimOutcome> {
+    if (stopping.signal.aborted) return Promise.resolve(nothing);
 
     inFlight ??= pool.maintenance
       .reclaimUnnamedBlobs(stopping.signal)
-      .then((taken) => {
-        log[taken === 0 ? "debug" : "info"](
-          { taken },
+      .then((took) => {
+        log[took.blobs === 0 ? "debug" : "info"](
+          took,
           "reclaimed blobs nothing names",
         );
-        return taken;
+        return took;
       })
       .finally(() => {
         inFlight = undefined;

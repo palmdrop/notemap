@@ -65,6 +65,11 @@ import type {
   RoutingRecord,
 } from "../domain/routing";
 import type { SourceUse } from "../domain/source";
+import type {
+  MeasuredStorage,
+  ReclaimOutcome,
+  RecordedStorage,
+} from "../domain/storage";
 import type { Suggestion } from "../domain/suggestion";
 import type { Delta, Tombstone } from "../domain/sync";
 import type {
@@ -444,10 +449,25 @@ export interface MaintenanceApi {
   verifyMirror(reader: MirrorReader, depth: VerifyDepth): Promise<MirrorReport>;
   repairMirror(reader: MirrorReader): Promise<MirrorReport>;
   sweepUnreferencedAssets(): Promise<readonly AssetId[]>;
-  /** Answers how many blobs it deleted; stopped, how many it had deleted by then. */
-  reclaimUnnamedBlobs(signal?: AbortSignal): Promise<number>;
+  /** Answers what it took; stopped, what it had taken by then. */
+  reclaimUnnamedBlobs(signal?: AbortSignal): Promise<ReclaimOutcome>;
   /** Answers how many pictures it measured; stopped, how many it had measured by then. */
   measurePictures(signal?: AbortSignal): Promise<number>;
+}
+
+/**
+ * How much the pool has taken, split by what the answer costs: `recorded` is
+ * two reads, `measure` is a walk of every blob and every mirror file. Neither
+ * deletes anything, and neither remembers an answer — whether to hold one, and
+ * how to say when it was taken, is the host's.
+ */
+export interface StorageApi {
+  recorded(): Promise<RecordedStorage>;
+  /**
+   * Walks. Throws where the signal fires rather than answering what it had
+   * reached by then, since a measurement is read as the whole of something.
+   */
+  measure(signal?: AbortSignal): Promise<MeasuredStorage>;
 }
 
 export interface Pool {
@@ -478,6 +498,7 @@ export interface Pool {
   readonly mirror: MirrorApi;
   readonly actions: ActionsApi;
   readonly sync: SyncApi;
+  readonly storage: StorageApi;
   readonly maintenance: MaintenanceApi;
 
   /** Disposes the pool, releasing every port that holds something open. */
