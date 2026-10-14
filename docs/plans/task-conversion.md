@@ -46,24 +46,24 @@ Depends on nothing.
 
 Depends on nothing. Phase 1 can go before or after it.
 
-- [ ] `output-markdown` publishes `conversion` (`block` | `list-item` | `task`, default `block`) on
+- [x] `output-markdown` publishes `conversion` (`block` | `list-item` | `task`, default `block`) on
       `create`, `append` and `create-or-append`, with a typed reader beside the others. Absent
       reads as `block`.
-- [ ] The conversion runs on the rendered body inside `renderNote`, so `deliver` and `preview`
+- [x] The conversion runs on the rendered body inside `renderNote`, so `deliver` and `preview`
       share it. `list-item` and `task`: the first line becomes the item, the rest of the body is
       indented beneath it as continuation, and hashtags (where asked for) go at the end of the
       item's first line instead of in the foot.
-- [ ] `frontmatter` carries `x-notemap-when: [{ field: "conversion", is: ["block"] }]`, and the
+- [x] `frontmatter` carries `x-notemap-when: [{ field: "conversion", is: ["block"] }]`, and the
       kinds read it as `none` for any other conversion, whatever the record holds.
-- [ ] Both markdown kinds pass the argument through; webdav and fs behave identically.
-- [ ] A record naming a value the kind does not publish is `rejected` at delivery.
-- [ ] Specs: core.md (routing: a conversion is a named argument the kind publishes, with a link to
+- [x] Both markdown kinds pass the argument through; webdav and fs behave identically.
+- [x] A record naming a value the kind does not publish is `rejected` at delivery.
+- [x] Specs: core.md (routing: a conversion is a named argument the kind publishes, with a link to
       ADR 61) and CONTEXT.md (**Conversion**: named, and selected per delivery).
-- [ ] Tests: each conversion on a one-line body, a multi-paragraph body, a body with pictures, with
+- [x] Tests: each conversion on a one-line body, a multi-paragraph body, a body with pictures, with
       and without hashtags; a `task` into a fresh note with `frontmatter: full` on the record writes
       none; preview equals the delivered output; a `block` record made before this
       writes byte-identical output.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint. Commit. _(2026-10-14)_
 
 ### Phase 3: an item joins the list next to it
 

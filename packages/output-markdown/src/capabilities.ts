@@ -13,6 +13,7 @@ import type {
   PayloadTypeName,
 } from "@notemap/core";
 
+import { CONVERSION, CONVERSION_ARGUMENT } from "./conversion";
 import { FRONTMATTER, FRONTMATTER_MODE } from "./frontmatter";
 import {
   HASHTAGS,
@@ -81,6 +82,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
         [PATH_FIELD]: "leaf",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,
@@ -112,6 +114,7 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
           "The heading to append under. Left blank, the item is appended at the end of the note.",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,
@@ -146,6 +149,7 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,

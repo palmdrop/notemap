@@ -1,4 +1,6 @@
 export * from "./capabilities";
+export * from "./conversion";
+export * from "./errors";
 export * from "./filename";
 export * from "./frontmatter";
 export * from "./names";

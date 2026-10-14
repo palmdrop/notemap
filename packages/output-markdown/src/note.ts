@@ -1,5 +1,7 @@
 import type { Delivery, DeliveredOutput } from "@notemap/core";
 
+import { asItem, type Conversion } from "./conversion";
+import { RenderingFailed } from "./errors";
 import { FIXED_KEYS, fixedFrontmatter, toYaml } from "./frontmatter";
 import type { FrontmatterMode, FrontmatterValue } from "./frontmatter";
 import {
@@ -9,9 +11,6 @@ import {
   type RenderingContext,
 } from "./renderers";
 import { carriedTags, hashtagsFor, type Hashtags } from "./tags";
-
-/** What a renderer did rather than what a destination did, which is never worth retrying. */
-export class RenderingFailed extends Error {}
 
 export type Note = {
   /** The YAML block, ending in a newline. Empty where none was asked for. */
@@ -27,6 +26,8 @@ export type Note = {
 
 /** What a note is asked to carry beyond the item's own prose. */
 export type NoteOptions = {
+  /** Anything but `block` writes no frontmatter, whatever `frontmatter` says. */
+  readonly conversion: Conversion;
   readonly frontmatter: FrontmatterMode;
   /** At the foot as `#tag`, or else among the frontmatter where there is one. */
   readonly hashtags: boolean;
@@ -74,14 +75,18 @@ export function renderNote(
   const tags = carriedTags(delivery.tags, options.triggerTags);
   const hashtags = options.hashtags ? hashtagsFor(tags) : undefined;
 
+  const line = hashtags?.line ?? "";
+
   const body =
-    hashtags === undefined || hashtags.line === ""
-      ? rendered.body
-      : below(rendered.body, hashtags.line);
+    options.conversion !== "block"
+      ? asItem(rendered.body, options.conversion, line)
+      : line === ""
+        ? rendered.body
+        : below(rendered.body, line);
   const dropped = confession(rendered, hashtags);
   const said = dropped === undefined ? {} : { dropped };
 
-  if (options.frontmatter === "none") {
+  if (options.frontmatter === "none" || options.conversion !== "block") {
     return { frontmatter: "", body, ...said };
   }
 

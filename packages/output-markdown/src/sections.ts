@@ -27,7 +27,7 @@ export function insertUnder(
 
   const tree = fromMarkdown(existing);
   const at = tree.children.findIndex(
-    (node) => isHeading(node) && textOf(existing, node) === heading,
+    (node) => isHeading(node) && headingText(existing, node) === heading,
   );
   if (at < 0) return join([trimmed(existing), head(heading), added]);
 
@@ -63,7 +63,7 @@ function endOfSection(tree: Root, at: number): number | undefined {
   return undefined;
 }
 
-function isHeading(node: RootContent): node is Heading {
+export function isHeading(node: RootContent): node is Heading {
   return node.type === "heading";
 }
 
@@ -72,7 +72,7 @@ function isHeading(node: RootContent): node is Heading {
  * so `## Read: *Borges*` matches what a person typed into the form instead of
  * what its emphasis parsed to.
  */
-function textOf(source: string, heading: Heading): string {
+export function headingText(source: string, heading: Heading): string {
   const start = heading.position?.start.offset;
   const end = heading.position?.end.offset;
   if (start === undefined || end === undefined) return "";

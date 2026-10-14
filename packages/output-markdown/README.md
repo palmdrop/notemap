@@ -39,6 +39,14 @@ decides where it goes.
 `create` takes `{ directory, filename? }` and `append` takes `{ path, heading? }`. All three also
 take `frontmatter` — `full` or `none` — which overrides the destination's own setting for one
 delivery; absent inherits it, and an absent setting is `none`.
+
+All three also take `conversion`: `block`, the note as it is and the default; `list-item`; or
+`task`. The two list shapes write one item: its line is the first line of the first prose the
+rendering holds, the rest goes beneath it as indented continuation with no blank lines, the
+hashtags go at the end of the item's line, and no frontmatter is written. `frontmatter` is offered
+only while `conversion` is `block`, and `conversion` comes before it in the schema because a form
+judges a condition against the fields ahead of it. A value no kind publishes is a
+`RenderingFailed`, so the delivery is rejected.
 They live here rather than in either adapter because two kinds doing the same thing under different
 words would make every rule and every composer choice kind-specific for no gain — and two copies of
 one schema are two things to keep in step.

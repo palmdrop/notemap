@@ -408,7 +408,6 @@ describe("appending to a note", () => {
   });
 
   /**
-   * The lost update this kind is exposed to and the filesystem kind is not.
    * Somebody writes between the read and the write; the condition catches it,
    * and the re-read carries their line into the result.
    */
@@ -597,6 +596,59 @@ describe("creating or appending, decided here", () => {
       kind: "rejected",
     });
     expect(Object.keys(server.files())).toEqual([]);
+  });
+});
+
+describe("a delivery converted to one item", () => {
+  const renderText: Renderer = (each) => ({
+    body: `${String(each.payload.content["text"] ?? "")}\n`,
+  });
+  const send = (server: DavServer, args: JsonObject) =>
+    adapter(server, { text: renderText }).deliver(
+      destinationRow({ root: "V" }),
+      delivery({ capability: "create-or-append", arguments: args }),
+    );
+
+  it("joins the list under the heading as a task", async () => {
+    const server = await vault();
+    server.put("V/todo.md", "# Todo\n\n## Templates\n\n- [ ] older\n");
+
+    const outcome = await send(server, {
+      path: "todo.md",
+      heading: "Templates",
+      conversion: "task",
+    });
+
+    expect(await outputOf(outcome)).toMatchObject({
+      text: "- [ ] a thought\n",
+    });
+    expect(server.files()["V/todo.md"]).toContain("- [ ] a thought\n");
+  });
+
+  it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await send(server, {
+      path: "todo.md",
+      conversion: "task",
+      frontmatter: "full",
+    });
+
+    expect(server.files()["V/todo.md"]).toBe("- [ ] a thought\n");
+  });
+
+  it("rejects a conversion this kind does not publish", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    const outcome = await send(server, {
+      path: "todo.md",
+      conversion: "haiku",
+    });
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(server.files()["V/todo.md"]).toBeUndefined();
   });
 });
 

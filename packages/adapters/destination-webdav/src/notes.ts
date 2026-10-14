@@ -8,6 +8,7 @@ import {
   deriveFilename,
   fileOf,
   folderModeOf,
+  conversionOf,
   frontmatterModeOf,
   insertUnder,
   placeOf,
@@ -310,6 +311,7 @@ function renderInto(
     delivery,
     { directory: collectionOfPointer(note), assets },
     {
+      conversion: conversionOf(delivery.arguments),
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
       hashtags: hashtagsOf(delivery.arguments, wiring.hashtags),
       triggerTags: triggerTagsOf(delivery.arguments),

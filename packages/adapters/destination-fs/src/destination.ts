@@ -17,6 +17,7 @@ import {
   asCreateFileArguments,
   asCreateOrAppendFileArguments,
   capabilitiesFor,
+  conversionOf,
   fileOf,
   folderModeOf,
   frontmatterModeOf,
@@ -515,6 +516,7 @@ function render(wiring: Wiring, delivery: Delivery, note: Contained) {
     delivery,
     { directory: within(note), assets: assetNames(delivery.assets) },
     {
+      conversion: conversionOf(delivery.arguments),
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
       hashtags: hashtagsOf(delivery.arguments, wiring.hashtags),
       triggerTags: triggerTagsOf(delivery.arguments),

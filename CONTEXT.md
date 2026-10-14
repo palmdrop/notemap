@@ -405,8 +405,10 @@ A destination reshaping a copy of an item on its way out — into a list entry, 
 a dialect of markdown that is not the item's. It happens inside the **delivery**, never to the
 capture, and what it produced is kept as the **output**. Reshapes the **rewrite** where the delivery
 carries one, and the capture's own words otherwise: what is converted is what was sent, and the
-destination owns the shape either way. Distinct from a **routing template**, which says where an
-item goes and never what shape it arrives in.
+destination owns the shape either way. A delivery names its conversion through an argument the
+destination publishes, such as `conversion: task`; the names are the destination's, never core's.
+Distinct from a **routing template**, which says where an item goes and never what shape it
+arrives in.
 _Avoid_: template, transform, formatting. Template names the saved routing decision below.
 
 **Output**:

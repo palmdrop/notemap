@@ -1129,6 +1129,16 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   entry — happen inside the delivery, where the dialect already lives. Amending the capture into
   the destination's shape first is not an option: one item may go to three destinations in three
   dialects, so the last to route would win and the original would be gone.
+- **A conversion is named by an argument the kind publishes** (added 2026-10-14,
+  [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)). A delivery asks
+  for a shape the way it asks for front matter: through an argument in the capability's
+  `argumentsSchema`, whose `enum` is the whole of what the kind offers. Core validates membership
+  and learns none of the names. The markdown kinds publish `conversion` (`block`, `list-item`,
+  `task`) on every capability that writes a note. `block` is the default and what every earlier
+  record meant. The other two write one list item: the first line of the capture's first prose
+  as the item, the rest of the rendering indented beneath it with no blank lines, the hashtags at
+  the end of the item's own line, and no front matter. A conversion shapes a **fragment**. One
+  that writes a whole file is not part of this.
 - **A delivery may carry its own content, and the reservation holds it** (added 2026-09-10,
   [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)). A routing request may supply the
   words this one delivery carries in place of the capture's. Core checks them against the item's

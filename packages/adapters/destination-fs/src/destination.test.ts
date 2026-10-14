@@ -939,6 +939,75 @@ describe("creating or appending, decided here", () => {
   });
 });
 
+describe("a delivery converted to one item", () => {
+  const asked = (args: JsonObject) =>
+    delivery({ capability: CREATE_OR_APPEND, arguments: args });
+
+  it("joins the list under the heading as a task", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(
+      join(path, "todo.md"),
+      "# Todo\n\n## Templates\n\n- [ ] older\n\n## Later\n",
+    );
+
+    const outcome = await destination.deliver(
+      asked({ path: "todo.md", heading: "Templates", conversion: "task" }),
+    );
+
+    expect(await outputOf(outcome)).toMatchObject({
+      text: "- [ ] a thought\n",
+    });
+    expect(await readFile(join(path, "todo.md"), "utf8")).toContain(
+      "- [ ] older\n",
+    );
+    expect(await readFile(join(path, "todo.md"), "utf8")).toContain(
+      "- [ ] a thought\n",
+    );
+  });
+
+  it("previews what it delivers", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "todo.md"), "## Templates\n");
+    const each = asked({
+      path: "todo.md",
+      heading: "Templates",
+      conversion: "list-item",
+    });
+
+    const previewed = await textOf(await destination.preview(each));
+    const outcome = await destination.deliver(each);
+
+    expect(previewed.text).toBe("- a thought\n");
+    expect(await outputOf(outcome)).toEqual(previewed);
+  });
+
+  it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {
+    const { path, destination } = await vault(
+      { text: renderText },
+      { frontmatter: "full" },
+    );
+
+    await destination.deliver(
+      asked({ path: "todo.md", conversion: "task", frontmatter: "full" }),
+    );
+
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "- [ ] a thought\n",
+    );
+  });
+
+  it("rejects a conversion this kind does not publish", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      asked({ path: "todo.md", conversion: "haiku" }),
+    );
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
+    expect(await filesUnder(path)).toEqual([]);
+  });
+});
+
 describe("assets", () => {
   const ONE = "a".repeat(64);
   const TWO = "b".repeat(64);
