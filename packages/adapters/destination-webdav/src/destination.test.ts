@@ -622,7 +622,9 @@ describe("a delivery converted to one item", () => {
     expect(await outputOf(outcome)).toMatchObject({
       text: "- [ ] a thought\n",
     });
-    expect(server.files()["V/todo.md"]).toContain("- [ ] a thought\n");
+    expect(server.files()["V/todo.md"]).toBe(
+      "# Todo\n\n## Templates\n\n- [ ] older\n- [ ] a thought\n",
+    );
   });
 
   it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {

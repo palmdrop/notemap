@@ -115,3 +115,53 @@ describe("inserting under a heading", () => {
     );
   });
 });
+
+describe("an item joining a list", () => {
+  it("keeps a tight list tight", () => {
+    expect(
+      insertUnder(
+        "## Todo\n\n- [ ] one\n- [ ] two\n\n## Later\n\nprose\n",
+        "- [ ] three\n",
+        "Todo",
+      ),
+    ).toBe(
+      "## Todo\n\n- [ ] one\n- [ ] two\n- [ ] three\n\n## Later\n\nprose\n",
+    );
+  });
+
+  it("keeps a loose list loose", () => {
+    expect(
+      insertUnder("## Todo\n\n- one\n\n- two\n", "- three\n", "Todo"),
+    ).toBe("## Todo\n\n- one\n\n- two\n\n- three\n");
+  });
+
+  it("joins the list at the end of a note where no heading is named", () => {
+    expect(insertUnder("- one\n- two\n", "- three\n")).toBe(
+      "- one\n- two\n- three\n",
+    );
+  });
+
+  it("starts a list of its own after a section ending in prose", () => {
+    expect(insertUnder("## Todo\n\nsome words\n", "- one\n", "Todo")).toBe(
+      "## Todo\n\nsome words\n\n- one\n",
+    );
+  });
+
+  it("does not take a list inside a fence for a list", () => {
+    expect(
+      insertUnder("## Todo\n\n```md\n- one\n```\n", "- two\n", "Todo"),
+    ).toBe("## Todo\n\n```md\n- one\n```\n\n- two\n");
+  });
+
+  it("leaves a block after a list as it always was", () => {
+    expect(insertUnder("## Notes\n\n- one\n", "a thought\n", "Notes")).toBe(
+      "## Notes\n\n- one\n\na thought\n",
+    );
+  });
+
+  it("joins a list that keeps going after a nested one", () => {
+    expect(
+      insertUnder("## Todo\n\n- one\n  - under one\n", "- two\n", "Todo"),
+    ).toBe("## Todo\n\n- one\n  - under one\n- two\n");
+  });
+});

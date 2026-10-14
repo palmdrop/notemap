@@ -69,13 +69,13 @@ Depends on nothing. Phase 1 can go before or after it.
 
 Depends on phase 2.
 
-- [ ] `insertUnder` takes the list-item fragment into account. Where the section's last block is a
+- [x] `insertUnder` takes the list-item fragment into account. Where the section's last block is a
       list, a list-item fragment is joined with one newline when that list is tight (`spread` is
       false) and a blank line when it is loose. Everything else is unchanged.
-- [ ] Tests: a tight list stays tight; a loose list stays loose; a section ending in prose gets
+- [x] Tests: a tight list stays tight; a loose list stays loose; a section ending in prose gets
       the item as a new list after a blank line; a list inside a fenced block is not a list; a
       `block` fragment after a list is unchanged from today.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint. Commit. _(2026-10-14)_
 
 ### Phase 4: `given` on a candidates request
 

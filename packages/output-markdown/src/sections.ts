@@ -1,5 +1,5 @@
 import { fromMarkdown } from "mdast-util-from-markdown";
-import type { Heading, Root, RootContent } from "mdast";
+import type { Heading, List, Root, RootContent } from "mdast";
 
 /** The level a heading this package has to write itself gets. */
 const OWN_LEVEL = "##";
@@ -23,44 +23,57 @@ export function insertUnder(
   if (existing.trim() === "") {
     return join(heading === undefined ? [added] : [head(heading), added]);
   }
-  if (heading === undefined) return join([trimmed(existing), added]);
 
   const tree = fromMarkdown(existing);
+  const item = isList(fromMarkdown(added).children[0]);
+  // One blank line between two items renders the whole list loose.
+  const after = (last: RootContent | undefined) =>
+    item && isList(last) && !last.spread ? "\n" : "\n\n";
+
+  if (heading === undefined) {
+    return `${trimmed(existing)}${after(tree.children.at(-1))}${added}\n`;
+  }
+
   const at = tree.children.findIndex(
     (node) => isHeading(node) && headingText(existing, node) === heading,
   );
   if (at < 0) return join([trimmed(existing), head(heading), added]);
 
-  const end = endOfSection(tree, at);
-  return end === undefined
-    ? join([trimmed(existing), added])
-    : join([
-        trimmed(existing.slice(0, end)),
-        added,
-        trimmed(existing.slice(end)),
-      ]);
+  const ends = endOfSection(tree, at);
+  const last = tree.children[ends - 1];
+  const offset = tree.children[ends]?.position?.start.offset;
+  if (offset === undefined) {
+    return `${trimmed(existing)}${after(last)}${added}\n`;
+  }
+
+  return `${trimmed(existing.slice(0, offset))}${after(last)}${join([
+    added,
+    trimmed(existing.slice(offset)),
+  ])}`;
 }
 
 /**
- * Where the section opened at `at` stops carrying content, as an offset into
- * the source — the start of the next heading no deeper than its own, or absent
- * where the section runs to the end of the note.
+ * Where the section opened at `at` stops, as the index of the first block that
+ * is not in it — the next heading no deeper than its own, or the end of the
+ * note.
  *
  * A `#` inside a fenced code block is not one of those, which is the whole
  * reason this reads a parse rather than the lines: `# install deps` in a shell
  * block used to end the section, and the fragment landed inside the fence.
  */
-function endOfSection(tree: Root, at: number): number | undefined {
+function endOfSection(tree: Root, at: number): number {
   const opened = tree.children[at];
-  if (opened === undefined || !isHeading(opened)) return undefined;
+  if (opened === undefined || !isHeading(opened)) return tree.children.length;
 
-  for (const node of tree.children.slice(at + 1)) {
-    if (isHeading(node) && node.depth <= opened.depth) {
-      return node.position?.start.offset;
-    }
-  }
+  const next = tree.children.findIndex(
+    (node, index) =>
+      index > at && isHeading(node) && node.depth <= opened.depth,
+  );
+  return next < 0 ? tree.children.length : next;
+}
 
-  return undefined;
+function isList(node: RootContent | undefined): node is List {
+  return node?.type === "list";
 }
 
 export function isHeading(node: RootContent): node is Heading {

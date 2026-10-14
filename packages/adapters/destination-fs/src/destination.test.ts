@@ -957,11 +957,8 @@ describe("a delivery converted to one item", () => {
     expect(await outputOf(outcome)).toMatchObject({
       text: "- [ ] a thought\n",
     });
-    expect(await readFile(join(path, "todo.md"), "utf8")).toContain(
-      "- [ ] older\n",
-    );
-    expect(await readFile(join(path, "todo.md"), "utf8")).toContain(
-      "- [ ] a thought\n",
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "# Todo\n\n## Templates\n\n- [ ] older\n- [ ] a thought\n\n## Later\n",
     );
   });
 
