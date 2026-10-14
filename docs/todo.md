@@ -118,6 +118,9 @@
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
+  - The hand-picked half shipped 2026-10-14: `conversion` on the markdown kinds, `block`,
+    `list-item` or `task` ([task-conversion](plans/task-conversion.md)). See the next entry for
+    what is left.
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Narrowed 2026-09-10: the **hand-made** half is answered — a person's words are a first-class `content` field of the request, beside the arguments rather than inside them, because a path and a person's prose are not the same kind of thing and only one of them is a destination's to interpret ([ADR 45](adr/0045-a-delivery-may-carry-its-own-content.md)). Still open: where an **automatic** conversion is configured — a template, a destination, a model in the loop — and whether one is itself a thing a person edits.
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
   ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
@@ -127,6 +130,11 @@
   output from `preview`, and a conversion that loses something says so in a note nobody parses.
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
+  - Narrowed 2026-10-14: a conversion is configured as a named argument the kind publishes
+    ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)), and the markdown
+    kinds ship `block`, `list-item` and `task`. A templating language was weighed there and
+    refused. Still open: a model in the loop, and a conversion that rewrites the whole file (a
+    fold), which ADR 61 deliberately left out of its interface.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
   - Shipped 2026-09-07, and the half that is closed is closed in code as well as on paper: templates
     are pool state, a `route/` tag applies one, a fired one waits out a configured window so the
@@ -144,8 +152,11 @@
     - test if JEV can be used for this
     - notemap keeps a backup of the original file when doing this?
     - Narrowed 2026-10-14 by [task-conversion](plans/task-conversion.md): a `list-item` or `task`
-      inserted under a picked heading is planned ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)).
-      Backups were deliberately left out. The output holds only the inserted fragment, so the note
+      now lands at the end of a heading picked from the note itself, joining a tight list without
+      loosening it ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md),
+      [ADR 62](adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)). Left
+      out on purpose: inserting at the **top** of a section rather than its end. Backups were
+      deliberately left out too. The output holds only the inserted fragment, so the note
       as it stood before notemap's edit cannot be recovered from the pool. The shape, if wanted:
       the whole pre-edit file as a blob, named on the routing record beside the output. A whole
       file rather than a reverse diff, because a diff only replays against a note nobody has

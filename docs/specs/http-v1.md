@@ -2,8 +2,13 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-14
 **Shipped**:
+
+- 2026-10-14 — **`/candidates` takes `given[<field>]`.** A field naming what its answer depends on
+  in `x-notemap-candidates-given` is asked with those arguments, each filled; `422 given-missing`
+  and `422 given-undeclared` refuse a request carrying anything else, before the destination is
+  asked. ([plan](../plans/task-conversion.md), [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md))
 
 - 2026-10-12 — **`GET /v1/storage`, `POST /v1/storage/measure` and `POST /v1/reclaim`.** Where the
   pool, the blobs, the mirror and the daemon's own database are, what each takes, and the space free

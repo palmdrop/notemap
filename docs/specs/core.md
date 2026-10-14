@@ -1,8 +1,16 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-14
 **Shipped**:
+
+- 2026-10-14 — **A delivery may be written as a list item or a task, under a heading picked from the
+  note.** The markdown kinds publish `conversion` (`block`, `list-item`, `task`) as an argument,
+  and core learns none of the names. A list shape writes one item, joins a tight list without
+  loosening it, and writes no front matter. A candidates request carries `given`, the arguments a
+  field's answer depends on, so `heading` lists a note's own headings given its `path`.
+  ([plan](../plans/task-conversion.md), [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md),
+  [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md))
 
 - 2026-10-12 — **The pool answers how much it has taken.** `pool.storage.recorded()` reads what the
   pool has written down — the store's bytes and how many of them it holds and is not using, and

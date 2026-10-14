@@ -1,7 +1,7 @@
 # A capture filed as a task, under a heading picked from the note
 
 **Date**: 2026-10-14
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`
 
 ---
@@ -130,10 +130,10 @@ Depends on phases 2 and 5.
 
 ### Phase 7: close out
 
-- [ ] `docs/todo.md`: narrow the **Conversion** and **Routing auto-processing** entries to what is
+- [x] `docs/todo.md`: narrow the **Conversion** and **Routing auto-processing** entries to what is
       still open (automatic and model-driven conversions, folds), and the **Output** in-file edits
       entry to what is left (full-file backups).
-- [ ] `Shipped:` entries in the specs listed above. Commit.
+- [x] `Shipped:` entries in the specs listed above. Commit. _(2026-10-14)_
 
 ---
 

@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-13
+**Last updated**: 2026-10-14
 **Shipped**:
+
+- 2026-10-14 — **`under` lists the note's headings, and `as` chooses a shape.** Once the place line
+  names a note, the heading field offers that note's headings and stays typeable where the
+  destination cannot answer; it never takes the caret. `as` (`block`, `list-item`, `task`) is
+  chosen beside the place, and `frontmatter` is not offered while it is anything but `block`. The
+  template form does the same. ([plan](../plans/task-conversion.md))
 
 - 2026-10-13 — **The Storage section is one figure per row, under a column of sizes.** Sizes share
   one right-aligned column; what each root holds takes a line of its own beneath it rather than a
