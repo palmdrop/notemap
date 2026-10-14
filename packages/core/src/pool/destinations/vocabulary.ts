@@ -35,6 +35,14 @@ export type PathRole = (typeof PATH_ROLES)[number];
 export const ASKABLE_FIELD = "x-notemap-candidates";
 
 /**
+ * The arguments an askable field's answer depends on, by name: a note's
+ * headings depend on which note. A request for the field carries each of them,
+ * filled, and nothing else; one asked before they are filled has nothing to be
+ * answered about.
+ */
+export const ASKABLE_GIVEN_FIELD = "x-notemap-candidates-given";
+
+/**
  * The field that may hold only something the destination already has: an
  * are.na channel, a board's column, a mailbox. It is the opposite of a vault's
  * folder, which a delivery makes where it is not there yet, and the difference
@@ -109,6 +117,14 @@ export const ANNOTATIONS: readonly {
   readonly value: JsonSchema;
 }[] = [
   { keyword: ASKABLE_FIELD, value: FLAG },
+  {
+    keyword: ASKABLE_GIVEN_FIELD,
+    value: {
+      type: "array",
+      minItems: 1,
+      items: { type: "string", minLength: 1 },
+    },
+  },
   { keyword: CARRIES, value: { enum: [CARRIES_ASSETS] } },
   { keyword: INHERITS_FIELD, value: FLAG },
   { keyword: OFFERED_ONLY_FIELD, value: FLAG },

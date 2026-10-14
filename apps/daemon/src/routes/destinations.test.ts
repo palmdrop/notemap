@@ -433,6 +433,71 @@ describe("GET /v1/destinations/{id}/candidates", () => {
     expect(answered.detail).toContain(host.vaultRoot);
   });
 
+  it("answers a heading given the note it is in, carried as given[path]", async () => {
+    const host = serving("ready");
+    writeFileSync(join(host.vaultRoot, "todo.md"), "# Todo\n\n## Templates\n");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "append",
+      field: "heading",
+      "given[path]": "todo.md",
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toEqual({
+      kind: "answered",
+      truncated: false,
+      entries: [
+        { label: "# Todo", value: "Todo" },
+        { label: "## Templates", value: "Templates" },
+      ],
+    });
+  });
+
+  it("refuses a heading asked about before the note it depends on is filled", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    for (const query of [
+      { capability: "append", field: "heading" },
+      { capability: "append", field: "heading", "given[path]": "" },
+    ]) {
+      const response = await ask(host, vault.id, query);
+
+      expect(response.status).toBe(422);
+      expect(await body(response)).toMatchObject({
+        error: {
+          code: "given-missing",
+          capability: "append",
+          field: "heading",
+          missing: ["path"],
+        },
+      });
+    }
+  });
+
+  it("refuses an argument the field never said it depends on", async () => {
+    const host = serving("ready");
+    const vault = await created(host);
+
+    const response = await ask(host, vault.id, {
+      capability: "create",
+      field: "directory",
+      "given[filename]": "a.md",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: {
+        code: "given-undeclared",
+        capability: "create",
+        field: "directory",
+        undeclared: ["filename"],
+      },
+    });
+  });
+
   it("offers a folder to walk through, and a note to take, for append", async () => {
     const host = serving("ready");
     mkdirSync(join(host.vaultRoot, "projects"));

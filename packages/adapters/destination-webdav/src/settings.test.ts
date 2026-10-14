@@ -144,7 +144,12 @@ describe("describing a destination", () => {
     ] as Record<string, Record<string, unknown>>;
 
     expect(properties["path"]).toHaveProperty("x-notemap-candidates", true);
-    expect(properties["heading"]).not.toHaveProperty("x-notemap-candidates");
+    expect(properties["heading"]).toMatchObject({
+      "x-notemap-candidates": true,
+      "x-notemap-candidates-given": ["path"],
+    });
+    expect(properties["filename"]).toBeUndefined();
+    expect(properties["conversion"]).not.toHaveProperty("x-notemap-candidates");
   });
 
   /** Describing never touches the network; enumerating is the call that does. */

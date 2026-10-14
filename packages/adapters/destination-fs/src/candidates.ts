@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs";
-import { lstat, readdir } from "node:fs/promises";
+import { lstat, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import {
@@ -11,7 +11,13 @@ import {
   type Destination,
 } from "@notemap/core";
 
-import { browsedBy, type Browsed } from "@notemap/output-markdown";
+import {
+  browsedBy,
+  headingCandidates,
+  headingsNote,
+  NO_HEADINGS,
+  type Browsed,
+} from "@notemap/output-markdown";
 
 import { contain, realOverlapsAny, realRootOf } from "./paths";
 import { asFilesystemSettings } from "./settings";
@@ -47,11 +53,36 @@ export async function filesystemCandidates(
     throw new Unusable(`${realRoot} overlaps notemap's own ${overlap}`);
   }
 
+  if (kind === "heading") return headingsIn(realRoot, request);
+
   const located = await contain(realRoot, request.scope ?? "");
   if (located.kind === "refused") throw new Error(located.detail);
 
   const entries = await list(located.path.absolute);
   return page(kind, located.path.relative, entries);
+}
+
+/** A note that is not there yet, or is a folder, has no headings to offer and is not a failure. */
+async function headingsIn(
+  realRoot: string,
+  request: CandidatesRequest,
+): Promise<CandidatesAnswer> {
+  const path = headingsNote(request);
+  if (path === undefined) return NO_HEADINGS;
+
+  const located = await contain(realRoot, path);
+  if (located.kind === "refused") throw new Error(located.detail);
+
+  let note: string;
+  try {
+    note = await readFile(located.path.absolute, "utf8");
+  } catch (cause) {
+    const code = (cause as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "EISDIR") return NO_HEADINGS;
+    throw new Error(`${path}: ${why(cause)}`, { cause });
+  }
+
+  return headingCandidates(note);
 }
 
 async function resolveRoot(root: string): Promise<string> {
@@ -119,7 +150,7 @@ export async function settle(
  * the handful of ways down through it.
  */
 function page(
-  kind: Browsed,
+  kind: Exclude<Browsed, "heading">,
   prefix: string,
   entries: readonly Listed[],
 ): CandidatesAnswer {

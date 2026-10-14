@@ -1281,9 +1281,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is the ordinary case and means the value is already the lasting one. Which of the two to take is
   the **asking surface's** business rather than the destination's: a decision made once prefers the
   readable name and reads it back on its record, and one that fires again for months prefers the
-  name that cannot rot. Core carries both and reads neither. A
-  request carries none of the arguments filled in so far, because no field either kind declares
-  today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
+  name that cannot rot. Core carries both and reads neither. A request may carry **`given`**
+  (added 2026-10-14, [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)):
+  the arguments the field's answer depends on, named by the field itself in
+  `x-notemap-candidates-given`, as strings. A note's headings are asked about given the note's
+  `path`. The route checks that a request carries exactly those, filled, before the destination is
+  asked anything; core passes them through. Failures are `unreachable`, `unusable` and `not-offered`, on the same
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.

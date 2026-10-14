@@ -136,6 +136,19 @@ is offered before `path` is filled and fails.
 
 ---
 
+## Amended 2026-10-14, implementing it
+
+Two corrections, neither changing the decision.
+
+**The query parameter is `given[path]`, not `given.path`.** OpenAPI describes an object in a query
+string as a `deepObject` parameter, and `given[<name>]` is what that style puts on the wire and
+what the generated client already sends for an object. `given.<name>` would have needed a
+hand-written serializer on every client and a parameter OpenAPI cannot describe.
+
+**The cache that has to key on `given` is the shell's**, not the client's. The client asks for
+candidates afresh every time and keeps nothing; the shell keeps the last answer per field for the
+life of a page and draws it while it asks again. That cache keys on `given` too.
+
 ## More information
 
 Plan: [task-conversion.md](../plans/task-conversion.md). Revisit when a field depends on a

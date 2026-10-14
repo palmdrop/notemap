@@ -174,7 +174,7 @@ describe("what it says it can do", () => {
     });
   });
 
-  it("asks nothing of create-or-append but offers candidates for its path", async () => {
+  it("asks nothing of create-or-append, and offers candidates for its path and, given the path, its heading", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
     const schema = described.capabilities[0]?.argumentsSchema as JsonObject;
@@ -182,11 +182,11 @@ describe("what it says it can do", () => {
     expect(schema["required"]).toBeUndefined();
     expect(schema["properties"]).toMatchObject({
       path: { "x-notemap-candidates": true },
-      heading: {},
+      heading: {
+        "x-notemap-candidates": true,
+        "x-notemap-candidates-given": ["path"],
+      },
     });
-    expect((schema["properties"] as JsonObject)["heading"]).not.toHaveProperty(
-      "x-notemap-candidates",
-    );
   });
 
   it("splits create's path into its folders and its leaf", async () => {

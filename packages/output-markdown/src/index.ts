@@ -3,6 +3,7 @@ export * from "./conversion";
 export * from "./errors";
 export * from "./filename";
 export * from "./frontmatter";
+export * from "./headings";
 export * from "./names";
 export * from "./note";
 export * from "./place";

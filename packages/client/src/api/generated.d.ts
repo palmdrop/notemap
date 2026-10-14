@@ -2454,6 +2454,10 @@ export interface paths {
                     field: string;
                     /** @description Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything. */
                     scope?: string;
+                    /** @description The arguments the field's answer depends on, as `given[path]=…`: exactly those its schema names in `x-notemap-candidates-given`, each filled. One left empty is `given-missing`; one it does not name is `given-undeclared`. */
+                    given?: {
+                        [key: string]: string;
+                    };
                 };
                 header?: never;
                 path: {
@@ -2489,7 +2493,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The capability was not declared, or the field is not one that can be asked about. */
+                /** @description The capability was not declared, the field is not one that can be asked about, or `given` does not carry exactly what the field depends on. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -2499,7 +2503,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "capability-undeclared" | "field-not-askable";
+                                code: "capability-undeclared" | "field-not-askable" | "given-missing" | "given-undeclared";
                             } & {
                                 [key: string]: unknown;
                             };

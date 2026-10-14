@@ -83,13 +83,62 @@ describe("what the typed line's path offers", () => {
       { label: "a.md", value: "projects/a.md" },
     ]);
   });
+});
 
-  it("offers nothing for its heading, which is free text", async () => {
+describe("what a heading offers, given the note", () => {
+  const HEADING: CandidatesRequest = {
+    capability: "create-or-append" as CapabilityName,
+    field: "heading",
+  };
+  const given = (path: string): CandidatesRequest => ({
+    ...HEADING,
+    given: { path },
+  });
+
+  it("lists the headings of the note the path names", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "docs"));
+    await writeFile(
+      join(path, "docs", "todo.md"),
+      "# Todo\n\n## Templates\n\n- [ ] one\n\n## Later\n",
+    );
+
+    expect(await candidates(given("docs/todo.md"))).toEqual({
+      truncated: false,
+      entries: [
+        { label: "# Todo", value: "Todo" },
+        { label: "## Templates", value: "Templates" },
+        { label: "## Later", value: "Later" },
+      ],
+    });
+  });
+
+  it("answers none for a note that is not there yet", async () => {
     const { candidates } = await vault();
 
-    await expect(candidates({ ...LINE, field: "heading" })).rejects.toThrow(
-      NotOffered,
-    );
+    expect((await candidates(given("todo.md"))).entries).toEqual([]);
+  });
+
+  it("answers none for a path naming a folder, whose note is named at delivery", async () => {
+    const { path, candidates } = await vault();
+    await mkdir(join(path, "docs"));
+
+    expect((await candidates(given("docs/"))).entries).toEqual([]);
+    expect((await candidates(given("docs"))).entries).toEqual([]);
+  });
+
+  it("refuses a note outside the destination", async () => {
+    const { candidates } = await vault();
+
+    await expect(candidates(given("../outside.md"))).rejects.toThrow();
+  });
+
+  it("is still not offered for a field nothing marks askable", async () => {
+    const { candidates } = await vault();
+
+    await expect(
+      candidates({ ...HEADING, field: "filename", given: { path: "a.md" } }),
+    ).rejects.toThrow(NotOffered);
   });
 });
 

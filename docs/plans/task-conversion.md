@@ -81,38 +81,41 @@ Depends on phase 2.
 
 Depends on nothing. Phase 5 needs it.
 
-- [ ] Core: `CandidatesRequest.given`, the `x-notemap-candidates-given` annotation constant, and
-      the two refusals checked before the destination is asked: `given-missing` and
-      `given-undeclared`.
-- [ ] HTTP: `given.<field>` query parameters on `GET /v1/destinations/{id}/candidates`, both
+- [x] Core: `CandidatesRequest.given` and the `x-notemap-candidates-given` annotation, registered
+      with the validator. Core passes `given` through; the route checks it, as it checks the
+      capability and the field.
+- [x] HTTP: `given[<field>]` query parameters, `given-missing` and `given-undeclared` checked before
+      the destination is asked, on `GET /v1/destinations/{id}/candidates`, both
       `422`s, the OpenAPI document regenerated, and the client's types regenerated with `codegen`.
-- [ ] Client: the candidates cache keys on `given`.
-- [ ] Specs: core.md (candidates) and http-v1.md (`/candidates`: parameters, the two codes, an
+- [-] Client: the candidates cache keys on `given`. _(moved to phase 6: the cache is the shell's,
+      `$lib/candidate-cache`; the client keeps nothing)_
+- [x] Specs: core.md (candidates) and http-v1.md (`/candidates`: parameters, the two codes, an
       example).
-- [ ] Tests: core refusals; route parsing and refusals; the client cache never answers one note's
-      headings for another.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint, `pnpm test:stack` (this changes the HTTP
-      surface and the client's transport). Commit.
+- [x] Tests: route parsing and both refusals; the client sends `given[path]`.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint, `pnpm test:stack` (this changes the HTTP
+      surface and the client's transport). Commit. _(2026-10-14)_
 
 ### Phase 5: the markdown kinds answer headings
 
 Depends on phase 4.
 
-- [ ] `heading` on `append` and `create-or-append` is marked askable, with `given: ["path"]`.
-- [ ] fs and webdav answer one entry per distinct heading text in the note `path` names, with
+- [x] `heading` on `append` and `create-or-append` is marked askable, with `given: ["path"]`.
+- [x] fs and webdav answer one entry per distinct heading text in the note `path` names, with
       `value` set and no `scope`, in document order, capped and `truncated` like any other answer.
       A note that is not there, or a `create-or-append` path ending in `/`, answers with no
       entries.
-- [ ] The heading text an entry carries is the text `insertUnder` matches on, from the same
+- [x] The heading text an entry carries is the text `insertUnder` matches on, from the same
       function. A picked heading must always be found by the splice.
-- [ ] Tests on both kinds: ATX and setext headings, emphasis in a heading, a `#` inside a fence,
+- [x] Tests on both kinds: ATX and setext headings, emphasis in a heading, a `#` inside a fence,
       duplicates listed once, a missing note, a folder path.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint. Commit. _(2026-10-14)_
 
 ### Phase 6: the shell
 
 Depends on phases 2 and 5.
 
+- [ ] The shell's candidate cache (`$lib/candidate-cache`) keys on `given`, so one note's headings
+      never answer for another.
 - [ ] The composer and the template form draw `conversion` as they draw other enums, and hide
       `frontmatter` for any conversion other than `block`. That follows from the `x-notemap-when`
       added in phase 2; a test confirms it, including `trigger tags` still showing through
@@ -141,9 +144,9 @@ Depends on phases 2 and 5.
   whether `CandidateBrowser` can be pointed at a field other than the path. Fallback: the heading
   picker is a plain list under the heading input rather than the browser, with the same request
   underneath.
-- **Whether `@hono/zod-openapi` can describe a `given.<field>` family of query parameters.** If it
-  cannot, use OpenAPI's `deepObject` style (`given[path]=…`), and amend ADR 62 before it is
-  accepted rather than after.
+- [x] **Whether `@hono/zod-openapi` can describe a `given.<field>` family of query parameters.**
+  Answered 2026-10-14: `deepObject` (`given[path]=…`) is what OpenAPI describes and what
+  openapi-fetch already sends for an object, so that is the shape. ADR 62 carries an amendment.
 - **A body that does not open with a line of prose**: a fence, a picture, a heading. A heading's
   markers are stripped and its text becomes the item. For a fence or a picture, the fallback is an
   item with no text of its own and the whole body as its continuation. Decide during phase 2 with

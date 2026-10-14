@@ -61,6 +61,18 @@ export type DaemonRefusal =
       readonly capability: string;
       readonly field: string;
     }
+  | {
+      readonly kind: "given-missing";
+      readonly capability: string;
+      readonly field: string;
+      readonly missing: readonly string[];
+    }
+  | {
+      readonly kind: "given-undeclared";
+      readonly capability: string;
+      readonly field: string;
+      readonly undeclared: readonly string[];
+    }
   | { readonly kind: "unknown-route"; readonly path: string }
   | {
       readonly kind: "method-not-allowed";

@@ -277,6 +277,12 @@ export const CANDIDATES_REQUEST_STATUS = {
   "field-not-askable": 422,
 } as const;
 
+/** `/candidates` alone: what a field's answer depends on, carried or not. */
+export const GIVEN_STATUS = {
+  "given-missing": 422,
+  "given-undeclared": 422,
+} as const;
+
 export const ADDRESS_STATUS = {
   "unknown-route": 404,
   "method-not-allowed": 405,
@@ -301,6 +307,7 @@ const DAEMON_STATUS = {
   ...SUBJECT_STATUS,
   ...ITEMS_READ_STATUS,
   ...CANDIDATES_REQUEST_STATUS,
+  ...GIVEN_STATUS,
   ...ADDRESS_STATUS,
   ...AUTH_STATUS,
 } as const satisfies Record<DaemonRefusal["kind"], number>;

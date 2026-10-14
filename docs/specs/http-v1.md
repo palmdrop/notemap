@@ -1187,6 +1187,20 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create&field=directory&s
   property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. An undeclared
   capability is `422 capability-undeclared`, the same code and shape routing an item refuses one
   with; a field that is not askable is `422 field-not-askable`. Neither reaches the destination.
+- **A field whose answer depends on other arguments says so, and the request carries them as
+  `given`** (added 2026-10-14,
+  [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)). The
+  field's schema names them in `x-notemap-candidates-given`, and each travels as a `deepObject`
+  query parameter, `given[<name>]=<value>`, a string. A note's headings are asked given its path:
+
+  ```
+  GET /v1/destinations/019a3f2c-.../candidates?capability=append&field=heading&given[path]=docs/todo.md
+  ```
+
+  Checked with the capability and the field, before the destination is asked anything: an
+  argument the field depends on that is absent or empty is `422 given-missing`, naming it in
+  `missing`, and one it does not depend on is `422 given-undeclared`, naming it in `undeclared`.
+  A field with no such annotation takes no `given` at all.
 - **It is capped, not paginated.** `truncated` says the destination held more than it answered. A
   folder holding thousands of notes is a search problem rather than a paging one, and a cursor
   would put a position on an ordering notemap does not own and cannot promise is stable between two
