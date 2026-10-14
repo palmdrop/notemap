@@ -2,21 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import { insertUnder } from "./sections";
 
+const filed = (...args: Parameters<typeof insertUnder>): string =>
+  insertUnder(...args).file;
+
 describe("inserting under a heading", () => {
   it("appends at the end where no heading is named", () => {
-    expect(insertUnder("the first line\n", "a thought")).toBe(
+    expect(filed("the first line\n", "a thought")).toBe(
       "the first line\n\na thought\n",
     );
   });
 
   it("writes the heading where the note does not have it", () => {
-    expect(insertUnder("# Monday\n", "a thought", "Captured")).toBe(
+    expect(filed("# Monday\n", "a thought", "Captured")).toBe(
       "# Monday\n\n## Captured\n\na thought\n",
     );
   });
 
   it("writes the note itself where there is nothing there", () => {
-    expect(insertUnder("", "a thought", "Captured")).toBe(
+    expect(filed("", "a thought", "Captured")).toBe(
       "## Captured\n\na thought\n",
     );
   });
@@ -24,7 +27,7 @@ describe("inserting under a heading", () => {
   it("puts the fragment at the end of the section, not the end of the note", () => {
     const note = "## Captured\n\nthe first\n\n## Later\n\nsomething else\n";
 
-    expect(insertUnder(note, "the second", "Captured")).toBe(
+    expect(filed(note, "the second", "Captured")).toBe(
       "## Captured\n\nthe first\n\nthe second\n\n## Later\n\nsomething else\n",
     );
   });
@@ -34,7 +37,7 @@ describe("inserting under a heading", () => {
     const note =
       "## Captured\n\n### A morning\n\nthe first\n\n## Later\n\nlast\n";
 
-    expect(insertUnder(note, "the second", "Captured")).toBe(
+    expect(filed(note, "the second", "Captured")).toBe(
       "## Captured\n\n### A morning\n\nthe first\n\nthe second\n\n## Later\n\nlast\n",
     );
   });
@@ -59,7 +62,7 @@ describe("inserting under a heading", () => {
       "",
     ].join("\n");
 
-    const written = insertUnder(note, "the second", "Captured");
+    const written = filed(note, "the second", "Captured");
 
     expect(written).toBe(
       [
@@ -84,7 +87,7 @@ describe("inserting under a heading", () => {
   it("does not find its heading inside a code fence", () => {
     const note = ["```sh", "## Captured", "```", ""].join("\n");
 
-    expect(insertUnder(note, "a thought", "Captured")).toBe(
+    expect(filed(note, "a thought", "Captured")).toBe(
       [
         "```sh",
         "## Captured",
@@ -102,7 +105,7 @@ describe("inserting under a heading", () => {
   it("finds a heading written with underlining", () => {
     const note = "Captured\n========\n\nthe first\n";
 
-    expect(insertUnder(note, "the second", "Captured")).toBe(
+    expect(filed(note, "the second", "Captured")).toBe(
       "Captured\n========\n\nthe first\n\nthe second\n",
     );
   });
@@ -110,7 +113,7 @@ describe("inserting under a heading", () => {
   it("matches the heading a person typed, not what its emphasis parsed to", () => {
     const note = "## Read: *Borges*\n\nthe first\n";
 
-    expect(insertUnder(note, "the second", "Read: *Borges*")).toBe(
+    expect(filed(note, "the second", "Read: *Borges*")).toBe(
       "## Read: *Borges*\n\nthe first\n\nthe second\n",
     );
   });
@@ -119,7 +122,7 @@ describe("inserting under a heading", () => {
 describe("an item joining a list", () => {
   it("keeps a tight list tight", () => {
     expect(
-      insertUnder(
+      filed(
         "## Todo\n\n- [ ] one\n- [ ] two\n\n## Later\n\nprose\n",
         "- [ ] three\n",
         "Todo",
@@ -130,38 +133,69 @@ describe("an item joining a list", () => {
   });
 
   it("keeps a loose list loose", () => {
-    expect(
-      insertUnder("## Todo\n\n- one\n\n- two\n", "- three\n", "Todo"),
-    ).toBe("## Todo\n\n- one\n\n- two\n\n- three\n");
+    expect(filed("## Todo\n\n- one\n\n- two\n", "- three\n", "Todo")).toBe(
+      "## Todo\n\n- one\n\n- two\n\n- three\n",
+    );
   });
 
   it("joins the list at the end of a note where no heading is named", () => {
-    expect(insertUnder("- one\n- two\n", "- three\n")).toBe(
+    expect(filed("- one\n- two\n", "- three\n")).toBe(
       "- one\n- two\n- three\n",
     );
   });
 
   it("starts a list of its own after a section ending in prose", () => {
-    expect(insertUnder("## Todo\n\nsome words\n", "- one\n", "Todo")).toBe(
+    expect(filed("## Todo\n\nsome words\n", "- one\n", "Todo")).toBe(
       "## Todo\n\nsome words\n\n- one\n",
     );
   });
 
   it("does not take a list inside a fence for a list", () => {
-    expect(
-      insertUnder("## Todo\n\n```md\n- one\n```\n", "- two\n", "Todo"),
-    ).toBe("## Todo\n\n```md\n- one\n```\n\n- two\n");
+    expect(filed("## Todo\n\n```md\n- one\n```\n", "- two\n", "Todo")).toBe(
+      "## Todo\n\n```md\n- one\n```\n\n- two\n",
+    );
   });
 
   it("leaves a block after a list as it always was", () => {
-    expect(insertUnder("## Notes\n\n- one\n", "a thought\n", "Notes")).toBe(
+    expect(filed("## Notes\n\n- one\n", "a thought\n", "Notes")).toBe(
       "## Notes\n\n- one\n\na thought\n",
     );
   });
 
-  it("joins a list that keeps going after a nested one", () => {
+  it("joins a list written with another bullet by taking its bullet", () => {
     expect(
-      insertUnder("## Todo\n\n- one\n  - under one\n", "- two\n", "Todo"),
-    ).toBe("## Todo\n\n- one\n  - under one\n- two\n");
+      insertUnder("## Todo\n\n* one\n* two\n", "- [ ] three\n  more\n", "Todo"),
+    ).toEqual({
+      file: "## Todo\n\n* one\n* two\n* [ ] three\n  more\n",
+      inserted: "* [ ] three\n  more\n",
+    });
+  });
+
+  it("leaves the bullets of a list nested in the item alone", () => {
+    expect(insertUnder("+ one\n", "- two\n  - under two\n").inserted).toBe(
+      "+ two\n  - under two\n",
+    );
+  });
+
+  it("starts a list of its own after a numbered one", () => {
+    expect(
+      insertUnder("## Todo\n\n1. one\n2. two\n", "- three\n", "Todo"),
+    ).toEqual({
+      file: "## Todo\n\n1. one\n2. two\n\n- three\n",
+      inserted: "- three\n",
+    });
+  });
+
+  it("says the fragment went in as it was, wherever no list is joined", () => {
+    expect(
+      insertUnder("## Notes\n\nwords\n", "- one\n", "Notes").inserted,
+    ).toBe("- one\n");
+    expect(insertUnder("", "- one\n", "Notes").inserted).toBe("- one\n");
+  });
+
+  it("joins a list that keeps going after a nested one", () => {
+    expect(filed("## Todo\n\n- one\n  - under one\n", "- two\n", "Todo")).toBe(
+      "## Todo\n\n- one\n  - under one\n- two\n",
+    );
   });
 });

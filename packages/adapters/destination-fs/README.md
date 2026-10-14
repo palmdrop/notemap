@@ -27,7 +27,8 @@ help nobody asked for.
 The fragment lands at the end of the named heading's section, or at the end of the file when no
 heading is named. **A heading that is not there is written**, and so is the file: the motivating
 case is a daily note whose sections appear as things are filed into them. A `list-item` or `task`
-fragment joins a tight list it lands after without a blank line, so the list stays tight.
+fragment joins a tight list it lands after without a blank line, so the list stays tight, and
+takes that list's bullet where it is `*` or `+`. The output records the bullet it went in with.
 
 `heading` can be browsed given `path`: the answer is the note's headings, each distinct one once,
 labelled with its `#`s, valued with exactly the text the splice matches on. A note that is not

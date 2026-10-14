@@ -15,7 +15,7 @@ import type {
 } from "@notemap/core";
 
 import { CONVERSION, CONVERSION_ARGUMENT } from "./conversion";
-import { HEADING } from "./headings";
+import { HEADING, HEADING_NOTE } from "./headings";
 import { FRONTMATTER, FRONTMATTER_MODE } from "./frontmatter";
 import {
   HASHTAGS,
@@ -95,7 +95,7 @@ function createFileArguments(browsable: boolean): JsonSchema {
 /** Which headings a note has depends on which note, so a browse for one carries the path. */
 function headingAskable(browsable: boolean): JsonObject {
   return browsable
-    ? { [ASKABLE_FIELD]: true, [ASKABLE_GIVEN_FIELD]: ["path"] }
+    ? { [ASKABLE_FIELD]: true, [ASKABLE_GIVEN_FIELD]: [HEADING_NOTE] }
     : {};
 }
 

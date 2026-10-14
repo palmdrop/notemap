@@ -58,6 +58,36 @@ describe("a body as one item", () => {
   it("writes an item with only its hashtags where the body is empty", () => {
     expect(asItem("", "task", "#reading")).toBe("- [ ] #reading\n");
   });
+
+  it("refuses a task with nothing on its own line", () => {
+    for (const body of ["", "- one\n- two\n", "```sh\necho a\n```\n"]) {
+      expect(() => asItem(body, "task", "")).toThrow(RenderingFailed);
+    }
+  });
+
+  it("drops a divider, which under the item's words would make them a heading", () => {
+    expect(asItem("buy milk\n\n---\n\noat, not soy\n", "task", "")).toBe(
+      "- [ ] buy milk\n  oat, not soy\n",
+    );
+  });
+
+  it("keeps a blank line before a block that would run into the words above it", () => {
+    expect(asItem("buy milk\n\n2. oat\n3. soy\n", "task", "")).toBe(
+      "- [ ] buy milk\n\n  2. oat\n  3. soy\n",
+    );
+    expect(asItem("buy milk\n\n    indented code\n", "task", "")).toBe(
+      "- [ ] buy milk\n\n      indented code\n",
+    );
+  });
+
+  it("keeps a blank line before words that would run into a list or a quote", () => {
+    expect(asItem("buy\n\n- milk\n\nthen home\n", "task", "")).toBe(
+      "- [ ] buy\n  - milk\n\n  then home\n",
+    );
+    expect(asItem("buy\n\n> milk\n\nthen home\n", "task", "")).toBe(
+      "- [ ] buy\n  > milk\n\n  then home\n",
+    );
+  });
 });
 
 describe("which conversion a delivery asked for", () => {

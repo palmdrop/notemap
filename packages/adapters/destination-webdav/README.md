@@ -40,9 +40,11 @@ every composer choice kind-specific for no gain.
 
 The place fields offer **candidates**, one `PROPFIND` at `Depth: 1` per level browsed: collections
 for a folder field, collections and notes for a field naming a note. A heading offers the headings
-of the note it is given as `path`, read with one `GET`: each distinct heading once, the label
-keeping its `#`s, the value being exactly what the splice matches on. A note that is not there,
-or a path ending in `/`, offers none.
+of the note it is given as `path`, read with a `PROPFIND` at `Depth: 0` and then a `GET`: each
+distinct heading once, the label keeping its `#`s, the value being exactly what the splice matches
+on. A note that is not there, or a path naming a collection, with or without its `/`, offers none.
+The `PROPFIND` is there because what a `GET` on a collection answers differs from server to
+server.
 
 Whether a note carries provenance is the `frontmatter` setting — `full` or `none`, unset meaning
 none — which each capability takes as an argument of the same name to override for one delivery,

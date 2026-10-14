@@ -978,6 +978,25 @@ describe("a delivery converted to one item", () => {
     expect(await outputOf(outcome)).toEqual(previewed);
   });
 
+  it("takes the bullet of the list it joins, in what it writes and in what it says it would", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "todo.md"), "## Templates\n\n* older\n");
+    const each = asked({
+      path: "todo.md",
+      heading: "Templates",
+      conversion: "task",
+    });
+
+    const previewed = await textOf(await destination.preview(each));
+    const outcome = await destination.deliver(each);
+
+    expect(previewed.text).toBe("* [ ] a thought\n");
+    expect(await outputOf(outcome)).toEqual(previewed);
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "## Templates\n\n* older\n* [ ] a thought\n",
+    );
+  });
+
   it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {
     const { path, destination } = await vault(
       { text: renderText },

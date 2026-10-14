@@ -43,7 +43,11 @@ delivery; absent inherits it, and an absent setting is `none`.
 All three also take `conversion`: `block`, the note as it is and the default; `list-item`; or
 `task`. The two list shapes write one item: its line is the first line of the first prose the
 rendering holds, the rest goes beneath it as indented continuation with no blank lines, the
-hashtags go at the end of the item's line, and no frontmatter is written. `frontmatter` is offered
+hashtags go at the end of the item's line, and no frontmatter is written. A divider is dropped,
+and a block that would run into the one above it keeps the blank line before it: a numbered list
+not starting at 1 under a line of words, or words under a list or a quote. A `task` with nothing
+on its own line is a `RenderingFailed`, since GFM reads `- [ ]` as a checkbox only with something
+after it. `frontmatter` is offered
 only while `conversion` is `block`, and `conversion` comes before it in the schema because a form
 judges a condition against the fields ahead of it. A value no kind publishes is a
 `RenderingFailed`, so the delivery is rejected.

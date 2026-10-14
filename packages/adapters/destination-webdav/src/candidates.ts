@@ -54,6 +54,15 @@ export function webdavCandidates(credentials: CredentialResolver) {
       if (located.kind === "refused") throw new Refused(located.detail);
 
       const dav = createDav(await credentials(settings.account));
+      // What a `GET` on a collection answers is the server's own business.
+      const looked = await dav.look(located.path.encoded, signal);
+      if (looked.kind === "refused") {
+        throw new Error(
+          `the account refused to say what ${located.path.relative} holds (${String(looked.status)})`,
+        );
+      }
+      if (looked.kind === "not-there" || looked.collection) return NO_HEADINGS;
+
       const note = await dav.get(located.path.encoded, signal);
       return note === undefined ? NO_HEADINGS : headingCandidates(note.body);
     }

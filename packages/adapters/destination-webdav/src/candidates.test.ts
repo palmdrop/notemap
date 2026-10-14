@@ -163,6 +163,22 @@ describe("what a webdav vault offers the typed line", () => {
     }
   });
 
+  it("offers no headings for a folder named without its slash, and never reads it", async () => {
+    const { server, candidates } = await vault();
+    server.makeCollection("V/notes");
+
+    expect(
+      (
+        await candidates({
+          ...LINE,
+          field: "heading",
+          given: { path: "notes" },
+        })
+      ).entries,
+    ).toEqual([]);
+    expect(server.requests()).not.toContain("GET /V/notes");
+  });
+
   it("is still not offered for a field nothing marks askable", async () => {
     const { candidates } = await vault();
 

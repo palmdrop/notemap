@@ -44,34 +44,86 @@ const MARKERS: Readonly<Record<Exclude<Conversion, "block">, string>> = {
  * above its words still reads as its words. Everything else follows, indented
  * as the item's continuation and in the order it was rendered, with the blank
  * lines between blocks taken out: one blank line inside an item makes the
- * whole list it joins loose. A fenced block keeps its own blank lines, which
- * are its content rather than spacing.
+ * whole list it joins loose. A block that would run into the one above it
+ * without one keeps it, and a divider is dropped, since under a line of words
+ * it would make them a heading. A fenced block keeps its own blank lines,
+ * which are its content rather than spacing.
  */
 export function asItem(
   body: string,
   conversion: Exclude<Conversion, "block">,
   hashtags: string,
 ): string {
-  const blocks = fromMarkdown(body).children;
+  const blocks = fromMarkdown(body).children.filter(
+    (block) => block.type !== "thematicBreak",
+  );
   const lead = leadOf(blocks);
 
   let said = "";
-  const rest: string[] = [];
+  const rest: Segment[] = [];
   blocks.forEach((block, at) => {
     const lines = linesOf(body, block);
+    const type = isHeading(block) ? "paragraph" : block.type;
     if (at === lead) {
       said = lines[0] ?? "";
-      rest.push(...lines.slice(1));
+      rest.push({ lines: lines.slice(1), type });
     } else {
-      rest.push(...lines);
+      rest.push({ lines, type });
     }
   });
 
   const words = [said, hashtags].filter((part) => part.trim() !== "");
+  // GFM reads `[ ]` as a checkbox only with something after it on its line.
+  if (conversion === "task" && words.length === 0) {
+    throw new RenderingFailed(
+      "a task needs words on its own line, and this capture opens with none",
+    );
+  }
+
   const first = `${MARKERS[conversion]}${words.join(" ")}`.trimEnd();
-  const continued = rest.map((line) => (line === "" ? "" : `  ${line}`));
+  const continued = spaced(said, rest).map((line) =>
+    line === "" ? "" : `  ${line}`,
+  );
 
   return `${[first, ...continued].join("\n")}\n`;
+}
+
+type Segment = {
+  readonly lines: readonly string[];
+  readonly type: RootContent["type"];
+};
+
+/** The continuation's lines, with a blank line only before a block that would otherwise run into the one above it. */
+function spaced(said: string, segments: readonly Segment[]): string[] {
+  const lines = said === "" ? [] : [said];
+  for (const { lines: own, type } of segments) {
+    if (own.length === 0) continue;
+    if (lines.length > 0 && runsIn(lines, own, type)) lines.push("");
+    lines.push(...own);
+  }
+  return said === "" ? lines : lines.slice(1);
+}
+
+/**
+ * Whether `own`, put straight under `above`, stops being the block it was.
+ * Prose running on into prose is the one merge a flattened item accepts.
+ */
+function runsIn(
+  above: readonly string[],
+  own: readonly string[],
+  type: RootContent["type"],
+): boolean {
+  const before = fromMarkdown(above.join("\n")).children;
+  const after = fromMarkdown([...above, ...own].join("\n")).children;
+  const last = after.at(-1)?.type;
+
+  if (after.length === before.length + 1 && last === type) return false;
+  return !(
+    type === "paragraph" &&
+    after.length === before.length &&
+    last === "paragraph" &&
+    before.at(-1)?.type === "paragraph"
+  );
 }
 
 /** The block whose first line the item says, or none where the body opens with something that is not words. */

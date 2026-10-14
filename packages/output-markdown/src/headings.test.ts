@@ -40,7 +40,11 @@ describe("the headings a note offers", () => {
   it("offers only what the splice will find", () => {
     const note = "# Monday\n\n## Read: *Borges*\n\n## Later\n";
     for (const entry of headingCandidates(note).entries) {
-      const filed = insertUnder(note, "marker\n", String(entry.value));
+      const { file: filed } = insertUnder(
+        note,
+        "marker\n",
+        String(entry.value),
+      );
       expect(filed.match(/^## /gm)?.length).toBe(2);
       expect(filed).toContain("marker");
     }

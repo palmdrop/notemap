@@ -9,6 +9,9 @@ import { headingText, isHeading } from "./sections";
 
 export const HEADING = "heading";
 
+/** The argument naming the note whose headings a heading browse lists. */
+export const HEADING_NOTE = "path";
+
 /** The same cap a folder is browsed under. */
 const LIMIT = 500;
 
@@ -17,7 +20,7 @@ const LIMIT = 500;
  * and the filename is not derived until delivery.
  */
 export function headingsNote(request: CandidatesRequest): string | undefined {
-  const path = request.given?.["path"] ?? "";
+  const path = request.given?.[HEADING_NOTE] ?? "";
   return path === "" || path.endsWith("/") ? undefined : path;
 }
 

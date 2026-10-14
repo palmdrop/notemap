@@ -490,7 +490,7 @@ async function append(
   if (existing === undefined) {
     const file = fileOf(
       rendered.frontmatter,
-      insertUnder("", rendered.body, heading),
+      insertUnder("", rendered.body, heading).file,
     );
     return {
       note,
@@ -501,10 +501,11 @@ async function append(
     };
   }
 
+  const { file, inserted } = insertUnder(existing.text, rendered.body, heading);
   return {
     note,
-    written: rendered.body,
-    file: insertUnder(existing.text, rendered.body, heading),
+    written: inserted,
+    file,
     expects: existing.snapshot,
     ...said(rendered.dropped),
   };

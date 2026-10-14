@@ -1145,8 +1145,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   `task`) on every capability that writes a note. `block` is the default and what every earlier
   record meant. The other two write one list item: the first line of the capture's first prose
   as the item, the rest of the rendering indented beneath it with no blank lines, the hashtags at
-  the end of the item's own line, and no front matter. A conversion shapes a **fragment**. One
-  that writes a whole file is not part of this.
+  the end of the item's own line, and no front matter. A divider is dropped, and a block that
+  would run into the one above it without a blank line keeps one, loosening that list rather
+  than changing what the capture says. A `task` with nothing on its own line is `rejected`, since
+  `- [ ]` alone is not a task. An item landing straight after a bullet list takes that list's
+  bullet and joins it. A conversion shapes a **fragment**. One that writes a whole file is not
+  part of this.
 - **A delivery may carry its own content, and the reservation holds it** (added 2026-09-10,
   [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)). A routing request may supply the
   words this one delivery carries in place of the capture's. Core checks them against the item's

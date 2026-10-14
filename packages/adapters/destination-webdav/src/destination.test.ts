@@ -627,6 +627,28 @@ describe("a delivery converted to one item", () => {
     );
   });
 
+  it("takes the bullet of the list it joins, in what it writes and in what it says it would", async () => {
+    const server = await vault();
+    server.put("V/todo.md", "## Templates\n\n* older\n");
+    const each = delivery({
+      capability: "create-or-append",
+      arguments: { path: "todo.md", heading: "Templates", conversion: "task" },
+    });
+    const kind = adapter(server, { text: renderText });
+
+    const previewed = await textOf(
+      await (kind.preview?.(destinationRow({ root: "V" }), each) ??
+        Promise.reject(new Error("the kind offers no preview"))),
+    );
+    const outcome = await kind.deliver(destinationRow({ root: "V" }), each);
+
+    expect(previewed.text).toBe("* [ ] a thought\n");
+    expect(await outputOf(outcome)).toMatchObject({ text: previewed.text });
+    expect(server.files()["V/todo.md"]).toBe(
+      "## Templates\n\n* older\n* [ ] a thought\n",
+    );
+  });
+
   it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {
     const server = await vault();
     server.makeCollection("V");

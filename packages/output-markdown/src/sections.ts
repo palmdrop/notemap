@@ -4,6 +4,9 @@ import type { Heading, List, Root, RootContent } from "mdast";
 /** The level a heading this package has to write itself gets. */
 const OWN_LEVEL = "##";
 
+/** The note as it is to be written, and the fragment as it went into it. */
+export type Inserted = { readonly file: string; readonly inserted: string };
+
 /**
  * A heading that is not there is written rather than refused: sections of a
  * daily note appear as things are filed into them.
@@ -17,39 +20,95 @@ export function insertUnder(
   existing: string,
   fragment: string,
   heading?: string,
-): string {
-  const added = trimmed(fragment);
-
+): Inserted {
   if (existing.trim() === "") {
-    return join(heading === undefined ? [added] : [head(heading), added]);
+    const added = trimmed(fragment);
+    return {
+      file: join(heading === undefined ? [added] : [head(heading), added]),
+      inserted: fragment,
+    };
   }
 
   const tree = fromMarkdown(existing);
-  const item = isList(fromMarkdown(added).children[0]);
-  // One blank line between two items renders the whole list loose.
-  const after = (last: RootContent | undefined) =>
-    item && isList(last) && !last.spread ? "\n" : "\n\n";
-
-  if (heading === undefined) {
-    return `${trimmed(existing)}${after(tree.children.at(-1))}${added}\n`;
+  const at =
+    heading === undefined
+      ? undefined
+      : tree.children.findIndex(
+          (node) => isHeading(node) && headingText(existing, node) === heading,
+        );
+  if (heading !== undefined && at === -1) {
+    return {
+      file: join([trimmed(existing), head(heading), trimmed(fragment)]),
+      inserted: fragment,
+    };
   }
 
-  const at = tree.children.findIndex(
-    (node) => isHeading(node) && headingText(existing, node) === heading,
+  const ends = at === undefined ? tree.children.length : endOfSection(tree, at);
+  const { inserted, gap } = joining(
+    existing,
+    tree.children[ends - 1],
+    fragment,
   );
-  if (at < 0) return join([trimmed(existing), head(heading), added]);
+  const added = trimmed(inserted);
 
-  const ends = endOfSection(tree, at);
-  const last = tree.children[ends - 1];
   const offset = tree.children[ends]?.position?.start.offset;
-  if (offset === undefined) {
-    return `${trimmed(existing)}${after(last)}${added}\n`;
+  const file =
+    offset === undefined
+      ? `${trimmed(existing)}${gap}${added}\n`
+      : `${trimmed(existing.slice(0, offset))}${gap}${join([
+          added,
+          trimmed(existing.slice(offset)),
+        ])}`;
+
+  return { file, inserted };
+}
+
+/**
+ * A fragment opening with a list, landing straight after a list of the same
+ * sort, joins it: one newline rather than the blank line that would loosen a
+ * tight list, and a bullet list's own marker, without which the fragment
+ * would start a list of its own.
+ */
+function joining(
+  existing: string,
+  last: RootContent | undefined,
+  fragment: string,
+): { inserted: string; gap: string } {
+  const opens = fromMarkdown(fragment).children[0];
+  if (!isList(opens) || !isList(last) || opens.ordered !== last.ordered) {
+    return { inserted: fragment, gap: "\n\n" };
   }
 
-  return `${trimmed(existing.slice(0, offset))}${after(last)}${join([
-    added,
-    trimmed(existing.slice(offset)),
-  ])}`;
+  const marker = last.ordered === true ? undefined : bulletAt(existing, last);
+  return {
+    inserted:
+      marker === undefined ? fragment : rebulleted(fragment, opens, marker),
+    gap: last.spread === true ? "\n\n" : "\n",
+  };
+}
+
+const BULLET = /^[ \t]*([-*+])/;
+
+function bulletAt(source: string, list: List): string | undefined {
+  const offset = list.position?.start.offset;
+  return offset === undefined
+    ? undefined
+    : BULLET.exec(source.slice(offset))?.[1];
+}
+
+/** Each of the list's own items written with `marker`, leaving nested lists as they are. */
+function rebulleted(fragment: string, list: List, marker: string): string {
+  let written = fragment;
+  for (const item of list.children) {
+    const offset = item.position?.start.offset;
+    const found =
+      offset === undefined ? null : BULLET.exec(written.slice(offset));
+    if (offset === undefined || found === null) continue;
+
+    const at = offset + found[0].length - 1;
+    written = `${written.slice(0, at)}${marker}${written.slice(at + 1)}`;
+  }
+  return written;
 }
 
 /**
