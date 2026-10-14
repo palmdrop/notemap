@@ -30,17 +30,17 @@ as a published argument), [ADR 62](../adr/0062-a-candidates-request-carries-the-
 
 Depends on nothing.
 
-- [ ] The fs append records the file's `mtimeMs` and size when it reads the file, and checks both
+- [x] The fs append records the file's `mtimeMs` and size when it reads the file, and checks both
       again before the rename. A mismatch answers `unreachable`, so the delivery is retried
       against the file as it now is. A file that did not exist at the read and exists at the write
       is a mismatch too.
-- [ ] `create-or-append` gets the guard through `append`. `create` already refuses a taken name
+- [x] `create-or-append` gets the guard through `append`. `create` already refuses a taken name
       through `link`.
-- [ ] Test: compose an append, change the file, then write. The write answers `unreachable`, the
+- [x] Test: compose an append, change the file, then write. The write answers `unreachable`, the
       file holds the other edit, and a retry lands the entry.
-- [ ] `packages/adapters/destination-fs/README.md` says what the guard catches and what it does
+- [x] `packages/adapters/destination-fs/README.md` says what the guard catches and what it does
       not: an edit that keeps both mtime and size within the filesystem's timestamp resolution.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint. Commit.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint. Commit. _(2026-10-14)_
 
 ### Phase 2: the `conversion` argument
 

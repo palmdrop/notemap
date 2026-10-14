@@ -1,4 +1,4 @@
-import { access, constants, readFile, stat } from "node:fs/promises";
+import { access, constants, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import {
@@ -38,7 +38,12 @@ import {
 } from "@notemap/output-markdown";
 
 import { assetNames, placeAssets } from "./assets";
-import { createFile, replaceFile } from "./atomic";
+import {
+  createFile,
+  readWithSnapshot,
+  replaceFile,
+  type Snapshot,
+} from "./atomic";
 import { filesystemCandidates } from "./candidates";
 import {
   carryOutPlacing,
@@ -317,7 +322,12 @@ type Composition = {
   /** What this delivery contributes: for an append into a note that is there, what was inserted. */
   readonly written: string;
   readonly file: string;
-  readonly fresh: boolean;
+  /**
+   * What the write holds the note to. A create refuses a name that is taken;
+   * an append that found no note is retried past one appearing, and one that
+   * found a note is retried past it changing.
+   */
+  readonly expects: "new" | "absent" | Snapshot;
   /** What the rendering could not carry, where it could not carry everything. */
   readonly dropped?: string;
 };
@@ -368,14 +378,28 @@ async function carryOut(
 ): Promise<void> {
   await placeAssets(dirname(composed.note.absolute), delivery.assets, signal);
 
-  if (composed.fresh) {
-    await createFile(composed.note.absolute, composed.file);
+  if (typeof composed.expects === "object") {
+    // An open editor's buffer still overwrites this on its next save.
+    await replaceFile(
+      composed.note.absolute,
+      composed.file,
+      composed.expects,
+      composed.note.relative,
+    );
     return;
   }
 
-  // **Not atomic against a concurrent editor**: an open editor's buffer will
-  // overwrite this on save.
-  await replaceFile(composed.note.absolute, composed.file);
+  try {
+    await createFile(composed.note.absolute, composed.file);
+  } catch (cause) {
+    const taken = (cause as NodeJS.ErrnoException).code === "EEXIST";
+    if (taken && composed.expects === "absent") {
+      throw new Contended(
+        `${composed.note.relative} appeared after it was read`,
+      );
+    }
+    throw cause;
+  }
 }
 
 function composeCreate(
@@ -443,7 +467,13 @@ async function create(
   const rendered = render(wiring, delivery, note);
   const file = fileOf(rendered.frontmatter, rendered.body);
 
-  return { note, written: file, file, fresh: true, ...said(rendered.dropped) };
+  return {
+    note,
+    written: file,
+    file,
+    expects: "new",
+    ...said(rendered.dropped),
+  };
 }
 
 async function append(
@@ -455,7 +485,7 @@ async function append(
   const note = await locate(wiring.realRoot, target);
   const rendered = render(wiring, delivery, note);
 
-  const existing = await readIfPresent(note.absolute);
+  const existing = await readWithSnapshot(note.absolute);
   if (existing === undefined) {
     const file = fileOf(
       rendered.frontmatter,
@@ -465,7 +495,7 @@ async function append(
       note,
       written: file,
       file,
-      fresh: true,
+      expects: "absent",
       ...said(rendered.dropped),
     };
   }
@@ -473,8 +503,8 @@ async function append(
   return {
     note,
     written: rendered.body,
-    file: insertUnder(existing, rendered.body, heading),
-    fresh: false,
+    file: insertUnder(existing.text, rendered.body, heading),
+    expects: existing.snapshot,
     ...said(rendered.dropped),
   };
 }
@@ -523,15 +553,6 @@ async function exists(path: string): Promise<boolean> {
     return true;
   } catch (cause) {
     if ((cause as NodeJS.ErrnoException).code === "ENOENT") return false;
-    throw cause;
-  }
-}
-
-async function readIfPresent(path: string): Promise<string | undefined> {
-  try {
-    return await readFile(path, "utf8");
-  } catch (cause) {
-    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw cause;
   }
 }

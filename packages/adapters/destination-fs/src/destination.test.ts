@@ -3,7 +3,9 @@ import {
   lstat,
   mkdir,
   readFile,
+  stat,
   symlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -725,6 +727,89 @@ describe("appending to a file", () => {
     expect(await readFile(join(path, "daily.md"), "utf8")).toBe(
       "# Monday\n\n## Captured\n\na thought\n",
     );
+  });
+});
+
+describe("a note somebody else writes while a delivery is under way", () => {
+  /**
+   * An asset is opened after the note was read and before it is written, so
+   * one whose opening edits the note is somebody saving in between.
+   */
+  function meanwhile(edit: () => Promise<void>) {
+    const asset = deliveredAsset("photo", "photo.png", bytes("PNG"));
+    return {
+      ...asset,
+      open: async (signal?: AbortSignal) => {
+        await edit();
+        return asset.open(signal);
+      },
+    };
+  }
+
+  const appended = (assets: readonly ReturnType<typeof meanwhile>[] = []) =>
+    delivery({
+      capability: "append",
+      arguments: { path: "daily.md", heading: "Notes" },
+      assets,
+    });
+
+  it("is not overwritten: the delivery is retried against what they wrote", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+    await writeFile(note, "## Notes\n\nmine\n");
+
+    const outcome = await destination.deliver(
+      appended([
+        meanwhile(() => writeFile(note, "## Notes\n\nmine, edited\n")),
+      ]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect((outcome as { detail: string }).detail).toContain(
+      "daily.md changed after it was read",
+    );
+    expect(await readFile(note, "utf8")).toBe("## Notes\n\nmine, edited\n");
+
+    expect(await destination.deliver(appended())).toMatchObject({
+      kind: "delivered",
+    });
+    expect(await readFile(note, "utf8")).toBe(
+      "## Notes\n\nmine, edited\n\na thought\n",
+    );
+  });
+
+  it("notices an edit that kept the note's size", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+    await writeFile(note, "## Notes\n\nmine\n");
+    const before = await stat(note);
+
+    const outcome = await destination.deliver(
+      appended([
+        meanwhile(async () => {
+          await writeFile(note, "## Notes\n\nMINE\n");
+          await utimes(note, before.atime, new Date(before.mtimeMs + 5_000));
+        }),
+      ]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect(await readFile(note, "utf8")).toBe("## Notes\n\nMINE\n");
+  });
+
+  it("is not overwritten where it appeared after the delivery found none", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+
+    const outcome = await destination.deliver(
+      appended([meanwhile(() => writeFile(note, "theirs\n"))]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect((outcome as { detail: string }).detail).toContain(
+      "daily.md appeared after it was read",
+    );
+    expect(await readFile(note, "utf8")).toBe("theirs\n");
   });
 });
 
