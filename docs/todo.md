@@ -143,6 +143,14 @@
 - [ ] in-file edits: instead of creating or appending, notemap allows for *inserting* a capture in a file. Only works if file is parsed by, for example, a markdown parser, or some other pattern/filetype that the destination supports. For example, inserting a capture item below a pre-existing heading in a file, or adding a todo list entry at the top of a todo list
     - test if JEV can be used for this
     - notemap keeps a backup of the original file when doing this?
+    - Narrowed 2026-10-14 by [task-conversion](plans/task-conversion.md): a `list-item` or `task`
+      inserted under a picked heading is planned ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)).
+      Backups were deliberately left out. The output holds only the inserted fragment, so the note
+      as it stood before notemap's edit cannot be recovered from the pool. The shape, if wanted:
+      the whole pre-edit file as a blob, named on the routing record beside the output. A whole
+      file rather than a reverse diff, because a diff only replays against a note nobody has
+      touched since. It costs a full copy per insert into a changed note, and it is a new field on
+      the record, so it extends ADR 19/33.
 
 ## Destinations and adapters
 
