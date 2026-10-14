@@ -3981,3 +3981,161 @@ test("a template that placed the attachments alone still draws for a capture wit
   await commit();
   expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
 });
+
+/** The markdown kinds' line as they now declare it: a heading browsed given the note, and a shape. */
+const CREATE_OR_APPEND_HEADED = {
+  name: "create-or-append",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    properties: {
+      path: {
+        type: "string",
+        title: "place",
+        "x-notemap-candidates": true,
+        "x-notemap-path": true,
+      },
+      heading: {
+        type: "string",
+        title: "under",
+        "x-notemap-candidates": true,
+        "x-notemap-candidates-given": ["path"],
+      },
+      conversion: {
+        type: "string",
+        title: "as",
+        enum: ["block", "list-item", "task"],
+        default: "block",
+      },
+      frontmatter: {
+        type: "string",
+        enum: ["full", "none"],
+        default: "none",
+        "x-notemap-inherits": true,
+        "x-notemap-when": [{ field: "conversion", is: ["block"] }],
+      },
+    },
+  },
+};
+
+function servingHeadings(
+  headings: (path: string) => Record<string, unknown> = (path) =>
+    answered(
+      path === "todo.md" ? [{ label: "## Templates", value: "Templates" }] : [],
+    ),
+) {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination({ kind: "filesystem" })] });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND_HEADED],
+      });
+    }
+    if (route.endsWith("/candidates")) {
+      const query = new URL(request.url).searchParams;
+      if (query.get("field") === "heading") {
+        return json(200, headings(query.get("given[path]") ?? ""));
+      }
+      return json(200, answered([{ label: "todo.md", value: "todo.md" }]));
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r",
+        item: "one",
+        state: "delivered",
+        target: {},
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+const askedForHeadings = (transport: ReturnType<typeof pool>) =>
+  sentTo(transport)
+    .map((request) => new URL(request.url).searchParams)
+    .filter((query) => query.get("field") === "heading");
+
+test("offers the note's own headings once the line names the note", async () => {
+  const transport = servingHeadings();
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  const line = await screen.findByRole("combobox", { name: "place" });
+
+  expect(screen.getByRole("combobox", { name: "under" })).toBeDefined();
+  expect(document.activeElement).toBe(line);
+  expect(askedForHeadings(transport)).toEqual([]);
+
+  await fireEvent.input(line, { target: { value: "todo.md" } });
+  await screen.findByText("append");
+
+  const list = await screen.findByRole("listbox", { name: "under candidates" });
+  await entry("## Templates");
+  expect(within(list).getByText("## Templates")).toBeDefined();
+  expect(askedForHeadings(transport).at(-1)?.get("given[path]")).toBe(
+    "todo.md",
+  );
+
+  await commit();
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toMatchObject({
+      path: "todo.md",
+      heading: "Templates",
+    });
+  });
+});
+
+test("keeps the heading typed where the destination cannot answer for it", async () => {
+  const transport = servingHeadings(() => ({
+    kind: "unreachable",
+    detail: "not mounted",
+  }));
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "todo.md" } });
+  await screen.findByText("append");
+
+  await fireEvent.input(screen.getByRole("combobox", { name: "under" }), {
+    target: { value: "Later" },
+  });
+
+  await commit();
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toMatchObject({
+      path: "todo.md",
+      heading: "Later",
+    });
+  });
+});
+
+test("offers no frontmatter while the delivery is a task, and sends none", async () => {
+  const transport = servingHeadings();
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "todo.md" } });
+  await screen.findByText("append");
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: /^full/ }) as HTMLElement,
+  );
+  await fireEvent.click(screen.getByRole("button", { name: "task" }));
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: /^full/ })).toBeNull();
+  });
+
+  await commit();
+  await vi.waitFor(async () => {
+    const { arguments: sent } = await routed(transport);
+    expect(sent).toMatchObject({ path: "todo.md", conversion: "task" });
+    expect(sent).not.toHaveProperty("frontmatter");
+  });
+});

@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   effectiveOf,
   fieldsOf,
+  givenFor,
   impliedOf,
   labelOf,
   OFF,
@@ -273,7 +274,7 @@ describe("what a field comes out as", () => {
     expect(effectiveOf(fields, {}, {})).toEqual({
       frontmatter: "none",
       hashtags: false,
-      triggerTags: false,
+      triggerTags: undefined,
     });
     expect(effectiveOf(fields, {}, { frontmatter: "full" })).toMatchObject({
       frontmatter: "full",
@@ -281,6 +282,40 @@ describe("what a field comes out as", () => {
     expect(
       effectiveOf(fields, { frontmatter: "none" }, { frontmatter: "full" }),
     ).toMatchObject({ frontmatter: "none" });
+  });
+
+  test("is nothing where it is not offered, so no condition holds through it", () => {
+    const gated = fieldsOf({
+      type: "object",
+      properties: {
+        conversion: {
+          type: "string",
+          enum: ["block", "task"],
+          default: "block",
+        },
+        frontmatter: {
+          type: "string",
+          enum: ["full", "none"],
+          default: "none",
+          "x-notemap-inherits": true,
+          "x-notemap-when": [{ field: "conversion", is: ["block"] }],
+        },
+        triggerTags: {
+          type: "boolean",
+          "x-notemap-when": [{ field: "frontmatter", is: ["full"] }],
+        },
+      },
+    });
+    const [, , gatedTags] = gated;
+    const inherited = { frontmatter: "full" };
+
+    expect(offered(gatedTags as never, effectiveOf(gated, {}, inherited))).toBe(
+      true,
+    );
+
+    const asTask = effectiveOf(gated, { conversion: "task" }, inherited);
+    expect(asTask["frontmatter"]).toBeUndefined();
+    expect(offered(gatedTags as never, asTask)).toBe(false);
   });
 
   test("is never seeded for a field that inherits", () => {
@@ -362,5 +397,37 @@ describe("what a field comes out as", () => {
     expect(impliedOf(fields[0] as never, { frontmatter: "full" })).toBe("full");
     expect(impliedOf(fields[1] as never, { hashtags: true })).toBe(ON);
     expect(impliedOf(triggerTags as never)).toBe(OFF);
+  });
+});
+
+describe("what a browse is asked given", () => {
+  const [, heading] = fieldsOf({
+    type: "object",
+    properties: {
+      path: { type: "string", "x-notemap-candidates": true },
+      heading: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-candidates-given": ["path"],
+      },
+    },
+  });
+
+  test("is each field the answer depends on, as the form holds it", () => {
+    expect(givenFor(heading as never, { path: "todo.md" })).toEqual({
+      path: "todo.md",
+    });
+  });
+
+  test("is empty for one not typed yet, which is how a browse knows to wait", () => {
+    expect(givenFor(heading as never, {})).toEqual({ path: "" });
+  });
+
+  test("is nothing for a field whose answer depends on nothing", () => {
+    const [path] = fieldsOf({
+      type: "object",
+      properties: { path: { type: "string", "x-notemap-candidates": true } },
+    });
+    expect(givenFor(path as never, { path: "todo.md" })).toBeUndefined();
   });
 });

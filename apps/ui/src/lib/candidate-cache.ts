@@ -23,15 +23,24 @@ export type Asked = {
   readonly capability: string;
   readonly field: string;
   readonly scope?: string | undefined;
+  readonly given?: Readonly<Record<string, string>> | undefined;
 };
 
-/** `\0` between the parts: none of them may contain it, so no two asks collide. */
+/**
+ * `\0` between the parts: none of them may contain it, so no two asks collide.
+ * One note's headings must never be drawn for another's, so what the ask was
+ * given is part of it.
+ */
 function keyOf(asked: Asked): string {
+  const given = Object.entries(asked.given ?? {}).sort(([one], [other]) =>
+    one < other ? -1 : one > other ? 1 : 0,
+  );
   return [
     asked.destination,
     asked.capability,
     asked.field,
     asked.scope ?? "",
+    JSON.stringify(given),
   ].join("\u0000");
 }
 

@@ -114,19 +114,19 @@ Depends on phase 4.
 
 Depends on phases 2 and 5.
 
-- [ ] The shell's candidate cache (`$lib/candidate-cache`) keys on `given`, so one note's headings
+- [x] The shell's candidate cache (`$lib/candidate-cache`) keys on `given`, so one note's headings
       never answer for another.
-- [ ] The composer and the template form draw `conversion` as they draw other enums, and hide
+- [x] The composer and the template form draw `conversion` as they draw other enums, and hide
       `frontmatter` for any conversion other than `block`. That follows from the `x-notemap-when`
       added in phase 2; a test confirms it, including `trigger tags` still showing through
       `hashtags` while `frontmatter` is hidden.
-- [ ] The `heading` field offers the destination's headings once `path` is filled, and accepts
+- [x] The `heading` field offers the destination's headings once `path` is filled, and accepts
       free text always: a heading that does not exist yet, or a destination that cannot answer.
       Changing `path` drops the offered list.
-- [ ] Spec: shell.md (the routing composer and the template form).
-- [ ] Tests: the picker is not offered before `path` is filled; picking fills the field; free text
+- [x] Spec: shell.md (the routing composer and the template form).
+- [x] Tests: the picker is not offered before `path` is filled; picking fills the field; free text
       survives `unreachable` and `not-offered`.
-- [ ] Verify: `pnpm -r --silent test`, typecheck, lint, `pnpm test:stack`. Commit.
+- [x] Verify: `pnpm -r --silent test`, typecheck, lint, `pnpm test:stack`. Commit. _(2026-10-14)_
 
 ### Phase 7: close out
 
@@ -139,18 +139,17 @@ Depends on phases 2 and 5.
 
 ## Unknowns
 
-- **Where the composer draws arguments beyond the path.** The typed line (`PathLine.svelte`) owns
-  `path`; it is not yet confirmed where `heading`, `frontmatter` and friends are drawn today, or
-  whether `CandidateBrowser` can be pointed at a field other than the path. Fallback: the heading
-  picker is a plain list under the heading input rather than the browser, with the same request
-  underneath.
+- [x] **Where the composer draws arguments beyond the path.** Answered 2026-10-14: every askable
+  field without a path mark already draws `CandidateBrowser`, so `heading` took it with a `given`
+  prop and no new control. Left open: the composer drops every field beside the line where it
+  forecasts `create`, `as` among them (shell.md, open questions).
 - [x] **Whether `@hono/zod-openapi` can describe a `given.<field>` family of query parameters.**
   Answered 2026-10-14: `deepObject` (`given[path]=…`) is what OpenAPI describes and what
   openapi-fetch already sends for an object, so that is the shape. ADR 62 carries an amendment.
-- **A body that does not open with a line of prose**: a fence, a picture, a heading. A heading's
-  markers are stripped and its text becomes the item. For a fence or a picture, the fallback is an
-  item with no text of its own and the whole body as its continuation. Decide during phase 2 with
-  the output in front of you.
+- [x] **A body that does not open with a line of prose.** Decided 2026-10-14: the item says the
+  first prose or heading in the body, whatever was rendered above it; a body of pictures alone
+  says the first; one opening with a list or a fence gets an item with no words and the body
+  nested beneath.
 - **mtime resolution on the filesystems people actually mount** (network mounts, FAT on a stick).
   Coarse timestamps widen the window the guard misses. Accepted and documented; not worked around.
 

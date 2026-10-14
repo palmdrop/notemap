@@ -12,6 +12,11 @@ export type Field = {
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
   readonly askable: boolean;
   /**
+   * Carries `x-notemap-candidates-given`: the fields the answer depends on, so
+   * a browse waits until they are filled and carries them when it asks.
+   */
+  readonly given?: readonly string[];
+  /**
    * Carries `x-notemap-offered-only`: the field may hold only something the
    * destination already has. A channel is joined, a mailbox is subscribed to —
    * where a vault's folder is made by the delivery that needs it. So a pattern
@@ -94,6 +99,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
       const preset = presetOf(meta);
       const when = conditionsOf(meta["x-notemap-when"]);
       const path = pathRoleOf(meta["x-notemap-path"]);
+      const given = stringsAt(meta, "x-notemap-candidates-given");
       return {
         name,
         required: required.includes(name),
@@ -105,6 +111,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
           : {}),
         ...(preset === undefined ? {} : { preset, fallback: meta["default"] }),
         askable: meta["x-notemap-candidates"] === true,
+        ...(given === undefined ? {} : { given }),
         offeredOnly: meta["x-notemap-offered-only"] === true,
         inherits: meta["x-notemap-inherits"] === true,
         ...(path === undefined ? {} : { path }),
@@ -167,8 +174,9 @@ export function presetsFrom(fields: readonly Field[]): Record<string, string> {
  * What every field comes out as: what was typed, else the destination's
  * setting where the field inherits one, else the schema's default. A flag
  * nobody said anything about is off. Resolved in the schema's order, and a
- * field that is not offered comes out as if nothing were typed in it — what
- * it still holds is not sent, so nothing downstream may be judged by it.
+ * field that is not offered comes out as nothing at all — not its setting, not
+ * its default — since what it holds is not sent and a condition must never
+ * hold through what a person cannot see.
  */
 export function effectiveOf(
   fields: readonly Field[],
@@ -177,11 +185,9 @@ export function effectiveOf(
 ): Effective {
   const effective: Record<string, unknown> = {};
   for (const field of fields) {
-    effective[field.name] = comesOutAs(
-      field,
-      offered(field, effective) ? typed : {},
-      inherited,
-    );
+    effective[field.name] = offered(field, effective)
+      ? comesOutAs(field, typed, inherited)
+      : undefined;
   }
   return effective;
 }
@@ -198,6 +204,21 @@ function comesOutAs(
   }
   if (field.fallback !== undefined) return field.fallback;
   return field.kind === "flag" ? false : undefined;
+}
+
+/**
+ * What a field's browse is asked given: each field its answer depends on, as
+ * the form holds it, empty where nothing is typed yet. Nothing where the
+ * answer depends on nothing.
+ */
+export function givenFor(
+  field: Pick<Field, "given">,
+  typed: Readonly<Record<string, string | undefined>>,
+): Readonly<Record<string, string>> | undefined {
+  if (field.given === undefined) return undefined;
+  return Object.fromEntries(
+    field.given.map((name) => [name, typed[name] ?? ""]),
+  );
 }
 
 /** Whether a field is offered at all, given what the others come out as. */

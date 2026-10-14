@@ -1357,6 +1357,23 @@ whole field is the filter. What it keeps that the line has no use for is **desce
 the scope before, `use <label>` to take the scope stood in, `clear` at the top — since an entry may
 be somewhere to look rather than something to hold, and this is the only control that can go there.
 
+**A field whose answer depends on another waits for it** *(2026-10-14,
+[ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md))*. A field
+marking `x-notemap-candidates-given` asks with those fields as the form holds them, and asks
+nothing while one of them is empty. Until then the browser is a line to type into. `under` is the
+first: once the line names a note, it lists that note's headings, labelled with their `#`s, and
+taking one fills the field with the heading's own words. Changing the note asks again, and what
+the browser keeps between asks is keyed on what it was given, so one note's headings are never
+drawn for another's. A destination that cannot answer leaves the field typed, as any browse does.
+Such a field never takes the caret when it is drawn: the field it depends on comes first and is
+where the caret belongs. The template form does the same.
+
+**A shape is chosen beside the place** *(2026-10-14,
+[ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md))*. The markdown kinds'
+`as` (`block`, `list-item`, `task`) is an enum and is chosen like one. `frontmatter` is offered
+only while `as` is `block`, and a hidden field comes out as nothing when a later condition is
+judged, so `trigger tags` is not offered through a frontmatter setting nobody can see.
+
 **Matching is one rule, wherever a line narrows a list** *(amended 2026-09-13)*. Case is ignored,
 and a name is found by its head first and by anything in it second: what is typed at the start of
 a name lists ahead of what falls in the middle of one, so completing a name still finds it at the
@@ -3008,6 +3025,12 @@ view is how a reader sees more at once.
 ---
 
 ## Open questions
+
+- [ ] 2026-10-14 — **`as` goes where the line forecasts `create`.** A field beside the line is
+      dropped where the surface knows a new note is being made, on the reasoning that the only
+      such field was the heading. `as` applies either way, so a task cannot be filed from the
+      composer into a todo list that does not exist yet. This is the "second such field" the rule
+      above said would need a schema hint; a template can still carry it.
 
 - [x] 2026-08-19 — **Where known tag names come from.** Answered 2026-08-20: `GET /v1/tags` reads
       the tags in use ([http-v1.md](http-v1.md#the-tags-in-use)), the client holds the whole set,
