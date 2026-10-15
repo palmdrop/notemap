@@ -29,6 +29,7 @@ export default tseslint.config(
       "**/dist/",
       "**/build/",
       "**/.svelte-kit/",
+      "**/.stryker-tmp/",
       "**/generated.d.ts",
       "apps/daemon/public/",
     ],

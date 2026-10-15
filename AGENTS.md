@@ -33,12 +33,14 @@ Git
 Verification
 
 - Run typecheck, tests and linters when you finish a feature or a larger test.
-- Run tests as `pnpm -r --silent test`, which prints nothing at all; on a non-zero exit, re-run
-  the failing package without `--silent` to see why.
+- Run tests as `pnpm -r --no-sort --silent test`, which prints nothing at all; on a non-zero
+  exit, re-run the failing package without `--silent` to see why.
 - You never see console output from passing tests: Vitest hides it in an agent session. To
   check for log noise, read the CI run's logs or run `env -u AI_AGENT -u CLAUDECODE pnpm test`.
 - `pnpm test:stack` is not part of finishing a feature. Run it after a change that crosses the
   layers — the HTTP surface, the host's wiring, the client's transport, the config file.
+- `pnpm --filter <package> mutation` is not part of finishing a feature either. Run it while
+  designing or reworking the decisions a package makes, not after wiring something in.
 - Resolve every issue before you commit or state that you are done.
 - A branch can be staged with `agent stage <branch>`: the daemon built from it, with a destination
   of every kind behind it, seeded. See `.claude/stage/README.md`.
@@ -136,8 +138,34 @@ the client's transport, the config file — or when asked, and leave it alone ot
 on every pull request and on every push to `main`, which is what keeps it honest without anyone
 paying for it locally.
 
-Run the tests as `pnpm -r --silent test`. It prints nothing — not even the failures — and says
-what happened through its exit code alone, which is all a green run has to say and is worth the
+Run the tests as `pnpm -r --no-sort --silent test`. It prints nothing — not even the failures —
+and says what happened through its exit code alone, which is all a green run has to say and is worth the
 few lines a full run spends per package. When it exits non-zero, re-run the package that failed
 without `--silent`, or run `pnpm test` in full, and read it there. This is for agents, whose
-context the noise costs; run them however you like by hand. 
+context the noise costs; run them however you like by hand.
+
+`--no-sort` is what keeps the slow packages from queueing behind the fast ones. Recursive pnpm
+runs a script in dependency order by default, so `tests/integration` waits for `@notemap/core`
+to finish *testing* — and no test needs that, because every package exports its TypeScript
+source and nothing is built before a test run. A package that one day needs a built dependency
+breaks this, and would have to be given its own step.
+
+## Mutation testing
+
+`pnpm --filter @notemap/core mutation` runs Stryker over one package: it changes the code in small
+ways and reports which changes no test objected to. A survivor is a decision nothing checks, and is
+worth reading; the score itself is not a target.
+
+Run it when you are designing or reworking the logic of a package — core, the destination adapters,
+`output-markdown`, the client — and not when you have wired something in, where the decisions being
+made are somebody else's. It is never part of finishing a feature and `pnpm test` never runs it:
+the whole set is minutes, and `pnpm -r --no-sort mutation` runs every package that has opted in.
+
+What the run says is honest only about a package's *own* tests. A mutant marked no-coverage is
+usually code another package exercises — `fixedFrontmatter` is tested from `destination-arena`, the
+markdown renderers from the daemon — so read the covered column and leave those to the integration
+suite. Some survivors cannot be killed at all: a guard against something the types already rule
+out, a comparison whose other branch no input can reach.
+
+`stryker.base.mjs` holds what every package's run shares. Its two deliberate exclusions: the
+wording of a string is not behaviour, and module-level code is not worth re-running every test for.

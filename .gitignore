@@ -67,3 +67,6 @@ desktop.ini
 .claude/worktrees/
 .claude/artifacts/
 .claude/settings.local.json
+
+# Mutation testing runs and their reports.
+.stryker-tmp/
