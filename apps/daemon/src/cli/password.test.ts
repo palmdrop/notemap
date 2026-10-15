@@ -12,7 +12,7 @@ const PASSWORD = "correct horse battery staple";
 
 /** What the daemon would see, opened after the command has closed its own. */
 const opened = async (file: string) => {
-  const store = createSqliteAuthStore({ file });
+  const store = createSqliteAuthStore({ file, synchronous: "off" });
   return {
     auth: createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING }),
     store,

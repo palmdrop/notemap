@@ -32,7 +32,10 @@ function tokens(clock: Clock = frozenClock()): {
   store: AuthStore;
 } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-tokens-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
 
   opened.push({ store, directory });
   return { tokens: createTokens(store, { clock }), store };

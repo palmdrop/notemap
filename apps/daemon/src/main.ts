@@ -51,6 +51,7 @@ async function start(): Promise<void> {
   const { auth, store: authStore } = openAuth(
     {
       file: config.auth,
+      synchronous: config.synchronous,
     },
     {
       clock: systemClock,
@@ -87,6 +88,7 @@ async function start(): Promise<void> {
     file: config.pool,
     config: config.poolConfig,
     assetRoot: config.assets.root,
+    synchronous: config.synchronous,
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
     accounts,
     log,

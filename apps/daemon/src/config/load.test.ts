@@ -137,6 +137,10 @@ describe("what a config may leave out", () => {
     });
   });
 
+  it("fsyncs every commit where the file says nothing about it", () => {
+    expect(parse("").synchronous).toBe("full");
+  });
+
   it("takes the payload types from core rather than from the file", () => {
     expect(parse("").poolConfig.payloadTypes).toBe(PAYLOAD_TYPES);
     expect(PAYLOAD_TYPES.map((type) => type.name)).toEqual(["note"]);
@@ -145,6 +149,20 @@ describe("what a config may leave out", () => {
   it("takes the pool settings from core rather than from the file", () => {
     expect(parse("").poolConfig.poolSettings).toBe(POOL_SETTINGS);
     expect(POOL_SETTINGS.map((setting) => setting.name)).toEqual(["unfurl"]);
+  });
+});
+
+describe("how hard a commit is written down", () => {
+  it("takes the word from the file", () => {
+    expect(parse('[daemon]\nsynchronous = "normal"').synchronous).toBe(
+      "normal",
+    );
+  });
+
+  it("refuses a word the pragma has no meaning for", () => {
+    expect(() => parse('[daemon]\nsynchronous = "sometimes"')).toThrow(
+      /daemon\.synchronous/,
+    );
   });
 });
 

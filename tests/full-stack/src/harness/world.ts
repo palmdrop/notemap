@@ -110,6 +110,8 @@ pool = "${paths.pool}"
 auth = "${paths.auth}"
 host = "127.0.0.1"
 port = ${at}
+# This daemon is torn down with its directory, so no commit need reach a disk.
+synchronous = "off"
 ${told.origin === undefined ? "" : `origin = "${told.origin}"\n`}
 [mirror]
 root = "${paths.mirror}"

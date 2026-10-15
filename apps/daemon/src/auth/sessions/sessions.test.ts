@@ -32,7 +32,10 @@ function sessions(clock: Clock = frozenClock()): {
   store: AuthStore;
 } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-sessions-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
 
   opened.push({ store, directory });
   return { sessions: createSessions(store, { clock }), store };

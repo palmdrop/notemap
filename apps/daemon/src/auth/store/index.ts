@@ -1,4 +1,9 @@
-import { openDatabase, migrate, statements } from "@notemap/sqlite";
+import {
+  openDatabase,
+  migrate,
+  statements,
+  type Synchronous,
+} from "@notemap/sqlite";
 import { MIGRATIONS } from "./migrations";
 import {
   toAccount,
@@ -24,11 +29,16 @@ import { chmodSync } from "node:fs";
 
 type Config = {
   readonly file: string;
+  /** How hard a commit is written down. Absent is `full`, fsyncing each one. */
+  readonly synchronous?: Synchronous;
 };
 
 export const createSqliteAuthStore = (config: Config): AuthStore => {
   const database = openDatabase({
     file: config.file,
+    ...(config.synchronous === undefined
+      ? {}
+      : { synchronous: config.synchronous }),
   });
 
   try {

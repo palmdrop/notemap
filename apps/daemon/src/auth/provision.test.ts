@@ -30,7 +30,10 @@ const directories: string[] = [];
 
 function auth(): Auth {
   const directory = mkdtempSync(join(tmpdir(), "notemap-provision-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
 
   opened.push({ store, directory });
   return createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING });

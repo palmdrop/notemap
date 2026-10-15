@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { PAYLOAD_TYPES, POOL_SETTINGS } from "@notemap/core";
 import type { Duration, JsonObject, PoolConfig } from "@notemap/core";
+import { SYNCHRONOUS, type Synchronous } from "@notemap/sqlite";
 
 import {
   DEFAULT_DELIVERY,
@@ -16,6 +17,7 @@ import {
   DEFAULT_PORT,
   DEFAULT_RETRY,
   DEFAULT_SWEEP,
+  DEFAULT_SYNCHRONOUS,
   DEFAULT_TRIGGER_WINDOW_MS,
   LOG_LEVEL_VARIABLE,
   defaultZone,
@@ -68,6 +70,13 @@ export type DaemonConfig = {
   /** The SQLite file the pool lives in. */
   readonly pool: string;
   readonly auth: string;
+  /**
+   * How hard both databases write a commit down. `full` fsyncs each one, so a
+   * power cut takes nothing the daemon answered for; `normal` may lose the last
+   * commits to one without corrupting anything; `off` may corrupt the file, and
+   * is for a pool nobody will miss.
+   */
+  readonly synchronous: Synchronous;
   readonly host: string;
   readonly port: number;
   /**
@@ -102,6 +111,7 @@ const fileSchema = z.object({
       host: z.string().min(1).optional(),
       port: z.number().int().min(1).max(65535).optional(),
       origin: z.string().url().optional(),
+      synchronous: z.enum(SYNCHRONOUS).optional(),
     })
     .optional(),
   mirror: z
@@ -437,6 +447,7 @@ export function parseConfig(source: string, from: string): LoadedConfig {
   const config: DaemonConfig = {
     pool: resolve(expandHome(file.daemon?.pool ?? defaultPoolPath())),
     auth: resolve(expandHome(file.daemon?.auth ?? defaultAuthPath())),
+    synchronous: file.daemon?.synchronous ?? DEFAULT_SYNCHRONOUS,
     host,
     port: file.daemon?.port ?? DEFAULT_PORT,
     ...(origin === undefined ? {} : { origin }),

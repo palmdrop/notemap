@@ -37,7 +37,10 @@ async function guarded(config: readonly Account[] = []): Promise<{
   bearer: string;
 }> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-route-accounts-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
   stores.push({ store, directory });
 
   const auth = createAuth(store, {

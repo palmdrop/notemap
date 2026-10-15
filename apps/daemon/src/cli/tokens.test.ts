@@ -8,7 +8,7 @@ import { cleanup, configured, said } from "./testing";
 import { CHEAP_HASHING } from "../testing/hashing";
 
 const opened = async (file: string) => {
-  const store = createSqliteAuthStore({ file });
+  const store = createSqliteAuthStore({ file, synchronous: "off" });
   return {
     auth: createAuth(store, { clock: systemClock, hashing: CHEAP_HASHING }),
     store,

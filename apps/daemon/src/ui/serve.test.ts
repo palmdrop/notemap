@@ -27,7 +27,10 @@ const systemClock: Clock = {
 /** A daemon with a password set, which is the only state where the door is shut. */
 async function guarded(): Promise<Daemon["app"]> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-ui-auth-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
   stores.push({ store, directory });
 
   const auth = createAuth(store, {

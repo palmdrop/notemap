@@ -1,3 +1,4 @@
+import { homedir } from "node:os";
 import { dirname } from "node:path";
 
 import { v7 as uuidv7 } from "uuid";
@@ -20,6 +21,7 @@ import {
 } from "@notemap/destination-webdav";
 import { createFilesystemMirrorWriter } from "@notemap/mirror-fs";
 import { createAjvSchemaValidator } from "@notemap/schema-ajv";
+import type { Synchronous } from "@notemap/sqlite";
 import { createSqlitePoolStore } from "@notemap/store-sqlite";
 import {
   createPool,
@@ -71,6 +73,8 @@ export type OpenPoolConfig = {
    * the pool — and a destination cannot name an address, only one of these.
    */
   readonly accounts?: Accounts;
+  /** How hard the store writes a commit down, which the config file decides. */
+  readonly synchronous: Synchronous;
   /** Told each action the pool records. Absent is a pool nobody listens to. */
   readonly log?: Logger;
   /** Told each action too, after the log: how the host reacts to what the pool did. */
@@ -155,6 +159,9 @@ export function openPool(options: OpenPoolConfig): OpenPool {
       renderers,
       accepts: everyPayloadType,
       reserved,
+      // Read once, here: a relative root a person wrote means where the daemon
+      // was started, which nothing may move under them afterwards.
+      paths: { home: homedir(), relativeTo: process.cwd() },
     }),
     createWebdavDestination({
       renderers,
@@ -184,6 +191,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
   const store = createSqlitePoolStore({
     file: options.file,
     clock: systemClock,
+    synchronous: options.synchronous,
   });
 
   const observer = observing(options.log, options.heard);
@@ -220,6 +228,7 @@ export function openPool(options: OpenPoolConfig): OpenPool {
 
 type OpenAuthConfig = {
   file: string;
+  synchronous: Synchronous;
 };
 
 type OpenAuthPorts = {
@@ -233,6 +242,7 @@ export const openAuth = (
 ) => {
   const store = createSqliteAuthStore({
     file: config.file,
+    synchronous: config.synchronous,
   });
 
   const auth = createAuth(store, {

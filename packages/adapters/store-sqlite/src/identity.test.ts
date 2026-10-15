@@ -26,7 +26,7 @@ afterEach(async () => {
 });
 
 function reopened(file: string): SqlitePoolStore {
-  const pool = createSqlitePoolStore({ file });
+  const pool = createSqlitePoolStore({ file, synchronous: "off" });
   opened.push(pool);
   return pool;
 }
@@ -73,6 +73,7 @@ describe("the pool says which pool it is", () => {
     const file = join(directory, "pool.db");
 
     const raw = new DatabaseSync(file);
+    raw.exec("PRAGMA synchronous = OFF");
     for (const migration of MIGRATIONS.slice(0, BEFORE_POOL_IDENTITY)) {
       raw.exec(migration);
     }

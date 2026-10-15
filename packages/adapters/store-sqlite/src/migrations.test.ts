@@ -52,13 +52,20 @@ afterEach(async () => {
   }
 });
 
+/** A pool whose file is built, read and deleted inside one test, so nothing fsyncs. */
+function unsynced(file: string): DatabaseSync {
+  const raw = new DatabaseSync(file);
+  raw.exec("PRAGMA synchronous = OFF");
+  return raw;
+}
+
 /** A pool as it stood before the subject was split, with work already owed. */
 function pooledAtPreviousVersion(): string {
   const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_SUBJECT_SPLIT)) {
     raw.exec(migration);
   }
@@ -107,7 +114,7 @@ function pooledAtPreviousVersion(): string {
 }
 
 function migrated(file: string): SqlitePoolStore {
-  const pool = createSqlitePoolStore({ file });
+  const pool = createSqlitePoolStore({ file, synchronous: "off" });
   opened.push(pool);
   return pool;
 }
@@ -214,7 +221,7 @@ describe("splitting a job's subject into a kind and an id", () => {
     const file = pooledAtPreviousVersion();
     migrated(file);
 
-    const raw = new DatabaseSync(file);
+    const raw = unsynced(file);
     try {
       const insert = raw.prepare(
         `INSERT INTO jobs
@@ -242,7 +249,7 @@ function routedAtPreviousVersion(): string {
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_TARGET_REMEMBERED)) {
     raw.exec(migration);
   }
@@ -362,7 +369,7 @@ describe("moving destinations into the pool", () => {
     const file = routedAtPreviousVersion();
     migrated(file);
 
-    const raw = new DatabaseSync(file);
+    const raw = unsynced(file);
     try {
       raw.exec("PRAGMA foreign_keys = ON");
       expect(() =>
@@ -382,7 +389,7 @@ function chainedAtPreviousVersion(
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_ONE_KEY)) {
     raw.exec(migration);
   }
@@ -458,7 +465,7 @@ function typedAtPreviousVersion(): string {
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_ONE_PAYLOAD_TYPE)) {
     raw.exec(migration);
   }
@@ -549,7 +556,7 @@ function savedAtPreviousVersion(): string {
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_GENERIC_CAPABILITIES)) {
     raw.exec(migration);
   }
@@ -629,7 +636,7 @@ function settledAtPreviousVersion(): string {
   directories.push(directory);
   const file = join(directory, "pool.db");
 
-  const raw = new DatabaseSync(file);
+  const raw = unsynced(file);
   for (const migration of MIGRATIONS.slice(0, BEFORE_POOL_SETTINGS)) {
     raw.exec(migration);
   }

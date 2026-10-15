@@ -41,7 +41,10 @@ async function serving(
   declared: Record<string, ArenaServer | undefined>,
 ): Promise<Daemon> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-arena-accounts-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
   stores.push({ store, directory });
 
   const config: Account[] = Object.entries(declared).map(([name, server]) => ({

@@ -21,6 +21,14 @@ pool = "~/.local/share/notemap/state/notemap.db"
 # should issue its own tokens.
 auth = "~/.local/share/notemap/state/auth.db"
 
+# How hard both databases write a commit down, which is a durability-for-speed
+# trade and nothing else. `full`, the default, fsyncs every commit: what the
+# daemon answered for is on the disk before it answers. `normal` leaves the last
+# commits to the operating system — a crash loses nothing, a power cut may lose
+# them, and neither can corrupt the file. `off` fsyncs nothing and a power cut
+# may leave an unreadable pool, which is only sane for one nobody will miss.
+# synchronous = "full"
+
 host = "127.0.0.1"
 port = 4747
 

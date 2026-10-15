@@ -188,7 +188,8 @@ export type Mirroring = "stub" | "filesystem" | "off";
 /**
  * A pool wired the way a host wires one, over the SQLite store on a real file.
  * Files rather than `:memory:`, because an in-memory database cannot have the
- * second connection the driver's reads use.
+ * second connection the driver's reads use. Nothing fsyncs: the directory goes
+ * when the test does.
  */
 export function harness(
   config: PoolConfig = CONFIG,
@@ -220,6 +221,7 @@ function over(
     file,
     clock,
     ids: countingIds("lease"),
+    synchronous: "off",
   });
 
   const blobs = counting(createFilesystemBlobStore({ root: assetRoot }));
