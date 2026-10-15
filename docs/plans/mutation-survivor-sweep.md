@@ -2,7 +2,6 @@
 
 **Date**: 2026-10-15
 **Status**: Todo <!-- Todo | In progress | Done -->
-**Spec**: `docs/specs/mirror.md` <!-- phase 4 only; the sweep itself changes no spec -->
 **Closed**:
 
 ---
@@ -24,6 +23,9 @@ line saying what its remaining survivors are, and no package left unread.
 
 Baselines, measured 2026-10-15, as the percentage of **covered** mutants.
 `core` is already done and is the worked example: 76.21% → 93.53%.
+
+The one survivor that is about the code rather than the tests has a plan of its
+own: [the mirror holds only delivered routes](mirror-holds-only-delivered-routes.md).
 
 ### 1. The weakest first
 
@@ -67,32 +69,6 @@ want the triage habit already formed.
 Verify: `pnpm --filter @notemap/client mutation` reports a higher covered score
 than 80.81% and its own suite is green. A per-file run is not enough to close
 the phase: the whole-package number is the one recorded.
-
-### 4. The mirror codec's `pending` state
-
-Independent of the sweep; depends on nothing. Separate commit, and the one task
-here that changes production code.
-
-`docs/specs/mirror.md` says an item's record carries its **delivered** routing
-records, because a pending one is a reservation rather than durable state
-([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
-`record.ts` honours that and filters. `codec.ts`'s reader accepts `pending`
-anyway, so the code is looser than the spec and the mutant that removes the
-check cannot be killed.
-
-- [ ] Narrow what the mirror's item record holds, so the spec's sentence is a
-      type rather than a comment, and `record.ts`'s filter has something to
-      prove
-- [ ] Reject `pending` where the record is read, rather than dropping the entry:
-      refusing a file loudly beats silently losing a route
-- [ ] Check every consumer of `ItemMirrorRecord.routing` in the daemon's rebuild
-      and repair paths
-- [ ] `git commit`
-
-Verify: `pnpm --filter @notemap/core test`, `pnpm typecheck`, and
-`pnpm --filter @notemap/core mutation` showing `codec.ts`'s state survivor gone.
-No change to `docs/specs/mirror.md` — the spec already says this; the code is
-catching up.
 
 ---
 
@@ -164,10 +140,6 @@ code — which is the kind of thing only a second read catches.
   loop slow and the triage cost high. Fallback: do the outbox and the cache per
   file, record the rest as unread, and close the phase honestly rather than
   pretending the package was swept.
-- **Whether narrowing the mirror's routing type stays contained.** If the
-  daemon's rebuild and repair paths turn out to read `state` widely, phase 4 is
-  larger than it looks. Fallback: reject `pending` at the reader only, leave the
-  type alone, and say so in the spec's `Shipped:` entry.
 - **Whether a package at its ceiling should be excluded from the score instead.**
   `core` dropped its composition root for a written reason. If another package
   turns out to be mostly delegation, the same move may be right — but it is a
@@ -180,8 +152,8 @@ code — which is the kind of thing only a second read catches.
 ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests
 already exist.
 
-A sweep session writes nothing but tests. The one exception is phase 4, which
-changes what the mirror reader accepts and needs a test for the refusal.
+A sweep session writes nothing but tests. A survivor that turns out to be about
+the code goes in the report and then to the developer, not into a fix.
 
 ---
 
