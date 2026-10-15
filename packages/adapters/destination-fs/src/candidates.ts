@@ -19,7 +19,7 @@ import {
   type Browsed,
 } from "@notemap/output-markdown";
 
-import { contain, realOverlapsAny, realRootOf } from "./paths";
+import { contain, realOverlapsAny, realRootOf, type HostPaths } from "./paths";
 import { asFilesystemSettings } from "./settings";
 
 /** However large a vault gets, past this many entries browsing is a search problem, not a paging one. */
@@ -27,6 +27,8 @@ const LIMIT = 500;
 
 export type CandidatesConfig = {
   readonly reserved?: readonly string[];
+  /** Whose home a `~` root means, and where a relative one starts. */
+  readonly paths: HostPaths;
 };
 
 export async function filesystemCandidates(
@@ -46,9 +48,13 @@ export async function filesystemCandidates(
     throw new Error(`${destination.name} has no readable filesystem settings`);
   }
 
-  const realRoot = await resolveRoot(settings.root);
+  const realRoot = await resolveRoot(settings.root, config.paths);
 
-  const overlap = await realOverlapsAny(realRoot, config.reserved ?? []);
+  const overlap = await realOverlapsAny(
+    realRoot,
+    config.reserved ?? [],
+    config.paths,
+  );
   if (overlap !== undefined) {
     throw new Unusable(`${realRoot} overlaps notemap's own ${overlap}`);
   }
@@ -85,9 +91,9 @@ async function headingsIn(
   return headingCandidates(note);
 }
 
-async function resolveRoot(root: string): Promise<string> {
+async function resolveRoot(root: string, paths: HostPaths): Promise<string> {
   try {
-    return await realRootOf(root);
+    return await realRootOf(root, paths);
   } catch (cause) {
     throw new Error(`${root}: ${why(cause)}`, { cause });
   }

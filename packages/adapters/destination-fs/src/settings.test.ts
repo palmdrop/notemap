@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
 import { asFilesystemSettings, FILESYSTEM_SETTINGS } from "./settings";
+
+const PATHS = { home: "/home/someone", relativeTo: "/srv/notemap" };
 import { delivery, destinationRow, TEXT } from "./testing/fixture";
 
 const schemas = createAjvSchemaValidator();
@@ -78,7 +80,10 @@ describe("reading settings back off a row", () => {
 });
 
 describe("a row whose settings the reader cannot make sense of", () => {
-  const kind = createFilesystemDestination({ accepts: [TEXT] });
+  const kind = createFilesystemDestination({
+    accepts: [TEXT],
+    paths: PATHS,
+  });
   const broken = { ...destinationRow({ root: "~/notes" }), settings: {} };
 
   it("cannot say what it can do", async () => {
@@ -98,7 +103,10 @@ describe("a row whose settings the reader cannot make sense of", () => {
 
 describe("what a destination takes", () => {
   it("is what the host said a folder can hold, on every row of the kind", async () => {
-    const kind = createFilesystemDestination({ accepts: [TEXT] });
+    const kind = createFilesystemDestination({
+      accepts: [TEXT],
+      paths: PATHS,
+    });
     const described = await kind.describe(destinationRow({ root: "/tmp" }));
 
     expect(described.capabilities[0]?.accepts).toEqual([TEXT]);

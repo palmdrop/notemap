@@ -62,8 +62,15 @@ function vault(): { readonly root: string } {
   return { root: join(directory, "vault") };
 }
 
+/** No test here writes under `~` or a relative root, and the host says where both are. */
+const PATHS = { home: "/home/someone", relativeTo: "/srv/notemap" };
+
 const FILESYSTEM = destinationRegistry([
-  createFilesystemDestination({ renderers, accepts: [TEXT, SECOND] }),
+  createFilesystemDestination({
+    renderers,
+    accepts: [TEXT, SECOND],
+    paths: PATHS,
+  }),
 ]);
 
 /** A pool holding one destination that is a real folder on disk, mirroring for real as well. */
@@ -282,6 +289,7 @@ describe("a root that overlaps notemap's own state", () => {
         renderers,
         accepts: [TEXT, SECOND],
         reserved: [root],
+        paths: PATHS,
       }),
     ]);
     const opened = harness(undefined, "filesystem", guarded);
