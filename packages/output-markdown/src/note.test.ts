@@ -55,6 +55,7 @@ const renderers: Renderers = { [NOTE]: prose };
 
 function options(overrides: Partial<NoteOptions> = {}): NoteOptions {
   return {
+    conversion: "block",
     frontmatter: "none",
     hashtags: false,
     triggerTags: false,
@@ -223,5 +224,31 @@ describe("what a note says it could not carry", () => {
       "its tags did not go",
     );
     expect(markdownOutput("a thought\n").note).toBe(undefined);
+  });
+});
+
+describe("a note converted to an item", () => {
+  it("writes no frontmatter, whatever it was asked for", () => {
+    const note = renderNote(
+      renderers,
+      delivery({ tags: ["reading"] }),
+      at,
+      options({ conversion: "task", frontmatter: "full" }),
+    );
+
+    expect(note.frontmatter).toBe("");
+    expect(note.body).toBe("- [ ] a thought\n");
+  });
+
+  it("carries its hashtags on the item's own line rather than at the foot", () => {
+    const note = renderNote(
+      renderers,
+      delivery({ tags: ["reading", "two words"] }),
+      at,
+      options({ conversion: "list-item", hashtags: true }),
+    );
+
+    expect(note.body).toBe("- a thought #reading\n");
+    expect(note.dropped).toContain("two words");
   });
 });

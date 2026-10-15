@@ -44,6 +44,7 @@
     value,
     durable = false,
     naming = false,
+    given,
     onchange,
     onsubmit,
     onrelease,
@@ -68,6 +69,12 @@
      * did not choose and cannot read.
      */
     naming?: boolean;
+    /**
+     * What the field's answer depends on — a note's headings depend on which
+     * note. Nothing is asked while one of them is still empty, and the line is
+     * typed into as it would be with nothing to browse.
+     */
+    given?: Readonly<Record<string, string>> | undefined;
     onchange: (value: string) => void;
     onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
@@ -168,8 +175,20 @@
   const rest = $derived(matching.length - shown.length);
 
   // The place is what a composer with a destination in its chrome is for, so
-  // the caret is here rather than waiting to be clicked into.
-  $effect(() => input?.focus());
+  // the caret is here rather than waiting to be clicked into — unless this
+  // field depends on another, which is then where the caret belongs.
+  $effect(() => {
+    if (given === undefined) input?.focus();
+  });
+
+  /**
+   * The same string for the same `given`, so typing into this field — which
+   * hands down a fresh object every keystroke — does not ask again.
+   */
+  const givenKey = $derived(given === undefined ? "" : JSON.stringify(given));
+  const waiting = $derived(
+    given !== undefined && Object.values(given).some((each) => each === ""),
+  );
 
   $effect(() => {
     // Whatever the caret was on stops meaning anything once the list beneath it
@@ -186,13 +205,26 @@
   let asking = 0;
 
   $effect(() => {
+    const held =
+      givenKey === ""
+        ? undefined
+        : (JSON.parse(givenKey) as Record<string, string>);
     const asked = {
       destination,
       capability,
       field,
       ...(scope === undefined ? {} : { scope }),
+      ...(held === undefined ? {} : { given: held }),
     };
     const mine = (asking += 1);
+
+    if (waiting) {
+      entries = [];
+      truncated = false;
+      refusal = undefined;
+      loading = false;
+      return;
+    }
 
     // What it answered last time, drawn while it answers again. The ask still
     // goes out, so this is only ever stale for as long as the round trip —

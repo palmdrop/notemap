@@ -3,7 +3,9 @@ import {
   lstat,
   mkdir,
   readFile,
+  stat,
   symlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -172,7 +174,7 @@ describe("what it says it can do", () => {
     });
   });
 
-  it("asks nothing of create-or-append but offers candidates for its path", async () => {
+  it("asks nothing of create-or-append, and offers candidates for its path and, given the path, its heading", async () => {
     const { destination } = await vault();
     const described = await destination.describe();
     const schema = described.capabilities[0]?.argumentsSchema as JsonObject;
@@ -180,11 +182,11 @@ describe("what it says it can do", () => {
     expect(schema["required"]).toBeUndefined();
     expect(schema["properties"]).toMatchObject({
       path: { "x-notemap-candidates": true },
-      heading: {},
+      heading: {
+        "x-notemap-candidates": true,
+        "x-notemap-candidates-given": ["path"],
+      },
     });
-    expect((schema["properties"] as JsonObject)["heading"]).not.toHaveProperty(
-      "x-notemap-candidates",
-    );
   });
 
   it("splits create's path into its folders and its leaf", async () => {
@@ -728,6 +730,89 @@ describe("appending to a file", () => {
   });
 });
 
+describe("a note somebody else writes while a delivery is under way", () => {
+  /**
+   * An asset is opened after the note was read and before it is written, so
+   * one whose opening edits the note is somebody saving in between.
+   */
+  function meanwhile(edit: () => Promise<void>) {
+    const asset = deliveredAsset("photo", "photo.png", bytes("PNG"));
+    return {
+      ...asset,
+      open: async (signal?: AbortSignal) => {
+        await edit();
+        return asset.open(signal);
+      },
+    };
+  }
+
+  const appended = (assets: readonly ReturnType<typeof meanwhile>[] = []) =>
+    delivery({
+      capability: "append",
+      arguments: { path: "daily.md", heading: "Notes" },
+      assets,
+    });
+
+  it("is not overwritten: the delivery is retried against what they wrote", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+    await writeFile(note, "## Notes\n\nmine\n");
+
+    const outcome = await destination.deliver(
+      appended([
+        meanwhile(() => writeFile(note, "## Notes\n\nmine, edited\n")),
+      ]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect((outcome as { detail: string }).detail).toContain(
+      "daily.md changed after it was read",
+    );
+    expect(await readFile(note, "utf8")).toBe("## Notes\n\nmine, edited\n");
+
+    expect(await destination.deliver(appended())).toMatchObject({
+      kind: "delivered",
+    });
+    expect(await readFile(note, "utf8")).toBe(
+      "## Notes\n\nmine, edited\n\na thought\n",
+    );
+  });
+
+  it("notices an edit that kept the note's size", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+    await writeFile(note, "## Notes\n\nmine\n");
+    const before = await stat(note);
+
+    const outcome = await destination.deliver(
+      appended([
+        meanwhile(async () => {
+          await writeFile(note, "## Notes\n\nMINE\n");
+          await utimes(note, before.atime, new Date(before.mtimeMs + 5_000));
+        }),
+      ]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect(await readFile(note, "utf8")).toBe("## Notes\n\nMINE\n");
+  });
+
+  it("is not overwritten where it appeared after the delivery found none", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    const note = join(path, "daily.md");
+
+    const outcome = await destination.deliver(
+      appended([meanwhile(() => writeFile(note, "theirs\n"))]),
+    );
+
+    expect(outcome).toMatchObject({ kind: "unreachable" });
+    expect((outcome as { detail: string }).detail).toContain(
+      "daily.md appeared after it was read",
+    );
+    expect(await readFile(note, "utf8")).toBe("theirs\n");
+  });
+});
+
 describe("creating or appending, decided here", () => {
   const asked = (args: Record<string, string>) =>
     delivery({ capability: "create-or-append", arguments: args });
@@ -850,6 +935,91 @@ describe("creating or appending, decided here", () => {
     const outcome = await destination.deliver(asked({ path: "../escaped.md" }));
 
     expect(outcome.kind).toBe("rejected");
+    expect(await filesUnder(path)).toEqual([]);
+  });
+});
+
+describe("a delivery converted to one item", () => {
+  const asked = (args: JsonObject) =>
+    delivery({ capability: CREATE_OR_APPEND, arguments: args });
+
+  it("joins the list under the heading as a task", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(
+      join(path, "todo.md"),
+      "# Todo\n\n## Templates\n\n- [ ] older\n\n## Later\n",
+    );
+
+    const outcome = await destination.deliver(
+      asked({ path: "todo.md", heading: "Templates", conversion: "task" }),
+    );
+
+    expect(await outputOf(outcome)).toMatchObject({
+      text: "- [ ] a thought\n",
+    });
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "# Todo\n\n## Templates\n\n- [ ] older\n- [ ] a thought\n\n## Later\n",
+    );
+  });
+
+  it("previews what it delivers", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "todo.md"), "## Templates\n");
+    const each = asked({
+      path: "todo.md",
+      heading: "Templates",
+      conversion: "list-item",
+    });
+
+    const previewed = await textOf(await destination.preview(each));
+    const outcome = await destination.deliver(each);
+
+    expect(previewed.text).toBe("- a thought\n");
+    expect(await outputOf(outcome)).toEqual(previewed);
+  });
+
+  it("takes the bullet of the list it joins, in what it writes and in what it says it would", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await writeFile(join(path, "todo.md"), "## Templates\n\n* older\n");
+    const each = asked({
+      path: "todo.md",
+      heading: "Templates",
+      conversion: "task",
+    });
+
+    const previewed = await textOf(await destination.preview(each));
+    const outcome = await destination.deliver(each);
+
+    expect(previewed.text).toBe("* [ ] a thought\n");
+    expect(await outputOf(outcome)).toEqual(previewed);
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "## Templates\n\n* older\n* [ ] a thought\n",
+    );
+  });
+
+  it("writes no frontmatter into a note it brings into being, whatever was asked", async () => {
+    const { path, destination } = await vault(
+      { text: renderText },
+      { frontmatter: "full" },
+    );
+
+    await destination.deliver(
+      asked({ path: "todo.md", conversion: "task", frontmatter: "full" }),
+    );
+
+    expect(await readFile(join(path, "todo.md"), "utf8")).toBe(
+      "- [ ] a thought\n",
+    );
+  });
+
+  it("rejects a conversion this kind does not publish", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    const outcome = await destination.deliver(
+      asked({ path: "todo.md", conversion: "haiku" }),
+    );
+
+    expect(outcome).toMatchObject({ kind: "rejected" });
     expect(await filesUnder(path)).toEqual([]);
   });
 });

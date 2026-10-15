@@ -1,5 +1,6 @@
 import {
   ASKABLE_FIELD,
+  ASKABLE_GIVEN_FIELD,
   CARRIES,
   CARRIES_ASSETS,
   FOLDER_ARGUMENT,
@@ -13,6 +14,8 @@ import type {
   PayloadTypeName,
 } from "@notemap/core";
 
+import { CONVERSION, CONVERSION_ARGUMENT } from "./conversion";
+import { HEADING, HEADING_NOTE } from "./headings";
 import { FRONTMATTER, FRONTMATTER_MODE } from "./frontmatter";
 import {
   HASHTAGS,
@@ -81,11 +84,19 @@ function createFileArguments(browsable: boolean): JsonSchema {
         [PATH_FIELD]: "leaf",
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,
     },
   };
+}
+
+/** Which headings a note has depends on which note, so a browse for one carries the path. */
+function headingAskable(browsable: boolean): JsonObject {
+  return browsable
+    ? { [ASKABLE_FIELD]: true, [ASKABLE_GIVEN_FIELD]: [HEADING_NOTE] }
+    : {};
 }
 
 /** `heading` absent appends at the end of the file. */
@@ -110,8 +121,10 @@ function appendToFileArguments(browsable: boolean): JsonSchema {
         title: "Heading",
         description:
           "The heading to append under. Left blank, the item is appended at the end of the note.",
+        ...headingAskable(browsable),
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,
@@ -144,8 +157,10 @@ function createOrAppendFileArguments(browsable: boolean): JsonSchema {
         title: "under",
         description:
           "The heading to append under, where the note is already there. Left blank, the item is appended at the end of it.",
+        ...headingAskable(browsable),
       },
       [FOLDER_ARGUMENT]: FOLDER_MODE,
+      [CONVERSION]: CONVERSION_ARGUMENT,
       [FRONTMATTER]: FRONTMATTER_MODE,
       [HASHTAGS]: HASHTAGS_ARGUMENT,
       [TRIGGER_TAGS]: TRIGGER_TAGS_ARGUMENT,
@@ -306,14 +321,15 @@ export function asPlaceAssetsArguments(
   return { directory: directory ?? "", folder };
 }
 
-/** What browsing a field offers: folders alone, or folders and the notes in them. */
-export type Browsed = "directory" | "file";
+/** What browsing a field offers: folders alone, folders and the notes in them, or one note's headings. */
+export type Browsed = "directory" | "file" | "heading";
 
 /**
  * Read off the capability's own schema rather than a list beside it, so a
  * capability that marks a field askable is browsed without anything else to
  * remember. A field holding folders offers folders; one holding a whole path
- * offers folders and the notes in them.
+ * offers folders and the notes in them; a heading offers the headings of the
+ * note its path names.
  */
 export function browsedBy(
   capability: CapabilityName,
@@ -330,5 +346,6 @@ export function browsedBy(
 
   if (held[PATH_FIELD] === "folders") return "directory";
   if (held[PATH_FIELD] === true) return "file";
+  if (field === HEADING) return "heading";
   return undefined;
 }

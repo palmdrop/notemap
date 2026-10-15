@@ -54,14 +54,15 @@ export type DestinationReport =
  * What a destination is asked when a person is choosing what one field of one
  * capability's arguments should hold. `scope` is opaque to core: absent asks
  * at the top, and present is a scope an earlier answer minted, for a caller
- * descending without being told it is descending anything. Carries neither
- * the capability's other arguments nor the ones filled in so far — no field
- * either kind declares today depends on another.
+ * descending without being told it is descending anything. `given` carries
+ * the arguments the field declares its answer depends on, and only those: a
+ * note's headings are asked about given the note.
  */
 export type CandidatesRequest = {
   readonly capability: CapabilityName;
   readonly field: string;
   readonly scope?: string;
+  readonly given?: Readonly<Record<string, string>>;
 };
 
 /**

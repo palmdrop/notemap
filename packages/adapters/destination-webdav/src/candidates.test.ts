@@ -133,10 +133,56 @@ describe("what a webdav vault offers the typed line", () => {
     ).toEqual([{ label: "library", value: "library", scope: "library" }]);
   });
 
-  it("offers nothing for a heading, which is free text", async () => {
+  it("offers the headings of the note a heading is given", async () => {
+    const { server, candidates } = await vault();
+    server.put("V/todo.md", "# Todo\n\n## Templates\n\n## Templates\n");
+
+    expect(
+      await candidates({
+        ...LINE,
+        field: "heading",
+        given: { path: "todo.md" },
+      }),
+    ).toEqual({
+      truncated: false,
+      entries: [
+        { label: "# Todo", value: "Todo" },
+        { label: "## Templates", value: "Templates" },
+      ],
+    });
+  });
+
+  it("offers no headings for a note that is not there, or a folder", async () => {
     const { candidates } = await vault();
 
-    await expect(candidates({ ...LINE, field: "heading" })).rejects.toThrow(
+    for (const path of ["todo.md", "notes/"]) {
+      expect(
+        (await candidates({ ...LINE, field: "heading", given: { path } }))
+          .entries,
+      ).toEqual([]);
+    }
+  });
+
+  it("offers no headings for a folder named without its slash, and never reads it", async () => {
+    const { server, candidates } = await vault();
+    server.makeCollection("V/notes");
+
+    expect(
+      (
+        await candidates({
+          ...LINE,
+          field: "heading",
+          given: { path: "notes" },
+        })
+      ).entries,
+    ).toEqual([]);
+    expect(server.requests()).not.toContain("GET /V/notes");
+  });
+
+  it("is still not offered for a field nothing marks askable", async () => {
+    const { candidates } = await vault();
+
+    await expect(candidates({ ...LINE, field: "folder" })).rejects.toThrow(
       NotOffered,
     );
   });

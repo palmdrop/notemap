@@ -17,9 +17,13 @@ describe("what browsing a field offers, read off the schema", () => {
     expect(browsedBy(named("create-or-append"), "path")).toBe("file");
   });
 
+  it("offers a note's headings for a heading", () => {
+    expect(browsedBy(named("append"), "heading")).toBe("heading");
+    expect(browsedBy(named("create-or-append"), "heading")).toBe("heading");
+  });
+
   it("offers nothing for a field that is not askable, or not there", () => {
     expect(browsedBy(named("create"), "filename")).toBeUndefined();
-    expect(browsedBy(named("append"), "heading")).toBeUndefined();
     expect(browsedBy(named("nothing-declared"), "path")).toBeUndefined();
   });
 });

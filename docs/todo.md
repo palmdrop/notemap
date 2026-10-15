@@ -1,46 +1,14 @@
 # Developer TODOs
 
-- [x] storage space, mirror + db size, asset sizes - give the user a way to inspect the storage used, the size the mirror takes on disk, the size an asset takes, etc. BOth stats page and useful insights wherever relevant in the app
-    - a Storage section in settings rather than a stats page: a stats surface — tag statistics, capture rates — is its own question ([plan](plans/what-notemap-takes-on-disk.md))
-
 ## Shell — layout and interaction
 
 - [ ] add ability to order feed by order of processing, which is more intuitive since the user might expect the capture they processed latest to appear on top
-
-- [x] navigating the queue with j/k does not fully scroll the view down so the entire capture is visible: part of it is hidden behind the statusline
-    - smooth scroll with some padding?
-- [x] strange scroll offset when attaching and removing attached files, the previews and file lines in the capture row offsets the scroll, sometimes leaving the capture partly outside the viewport
-- [x] notices (like "copied") should slide in on the statusbar, without movement it is hard to understand that something happened
-  - the newest notice arrives from the left (`in:arrive`, `apps/ui/src/components/status/Message.svelte`) since #90
-- [x] trying to capture an empty capture gives no error or warning indicating why it does not work
 - [ ] destination fields should provide succinct placeholder texts
 
 - [ ] fuzzy search for captures, feed, tags, other views
 
-- [x] "keep the capture's" in when doing routing edits reads strange, maybe just "restore"
-- [x] tags in processing view show twice: once above the capture body and once in the composer. Lets just show in composer.
-
-- [x] update empty lists inidcators: 
-    - when no items match the tag filters, we get "Nothing tagged <tag> and <tag> is waiting." and a button for "whole queue" that reads just like text. Should say: "Nothing matches both <tag> and <tag>" and the button should read "Clear filters" and look like a button, not just text.
-    - empty queue reads like "Nothing left to process", should say "Queue is empty
-    - when the notices expandable is empty, it says "Nothing has been said yet" but it should say "No notices".
-    - also, for the queue message (empty queue or no tags matching), the text is strangely offset to the right and down. Align with the left of the queue, no additional padding on top.
-
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 - [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
-
-- [x] link unfurl/preview that contain nothing should not provide a preview at all. Instead, we get a preview with a message saying something about the link not responding or that it states nothing about itself. Hide preview if it is not meaningful
-
-- [x] when a delivery has no text content, just an asset, we get this in the preview: "a block carries neither its tags; what fitted went into the block's own metadata". I do not like that, needs to be an image preview instead, to show that the asset itself is included. That text, "a block carries..." does not make sense to a user.
-
-- [x] escaping out of composer after item has been routed returns user to queue, with the routed item at the bottom (wrongly) - determine how this behavior should work. Return user to next item in queue?
-
-- [x] Mobile view too cramped - show dates as heading lines, once for every day + month, sticky header, then just show time beside (or above?) the capture row
-
-- [x] Tag dropdown not showing on phone unless user types, at least not initially. After tag is added, it starts working? 
-
-- [x] live update of queue/feed: a capture made with raycast should show up in notemap, either using websocket or a poll every X seconds
-  - polled on the action log's ten-second tempo since 2026-10-09 ([live-arrivals](plans/live-arrivals.md))
 
 - [ ] feed, filter on routed and non-routed
 
@@ -49,17 +17,6 @@
     - full-screen for editing and capturing
     - tag input using a centered input field and expandable
     - bottom bar for switching views
-
-- [x] after pressing escape in capture input, then cmd+enter, should commit the capture, but it does not. Should also be a way, after one escape, to return focus to the capture input text field, maybe using "e" or "i" (for insertion mode, vim keybind). 
-
-- [x] Add proper loading icons and states. Pay attention to layout shifting - avoid it.
-- [x] stale and premature UI state
-  - No good way to see pending operations. A held row says `retrying` while it is
-    looked at and the corner speaks when the delivery resolves, but nothing shows everything in
-    flight at once. Belongs with the routing-record and log readability items below.
-
-- [x] make URLs clickable links
-- [x] preview external links, like instagram, are.na, image URLs, etc 
 
 - [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
     - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
@@ -83,26 +40,6 @@
   dropped as the reader scrolls back).
 
 ## Composer and capture
-
-- [x] Should it be possible to attach multiple attachments to the same capture — yes, any number
-  of any kind since 2026-10-07 ([attachments-of-any-kind](plans/attachments-of-any-kind.md))
-
-- [x] **An edit's dropped, reverted or abandoned attachments stay in the client's store.** An edit
-  attaches each file as it is picked, so `drop`, `revert` and closing without saving forget the
-  asset but leave its bytes held, and no operation will ever release them
-  (`apps/ui/src/components/item/editing.svelte.ts`). Older than many attachments, but bounded at one
-  picture until 2026-10-07 and now any number of files of up to the upload limit each. The capture
-  box lets go of what a failed capture attached through `client.detach`; the edit wants the same at
-  each of its three exits — or to attach at `save`, as the box attaches at the button. Raised
-  reviewing [attachments-of-any-kind](reviews/attachments-of-any-kind-2026-10-07.md).
-  - Closed 2026-10-10 by attaching at `save`
-    ([an-edit-lets-go-of-its-bytes](plans/an-edit-lets-go-of-its-bytes.md)). The same plan found the
-    Raycast capture passing `asset` where a capture input names `assets`, so its attachment never
-    reached the pool and its bytes were orphaned every time; it captures through `capturing` in
-    `apps/raycast-extension/src/lib/note.ts` now. What either shell had already left is taken by the
-    shell itself on its next start, past a grace window
-    ([a-shell-reclaims-its-own-bytes](plans/a-shell-reclaims-its-own-bytes.md)), and `pnpm reclaim`
-    is for looking ([running.md](running.md#bytes-a-shell-is-holding)).
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
   - Cheaper than it was, as of 2026-09-07: the auto-routing half is done. A capture that arrives
@@ -181,6 +118,9 @@
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
+  - The hand-picked half shipped 2026-10-14: `conversion` on the markdown kinds, `block`,
+    `list-item` or `task` ([task-conversion](plans/task-conversion.md)). See the next entry for
+    what is left.
   - Shape settled in [ADR 19](adr/0019-a-destination-converts-and-the-delivery-records-what-went.md): the destination converts a copy, the work happens inside the delivery, and the bytes that landed come back to be stored on the routing record. Narrowed 2026-09-10: the **hand-made** half is answered — a person's words are a first-class `content` field of the request, beside the arguments rather than inside them, because a path and a person's prose are not the same kind of thing and only one of them is a destination's to interpret ([ADR 45](adr/0045-a-delivery-may-carry-its-own-content.md)). Still open: where an **automatic** conversion is configured — a template, a destination, a model in the loop — and whether one is itself a thing a person edits.
 - [ ] Routing auto-processing - routing a note to a specific destination converts it to a specified format. A todo list, a prose paragraph, a markdown image link, whatever. The format could be a templating language, or natural language, with an LLM in the loop, or a mix. ADR 19 answers _where the work happens_, and the **preview** half is now closed: the destination port has `preview`, the composer asks for one on demand, and a delivery records the output it produced so what went is readable after the fact
   ([delivery-output-and-preview](plans/delivery-output-and-preview.md),
@@ -190,6 +130,11 @@
   output from `preview`, and a conversion that loses something says so in a note nobody parses.
   The repeatability worry this line carried is answered rather than solved: a preview is
   **indicative**, so a non-deterministic converter is allowed and the shell says what a preview is.
+  - Narrowed 2026-10-14: a conversion is configured as a named argument the kind publishes
+    ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)), and the markdown
+    kinds ship `block`, `list-item` and `task`. A templating language was weighed there and
+    refused. Still open: a model in the loop, and a conversion that rewrites the whole file (a
+    fold), which ADR 61 deliberately left out of its interface.
 - [ ] Routing rules - core.md has carried "how rules are expressed, how fan-out to several destinations is presented, and whether a rule may ever be trusted to fire unattended" since 2026-08-02. Half answered on 2026-09-05 by [ADR 34](adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) and the [routing-templates plan](plans/routing-templates.md): a **routing template** is what a rule would have had for a right-hand side, a **trigger tag** applies one, and the sentence about a rule never delivering on its own was rewritten deliberately rather than discovered later. Still open, and only reachable once conditions exist: the rule table itself, fan-out to several destinations from one gesture, and precedence between rules.
   - Shipped 2026-09-07, and the half that is closed is closed in code as well as on paper: templates
     are pool state, a `route/` tag applies one, a fired one waits out a configured window so the
@@ -206,49 +151,22 @@
 - [ ] in-file edits: instead of creating or appending, notemap allows for *inserting* a capture in a file. Only works if file is parsed by, for example, a markdown parser, or some other pattern/filetype that the destination supports. For example, inserting a capture item below a pre-existing heading in a file, or adding a todo list entry at the top of a todo list
     - test if JEV can be used for this
     - notemap keeps a backup of the original file when doing this?
+    - Narrowed 2026-10-14 by [task-conversion](plans/task-conversion.md): a `list-item` or `task`
+      now lands at the end of a heading picked from the note itself, joining a tight list without
+      loosening it ([ADR 61](adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md),
+      [ADR 62](adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)). Left
+      out on purpose: inserting at the **top** of a section rather than its end. Backups were
+      deliberately left out too. The output holds only the inserted fragment, so the note
+      as it stood before notemap's edit cannot be recovered from the pool. The shape, if wanted:
+      the whole pre-edit file as a blob, named on the routing record beside the output. A whole
+      file rather than a reverse diff, because a diff only replays against a note nobody has
+      touched since. It costs a full copy per insert into a changed note, and it is a new field on
+      the record, so it extends ADR 19/33.
 
 ## Destinations and adapters
 
-- [x] **are.na refuses a capture carrying more than one file.** A block holds one thing, so the
-  arena kind refuses any capture whose payload names more than one asset — reachable from the shell
-  since 2026-10-07, when a capture began carrying any number of files
-  ([attachments-of-any-kind](plans/attachments-of-any-kind.md)). Routing by hand hears it in the
-  preview, before deciding; a trigger tag hears it only at delivery. Options weighed then: keep
-  refusing; **one block per file**, the words captioning the first — what a person would do by hand,
-  but one delivery making several blocks against a record holding one pointer, and a partial
-  failure retried may duplicate more than [ADR 41](adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)
-  accepts for one; or **the first file only, saying what was dropped**, through the output and note
-  [ADR 33](adr/0033-a-lossy-delivery-carries-its-output-and-a-preview-is-indicative.md) already
-  gives a lossy delivery. Leaning to the last, unless are.na should receive everything.
-  - *2026-10-08*: decided on **one block per file**, are.na should receive everything. Also gives
-    the arena kind the `place-assets` capability ([attachments-only](plans/attachments-only.md)):
-    one block per file and no text block. Two things to settle first: what a partial failure
-    retried does (duplicate under ADR 41, or keep track of the blocks already made), and what the
-    record's single pointer and `url` name when one delivery makes several blocks.
-  - Closed 2026-10-10 ([arena-takes-every-file](plans/arena-takes-every-file.md),
-    [ADR 59](adr/0059-one-block-per-file-and-a-multi-block-delivery-names-its-channel.md)): one
-    block per file with the words on the first, `place-assets` on the kind taking a channel alone,
-    a multi-block delivery naming the channel and listing the blocks in its output, and a partial
-    failure retried duplicating, which the kind's README says.
-
 - [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
 
-- [x] **The shell picks a browse control by destination kind name.**
-  `apps/ui/src/lib/candidate-browsers.ts` maps `filesystem` and `webdav` to the typed line and
-  everything else to the flat one, so a third filesystem-like kind needs a UI edit to get the tree —
-  which is the shell knowing about particular destinations, the thing the adapter seam exists to
-  prevent. Raised 2026-09-08 while making the flat browse typeable.
-
-  Inferring it from the answer does not work: the line has to know **before the first answer** that
-  values are `/`-separated, because the level-per-segment asks, the forecast and the `+ folder` for
-  what is not there yet all read the path apart. That is a property of the field, not of what came
-  back. So the fix is to let the schema say it — `x-notemap-candidates` carrying a shape
-  (`"path"` | `"flat"`) rather than `true`, adapter-declared and core-uninterpreted, exactly as
-  every other annotation is. It changes an annotation that has already shipped and that
-  `docs/specs/shell.md` and [ADR 26](adr/0026-a-destination-can-be-asked-what-an-argument-could-hold.md)
-  both describe, so it wants an ADR and a migration of the three kinds that declare it.
-  Closed 2026-10-02 by [ADR 55](adr/0055-a-path-field-says-which-part-of-the-path-it-holds.md): the
-  path role already says a field is `/`-separated, so `x-notemap-candidates` stays a flag.
 - [ ] Verify and repair reach destination, template and pool-setting records. The mirror carries
   them ([ADR 20](adr/0020-destinations-are-pool-state.md),
   [ADR 50](adr/0050-pool-settings-are-pool-state.md)), but neither verify nor repair exists to
@@ -266,18 +184,11 @@
 ## Inboxes
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
 - [ ] raycast extension need to support empty note bodies, just attachments. Move attachments above tags
-- [x] in raycast, show undrained count, and/or view for outbox
-- [x] raycast capture takes any number of attachments, as a capture has since 2026-10-07 _(2026-10-11)_
 
 - [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
-
-- [x] are.na relay: if "source" link is present, include it in the relayed capture
-- [x] are.na relay does not seem to handle links well, or channels... should send them to notemap just as links, not skip entirely
-  - channels arrive as links since 2026-10-06. The links half could not be reproduced: the live v3
-    shape matches what the relay reads.
 
 - [ ] relays: an upstream edit to a *processed* item becomes a revision and resurfaces in the queue,
   which may not be what a person who already dealt with it expects. It is also the only way the edit
@@ -291,31 +202,6 @@
 - [ ] add a way to edit tags, remove tags, rename tags, see tag statistics, etc
 
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
-- [x] Nothing reclaims a blob no asset ever named. **Whatever closes this must not take an
-  output**: a delivery's output is a blob named by a routing record rather than by an asset, so a
-  reclaim that reasons from the `assets` table alone would delete the evidence of what was sent
-  (2026-09-04). An output also *adds* to what this entry owes: the blob is written before the
-  transaction that names it, so a route refused as `item-purged` after a delivery landed, or a
-  completion whose lease was lost, leaves one behind. That is an ordinary path rather than the
-  crash the upload case describes. The store already withholds one from the sweep's release path; a reclaim that
-  walks the blob store instead has to ask the same question. The sweep enumerates the `assets` table, so a
-  blob written by an upload that never minted a row — a crash between the two, or a refused
-  `asset-id-conflict` — is permanent, where every other kind of debris is eventually taken. Both
-  [core.md](specs/core.md) and [ADR 22](adr/0022-the-uploader-mints-the-asset-id.md) park this on
-  deep verify, which does not exist. The narrow version is a sweep over the blob store dropping
-  hashes no asset names, behind the same grace window the asset sweep already uses for the same
-  reason. Raised reviewing [client-minted assets](plans/client-minted-assets-and-health.md), where
-  a refused upload made this reachable rather than only a crash window.
-- [x] The sweep deletes a blob after its transaction commits, and the other order would be worse
-  — but an upload of that same content committing in the window between the two ends up naming a
-  file the sweep then deletes, so an asset that landed reads `blob-missing`. Pre-existing and
-  unrelated to who mints the id; found reviewing
-  [client-minted assets](plans/client-minted-assets-and-health.md). Wants either a delete that
-  re-checks the asset table under the write lock, or a grace on the blob as well as the asset.
-  - Both closed 2026-10-09 ([reclaim-unnamed-blobs](plans/reclaim-unnamed-blobs.md),
-    [ADR 58](adr/0058-a-reclaim-walks-the-blob-store-and-a-naming-transaction-checks-its-blob.md)):
-    the sweep no longer deletes blobs, and a reclaim takes any blob nothing names under the write
-    lock, while a transaction naming a blob checks it is still there.
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.)
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.

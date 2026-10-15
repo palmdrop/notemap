@@ -18,6 +18,7 @@
   import {
     effectiveOf,
     fieldsOf,
+    givenFor,
     impliedOf,
     labelOf,
     offered,
@@ -346,6 +347,7 @@
           value={typed[field.name] ?? ""}
           durable
           naming={field.offeredOnly}
+          given={givenFor(field, typed)}
           onchange={(value) => (typed[field.name] = value)}
         />
       {:else}

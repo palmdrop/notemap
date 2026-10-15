@@ -1,8 +1,16 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-14
 **Shipped**:
+
+- 2026-10-14 — **A delivery may be written as a list item or a task, under a heading picked from the
+  note.** The markdown kinds publish `conversion` (`block`, `list-item`, `task`) as an argument,
+  and core learns none of the names. A list shape writes one item, joins a tight list without
+  loosening it, and writes no front matter. A candidates request carries `given`, the arguments a
+  field's answer depends on, so `heading` lists a note's own headings given its `path`.
+  ([plan](../plans/task-conversion.md), [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md),
+  [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md))
 
 - 2026-10-12 — **The pool answers how much it has taken.** `pool.storage.recorded()` reads what the
   pool has written down — the store's bytes and how many of them it holds and is not using, and
@@ -1129,6 +1137,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   entry — happen inside the delivery, where the dialect already lives. Amending the capture into
   the destination's shape first is not an option: one item may go to three destinations in three
   dialects, so the last to route would win and the original would be gone.
+- **A conversion is named by an argument the kind publishes** (added 2026-10-14,
+  [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md)). A delivery asks
+  for a shape the way it asks for front matter: through an argument in the capability's
+  `argumentsSchema`, whose `enum` is the whole of what the kind offers. Core validates membership
+  and learns none of the names. The markdown kinds publish `conversion` (`block`, `list-item`,
+  `task`) on every capability that writes a note. `block` is the default and what every earlier
+  record meant. The other two write one list item: the first line of the capture's first prose
+  as the item, the rest of the rendering indented beneath it with no blank lines, the hashtags at
+  the end of the item's own line, and no front matter. A divider is dropped, and a block that
+  would run into the one above it without a blank line keeps one, loosening that list rather
+  than changing what the capture says. A `task` with nothing on its own line is `rejected`, since
+  `- [ ]` alone is not a task. An item landing straight after a bullet list takes that list's
+  bullet and joins it. A conversion shapes a **fragment**. One that writes a whole file is not
+  part of this.
 - **A delivery may carry its own content, and the reservation holds it** (added 2026-09-10,
   [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)). A routing request may supply the
   words this one delivery carries in place of the capture's. Core checks them against the item's
@@ -1271,9 +1293,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is the ordinary case and means the value is already the lasting one. Which of the two to take is
   the **asking surface's** business rather than the destination's: a decision made once prefers the
   readable name and reads it back on its record, and one that fires again for months prefers the
-  name that cannot rot. Core carries both and reads neither. A
-  request carries none of the arguments filled in so far, because no field either kind declares
-  today depends on another. Failures are `unreachable`, `unusable` and `not-offered`, on the same
+  name that cannot rot. Core carries both and reads neither. A request may carry **`given`**
+  (added 2026-10-14, [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)):
+  the arguments the field's answer depends on, named by the field itself in
+  `x-notemap-candidates-given`, as strings. A note's headings are asked about given the note's
+  `path`. The route checks that a request carries exactly those, filled, before the destination is
+  asked anything; core passes them through. Failures are `unreachable`, `unusable` and `not-offered`, on the same
   terms `describe()`'s own report already uses. `not-offered` is one answer however it was reached
   — a kind whose adapter implements none of this, and a field an adapter does not answer for, are
   the same fact to a caller: nothing here can be browsed.

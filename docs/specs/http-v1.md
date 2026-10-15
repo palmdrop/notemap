@@ -2,8 +2,13 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-14
 **Shipped**:
+
+- 2026-10-14 — **`/candidates` takes `given[<field>]`.** A field naming what its answer depends on
+  in `x-notemap-candidates-given` is asked with those arguments, each filled; `422 given-missing`
+  and `422 given-undeclared` refuse a request carrying anything else, before the destination is
+  asked. ([plan](../plans/task-conversion.md), [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md))
 
 - 2026-10-12 — **`GET /v1/storage`, `POST /v1/storage/measure` and `POST /v1/reclaim`.** Where the
   pool, the blobs, the mirror and the daemon's own database are, what each takes, and the space free
@@ -1187,6 +1192,20 @@ GET /v1/destinations/019a3f2c-.../candidates?capability=create&field=directory&s
   property of that capability's `argumentsSchema` carrying `x-notemap-candidates`. An undeclared
   capability is `422 capability-undeclared`, the same code and shape routing an item refuses one
   with; a field that is not askable is `422 field-not-askable`. Neither reaches the destination.
+- **A field whose answer depends on other arguments says so, and the request carries them as
+  `given`** (added 2026-10-14,
+  [ADR 62](../adr/0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)). The
+  field's schema names them in `x-notemap-candidates-given`, and each travels as a `deepObject`
+  query parameter, `given[<name>]=<value>`, a string. A note's headings are asked given its path:
+
+  ```
+  GET /v1/destinations/019a3f2c-.../candidates?capability=append&field=heading&given[path]=docs/todo.md
+  ```
+
+  Checked with the capability and the field, before the destination is asked anything: an
+  argument the field depends on that is absent or empty is `422 given-missing`, naming it in
+  `missing`, and one it does not depend on is `422 given-undeclared`, naming it in `undeclared`.
+  A field with no such annotation takes no `given` at all.
 - **It is capped, not paginated.** `truncated` says the destination held more than it answered. A
   folder holding thousands of notes is a search problem rather than a paging one, and a cursor
   would put a position on an ordering notemap does not own and cannot promise is stable between two

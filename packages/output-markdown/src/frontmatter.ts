@@ -1,7 +1,9 @@
 import { dump } from "js-yaml";
 
-import { INHERITS_FIELD } from "@notemap/core";
+import { INHERITS_FIELD, OFFERED_WHEN_FIELD } from "@notemap/core";
 import type { Delivery, JsonObject, JsonSchema } from "@notemap/core";
+
+import { CONVERSION } from "./conversion";
 
 export type FrontmatterValue = string | number | boolean | readonly string[];
 
@@ -100,6 +102,7 @@ export const FRONTMATTER_MODE: JsonSchema = {
   description:
     "How much provenance is written above this note. Left unset, the destination's own setting decides.",
   [INHERITS_FIELD]: true,
+  [OFFERED_WHEN_FIELD]: [{ field: CONVERSION, is: ["block"] }],
 };
 
 /** Absent inherits the destination's setting, and an absent setting is `none`. */

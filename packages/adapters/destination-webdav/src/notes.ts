@@ -8,6 +8,7 @@ import {
   deriveFilename,
   fileOf,
   folderModeOf,
+  conversionOf,
   frontmatterModeOf,
   insertUnder,
   placeOf,
@@ -221,16 +222,21 @@ async function append(
       );
     }
 
+    const { file, inserted } = insertUnder(
+      existing.body,
+      rendered.body,
+      heading,
+    );
     const written = await wiring.dav.replace(
       note.encoded,
-      insertUnder(existing.body, rendered.body, heading),
+      file,
       existing.etag,
       signal,
     );
     if (written === "written") {
       return {
         pointer: note.relative,
-        written: rendered.body,
+        written: inserted,
         ...said(rendered),
       };
     }
@@ -248,7 +254,10 @@ function whole(rendered: Note): string {
 }
 
 function wholeUnder(rendered: Note, heading?: string): string {
-  return fileOf(rendered.frontmatter, insertUnder("", rendered.body, heading));
+  return fileOf(
+    rendered.frontmatter,
+    insertUnder("", rendered.body, heading).file,
+  );
 }
 
 /**
@@ -284,7 +293,7 @@ export async function previewNote(
     text:
       existing === undefined
         ? wholeUnder(rendered, wanted.heading)
-        : rendered.body,
+        : insertUnder(existing.body, rendered.body, wanted.heading).inserted,
     ...said(rendered),
   };
 }
@@ -310,6 +319,7 @@ function renderInto(
     delivery,
     { directory: collectionOfPointer(note), assets },
     {
+      conversion: conversionOf(delivery.arguments),
       frontmatter: frontmatterModeOf(delivery.arguments, wiring.frontmatter),
       hashtags: hashtagsOf(delivery.arguments, wiring.hashtags),
       triggerTags: triggerTagsOf(delivery.arguments),

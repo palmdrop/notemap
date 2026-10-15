@@ -2,6 +2,7 @@ import type { Context } from "hono";
 
 import type {
   CandidatesRequest,
+  Capability,
   CapabilityName,
   Destination,
   DestinationId,
@@ -22,6 +23,7 @@ import {
   updateDestinationRequestSchema,
 } from "../schemas/destination";
 import { readBody } from "../utils/body";
+import { givenOf, unmetGiven } from "./given";
 import { json, refuse } from "../utils/responses";
 
 /** What a destination is on the wire: when it was retired is not a client's business. */
@@ -113,7 +115,7 @@ async function asking(
   id: DestinationId,
   capability: CapabilityName,
   field: string,
-): Promise<Response | undefined> {
+): Promise<Response | Capability> {
   const description = await pool.destinations.describe(id, reaching());
   if (description === undefined) {
     return json(
@@ -138,7 +140,7 @@ async function asking(
     return refuse({ kind: "field-not-askable", capability, field });
   }
 
-  return undefined;
+  return declared;
 }
 
 export function destinationCandidatesHandler(pool: Pool) {
@@ -148,14 +150,24 @@ export function destinationCandidatesHandler(pool: Pool) {
       "") as CapabilityName;
     const field = context.req.query("field") ?? "";
     const scope = context.req.query("scope");
+    const given = givenOf(context.req.url);
 
-    const refused = await asking(pool, id, capability, field);
-    if (refused !== undefined) return refused;
+    const declared = await asking(pool, id, capability, field);
+    if (declared instanceof Response) return declared;
+
+    const unmet = unmetGiven(
+      declared.argumentsSchema,
+      capability,
+      field,
+      given,
+    );
+    if (unmet !== undefined) return refuse(unmet);
 
     const request: CandidatesRequest = {
       capability,
       field,
       ...(scope === undefined ? {} : { scope }),
+      ...(Object.keys(given).length === 0 ? {} : { given }),
     };
     const report = await pool.destinations.candidates(id, request, reaching());
 
@@ -178,8 +190,8 @@ export function destinationNamedHandler(pool: Pool) {
     const field = context.req.query("field") ?? "";
     const value = context.req.query("value") ?? "";
 
-    const refused = await asking(pool, id, capability, field);
-    if (refused !== undefined) return refused;
+    const declared = await asking(pool, id, capability, field);
+    if (declared instanceof Response) return declared;
 
     const report = await pool.destinations.naming(
       id,

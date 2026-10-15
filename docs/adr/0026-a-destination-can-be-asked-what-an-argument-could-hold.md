@@ -1,7 +1,9 @@
 # 26. A destination can be asked what an argument could hold
 
 **Date**: 2026-08-31
-**Status**: Accepted — extends the routing section of [core.md](../specs/core.md)
+**Status**: Accepted — extends the routing section of [core.md](../specs/core.md). *A request
+carries no arguments filled in so far* is superseded by
+[ADR 62](0062-a-candidates-request-carries-the-arguments-a-field-depends-on.md)
 **Deciders**: palmdrop, with Claude
 
 ---

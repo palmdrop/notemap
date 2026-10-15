@@ -5,7 +5,13 @@ import {
   type CandidatesRequest,
   type Destination,
 } from "@notemap/core";
-import { browsedBy, type Browsed } from "@notemap/output-markdown";
+import {
+  browsedBy,
+  headingCandidates,
+  headingsNote,
+  NO_HEADINGS,
+  type Browsed,
+} from "@notemap/output-markdown";
 
 import type { CredentialResolver } from "./credentials";
 import { createDav, type Child } from "./dav";
@@ -40,6 +46,27 @@ export function webdavCandidates(credentials: CredentialResolver) {
       throw new Error(`${destination.name} has no readable webdav settings`);
     }
 
+    if (kind === "heading") {
+      const path = headingsNote(request);
+      if (path === undefined) return NO_HEADINGS;
+
+      const located = contain(settings.root, path);
+      if (located.kind === "refused") throw new Refused(located.detail);
+
+      const dav = createDav(await credentials(settings.account));
+      // What a `GET` on a collection answers is the server's own business.
+      const looked = await dav.look(located.path.encoded, signal);
+      if (looked.kind === "refused") {
+        throw new Error(
+          `the account refused to say what ${located.path.relative} holds (${String(looked.status)})`,
+        );
+      }
+      if (looked.kind === "not-there" || looked.collection) return NO_HEADINGS;
+
+      const note = await dav.get(located.path.encoded, signal);
+      return note === undefined ? NO_HEADINGS : headingCandidates(note.body);
+    }
+
     const scope = request.scope ?? "";
     const located = contain(settings.root, scope);
     if (located.kind === "refused") throw new Refused(located.detail);
@@ -58,7 +85,7 @@ export function webdavCandidates(credentials: CredentialResolver) {
  * notes would otherwise bury the handful of ways down through it.
  */
 function page(
-  kind: Browsed,
+  kind: Exclude<Browsed, "heading">,
   prefix: string,
   children: readonly Child[],
 ): CandidatesAnswer {

@@ -276,6 +276,21 @@ describe("asking what a field could hold", () => {
     expect(query.get("scope")).toBe("notes");
   });
 
+  it("carries what the field depends on as given[name], the shape the route reads", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, { kind: "answered", entries: [], truncated: false }),
+    );
+
+    await client.destinations.candidates(aDestination().id, {
+      capability: "append",
+      field: "heading",
+      given: { path: "docs/todo.md" },
+    });
+
+    const query = new URL(sentTo(transport).at(-1)?.url ?? "").searchParams;
+    expect(query.get("given[path]")).toBe("docs/todo.md");
+  });
+
   it("reads a refusal the destination itself gave as an answer, not a failure", async () => {
     const { client } = clientOver(() => json(200, { kind: "not-offered" }));
 

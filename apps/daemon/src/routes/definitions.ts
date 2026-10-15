@@ -11,6 +11,7 @@ import {
   BODY_STATUS,
   CANCEL_STATUS,
   CANDIDATES_REQUEST_STATUS,
+  GIVEN_STATUS,
   CAPTURE_STATUS,
   codesFor,
   DELIVERY_STATUS,
@@ -874,6 +875,20 @@ const candidatesQuery = z.object({
         "Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything.",
       example: "inbox",
     }),
+  given: z
+    .record(z.string(), z.string())
+    .optional()
+    .openapi({
+      param: {
+        name: "given",
+        in: "query",
+        style: "deepObject",
+        explode: true,
+      },
+      description:
+        "The arguments the field's answer depends on, as `given[path]=…`: exactly those its schema names in `x-notemap-candidates-given`, each filled. One left empty is `given-missing`; one it does not name is `given-undeclared`.",
+      example: { path: "daily.md" },
+    }),
 });
 
 export const destinationCandidatesRoute = createRoute({
@@ -892,9 +907,10 @@ export const destinationCandidatesRoute = createRoute({
     },
     404: errorResponse("No destination has that id.", 404, DESTINATION_STATUS),
     422: errorResponse(
-      "The capability was not declared, or the field is not one that can be asked about.",
+      "The capability was not declared, the field is not one that can be asked about, or `given` does not carry exactly what the field depends on.",
       422,
       CANDIDATES_REQUEST_STATUS,
+      GIVEN_STATUS,
     ),
   },
 });

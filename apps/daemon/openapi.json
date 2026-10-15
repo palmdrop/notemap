@@ -5586,6 +5586,24 @@
             "description": "Opaque. Absent asks at the top; present is a scope an earlier answer minted, to descend without being told it is descending anything.",
             "name": "scope",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "The arguments the field's answer depends on, as `given[path]=…`: exactly those its schema names in `x-notemap-candidates-given`, each filled. One left empty is `given-missing`; one it does not name is `given-undeclared`.",
+              "example": {
+                "path": "daily.md"
+              }
+            },
+            "required": false,
+            "description": "The arguments the field's answer depends on, as `given[path]=…`: exactly those its schema names in `x-notemap-candidates-given`, each filled. One left empty is `given-missing`; one it does not name is `given-undeclared`.",
+            "name": "given",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true
           }
         ],
         "responses": {
@@ -5631,7 +5649,7 @@
             }
           },
           "422": {
-            "description": "The capability was not declared, or the field is not one that can be asked about.",
+            "description": "The capability was not declared, the field is not one that can be asked about, or `given` does not carry exactly what the field depends on.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5644,7 +5662,9 @@
                           "type": "string",
                           "enum": [
                             "capability-undeclared",
-                            "field-not-askable"
+                            "field-not-askable",
+                            "given-missing",
+                            "given-undeclared"
                           ]
                         }
                       },

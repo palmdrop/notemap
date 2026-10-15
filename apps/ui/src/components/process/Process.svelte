@@ -59,6 +59,7 @@
   import {
     effectiveOf,
     fieldsOf,
+    givenFor,
     impliedOf,
     labelOf,
     offered,
@@ -966,6 +967,7 @@
       label={title}
       value={args[field.name] ?? ""}
       said={field.name === LINE_FIELD ? spoken : undefined}
+      given={givenFor(field, args)}
       onchange={(value) => (args = { ...args, [field.name]: value })}
       onsubmit={(beside) => void send(beside)}
       onrelease={release}

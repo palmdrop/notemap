@@ -20,6 +20,12 @@ export type BrowserProps = {
   value: string;
   /** What the item says, for a control that can show the name a note would get. */
   said?: Said;
+  /**
+   * What the field's answer depends on, as the form holds it. Present only
+   * for a field that depends on others; one still empty means there is
+   * nothing to ask about yet.
+   */
+  given?: Readonly<Record<string, string>> | undefined;
   onchange: (value: string) => void;
   /**
    * Committing from inside the control. `beside` is the name a control offers

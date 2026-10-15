@@ -114,6 +114,10 @@ const SAID: {
     "this daemon cannot make sense of that destination's settings",
   "digest-mismatch": "the upload arrived corrupted; pick the file again",
   "field-not-askable": "that field cannot be browsed; type it instead",
+  "given-missing":
+    "fill in what that field depends on first, or type it instead",
+  "given-undeclared":
+    "the app asked that field about something it does not depend on",
   "id-required": "the app asked for items without naming any",
   "invalid-account": "those are not details this kind of account can use",
   "invalid-destination-settings":

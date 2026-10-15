@@ -26,7 +26,13 @@ help nobody asked for.
 
 The fragment lands at the end of the named heading's section, or at the end of the file when no
 heading is named. **A heading that is not there is written**, and so is the file: the motivating
-case is a daily note whose sections appear as things are filed into them.
+case is a daily note whose sections appear as things are filed into them. A `list-item` or `task`
+fragment joins a tight list it lands after without a blank line, so the list stays tight, and
+takes that list's bullet where it is `*` or `+`. The output records the bullet it went in with.
+
+`heading` can be browsed given `path`: the answer is the note's headings, each distinct one once,
+labelled with its `#`s, valued with exactly the text the splice matches on. A note that is not
+there yet, or a path naming a folder, offers none.
 
 An appended fragment carries **no frontmatter** — it is going into somebody else's file, which has
 its own. A file this adapter creates because it was missing gets the frontmatter, since the whole
@@ -78,6 +84,7 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | The disk is full, or the filesystem is read-only | `unreachable` | Same shape of problem |
 | The target escapes the root | `rejected` | No later attempt makes it legal |
 | The file is already there | `rejected` | It will be there next time too |
+| An appended note changed after it was read | `unreachable` | The next attempt reads it again |
 | The target is not the shape the capability declared | `rejected` | Likewise |
 | A renderer threw | `rejected` | It will throw identically |
 
@@ -88,18 +95,19 @@ throws away a decision somebody made.
 
 ## One writer per file, and who is outside that promise
 
-Section handling is a line walk with a regular expression rather than a Markdown parser, so a `#`
-inside a fenced code block reads as a heading. Moving it onto a real Markdown library is a `TODO` in
-`sections.ts`.
+Appending reads the file, inserts, and writes it back. The file is parsed as Markdown to find a
+section, so a `#` inside a fenced code block is not a heading, and the fragment is spliced into the
+original text rather than written back from the parse.
 
-Appending reads the file, inserts, and writes it back. **This is not atomic against a concurrent
-editor.** One writer per file is the standing rule and this adapter is it, but a person with the
-vault open in an editor is outside that promise: their unsaved buffer will overwrite whatever
-landed, and nothing here can prevent it. Route into a file you are editing and you may lose the
-fragment.
+**A note that changed after it was read is not replaced.** The write compares the file's
+modification time and size with what they were at the read, and where either differs the delivery
+is `unreachable` and retried against the note as it now is. A note that appeared after an append
+found none is treated the same way. What gets past: an edit landing between that check and the
+rename, an edit that keeps the size on a filesystem whose timestamps are too coarse to tell, and an
+editor's unsaved buffer, which overwrites whatever landed when it is next saved. Route into a file
+you are editing and you may still lose the fragment that way.
 
-Creating a file is not exposed to this — a file that is already there is refused rather than
-touched.
+Creating a file is not exposed to this. A file that is already there is refused, not touched.
 
 ## Rendering
 
