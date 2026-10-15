@@ -12,6 +12,11 @@ describe("inserting under a heading", () => {
     );
   });
 
+  it("is the fragment alone where the note holds nothing but whitespace", () => {
+    expect(filed("", "a thought")).toBe("a thought\n");
+    expect(filed("  \n\n", "a thought")).toBe("a thought\n");
+  });
+
   it("writes the heading where the note does not have it", () => {
     expect(filed("# Monday\n", "a thought", "Captured")).toBe(
       "# Monday\n\n## Captured\n\na thought\n",

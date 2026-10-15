@@ -233,6 +233,21 @@ describe("what a placement says", () => {
     expect(output.note).toBe("already there: library/scan.pdf");
   });
 
+  it("names each path by itself at the root, and says nothing about what was there", async () => {
+    const placed = [
+      { asset: asset("a", "paper.pdf"), name: "paper.pdf", there: false },
+    ];
+    const output = placedOutput(placed, "");
+
+    const content = output.content;
+    if (content === undefined) throw new Error("no content");
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of await content.open()) chunks.push(chunk);
+
+    expect(new TextDecoder().decode(Buffer.concat(chunks))).toBe("paper.pdf\n");
+    expect(output.note).toBeUndefined();
+  });
+
   it("names the folder as the pointer, and nothing at the root", () => {
     expect(folderPointer("library/papers")).toBe("library/papers/");
     expect(folderPointer("")).toBeUndefined();

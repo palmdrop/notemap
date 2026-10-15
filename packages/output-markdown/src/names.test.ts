@@ -30,6 +30,16 @@ describe("one segment", () => {
     expect(oneSegment("Read: Borges", "fallback")).toBe("Read- Borges");
   });
 
+  it("cuts a name no filesystem would take, at 120 characters", () => {
+    expect(oneSegment("a".repeat(200), "fallback")).toBe("a".repeat(120));
+  });
+
+  /** Every one of them, rather than the last: `a thought...` ends `a thought`. */
+  it("drops a run of markers at either end", () => {
+    expect(oneSegment("a thought...", "fallback")).toBe("a thought");
+    expect(oneSegment("--- a thought", "fallback")).toBe("a thought");
+  });
+
   it("keeps letters of any script, because a filename is the user's", () => {
     expect(oneSegment("Ölandsbron.md", "fallback")).toBe("Ölandsbron.md");
     expect(oneSegment("メモ.md", "fallback")).toBe("メモ.md");
