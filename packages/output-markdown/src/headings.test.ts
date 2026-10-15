@@ -16,12 +16,39 @@ describe("the headings a note offers", () => {
     ]);
   });
 
+  /** The cap, and the first heading past it: a browse says it was cut rather than lying. */
+  it("offers the cap in full, and says so where the note holds one more", () => {
+    const upTo = (count: number) =>
+      Array.from({ length: count }, (_, each) => `# h${each}\n`).join("\n");
+
+    const capped = headingCandidates(upTo(500));
+    expect(capped.truncated).toBe(false);
+    expect(capped.entries).toHaveLength(500);
+
+    const over = headingCandidates(upTo(501));
+    expect(over.truncated).toBe(true);
+    expect(over.entries).toHaveLength(500);
+    expect(over.entries.at(-1)).toEqual({ label: "# h499", value: "h499" });
+  });
+
   it("reads an underlined heading and keeps the emphasis a person typed", () => {
     expect(
       headingCandidates("Reading\n=======\n\n## Read: *Borges*\n").entries,
     ).toEqual([
       { label: "# Reading", value: "Reading" },
       { label: "## Read: *Borges*", value: "Read: *Borges*" },
+    ]);
+  });
+
+  it("reads a closed heading as what it says, without its closing hashes", () => {
+    expect(headingCandidates("## Monday ##\n").entries).toEqual([
+      { label: "## Monday", value: "Monday" },
+    ]);
+  });
+
+  it("leaves out a heading that is nothing but its hashes", () => {
+    expect(headingCandidates("#\n\n## Monday\n").entries).toEqual([
+      { label: "## Monday", value: "Monday" },
     ]);
   });
 

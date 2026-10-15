@@ -57,6 +57,7 @@ async function staged(): Promise<Stage> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-seed-"));
   const store: AuthStore = createSqliteAuthStore({
     file: join(directory, "auth.db"),
+    synchronous: "off",
   });
   closing.push(async () => {
     await store.close();

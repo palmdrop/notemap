@@ -58,6 +58,7 @@ import {
   realOverlapsAny,
   realRootOf,
   type Contained,
+  type HostPaths,
 } from "./paths";
 import {
   asFilesystemSettings,
@@ -78,6 +79,8 @@ export type FilesystemDestinationConfig = {
    * note into the mirror is destructive and nobody ever means it.
    */
   readonly reserved?: readonly string[];
+  /** Whose home a `~` root means, and where a relative one starts. The host's to say. */
+  readonly paths: HostPaths;
 };
 
 const UNREACHABLE: readonly string[] = [
@@ -93,6 +96,7 @@ export function createFilesystemDestination(
 ): DestinationKindAdapter {
   const renderers = config.renderers ?? {};
   const reserved = config.reserved ?? [];
+  const { paths } = config;
 
   return {
     name: FILESYSTEM,
@@ -109,7 +113,7 @@ export function createFilesystemDestination(
       if (settings === undefined)
         return Promise.reject(unreadable(destination));
 
-      const overlap = overlapsAny(settings.root, reserved);
+      const overlap = overlapsAny(settings.root, reserved, paths);
       if (overlap !== undefined) {
         return Promise.reject(
           new Unusable(overlapDetail(settings.root, overlap)),
@@ -134,10 +138,10 @@ export function createFilesystemDestination(
         return { kind: "rejected", detail: why(unreadable(destination)) };
       }
 
-      const reached = await reachRoot(settings.root);
+      const reached = await reachRoot(settings.root, paths);
       if (typeof reached !== "string") return reached;
 
-      const overlap = await realOverlapsAny(reached, reserved);
+      const overlap = await realOverlapsAny(reached, reserved, paths);
       if (overlap !== undefined) {
         return { kind: "rejected", detail: overlapDetail(reached, overlap) };
       }
@@ -196,10 +200,10 @@ export function createFilesystemDestination(
 
       // The same reach a delivery makes, so a root that is a file answers one
       // thing rather than two.
-      const reached = await reachRoot(settings.root);
+      const reached = await reachRoot(settings.root, paths);
       if (typeof reached !== "string") throw new Error(reached.detail);
 
-      const overlap = await realOverlapsAny(reached, reserved);
+      const overlap = await realOverlapsAny(reached, reserved, paths);
       if (overlap !== undefined) {
         throw new Unusable(overlapDetail(reached, overlap));
       }
@@ -225,7 +229,7 @@ export function createFilesystemDestination(
     },
 
     candidates: (destination, request) =>
-      filesystemCandidates({ reserved }, destination, request),
+      filesystemCandidates({ reserved, paths }, destination, request),
 
     probe: async (destination) => {
       const settings = asFilesystemSettings(destination.settings);
@@ -233,12 +237,12 @@ export function createFilesystemDestination(
 
       let realRoot: string;
       try {
-        realRoot = await realRootOf(settings.root);
+        realRoot = await realRootOf(settings.root, paths);
       } catch (cause) {
         throw unresolvable(settings.root, cause);
       }
 
-      const overlap = await realOverlapsAny(realRoot, reserved);
+      const overlap = await realOverlapsAny(realRoot, reserved, paths);
       if (overlap !== undefined) {
         throw new Unusable(overlapDetail(realRoot, overlap));
       }
@@ -279,9 +283,12 @@ function overlapDetail(root: string, reserved: string): string {
 }
 
 /** The root as the filesystem holds it, or why it could not be reached. */
-async function reachRoot(root: string): Promise<string | Unreachable> {
+async function reachRoot(
+  root: string,
+  paths: HostPaths,
+): Promise<string | Unreachable> {
   try {
-    const realRoot = await realRootOf(root);
+    const realRoot = await realRootOf(root, paths);
     return (await stat(realRoot)).isDirectory()
       ? realRoot
       : unreachable(`${root} is not a directory`);

@@ -23,6 +23,13 @@ import type {
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createFilesystemDestination } from "./destination";
+import type { HostPaths } from "./paths";
+
+/**
+ * Whose home a `~` root means and where a relative one starts. The host says,
+ * so no test reads the machine's, and none has to change its own.
+ */
+const PATHS = { home: "/home/someone", relativeTo: "/srv/notemap" };
 import {
   APPEND,
   CREATE_OR_APPEND,
@@ -110,8 +117,14 @@ function bind(
   renderers: Record<string, Renderer>,
   reserved: readonly string[] = [],
   settings: Settings = {},
+  paths: HostPaths = PATHS,
 ): Bound {
-  const kind = createFilesystemDestination({ renderers, accepts, reserved });
+  const kind = createFilesystemDestination({
+    renderers,
+    accepts,
+    reserved,
+    paths,
+  });
   const row = destinationRow({ root: path, ...settings });
 
   return {
@@ -1184,44 +1197,53 @@ describe("a root that is not there", () => {
 });
 
 describe("the root a person wrote", () => {
-  it("takes ~ for their home rather than a folder named ~", async () => {
+  it("takes ~ for the home the host named, rather than a folder named ~", async () => {
     const made = root();
     cleanups.push(made.cleanup);
     await mkdir(join(made.path, "notes"), { recursive: true });
 
-    const home = process.env["HOME"];
-    process.env["HOME"] = made.path;
-    try {
-      const destination = bind("~/notes", [TEXT], { text: renderText });
-      expect(
-        await destination.deliver(
-          delivery({ arguments: { directory: "", filename: "a.md" } }),
-        ),
-      ).toMatchObject({ kind: "delivered" });
-      expect(await filesUnder(join(made.path, "notes"))).toEqual(["a.md"]);
-    } finally {
-      if (home === undefined) delete process.env["HOME"];
-      else process.env["HOME"] = home;
-    }
+    const destination = bind(
+      "~/notes",
+      [TEXT],
+      { text: renderText },
+      [],
+      {},
+      {
+        ...PATHS,
+        home: made.path,
+      },
+    );
+
+    expect(
+      await destination.deliver(
+        delivery({ arguments: { directory: "", filename: "a.md" } }),
+      ),
+    ).toMatchObject({ kind: "delivered" });
+    expect(await filesUnder(join(made.path, "notes"))).toEqual(["a.md"]);
   });
 
-  it("resolves a relative one against where the daemon runs, once", async () => {
+  it("resolves a relative one against where the daemon runs", async () => {
     const made = root();
     cleanups.push(made.cleanup);
     await mkdir(made.path, { recursive: true });
 
-    const where = process.cwd();
-    process.chdir(made.path);
-    try {
-      const destination = bind(".", [TEXT], { text: renderText });
-      expect(
-        await destination.deliver(
-          delivery({ arguments: { directory: "", filename: "a.md" } }),
-        ),
-      ).toMatchObject({ kind: "delivered" });
-    } finally {
-      process.chdir(where);
-    }
+    const destination = bind(
+      ".",
+      [TEXT],
+      { text: renderText },
+      [],
+      {},
+      {
+        ...PATHS,
+        relativeTo: made.path,
+      },
+    );
+
+    expect(
+      await destination.deliver(
+        delivery({ arguments: { directory: "", filename: "a.md" } }),
+      ),
+    ).toMatchObject({ kind: "delivered" });
     expect(await filesUnder(made.path)).toEqual(["a.md"]);
   });
 });
@@ -1350,7 +1372,7 @@ describe("probing a filesystem destination", () => {
   it("rejects a root that is not there", async () => {
     const made = root();
     cleanups.push(made.cleanup);
-    const kind = createFilesystemDestination({ accepts: [TEXT] });
+    const kind = createFilesystemDestination({ accepts: [TEXT], paths: PATHS });
 
     await expect(
       kind.probe?.(destinationRow({ root: join(made.path, "nowhere") })),
@@ -1363,7 +1385,7 @@ describe("probing a filesystem destination", () => {
     await mkdir(made.path, { recursive: true });
     const note = join(made.path, "a-note.md");
     await writeFile(note, "not a folder\n");
-    const kind = createFilesystemDestination({ accepts: [TEXT] });
+    const kind = createFilesystemDestination({ accepts: [TEXT], paths: PATHS });
 
     await expect(kind.probe?.(destinationRow({ root: note }))).rejects.toThrow(
       /is not a directory/,
@@ -1379,7 +1401,10 @@ describe("probing a filesystem destination", () => {
       await mkdir(made.path, { recursive: true });
       await chmod(made.path, 0o500);
       cleanups.push(() => void chmod(made.path, 0o700).catch(() => undefined));
-      const kind = createFilesystemDestination({ accepts: [TEXT] });
+      const kind = createFilesystemDestination({
+        accepts: [TEXT],
+        paths: PATHS,
+      });
 
       await expect(
         kind.probe?.(destinationRow({ root: made.path })),
@@ -1397,7 +1422,7 @@ describe("probing a filesystem destination", () => {
     await mkdir(made.path, { recursive: true });
     const note = join(made.path, "a-note.md");
     await writeFile(note, "not a folder\n");
-    const kind = createFilesystemDestination({ accepts: [TEXT] });
+    const kind = createFilesystemDestination({ accepts: [TEXT], paths: PATHS });
 
     await expect(
       kind.probe?.(destinationRow({ root: join(note, "inside") })),
@@ -1416,7 +1441,10 @@ describe("probing a filesystem destination", () => {
         made.cleanup();
       });
       await chmod(shut, 0o000);
-      const kind = createFilesystemDestination({ accepts: [TEXT] });
+      const kind = createFilesystemDestination({
+        accepts: [TEXT],
+        paths: PATHS,
+      });
 
       const failed = await kind
         .probe?.(destinationRow({ root: join(shut, "vault") }))
@@ -1433,6 +1461,7 @@ describe("probing a filesystem destination", () => {
     cleanups.push(made.cleanup);
     await mkdir(made.path, { recursive: true });
     const kind = createFilesystemDestination({
+      paths: PATHS,
       accepts: [TEXT],
       reserved: [made.path],
     });

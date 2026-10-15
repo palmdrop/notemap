@@ -51,7 +51,10 @@ function authStore(): AuthStore {
   const directory = mkdtempSync(join(tmpdir(), "notemap-accounts-"));
   directories.push(directory);
 
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
   stores.push(store);
   return store;
 }

@@ -623,6 +623,142 @@ describe("retiring a destination", () => {
   });
 });
 
+describe("resolving what a record still has to carry out", () => {
+  const anItem: Item = {
+    id: "item-1" as ItemId,
+    source: "web" as SourceId,
+    sourceItemId: "one",
+    payload: {
+      type: "text" as PayloadTypeName,
+      content: { text: "a thought" },
+      metadata: {},
+      assets: [],
+    },
+    tags: [],
+    createdAt: "2026-08-17T09:00:00.000Z" as Timestamp,
+    modifiedAt: "2026-08-17T09:00:00.000Z" as Timestamp,
+    revisedInto: [],
+  };
+
+  function pending(overrides: Partial<RoutingRecord> = {}): RoutingRecord {
+    return {
+      id: "record-1" as RoutingRecordId,
+      item: anItem.id,
+      target: {
+        kind: "destination",
+        destination: "vault" as DestinationId,
+        capability: "create-note" as CapabilityName,
+        arguments: { directory: "inbox" },
+      },
+      state: "pending",
+      at: "2026-08-17T09:30:00.000Z" as Timestamp,
+      ...overrides,
+    };
+  }
+
+  it("answers nothing where the record has gone", async () => {
+    const wired = ports({ items: [anItem] });
+
+    expect(
+      await deliveryFor(wired, "record-1" as RoutingRecordId),
+    ).toBeUndefined();
+  });
+
+  it("answers nothing where the record has already landed", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const record = pending({ state: "delivered" });
+    const wired = ports({
+      destinations: [vault],
+      items: [anItem],
+      records: [record],
+    });
+
+    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+  });
+
+  it("answers nothing where the record was never meant for a destination", async () => {
+    const record = pending({ target: { kind: "user" } });
+    const wired = ports({ items: [anItem], records: [record] });
+
+    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+  });
+
+  it("answers nothing where the item itself has gone", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const record = pending();
+    const wired = ports({ destinations: [vault], records: [record] });
+
+    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+  });
+
+  it("answers unusable where the row the record names has gone from the pool", async () => {
+    const record = pending();
+    const wired = ports({ items: [anItem], records: [record] });
+
+    expect(await deliveryFor(wired, record.id)).toMatchObject({
+      kind: "unusable",
+      detail: "vault is no longer in the pool",
+    });
+  });
+
+  it("answers unusable where nothing speaks the destination's kind any more", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: "mystery" });
+    const record = pending();
+    const wired = ports({
+      destinations: [vault],
+      items: [anItem],
+      records: [record],
+    });
+
+    expect(await deliveryFor(wired, record.id)).toMatchObject({
+      kind: "unusable",
+      detail: "nothing here speaks the mystery kind",
+    });
+  });
+
+  it("carries the words the decision rewrote, in place of the capture's", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const record = pending({
+      target: {
+        kind: "destination",
+        destination: "vault" as DestinationId,
+        capability: "create-note" as CapabilityName,
+        arguments: { directory: "inbox" },
+        content: { text: "a thought, tidied" },
+      },
+    });
+    const wired = ports({
+      destinations: [vault],
+      items: [anItem],
+      records: [record],
+    });
+
+    const attemptable = await deliveryFor(wired, record.id);
+    expect(attemptable?.kind).toBe("ready");
+    if (attemptable?.kind !== "ready") return;
+    expect(attemptable.delivery.payload.content).toEqual({
+      text: "a thought, tidied",
+    });
+  });
+
+  it("carries the capture's own words where the decision rewrote none", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const record = pending();
+    const wired = ports({
+      destinations: [vault],
+      items: [anItem],
+      records: [record],
+    });
+
+    const attemptable = await deliveryFor(wired, record.id);
+    expect(attemptable?.kind).toBe("ready");
+    if (attemptable?.kind !== "ready") return;
+    expect(attemptable.delivery.payload.content).toEqual({
+      text: "a thought",
+    });
+  });
+});
+
 describe("deleting a destination", () => {
   const referenced: RoutingRecord = {
     id: "record-1" as RoutingRecordId,

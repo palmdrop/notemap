@@ -49,7 +49,7 @@ export function at(value: string): Timestamp {
  *
  * Files rather than `:memory:` on purpose: a `:memory:` database cannot have
  * the second connection reads use, so it would exercise different isolation
- * from the one that ships.
+ * from the one that ships. Nothing fsyncs, the file being gone either way.
  */
 export type StoreOptions = {
   readonly clock?: Clock;
@@ -66,7 +66,11 @@ export function store(options: StoreOptions = {}): {
 } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-store-"));
   const file = join(directory, "pool.db");
-  const pool = createSqlitePoolStore({ file, ...options });
+  const pool = createSqlitePoolStore({
+    file,
+    synchronous: "off",
+    ...options,
+  });
   const raw = new DatabaseSync(file);
 
   return {

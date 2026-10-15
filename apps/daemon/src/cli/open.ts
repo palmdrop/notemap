@@ -20,7 +20,10 @@ export async function withAuth(
   const { config } = loadConfig(configPath);
   mkdirSync(dirname(config.auth), { recursive: true });
 
-  const { auth } = openAuth({ file: config.auth }, { clock: systemClock });
+  const { auth } = openAuth(
+    { file: config.auth, synchronous: config.synchronous },
+    { clock: systemClock },
+  );
 
   try {
     await work(auth);

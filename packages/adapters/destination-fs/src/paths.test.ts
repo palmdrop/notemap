@@ -1,10 +1,13 @@
 import { mkdir, symlink, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
+
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { contain, overlapsAny, realRootOf } from "./paths";
+
+/** Nobody's real home or working directory: the host says, so a test says. */
+const PATHS = { home: "/home/someone", relativeTo: "/srv/notemap" };
 import { root } from "./testing/fixture";
 
 const roots: Array<() => void> = [];
@@ -17,7 +20,7 @@ async function vault(): Promise<string> {
   const made = root();
   roots.push(made.cleanup);
   await mkdir(made.path, { recursive: true });
-  return realRootOf(made.path);
+  return realRootOf(made.path, PATHS);
 }
 
 describe("containment", () => {
@@ -112,36 +115,41 @@ describe("containment", () => {
 
 describe("overlapping reserved state", () => {
   it("is undefined where nothing reserved is anywhere near the root", () => {
-    expect(overlapsAny("/vault", ["/var/lib/notemap/state"])).toBeUndefined();
+    expect(
+      overlapsAny("/vault", ["/var/lib/notemap/state"], PATHS),
+    ).toBeUndefined();
   });
 
   it("names the reserved path a root sits inside of", () => {
     expect(
-      overlapsAny("/var/lib/notemap/state/deeper", [
-        "/var/lib/notemap/state",
-        "/var/lib/notemap/assets",
-      ]),
+      overlapsAny(
+        "/var/lib/notemap/state/deeper",
+        ["/var/lib/notemap/state", "/var/lib/notemap/assets"],
+        PATHS,
+      ),
     ).toBe("/var/lib/notemap/state");
   });
 
   it("names the reserved path a root contains", () => {
-    expect(overlapsAny("/var/lib/notemap", ["/var/lib/notemap/assets"])).toBe(
-      "/var/lib/notemap/assets",
-    );
+    expect(
+      overlapsAny("/var/lib/notemap", ["/var/lib/notemap/assets"], PATHS),
+    ).toBe("/var/lib/notemap/assets");
   });
 
   it("catches the root naming reserved state exactly", () => {
     expect(
-      overlapsAny("/var/lib/notemap/assets", ["/var/lib/notemap/assets"]),
+      overlapsAny(
+        "/var/lib/notemap/assets",
+        ["/var/lib/notemap/assets"],
+        PATHS,
+      ),
     ).toBe("/var/lib/notemap/assets");
   });
 
-  it("resolves `~` and relative segments before comparing", () => {
-    const home = homedir();
+  it("resolves `~` against the home the host named, and relative segments too", () => {
+    const reserved = join(PATHS.home, "..", "lib", "notemap", "assets");
     expect(
-      overlapsAny("~/vaults/../../lib/notemap/assets", [
-        join(home, "..", "lib", "notemap", "assets"),
-      ]),
-    ).toBe(join(home, "..", "lib", "notemap", "assets"));
+      overlapsAny("~/vaults/../../lib/notemap/assets", [reserved], PATHS),
+    ).toBe(reserved);
   });
 });

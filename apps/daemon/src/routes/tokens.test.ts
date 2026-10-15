@@ -31,7 +31,10 @@ async function guarded(): Promise<{
   cookie: string;
 }> {
   const directory = mkdtempSync(join(tmpdir(), "notemap-route-tokens-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
   stores.push({ store, directory });
 
   const auth = createAuth(store, {

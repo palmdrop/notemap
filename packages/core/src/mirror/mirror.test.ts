@@ -1,15 +1,22 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
+import type { Artifact } from "#types/domain/enrichment";
 import type { Asset } from "#types/domain/asset";
+import type { Destination } from "#types/domain/destination";
 import type {
   CapabilityName,
   DestinationId,
+  DestinationKindName,
   ItemId,
+  PoolSettingName,
+  RoutingTemplateId,
   Timestamp,
 } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
+import type { PoolSettingRecord } from "#types/domain/pool-setting";
 import type { RoutingRecord } from "#types/domain/routing";
+import type { RoutingTemplate } from "#types/domain/template";
 
 import {
   destination,
@@ -51,6 +58,44 @@ function anItem(overrides: Partial<Item> = {}): Item {
 }
 
 const bare = (item: Item) => projectMirrorRecord(item, [], [], []);
+
+function aTemplate(overrides: Partial<RoutingTemplate> = {}): RoutingTemplate {
+  return {
+    id: "template-1" as RoutingTemplateId,
+    name: "quotes to vault",
+    destination: "vault" as DestinationId,
+    capability: "create-note" as CapabilityName,
+    arguments: {},
+    folder: "create",
+    createdAt: at("2026-08-11T09:00:00.000Z"),
+    modifiedAt: at("2026-08-11T09:00:00.000Z"),
+    fired: { records: 0 },
+    ...overrides,
+  };
+}
+
+function aDestination(overrides: Partial<Destination> = {}): Destination {
+  return {
+    id: "vault" as DestinationId,
+    name: "Vault",
+    kind: "filesystem" as DestinationKindName,
+    settings: {},
+    createdAt: at("2026-08-11T09:00:00.000Z"),
+    modifiedAt: at("2026-08-11T09:00:00.000Z"),
+    ...overrides,
+  };
+}
+
+function aPoolSetting(
+  overrides: Partial<PoolSettingRecord> = {},
+): PoolSettingRecord {
+  return {
+    name: "capture.autoTag" as PoolSettingName,
+    value: true,
+    changedAt: at("2026-08-11T09:00:00.000Z"),
+    ...overrides,
+  };
+}
 
 /**
  * The one property the lossless claim rests on. A record that quietly drops a
@@ -230,6 +275,187 @@ describe("canonical serialisation", () => {
       "asset-b",
     ]);
   });
+
+  it("gives one set of artifacts one order, each carrying its own assets in slot order", () => {
+    const artifact = (id: string): Artifact => ({
+      id: id as Artifact["id"],
+      item: "item-1" as ItemId,
+      enrichment: "transcribe" as Artifact["enrichment"],
+      by: { kind: "notemap" },
+      createdAt: at("2026-08-11T09:00:00.000Z"),
+      content: {},
+      assets: [
+        {
+          slot: "cover",
+          asset: "asset-b" as Artifact["assets"][number]["asset"],
+        },
+        {
+          slot: "audio",
+          asset: "asset-a" as Artifact["assets"][number]["asset"],
+        },
+      ],
+    });
+    const artifacts = [artifact("artifact-b"), artifact("artifact-a")];
+
+    const forwards = projectMirrorRecord(anItem(), [], artifacts, []);
+    const backwards = projectMirrorRecord(
+      anItem(),
+      [],
+      [...artifacts].reverse(),
+      [],
+    );
+
+    expect(serialiseMirrorRecord(forwards)).toBe(
+      serialiseMirrorRecord(backwards),
+    );
+    expect(forwards.artifacts.map((each) => each.id)).toEqual([
+      "artifact-a",
+      "artifact-b",
+    ]);
+    expect(forwards.artifacts[0]?.assets.map((ref) => ref.slot)).toEqual([
+      "audio",
+      "cover",
+    ]);
+  });
+
+  it("gives one set of delivered routing records one order", () => {
+    const routing = (id: string): RoutingRecord => ({
+      id: id as RoutingRecord["id"],
+      item: "item-1" as ItemId,
+      target: { kind: "user" },
+      state: "delivered",
+      at: at("2026-08-11T09:00:00.000Z"),
+    });
+    const records = [routing("routing-b"), routing("routing-a")];
+
+    const forwards = projectMirrorRecord(anItem(), [], [], records);
+    const backwards = projectMirrorRecord(
+      anItem(),
+      [],
+      [],
+      [...records].reverse(),
+    );
+
+    expect(serialiseMirrorRecord(forwards)).toBe(
+      serialiseMirrorRecord(backwards),
+    );
+    expect(forwards.routing.map((each) => each.id)).toEqual([
+      "routing-a",
+      "routing-b",
+    ]);
+  });
+
+  it("gives one set of tags one order", () => {
+    const tag = (name: string): Item["tags"][number] => ({
+      name: name as Item["tags"][number]["name"],
+      by: { kind: "person" },
+      addedAt: at("2026-08-11T09:00:00.000Z"),
+    });
+    const tags = [tag("kind/quote"), tag("kind/article")];
+
+    const forwards = bare(anItem({ tags }));
+    const backwards = bare(anItem({ tags: [...tags].reverse() }));
+
+    expect(serialiseMirrorRecord(forwards)).toBe(
+      serialiseMirrorRecord(backwards),
+    );
+    expect(forwards.item.tags.map((each) => each.name)).toEqual([
+      "kind/article",
+      "kind/quote",
+    ]);
+  });
+
+  it("gives one payload's assets one order, by slot", () => {
+    const ref = (
+      slot: string,
+      asset: string,
+    ): Item["payload"]["assets"][number] => ({
+      slot,
+      asset: asset as Item["payload"]["assets"][number]["asset"],
+    });
+    const assets = [ref("cover", "asset-b"), ref("audio", "asset-a")];
+    const payload = anItem().payload;
+
+    const forwards = bare(anItem({ payload: { ...payload, assets } }));
+    const backwards = bare(
+      anItem({ payload: { ...payload, assets: [...assets].reverse() } }),
+    );
+
+    expect(serialiseMirrorRecord(forwards)).toBe(
+      serialiseMirrorRecord(backwards),
+    );
+    expect(forwards.item.payload.assets.map((each) => each.slot)).toEqual([
+      "audio",
+      "cover",
+    ]);
+  });
+});
+
+describe("what the record keeps", () => {
+  it("carries a UTC offset and a content revision time, when the item knows them", () => {
+    const withBoth = bare(
+      anItem({
+        utcOffset: -120,
+        contentUpdatedAt: at("2026-08-11T10:00:00.000Z"),
+      }),
+    );
+
+    expect(withBoth.item.utcOffset).toBe(-120);
+    expect(withBoth.item.contentUpdatedAt).toBe("2026-08-11T10:00:00.000Z");
+
+    const withNeither = bare(anItem());
+    expect("utcOffset" in withNeither.item).toBe(false);
+    expect("contentUpdatedAt" in withNeither.item).toBe(false);
+  });
+
+  it("leaves a revision link out where the item carries none", () => {
+    const unrevised = bare(anItem());
+    expect("revisionOf" in unrevised.item).toBe(false);
+  });
+
+  it("carries an item's archive state, with its instant canonicalised", () => {
+    const archived = bare(
+      anItem({
+        archived: {
+          archivedAt: at("2026-08-11T09:00:00Z"),
+          reason: "superseded",
+        },
+      }),
+    );
+
+    expect(archived.item.archived).toEqual({
+      archivedAt: "2026-08-11T09:00:00.000Z",
+      reason: "superseded",
+    });
+  });
+
+  it("carries a destination's retirement, when it has one", () => {
+    const retired = projectDestinationRecord(
+      aDestination({ retiredAt: at("2026-08-11T09:00:00Z") }),
+    );
+    expect(retired.destination.retiredAt).toBe("2026-08-11T09:00:00.000Z");
+
+    const active = projectDestinationRecord(aDestination());
+    expect("retiredAt" in active.destination).toBe(false);
+  });
+
+  it("carries a template's establishment, when it has one", () => {
+    const established = projectTemplateRecord(
+      aTemplate({ establishedAt: at("2026-08-11T09:00:00Z") }),
+    );
+    expect(established.template.establishedAt).toBe("2026-08-11T09:00:00.000Z");
+
+    const unestablished = projectTemplateRecord(aTemplate());
+    expect("establishedAt" in unestablished.template).toBe(false);
+  });
+});
+
+describe("a timestamp the projector is handed", () => {
+  it("refuses one it cannot parse, rather than writing it through", () => {
+    expect(() =>
+      bare(anItem({ createdAt: "not a date" as Timestamp })),
+    ).toThrow(/not a parseable timestamp/);
+  });
 });
 
 describe("what the record leaves out", () => {
@@ -363,5 +589,180 @@ describe("parsing", () => {
     expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
       /is not an agent/,
     );
+  });
+
+  it("refuses a record that is not an object", () => {
+    expect(() => parseMirrorRecord("42")).toThrow(
+      /the record is not an object/,
+    );
+    expect(() => parseMirrorRecord("null")).toThrow(
+      /the record is not an object/,
+    );
+    expect(() => parseMirrorRecord("[]")).toThrow(
+      /the record is not an object/,
+    );
+  });
+
+  it("refuses an item whose tags are not a list", () => {
+    const record = JSON.parse(serialiseMirrorRecord(bare(anItem()))) as Record<
+      string,
+      unknown
+    >;
+    (record["item"] as Record<string, unknown>)["tags"] = "kind/quote";
+
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /item\.tags is not a list/,
+    );
+  });
+
+  it("refuses a timestamp that does not parse as one", () => {
+    const record = JSON.parse(serialiseMirrorRecord(bare(anItem()))) as Record<
+      string,
+      unknown
+    >;
+    (record["item"] as Record<string, unknown>)["createdAt"] = "not a date";
+
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /item\.createdAt is not a timestamp/,
+    );
+  });
+
+  it("refuses a UTC offset that is not a whole number of minutes within a day", () => {
+    const record = JSON.parse(
+      serialiseMirrorRecord(bare(anItem({ utcOffset: 60 }))),
+    ) as Record<string, unknown>;
+    const item = record["item"] as Record<string, unknown>;
+
+    item["utcOffset"] = "sixty";
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /utcOffset is not an offset in minutes/,
+    );
+
+    item["utcOffset"] = 90.5;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /utcOffset is not an offset in minutes/,
+    );
+
+    item["utcOffset"] = -1441;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /utcOffset is not an offset in minutes/,
+    );
+
+    item["utcOffset"] = 1441;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /utcOffset is not an offset in minutes/,
+    );
+  });
+
+  it("accepts a UTC offset at the edge of a day in either direction", () => {
+    const record = JSON.parse(
+      serialiseMirrorRecord(bare(anItem({ utcOffset: 60 }))),
+    ) as Record<string, unknown>;
+    const item = record["item"] as Record<string, unknown>;
+
+    item["utcOffset"] = -1440;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).not.toThrow();
+
+    item["utcOffset"] = 1440;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).not.toThrow();
+  });
+
+  it("refuses an asset whose byte count is not a whole, non-negative number", () => {
+    const measured: Asset = {
+      id: "asset-a" as Asset["id"],
+      filename: "a.png",
+      mime: "image/png",
+      blob: "hash-a" as Asset["blob"],
+      bytes: 1,
+    };
+    const record = JSON.parse(
+      serialiseMirrorRecord(projectMirrorRecord(anItem(), [measured], [], [])),
+    ) as Record<string, unknown>;
+    const asset = (record["assets"] as Record<string, unknown>[])[0];
+    if (asset === undefined) throw new Error("expected an asset");
+
+    asset["bytes"] = "lots";
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /bytes is not a whole number of bytes/,
+    );
+
+    asset["bytes"] = -1;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /bytes is not a whole number of bytes/,
+    );
+
+    asset["bytes"] = 1.5;
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /bytes is not a whole number of bytes/,
+    );
+  });
+
+  it("refuses a pool setting whose value is not a boolean", () => {
+    const record = JSON.parse(
+      serialiseMirrorRecord(projectPoolSettingRecord(aPoolSetting())),
+    ) as Record<string, unknown>;
+    record["value"] = "on";
+
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /value is not a boolean/,
+    );
+  });
+
+  it("refuses a template whose folder mode notemap does not know", () => {
+    const record = JSON.parse(
+      serialiseMirrorRecord(projectTemplateRecord(aTemplate())),
+    ) as Record<string, unknown>;
+    (record["template"] as Record<string, unknown>)["folder"] = "improvise";
+
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /template\.folder is not a folder mode/,
+    );
+  });
+
+  it("refuses a routing record whose state is neither pending nor delivered", () => {
+    const delivered: RoutingRecord = {
+      id: "routing-1" as RoutingRecord["id"],
+      item: "item-1" as ItemId,
+      target: { kind: "user" },
+      state: "delivered",
+      at: at("2026-08-11T09:00:00.000Z"),
+    };
+    const record = JSON.parse(
+      serialiseMirrorRecord(projectMirrorRecord(anItem(), [], [], [delivered])),
+    ) as Record<string, unknown>;
+    const routing = (record["routing"] as Record<string, unknown>[])[0];
+    if (routing === undefined) throw new Error("expected a routing record");
+    routing["state"] = "archived";
+
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /routing\[0\]\.state is not a routing record state/,
+    );
+  });
+
+  /**
+   * Nothing core writes carries a pending record inside an item's routing
+   * list — the projection drops them — but the state is a real one, and the
+   * reader takes the file's word for it rather than refusing a spelling it
+   * never produces itself.
+   */
+  it("accepts a routing record state of pending, though nothing we write ever leaves one in", () => {
+    const record = JSON.parse(serialiseMirrorRecord(bare(anItem()))) as Record<
+      string,
+      unknown
+    >;
+    record["routing"] = [
+      {
+        id: "routing-1",
+        item: "item-1",
+        target: { kind: "user" },
+        state: "pending",
+        at: "2026-08-11T09:00:00.000Z",
+      },
+    ];
+
+    const parsed = parseMirrorRecord(JSON.stringify(record));
+    if (parsed.kind !== "item") throw new Error("expected an item record");
+
+    expect(parsed.routing[0]?.state).toBe("pending");
   });
 });

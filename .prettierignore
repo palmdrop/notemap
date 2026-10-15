@@ -8,6 +8,7 @@ apps/daemon/openapi.json
 **/build/
 **/dist/
 **/.svelte-kit/
+**/.stryker-tmp/
 **/generated.d.ts
 apps/daemon/public/
 apps/raycast-extension/raycast-env.d.ts

@@ -18,7 +18,10 @@ const opened: { store: AuthStore; directory: string }[] = [];
 /** A file rather than `:memory:`, which forfeits the second read connection. */
 function store(): AuthStore {
   const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
 
   opened.push({ store, directory });
   return store;
@@ -72,7 +75,10 @@ describe("the database file", () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
     const file = join(directory, "auth.db");
 
-    opened.push({ store: createSqliteAuthStore({ file }), directory });
+    opened.push({
+      store: createSqliteAuthStore({ file, synchronous: "off" }),
+      directory,
+    });
 
     const written = readdirSync(directory);
     // Named, so the loop below cannot pass by finding nothing to look at.
@@ -90,7 +96,7 @@ describe("migrating", () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
     const file = join(directory, "auth.db");
 
-    const earlier = openDatabase({ file });
+    const earlier = openDatabase({ file, synchronous: "off" });
     migrate(earlier.writer, MIGRATIONS.slice(0, 1), "auth");
     earlier.writer
       .prepare(
@@ -99,7 +105,7 @@ describe("migrating", () => {
       .run(token.id, token.name, token.secretHash, Date.parse(token.createdAt));
     earlier.close();
 
-    const auth = createSqliteAuthStore({ file });
+    const auth = createSqliteAuthStore({ file, synchronous: "off" });
     opened.push({ store: auth, directory });
 
     expect(await auth.getToken(token.id)).toEqual(token);

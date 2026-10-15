@@ -175,7 +175,10 @@ describe("POST /v1/reclaim", () => {
 describe("the door", () => {
   it("lets a token through to all three, and nobody without one", async () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-route-storage-"));
-    const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+    const store = createSqliteAuthStore({
+      file: join(directory, "auth.db"),
+      synchronous: "off",
+    });
     stores.push({ store, directory });
     const auth = createAuth(store, {
       clock: systemClock,

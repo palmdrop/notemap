@@ -447,7 +447,10 @@ describe("GET /v1/unfurl", () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-route-unfurl-"));
     directories.push(directory);
     const auth = createAuth(
-      createSqliteAuthStore({ file: join(directory, "auth.db") }),
+      createSqliteAuthStore({
+        file: join(directory, "auth.db"),
+        synchronous: "off",
+      }),
       {
         clock: { now: () => new Date().toISOString() as Timestamp },
         hashing: CHEAP_HASHING,

@@ -417,7 +417,10 @@ describe("GET /v1/assets/limits", () => {
     const directory = mkdtempSync(join(tmpdir(), "notemap-route-limits-"));
     try {
       const auth = createAuth(
-        createSqliteAuthStore({ file: join(directory, "auth.db") }),
+        createSqliteAuthStore({
+          file: join(directory, "auth.db"),
+          synchronous: "off",
+        }),
         {
           clock: { now: () => new Date().toISOString() as Timestamp },
           hashing: CHEAP_HASHING,

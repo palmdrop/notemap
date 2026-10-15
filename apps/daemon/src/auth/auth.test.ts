@@ -35,7 +35,10 @@ function auth(
   hashing: ScryptParams | null = CHEAP_HASHING,
 ): { auth: Auth; store: AuthStore } {
   const directory = mkdtempSync(join(tmpdir(), "notemap-auth-"));
-  const store = createSqliteAuthStore({ file: join(directory, "auth.db") });
+  const store = createSqliteAuthStore({
+    file: join(directory, "auth.db"),
+    synchronous: "off",
+  });
 
   opened.push({ store, directory });
   return {

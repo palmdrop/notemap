@@ -22,7 +22,11 @@ afterEach(() => {
 
 /** The kind's `candidates`, bound to one destination row, over a real temporary tree. */
 function bind(path: string, reserved: readonly string[] = []) {
-  const kind = createFilesystemDestination({ accepts: [TEXT], reserved });
+  const kind = createFilesystemDestination({
+    accepts: [TEXT],
+    reserved,
+    paths: { home: "/home/someone", relativeTo: "/srv/notemap" },
+  });
   const row = destinationRow({ root: path });
 
   if (kind.candidates === undefined) {

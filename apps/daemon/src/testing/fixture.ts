@@ -176,6 +176,8 @@ export function daemon(
     config,
     assetRoot,
     accounts,
+    // The directory goes when the test does, so a commit need not reach a disk.
+    synchronous: "off",
     ...(options.mirroring === true ? { mirrorRoot } : {}),
   });
 

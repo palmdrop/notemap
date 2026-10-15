@@ -99,6 +99,7 @@ import {
   placeholders,
   statements,
   type Bindable,
+  type Synchronous,
 } from "@notemap/sqlite";
 import { writeLock, type Fence } from "./write-lock";
 
@@ -114,6 +115,12 @@ export type SqlitePoolStoreConfig = {
    * every write against the pool. Not a budget to design against.
    */
   readonly transactionTimeoutMs?: number;
+  /**
+   * How hard a commit is written down. Defaults to `full`, which is what a pool
+   * anyone would miss needs. Opening migrates, which is an fsync per migration,
+   * so a pool thrown away afterwards need not pay for any of them.
+   */
+  readonly synchronous?: Synchronous;
 };
 
 const ITEM_COLUMNS = `
@@ -275,6 +282,9 @@ export function createSqlitePoolStore(
     busyTimeoutMs: BUSY_TIMEOUT_MS,
     foreignKeys: true,
     reader: true,
+    ...(config.synchronous === undefined
+      ? {}
+      : { synchronous: config.synchronous }),
   });
   const { writer, reader } = database;
   let shut = false;

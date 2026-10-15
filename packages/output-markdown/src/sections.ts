@@ -155,7 +155,9 @@ export function headingText(source: string, heading: Heading): string {
       // The underline of a setext heading, which is part of the heading and not
       // part of what it says.
       .replace(/\n[=-]+[ \t]*$/, "")
-      .replace(/^#{1,6}\s+/, "")
+      // `\s*`, not `\s+`: a heading that is nothing but its hashes says
+      // nothing, and a browse offers what a note says.
+      .replace(/^#{1,6}\s*/, "")
       .replace(/\s+#*\s*$/, "")
       .trim()
   );

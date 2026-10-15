@@ -116,12 +116,32 @@ describe("what an attempt's outcome becomes for the queue", () => {
     ).toEqual({ kind: "delivered", pointer: "vault/inbox/a.md" });
   });
 
-  it("omits the pointer rather than carrying an absent one", () => {
+  it("omits the pointer, the link and the output rather than carrying an absent one", () => {
     expect(
       asDeliveryWorkOutcome({
         kind: "delivered",
       }),
-    ).toEqual({ kind: "delivered" });
+    ).toStrictEqual({ kind: "delivered" });
+  });
+
+  it("carries a link where the destination offered one", () => {
+    expect(
+      asDeliveryWorkOutcome({
+        kind: "delivered",
+        url: "https://vault.example/inbox/a.md",
+      }),
+    ).toEqual({
+      kind: "delivered",
+      url: "https://vault.example/inbox/a.md",
+    });
+  });
+
+  it("carries the output it was handed, where there is one", () => {
+    const output = { note: "see the attached receipt" };
+    expect(asDeliveryWorkOutcome({ kind: "delivered", output })).toEqual({
+      kind: "delivered",
+      output,
+    });
   });
 
   /** The evidence rule, in the one place a host's report turns into a retry or a refusal. */
@@ -309,5 +329,27 @@ describe("when the delivery carries its own words", () => {
     const delivery = await projectDelivery(wired, item(), REQUEST);
 
     expect(delivery.payload.content).toEqual({ body: "a thought" });
+  });
+});
+
+describe("what a projected delivery carries from the item", () => {
+  it("carries when the content was last updated, where the capture knew it", async () => {
+    const wired = ports({ assets: [], artifacts: [] });
+    const updated = {
+      ...item(),
+      contentUpdatedAt: "2026-08-06T10:00:00.000Z" as Timestamp,
+    };
+
+    const delivery = await projectDelivery(wired, updated, REQUEST);
+
+    expect(delivery.contentUpdatedAt).toBe("2026-08-06T10:00:00.000Z");
+  });
+
+  it("leaves it out where the capture never knew", async () => {
+    const wired = ports({ assets: [], artifacts: [] });
+
+    const delivery = await projectDelivery(wired, item(), REQUEST);
+
+    expect("contentUpdatedAt" in delivery).toBe(false);
   });
 });

@@ -1,5 +1,4 @@
 import { realpath } from "node:fs/promises";
-import { homedir } from "node:os";
 import { dirname, relative, resolve, sep } from "node:path";
 
 /**
@@ -17,21 +16,32 @@ export type Containment =
   | { readonly kind: "refused"; readonly detail: string };
 
 /**
- * A person writes `~/notes` and means their home; a bare `notes` means the
- * directory the daemon happens to have been started in, which is nobody's
- * intent, so it is resolved once here rather than left to the syscall.
+ * What only the host can say about a path somebody wrote: whose home `~` is,
+ * and where a relative root starts from. Read off the process and a driver
+ * answers a different question from the one the daemon configured — and the
+ * answer moves if anything ever changes directory.
  */
-export function rootPath(root: string): string {
+export type HostPaths = {
+  readonly home: string;
+  readonly relativeTo: string;
+};
+
+/**
+ * A person writes `~/notes` and means their home; a bare `notes` means the
+ * directory the daemon was started in, which is nobody's intent, so it is
+ * resolved once here rather than left to the syscall.
+ */
+export function rootPath(root: string, paths: HostPaths): string {
   const expanded =
     root === "~" || root.startsWith(`~${sep}`) || root.startsWith("~/")
-      ? `${homedir()}${root.slice(1)}`
+      ? `${paths.home}${root.slice(1)}`
       : root;
-  return resolve(expanded);
+  return resolve(paths.relativeTo, expanded);
 }
 
 /** Every containment check compares against this: a resolved path against a symlinked root would refuse everything. */
-export function realRootOf(root: string): Promise<string> {
-  return realpath(rootPath(root));
+export function realRootOf(root: string, paths: HostPaths): Promise<string> {
+  return realpath(rootPath(root, paths));
 }
 
 /**
@@ -44,9 +54,10 @@ export function realRootOf(root: string): Promise<string> {
 export function overlapsAny(
   root: string,
   reserved: readonly string[],
+  paths: HostPaths,
 ): string | undefined {
-  const candidate = rootPath(root);
-  return reserved.find((each) => overlaps(candidate, rootPath(each)));
+  const candidate = rootPath(root, paths);
+  return reserved.find((each) => overlaps(candidate, rootPath(each, paths)));
 }
 
 /**
@@ -57,9 +68,12 @@ export function overlapsAny(
 export async function realOverlapsAny(
   realRoot: string,
   reserved: readonly string[],
+  paths: HostPaths,
 ): Promise<string | undefined> {
   for (const each of reserved) {
-    const real = await realpath(rootPath(each)).catch(() => rootPath(each));
+    const real = await realpath(rootPath(each, paths)).catch(() =>
+      rootPath(each, paths),
+    );
     if (overlaps(realRoot, real)) return each;
   }
   return undefined;
