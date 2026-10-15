@@ -14,7 +14,7 @@
     "reclaim": "node scripts/reclaim-held-blobs.ts",
     "build": "pnpm --filter @notemap/ui build && pnpm --filter @notemap/daemon build",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm -r --no-sort test",
     "test:stack": "pnpm --filter @notemap/full-stack-tests test:stack",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
@@ -33,6 +33,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@notemap/seed": "workspace:*",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/node": "^26.6.4",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
