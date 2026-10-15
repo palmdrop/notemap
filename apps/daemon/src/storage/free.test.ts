@@ -25,12 +25,24 @@ describe("how much room is left where a root lives", () => {
     expect(await freeAt(scratch())).toBeGreaterThan(0);
   });
 
-  /** A mirror root is created as writes land in it, so it may not exist yet. */
+  /**
+   * A mirror root is created as writes land in it, so it may not exist yet.
+   *
+   * The two are compared as the same filesystem rather than the same number:
+   * each is a reading of a live counter, and anything writing anywhere on that
+   * filesystem moves it between the calls. A different filesystem would be out
+   * by orders of magnitude, not by a few blocks.
+   */
   it("answers through the nearest existing parent for one that is not", async () => {
     const directory = scratch();
 
-    expect(await freeAt(join(directory, "never", "written", "here"))).toBe(
-      await freeAt(directory),
-    );
+    const through = await freeAt(join(directory, "never", "written", "here"));
+    const itself = await freeAt(directory);
+    if (through === undefined || itself === undefined) {
+      throw new Error("the filesystem would not say how much room is left");
+    }
+
+    expect(through).toBeGreaterThan(0);
+    expect(through / itself).toBeCloseTo(1, 3);
   });
 });
