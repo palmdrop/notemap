@@ -11,11 +11,23 @@ export function read<T>(source: Observable<T>): T {
   return seen as T;
 }
 
-/** A client begins work nobody holds a promise for, so a test waits on the effect. */
+/**
+ * A client begins work nobody holds a promise for, so a test waits on the
+ * effect. The budget is a deadline rather than a count of turns, because how
+ * many turns a loaded machine gets through says nothing about the client.
+ */
 export async function until(
   reached: () => boolean | Promise<boolean>,
+  patienceMs = 2_000,
 ): Promise<void> {
-  for (let tries = 0; tries < 50 && !(await reached()); tries += 1) {
+  const deadline = Date.now() + patienceMs;
+
+  while (!(await reached())) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `waited ${patienceMs}ms for something that never happened`,
+      );
+    }
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
 }
