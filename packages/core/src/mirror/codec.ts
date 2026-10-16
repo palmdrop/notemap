@@ -286,7 +286,7 @@ function readOutputContent(value: unknown, at: string): StoredContent {
 /** Read rather than assumed: salvaging a file that says `pending` would invent an arrival. */
 function readState(value: unknown, at: string): "delivered" {
   const spelling = text(value, at);
-  if (spelling !== "delivered") reject(at, "delivered");
+  if (spelling !== "delivered") reject(at, "a delivered state");
   return spelling;
 }
 

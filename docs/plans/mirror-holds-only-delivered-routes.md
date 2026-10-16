@@ -108,6 +108,7 @@ raising before landing.
   spreads further than that: keep the field as it is, do phase 2 alone, and say
   in the `Shipped:` entry that the invariant is enforced at the boundary rather
   than in the type.
+  _Outcome_: it stayed inside core, and no adapter fixture needed changing.
 - **Whether a refusal is right for a file written by a future notemap.** A
   reader that refuses is a reader that cannot be made lenient again without a
   format decision. The spec's reasoning says a pending route is not durable
@@ -115,11 +116,14 @@ raising before landing.
   the wrong bet, the fallback is to skip the entry and log, which needs a
   decision about what a mirror reader may silently drop, and that is an ADR
   rather than a line of code.
+  _Outcome_: the refusal was taken. The spec's rule that the reader reports
+  rather than skips backs it.
 - **Whether `verify` compares records in a way this changes.** The mirror's
   verify path compares a stored record against a projected one. Narrowing a type
   changes nothing at runtime, but if verify reads `state` to decide equality, a
   file holding a pending route stops being comparable and starts being a
   refusal. Check before phase 2 lands.
+  _Outcome_: nothing to check yet, because verify is not built.
 
 ---
 

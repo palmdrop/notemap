@@ -35,7 +35,9 @@ export function projectMirrorRecord(
     artifacts: [...artifacts]
       .map(canonicalArtifact)
       .sort(byKey((artifact) => artifact.id)),
-    routing: routing.flatMap(deliveredRouting).sort(byKey((entry) => entry.id)),
+    routing: routing
+      .flatMap(canonicalDeliveredRouting)
+      .sort(byKey((entry) => entry.id)),
     modifiedAt: instant(item.modifiedAt),
   };
 }
@@ -143,8 +145,10 @@ function canonicalArtifact(artifact: Artifact): Artifact {
   };
 }
 
-/** `state` is the narrowed field rather than a literal, so the check is what the type rests on. */
-function deliveredRouting(entry: RoutingRecord): DeliveredRoutingRecord[] {
+/** The spread keeps `state` wide; taking it from the check is what narrows it. */
+function canonicalDeliveredRouting(
+  entry: RoutingRecord,
+): DeliveredRoutingRecord[] {
   return entry.state === "delivered"
     ? [{ ...entry, state: entry.state, at: instant(entry.at) }]
     : [];
