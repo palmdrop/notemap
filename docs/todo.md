@@ -49,14 +49,32 @@
 
 - [ ] auto-route from relay to destination, for example, configure are.na inbox -> notemap -> template -> destination
 
-- [ ] picking folders in composer is strange and clunky, sometimes you have to click with mouse 
+- [ ] picking folders in the template form is strange and clunky, sometimes you have to click with mouse 
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
   - going back is not clearly a button
   - the composer allocates space that is not needed at all times, leaving a lot of empty space
   - a proper file-picker library would be ideal, or a more traditional file picker/navigation flow at least, while still allowing text-first input
+  - The form drew the schema-driven browser for path fields rather than the composer's typed line,
+    which is where every bullet above but the empty space came from
+    ([path-picking-and-enter](plans/path-picking-and-enter.md)). The empty space is the list's
+    fixed floor, in both the composer and the form, and is still open.
 
 - [ ] Pressing enter when inputting a file path in composer routes the entire thing, instead of doing the expected "submit" or "complete" the file path. "Enter" should not route immediatelly, since it might be clicked accidentally. Enter should instead "choose" the selected path, or complete a partial input. CMD+Enter could in turn send the capture to the destination
+  - Addressed by [path-picking-and-enter](plans/path-picking-and-enter.md).
+
+- [ ] Composer findings left out of [path-picking-and-enter](plans/path-picking-and-enter.md):
+  - a half-typed heading in `under` (`Ne`) is taken as the heading it prefixes (`## Next`), and
+    nothing says so before the route
+  - `↑↓` after taking a folder starts at the top of the whole tree, not inside the folder just taken
+  - the forecast word under the place (`append`, `create`) does not read as the action that will
+    be taken: it does not name the note it appends to, and `⇧⏎ todo-1.md` beside it is cryptic
+
+- [ ] Consider a picker for a destination's root, in the destination form. Today `root` is typed
+  freely. Nothing can be listed before a destination exists, so it needs a listing that does not
+  go through one: through an account for WebDAV, and on the daemon's own host for the filesystem
+  kind. The second lets any session enumerate the host's directories — the container limits that
+  to `/var/lib/notemap/vaults`, a bare install has no such limit. Worth deciding before building.
 
 - [ ] searchable files/folders in webdav/fs destinations, investigate if possible
 
