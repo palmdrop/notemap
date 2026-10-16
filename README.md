@@ -42,7 +42,7 @@ docker compose up -d
 docker compose -f compose.yaml up -d      
 ```
 
-Upgrade by bumping the version in `.env` and run `docker compose pull && up -d`.
+Upgrade by bumping the version in `.env` and run `docker compose pull && docker compose up -d`.
 
 NOTE: Basic authentication is implemented. Password can be set using `notemap password set` inside the container.
 Not really security tested. Do not expose `Notemap` to the public internet.
