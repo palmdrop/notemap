@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-14
+**Last updated**: 2026-10-16
 **Shipped**:
+
+- 2026-10-16 — **One place line in the composer and the template form, and `⏎` never routes.** A
+  template's path field draws the composer's typed line rather than the schema-driven browser,
+  which could not take a folder. In the line and the browser alike `⏎` takes, completes or
+  settles; routing is `⌘/ctrl+⏎` alone, and *make a new one beside it* is `⌘/ctrl+⇧⏎`.
+  ([plan](../plans/path-picking-and-enter.md))
 
 - 2026-10-14 — **`under` lists the note's headings, and `as` chooses a shape.** Once the place line
   names a note, the heading field offers that note's headings and stays typeable where the
@@ -1256,8 +1262,10 @@ completes the segment under the caret as far as the matches agree — and **does
 is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
-everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`,
-left alone, routes. **The line is the value**: there is no second input beside it holding the same
+everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`
+takes the row walked to and, left alone, completes the way `⇥` does. **`⏎` never routes from the
+line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a file named
+`proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press to it. **The line is the value**: there is no second input beside it holding the same
 string, which is what the browser-and-input pair did and neither half could see the other.
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
@@ -1293,7 +1301,8 @@ whose value the field holds, and takeable as it always was. It is **drawn and ne
 the adapter decides again at delivery, when the answer is true
 ([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
 read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
-from it sits beside the state it overrides. `⇧⏎` says *make a new one beside it*, names what it
+from it sits beside the state it overrides. `⌘/ctrl+⇧⏎` *(was `⇧⏎` until 2026-10-16, the one bare
+`⏎` left that committed)* says *make a new one beside it*, names what it
 would be called, and stores the capability that refuses a taken name rather than writing into it —
 appending to somebody's note when a new one was meant being the one place *nothing to choose* can
 surprise. A blank leaf is not a gap: the name the note would get is shown before committing,
@@ -1361,7 +1370,9 @@ off — and neither control takes the caret there, the form's first field being 
 settles `create-or-append` where that capability's place field is marked. A field with no hierarchy in it draws no tree, and
 keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
 field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
-`↑↓` walking and `⏎` taking the one walked to or committing where the walk has not moved. The same
+`↑↓` walking and `⏎` taking the one walked to or, where the walk has not moved, settling what was
+typed into the field — never committing *(amended 2026-10-16; it committed, which sent a heading
+half-typed into `under`)*. `⌘/ctrl+⏎` settles it and routes. The same
 gestures the typed line has, without the segments: there is one value rather than a path, so the
 whole field is the filter. What it keeps that the line has no use for is **descent** — `back` to
 the scope before, `use <label>` to take the scope stood in, `clear` at the top — since an entry may

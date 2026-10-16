@@ -105,29 +105,29 @@ Depends on nothing.
 
 Depends on nothing. Independent of phase 1, though the form inherits it once both land.
 
-- [ ] `PathLine`:
+- [x] `PathLine`:
   - `⏎` with a walk takes the row
   - `⏎` without one completes as `⇥` does
   - `⏎` with `⌘/ctrl` is left alone so the surface's `route` command fires
   - `⇧⏎` per the decision above
-- [ ] `CandidateBrowser`:
+- [x] `CandidateBrowser`:
   - `⏎` with a walk opens or takes the row
   - `⏎` without one settles
   - `⏎` with `⌘/ctrl` is left alone
-- [ ] Remove `onsubmit` from `BrowserProps` and both controls if nothing commits through it any
+- [x] Remove `onsubmit` from `BrowserProps` and both controls if nothing commits through it any
       more. If beside still does, keep it for that alone.
-- [ ] The beside button's label names the new chord
-- [ ] shell.md, as amendments with today's date:
+- [x] The beside button's label names the new chord
+- [x] shell.md, as amendments with today's date:
   - *The keyboard on the surface* (already says `⌘/ctrl+⏎`, so check it still holds)
   - *The place is one line you type*: `⏎, left alone, routes`, and the `⇧⏎` paragraph
   - the browser paragraph: `⏎ … committing where the walk has not moved`
   - ADR 31 names `⇧⏎`. Add a superseding note if the chord changes; do not edit the decision.
-- [ ] Tests:
+- [x] Tests:
   - `PathLine.test.ts`: `⏎` on a partial name completes it and never calls submit, and `⏎` with
     nothing to complete does nothing
   - `composer.test.ts` / `Process.test.ts`: `⌘/ctrl+⏎` from the line and from `under` routes, and a
     bare `⏎` from either does not
-- [ ] `git commit`
+- [x] `git commit` _(2026-10-16)_
 
 ### Phase 3: verify
 

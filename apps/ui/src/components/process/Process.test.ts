@@ -1324,8 +1324,34 @@ test("still draws a + for a note that is not there", async () => {
   expect(screen.getByText("+ thoughts.md")).toBeDefined();
 });
 
+/** A reflex `⏎` on a half-typed folder used to make a file of it. */
+test("enter on a half-typed place completes it and routes nothing, and mod-enter routes", async () => {
+  const transport = servingVault([{ label: "projects", scope: "projects" }]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = (await screen.findByRole("combobox")) as HTMLInputElement;
+  await fireEvent.input(line, { target: { value: "proj" } });
+  await screen.findByText("projects/");
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  expect(line.value).toBe("projects/");
+  expect(sentTo(transport).map(routeOf)).not.toContain(
+    "POST /v1/items/one/route",
+  );
+
+  await fireEvent.keyDown(line, { key: "Enter", ctrlKey: true });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toMatchObject({
+      path: expect.stringMatching(/^projects\//),
+    });
+  });
+});
+
 /** The one capability that promises never to write into somebody's note. */
-test("shift-enter stores create under the free name it offered", async () => {
+test("mod-shift-enter stores create under the free name it offered", async () => {
   const transport = servingVault([
     { label: "decisions.md", value: "notes/decisions.md" },
   ]);
@@ -1336,7 +1362,11 @@ test("shift-enter stores create under the free name it offered", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
   await screen.findByText("append");
-  await fireEvent.keyDown(line, { key: "Enter", shiftKey: true });
+  await fireEvent.keyDown(line, {
+    key: "Enter",
+    shiftKey: true,
+    metaKey: true,
+  });
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
@@ -1833,8 +1863,8 @@ test("walks the narrowed list and takes the one it landed on", async () => {
   expect(field.value).toBe("reading-notes");
 });
 
-/** Left alone, `⏎` means route: walking is what makes it mean *take this one*. */
-test("commits where the walk has not moved", async () => {
+/** A reflex `⏎` on a half-typed name would send it, so only `⌘/ctrl+⏎` routes. */
+test("enter never commits from the field, and mod-enter does", async () => {
   const transport = servingBrowsable(() => answered(CHANNELS));
   draw();
   await choose(/Vault/);
@@ -1842,6 +1872,12 @@ test("commits where the walk has not moved", async () => {
   const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  expect(sentTo(transport).map(routeOf)).not.toContain(
+    "POST /v1/items/one/route",
+  );
+
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
@@ -1966,7 +2002,7 @@ test("resolves a title typed to the value it stands for, on commit", async () =>
   // still writing.
   expect(field.value).toBe("Reading Notes");
 
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({
@@ -1987,7 +2023,7 @@ test("resolves enough of a title that only one channel still matches", async () 
   await screen.findByText("Reading");
 
   await fireEvent.input(field, { target: { value: "Field" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({
@@ -2018,7 +2054,7 @@ test("leaves something it does not recognise exactly as written, and still route
   await screen.findByText("Reading");
 
   await fireEvent.input(field, { target: { value: "12345" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ directory: "12345" });

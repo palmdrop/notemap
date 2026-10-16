@@ -369,14 +369,45 @@ test("takes an ancestor's sibling the arrows reached", async () => {
   expect(line.value()).toBe("projects/notemap/readme.md");
 });
 
-test("enter with nothing picked commits, which is the ordinary way through", async () => {
+test("enter with nothing picked completes what is typed, and never commits", async () => {
+  servingTree();
+  const line = draw("projects/no");
+
+  await screen.findByText("notemap/");
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/");
+  expect(line.submitted).not.toHaveBeenCalled();
+});
+
+test("enter with nothing to complete does nothing", async () => {
   servingTree();
   const line = draw("projects/notemap/");
 
   await screen.findByText("notes/");
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
-  expect(line.submitted).toHaveBeenCalled();
+  expect(line.value()).toBe("projects/notemap/");
+  expect(line.submitted).not.toHaveBeenCalled();
+});
+
+/** The surface's own route takes `⌘/ctrl+⏎`, so the line leaves the press unclaimed. */
+test("mod-enter is left to the surface", async () => {
+  servingTree();
+  const line = draw("projects/no");
+
+  await screen.findByText("notemap/");
+  const press = new KeyboardEvent("keydown", {
+    key: "Enter",
+    ctrlKey: true,
+    bubbles: true,
+    cancelable: true,
+  });
+  line.line().dispatchEvent(press);
+
+  expect(press.defaultPrevented).toBe(false);
+  expect(line.value()).toBe("projects/no");
+  expect(line.submitted).not.toHaveBeenCalled();
 });
 
 test("says an answer was cut short rather than pretending it was whole", async () => {
@@ -497,14 +528,18 @@ test("draws what it will make inside the folder that will hold it", async () => 
   expect(drawn).toEqual(["projects/", "+ drafts/", "+ picker.md", "reading/"]);
 });
 
-test("offers a free name beside one that is taken, and shift-enter takes it", async () => {
+test("offers a free name beside one that is taken, and mod-shift-enter takes it", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
   const line = draw("decisions.md", SAID);
 
   await screen.findByText("append");
   expect(screen.getByRole("button", { name: /decisions-1\.md/ })).toBeDefined();
 
-  await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
+  await fireEvent.keyDown(line.line(), {
+    key: "Enter",
+    shiftKey: true,
+    ctrlKey: true,
+  });
   expect(line.submitted).toHaveBeenCalledWith("decisions-1.md");
 });
 
@@ -513,12 +548,16 @@ test("offers a free name beside one that is taken, and shift-enter takes it", as
  * one is what routing already does. Swallowing the key would leave a keystroke
  * that does nothing at all.
  */
-test("shift-enter routes where the name is free", async () => {
+test("mod-shift-enter routes where the name is free", async () => {
   servingFolder([]);
   const line = draw("picker.md", SAID);
 
   await screen.findByText("create");
-  await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
+  await fireEvent.keyDown(line.line(), {
+    key: "Enter",
+    shiftKey: true,
+    metaKey: true,
+  });
 
   expect(line.submitted).toHaveBeenCalledWith(undefined);
 });
@@ -681,4 +720,14 @@ test("stands the asking mark in the tree's place until the first answer, and not
   answer(json(200, answered(TREE[""]!)));
   await screen.findByText("journal/");
   expect(places.querySelector("[data-asking]")).toBeNull();
+});
+
+test("shift-enter alone commits nothing", async () => {
+  servingFolder([file("decisions.md", "decisions.md")]);
+  const line = draw("decisions.md", SAID);
+
+  await screen.findByText("append");
+  await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
+
+  expect(line.submitted).not.toHaveBeenCalled();
 });

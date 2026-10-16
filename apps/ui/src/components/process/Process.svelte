@@ -77,7 +77,7 @@
   const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
   const CREATE_OR_APPEND = "create-or-append";
-  /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
+  /** The one field the typed line drives, and the only one `⌘/ctrl+⇧⏎` has to re-read. */
   const LINE_FIELD = "path";
   /** Where a folder mode is carried, which core writes and no adapter names. */
   const FOLDER_MODE = "folder";
@@ -228,7 +228,7 @@
 
   /**
    * Where the line is what draws the place, *what will happen* is not a step:
-   * it is read off the line and said in one word, and `⇧⏎` is the way to the
+   * it is read off the line and said in one word, and `⌘/ctrl+⇧⏎` is the way to the
    * one capability that overrides it. A destination whose line field is no
    * path is asked, where it has more than one to be asked about.
    */
@@ -834,7 +834,7 @@
   }
 
   /**
-   * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
+   * `beside` is `⌘/ctrl+⇧⏎`: the person meant a new note rather than an addition to
    * the one that is there, so it asks for `create`. Both file kinds refuse a
    * name that is taken rather than writing into it; the capability itself no
    * longer promises that, and a kind that cannot would clobber here.

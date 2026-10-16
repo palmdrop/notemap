@@ -28,8 +28,9 @@ export type BrowserProps = {
   given?: Readonly<Record<string, string>> | undefined;
   onchange: (value: string) => void;
   /**
-   * Committing from inside the control. `beside` is the name a control offers
-   * when what is typed is already there and a new note was meant.
+   * Committing from inside the control, where a commit asks for something the
+   * surface's own route cannot: `beside` is the name a control offers when what
+   * is typed is already there and a new note was meant.
    */
   onsubmit?: (beside?: string) => void;
   /** Backspacing out of an empty control, where its keys reach that far. */

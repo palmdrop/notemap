@@ -75,7 +75,7 @@ is stored is `create-or-append-file`, and the adapter asks the question again wh
 true.
 
 **Why the other two are kept.** `create-file` is the only capability that guarantees a note is
-never added to — it is what `⇧⏎` stores when somebody explicitly means *make a new one beside it*,
+never added to — it is what `⇧⏎` *(`⌘/ctrl+⇧⏎` since 2026-10-16)* stores when somebody explicitly means *make a new one beside it*,
 and its refusal on a taken name is the guarantee, not a bug.
 
 `append-to-file` earns its place on a narrower ground, and it is worth being exact about which,

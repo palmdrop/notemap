@@ -32,7 +32,7 @@
    * anybody can type.
    *
    * The same shape the typed line has, without the hierarchy: `⇥` completes,
-   * `↑↓` walks, `⏎` takes the one walked to or commits. What it keeps that the
+   * `↑↓` walks, `⏎` takes the one walked to or settles what was typed. What it keeps that the
    * line has no use for is **descent** — an entry may be somewhere to look
    * further, and this is the only control that can go there.
    */
@@ -46,7 +46,6 @@
     naming = false,
     given,
     onchange,
-    onsubmit,
     onrelease,
     claims = true,
   }: {
@@ -77,7 +76,6 @@
      */
     given?: Readonly<Record<string, string>> | undefined;
     onchange: (value: string) => void;
-    onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
     /** Takes the caret when drawn, which a form whose first field is something else does not want. */
@@ -443,15 +441,18 @@
     }
 
     if (event.key === "Enter") {
-      event.preventDefault();
-      const picked = shown[at];
-      // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
-      // means *route*, which is the ordinary way through the line.
-      if (moved && picked !== undefined) open(picked);
-      else {
+      // `⌘/ctrl+⏎` is the surface's route, so it is left to reach it, with
+      // what was typed settled into the field first.
+      if (event.metaKey || event.ctrlKey) {
         settle();
-        onsubmit?.();
+        return;
       }
+      event.preventDefault();
+
+      // Never a route: a reflex `⏎` on a half-typed name would send it.
+      const picked = shown[at];
+      if (moved && picked !== undefined) open(picked);
+      else settle();
       return;
     }
 

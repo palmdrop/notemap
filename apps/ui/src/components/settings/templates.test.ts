@@ -1062,9 +1062,7 @@ const VAULT_TREE: Record<string, readonly Record<string, unknown>[]> = {
     { label: "garden", scope: "projects/garden" },
     { label: "notemap", scope: "projects/notemap" },
   ],
-  "projects/notemap": [
-    { label: "todo.md", value: "projects/notemap/todo.md" },
-  ],
+  "projects/notemap": [{ label: "todo.md", value: "projects/notemap/todo.md" }],
 };
 
 function servingVault() {

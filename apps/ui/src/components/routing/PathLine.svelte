@@ -70,8 +70,8 @@
     places?: readonly RememberedPlace[];
     onchange: (value: string) => void;
     /**
-     * `⏎` on the line commits the whole composer. `beside` is `⇧⏎`: make a new
-     * note rather than adding to the one that is there.
+     * `⌘/ctrl+⇧⏎`, committing the whole composer. `beside` is the name of a new
+     * note to make rather than adding to the one that is there.
      */
     onsubmit?: (beside?: string) => void;
     /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
@@ -289,15 +289,18 @@
     take(choice.row.entry);
   }
 
+  function complete(): void {
+    const finished = completionOf(caretIn?.entries ?? [], path.typing);
+    if (finished !== undefined) onchange(withTyping(path, finished));
+  }
+
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
       // With nothing to complete it does nothing, rather than handing focus to
       // whatever is next: the line is what the composer is for, and leaving it
       // is `⇧⇥` or the pointer.
       event.preventDefault();
-      const finished = completionOf(caretIn?.entries ?? [], path.typing);
-      if (finished === undefined) return;
-      onchange(withTyping(path, finished));
+      complete();
       return;
     }
 
@@ -330,19 +333,22 @@
     }
 
     if (event.key === "Enter") {
+      // `⌘/ctrl+⏎` is the surface's route, so it is left to reach it.
+      if ((event.metaKey || event.ctrlKey) && !event.shiftKey) return;
       event.preventDefault();
+
       // Nothing is taken, so there is nothing to make a new one beside: what
       // `create-or-append` will do is already make it.
-      if (event.shiftKey) {
+      if (event.metaKey || event.ctrlKey) {
         onsubmit?.(forecast?.beside);
         return;
       }
 
+      // Never a route: a reflex `⏎` on a half-typed name would make a file
+      // of it.
       const picked = choices[at];
-      // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
-      // means *route*, which is the ordinary way through the line.
       if (moved && picked !== undefined) taken(picked);
-      else onsubmit?.();
+      else complete();
       return;
     }
 
@@ -430,7 +436,7 @@
           onmousedown={(event) => {
             event.preventDefault();
             onsubmit?.(forecast.beside);
-          }}>⇧⏎ {forecast.beside}</button
+          }}>⌘/ctrl+⇧⏎ {forecast.beside}</button
         >
       {/if}
     </div>
