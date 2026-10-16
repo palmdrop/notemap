@@ -23,13 +23,14 @@ import type {
 } from "#types/domain/ids";
 import type { DestinationRecord } from "#types/domain/destination";
 import type { ArchiveState, ItemRecord, Tag } from "#types/domain/item";
-import type { MirrorRecord } from "#types/domain/mirror";
+import type {
+  DeliveredRoutingRecord,
+  MirrorRecord,
+} from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
 import type { FolderMode, RoutingTemplateRecord } from "#types/domain/template";
 import type {
   AppliedTemplate,
-  RoutingRecord,
-  RoutingRecordState,
   RoutingTarget,
   StoredContent,
   StoredOutput,
@@ -241,7 +242,7 @@ function readArtifact(value: unknown, at: string): Artifact {
   };
 }
 
-function readRouting(value: unknown, at: string): RoutingRecord {
+function readRouting(value: unknown, at: string): DeliveredRoutingRecord {
   const row = object(value, at);
   return {
     id: text(row["id"], `${at}.id`) as RoutingRecordId,
@@ -283,11 +284,9 @@ function readOutputContent(value: unknown, at: string): StoredContent {
 }
 
 /** Read rather than assumed: salvaging a file that says `pending` would invent an arrival. */
-function readState(value: unknown, at: string): RoutingRecordState {
+function readState(value: unknown, at: string): "delivered" {
   const spelling = text(value, at);
-  if (spelling !== "pending" && spelling !== "delivered") {
-    reject(at, "a routing record state");
-  }
+  if (spelling !== "delivered") reject(at, "delivered");
   return spelling;
 }
 

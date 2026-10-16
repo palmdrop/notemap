@@ -33,9 +33,14 @@ export type ItemMirrorRecord = {
   /** Every asset the payload's and the artifacts' references reach, resolved. */
   readonly assets: readonly Asset[];
   readonly artifacts: readonly Artifact[];
-  readonly routing: readonly RoutingRecord[];
+  readonly routing: readonly DeliveredRoutingRecord[];
   /** Compared by verify, never restored. */
   readonly modifiedAt: Timestamp;
+};
+
+/** A reservation is a promise no job would exist to keep after a rebuild, so a mirror never holds one. */
+export type DeliveredRoutingRecord = RoutingRecord & {
+  readonly state: "delivered";
 };
 
 /**

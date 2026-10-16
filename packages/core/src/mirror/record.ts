@@ -4,6 +4,7 @@ import type { Artifact } from "#types/domain/enrichment";
 import type { Timestamp } from "#types/domain/ids";
 import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import type {
+  DeliveredRoutingRecord,
   DestinationMirrorRecord,
   ItemMirrorRecord,
   PoolSettingMirrorRecord,
@@ -34,11 +35,7 @@ export function projectMirrorRecord(
     artifacts: [...artifacts]
       .map(canonicalArtifact)
       .sort(byKey((artifact) => artifact.id)),
-    // A rebuild that restored a reservation would restore a promise no job exists to keep.
-    routing: routing
-      .filter((entry) => entry.state === "delivered")
-      .map(canonicalRouting)
-      .sort(byKey((entry) => entry.id)),
+    routing: routing.flatMap(deliveredRouting).sort(byKey((entry) => entry.id)),
     modifiedAt: instant(item.modifiedAt),
   };
 }
@@ -146,8 +143,11 @@ function canonicalArtifact(artifact: Artifact): Artifact {
   };
 }
 
-function canonicalRouting(entry: RoutingRecord): RoutingRecord {
-  return { ...entry, at: instant(entry.at) };
+/** `state` is the narrowed field rather than a literal, so the check is what the type rests on. */
+function deliveredRouting(entry: RoutingRecord): DeliveredRoutingRecord[] {
+  return entry.state === "delivered"
+    ? [{ ...entry, state: entry.state, at: instant(entry.at) }]
+    : [];
 }
 
 /** A timestamp is an instant, not a spelling: `09:00:00Z` and `09:00:00.000Z` are one value. */
