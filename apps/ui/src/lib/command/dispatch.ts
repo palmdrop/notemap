@@ -14,7 +14,7 @@ export function dispatch(
   layers: readonly (() => readonly Command[])[],
   chordFor: (id: string) => string | undefined,
 ): Command | undefined {
-  // A line that committed on `⏎`, a control the browser is about to click:
+  // A field that kept the press, a control the browser is about to click:
   // either has taken the press, and a command taking it too would act twice
   // on one of them.
   if (event.defaultPrevented || activates(event)) return undefined;

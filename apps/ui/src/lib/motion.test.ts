@@ -302,6 +302,18 @@ describe("following", () => {
     expect(froms(animate).at(-1)).toEqual(["170px", "60px"]);
   });
 
+  test("a box inside that is already growing is followed rather than grown again", () => {
+    const { node, animate, resize } = box();
+    following(node);
+    const content = node.firstElementChild as HTMLElement;
+    Object.assign(content, {
+      getAnimations: () => [{ id: "growing" }],
+    });
+
+    resize({ height: 240 });
+    expect(animate).not.toHaveBeenCalled();
+  });
+
   test("a change of width is the window's, and moves nothing", () => {
     const { node, animate, resize } = box();
     following(node);

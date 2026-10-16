@@ -287,6 +287,9 @@ export function following(node: HTMLElement): () => void {
     height = content.offsetHeight;
     width = content.offsetWidth;
     if (was === undefined || across !== width || was === height) return;
+    // A box inside already grows toward the same height, and the content's
+    // every frame of it would otherwise restart this one a frame behind.
+    if (growingWithin(content)) return;
     const moving =
       typeof node.getAnimations === "function" &&
       node.getAnimations().length > 0;
@@ -295,4 +298,13 @@ export function following(node: HTMLElement): () => void {
 
   watching.observe(content);
   return () => watching.disconnect();
+}
+
+function growingWithin(content: HTMLElement): boolean {
+  return (
+    typeof content.getAnimations === "function" &&
+    content
+      .getAnimations({ subtree: true })
+      .some((animation) => animation.id === GROWING)
+  );
 }

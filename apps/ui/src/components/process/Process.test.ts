@@ -1279,7 +1279,7 @@ test("stores what the person meant, not the word that was drawn", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("append");
+  await screen.findByText("[append]");
   await commit();
 
   await vi.waitFor(async () => {
@@ -1302,11 +1302,11 @@ test("draws no + where the line lands on a note that is there", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("append");
+  await screen.findByText("[append]");
 
   expect(screen.queryByText("+ decisions.md")).toBeNull();
   // The note's own row instead, marked as the one the line holds.
-  const row = screen.getByRole("option", { name: "decisions.md" });
+  const row = screen.getByRole("option", { name: /^decisions\.md/ });
   expect(row.className).toContain("underline");
   expect(row.getAttribute("aria-disabled")).toBeNull();
 });
@@ -1319,13 +1319,39 @@ test("still draws a + for a note that is not there", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "thoughts.md" } });
-  await screen.findByText("create");
 
-  expect(screen.getByText("+ thoughts.md")).toBeDefined();
+  expect(await screen.findByText("+ thoughts.md")).toBeDefined();
+  expect(screen.queryByText("[append]")).toBeNull();
 });
 
-/** The one capability that promises never to write into somebody's note. */
-test("shift-enter stores create under the free name it offered", async () => {
+/** A reflex `⏎` on a half-typed folder used to make a file of it. */
+test("enter on a half-typed place completes it and routes nothing, and mod-enter routes", async () => {
+  const transport = servingVault([{ label: "projects", scope: "projects" }]);
+
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = (await screen.findByRole("combobox")) as HTMLInputElement;
+  await fireEvent.input(line, { target: { value: "proj" } });
+  await screen.findByText("projects/");
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  expect(line.value).toBe("projects/");
+  expect(
+    screen.getByRole("button", { name: "route" }).getAttribute("aria-busy"),
+  ).toBeNull();
+
+  await fireEvent.keyDown(line, { key: "Enter", ctrlKey: true });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toMatchObject({
+      path: expect.stringMatching(/^projects\//),
+    });
+  });
+});
+
+/** Written into the line rather than sent: committing stays `⌘/ctrl+⏎`'s. */
+test("mod-shift-enter writes the free name beside a taken one, and mod-enter routes it", async () => {
   const transport = servingVault([
     { label: "decisions.md", value: "notes/decisions.md" },
   ]);
@@ -1333,15 +1359,22 @@ test("shift-enter stores create under the free name it offered", async () => {
   drawAbout({ text: "a thought" });
   await choose(/Vault/);
 
-  const line = await screen.findByRole("combobox");
+  const line = (await screen.findByRole("combobox")) as HTMLInputElement;
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("append");
-  await fireEvent.keyDown(line, { key: "Enter", shiftKey: true });
+  await screen.findByText("[append]");
+  await fireEvent.keyDown(line, {
+    key: "Enter",
+    shiftKey: true,
+    metaKey: true,
+  });
+
+  expect(line.value).toBe("decisions-1.md");
+  await fireEvent.keyDown(line, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect(await routed(transport)).toMatchObject({
-      capability: "create",
-      arguments: { directory: "", filename: "decisions-1.md" },
+      capability: "create-or-append",
+      arguments: { path: "decisions-1.md" },
     });
   });
 });
@@ -1833,8 +1866,8 @@ test("walks the narrowed list and takes the one it landed on", async () => {
   expect(field.value).toBe("reading-notes");
 });
 
-/** Left alone, `⏎` means route: walking is what makes it mean *take this one*. */
-test("commits where the walk has not moved", async () => {
+/** A reflex `⏎` on a half-typed name would send it, so only `⌘/ctrl+⏎` routes. */
+test("enter never commits from the field, and mod-enter does", async () => {
   const transport = servingBrowsable(() => answered(CHANNELS));
   draw();
   await choose(/Vault/);
@@ -1842,6 +1875,12 @@ test("commits where the walk has not moved", async () => {
   const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
+  // A send marks the button busy before it awaits anything.
+  expect(
+    screen.getByRole("button", { name: "route" }).getAttribute("aria-busy"),
+  ).toBeNull();
+
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
@@ -1966,7 +2005,7 @@ test("resolves a title typed to the value it stands for, on commit", async () =>
   // still writing.
   expect(field.value).toBe("Reading Notes");
 
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({
@@ -1987,7 +2026,7 @@ test("resolves enough of a title that only one channel still matches", async () 
   await screen.findByText("Reading");
 
   await fireEvent.input(field, { target: { value: "Field" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({
@@ -2018,7 +2057,7 @@ test("leaves something it does not recognise exactly as written, and still route
   await screen.findByText("Reading");
 
   await fireEvent.input(field, { target: { value: "12345" } });
-  await fireEvent.keyDown(field, { key: "Enter" });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
 
   await vi.waitFor(async () => {
     expect((await routed(transport)).arguments).toEqual({ directory: "12345" });
@@ -2619,7 +2658,7 @@ test("drops the field beside the line where it knows a new note is being made", 
   expect(screen.getByLabelText("under")).toBeDefined();
 
   await fireEvent.input(line, { target: { value: "drafts/" } });
-  await screen.findByText("create");
+  await screen.findByText("+ drafts/");
 
   await vi.waitFor(() => {
     expect(screen.queryByLabelText("under")).toBeNull();
@@ -2635,7 +2674,7 @@ test("keeps the field where the line would append to a note that is there", asyn
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "decisions.md" } });
 
-  await screen.findByText("append");
+  await screen.findByText("[append]");
   expect(screen.getByLabelText("under")).toBeDefined();
 });
 
@@ -4071,9 +4110,12 @@ test("offers the note's own headings once the line names the note", async () => 
   expect(askedForHeadings(transport)).toEqual([]);
 
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("append");
+  await screen.findByText("[append]");
 
   const list = await screen.findByRole("listbox", { name: "under candidates" });
+  // Folded until the field is typed into: most decisions leave it empty.
+  expect(within(list).queryByText("## Templates")).toBeNull();
+  screen.getByRole("combobox", { name: "under" }).focus();
   await entry("## Templates");
   expect(within(list).getByText("## Templates")).toBeDefined();
   expect(askedForHeadings(transport).at(-1)?.get("given[path]")).toBe(
@@ -4099,7 +4141,7 @@ test("keeps the heading typed where the destination cannot answer for it", async
   await choose(/Vault/);
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("append");
+  await screen.findByText("[append]");
 
   await fireEvent.input(screen.getByRole("combobox", { name: "under" }), {
     target: { value: "Later" },
@@ -4121,7 +4163,7 @@ test("offers no frontmatter while the delivery is a task, and sends none", async
   await choose(/Vault/);
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("append");
+  await screen.findByText("[append]");
 
   await fireEvent.click(
     screen.getByRole("button", { name: /^full/ }) as HTMLElement,

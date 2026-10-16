@@ -9,6 +9,7 @@
   import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { commits } from "$lib/command/keys";
   import { nameOf } from "$lib/destinations";
   import { client } from "$lib/client";
   import {
@@ -20,6 +21,7 @@
     type Form,
   } from "$lib/candidate-list";
   import { recall, remember } from "$lib/candidate-cache";
+  import { following } from "$lib/motion";
   import { learn } from "$lib/names.svelte";
 
   /**
@@ -32,7 +34,7 @@
    * anybody can type.
    *
    * The same shape the typed line has, without the hierarchy: `⇥` completes,
-   * `↑↓` walks, `⏎` takes the one walked to or commits. What it keeps that the
+   * `↑↓` walks, `⏎` takes the one walked to or settles what was typed. What it keeps that the
    * line has no use for is **descent** — an entry may be somewhere to look
    * further, and this is the only control that can go there.
    */
@@ -46,8 +48,8 @@
     naming = false,
     given,
     onchange,
-    onsubmit,
     onrelease,
+    claims = true,
   }: {
     destination: string;
     capability: string;
@@ -76,10 +78,13 @@
      */
     given?: Readonly<Record<string, string>> | undefined;
     onchange: (value: string) => void;
-    onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
+    /** Takes the caret when drawn, which a form whose first field is something else does not want. */
+    claims?: boolean;
   } = $props();
+
+  const id = $props.id();
 
   type Crumb = {
     readonly label: string;
@@ -102,6 +107,7 @@
   let loading = $state(false);
   let refusal = $state<string | undefined>(undefined);
   let input = $state<HTMLInputElement | undefined>(undefined);
+  let focused = $state(false);
 
   /** Where `↑↓` stands, and whether it has been used since the list last changed. */
   let at = $state(0);
@@ -174,11 +180,17 @@
 
   const rest = $derived(matching.length - shown.length);
 
+  /**
+   * A field that depends on another is one most decisions leave empty, so its
+   * list is drawn only while it is being typed into.
+   */
+  const folded = $derived(given !== undefined && !focused);
+
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into — unless this
   // field depends on another, which is then where the caret belongs.
   $effect(() => {
-    if (given === undefined) input?.focus();
+    if (claims && given === undefined) input?.focus();
   });
 
   /**
@@ -438,15 +450,16 @@
     }
 
     if (event.key === "Enter") {
-      event.preventDefault();
-      const picked = shown[at];
-      // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
-      // means *route*, which is the ordinary way through the line.
-      if (moved && picked !== undefined) open(picked);
-      else {
+      // The surface routes on it, after what was typed is settled.
+      if (commits(event)) {
         settle();
-        onsubmit?.();
+        return;
       }
+      event.preventDefault();
+
+      const picked = shown[at];
+      if (moved && picked !== undefined) open(picked);
+      else settle();
       return;
     }
 
@@ -514,11 +527,18 @@
   }
 
   const active = $derived(
-    moved && shown[at] !== undefined ? `candidate-${at}` : undefined,
+    moved && shown[at] !== undefined ? `${id}-candidate-${at}` : undefined,
   );
 </script>
 
-<div>
+<!-- Pressing a row or an action keeps the caret in the field, so a folded
+     list stays open under the press. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  onmousedown={(event) => {
+    if (event.target !== input) event.preventDefault();
+  }}
+>
   <div class="border-b border-ink px-2 py-0.5">
     <input
       bind:this={input}
@@ -528,7 +548,11 @@
         filter = undefined;
         typedIn(event.currentTarget.value);
       }}
-      onblur={settle}
+      onfocus={() => (focused = true)}
+      onblur={() => {
+        focused = false;
+        settle();
+      }}
       {onkeydown}
       spellcheck="false"
       autocapitalize="off"
@@ -536,69 +560,74 @@
       aria-label={label}
       role="combobox"
       aria-autocomplete="list"
-      aria-expanded={shown.length > 0}
-      aria-controls="candidate-entries"
+      aria-expanded={!folded && shown.length > 0}
+      aria-controls="{id}-entries"
       aria-activedescendant={active}
       class="w-full bg-transparent caret-ink outline-none"
     />
   </div>
 
-  {#if here !== undefined}
+  {#if !folded && here !== undefined}
     <div class="mt-2.5 flex items-baseline gap-3">
       <Action onclick={back}>back</Action>
       {#if here.value !== undefined}
         <Action onclick={take}>use {here.label}</Action>
       {/if}
     </div>
-  {:else if text !== ""}
+  {:else if !folded && text !== ""}
     <div class="mt-2.5 flex items-baseline gap-3">
       <Action onclick={clear}>clear</Action>
     </div>
   {/if}
 
-  <!-- A floor, so a short answer leaves room rather than collapsing the column
-       and moving everything the eye is on. -->
-  <div
-    id="candidate-entries"
-    role="listbox"
-    aria-label="{label} candidates"
-    class="mt-2.5 min-h-[12.5rem]"
-  >
-    {#if loading}
-      <p><Asking subject={nameOf(destination)} /></p>
-    {:else if refusal !== undefined && entries.length === 0}
-      <p>{refusal}</p>
-    {:else}
-      {#if refusal !== undefined}
-        <!-- Held from the last ask, and the ask that just failed said so.
-             Drawn rather than dropped: the field is typed either way. -->
-        <p><Lead lead={refusal} rest="showing what it said before" /></p>
-      {/if}
-      {#each shown as entry, index (entry.scope ?? String(entry.value))}
-        {@const picked = moved && at === index}
-        <Walked
-          id={picked ? `candidate-${index}` : undefined}
-          on={picked}
-          held={entry.value !== undefined && takenAs(entry, keeps) === value}
-          ontake={() => open(entry)}
-        >
-          {entry.scope !== undefined ? `${entry.label}/` : entry.label}
-        </Walked>
-      {/each}
+  <div {@attach following}>
+    <div class="flow-root">
+      <div
+        id="{id}-entries"
+        role="listbox"
+        aria-label="{label} candidates"
+        class={folded ? "" : "mt-2.5"}
+      >
+        {#if folded}
+          <!-- Empty rather than gone: the field's `aria-controls` names it. -->
+        {:else if loading}
+          <p><Asking subject={nameOf(destination)} /></p>
+        {:else if refusal !== undefined && entries.length === 0}
+          <p>{refusal}</p>
+        {:else}
+          {#if refusal !== undefined}
+            <!-- Held from the last ask, and the ask that just failed said so.
+               Drawn rather than dropped: the field is typed either way. -->
+            <p><Lead lead={refusal} rest="showing what it said before" /></p>
+          {/if}
+          {#each shown as entry, index (entry.scope ?? String(entry.value))}
+            {@const picked = moved && at === index}
+            <Walked
+              id={picked ? `${id}-candidate-${index}` : undefined}
+              on={picked}
+              held={entry.value !== undefined &&
+                takenAs(entry, keeps) === value}
+              ontake={() => open(entry)}
+            >
+              {entry.scope !== undefined ? `${entry.label}/` : entry.label}
+            </Walked>
+          {/each}
 
-      {#if rest > 0}
-        <!-- The handful is a sample, not the answer: typing narrows it, and
-             this asks for the whole of what was already fetched. -->
-        <Action onclick={() => (expanded = true)}>{rest} more</Action>
-      {/if}
-      {#if shown.length === 0 && entries.length > 0}
-        <p>nothing here matches</p>
-      {/if}
-      {#if truncated && expanded}
-        <!-- The destination held more than it answered, which is its own
-             limit rather than this one. -->
-        <p>and more than it answered</p>
-      {/if}
-    {/if}
+          {#if rest > 0}
+            <!-- The handful is a sample, not the answer: typing narrows it, and
+               this asks for the whole of what was already fetched. -->
+            <Action onclick={() => (expanded = true)}>{rest} more</Action>
+          {/if}
+          {#if shown.length === 0 && entries.length > 0}
+            <p>nothing here matches</p>
+          {/if}
+          {#if truncated && expanded}
+            <!-- The destination held more than it answered, which is its own
+               limit rather than this one. -->
+            <p>and more than it answered</p>
+          {/if}
+        {/if}
+      </div>
+    </div>
   </div>
 </div>

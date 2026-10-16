@@ -74,10 +74,9 @@
   import Preview from "./Preview.svelte";
   import Section from "./Section.svelte";
 
-  const CREATE = "create";
   /** What the typed line drives: the capability that decides at delivery. */
   const CREATE_OR_APPEND = "create-or-append";
-  /** The one field the typed line drives, and the only one `⇧⏎` has to re-read. */
+  /** The one field the typed line drives. */
   const LINE_FIELD = "path";
   /** Where a folder mode is carried, which core writes and no adapter names. */
   const FOLDER_MODE = "folder";
@@ -228,9 +227,9 @@
 
   /**
    * Where the line is what draws the place, *what will happen* is not a step:
-   * it is read off the line and said in one word, and `⇧⏎` is the way to the
-   * one capability that overrides it. A destination whose line field is no
-   * path is asked, where it has more than one to be asked about.
+   * it is read off the line, and the line is what changes it. A destination
+   * whose line field is no path is asked, where it has more than one to be
+   * asked about.
    */
   const settles = $derived(
     capabilities.some(
@@ -563,10 +562,9 @@
    * decision of the person's own and goes as one — the template was where it
    * started, not what it stayed.
    */
-  function requestFor(beside?: string) {
+  function requestFor() {
     const wanted = valuesFrom(fields, args);
     const untouched =
-      beside === undefined &&
       applied !== undefined &&
       resolved !== undefined &&
       capability === resolved.capability &&
@@ -578,9 +576,8 @@
 
     return {
       destination: chosen as string,
-      ...(beside === undefined
-        ? { capability: capability as string, arguments: wanted }
-        : freshFile(beside)),
+      capability: capability as string,
+      arguments: wanted,
       ...carried(),
     };
   }
@@ -632,17 +629,6 @@
   function keep(): void {
     words = undefined;
     editing = false;
-  }
-
-  function freshFile(beside: string): {
-    capability: string;
-    arguments: Record<string, unknown>;
-  } {
-    const place = placeOf(args[LINE_FIELD] ?? "");
-    return {
-      capability: CREATE,
-      arguments: { directory: place.directory, filename: beside },
-    };
   }
 
   function reasonFor(id: string): string | undefined {
@@ -833,19 +819,13 @@
     void client.tag(item.id, tag).catch(() => undefined);
   }
 
-  /**
-   * `beside` is `⇧⏎`: the person meant a new note rather than an addition to
-   * the one that is there, so it asks for `create`. Both file kinds refuse a
-   * name that is taken rather than writing into it; the capability itself no
-   * longer promises that, and a kind that cannot would clobber here.
-   */
-  async function send(beside?: string) {
+  async function send() {
     if (chosen === undefined || capability === undefined || busy) return;
 
     busy = true;
     said = "";
     try {
-      const record = await client.routing.route(item.id, requestFor(beside));
+      const record = await client.routing.route(item.id, requestFor());
       classify(record);
       notices.raise(
         saidOf(record, nameOf, {
@@ -969,7 +949,6 @@
       said={field.name === LINE_FIELD ? spoken : undefined}
       given={givenFor(field, args)}
       onchange={(value) => (args = { ...args, [field.name]: value })}
-      onsubmit={(beside) => void send(beside)}
       onrelease={release}
     />
   {:else if field.options !== undefined}
@@ -1212,7 +1191,6 @@
           said={spoken}
           {places}
           onchange={(value) => (args = { ...args, [line.name]: value })}
-          onsubmit={(beside) => void send(beside)}
           onrelease={release}
           onforecast={(word) => (forecast = word)}
         />

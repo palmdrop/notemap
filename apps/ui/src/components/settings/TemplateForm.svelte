@@ -11,6 +11,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import Option from "$components/primitives/composer/Option.svelte";
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
+  import PathLine from "$components/routing/PathLine.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
@@ -66,6 +67,9 @@
   let capability = $state(untrack(() => editing?.capability ?? ""));
   let folder = $state(untrack(() => editing?.folder ?? "create"));
   let typed = $state(untrack(() => typedFrom(editing?.arguments)));
+
+  let nameField = $state<HTMLInputElement | undefined>(undefined);
+  $effect(() => nameField?.focus());
 
   let capabilities = $state<readonly Capability[]>([]);
   let said = $state("");
@@ -239,6 +243,7 @@
 >
   <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
   <input
+    bind:this={nameField}
     bind:value={name}
     aria-label="name"
     class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
@@ -320,15 +325,20 @@
             />
           {/each}
         </div>
+      {:else if field.askable && destination !== "" && field.path !== undefined}
+        <!-- No forecast and no remembered continuation: a pattern names no
+             one note, so neither has anything to read off it. -->
+        <PathLine
+          {destination}
+          {capability}
+          field={field.name}
+          label={field.title ?? field.name}
+          value={typed[field.name] ?? ""}
+          claims={false}
+          onchange={(value) => (typed[field.name] = value)}
+        />
       {:else if field.askable && destination !== ""}
         <!--
-          The schema-driven browser rather than the kind's own control: what a
-          template holds is a pattern, and the typed path line beside it
-          forecasts create-against-append for a path that does not exist yet.
-          The browser carries the field's own input, so a place that has to be
-          picked from what is there and one that has to be written are the same
-          field.
-
           `durable`, because this is the decision that fires again: a template
           sits on a tag for months, and a value that rots takes the template
           with it. Where a destination offers no second name for a thing this
@@ -348,6 +358,7 @@
           durable
           naming={field.offeredOnly}
           given={givenFor(field, typed)}
+          claims={false}
           onchange={(value) => (typed[field.name] = value)}
         />
       {:else}

@@ -111,6 +111,19 @@ export function filtered(path: TypedPath): number {
 }
 
 /**
+ * The levels that answered for the path as it is now: the ones before the
+ * first whose scope it no longer runs through. Levels are held by depth, so
+ * one answered for a sibling would otherwise be drawn as this folder's.
+ */
+export function alignedTo(
+  levels: readonly Level[],
+  scopes: readonly string[],
+): readonly Level[] {
+  const off = levels.findIndex((level, at) => level.scope !== scopes[at]);
+  return off === -1 ? levels : levels.slice(0, off);
+}
+
+/**
  * The hierarchy as it is drawn: each level's entries under the ancestor the
  * path took, rather than one level's whole listing after another's. Every level
  * shows its siblings, which is what makes the tree *shown* rather than walked;

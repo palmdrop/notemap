@@ -1034,3 +1034,201 @@ test("an opened template placing the attachments alone says so under output", as
   });
   expect(screen.queryByText("action")).toBeNull();
 });
+
+/** The markdown kinds' one-line place: a whole path, browsed level by level. */
+const CREATE_OR_APPEND = {
+  name: "create-or-append",
+  accepts: ["text"],
+  argumentsSchema: {
+    type: "object",
+    required: ["path"],
+    properties: {
+      path: {
+        type: "string",
+        title: "place",
+        "x-notemap-path": true,
+        "x-notemap-candidates": true,
+      },
+    },
+  },
+};
+
+const VAULT_TREE: Record<string, readonly Record<string, unknown>[]> = {
+  "": [
+    { label: "inbox", scope: "inbox" },
+    { label: "projects", scope: "projects" },
+  ],
+  projects: [
+    { label: "garden", scope: "projects/garden" },
+    { label: "notemap", scope: "projects/notemap" },
+  ],
+  "projects/notemap": [{ label: "todo.md", value: "projects/notemap/todo.md" }],
+};
+
+function servingVault() {
+  return pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route.endsWith("/candidates")) {
+      const scope = new URL(request.url).searchParams.get("scope") ?? "";
+      const entries = VAULT_TREE[scope];
+      return json(
+        200,
+        entries === undefined
+          ? { kind: "answered", entries: [], truncated: false }
+          : { kind: "answered", entries, truncated: false },
+      );
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE_OR_APPEND] });
+    }
+    if (route === "POST /v1/templates") return json(201, aTemplate());
+    return json(404, { error: { code: "unknown-route" } });
+  });
+}
+
+/** As the markdown kinds declare it: the heading an append goes under, asked of the note. */
+const CREATE_OR_APPEND_UNDER = {
+  ...CREATE_OR_APPEND,
+  argumentsSchema: {
+    ...CREATE_OR_APPEND.argumentsSchema,
+    properties: {
+      ...CREATE_OR_APPEND.argumentsSchema.properties,
+      heading: {
+        type: "string",
+        title: "heading",
+        "x-notemap-candidates": true,
+        "x-notemap-candidates-given": ["path"],
+      },
+    },
+  },
+};
+
+const place = async () =>
+  (await screen.findByLabelText("place")) as HTMLInputElement;
+
+test("a path field is the typed line, and ⇥ finishes a folder with its slash", async () => {
+  servingVault();
+
+  render(Templates);
+  await open(/add a template/);
+  await screen.findByText("projects/");
+
+  await fireEvent.input(await place(), { target: { value: "pro" } });
+  await vi.waitFor(() => {
+    expect(screen.queryByText("inbox/")).toBeNull();
+  });
+  await fireEvent.keyDown(await place(), { key: "Tab" });
+  expect((await place()).value).toBe("projects/");
+
+  await fireEvent.input(await place(), { target: { value: "projects/no" } });
+  await screen.findByText("notemap/");
+  await fireEvent.keyDown(await place(), { key: "Tab" });
+  expect((await place()).value).toBe("projects/notemap/");
+});
+
+test("taking a folder writes it to the line and draws what is in it", async () => {
+  servingVault();
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.mouseDown(await screen.findByText("projects/"));
+
+  expect((await place()).value).toBe("projects/");
+  await screen.findByText("notemap/");
+
+  await fireEvent.mouseDown(screen.getByText("notemap/"));
+  expect((await place()).value).toBe("projects/notemap/");
+});
+
+test("the line holds a pattern, and saves it as typed", async () => {
+  servingVault();
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Journal" },
+  });
+  await fireEvent.input(await place(), {
+    target: { value: "journal/{{captured_at:month}}/{{item}}.md" },
+  });
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      arguments: { path: "journal/{{captured_at:month}}/{{item}}.md" },
+    }),
+  );
+});
+
+test("the form puts the caret in its name, not in the place", async () => {
+  servingVault();
+
+  render(Templates);
+  await open(/add a template/);
+  await screen.findByText("projects/");
+
+  expect(document.activeElement).toBe(screen.getByLabelText("name"));
+});
+
+test("a browsable field leaves the caret in the name too", async () => {
+  servingChannels([{ label: "reading", value: "reading" }]);
+
+  render(Templates);
+  await open(/add a template/);
+  await screen.findByText("reading");
+
+  expect(document.activeElement).toBe(screen.getByLabelText("name"));
+});
+
+/** The note's headings, once the line names a note, and only while the field is typed into. */
+test("offers a note's headings under the place, folded until asked for", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [] });
+    if (route.endsWith("/candidates")) {
+      const query = new URL(request.url).searchParams;
+      if (query.get("field") === "heading") {
+        return json(200, {
+          kind: "answered",
+          entries: [{ label: "## Next", value: "Next" }],
+          truncated: false,
+        });
+      }
+      const entries = VAULT_TREE[query.get("scope") ?? ""] ?? [];
+      return json(200, { kind: "answered", entries, truncated: false });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, {
+        kind: "described",
+        capabilities: [CREATE_OR_APPEND_UNDER],
+      });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.input(await place(), {
+    target: { value: "projects/notemap/todo.md" },
+  });
+
+  const under = await screen.findByLabelText("heading");
+  under.focus();
+  await fireEvent.mouseDown(await screen.findByText("## Next"));
+  expect((under as HTMLInputElement).value).toBe("Next");
+
+  under.blur();
+  await vi.waitFor(() => {
+    expect(screen.queryByText("## Next")).toBeNull();
+  });
+});

@@ -2,6 +2,7 @@ import type { CandidateEntry } from "@notemap/client";
 import { describe, expect, test } from "vitest";
 
 import {
+  alignedTo,
   completionOf,
   continuing,
   ghostFor,
@@ -667,5 +668,26 @@ describe("places used before", () => {
 
     expect(ghostFor("", places)).toBeUndefined();
     expect(ghostFor("notes/", places)).toBeUndefined();
+  });
+});
+
+describe("alignedTo", () => {
+  const level = (scope: string) => ({ scope, entries: [] });
+
+  test("keeps the levels the path still runs through", () => {
+    const levels = [level(""), level("projects")];
+    expect(alignedTo(levels, ["", "projects", "projects/notemap"])).toBe(
+      levels,
+    );
+  });
+
+  test("drops a sibling's level from the depth it no longer matches", () => {
+    const levels = [level(""), level("projects"), level("projects/notemap")];
+    expect(alignedTo(levels, ["", "journal"])).toEqual([level("")]);
+  });
+
+  test("drops what is deeper than the path", () => {
+    const levels = [level(""), level("projects")];
+    expect(alignedTo(levels, [""])).toEqual([level("")]);
   });
 });

@@ -78,6 +78,13 @@ true.
 never added to — it is what `⇧⏎` stores when somebody explicitly means *make a new one beside it*,
 and its refusal on a taken name is the guarantee, not a bug.
 
+*Superseded in part, 2026-10-16 ([plan](../plans/path-picking-and-enter.md)):* the composer no
+longer stores `create` for *make a new one beside it*. The chord, now `⌘/ctrl+⇧⏎`, writes the free
+name into the line and commits nothing, and the line goes as `create-or-append`. A stray chord
+routing straight away was the cost that outweighed the guarantee. A note made under that name between
+the draw and the delivery is now added to rather than refused. `create` remains for a template or a
+request that asks for it.
+
 `append-to-file` earns its place on a narrower ground, and it is worth being exact about which,
 because the obvious one is not true: **it does not require the note to already be there.** Both
 kinds write one that is not, deliberately — the motivating case is a daily note whose sections

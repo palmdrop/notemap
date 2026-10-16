@@ -8,15 +8,17 @@
 
   import { untrack } from "svelte";
 
-  import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { commits } from "$lib/command/keys";
   import { nameOf } from "$lib/destinations";
   import { recall, remember } from "$lib/candidate-cache";
+  import { following } from "$lib/motion";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
   import {
+    alignedTo,
     completionOf,
     continuationOf,
     ghostFor,
@@ -50,9 +52,9 @@
     said,
     places = [],
     onchange,
-    onsubmit,
     onrelease,
     onforecast,
+    claims = true,
   }: {
     destination: string;
     capability: string;
@@ -68,16 +70,15 @@
     /** Places routed to before, as the pool answered them: what the greyed continuation is read from. */
     places?: readonly RememberedPlace[];
     onchange: (value: string) => void;
-    /**
-     * `⏎` on the line commits the whole composer. `beside` is `⇧⏎`: make a new
-     * note rather than adding to the one that is there.
-     */
-    onsubmit?: (beside?: string) => void;
     /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
     /** What committing now would do, which decides what else the surface asks. */
     onforecast?: (word: "create" | "append" | undefined) => void;
+    /** Takes the caret when drawn, which a form whose first field is something else does not want. */
+    claims?: boolean;
   } = $props();
+
+  const id = $props.id();
 
   let levels = $state<readonly Level[]>([]);
   let at = $state(0);
@@ -85,6 +86,13 @@
   let moved = $state(false);
   let input = $state<HTMLInputElement | undefined>(undefined);
   let shown = $state<HTMLElement | undefined>(undefined);
+  let list = $state<HTMLElement | undefined>(undefined);
+  /**
+   * The height the list stood at before the path moved to a folder nobody has
+   * answered for yet, held until one does: its rows go at once, and the list
+   * settles once, on the answer, rather than collapsing and growing again.
+   */
+  let floor = $state<number | undefined>(undefined);
 
   /**
    * The input's own text is transparent and the layer beneath is what is read,
@@ -99,6 +107,7 @@
   }
 
   const path = $derived(parsePath(value));
+  const scopes = $derived(scopesAlong(path));
   /**
    * The level the caret is in, which is not the deepest that answered: inside a
    * folder that is not there yet, that would be the folder above, and
@@ -157,7 +166,9 @@
 
   // The place is what a surface with a destination settled is for, so the
   // caret is here rather than waiting to be clicked into.
-  $effect(() => input?.focus());
+  $effect(() => {
+    if (claims) input?.focus();
+  });
 
   // Every answer but the newest is dropped: typing a segment leaves several
   // rounds of asks in flight, and without this a slower one paints the entries
@@ -167,29 +178,31 @@
   /** The newest round of asks is still out. */
   let unanswered = $state(false);
 
-  $effect(() => {
-    const scopes = scopesAlong(path);
+  // Before the DOM moves, so the height held is the one the list stood at.
+  $effect.pre(() => {
+    const asked = scopes;
     const mine = (asking += 1);
 
-    // Drawn while they are asked for again, and only where nothing is drawn
-    // yet: replacing a tree that is already up with a shorter remembered one
-    // would make it flicker under the caret on every keystroke.
-    // Untracked: the answer below writes `levels`, and an effect depending
-    // on it would ask again for every answer it drew.
-    if (untrack(() => levels.length) === 0) {
-      const kept = heldAlong(scopes);
-      if (kept.length > 0) levels = kept;
-    }
+    // What is still true is drawn while everything is asked for again: the
+    // levels the path still runs through, then whatever was last told about
+    // the rest. Untracked: the answer below writes `levels`, and an effect
+    // depending on it would ask again for every answer it drew.
+    untrack(() => {
+      const kept = [...alignedTo(levels, asked), ...heldPast(levels, asked)];
+      if (kept.length < asked.length) floor ??= list?.offsetHeight;
+      levels = kept;
+    });
 
     clearTimeout(timer);
     timer = setTimeout(() => {
       unanswered = true;
       void (async () => {
-        const answers = await Promise.all(scopes.map(askAbout));
+        const answers = await Promise.all(asked.map(askAbout));
         if (mine !== asking) return;
 
         levels = answers;
         unanswered = false;
+        floor = undefined;
       })();
     }, 120);
 
@@ -222,25 +235,29 @@
   }
 
   /**
-   * What each level along the path was last told, so a line opened a second
-   * time draws its tree at once. A level per segment is a request per segment,
-   * and this control asks them all again on every keystroke that changes the
-   * path — the debounce spends 120ms of that wait, and this fills the rest of
-   * it with what was true a moment ago.
+   * What each level past the ones still drawn was last told, so a line opened
+   * a second time, or a folder gone back to, draws at once. A level per segment
+   * is a request per segment, and this control asks them all again on every
+   * keystroke that changes the path — the debounce spends 120ms of that wait,
+   * and this fills the rest of it with what was true a moment ago. It stops at
+   * the first scope nothing is held for, since levels are held by depth.
    */
-  function heldAlong(scopes: readonly string[]): readonly Level[] {
-    return scopes.flatMap((scope) => {
+  function heldPast(
+    levels: readonly Level[],
+    scopes: readonly string[],
+  ): readonly Level[] {
+    const held: Level[] = [];
+    for (const scope of scopes.slice(alignedTo(levels, scopes).length)) {
       const kept = recall({
         destination,
         capability,
         field,
         ...(scope === "" ? {} : { scope }),
       });
-
-      return kept === undefined
-        ? []
-        : [{ scope, entries: kept.entries, truncated: kept.truncated }];
-    });
+      if (kept === undefined) break;
+      held.push({ scope, entries: kept.entries, truncated: kept.truncated });
+    }
+    return held;
   }
 
   /**
@@ -282,15 +299,18 @@
     take(choice.row.entry);
   }
 
+  function complete(): void {
+    const finished = completionOf(caretIn?.entries ?? [], path.typing);
+    if (finished !== undefined) onchange(withTyping(path, finished));
+  }
+
   function onkeydown(event: KeyboardEvent): void {
     if (event.key === "Tab" && !event.shiftKey) {
       // With nothing to complete it does nothing, rather than handing focus to
       // whatever is next: the line is what the composer is for, and leaving it
       // is `⇧⇥` or the pointer.
       event.preventDefault();
-      const finished = completionOf(caretIn?.entries ?? [], path.typing);
-      if (finished === undefined) return;
-      onchange(withTyping(path, finished));
+      complete();
       return;
     }
 
@@ -323,19 +343,20 @@
     }
 
     if (event.key === "Enter") {
+      if (commits(event)) return;
       event.preventDefault();
-      // Nothing is taken, so there is nothing to make a new one beside: what
-      // `create-or-append` will do is already make it.
-      if (event.shiftKey) {
-        onsubmit?.(forecast?.beside);
+
+      // A new note beside the one the line names, under the free name it
+      // would get — written into the line rather than sent, like any `⏎`.
+      if (event.metaKey || event.ctrlKey) {
+        if (forecast?.beside === undefined) complete();
+        else onchange(withTyping(path, forecast.beside));
         return;
       }
 
       const picked = choices[at];
-      // `↑↓` having moved is what makes `⏎` mean *take this one*; left alone it
-      // means *route*, which is the ordinary way through the line.
       if (moved && picked !== undefined) taken(picked);
-      else onsubmit?.();
+      else complete();
       return;
     }
 
@@ -357,7 +378,7 @@
   );
 
   const active = $derived(
-    !moved || choices[at] === undefined ? undefined : `path-line-place-${at}`,
+    !moved || choices[at] === undefined ? undefined : `${id}-place-${at}`,
   );
 </script>
 
@@ -395,7 +416,7 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={choices.length > 0}
-      aria-controls="path-line-places"
+      aria-controls="{id}-places"
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
@@ -408,55 +429,46 @@
         rest={refusal === "unreachable" ? "best effort" : undefined}
       />
     </p>
-  {:else if forecast !== undefined}
-    <!-- The name a derived leaf would get is not said here: the tree draws it
-         where the note lands, which is where the eye already is. -->
-    <div class="mt-3.5 flex items-baseline gap-x-3">
-      <StateWord word={forecast.word} inline />
-      {#if forecast.beside !== undefined}
-        <!-- Beside the state it overrides rather than in the key hints:
-             adding to somebody's note when a new one was meant is the one
-             place *nothing to choose* can surprise. -->
-        <button
-          type="button"
-          class="ml-auto shrink-0 hover:underline"
-          onmousedown={(event) => {
-            event.preventDefault();
-            onsubmit?.(forecast.beside);
-          }}>⇧⏎ {forecast.beside}</button
-        >
+  {/if}
+
+  <div class="mt-2.5" {@attach following}>
+    <div class="flow-root">
+      <div
+        bind:this={list}
+        id="{id}-places"
+        role="listbox"
+        aria-label="places"
+        style:min-height={floor === undefined
+          ? undefined
+          : `${String(floor)}px`}
+      >
+        {#if drawn.length === 0 && unanswered}
+          <Asking subject={nameOf(destination)} />
+        {/if}
+        {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
+          {@const picked = moved && here[at] === row}
+          <Walked
+            id={picked ? `${id}-place-${at}` : undefined}
+            on={picked}
+            along={row.onPath || row.made === true || row.held === true}
+            held={row.made === true || row.held === true}
+            disabled={row.made === true}
+            indent={row.depth}
+            ontake={() => take(row.entry)}
+          >
+            <!-- Inline-block, so the row's underline stops at the name. -->
+            {row.made === true
+              ? `+ ${textOf(row.entry)}`
+              : textOf(row.entry)}{#if row.held === true}<span
+                class="ml-[1ch] inline-block font-normal">[append]</span
+              >{/if}
+          </Walked>
+        {/each}
+      </div>
+
+      {#if caretIn?.truncated === true}
+        <p class="mt-1">more than this shows</p>
       {/if}
     </div>
-  {/if}
-
-  <!-- A floor, so a shallow answer leaves room rather than collapsing the
-       column and moving everything the eye is on. -->
-  <div
-    id="path-line-places"
-    role="listbox"
-    aria-label="places"
-    class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
-  >
-    {#if drawn.length === 0 && unanswered}
-      <Asking subject={nameOf(destination)} />
-    {/if}
-    {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
-      {@const picked = moved && here[at] === row}
-      <Walked
-        id={picked ? `path-line-place-${at}` : undefined}
-        on={picked}
-        along={row.onPath || row.made === true || row.held === true}
-        held={row.made === true || row.held === true}
-        disabled={row.made === true}
-        indent={row.depth}
-        ontake={() => take(row.entry)}
-      >
-        {row.made === true ? `+ ${textOf(row.entry)}` : textOf(row.entry)}
-      </Walked>
-    {/each}
   </div>
-
-  {#if caretIn?.truncated === true}
-    <p class="mt-1">more than this shows</p>
-  {/if}
 </div>
