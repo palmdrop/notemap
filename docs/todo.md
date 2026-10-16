@@ -53,12 +53,19 @@
   - it is not clear how to go back or use the current folder
   - tabbing down the hierarchy has no effect on input field until you press "use <path>"
   - going back is not clearly a button
+  - the composer allocates space that is not needed at all times, leaving a lot of empty space
+  - a proper file-picker library would be ideal, or a more traditional file picker/navigation flow at least, while still allowing text-first input
+
+- [ ] Pressing enter when inputting a file path in composer routes the entire thing, instead of doing the expected "submit" or "complete" the file path. "Enter" should not route immediatelly, since it might be clicked accidentally. Enter should instead "choose" the selected path, or complete a partial input. CMD+Enter could in turn send the capture to the destination
 
 - [ ] searchable files/folders in webdav/fs destinations, investigate if possible
 
 - [ ] consider source to destination auto routing: for example, I might have an inbox that I *always* want routed to a specific destination, using a template.
 
 ## Templates
+
+- [ ] trigger tags with arguments, for example, I might need to insert a todo in a todo file after a specific headline... how to do that? routing tag arguments? templates with arguments? 
+
 
 - [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
 - [ ] add way of picking a separate location for note and assets when using templates
@@ -115,6 +122,10 @@
 ## Routing — templates, rules, conversion
 
 - [ ] capture merging: related to batch processing, select multiple capture rows, and/or filter by tags, then process all these at once -> a collective routing record with the body being a merged version of all the items. One frontmatter, one foot of hashtags
+
+- [ ] trying to route a capture to the exact same place as a folder produces a strange webdav ETag error that is not very useful for a user
+
+- [ ] ability to "invalidate" a routing record, for example, if something was routed but I then removed what was routed manually in the destination. Would like this feature, even though notemap cannot always verify that the routing record is "actually" invalid, however, if the destination can check if the file is still there, it can prompt the user with a "the note is still in the destination. Invalidate anyway?".
 
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
