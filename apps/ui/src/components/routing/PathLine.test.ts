@@ -79,7 +79,6 @@ const servingTree = () =>
  * does and re-renders on every change.
  */
 function draw(value = "", said: unknown = undefined) {
-  const submitted = vi.fn();
   const { rerender } = render(PathLine, {
     props: {
       destination: VAULT,
@@ -93,13 +92,11 @@ function draw(value = "", said: unknown = undefined) {
         held = next;
         void rerender({ value: next } as never);
       },
-      onsubmit: submitted,
     } as never,
   });
 
   let held = value;
   return {
-    submitted,
     line: () => screen.getByRole("combobox") as HTMLInputElement,
     value: () => held,
     type: async (next: string) => {
@@ -260,19 +257,6 @@ test("tab with nothing to complete does nothing rather than handing focus away",
   expect(line.value()).toBe("zz");
 });
 
-/**
- * A tree that gains and loses a whole level as a segment is typed moves
- * everything under it, and the control being typed into must not move.
- */
-test("keeps a floor under the tree, so a shallow answer leaves room", async () => {
-  servingTree();
-  draw("");
-
-  await settled();
-  const tree = screen.getByRole("listbox", { name: "places" });
-  expect(tree.className).toContain("min-h-[12.5rem]");
-});
-
 test("keeps no floor where there is no tree to hold up", async () => {
   serving(() => ({ kind: "unreachable", detail: "not mounted" }));
   draw("");
@@ -342,7 +326,6 @@ test("moves down the drawn tree with the arrows and takes with enter", async () 
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("projects/notemap/notes/");
-  expect(line.submitted).not.toHaveBeenCalled();
 });
 
 /** The first press lands on the first row rather than skipping it. */
@@ -369,7 +352,7 @@ test("takes an ancestor's sibling the arrows reached", async () => {
   expect(line.value()).toBe("projects/notemap/readme.md");
 });
 
-test("enter with nothing picked completes what is typed, and never commits", async () => {
+test("enter with nothing picked completes what is typed", async () => {
   servingTree();
   const line = draw("projects/no");
 
@@ -377,7 +360,6 @@ test("enter with nothing picked completes what is typed, and never commits", asy
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("projects/notemap/");
-  expect(line.submitted).not.toHaveBeenCalled();
 });
 
 test("enter with nothing to complete does nothing", async () => {
@@ -388,7 +370,6 @@ test("enter with nothing to complete does nothing", async () => {
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
   expect(line.value()).toBe("projects/notemap/");
-  expect(line.submitted).not.toHaveBeenCalled();
 });
 
 /** The surface's own route takes `⌘/ctrl+⏎`, so the line leaves the press unclaimed. */
@@ -407,7 +388,6 @@ test("mod-enter is left to the surface", async () => {
 
   expect(press.defaultPrevented).toBe(false);
   expect(line.value()).toBe("projects/no");
-  expect(line.submitted).not.toHaveBeenCalled();
 });
 
 test("says an answer was cut short rather than pretending it was whole", async () => {
@@ -464,18 +444,22 @@ const servingFolder = (entries: readonly Entry[]) =>
     scope === undefined ? answered(entries) : { kind: "not-offered" },
   );
 
-test("says create in one word for a name the folder does not hold", async () => {
+test("draws a name the folder does not hold as a note to be made", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
   draw("picker.md", SAID);
 
-  expect(await screen.findByText("create")).toBeDefined();
+  expect(await screen.findByText("+ picker.md")).toBeDefined();
+  expect(screen.queryByText("[append]")).toBeNull();
 });
 
-test("says append for a name it does", async () => {
+test("marks a name it does hold as the note appended to", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
   draw("decisions.md", SAID);
 
-  expect(await screen.findByText("append")).toBeDefined();
+  const marked = await screen.findByText("[append]");
+  expect(marked.closest('[role="option"]')?.textContent).toBe(
+    "decisions.md[append]",
+  );
 });
 
 /** In the tree, where they will be, rather than named off beside the word. */
@@ -528,38 +512,37 @@ test("draws what it will make inside the folder that will hold it", async () => 
   expect(drawn).toEqual(["projects/", "+ drafts/", "+ picker.md", "reading/"]);
 });
 
-test("offers a free name beside one that is taken, and mod-shift-enter takes it", async () => {
+test("mod-shift-enter writes the free name beside one that is taken, and routes nothing", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
   const line = draw("decisions.md", SAID);
 
-  await screen.findByText("append");
-  expect(screen.getByRole("button", { name: /decisions-1\.md/ })).toBeDefined();
-
-  await fireEvent.keyDown(line.line(), {
+  await screen.findByText("[append]");
+  const press = new KeyboardEvent("keydown", {
     key: "Enter",
     shiftKey: true,
     ctrlKey: true,
+    bubbles: true,
+    cancelable: true,
   });
-  expect(line.submitted).toHaveBeenCalledWith("decisions-1.md");
+  line.line().dispatchEvent(press);
+
+  expect(line.value()).toBe("decisions-1.md");
+  expect(press.defaultPrevented).toBe(true);
 });
 
-/**
- * Nothing is taken, so there is nothing to make a new one beside — and making
- * one is what routing already does. Swallowing the key would leave a keystroke
- * that does nothing at all.
- */
-test("mod-shift-enter routes where the name is free", async () => {
-  servingFolder([]);
-  const line = draw("picker.md", SAID);
+/** Nothing is taken, so there is no free name to write: it completes as `⏎` does. */
+test("mod-shift-enter completes where nothing is taken", async () => {
+  servingFolder([file("decisions.md", "decisions.md")]);
+  const line = draw("deci", SAID);
 
-  await screen.findByText("create");
+  await screen.findByText("decisions.md");
   await fireEvent.keyDown(line.line(), {
     key: "Enter",
     shiftKey: true,
     metaKey: true,
   });
 
-  expect(line.submitted).toHaveBeenCalledWith(undefined);
+  expect(line.value()).toBe("decisions.md");
 });
 
 test("draws no word at all where the destination could not be asked", async () => {
@@ -722,12 +705,12 @@ test("stands the asking mark in the tree's place until the first answer, and not
   expect(places.querySelector("[data-asking]")).toBeNull();
 });
 
-test("shift-enter alone commits nothing", async () => {
+test("shift-enter alone is enter", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
-  const line = draw("decisions.md", SAID);
+  const line = draw("deci", SAID);
 
-  await screen.findByText("append");
+  await screen.findByText("decisions.md");
   await fireEvent.keyDown(line.line(), { key: "Enter", shiftKey: true });
 
-  expect(line.submitted).not.toHaveBeenCalled();
+  expect(line.value()).toBe("decisions.md");
 });

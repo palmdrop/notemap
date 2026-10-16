@@ -6,8 +6,11 @@
 
 - 2026-10-16 — **One place line in the composer and the template form, and `⏎` never routes.** A
   template's path field draws the composer's typed line rather than the schema-driven browser,
-  which could not take a folder. In the line and the browser alike `⏎` takes, completes or
-  settles; routing is `⌘/ctrl+⏎` alone, and *make a new one beside it* is `⌘/ctrl+⇧⏎`.
+  which could not take a folder, and the caret starts in the form's name. In the line and the
+  browser alike `⏎` takes, completes or settles; routing is `⌘/ctrl+⏎` alone, and
+  `⌘/ctrl+⇧⏎` writes a free name beside a taken one into the line. The forecast word and the
+  button beside it are gone: a note to be added to reads `[append]` in the tree. Neither list keeps
+  a floor, and `under`'s is drawn only while it has the caret.
   ([plan](../plans/path-picking-and-enter.md))
 
 - 2026-10-14 — **`under` lists the note's headings, and `as` chooses a shape.** Once the place line
@@ -1263,10 +1266,13 @@ is nothing to complete** *(added 2026-09-04)*, rather than handing focus to what
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`
-takes the row walked to and, left alone, completes the way `⇥` does. **`⏎` never routes from the
-line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a file named
-`proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press to it. **The line is the value**: there is no second input beside it holding the same
-string, which is what the browser-and-input pair did and neither half could see the other.
+takes the row walked to and, left alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never
+routes from the line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a
+file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press
+to it. **The line is the value**: there is no second input beside it holding the same string, which
+is what the browser-and-input pair did and neither half could see the other. **The tree takes the
+room it needs** *(amended 2026-10-16; it kept a floor of several rows, so a shallow tree left a gap
+above everything under it)*.
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
@@ -1284,29 +1290,27 @@ scope that answers nothing is a folder still being typed and not a failure of an
 root's answer says whether the destination can be asked at all. A cut-short answer says so, since
 a scope past the adapter's cap cannot be filtered into completeness client-side.
 
-**What will happen is read off the line and said in one word** — `create` where the folder does not
-hold that name, `append` where it does — and the folders that will be made are drawn **in the tree
-beneath it**, in the accent as `+ drafts/`, under the deepest one that is there and with the note
-itself under those. Where they will be, rather than named off to one side. The word is said only
-where there is something to read it off: a level that has not answered is no evidence either way,
-and nothing under a folder that is not there can be looked up at all. **The name a derived leaf
-would get is not said beside the word** *(amended 2026-09-04)*: the tree draws it where the note
-lands, which is where the eye already is, and saying it twice made the state word a sentence.
-**Nothing is drawn with a `+` where it is already there** *(amended 2026-09-09; the note was drawn
-with one either way)*. A `+` says the delivery will make this, so a row for the note under the note
-it is going into promises a second file beside it — which is what `⇧⏎` is for and the opposite of
-what committing would do. Appending, the note's own row is the one the tree already holds, and it
-takes the accent as **the row the line names**: the same mark every walked list uses for the row
-whose value the field holds, and takeable as it always was. It is **drawn and never stored**: what is stored says *put this here*, and
-the adapter decides again at delivery, when the answer is true
-([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because the word is
-read rather than chosen, **`do` is not a step here**: the capability is settled, and the one escape
-from it sits beside the state it overrides. `⌘/ctrl+⇧⏎` *(was `⇧⏎` until 2026-10-16, the one bare
-`⏎` left that committed)* says *make a new one beside it*, names what it
-would be called, and stores the capability that refuses a taken name rather than writing into it —
-appending to somebody's note when a new one was meant being the one place *nothing to choose* can
-surprise. A blank leaf is not a gap: the name the note would get is shown before committing,
-derived by the same code the adapter will run.
+**What will happen is read off the line and drawn in the tree** *(amended 2026-10-16; it was said in
+one word above the tree, `create` or `append`, with a button for a new note beside it, and neither
+read as the action that would be taken)*. The folders that will be made are drawn in the accent as
+`+ drafts/`, under the deepest one that is there, with the note itself under those. A note that is
+there and will be added to keeps its own row as **the row the line names**, followed by
+`[append]`. Where they will be, rather than named off to one side. Nothing is drawn where there is
+nothing to read it off: a level that has not answered is no evidence either way, and nothing under
+a folder that is not there can be looked up at all. **Nothing is drawn with a `+` where it is
+already there** *(amended 2026-09-09; the note was drawn with one either way)*. A `+` says the
+delivery will make this, so a row for the note under the note it is going into promises a second
+file beside it, the opposite of what committing would do. It is **drawn and never stored**: what is
+stored says *put this here*, and the adapter decides again at delivery, when the answer is true
+([ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)). Because it is read
+rather than chosen, **`do` is not a step here**: the capability is settled, and the line is what
+changes it. **`⌘/ctrl+⇧⏎` writes a new name beside a taken one into the line** *(amended
+2026-10-16; as `⇧⏎` it committed, storing `create`, the capability that refuses a taken name)* —
+the name the adapter would give a second note there — and commits nothing, so the row reads `+`
+and is routed as any line is. What is stored is then `create-or-append` under a name that was free
+when it was drawn, so a note made under that name before the delivery is added to. A blank leaf is
+not a gap: the name the note would get is shown before committing, derived by the same code the
+adapter will run.
 
 **Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
 under it)*, above what the destination merely offers, under their own label, with **how often each
@@ -1366,7 +1370,7 @@ third filesystem-like kind gets the tree by marking its fields and with no shell
 template form follows the same mark** *(amended 2026-10-16; it drew the schema-driven browser for
 every field, which could not take a folder and filtered a folder's contents by the line's own
 text)*, with no forecast and no greyed continuation — a pattern names no one note to read either
-off — and neither control takes the caret there, the form's first field being its name. The line
+off. The caret starts in the form's name, and neither control takes it. The line
 settles `create-or-append` where that capability's place field is marked. A field with no hierarchy in it draws no tree, and
 keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
 field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,
@@ -1387,7 +1391,9 @@ taking one fills the field with the heading's own words. Changing the note asks 
 the browser keeps between asks is keyed on what it was given, so one note's headings are never
 drawn for another's. A destination that cannot answer leaves the field typed, as any browse does.
 Such a field never takes the caret when it is drawn: the field it depends on comes first and is
-where the caret belongs. The template form does the same.
+where the caret belongs. **Its list is drawn only while it has the caret** *(amended 2026-10-16;
+it kept a floor of several rows, under a field most decisions leave empty)*, so the line beneath
+it is all it takes until it is typed into. The template form does the same.
 
 **A shape is chosen beside the place** *(2026-10-14,
 [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md))*. The markdown kinds'
@@ -1806,8 +1812,8 @@ wherever the focus is, so its `esc` stays its own.
 **Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
 says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
 makes the queue's keyboard reachable at all, the capture box taking the caret on arrival, so `esc`
-is the way from writing to working. The same rule covers a control reached by tab: a line that
-committed on `⏎`, or a button the browser is about to click, has answered for the press, and a
+is the way from writing to working. The same rule covers a control reached by tab: a field that
+kept the press, or a button the browser is about to click, has answered for the press, and a
 command taking it too would act twice on one of them.
 
 **What a command could not do is said in the status line**, never under the row. A deed a key took may
@@ -2019,7 +2025,7 @@ take: a list read cold draws it in the foot's place, where `load more` would hav
 `load more` beside it, there being nothing yet to have more of; an item read cold, in the body
 column where the capture will be; an item's routing records, under the capture's box, where the first
 record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
-line's tree, at the top of the floor the list already keeps. A browse or a tree already drawn is
+line's tree, where its first row will be. A browse or a tree already drawn is
 not marked while it is asked again, being what the last answer said and exactly as useful.
 
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the

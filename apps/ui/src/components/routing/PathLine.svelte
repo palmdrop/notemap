@@ -8,10 +8,10 @@
 
   import { untrack } from "svelte";
 
-  import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { commits } from "$lib/command/keys";
   import { nameOf } from "$lib/destinations";
   import { recall, remember } from "$lib/candidate-cache";
   import { client } from "$lib/client";
@@ -50,7 +50,6 @@
     said,
     places = [],
     onchange,
-    onsubmit,
     onrelease,
     onforecast,
     claims = true,
@@ -69,11 +68,6 @@
     /** Places routed to before, as the pool answered them: what the greyed continuation is read from. */
     places?: readonly RememberedPlace[];
     onchange: (value: string) => void;
-    /**
-     * `⌘/ctrl+⇧⏎`, committing the whole composer. `beside` is the name of a new
-     * note to make rather than adding to the one that is there.
-     */
-    onsubmit?: (beside?: string) => void;
     /** Backspacing past the head of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
     /** What committing now would do, which decides what else the surface asks. */
@@ -333,19 +327,17 @@
     }
 
     if (event.key === "Enter") {
-      // `⌘/ctrl+⏎` is the surface's route, so it is left to reach it.
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey) return;
+      if (commits(event)) return;
       event.preventDefault();
 
-      // Nothing is taken, so there is nothing to make a new one beside: what
-      // `create-or-append` will do is already make it.
+      // A new note beside the one the line names, under the free name it
+      // would get — written into the line rather than sent, like any `⏎`.
       if (event.metaKey || event.ctrlKey) {
-        onsubmit?.(forecast?.beside);
+        if (forecast?.beside === undefined) complete();
+        else onchange(withTyping(path, forecast.beside));
         return;
       }
 
-      // Never a route: a reflex `⏎` on a half-typed name would make a file
-      // of it.
       const picked = choices[at];
       if (moved && picked !== undefined) taken(picked);
       else complete();
@@ -421,35 +413,9 @@
         rest={refusal === "unreachable" ? "best effort" : undefined}
       />
     </p>
-  {:else if forecast !== undefined}
-    <!-- The name a derived leaf would get is not said here: the tree draws it
-         where the note lands, which is where the eye already is. -->
-    <div class="mt-3.5 flex items-baseline gap-x-3">
-      <StateWord word={forecast.word} inline />
-      {#if forecast.beside !== undefined}
-        <!-- Beside the state it overrides rather than in the key hints:
-             adding to somebody's note when a new one was meant is the one
-             place *nothing to choose* can surprise. -->
-        <button
-          type="button"
-          class="ml-auto shrink-0 hover:underline"
-          onmousedown={(event) => {
-            event.preventDefault();
-            onsubmit?.(forecast.beside);
-          }}>⌘/ctrl+⇧⏎ {forecast.beside}</button
-        >
-      {/if}
-    </div>
   {/if}
 
-  <!-- A floor, so a shallow answer leaves room rather than collapsing the
-       column and moving everything the eye is on. -->
-  <div
-    id="{id}-places"
-    role="listbox"
-    aria-label="places"
-    class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
-  >
+  <div id="{id}-places" role="listbox" aria-label="places" class="mt-2.5">
     {#if drawn.length === 0 && unanswered}
       <Asking subject={nameOf(destination)} />
     {/if}
@@ -464,7 +430,12 @@
         indent={row.depth}
         ontake={() => take(row.entry)}
       >
-        {row.made === true ? `+ ${textOf(row.entry)}` : textOf(row.entry)}
+        <!-- Inline-block, so the row's underline stops at the name. -->
+        {row.made === true
+          ? `+ ${textOf(row.entry)}`
+          : textOf(row.entry)}{#if row.held === true}<span
+            class="ml-[1ch] inline-block font-normal">[append]</span
+          >{/if}
       </Walked>
     {/each}
   </div>

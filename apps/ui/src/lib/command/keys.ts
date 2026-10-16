@@ -30,9 +30,9 @@ export function chord(event: KeyboardEvent): string {
 }
 
 /**
- * Whether the press is `mod+enter` inside a field: the one chord that commits
- * what a field holds from inside it, where `⏎` is a new line. Handled by the
- * field itself rather than published, so the field keeps the press.
+ * Whether the press is `mod+enter`: the one chord that commits from inside a
+ * field, where `⏎` is a new line or a completion. A field whose commit is its
+ * own handles it; one whose commit is the surface's leaves the press alone.
  */
 export function commits(event: KeyboardEvent): boolean {
   return (

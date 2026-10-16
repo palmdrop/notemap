@@ -68,6 +68,9 @@
   let folder = $state(untrack(() => editing?.folder ?? "create"));
   let typed = $state(untrack(() => typedFrom(editing?.arguments)));
 
+  let nameField = $state<HTMLInputElement | undefined>(undefined);
+  $effect(() => nameField?.focus());
+
   let capabilities = $state<readonly Capability[]>([]);
   let said = $state("");
   let busy = $state(false);
@@ -240,6 +243,7 @@
 >
   <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
   <input
+    bind:this={nameField}
     bind:value={name}
     aria-label="name"
     class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"

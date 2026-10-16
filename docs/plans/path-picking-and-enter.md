@@ -49,7 +49,8 @@ anything itself.
 
 - **`⏎` in the line, with no walk:** completes the segment under the caret, the same as `⇥`, and
   does nothing where there is nothing to complete. It never routes.
-- **`⇧⏎` (*make a new one beside it*):** it commits too, so it becomes `⌘/ctrl+⇧⏎`.
+- **`⇧⏎` (*make a new one beside it*):** it commits too, so it becomes `⌘/ctrl+⇧⏎`. *(Revised in
+  phase 4: the chord writes the name into the line rather than committing.)*
   *Recommended.* The other option is to keep `⇧⏎`, which leaves an accidental commit one modifier
   away. The beside button's label changes to match.
 - **`⏎` in the schema-driven browser, with no walk:** settles what was typed, the same as leaving
@@ -142,6 +143,23 @@ Depends on phases 1 and 2.
 - [-] `git commit` any fixes _(none needed)_
 
 ---
+
+### Phase 4: after manual testing and review
+
+Raised by the developer testing the branch, and by
+[the review](../reviews/path-picking-and-enter-2026-10-16.md).
+
+- [x] `⌘/ctrl+⇧⏎` writes the free name beside a taken one into the line and commits nothing. The
+      beside button and the forecast word above the tree are gone, and a note to be added to reads
+      `[append]` after its row. Note added to ADR 31: the composer no longer stores `create`. _(2026-10-16)_
+- [x] Neither list keeps a floor, and a field that depends on another draws its list only while it
+      has the caret _(2026-10-16)_
+- [x] The template form puts the caret in its name _(2026-10-16)_
+- [x] Review fixes: `commits()` reused and its doc corrected, stale wording in `dispatch.ts` and
+      shell.md, `⇧⏎` as `⏎` specified, comments that described removed behaviour dropped,
+      deterministic no-route checks, tests for the caret and for `under` in the form, todo synced
+      _(2026-10-16)_
+- [x] `git commit` _(2026-10-16)_
 
 ## Unknowns
 
