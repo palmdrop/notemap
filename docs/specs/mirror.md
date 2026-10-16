@@ -1,8 +1,13 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-16
 **Shipped**:
+
+- 2026-10-16 — **A mirrored item holds only delivered routing records, on both sides.** The rule
+  was already stated here and kept by the projection; now the record's type cannot hold a pending
+  one, and reading a file that names one refuses it as malformed rather than restoring a
+  reservation. ([mirror-holds-only-delivered-routes](../plans/mirror-holds-only-delivered-routes.md))
 
 - 2026-10-12 — **The writer says how much the mirror holds.** `MirrorWriter.footprint()` walks the
   tree and answers records, files and bytes — records and files apart, since an item is a `.json`

@@ -1,9 +1,9 @@
 # The mirror holds only delivered routes
 
 **Date**: 2026-10-15
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-10-16
 
 ---
 
@@ -47,14 +47,14 @@ reject.
 
 Depends on nothing.
 
-- [ ] Branch `agent/mirror-holds-only-delivered-routes`
-- [ ] Give the mirror's item record a routing entry whose state can only be
+- [x] Branch `agent/mirror-holds-only-delivered-routes`
+- [x] Give the mirror's item record a routing entry whose state can only be
       `delivered`, named in `types/domain/mirror.ts` beside the record it
       belongs to
-- [ ] Let `record.ts`'s projection narrow as it filters, so the filter proves
+- [x] Let `record.ts`'s projection narrow as it filters, so the filter proves
       the type rather than sitting beside it, and the comment there is no longer
       the only thing saying why
-- [ ] `git commit`
+- [x] `git commit`
 
 Verify: `pnpm --filter @notemap/core typecheck` passes with no cast at the
 projection, and `pnpm -r --no-sort --silent test` is green. The existing test at
@@ -65,15 +65,19 @@ the delivered one back should still pass untouched.
 
 Depends on phase 1: the reader's return type is what phase 1 narrowed.
 
-- [ ] Reject a `pending` state where a record is read, with the same refusal the
+Landed in phase 1's commit: narrowing the field fails typecheck at the reader
+until it refuses a `pending` state, so the two phases could not be committed
+apart.
+
+- [x] Reject a `pending` state where a record is read, with the same refusal the
       codec gives every other malformed field — refusing a file loudly beats
       dropping a route silently
-- [ ] Rewrite the test that currently pins the lenient read
+- [x] Rewrite the test that currently pins the lenient read
       (`packages/core/src/mirror/mirror.test.ts`, the case that hand-builds a
       record whose `routing[0].state` is `"pending"`) to expect the refusal
-- [ ] Check the codec's comment still says something true once the behaviour has
+- [x] Check the codec's comment still says something true once the behaviour has
       changed, and cut it if the code now says it
-- [ ] `git commit`
+- [x] `git commit`
 
 Verify: `pnpm --filter @notemap/core test` green, and
 `pnpm --filter @notemap/core mutation` no longer reports a survivor at the state
@@ -83,10 +87,10 @@ reader. Core's covered score should rise from 93.53%.
 
 Depends on phases 1 and 2.
 
-- [ ] Add a dated `Shipped:` entry to `docs/specs/mirror.md` saying the rule it
+- [x] Add a dated `Shipped:` entry to `docs/specs/mirror.md` saying the rule it
       already states is now enforced on both sides, linking this plan
-- [ ] Confirm no other wording in that spec implied the reader was lenient
-- [ ] `git commit`
+- [x] Confirm no other wording in that spec implied the reader was lenient
+- [x] `git commit`
 
 Verify: `pnpm lint` green, and the spec's own words need no correction — if they
 do, that is a sign the behaviour changed rather than caught up, and worth
@@ -104,6 +108,7 @@ raising before landing.
   spreads further than that: keep the field as it is, do phase 2 alone, and say
   in the `Shipped:` entry that the invariant is enforced at the boundary rather
   than in the type.
+  _Outcome_: it stayed inside core, and no adapter fixture needed changing.
 - **Whether a refusal is right for a file written by a future notemap.** A
   reader that refuses is a reader that cannot be made lenient again without a
   format decision. The spec's reasoning says a pending route is not durable
@@ -111,11 +116,14 @@ raising before landing.
   the wrong bet, the fallback is to skip the entry and log, which needs a
   decision about what a mirror reader may silently drop, and that is an ADR
   rather than a line of code.
+  _Outcome_: the refusal was taken. The spec's rule that the reader reports
+  rather than skips backs it.
 - **Whether `verify` compares records in a way this changes.** The mirror's
   verify path compares a stored record against a projected one. Narrowing a type
   changes nothing at runtime, but if verify reads `state` to decide equality, a
   file holding a pending route stops being comparable and starts being a
   refusal. Check before phase 2 lands.
+  _Outcome_: nothing to check yet, because verify is not built.
 
 ---
 

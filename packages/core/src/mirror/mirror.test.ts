@@ -719,7 +719,7 @@ describe("parsing", () => {
     );
   });
 
-  it("refuses a routing record whose state is neither pending nor delivered", () => {
+  it("refuses a routing record whose state notemap does not know", () => {
     const delivered: RoutingRecord = {
       id: "routing-1" as RoutingRecord["id"],
       item: "item-1" as ItemId,
@@ -735,17 +735,11 @@ describe("parsing", () => {
     routing["state"] = "archived";
 
     expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
-      /routing\[0\]\.state is not a routing record state/,
+      /routing\[0\]\.state/,
     );
   });
 
-  /**
-   * Nothing core writes carries a pending record inside an item's routing
-   * list — the projection drops them — but the state is a real one, and the
-   * reader takes the file's word for it rather than refusing a spelling it
-   * never produces itself.
-   */
-  it("accepts a routing record state of pending, though nothing we write ever leaves one in", () => {
+  it("refuses a routing record still pending", () => {
     const record = JSON.parse(serialiseMirrorRecord(bare(anItem()))) as Record<
       string,
       unknown
@@ -760,9 +754,8 @@ describe("parsing", () => {
       },
     ];
 
-    const parsed = parseMirrorRecord(JSON.stringify(record));
-    if (parsed.kind !== "item") throw new Error("expected an item record");
-
-    expect(parsed.routing[0]?.state).toBe("pending");
+    expect(() => parseMirrorRecord(JSON.stringify(record))).toThrow(
+      /routing\[0\]\.state/,
+    );
   });
 });
