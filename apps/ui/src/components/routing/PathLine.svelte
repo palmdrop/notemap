@@ -14,9 +14,11 @@
   import { commits } from "$lib/command/keys";
   import { nameOf } from "$lib/destinations";
   import { recall, remember } from "$lib/candidate-cache";
+  import { following } from "$lib/motion";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
   import {
+    alignedTo,
     completionOf,
     continuationOf,
     ghostFor,
@@ -84,6 +86,13 @@
   let moved = $state(false);
   let input = $state<HTMLInputElement | undefined>(undefined);
   let shown = $state<HTMLElement | undefined>(undefined);
+  let list = $state<HTMLElement | undefined>(undefined);
+  /**
+   * The height the list stood at before the path moved to a folder nobody has
+   * answered for yet, held until one does: its rows go at once, and the list
+   * settles once, on the answer, rather than collapsing and growing again.
+   */
+  let floor = $state<number | undefined>(undefined);
 
   /**
    * The input's own text is transparent and the layer beneath is what is read,
@@ -98,6 +107,7 @@
   }
 
   const path = $derived(parsePath(value));
+  const scopes = $derived(scopesAlong(path));
   /**
    * The level the caret is in, which is not the deepest that answered: inside a
    * folder that is not there yet, that would be the folder above, and
@@ -168,29 +178,31 @@
   /** The newest round of asks is still out. */
   let unanswered = $state(false);
 
-  $effect(() => {
-    const scopes = scopesAlong(path);
+  // Before the DOM moves, so the height held is the one the list stood at.
+  $effect.pre(() => {
+    const asked = scopes;
     const mine = (asking += 1);
 
-    // Drawn while they are asked for again, and only where nothing is drawn
-    // yet: replacing a tree that is already up with a shorter remembered one
-    // would make it flicker under the caret on every keystroke.
-    // Untracked: the answer below writes `levels`, and an effect depending
-    // on it would ask again for every answer it drew.
-    if (untrack(() => levels.length) === 0) {
-      const kept = heldAlong(scopes);
-      if (kept.length > 0) levels = kept;
-    }
+    // What is still true is drawn while everything is asked for again: the
+    // levels the path still runs through, then whatever was last told about
+    // the rest. Untracked: the answer below writes `levels`, and an effect
+    // depending on it would ask again for every answer it drew.
+    untrack(() => {
+      const kept = [...alignedTo(levels, asked), ...heldPast(levels, asked)];
+      if (kept.length < asked.length) floor ??= list?.offsetHeight;
+      levels = kept;
+    });
 
     clearTimeout(timer);
     timer = setTimeout(() => {
       unanswered = true;
       void (async () => {
-        const answers = await Promise.all(scopes.map(askAbout));
+        const answers = await Promise.all(asked.map(askAbout));
         if (mine !== asking) return;
 
         levels = answers;
         unanswered = false;
+        floor = undefined;
       })();
     }, 120);
 
@@ -223,25 +235,29 @@
   }
 
   /**
-   * What each level along the path was last told, so a line opened a second
-   * time draws its tree at once. A level per segment is a request per segment,
-   * and this control asks them all again on every keystroke that changes the
-   * path — the debounce spends 120ms of that wait, and this fills the rest of
-   * it with what was true a moment ago.
+   * What each level past the ones still drawn was last told, so a line opened
+   * a second time, or a folder gone back to, draws at once. A level per segment
+   * is a request per segment, and this control asks them all again on every
+   * keystroke that changes the path — the debounce spends 120ms of that wait,
+   * and this fills the rest of it with what was true a moment ago. It stops at
+   * the first scope nothing is held for, since levels are held by depth.
    */
-  function heldAlong(scopes: readonly string[]): readonly Level[] {
-    return scopes.flatMap((scope) => {
+  function heldPast(
+    levels: readonly Level[],
+    scopes: readonly string[],
+  ): readonly Level[] {
+    const held: Level[] = [];
+    for (const scope of scopes.slice(alignedTo(levels, scopes).length)) {
       const kept = recall({
         destination,
         capability,
         field,
         ...(scope === "" ? {} : { scope }),
       });
-
-      return kept === undefined
-        ? []
-        : [{ scope, entries: kept.entries, truncated: kept.truncated }];
-    });
+      if (kept === undefined) break;
+      held.push({ scope, entries: kept.entries, truncated: kept.truncated });
+    }
+    return held;
   }
 
   /**
@@ -415,32 +431,44 @@
     </p>
   {/if}
 
-  <div id="{id}-places" role="listbox" aria-label="places" class="mt-2.5">
-    {#if drawn.length === 0 && unanswered}
-      <Asking subject={nameOf(destination)} />
-    {/if}
-    {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
-      {@const picked = moved && here[at] === row}
-      <Walked
-        id={picked ? `${id}-place-${at}` : undefined}
-        on={picked}
-        along={row.onPath || row.made === true || row.held === true}
-        held={row.made === true || row.held === true}
-        disabled={row.made === true}
-        indent={row.depth}
-        ontake={() => take(row.entry)}
+  <div class="mt-2.5" {@attach following}>
+    <div class="flow-root">
+      <div
+        bind:this={list}
+        id="{id}-places"
+        role="listbox"
+        aria-label="places"
+        style:min-height={floor === undefined
+          ? undefined
+          : `${String(floor)}px`}
       >
-        <!-- Inline-block, so the row's underline stops at the name. -->
-        {row.made === true
-          ? `+ ${textOf(row.entry)}`
-          : textOf(row.entry)}{#if row.held === true}<span
-            class="ml-[1ch] inline-block font-normal">[append]</span
-          >{/if}
-      </Walked>
-    {/each}
-  </div>
+        {#if drawn.length === 0 && unanswered}
+          <Asking subject={nameOf(destination)} />
+        {/if}
+        {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
+          {@const picked = moved && here[at] === row}
+          <Walked
+            id={picked ? `${id}-place-${at}` : undefined}
+            on={picked}
+            along={row.onPath || row.made === true || row.held === true}
+            held={row.made === true || row.held === true}
+            disabled={row.made === true}
+            indent={row.depth}
+            ontake={() => take(row.entry)}
+          >
+            <!-- Inline-block, so the row's underline stops at the name. -->
+            {row.made === true
+              ? `+ ${textOf(row.entry)}`
+              : textOf(row.entry)}{#if row.held === true}<span
+                class="ml-[1ch] inline-block font-normal">[append]</span
+              >{/if}
+          </Walked>
+        {/each}
+      </div>
 
-  {#if caretIn?.truncated === true}
-    <p class="mt-1">more than this shows</p>
-  {/if}
+      {#if caretIn?.truncated === true}
+        <p class="mt-1">more than this shows</p>
+      {/if}
+    </div>
+  </div>
 </div>

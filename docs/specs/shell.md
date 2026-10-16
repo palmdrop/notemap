@@ -1272,7 +1272,10 @@ file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the 
 to it. **The line is the value**: there is no second input beside it holding the same string, which
 is what the browser-and-input pair did and neither half could see the other. **The tree takes the
 room it needs** *(amended 2026-10-16; it kept a floor of several rows, so a shallow tree left a gap
-above everything under it)*.
+above everything under it)*. **Going to a folder nobody has answered for yet drops what the tree
+drew past it at once and holds the height it stood at** until the folder answers, then settles
+into the answer *(2026-10-16; a sibling's contents were drawn as the new folder's while it was
+asked)*. A folder answered for before is drawn from what it said then.
 
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
@@ -2885,7 +2888,11 @@ each word holding its bold width throughout so nothing beside it moves. A surfac
 anywhere under its own address — `settings` at a section's. No navigation moves: an item carried from its
 row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
 overlays — the order chooser, the path and candidate lists — do not move of themselves: they
-are used at typing speed, and a panel fading in behind a keystroke reads as lag. **Except the tag
+are used at typing speed, and a panel fading in behind a keystroke reads as lag. **The path and
+candidate lists grow and shrink into what they hold** *(2026-10-16)*, over `short`, wherever they
+are drawn — the template form too, where the open section's own growing was the whole form's
+and nothing beside the list moved with it. A box already following a list that grows lets the list
+lead rather than starting over a frame behind it. **Except the tag
 chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
 right across the room the `+` held *(2026-10-01; it used to widen into it)*, and its panel unrolls
 downward from where it will stand, both over `short` and back again as it closes; the panel

@@ -714,3 +714,39 @@ test("shift-enter alone is enter", async () => {
 
   expect(line.value()).toBe("decisions.md");
 });
+
+/** Levels are held by depth, so a sibling's answer would otherwise be drawn as this folder's. */
+test("going to a sibling folder drops the first one's contents until the sibling answers", async () => {
+  let answer: ((response: Response) => void) | undefined;
+  pool((request) => {
+    const route = routeOf(request);
+    const scope = new URL(request.url).searchParams.get("scope");
+    if (!route.endsWith("/candidates")) {
+      return json(200, { truncated: false, places: [] });
+    }
+    if (scope === null) {
+      return json(
+        200,
+        answered([
+          folder("drawings", "drawings"),
+          folder("letters", "letters"),
+        ]),
+      );
+    }
+    if (scope === "drawings") {
+      return json(200, answered([folder("ink", "drawings/ink")]));
+    }
+    return new Promise<Response>((resolve) => (answer = resolve));
+  });
+  const line = draw("drawings/");
+  await screen.findByText("ink/");
+
+  await line.type("letters/");
+
+  expect(screen.queryByText("ink/")).toBeNull();
+  expect(screen.getByRole("option", { name: "letters/" })).toBeDefined();
+
+  await vi.waitFor(() => expect(answer).toBeDefined());
+  answer?.(json(200, answered([folder("from home", "letters/from home")])));
+  expect(await screen.findByText("from home/")).toBeDefined();
+});

@@ -21,6 +21,7 @@
     type Form,
   } from "$lib/candidate-list";
   import { recall, remember } from "$lib/candidate-cache";
+  import { following } from "$lib/motion";
   import { learn } from "$lib/names.svelte";
 
   /**
@@ -579,49 +580,54 @@
     </div>
   {/if}
 
-  <div
-    id="{id}-entries"
-    role="listbox"
-    aria-label="{label} candidates"
-    class={folded ? "" : "mt-2.5"}
-  >
-    {#if folded}
-      <!-- Empty rather than gone: the field's `aria-controls` names it. -->
-    {:else if loading}
-      <p><Asking subject={nameOf(destination)} /></p>
-    {:else if refusal !== undefined && entries.length === 0}
-      <p>{refusal}</p>
-    {:else}
-      {#if refusal !== undefined}
-        <!-- Held from the last ask, and the ask that just failed said so.
-           Drawn rather than dropped: the field is typed either way. -->
-        <p><Lead lead={refusal} rest="showing what it said before" /></p>
-      {/if}
-      {#each shown as entry, index (entry.scope ?? String(entry.value))}
-        {@const picked = moved && at === index}
-        <Walked
-          id={picked ? `${id}-candidate-${index}` : undefined}
-          on={picked}
-          held={entry.value !== undefined && takenAs(entry, keeps) === value}
-          ontake={() => open(entry)}
-        >
-          {entry.scope !== undefined ? `${entry.label}/` : entry.label}
-        </Walked>
-      {/each}
+  <div {@attach following}>
+    <div class="flow-root">
+      <div
+        id="{id}-entries"
+        role="listbox"
+        aria-label="{label} candidates"
+        class={folded ? "" : "mt-2.5"}
+      >
+        {#if folded}
+          <!-- Empty rather than gone: the field's `aria-controls` names it. -->
+        {:else if loading}
+          <p><Asking subject={nameOf(destination)} /></p>
+        {:else if refusal !== undefined && entries.length === 0}
+          <p>{refusal}</p>
+        {:else}
+          {#if refusal !== undefined}
+            <!-- Held from the last ask, and the ask that just failed said so.
+               Drawn rather than dropped: the field is typed either way. -->
+            <p><Lead lead={refusal} rest="showing what it said before" /></p>
+          {/if}
+          {#each shown as entry, index (entry.scope ?? String(entry.value))}
+            {@const picked = moved && at === index}
+            <Walked
+              id={picked ? `${id}-candidate-${index}` : undefined}
+              on={picked}
+              held={entry.value !== undefined &&
+                takenAs(entry, keeps) === value}
+              ontake={() => open(entry)}
+            >
+              {entry.scope !== undefined ? `${entry.label}/` : entry.label}
+            </Walked>
+          {/each}
 
-      {#if rest > 0}
-        <!-- The handful is a sample, not the answer: typing narrows it, and
-           this asks for the whole of what was already fetched. -->
-        <Action onclick={() => (expanded = true)}>{rest} more</Action>
-      {/if}
-      {#if shown.length === 0 && entries.length > 0}
-        <p>nothing here matches</p>
-      {/if}
-      {#if truncated && expanded}
-        <!-- The destination held more than it answered, which is its own
-           limit rather than this one. -->
-        <p>and more than it answered</p>
-      {/if}
-    {/if}
+          {#if rest > 0}
+            <!-- The handful is a sample, not the answer: typing narrows it, and
+               this asks for the whole of what was already fetched. -->
+            <Action onclick={() => (expanded = true)}>{rest} more</Action>
+          {/if}
+          {#if shown.length === 0 && entries.length > 0}
+            <p>nothing here matches</p>
+          {/if}
+          {#if truncated && expanded}
+            <!-- The destination held more than it answered, which is its own
+               limit rather than this one. -->
+            <p>and more than it answered</p>
+          {/if}
+        {/if}
+      </div>
+    </div>
   </div>
 </div>

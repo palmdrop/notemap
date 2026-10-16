@@ -155,6 +155,9 @@ Raised by the developer testing the branch, and by
 - [x] Neither list keeps a floor, and a field that depends on another draws its list only while it
       has the caret _(2026-10-16)_
 - [x] The template form puts the caret in its name _(2026-10-16)_
+- [x] Going to a sibling folder drops the first one's contents at once and holds the list's
+      height until the sibling answers. The path and candidate lists grow and shrink themselves, so
+      the template form animates as the composer does. _(2026-10-16)_
 - [x] Review fixes: `commits()` reused and its doc corrected, stale wording in `dispatch.ts` and
       shell.md, `⇧⏎` as `⏎` specified, comments that described removed behaviour dropped,
       deterministic no-route checks, tests for the caret and for `under` in the form, todo synced
