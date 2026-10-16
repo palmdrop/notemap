@@ -1353,7 +1353,11 @@ necessary, and that is the moment to add it.
 keyed by destination kind name)*. A field marked `x-notemap-path`, in any role, is `/`-separated
 and draws the typed line; a field marked with none draws the schema-driven browser. The line has to
 know before the first answer arrives, and the mark is the kind saying so in its own schema, so a
-third filesystem-like kind gets the tree by marking its fields and with no shell edit. The line
+third filesystem-like kind gets the tree by marking its fields and with no shell edit. **The
+template form follows the same mark** *(amended 2026-10-16; it drew the schema-driven browser for
+every field, which could not take a folder and filtered a folder's contents by the line's own
+text)*, with no forecast and no greyed continuation — a pattern names no one note to read either
+off — and neither control takes the caret there, the form's first field being its name. The line
 settles `create-or-append` where that capability's place field is marked. A field with no hierarchy in it draws no tree, and
 keeps the schema-driven browser — but **that browser is a line too** *(amended 2026-09-08)*: one
 field with what the destination offers under it, **narrowed to what is typed**, `⇥` completing,

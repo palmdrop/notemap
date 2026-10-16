@@ -53,6 +53,7 @@
     onsubmit,
     onrelease,
     onforecast,
+    claims = true,
   }: {
     destination: string;
     capability: string;
@@ -77,7 +78,11 @@
     onrelease?: () => void;
     /** What committing now would do, which decides what else the surface asks. */
     onforecast?: (word: "create" | "append" | undefined) => void;
+    /** Takes the caret when drawn, which a form whose first field is something else does not want. */
+    claims?: boolean;
   } = $props();
+
+  const id = $props.id();
 
   let levels = $state<readonly Level[]>([]);
   let at = $state(0);
@@ -157,7 +162,9 @@
 
   // The place is what a surface with a destination settled is for, so the
   // caret is here rather than waiting to be clicked into.
-  $effect(() => input?.focus());
+  $effect(() => {
+    if (claims) input?.focus();
+  });
 
   // Every answer but the newest is dropped: typing a segment leaves several
   // rounds of asks in flight, and without this a slower one paints the entries
@@ -357,7 +364,7 @@
   );
 
   const active = $derived(
-    !moved || choices[at] === undefined ? undefined : `path-line-place-${at}`,
+    !moved || choices[at] === undefined ? undefined : `${id}-place-${at}`,
   );
 </script>
 
@@ -395,7 +402,7 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={choices.length > 0}
-      aria-controls="path-line-places"
+      aria-controls="{id}-places"
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
@@ -432,7 +439,7 @@
   <!-- A floor, so a shallow answer leaves room rather than collapsing the
        column and moving everything the eye is on. -->
   <div
-    id="path-line-places"
+    id="{id}-places"
     role="listbox"
     aria-label="places"
     class="mt-2.5 {refusal === undefined ? 'min-h-[12.5rem]' : ''}"
@@ -443,7 +450,7 @@
     {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
       {@const picked = moved && here[at] === row}
       <Walked
-        id={picked ? `path-line-place-${at}` : undefined}
+        id={picked ? `${id}-place-${at}` : undefined}
         on={picked}
         along={row.onPath || row.made === true || row.held === true}
         held={row.made === true || row.held === true}

@@ -82,22 +82,24 @@ anything itself.
 
 Depends on nothing.
 
-- [ ] `PathLine` takes the caret only when asked, so a form whose first field is `NAME` keeps it there.
+- [x] `PathLine` takes the caret only when asked, so a form whose first field is `NAME` keeps it there.
       The composer keeps asking for it.
-- [ ] `TemplateForm` picks its control through `browserFor`, without `said` or `places`. Delete the
-      comment that justified the browser.
-- [ ] Each instance of `CandidateBrowser` and `PathLine` gets its own listbox id (`$props.id()`, as
+- [x] `TemplateForm` draws `PathLine` for a path field, without `said` or `places`, and deletes the
+      comment that justified the browser. It branches directly rather than going through
+      `browserFor`, because the browser branch passes `durable` and `naming`, which `BrowserProps`
+      does not carry. _(2026-10-16)_
+- [x] Each instance of `CandidateBrowser` and `PathLine` gets its own listbox id (`$props.id()`, as
       `TagSet` does), so two on one form no longer collide
 - [ ] Confirm `under` still asks for headings once the line names a note, since its `given` now
       reads from the line
-- [ ] shell.md, *Templates* in settings: a path field draws the typed line, without a forecast or
+- [x] shell.md, *Templates* in settings: a path field draws the typed line, without a forecast or
       a remembered continuation. Add a dated amendment note.
-- [ ] Tests in `templates.test.ts`:
+- [x] Tests in `templates.test.ts`:
   - a path field draws the line
   - `⇥` completes a folder with its `/`
   - taking a folder writes it to the line
   - a non-path askable field still draws the browser
-- [ ] `git commit`
+- [x] `git commit` _(2026-10-16)_
 
 ### Phase 2: `⏎` takes or completes, and only `⌘/ctrl+⏎` routes
 

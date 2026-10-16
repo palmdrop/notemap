@@ -48,6 +48,7 @@
     onchange,
     onsubmit,
     onrelease,
+    claims = true,
   }: {
     destination: string;
     capability: string;
@@ -79,7 +80,11 @@
     onsubmit?: () => void;
     /** Backspacing out of an empty line: a wrong destination is not a reason to close. */
     onrelease?: () => void;
+    /** Takes the caret when drawn, which a form whose first field is something else does not want. */
+    claims?: boolean;
   } = $props();
+
+  const id = $props.id();
 
   type Crumb = {
     readonly label: string;
@@ -178,7 +183,7 @@
   // the caret is here rather than waiting to be clicked into — unless this
   // field depends on another, which is then where the caret belongs.
   $effect(() => {
-    if (given === undefined) input?.focus();
+    if (claims && given === undefined) input?.focus();
   });
 
   /**
@@ -514,7 +519,7 @@
   }
 
   const active = $derived(
-    moved && shown[at] !== undefined ? `candidate-${at}` : undefined,
+    moved && shown[at] !== undefined ? `${id}-candidate-${at}` : undefined,
   );
 </script>
 
@@ -537,7 +542,7 @@
       role="combobox"
       aria-autocomplete="list"
       aria-expanded={shown.length > 0}
-      aria-controls="candidate-entries"
+      aria-controls="{id}-entries"
       aria-activedescendant={active}
       class="w-full bg-transparent caret-ink outline-none"
     />
@@ -559,7 +564,7 @@
   <!-- A floor, so a short answer leaves room rather than collapsing the column
        and moving everything the eye is on. -->
   <div
-    id="candidate-entries"
+    id="{id}-entries"
     role="listbox"
     aria-label="{label} candidates"
     class="mt-2.5 min-h-[12.5rem]"
@@ -577,7 +582,7 @@
       {#each shown as entry, index (entry.scope ?? String(entry.value))}
         {@const picked = moved && at === index}
         <Walked
-          id={picked ? `candidate-${index}` : undefined}
+          id={picked ? `${id}-candidate-${index}` : undefined}
           on={picked}
           held={entry.value !== undefined && takenAs(entry, keeps) === value}
           ontake={() => open(entry)}
