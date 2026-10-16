@@ -1,9 +1,9 @@
 # One place line everywhere, and `⏎` that never routes
 
 **Date**: 2026-10-16
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-10-16
 
 ---
 
@@ -90,7 +90,7 @@ Depends on nothing.
       does not carry. _(2026-10-16)_
 - [x] Each instance of `CandidateBrowser` and `PathLine` gets its own listbox id (`$props.id()`, as
       `TagSet` does), so two on one form no longer collide
-- [ ] Confirm `under` still asks for headings once the line names a note, since its `given` now
+- [x] Confirm `under` still asks for headings once the line names a note, since its `given` now
       reads from the line
 - [x] shell.md, *Templates* in settings: a path field draws the typed line, without a forecast or
       a remembered continuation. Add a dated amendment note.
@@ -133,13 +133,13 @@ Depends on nothing. Independent of phase 1, though the form inherits it once bot
 
 Depends on phases 1 and 2.
 
-- [ ] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`
-- [ ] Re-run the headless scenarios against a throwaway pool:
+- [x] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`
+- [x] Re-run the headless scenarios against a throwaway pool:
   - `proj` + `⏎` completes to `projects/` and writes nothing to the vault
   - `⌘/ctrl+⏎` routes
   - in the template form, `pro` `⇥` `no` `⇥` gives `projects/notemap/`, and clicking folders
     writes the line
-- [ ] `git commit` any fixes
+- [-] `git commit` any fixes _(none needed)_
 
 ---
 
