@@ -70,6 +70,7 @@
       rel="noreferrer"
       data-unfurl={drawn.kind}
       class="block max-w-prose border border-ink px-3 py-2 hover:no-underline"
+      target="_blank"
     >
       <div
         class="flex h-[calc(var(--text-shell--line-height)*4)] gap-3 overflow-hidden"
