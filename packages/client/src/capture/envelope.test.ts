@@ -66,3 +66,29 @@ describe("the tags a capture carries", () => {
     expect(optimisticItem(envelope).tags).toEqual([]);
   });
 });
+
+describe("the values a capture's trigger tags carry", () => {
+  it("go on the envelope beside the tags", () => {
+    const envelope = envelopeFor(
+      {
+        ...input,
+        tags: ["route/todo"],
+        arguments: { "route/todo": { heading: "Next" } },
+      },
+      "item-1",
+      "2026-09-05T21:30:00.000Z",
+    );
+
+    expect(envelope.arguments).toEqual({ "route/todo": { heading: "Next" } });
+  });
+
+  it("are left behind for a tag the capture no longer carries", () => {
+    const envelope = envelopeFor(
+      { ...input, tags: [], arguments: { "route/todo": { heading: "Next" } } },
+      "item-1",
+      "2026-09-05T21:30:00.000Z",
+    );
+
+    expect(envelope).not.toHaveProperty("arguments");
+  });
+});

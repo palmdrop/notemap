@@ -21,6 +21,10 @@ export function envelopeFor(
 ): CaptureEnvelope {
   const said = input.text.trim() === "" ? {} : { text: input.text };
   const tags = input.tags ?? [];
+  // Only for a tag the capture carries: a value for one taken off since means nothing.
+  const supplied = Object.entries(input.arguments ?? {}).filter(([tag]) =>
+    tags.includes(tag),
+  );
 
   return {
     id,
@@ -29,6 +33,9 @@ export function envelopeFor(
     capturedAt: at,
     ...(utcOffset === undefined ? {} : { utcOffset }),
     ...(tags.length === 0 ? {} : { tags: [...tags] }),
+    ...(supplied.length === 0
+      ? {}
+      : { arguments: Object.fromEntries(supplied) }),
     payload: attached(
       { type: NOTE, content: said, metadata: {}, assets: [] },
       input.assets ?? [],

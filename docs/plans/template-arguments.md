@@ -112,14 +112,16 @@ Depends on Phase 1.
 
 Depends on Phase 2.
 
-- [ ] The outbox's `tag` operation carries optional `arguments`, applied to the cache as today and
+- [x] The outbox's `tag` operation carries optional `arguments`, applied to the cache as today and
       sent with the request. A capture operation carries the per-tag map. Conflict and opposition
-      rules are unchanged: they key on the tag.
-- [ ] `client.tag(item, tag, arguments?)`, and routing from a template takes arguments.
-- [ ] Tests beside `outbox/kinds/tags.ts` and the capture kind: a tag drained with arguments sends
-      them, and an offline tag keeps them across hydration.
-- [ ] Spec: `client.md`.
-- [ ] Verify: tests, typecheck, lint. Commit.
+      rules are unchanged: they key on the tag. _(2026-10-19)_
+- [x] `client.tag(item, tag, arguments?)`. Routing from a template takes arguments through the
+      generated `RouteRequest`. _(2026-10-19)_
+- [x] Tests in `outbox/vocabulary.test.ts` and `capture/envelope.test.ts`: a tag sends its
+      arguments, and a capture sends only those for tags it carries. Hydration is a JSON round trip
+      of the operation and needs nothing new. _(2026-10-19)_
+- [x] Spec: `client.md`. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
 
 ### Phase 4: template form and list
 

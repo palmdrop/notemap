@@ -90,6 +90,8 @@ export type RoutingPreview = components["schemas"]["RoutingPreview"];
 export type DeliveryOutput = components["schemas"]["DeliveryOutput"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
 export type RoutingTemplate = components["schemas"]["RoutingTemplate"];
+/** Values for a template's asked arguments, by field. */
+export type SuppliedArguments = components["schemas"]["SuppliedArguments"];
 export type RoutingTemplateReport =
   components["schemas"]["RoutingTemplateReport"];
 export type ResolvedRoutingTemplate =

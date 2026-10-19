@@ -641,7 +641,13 @@ export function createClient(config: ClientConfig): Client {
 
     unarchive: (item) => mutate({ kind: "unarchive", item }),
 
-    tag: (item, tag) => mutate({ kind: "tag", item, tag }),
+    tag: (item, tag, supplied) =>
+      mutate({
+        kind: "tag",
+        item,
+        tag,
+        ...(supplied === undefined ? {} : { arguments: supplied }),
+      }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
 
     edit: (item, payload, source, tags = []) =>

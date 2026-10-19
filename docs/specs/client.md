@@ -789,6 +789,14 @@ holds for a person; and the reservation it makes reaches the cache with the pool
 which carries it *(amended 2026-09-28)*. Until the drain the optimistic copy is still work, as it
 would be for any tag.
 
+**A tag and a capture may carry values for what a template asks** *(added 2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. `tag` takes
+them as a third argument, and the `tag` operation holds them so an offline tag drains with the
+values it was given; `capture` takes `arguments` keyed by tag, and sends only those whose tag it
+still carries. Neither changes what the operation is about or what opposes it: a `tag` still pairs
+with its `untag` on the tag alone. Whether a value fits is the pool's to say on drain, on the terms
+a stale template already is.
+
 **`untag` is where a trigger tag is not ordinary** *(added 2026-09-07)*. A tag that filed the item
 cannot be removed while what it filed still stands, so `untag` may come back refused where no other
 tag's would ([http-v1.md](http-v1.md)) — applied optimistically here like any other, and reconciled

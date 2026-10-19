@@ -94,3 +94,49 @@ describe("which operations oppose each other", () => {
     ).toBe(false);
   });
 });
+
+describe("a tag sent with values for what its template asks", () => {
+  async function bodySent(operation: Operation): Promise<unknown> {
+    const bodies: unknown[] = [];
+    const api = createApi(
+      mockTransport(async (request) => {
+        bodies.push(await request.json());
+        return new Response(
+          JSON.stringify({
+            id: "one",
+            source: "web",
+            sourceItemId: "one",
+            payload: { type: "note", content: {}, metadata: {}, assets: [] },
+            tags: [],
+            createdAt: AT,
+            modifiedAt: AT,
+            revisedInto: [],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }),
+    );
+    await sendOperation(
+      { api, bytes: () => Promise.resolve(undefined) },
+      operation,
+    );
+    return bodies[0];
+  }
+
+  it("carries them beside the tag", async () => {
+    expect(
+      await bodySent({
+        kind: "tag",
+        item: "one",
+        tag: "route/todo",
+        arguments: { heading: "Next" },
+      }),
+    ).toEqual({ tag: "route/todo", arguments: { heading: "Next" } });
+  });
+
+  it("sends the tag alone where it was given none", async () => {
+    expect(
+      await bodySent({ kind: "tag", item: "one", tag: "route/todo" }),
+    ).toEqual({ tag: "route/todo" });
+  });
+});

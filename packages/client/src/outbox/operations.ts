@@ -1,4 +1,9 @@
-import type { CaptureEnvelope, EditEnvelope, ItemId } from "#api/types";
+import type {
+  CaptureEnvelope,
+  EditEnvelope,
+  ItemId,
+  SuppliedArguments,
+} from "#api/types";
 
 export type OperationId = string;
 
@@ -23,7 +28,13 @@ export type Operation =
       /** Sent only once the edit has landed, to whichever item then says its words. */
       readonly tags?: readonly string[];
     }
-  | { readonly kind: "tag"; readonly item: ItemId; readonly tag: string }
+  | {
+      readonly kind: "tag";
+      readonly item: ItemId;
+      readonly tag: string;
+      /** For the asked arguments of the template the tag fires, if it fires one. */
+      readonly arguments?: SuppliedArguments;
+    }
   | { readonly kind: "untag"; readonly item: ItemId; readonly tag: string }
   | {
       readonly kind: "accept-suggestion";

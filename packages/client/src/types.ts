@@ -38,6 +38,7 @@ import type {
   Reclaimed,
   SourceUse,
   Storage,
+  SuppliedArguments,
   TagUse,
   Token,
   UpdateDestinationRequest,
@@ -107,6 +108,8 @@ export type CaptureInput = {
   readonly assets?: readonly AssetId[];
   /** Applied as the item arrives, so a trigger tag among them files it on capture. */
   readonly tags?: readonly string[];
+  /** By trigger tag among `tags`: values for what its template asks. */
+  readonly arguments?: Readonly<Record<string, SuppliedArguments>>;
 };
 
 /**
@@ -454,7 +457,8 @@ export interface Client {
   capture(input: CaptureInput): Promise<Item>;
   archive(item: ItemId, reason?: string): Promise<void>;
   unarchive(item: ItemId): Promise<void>;
-  tag(item: ItemId, tag: string): Promise<void>;
+  /** `supplied` is for the asked arguments of the template a trigger tag fires. */
+  tag(item: ItemId, tag: string, supplied?: SuppliedArguments): Promise<void>;
   untag(item: ItemId, tag: string): Promise<void>;
 
   /**
