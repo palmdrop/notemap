@@ -1,8 +1,11 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-12
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **A tag, a capture and an edit carry values for what a template asks.** The `tag`
+  operation holds them, so an offline tag drains with what it was given. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-12 — **A client reads what the pool takes on disk.** `storage.read()`, `.measure()` and
   `.reclaim()`, none of them an outbox operation and none of them cached: the daemon holds the

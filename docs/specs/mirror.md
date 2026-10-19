@@ -1,8 +1,10 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-16
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **A template's record carries what it asks for.** ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-16 — **A mirrored item holds only delivered routing records, on both sides.** The rule
   was already stated here and kept by the projection; now the record's type cannot hold a pending

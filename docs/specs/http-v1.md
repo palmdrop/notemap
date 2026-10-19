@@ -2,8 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-14
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **Asked arguments on the wire.** Templates carry `asked`; `/tag`, a capture and a
+  template `route` or `preview` carry `arguments` for them, a capture's keyed by tag.
+  `argument-not-asked`, `argument-missing` and `asked-invalid` are new refusals. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-14 — **`/candidates` takes `given[<field>]`.** A field naming what its answer depends on
   in `x-notemap-candidates-given` is asked with those arguments, each filled; `422 given-missing`

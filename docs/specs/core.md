@@ -1,8 +1,14 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-14
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **A template may ask for an argument each time it is applied.** A template names
+  the fields it leaves open in `asked`, its arguments holding their defaults. Tagging, a capture and
+  routing from a template carry values for them beside the tag, merged literally and checked by the
+  capability's schema; a missing value with no default refuses the tag, or drops it from a capture.
+  ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-14 — **A delivery may be written as a list item or a task, under a heading picked from the
   note.** The markdown kinds publish `conversion` (`block`, `list-item`, `task`) as an argument,

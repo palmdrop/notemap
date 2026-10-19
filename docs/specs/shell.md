@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-16
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **A trigger tag asks what its template asks before it lands.** The template form
+  marks a field `ask each time`; the tag chooser then asks for each in turn, offering a fixed set or
+  what the destination lists, on the row, in the capture box and in a held edit. The process surface
+  draws a taken template's asked fields open with the caret in the first, and the status line says
+  where a firing goes. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-16 — **One place line in the composer and the template form, and `⏎` never routes.** A
   template's path field draws the composer's typed line rather than the schema-driven browser,
