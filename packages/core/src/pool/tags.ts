@@ -3,6 +3,7 @@ import { enqueueMirrorWrite } from "./mirror";
 import { alreadyApplied, fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
+import type { Tagging } from "#types/api/pool";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type { TagRefusal } from "#types/api/refusal";
 import type { Agent } from "#types/domain/agent";
@@ -39,12 +40,12 @@ export async function tag(
   id: ItemId,
   name: TagName,
   by: Agent,
-  signal?: AbortSignal,
+  options: Tagging = {},
 ): Promise<TagResult> {
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
 
-  const trigger = await triggerFor(config, ports, id, tag, signal);
+  const trigger = await triggerFor(config, ports, id, tag, options);
   if (trigger?.firing.kind === "refused") {
     return refused({
       kind: "trigger-refused",
@@ -179,7 +180,7 @@ async function triggerFor(
   ports: PoolPorts,
   id: ItemId,
   tag: TagName,
-  signal?: AbortSignal,
+  options: Tagging,
 ): Promise<{ template: RoutingTemplate; firing: Firing } | undefined> {
   if (!tag.startsWith(TRIGGER_TAG_NAMESPACE)) return undefined;
 
@@ -192,6 +193,13 @@ async function triggerFor(
 
   return {
     template,
-    firing: await firingFor(config, ports, item, template, signal),
+    firing: await firingFor(
+      config,
+      ports,
+      item,
+      template,
+      options.arguments,
+      options.signal,
+    ),
   };
 }

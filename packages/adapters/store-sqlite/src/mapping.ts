@@ -3,6 +3,7 @@ import type {
   ActionId,
   ActionKind,
   Agent,
+  AskedArguments,
   Asset,
   AssetId,
   AssetRef,
@@ -414,6 +415,9 @@ export function toRoutingTemplate(row: RoutingTemplateRow): RoutingTemplate {
     destination: row.destination_id as DestinationId,
     capability: row.capability as CapabilityName,
     arguments: parseJson(row.arguments),
+    ...(row.asked === null
+      ? {}
+      : { asked: parseJson(row.asked) as AskedArguments }),
     folder: row.folder,
     ...(row.trigger_tag === null
       ? {}
@@ -447,6 +451,7 @@ export function routingTemplateParams(
   number | null,
   number,
   number,
+  string | null,
 ] {
   return [
     record.id,
@@ -459,6 +464,7 @@ export function routingTemplateParams(
     record.establishedAt === undefined ? null : toMillis(record.establishedAt),
     toMillis(record.createdAt),
     modifiedAt,
+    record.asked === undefined ? null : JSON.stringify(record.asked),
   ];
 }
 

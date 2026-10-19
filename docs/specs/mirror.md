@@ -210,7 +210,8 @@ mirror carrying only items and destinations would rebuild a pool whose records r
 it cannot produce, which is the destination's own argument unchanged.
 
 The unit is the template itself: id, name, destination, capability, the arguments **as patterns**,
-the folder mode, its trigger tag, when it was established and its timestamps. The patterns are
+the arguments it asks for *(2026-10-19)*, the folder mode, its trigger tag, when it was established
+and its timestamps. The patterns are
 mirrored **unexpanded**, because unexpanded is what a template is; what a decision expanded them to
 is on the record that decision wrote. How much of the pool a template made is derived from the
 records naming it and is not mirrored, on the rule that already keeps `revisedInto` out.

@@ -151,7 +151,7 @@ const ROUTING_COLUMNS = `
  */
 const TEMPLATE_COLUMNS = `
   id, name, destination_id, capability, arguments, folder, trigger_tag,
-  established_at, created_at, modified_at
+  established_at, created_at, modified_at, asked
 `;
 
 /**
@@ -379,7 +379,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingTemplateParams>
   >(`
     INSERT INTO routing_templates (${TEMPLATE_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const updateTemplate = write.query<
     never,
@@ -393,12 +393,14 @@ export function createSqlitePoolStore(
       number | null,
       number,
       number,
+      string | null,
       string,
     ]
   >(`
     UPDATE routing_templates
     SET name = ?, destination_id = ?, capability = ?, arguments = ?, folder = ?,
-        trigger_tag = ?, established_at = ?, created_at = ?, modified_at = ?
+        trigger_tag = ?, established_at = ?, created_at = ?, modified_at = ?,
+        asked = ?
     WHERE id = ?
   `);
   const deleteTemplate = write.query<never, [string]>(

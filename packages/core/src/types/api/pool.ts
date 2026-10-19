@@ -29,6 +29,7 @@ import type {
   RoutingTemplate,
   RoutingTemplateChanges,
   RoutingTemplateDraft,
+  SuppliedArguments,
 } from "../domain/template";
 import type { ResolvedTemplate } from "../../pool/templates/apply";
 import type { RoutingTemplateReport } from "../../pool/templates/report";
@@ -125,7 +126,7 @@ export interface ItemsApi {
     id: ItemId,
     tag: TagName,
     by: Agent,
-    signal?: AbortSignal,
+    options?: Tagging,
   ): Promise<Result<Item, TagRefusal>>;
   untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
   archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;
@@ -289,6 +290,7 @@ export interface TemplatesApi {
   resolve(
     item: ItemId,
     id: RoutingTemplateId,
+    supplied?: SuppliedArguments,
   ): Promise<ResolvedTemplate | undefined>;
 
   /**
@@ -308,6 +310,14 @@ export type TemplateRouting = {
   readonly signal?: AbortSignal;
   /** The words this one delivery carries. A template holds none of its own. */
   readonly content?: JsonObject;
+  /** Values for the template's asked arguments. */
+  readonly arguments?: SuppliedArguments;
+};
+
+export type Tagging = {
+  readonly signal?: AbortSignal;
+  /** Values for the asked arguments of the template the tag fires. */
+  readonly arguments?: SuppliedArguments;
 };
 
 export interface PoolSettingsApi {

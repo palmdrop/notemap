@@ -3160,7 +3160,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format" | "asked-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3392,7 +3392,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format" | "asked-invalid";
                             } & {
                                 [key: string]: unknown;
                             };

@@ -58,32 +58,38 @@ Decided in conversation (2026-10-18/19), recorded as
 
 Depends on Phase 0.
 
-- [ ] `RoutingTemplateRecord`, `Draft` and `Changes` gain `asked`: field name to `{ label? }`. A
-      field's default is whatever `arguments` holds for it, and absence means none.
-- [ ] Saving refuses an asked field the capability's schema does not declare, or one that is not
-      a string or a string enum.
-- [ ] The template report counts an asked field as filled when it checks for required fields, so
-      a template whose only gap is an asked field without a default still `fits`.
-- [ ] `requestFor` takes the supplied arguments, merges them over the expanded ones for asked
+- [x] `RoutingTemplateRecord`, `Draft` and `Changes` gain `asked`: field name to `{ label? }`. A
+      field's default is whatever `arguments` holds for it, and absence means none. _(2026-10-19)_
+- [x] Saving refuses asking for the folder mode or a blank field. Whether the capability declares
+      an asked field as a string is the report's to say, since saving asks the destination nothing.
+      _(2026-10-19)_
+- [x] The template report counts an asked field as filled when it checks for required fields, so
+      a template whose only gap is an asked field without a default still `fits`. _(2026-10-19)_
+- [x] `requestFor` takes the supplied arguments, merges them over the expanded ones for asked
       fields only, and does not expand them. A supplied value for a field that is not asked is
-      refused. An asked field left with no value and no default is refused.
-- [ ] `tag` takes supplied arguments and passes them to `firingFor`. A refusal is
+      refused. An asked field left with no value and no default is refused. A blank value is no
+      value. _(2026-10-19)_
+- [x] `tag` takes supplied arguments and passes them to `firingFor`. A refusal is
       `trigger-refused`, with a detail saying which field. An absorbed re-tag ignores them, as it
-      ignores everything else.
-- [ ] A capture's envelope carries supplied arguments per trigger tag. A tag whose firing is
-      refused for a missing or invalid value is dropped, as other refusals already are.
-- [ ] `routeFrom` takes supplied arguments beside `content`, so a composer route stays a template
-      route: the record names the template and the tag is written after it.
-- [ ] `template-fired` carries the supplied arguments in its detail, so the status line can say
-      `under Next`.
-- [ ] Store: the templates table gains `asked` (migration). Mirror: the template record carries it,
-      lossless through the codec and the arbitraries, and the rendering names asked fields.
-- [ ] Tests: merge and refusal cases in `templates.test.ts`. A tag with a value fires a record
+      ignores everything else. _(2026-10-19)_
+- [x] A capture's envelope carries supplied arguments per trigger tag. A tag whose firing is
+      refused for a missing or invalid value is dropped, as other refusals already are. _(2026-10-19)_
+- [x] `routeFrom` takes supplied arguments beside `content`, so a composer route stays a template
+      route: the record names the template and the tag is written after it. _(2026-10-19)_
+- [x] `template-fired` carries the supplied arguments in its detail, so the status line can say
+      `under Next`. _(2026-10-19)_
+- [x] Store: the templates table gains `asked` (migration). Mirror: the template record carries it,
+      lossless through the codec and the arbitraries. A template has no rendering to name it in.
+      _(2026-10-19)_
+- [x] Tests: merge and refusal cases in `tests/integration/src/templates.test.ts`. A tag with a value fires a record
       holding it. A tag without one takes the default, and is refused where there is none. A
-      capture drops the tag instead. A codec round-trip with `asked`.
-- [ ] `pnpm --filter @notemap/core mutation`, and read the survivors in `pool/templates`.
-- [ ] Specs: `core.md` (templates, classification), `mirror.md` (template record).
-- [ ] Verify: `pnpm -r --no-sort --silent test`, typecheck, lint. Commit.
+      capture drops the tag instead. A codec round-trip with `asked`, through the arbitrary.
+      _(2026-10-19)_
+- [x] `pnpm --filter @notemap/core mutation`, and read the survivors in `pool/templates`. The
+      new lifecycle survivors are killed by unit tests; `apply`, `fire`, `report` and `capture`
+      are covered from the integration suite, not core's own. _(2026-10-19)_
+- [x] Specs: `core.md` (templates, classification), `mirror.md` (template record). _(2026-10-19)_
+- [x] Verify: `pnpm -r --no-sort --silent test`, typecheck, lint. Commit. _(2026-10-19)_
 
 ### Phase 2: HTTP
 

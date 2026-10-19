@@ -191,7 +191,20 @@ export type RoutingTemplateRefusal =
       readonly kind: "unknown-pattern-format";
       readonly pattern: string;
       readonly format: string;
-    };
+    }
+  /** A field that cannot be asked: unnamed, or the folder mode, which is core's. */
+  | { readonly kind: "asked-invalid"; readonly field: string };
+
+/**
+ * What a template is refused for when it is applied with arguments of its own.
+ * Whether the values fit the capability is the schema's to say, as it is for any
+ * route.
+ */
+export type SuppliedArgumentsRefusal =
+  /** A value for a field the template fixes, which applying it cannot change. */
+  | { readonly kind: "argument-not-asked"; readonly field: string }
+  /** An asked field with no value given and no default to fall back on. */
+  | { readonly kind: "argument-missing"; readonly field: string };
 
 export type PreparationRefusal =
   | SubjectRefusal
@@ -251,11 +264,12 @@ export type CancelRefusal =
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 /**
- * Routing from a template is routing, plus the one thing only a template can be
- * refused for. Nothing about the patterns is here: what saved expands.
+ * Routing from a template is routing, plus what only a template can be refused
+ * for. Nothing about the patterns is here: what saved expands.
  */
 export type TemplateRoutingRefusal =
   | DeliveryRefusal
+  | SuppliedArgumentsRefusal
   | { readonly kind: "unknown-template"; readonly template: RoutingTemplateId };
 
 /**

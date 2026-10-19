@@ -912,6 +912,10 @@ export const MIGRATIONS: readonly string[] = [
   ALTER TABLE assets ADD COLUMN height INTEGER
     CHECK (height > 0 AND (width IS NULL) = (height IS NULL));
   `,
+  `
+  -- JSON, by field name. NULL is a template that asks for nothing.
+  ALTER TABLE routing_templates ADD COLUMN asked TEXT;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

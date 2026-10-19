@@ -1151,3 +1151,266 @@ describe("a destination that is not filesystem-shaped", () => {
     expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
   });
 });
+
+/**
+ * One template for a todo list whose headings change: the heading is left to be
+ * supplied each time the template is applied, beside the tag rather than in it.
+ */
+describe("a template that asks for an argument", () => {
+  const TODO = "route/todo" as TagName;
+
+  const HEADING_SCHEMA = {
+    type: "object",
+    required: ["path", "heading"],
+    properties: {
+      path: { type: "string" },
+      heading: { type: "string" },
+      conversion: { type: "string", enum: ["block", "task"] },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+    additionalProperties: false,
+  };
+
+  async function asking(overrides: Partial<RoutingTemplateDraft> = {}) {
+    const opened = await pooled(HEADING_SCHEMA);
+    const template = succeeded(
+      await opened.pool.templates.create(
+        draft({
+          triggerTag: TODO,
+          arguments: { path: "todo.md" },
+          asked: { heading: { label: "list" } },
+          ...overrides,
+        }),
+      ),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    return { ...opened, template, item };
+  }
+
+  const argumentsOf = async (pool: Pool, item: ItemId) =>
+    (await pool.routing.recordsFor(item))[0]?.target;
+
+  it("keeps what it asks for, with the label a person reads", async () => {
+    const { pool, template } = await asking();
+
+    expect((await pool.templates.get(template.id))?.asked).toEqual({
+      heading: { label: "list" },
+    });
+  });
+
+  it("refuses to ask for the folder mode, which is core's to write", async () => {
+    const { pool } = await pooled(HEADING_SCHEMA);
+
+    expect(
+      await pool.templates.create(draft({ asked: { folder: {} } })),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "asked-invalid", field: "folder" },
+    });
+  });
+
+  it("stops asking where an edit asks for nothing", async () => {
+    const { pool, template } = await asking();
+
+    const edited = succeeded(
+      await pool.templates.edit(template.id, { asked: {} }),
+    );
+
+    expect(edited.asked).toBeUndefined();
+  });
+
+  it("files under the value a tag was given", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { path: "todo.md", heading: "Next" },
+    });
+  });
+
+  it("takes the value literally rather than as a pattern", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "{{captured_at}}" },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "{{captured_at}}" },
+    });
+  });
+
+  it("files under the default where the tag was given nothing", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md", heading: "Inbox" },
+    });
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Inbox" },
+    });
+  });
+
+  it("reads a blank value as none, and falls back to the default", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md", heading: "Inbox" },
+    });
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "  " },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Inbox" },
+    });
+  });
+
+  it("refuses a tag given nothing where there is no default, and writes nothing", async () => {
+    const { pool, item, template } = await asking();
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: {
+        kind: "trigger-refused",
+        template: template.id,
+        detail: "argument-missing: heading",
+      },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+
+  it("refuses a value for a field the template fixes", async () => {
+    const { pool, item } = await asking();
+
+    expect(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next", path: "elsewhere.md" },
+      }),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-not-asked: path" },
+    });
+  });
+
+  it("validates the value against the capability, as a hand-made route is", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md" },
+      asked: { conversion: {}, heading: {} },
+    });
+
+    expect(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next", conversion: "fold" },
+      }),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "trigger-refused" },
+    });
+  });
+
+  it("says where it filed, in the log, so the status line can", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    const fired = (await logFor(pool, item.id)).find(
+      (action) => action.kind === "template-fired",
+    );
+    expect(fired?.detail).toMatchObject({ arguments: { heading: "Next" } });
+  });
+
+  it("fires from a capture that carries the value beside its tags", async () => {
+    const { pool } = await asking();
+
+    const item = captured(
+      await pool.capture({
+        ...envelope({ sourceItemId: "src-2", tags: [TODO] }),
+        arguments: { [TODO]: { heading: "Next" } },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Next" },
+    });
+  });
+
+  it("drops a capture's tag that was given nothing and has no default", async () => {
+    const { pool } = await asking();
+
+    const item = captured(
+      await pool.capture(envelope({ sourceItemId: "src-2", tags: [TODO] })),
+    );
+
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+  });
+
+  it("is applied as the template from the composer, with the value", async () => {
+    const { pool, item, template } = await asking();
+
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    expect(record.applied).toEqual({
+      template: template.id,
+      firedByTag: false,
+    });
+    expect(record.target).toMatchObject({ arguments: { heading: "Next" } });
+  });
+
+  it("resolves as far as it was given, and refuses nothing", async () => {
+    const { pool, item, template } = await asking();
+
+    expect(
+      (await pool.templates.resolve(item.id, template.id))?.arguments,
+    ).toEqual({ path: "todo.md" });
+    expect(
+      (
+        await pool.templates.resolve(item.id, template.id, {
+          heading: "Next",
+        })
+      )?.arguments,
+    ).toEqual({ path: "todo.md", heading: "Next" });
+  });
+
+  it("fits where the only gap is the field it asks for", async () => {
+    const { pool, template } = await asking();
+
+    expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
+  });
+
+  it("reports a field the capability does not declare as a string", async () => {
+    const { pool } = await pooled(HEADING_SCHEMA);
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { path: "todo.md", heading: "Inbox" },
+          asked: { position: {} },
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({
+      kind: "arguments-invalid",
+      issues: [{ path: "/position", keyword: "asked" }],
+    });
+  });
+});

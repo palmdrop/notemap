@@ -679,6 +679,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A capture's trigger tag is dropped rather than the capture refused**, on the rule this section
   already sets for a tag that trims to nothing: a whole capture is not lost over a tag, and there
   is nobody there to be told. Landing it would be worse than dropping it, for the reason above.
+- **A trigger tag may carry values for its template's asked arguments** (added 2026-10-19,
+  [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md)), given
+  beside it rather than written into it, so the tag is the same tag in use whatever it was given.
+  A tag given nothing takes the template's defaults, and one that has none is refused, or dropped
+  from a capture, as any trigger tag whose template cannot route. An absorbed re-tag ignores the
+  values with everything else.
 
 ### Archive and purge
 
@@ -1402,6 +1408,25 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   refusal at route time and a template that saved will always expand. Expansion applies to string
   values only, at every depth of the arguments, and the result is validated against the
   capability's arguments schema exactly as a hand-made set is.
+  *Amended 2026-10-19*: that holds for every template that asks nothing. A template with an
+  **asked argument** can be refused at route time over the value it was given, below.
+- **A template may leave a field to be supplied each time it is applied** (added 2026-10-19,
+  [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md)): an **asked
+  argument**, named in the template's `asked` with an optional label. Its **default** is what the
+  template's arguments hold for it, patterns included; a field they leave out has none. The folder
+  mode cannot be asked, being core's to write, and the template's report says so where the
+  capability does not declare an asked field as a string. A field with no default may be required
+  by the schema and still fit, since applying the template supplies it.
+- **A supplied value is the argument, taken literally.** It is merged over the expanded arguments
+  for asked fields only and never expanded itself, and a blank one is no value, falling back to
+  the default. A value for a field the template fixes is refused as `argument-not-asked`, and an
+  asked field left with neither a value nor a default as `argument-missing`. What the value says is
+  the schema's to check, on the merged set, exactly as for a hand-made route.
+- **Values travel beside the tag, never in it.** Tagging takes `arguments` for the template the tag
+  fires, a capture carries a map from trigger tag to arguments beside its tags, and routing from a
+  template takes them too, still naming the template. A refusal over a value is a trigger tag
+  refused or, on a capture, dropped, on the terms [Classification](#classification) sets. The
+  `template-fired` entry names what the asked arguments came out as, given or defaulted.
 - **The line against [ADR 31](../adr/0031-the-adapter-decides-create-or-append-at-delivery.md)**:
   the adapter resolves what only it can know — what is already there, at the moment of writing —
   and core resolves what only the item knows. A date is the item's, not the vault's.

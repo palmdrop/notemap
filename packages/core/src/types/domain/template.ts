@@ -17,6 +17,21 @@ export type FolderMode = "create" | "require" | "establish";
 /** The namespace a trigger tag lives under, so a tag with an effect is recognisable as one. */
 export const TRIGGER_TAG_NAMESPACE = "route/";
 
+/**
+ * A field the template leaves to be supplied each time it is applied. Its
+ * default is whatever the template's arguments hold for it.
+ */
+export type AskedArgument = {
+  /** What a person reads in place of the field's own name. */
+  readonly label?: string;
+};
+
+/** Asked arguments by field name. */
+export type AskedArguments = Readonly<Record<string, AskedArgument>>;
+
+/** What applying a template supplies for its asked arguments, by field name. */
+export type SuppliedArguments = Readonly<Record<string, string>>;
+
 /** What core submits to be written. Excludes every field the store owns or derives. */
 export type RoutingTemplateRecord = {
   readonly id: RoutingTemplateId;
@@ -26,6 +41,8 @@ export type RoutingTemplateRecord = {
   readonly capability: CapabilityName;
   /** Patterns until the decision is made, which is when core expands them. */
   readonly arguments: JsonObject;
+  /** Absent where the template asks for nothing. */
+  readonly asked?: AskedArguments;
   readonly folder: FolderMode;
   /** Declared rather than derived, so renaming disarms no tag already written. */
   readonly triggerTag?: TagName;
@@ -56,6 +73,7 @@ export type RoutingTemplateDraft = {
   readonly destination: DestinationId;
   readonly capability: CapabilityName;
   readonly arguments: JsonObject;
+  readonly asked?: AskedArguments;
   /** Absent is `create`, which is what every routing decision does today. */
   readonly folder?: FolderMode;
   readonly triggerTag?: TagName;
@@ -67,6 +85,8 @@ export type RoutingTemplateChanges = {
   readonly destination?: DestinationId;
   readonly capability?: CapabilityName;
   readonly arguments?: JsonObject;
+  /** An empty set asks for nothing; absent leaves it as it stands. */
+  readonly asked?: AskedArguments;
   readonly folder?: FolderMode;
   /** `null` takes the tag off; absent leaves it as it stands. */
   readonly triggerTag?: TagName | null;

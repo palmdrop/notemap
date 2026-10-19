@@ -46,8 +46,8 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       get: (id) => store.item(id),
       many: (ids) => store.items(ids),
       edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
-      tag: (id, name, by, signal) =>
-        tags.tag(config, ports, id, name, by, signal),
+      tag: (id, name, by, options) =>
+        tags.tag(config, ports, id, name, by, options),
       untag: (id, name, by) => tags.untag(ports, id, name, by),
       archive: (id, reason) => archive.archive(ports, id, reason),
       unarchive: (id) => archive.unarchive(ports, id),
@@ -104,7 +104,8 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       edit: (id, changes) => templates.edit(ports, id, changes),
       delete: (id) => templates.remove(ports, id),
       report: (id, signal) => templates.report(ports, id, signal),
-      resolve: (item, id) => templates.resolve(config, ports, item, id),
+      resolve: (item, id, supplied) =>
+        templates.resolve(config, ports, item, id, supplied),
       route: (item, id, options) =>
         templates.routeFrom(config, ports, item, id, options),
     },

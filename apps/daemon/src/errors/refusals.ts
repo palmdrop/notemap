@@ -214,12 +214,18 @@ export const TEMPLATE_STATUS = {
   "trigger-tag-taken": 409,
   "unknown-pattern-field": 422,
   "unknown-pattern-format": 422,
+  "asked-invalid": 422,
 } as const satisfies Record<RoutingTemplateRefusal["kind"], number>;
 
-/** Routing from one: delivery's own table, plus the template that is not there. */
+/**
+ * Routing from one: delivery's own table, plus the template that is not there
+ * and the values given for what it asks.
+ */
 export const TEMPLATE_ROUTING_STATUS = {
   ...DELIVERY_STATUS,
   "unknown-template": 404,
+  "argument-not-asked": 422,
+  "argument-missing": 422,
 } as const satisfies Record<TemplateRoutingRefusal["kind"], number>;
 
 /** The two `409`s conflict with state the caller can already read — a record that has landed, and one somebody holds a lease on. */

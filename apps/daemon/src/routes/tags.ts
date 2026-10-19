@@ -20,7 +20,9 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
     // the signal: untagging is store work and finishes.
     const result =
       half === "tag"
-        ? await pool.items.tag(id as ItemId, tag, by, context.req.raw.signal)
+        ? await pool.items.tag(id as ItemId, tag, by, {
+            signal: context.req.raw.signal,
+          })
         : await pool.items.untag(id as ItemId, tag, by);
 
     return result.kind === "refused"

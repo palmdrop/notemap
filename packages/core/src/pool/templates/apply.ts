@@ -1,13 +1,19 @@
 import { route } from "../routing/route";
-import { refused } from "#utils/result";
+import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts } from "#types/api/ports";
 import type { TemplateRouting } from "#types/api/pool";
-import type { TemplateRoutingRefusal } from "#types/api/refusal";
+import type {
+  SuppliedArgumentsRefusal,
+  TemplateRoutingRefusal,
+} from "#types/api/refusal";
 import type { ItemId, RoutingTemplateId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { DeliveryRequest, RoutingRecord } from "#types/domain/routing";
-import type { RoutingTemplate } from "#types/domain/template";
+import type {
+  RoutingTemplate,
+  SuppliedArguments,
+} from "#types/domain/template";
 import type { JsonObject } from "#types/json";
 import type { Result } from "#types/result";
 import { FOLDER_ARGUMENT } from "../destinations/vocabulary";
@@ -20,12 +26,16 @@ export type ResolvedTemplate = DeliveryRequest;
  * The expansion, and nothing else. What the composer draws before the commit
  * and what `route/resolve` answers: one expander, drawn rather than
  * reimplemented on the other side of the wire.
+ *
+ * Asked arguments are taken as far as they are supplied, and never refused: the
+ * question is what the decision says so far, not whether it is complete.
  */
 export async function resolve(
   config: PoolConfig,
   ports: PoolPorts,
   item: ItemId,
   id: RoutingTemplateId,
+  supplied: SuppliedArguments = {},
 ): Promise<ResolvedTemplate | undefined> {
   const [held, template] = await Promise.all([
     ports.store.item(item),
@@ -33,7 +43,11 @@ export async function resolve(
   ]);
   if (held === undefined || template === undefined) return undefined;
 
-  return requestFor(config, held, template);
+  const request = requestFor(config, held, template);
+  return {
+    ...request,
+    arguments: merged(template, request.arguments, supplied),
+  };
 }
 
 /**
@@ -66,7 +80,14 @@ export async function routeFrom(
     });
   }
 
-  const request = requestFor(config, held, template);
+  const request = withSupplied(
+    template,
+    requestFor(config, held, template),
+    options.arguments,
+  );
+  if (request.kind === "refused") {
+    return refused<RoutingRecord, TemplateRoutingRefusal>(request.refusal);
+  }
   // Not the template's — a template says where an item goes and never what it
   // says — so it rides beside the expansion rather than being part of it.
   const { content } = options;
@@ -75,7 +96,7 @@ export async function routeFrom(
     config,
     ports,
     item,
-    content === undefined ? request : { ...request, content },
+    content === undefined ? request.value : { ...request.value, content },
     options.signal,
     { template: template.id, firedByTag: options.firedByTag ?? false },
   );
@@ -101,6 +122,59 @@ export function requestFor(
       }),
     ),
   };
+}
+
+/**
+ * The expansion with the asked arguments filled in, refused where a value names
+ * a field the template fixes or an asked field is left with no value and no
+ * default. What the values say is left to the capability's schema, which checks
+ * the whole set as it checks a hand-made route's.
+ */
+export function withSupplied(
+  template: RoutingTemplate,
+  request: DeliveryRequest,
+  supplied: SuppliedArguments = {},
+): Result<DeliveryRequest, SuppliedArgumentsRefusal> {
+  const asked = template.asked ?? {};
+
+  const fixed = Object.keys(supplied).find((field) => !(field in asked));
+  if (fixed !== undefined) {
+    return refused<DeliveryRequest, SuppliedArgumentsRefusal>({
+      kind: "argument-not-asked",
+      field: fixed,
+    });
+  }
+
+  const args = merged(template, request.arguments, supplied);
+  const missing = Object.keys(asked).find((field) => !(field in args));
+  if (missing !== undefined) {
+    return refused<DeliveryRequest, SuppliedArgumentsRefusal>({
+      kind: "argument-missing",
+      field: missing,
+    });
+  }
+
+  return ok<DeliveryRequest, SuppliedArgumentsRefusal>({
+    ...request,
+    arguments: args,
+  });
+}
+
+/**
+ * Supplied values over the expanded ones, for asked fields only. Never expanded
+ * themselves: a value a person gives is the argument, not a pattern. A blank one
+ * is no value, so it falls back to the default rather than replacing it.
+ */
+function merged(
+  template: RoutingTemplate,
+  args: JsonObject,
+  supplied: SuppliedArguments,
+): JsonObject {
+  const asked = template.asked ?? {};
+  const given = Object.entries(supplied).filter(
+    ([field, value]) => field in asked && value.trim() !== "",
+  );
+  return given.length === 0 ? args : { ...args, ...Object.fromEntries(given) };
 }
 
 /**

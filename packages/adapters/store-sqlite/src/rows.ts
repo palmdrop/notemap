@@ -86,6 +86,8 @@ export type RoutingTemplateRow = {
   readonly capability: string;
   /** JSON: the arguments as patterns, expanded only when a decision is made. */
   readonly arguments: string;
+  /** JSON: the fields applying it supplies, by name. Null where it asks for none. */
+  readonly asked: string | null;
   readonly folder: "create" | "require" | "establish";
   readonly trigger_tag: string | null;
   readonly established_at: number | null;
@@ -227,6 +229,7 @@ export const TABLE_COLUMNS = {
     "established_at",
     "created_at",
     "modified_at",
+    "asked",
   ],
   jobs: [
     "id",

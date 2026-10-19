@@ -584,6 +584,104 @@ describe("editing a template", () => {
   });
 });
 
+describe("what a template asks for", () => {
+  const asking = { ...draft, asked: { heading: { label: "list" } } };
+
+  it("keeps the fields it asks for, with their labels", async () => {
+    const made = await create(ports(), asking);
+
+    expect(made.kind === "ok" && made.value.asked).toEqual({
+      heading: { label: "list" },
+    });
+  });
+
+  it("stores asking for nothing as not asking at all", async () => {
+    const made = await create(ports(), { ...draft, asked: {} });
+
+    expect(made.kind === "ok" && "asked" in made.value).toBe(false);
+  });
+
+  it.each([["folder"], [" "]])(
+    "refuses to ask for %j, before anything is written",
+    async (field) => {
+      const wired = ports();
+
+      const made = await create(wired, { ...draft, asked: { [field]: {} } });
+
+      expect(made).toEqual({
+        kind: "refused",
+        refusal: { kind: "asked-invalid", field },
+      });
+      expect(wired.held.size).toBe(0);
+    },
+  );
+
+  it("refuses an edit asking for the folder mode", async () => {
+    const wired = ports();
+    const made = await create(wired, draft);
+    if (made.kind !== "ok") throw new Error("not created");
+
+    const edited = await edit(wired, made.value.id, {
+      asked: { folder: {} },
+    });
+
+    expect(edited).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "asked-invalid", field: "folder" },
+    });
+    expect(wired.held.get(made.value.id)?.asked).toBeUndefined();
+  });
+
+  it("starts asking on an edit, and says it changed", async () => {
+    const wired = ports();
+    const made = await create(wired, draft);
+    if (made.kind !== "ok") throw new Error("not created");
+    wired.appended.length = 0;
+
+    const edited = await edit(wired, made.value.id, {
+      asked: { heading: {} },
+    });
+
+    expect(edited.kind === "ok" && edited.value.asked).toEqual({
+      heading: {},
+    });
+    expect(wired.appended.map((each) => each.kind)).toEqual([
+      "template-edited",
+    ]);
+  });
+
+  it("stops asking where an edit asks for nothing", async () => {
+    const wired = ports();
+    const made = await create(wired, asking);
+    if (made.kind !== "ok") throw new Error("not created");
+
+    const edited = await edit(wired, made.value.id, { asked: {} });
+
+    expect(edited.kind === "ok" && "asked" in edited.value).toBe(false);
+  });
+
+  it("leaves what it asks for alone where an edit does not mention it", async () => {
+    const wired = ports();
+    const made = await create(wired, asking);
+    if (made.kind !== "ok") throw new Error("not created");
+
+    const edited = await edit(wired, made.value.id, { name: "Todo" });
+
+    expect(edited.kind === "ok" && edited.value.asked).toEqual(asking.asked);
+  });
+
+  it("appends nothing where it is asked for the same fields again", async () => {
+    const wired = ports();
+    const made = await create(wired, asking);
+    if (made.kind !== "ok") throw new Error("not created");
+    wired.appended.length = 0;
+
+    await edit(wired, made.value.id, { asked: { heading: { label: "list" } } });
+
+    expect(wired.appended).toEqual([]);
+  });
+});
+
 describe("deleting a template", () => {
   it("removes it and owes the mirror a removal", async () => {
     const wired = ports();

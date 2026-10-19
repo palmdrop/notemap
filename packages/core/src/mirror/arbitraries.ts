@@ -267,6 +267,11 @@ export const routingTemplate = (): fc.Arbitrary<RoutingTemplate> =>
       destination: branded<never>(),
       capability: branded<never>(),
       arguments: jsonObject(),
+      asked: fc.dictionary(
+        name(),
+        fc.record({ label: name() }, { requiredKeys: [] }),
+        { minKeys: 1, maxKeys: 3 },
+      ),
       folder: fc.constantFrom(
         "create" as const,
         "require" as const,

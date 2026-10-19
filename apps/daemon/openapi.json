@@ -6540,7 +6540,8 @@
                             "trigger-tag-invalid",
                             "trigger-tag-unreserved",
                             "unknown-pattern-field",
-                            "unknown-pattern-format"
+                            "unknown-pattern-format",
+                            "asked-invalid"
                           ]
                         }
                       },
@@ -6797,7 +6798,8 @@
                             "trigger-tag-invalid",
                             "trigger-tag-unreserved",
                             "unknown-pattern-field",
-                            "unknown-pattern-format"
+                            "unknown-pattern-format",
+                            "asked-invalid"
                           ]
                         }
                       },
