@@ -18,7 +18,13 @@ export function placeOf(
   called?: Namer,
   reading?: Reading,
 ): string {
-  return placeNamed(template.arguments, called, reading) ?? "—";
+  const asked = template.asked ?? {};
+  const fixed = Object.fromEntries(
+    Object.entries(template.arguments).filter(([field]) => !(field in asked)),
+  );
+  const asks = Object.keys(asked).length === 0 ? undefined : "asks each time";
+  const place = placeNamed(fixed, called, reading);
+  return [place, asks].filter((one) => one !== undefined).join(", ") || "—";
 }
 
 /**

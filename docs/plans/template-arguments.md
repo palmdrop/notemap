@@ -127,13 +127,13 @@ Depends on Phase 2.
 
 Depends on Phase 3.
 
-- [ ] In `TemplateForm.svelte`, each string or enum field can be marked `ask each time`, with a
-      label. The value the field holds becomes its default, and may be left empty.
-- [ ] The template line and its opened facts draw an asked field by its label, with the default
-      where there is one.
-- [ ] Tests in `settings/templates.test.ts`.
-- [ ] Spec: `shell.md` § Settings.
-- [ ] Verify: tests, typecheck, lint. Commit.
+- [x] In `TemplateForm.svelte`, each field holding text can be marked `ask each time`, with a
+      label. The value the field holds becomes its default, and may be left empty. _(2026-10-19)_
+- [x] The template line and its opened facts draw an asked field by its label, with the default
+      where there is one. _(2026-10-19)_
+- [x] Tests in `settings/templates.test.ts`. _(2026-10-19)_
+- [x] Spec: `shell.md` § Settings. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
 
 ### Phase 5: the chooser's argument step
 

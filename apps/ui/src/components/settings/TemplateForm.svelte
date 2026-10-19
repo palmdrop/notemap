@@ -13,6 +13,7 @@
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
+  import { askable } from "$lib/asked";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
@@ -67,6 +68,26 @@
   let capability = $state(untrack(() => editing?.capability ?? ""));
   let folder = $state(untrack(() => editing?.folder ?? "create"));
   let typed = $state(untrack(() => typedFrom(editing?.arguments)));
+  /** Asked fields by name, each holding the label typed for it, blank for none. */
+  let asked = $state<Record<string, string>>(
+    untrack(() =>
+      Object.fromEntries(
+        Object.entries(editing?.asked ?? {}).map(([field, one]) => [
+          field,
+          one.label ?? "",
+        ]),
+      ),
+    ),
+  );
+
+  function ask(field: string): void {
+    if (field in asked) {
+      const { [field]: _dropped, ...rest } = asked;
+      asked = rest;
+    } else {
+      asked = { ...asked, [field]: "" };
+    }
+  }
 
   let nameField = $state<HTMLInputElement | undefined>(undefined);
   $effect(() => nameField?.focus());
@@ -189,16 +210,41 @@
     };
   });
 
+  /** What is asked among the fields still drawn, each label trimmed and a blank one left out. */
+  function asking(): Record<string, { label?: string }> {
+    return Object.fromEntries(
+      typeable
+        .filter((field) => askable(field) && field.name in asked)
+        .map((field) => {
+          const label = (asked[field.name] ?? "").trim();
+          return [field.name, label === "" ? {} : { label }];
+        }),
+    );
+  }
+
+  /** An asked field left empty has no default, which is absence rather than an empty string. */
+  function argumentsFor(
+    asks: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(valuesFrom(typeable, typed)).filter(
+        ([field, value]) => !(field in asks) || value !== "",
+      ),
+    );
+  }
+
   async function save() {
     if (busy) return;
     busy = true;
     said = "";
 
+    const asks = asking();
     const wanted = {
       name: name.trim(),
       destination,
       capability,
-      arguments: valuesFrom(typeable, typed),
+      arguments: argumentsFor(asks),
+      asked: asks,
       // A capability with no folders has nothing to establish, and a mode left
       // over from the one chosen before would be refused as an argument.
       folder: folders ? folder : ("create" as const),
@@ -213,6 +259,9 @@
           destination: wanted.destination,
           capability: wanted.capability,
           arguments: wanted.arguments,
+          ...(Object.keys(wanted.asked).length === 0
+            ? {}
+            : { asked: wanted.asked }),
           folder: wanted.folder,
           ...(wanted.triggerTag === undefined
             ? {}
@@ -365,11 +414,38 @@
         <input
           bind:value={typed[field.name]}
           aria-label={field.title ?? field.name}
-          placeholder={field.required ? "required" : "optional"}
+          placeholder={field.name in asked
+            ? "default"
+            : field.required
+              ? "required"
+              : "optional"}
           class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
         />
       {/if}
     </div>
+    {#if askable(field)}
+      <!-- The value above becomes what applying the template falls back to. -->
+      <span></span>
+      <div
+        class="col-start-2 grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch] max-narrow:col-start-1"
+      >
+        <Option
+          label="ask each time"
+          chosen={field.name in asked}
+          onchoose={() => ask(field.name)}
+        />
+        {#if field.name in asked}
+          <input
+            bind:value={asked[field.name]}
+            aria-label={`${field.title ?? field.name} label`}
+            placeholder={`label, ${field.title ?? field.name} if blank`}
+            class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
+          />
+        {:else}
+          <span></span>
+        {/if}
+      </div>
+    {/if}
     <!-- Said once, terse, rather than a paragraph per pattern: what each comes
          out as is the pool's answer, and the pool refuses one it does not know. -->
     {#if field.name === patterned}

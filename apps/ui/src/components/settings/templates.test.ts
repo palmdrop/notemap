@@ -1232,3 +1232,94 @@ test("offers a note's headings under the place, folded until asked for", async (
     expect(screen.queryByText("## Next")).toBeNull();
   });
 });
+
+test("asks for a field each time, under a label, leaving it without a default", async () => {
+  serving([]);
+
+  render(Templates);
+  await open(/add a template/);
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Projects" },
+  });
+  await open("ask each time");
+  await fireEvent.input(await screen.findByLabelText("directory label"), {
+    target: { value: "project" },
+  });
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Projects",
+    destination: VAULT,
+    capability: "create",
+    arguments: {},
+    asked: { directory: { label: "project" } },
+    folder: "create",
+  });
+});
+
+test("saves what an asked field holds as its default", async () => {
+  serving([]);
+
+  render(Templates);
+  await open(/add a template/);
+
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Projects" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "inbox" },
+  });
+  await open("ask each time");
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      arguments: { directory: "inbox" },
+      asked: { directory: {} },
+    }),
+  );
+});
+
+test("an edit that stops asking says so, rather than leaving it as it was", async () => {
+  serving([
+    aTemplate({ asked: { directory: { label: "project" } }, arguments: {} }),
+  ]);
+
+  render(Templates);
+  await open(/research/);
+  await open("edit");
+  expect(
+    ((await screen.findByLabelText("directory label")) as HTMLInputElement)
+      .value,
+  ).toBe("project");
+
+  await open("ask each time");
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain(`PATCH /v1/templates/${RESEARCH}`);
+  });
+  expect(await sent()).toContainEqual(expect.objectContaining({ asked: {} }));
+});
+
+test("an opened template names what it asks for, and what it falls back to", async () => {
+  serving([
+    aTemplate({
+      arguments: { directory: "inbox" },
+      asked: { directory: { label: "project" } },
+    }),
+  ]);
+
+  render(Templates);
+
+  expect(await screen.findByText("asks each time")).toBeTruthy();
+  await open(/research/);
+  expect(await said("project")).toBe("asked each time default inbox");
+});
