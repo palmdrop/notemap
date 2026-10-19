@@ -20,8 +20,23 @@ export type FixtureTemplate = {
   readonly capability: string;
   readonly arguments: Json;
   readonly folder?: Folder;
+  /** Fields left to be supplied each time it is applied, by name, as `/v1/templates` takes them. */
+  readonly asked?: Json;
   /** Seed captures one item carrying this tag, which is what routes it. */
   readonly triggerTag: string;
+  /** What that capture gives for the fields the template asks, where it asks any. */
+  readonly firedWith?: Readonly<Record<string, string>>;
+};
+
+/**
+ * Something already at a destination before anything is filed there, written
+ * the only way `/v1` can: a capture holding the text, routed there by hand.
+ */
+export type FixtureNote = {
+  readonly destination: string;
+  readonly capability: string;
+  readonly arguments: Json;
+  readonly text: string;
 };
 
 export type Fixture = {
@@ -29,6 +44,14 @@ export type Fixture = {
   readonly links?: string;
   readonly destinations: readonly FixtureDestination[];
   readonly templates: readonly FixtureTemplate[];
+  /** Written before the templates fire, so one can file into what they hold. */
+  readonly notes?: readonly FixtureNote[];
+};
+
+/** A template as the fixture wrote it and as the pool now holds it. */
+export type LaidOut = {
+  readonly fixture: FixtureTemplate;
+  readonly held: Template;
 };
 
 /** Read rather than cast: a fixture is a file somebody wrote by hand. */
@@ -63,21 +86,50 @@ export function readFixture(value: unknown): Fixture {
         throw new Error(`${at}.folder is not one of ${FOLDERS.join(", ")}`);
       }
 
+      const asked = one["asked"];
+      const firedWith = one["firedWith"];
       return {
         name: stringAt(one, "name", at),
         destination,
         capability: stringAt(one, "capability", at),
         arguments: objectAt(one["arguments"], `${at}.arguments`),
         ...(folder === undefined ? {} : { folder: folder as Folder }),
+        ...(asked === undefined
+          ? {}
+          : { asked: objectAt(asked, `${at}.asked`) }),
         triggerTag: stringAt(one, "triggerTag", at),
+        ...(firedWith === undefined
+          ? {}
+          : { firedWith: stringsAt(firedWith, `${at}.firedWith`) }),
       };
     },
   );
+
+  const notes =
+    fixture["notes"] === undefined
+      ? undefined
+      : listAt(fixture, "notes").map((each, index): FixtureNote => {
+          const at = `notes[${index}]`;
+          const one = objectAt(each, at);
+          const destination = stringAt(one, "destination", at);
+          if (!named.has(destination)) {
+            throw new Error(
+              `${at} names ${destination}, which no destination is`,
+            );
+          }
+          return {
+            destination,
+            capability: stringAt(one, "capability", at),
+            arguments: objectAt(one["arguments"], `${at}.arguments`),
+            text: stringAt(one, "text", at),
+          };
+        });
 
   return {
     ...(links === undefined ? {} : { links }),
     destinations,
     templates,
+    ...(notes === undefined ? {} : { notes }),
   };
 }
 
@@ -89,7 +141,10 @@ export function readFixture(value: unknown): Fixture {
 export async function layOut(
   http: Http,
   fixture: Fixture,
-): Promise<readonly Template[]> {
+): Promise<{
+  readonly destinations: ReadonlyMap<string, string>;
+  readonly templates: readonly LaidOut[];
+}> {
   const held = await http.get<Destinations>("/v1/destinations");
   const destinations = new Map(
     held.values.map((each) => [each.name, each.id] as const),
@@ -111,17 +166,21 @@ export async function layOut(
 
   for (const template of fixture.templates) {
     if (templates.has(template.name)) continue;
+    const { firedWith: _seeds, ...saved } = template;
     const made = await http.post<Template>("/v1/templates", {
-      ...template,
+      ...saved,
       destination: destinations.get(template.destination),
     });
     templates.set(template.name, made);
   }
 
-  return fixture.templates.flatMap((each) => {
-    const held = templates.get(each.name);
-    return held === undefined ? [] : [held];
-  });
+  return {
+    destinations,
+    templates: fixture.templates.flatMap((each) => {
+      const held = templates.get(each.name);
+      return held === undefined ? [] : [{ fixture: each, held }];
+    }),
+  };
 }
 
 function objectAt(value: unknown, at: string): Json {
@@ -129,6 +188,17 @@ function objectAt(value: unknown, at: string): Json {
     throw new Error(`${at} is not an object`);
   }
   return value as Json;
+}
+
+function stringsAt(
+  value: unknown,
+  at: string,
+): Readonly<Record<string, string>> {
+  const held = objectAt(value, at);
+  for (const [key, one] of Object.entries(held)) {
+    if (typeof one !== "string") throw new Error(`${at}.${key} is not text`);
+  }
+  return held as Readonly<Record<string, string>>;
 }
 
 function listAt(value: Json, key: string): readonly unknown[] {
