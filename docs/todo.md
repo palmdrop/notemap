@@ -39,6 +39,8 @@
   bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
   dropped as the reader scrolls back).
 
+- [ ] add way to open a capture from the index view, for example, have it expand when selected, grow to a regular capture row size
+
 ## Composer and capture
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
@@ -49,21 +51,7 @@
 
 - [ ] auto-route from relay to destination, for example, configure are.na inbox -> notemap -> template -> destination
 
-- [x] picking folders in the template form is strange and clunky, sometimes you have to click with mouse 
-  - it is not clear how to go back or use the current folder
-  - tabbing down the hierarchy has no effect on input field until you press "use <path>"
-  - going back is not clearly a button
-  - the composer allocates space that is not needed at all times, leaving a lot of empty space
-  - Done 2026-10-16 ([path-picking-and-enter](plans/path-picking-and-enter.md)): the form draws the
-    composer's typed line for a path field, neither list keeps a floor, and `under`'s list is drawn
-    only while it has the caret.
-
 - [ ] a proper file-picker library would be ideal, or a more traditional file picker/navigation flow at least, while still allowing text-first input
-
-- [x] Pressing enter when inputting a file path in composer routes the entire thing, instead of doing the expected "submit" or "complete" the file path. "Enter" should not route immediatelly, since it might be clicked accidentally. Enter should instead "choose" the selected path, or complete a partial input. CMD+Enter could in turn send the capture to the destination
-  - Done 2026-10-16 ([path-picking-and-enter](plans/path-picking-and-enter.md)). `⌘/ctrl+⇧⏎`
-    writes a free name beside a taken one into the line rather than routing, and a note to be
-    added to reads `[append]` in the tree.
 
 - [ ] Composer findings left out of [path-picking-and-enter](plans/path-picking-and-enter.md):
   - a half-typed heading in `under` (`Ne`) is taken as the heading it prefixes (`## Next`), and
@@ -84,6 +72,8 @@
 
 - [ ] trigger tags with arguments, for example, I might need to insert a todo in a todo file after a specific headline... how to do that? routing tag arguments? templates with arguments? 
 
+- [ ] add template descriptions
+    - and show description, or excerpt, when template is minimized in the settings view
 
 - [ ] Add a way to append text, or insert {{templates}} INSIDE the output of a capture. Requires capture output.
 - [ ] add way of picking a separate location for note and assets when using templates
@@ -194,7 +184,7 @@
 
 ## Destinations and adapters
 
-- [ ] Consider (fs) adapter on other machine. Sometimes, I might want to send a note to a specific machine, reachable over HTTPs or SSH (usually local network or tailscale/twingate network) 
+- [ ] Add destination descriptions
 
 - [ ] Verify and repair reach destination, template and pool-setting records. The mirror carries
   them ([ADR 20](adr/0020-destinations-are-pool-state.md),
@@ -225,6 +215,8 @@
   per-source policy in `packages/relay` rather than per relay: archiving the revision on arrival
   keeps the edit in the pool and the feed and out of the queue. A relay reading a block differently
   after an upgrade looks like an edit too, and the same policy would quiet that.
+
+- [ ] raycast, when escaped, cancels the input in the capture  note. Cache it temporarily and restore when command is opened again
 
 ## Pool, store and correctness
 
