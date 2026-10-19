@@ -1,5 +1,6 @@
 import type { Client } from "@notemap/client";
 
+import type { Supplied } from "./asked";
 import { capturing, chosen, excerpt, landing } from "./note";
 
 /** What the form holds when it is submitted. */
@@ -8,6 +9,8 @@ export type Values = {
   readonly tags: readonly string[];
   readonly newTags: string;
   readonly files: readonly string[];
+  /** By trigger tag, values for what its template asks, gathered from the form's own fields. */
+  readonly asked?: Supplied;
 };
 
 /**
@@ -52,6 +55,7 @@ export async function submitting(form: Form, values: Values): Promise<void> {
       text: values.text,
       files: values.files,
       tags: chosen(values.tags, values.newTags),
+      ...(values.asked === undefined ? {} : { arguments: values.asked }),
     });
 
     if (captured.kind === "refused") {

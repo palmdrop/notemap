@@ -178,13 +178,18 @@ Depends on Phase 3. Phase 5 can go before or after it.
 
 Depends on Phase 3.
 
-- [ ] The capture form reads the templates, and for each chosen trigger tag that asks it draws one
-      field per asked field under the tags, titled by its label and prefilled with the default.
+- [x] The capture form reads the templates, and for each chosen trigger tag that asks it draws one
+      field per asked field under the tags, titled by its label, the default its first entry or
+      its placeholder. A fixed set or what the destination lists is a `Form.Dropdown`, which also
+      takes typed text as a `+` entry; anything else a `Form.TextField`. Submitting with an asked
+      field empty and no default is refused on the form. Declared trigger tags are offered beside
+      those in use. _(2026-10-19)_
       This replaces the pushed `List` sketched in conversation: a form already on screen is
       Raycast's own idiom for "and one more value".
-- [ ] `lib/note.ts` tags with the arguments.
-- [ ] Tests beside `lib/submitting.ts`.
-- [ ] Verify: tests, typecheck, lint, and a manual run in Raycast. Commit.
+- [x] `lib/note.ts` tags with the arguments. _(2026-10-19)_
+- [x] Tests in `lib/asked.test.ts` and `lib/note.test.ts`. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
+- [ ] A manual run in Raycast. _(not done: no Raycast in this session)_
 
 ---
 
@@ -193,9 +198,10 @@ Depends on Phase 3.
 - **A supplied value that looks like a pattern.** Taken literally. That means `{{` is writable
   through an asked field and not through a template, which is a small asymmetry worth naming in the
   ADR rather than fixing.
-- **Raycast's dropdown and typed values.** `Form.Dropdown` offers only its items. The fallback is
-  to add the search text as an item while it matches none, or a `Form.TextField` with the
-  candidates listed in its `info`.
+- **Raycast's dropdown and typed values.** `Form.Dropdown` offers only its items, so the search
+  text is added as an item while it matches none. Whether `onSearchTextChange` with `filtering`
+  behaves that way inside a form is untested outside Raycast; the fallback is a `Form.TextField`
+  with the candidates listed in its `info`.
 - **An asked field depending on another asked field** (an asked `path`, then `heading`). The step
   asks with the value just given, which ADR 62's `given` carries. No template does this yet, so
   the chain is tested but not designed for beyond one step.
