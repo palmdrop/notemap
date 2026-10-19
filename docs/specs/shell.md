@@ -1190,8 +1190,19 @@ that cannot apply is drawn with its reason and not removed** — stranded, its d
 (`its destination is disabled`), its capability no longer declared. A template is the person's own
 decision, and hiding it because of a setting elsewhere is the worse surprise. Never a pattern: expansion is statically total.
 
+**A taken template that asks for something draws those fields open** *(2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*, under the
+read-only place, each under its label with the control its field draws anywhere else here — the
+note's headings to pick from, a fixed set to choose among, a line to type — and holding the default
+it resolved with. The first takes the caret, being the one thing left to decide. `route` waits until
+each holds a value, and commits as the template with them: changing what it asks is applying it,
+and only correcting what it fixed makes the decision the person's own. The place line leaves the
+asked fields out.
+
 **A trigger tag taken in the surface's own tags section files the item**, and the surface moves on
-rather than leaving a second decision half-made beside a route already on its way. Said on the
+rather than leaving a second decision half-made beside a route already on its way. *Amended
+2026-10-19*: one whose template asks for something files nothing there; it takes the template in
+`place`, which is where this surface asks. Said on the
 press rather than on the pool's answer, so whoever is holding a half-made decision is told before
 they can press it into a second copy.
 

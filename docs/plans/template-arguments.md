@@ -164,15 +164,15 @@ hand.
 
 Depends on Phase 3. Phase 5 can go before or after it.
 
-- [ ] Taking a template that asks draws its place read-only with each asked field open inline,
-      using the same lists as the chooser step. The first asked field takes the caret.
-- [ ] `route` commits as the template, with the arguments. Editing any other field still makes the
-      decision the person's own, as today.
-- [ ] A trigger tag taken in the surface's tags section takes the template in `place` rather than
-      filing at once, wherever the template asks.
-- [ ] Tests in `Process.test.ts`.
-- [ ] Spec: `shell.md` § The process surface.
-- [ ] Verify: tests, typecheck, lint. Commit.
+- [x] Taking a template that asks draws its place read-only with each asked field open inline,
+      using the same lists as the chooser step. The first asked field takes the caret. _(2026-10-19)_
+- [x] `route` commits as the template, with the arguments. Editing any other field still makes the
+      decision the person's own, as today. _(2026-10-19)_
+- [x] A trigger tag taken in the surface's tags section takes the template in `place` rather than
+      filing at once, wherever the template asks. _(2026-10-19)_
+- [x] Tests in `Process.test.ts`. _(2026-10-19)_
+- [x] Spec: `shell.md` § The process surface. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
 
 ### Phase 7: Raycast
 

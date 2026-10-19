@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { RoutingTemplate } from "@notemap/client";
+
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
   import { sayItFired } from "$lib/firing";
@@ -15,6 +17,7 @@
     names,
     templates = [],
     onfired,
+    onasks,
   }: {
     item: string;
     /** What the item carries, read live: a tag taken here is drawn taken at once. */
@@ -28,6 +31,12 @@
      * before they can press it into a second copy.
      */
     onfired?: () => void;
+    /**
+     * A trigger tag whose template asks for something was taken. It is not
+     * applied here: the template is taken where the decision is made, which
+     * already has a place to ask in.
+     */
+    onasks?: (template: RoutingTemplate) => void;
   } = $props();
 
   const inUse = client.tags.inUse;
@@ -50,6 +59,15 @@
   }
 
   function add(name: string): void {
+    const template = triggeredBy(name);
+    if (
+      template !== undefined &&
+      onasks !== undefined &&
+      Object.keys(template.asked ?? {}).length > 0
+    ) {
+      onasks(template);
+      return;
+    }
     void tagged(name);
     if (fires(name) !== undefined) onfired?.();
   }

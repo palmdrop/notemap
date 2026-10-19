@@ -4181,3 +4181,54 @@ test("offers no frontmatter while the delivery is a task, and sends none", async
     expect(sent).not.toHaveProperty("frontmatter");
   });
 });
+
+const ASKING = {
+  ...RESEARCH,
+  asked: { filename: { label: "name" } },
+};
+
+test("a template that asks draws the field open, gives it the caret, and commits as the template", async () => {
+  servingTemplates([ASKING]);
+
+  draw();
+  await choose("research");
+  await screen.findByRole("button", { name: "edit place" });
+
+  const name = (await screen.findByLabelText("filename")) as HTMLInputElement;
+  expect(screen.getByText("name")).toBeDefined();
+  await vi.waitFor(() => {
+    expect(document.activeElement).toBe(name);
+  });
+  expect(
+    (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+
+  await fireEvent.input(name, { target: { value: "milk.md" } });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual({
+    template: RESEARCH.id,
+    arguments: { filename: "milk.md" },
+  });
+});
+
+test("a trigger tag whose template asks takes the template here rather than filing", async () => {
+  servingTemplates([ASKING]);
+
+  draw();
+  await choose(/Vault/);
+  await described();
+
+  await addingTag();
+  await fireEvent.mouseDown(
+    await screen.findByRole("option", { name: /route\/research/ }),
+  );
+
+  expect(await screen.findByLabelText("filename")).toBeDefined();
+  expect(left()).toBeUndefined();
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
+});
