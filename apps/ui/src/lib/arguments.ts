@@ -3,7 +3,7 @@ import { fieldsOf } from "./schema-form";
 
 /**
  * The argument names notemap defines rather than a destination. They are drawn
- * as their own control — a folder mode is `create · require · establish` on a
+ * as their own control — a folder mode is `create`, `require` or `establish` on a
  * form, not a place typed into one — so they are never part of the place a
  * person reads off a row. Everything else in an arguments object is the
  * destination's own, and is drawn without this shell knowing what it means.

@@ -153,7 +153,7 @@ entering and leaving the corner. Nothing else moves.
 
 ### Bar
 
-`queue · feed · log · settings` as four equals at the left, the current one bold. At the right,
+`queue`, `feed`, `log` and `settings` as four equals at the left, the current one bold. At the right,
 one status glyph: reachable, unreachable, pending work. No wordmark, no theme toggle, no order
 control, no count. The order control (`oldest ▾` / `newest ▾`) moves into the head of each list
 that has one.
@@ -171,8 +171,8 @@ is unrouted, so saying it says nothing. No `+`. No grey. The queue should read a
 what was written.
 
 **A selected row** — one click or `enter` — is drawn as a box around both columns, the rail's
-rule running through it, with the actions as the box's own foot: `process · manual · discard`
-on the left, `process` bold, `discard` red; `edit · copy · open` on the right. Words only; no
+rule running through it, with the actions as the box's own foot: `process`, `manual` and
+`discard` on the left, `process` bold, `discard` red; `edit`, `copy` and `open` on the right. Words only; no
 marks for now. The rail's tags end in a `+` on the selected row, which opens the chooser in
 place — and is also how a template is applied, since a template is a tag. No fill, no colour:
 the box is the selection.
@@ -233,15 +233,15 @@ open. The item is reached from a record by a button, not by its text.
 
 ### Log
 
-A head with the five views as a ruled tab row — `everything · routing · captures ·
-classification · pool` — remembering the last one chosen. Rows on the open grid: when, the
+A head with the five views as a ruled tab row — `everything`, `routing`, `captures`,
+`classification` and `pool` — remembering the last one chosen. Rows on the open grid: when, the
 **kind** in its own column in caps, the item's first words. A routing kind draws the record block
 beneath. No lede, no source, no ids, no `firedByTag`; `pointer` reads as `place`. The per-item
 filter is reached from the item, named `history` rather than `only this`.
 
 ### Settings
 
-A side menu — `Destinations · Templates · Account · Server · Appearance` — and one section on
+A side menu — `Destinations`, `Templates`, `Account`, `Server` and `Appearance` — and one section on
 the right, ruled between rows. `Account` is sign out and access tokens. `Server` is the address,
 version, reachability with its last answer, the way to the API reference, and the sources the
 pool has seen, folded. `Appearance` is the theme. No lede sentence. `pool` is not said to the

@@ -137,7 +137,7 @@
   until then and sent once the edit has landed, so it files the saved words; letting the edit go
   takes it away unsent. Ordinary tags are sent at once, as before.
   ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md))
-- 2026-09-29 — **Rows by day.** Appearance offers `rows: auto · by day · rail`, held on the
+- 2026-09-29 — **Rows by day.** Appearance offers `rows` as `auto`, `by day` or `rail`, held on the
   device. By day, the queue and the feed, in the timeline and the index, head each day with its
   date and weekday, sticky while its rows scroll, and a row keeps only its time. Below `narrow`
   the rail holds the time alone and the rest follows the capture; above it, the rail keeps its
@@ -163,7 +163,7 @@
   it whole, and an emptied filter never says the queue is drained. See
   [filter-by-tag](../plans/filter-by-tag.md).
 - 2026-09-27 — **An edit asks before it is left, and the capture box is walked.** `edit`
-  rewrites the capture in the body itself, and `close · revert · attach` and `save` take the
+  rewrites the capture in the body itself, and `close`, `revert`, `attach` and `save` take the
   actions' place in the foot; no decision is reached meanwhile, and the tags stay live. Leaving an
   edit with changes, by any way at all, asks in a dialog naming the capture — `revert` or `save`,
   and `esc` goes back into the field. The item's own surface does the same. A selected row growing or
@@ -195,9 +195,9 @@
   both ways. The log moves only what the watcher brings, and a view or order chosen fades the old
   reading out and the new one in. See [loading-and-motion](../plans/loading-and-motion.md).
 - 2026-09-24 — **The corner lets go, and the lists read on.** `marked manual`, `discarded` and a
-  landed `routed · research` no longer stand: a notice that offers something lingers long enough to
+  landed `routed **research**` no longer stand: a notice that offers something lingers long enough to
   reach for it, nothing leaves the corner while the pointer is over it or focus is inside it, and
-  every notice can be dismissed. Only `routing · research`, whose `cancel` exists nowhere else,
+  every notice can be dismissed. Only `routing **research**`, whose `cancel` exists nowhere else,
   still stands. The feed, the queue and the log read their next page as the reader scrolls within a
   screen of the foot, and `j` past the last row held reads it before stepping; `load more` stays as
   the keyboard's and a failed read's way to ask again, and keeps its width while it loads.
@@ -274,7 +274,7 @@
   queue holds the selected row after a decision until the selection leaves it; the composer draws a
   taken template's place read-only, bolds the trail it names, heads its preview with the full path,
   and stays after a route for a second place; the tag chooser is an overlay that marks its match
-  once typed into, offers a `new ·` row, removes on a second press, and draws a filed trigger tag
+  once typed into, offers a `+ name` row, removes on a second press, and draws a filed trigger tag
   inert; a typed line break is drawn as one. See
   [shell-minor-changes](../plans/shell-minor-changes.md).
 - 2026-09-14 — **The log on the register.** Phase 5b of
@@ -300,13 +300,13 @@
 - 2026-09-14 — **Processing is a surface.** `/items/{id}/process` replaces the modal composer:
   the capture at a fixed head, editable in place for this delivery alone; ruled sections —
   `destination` narrowing three bands, `place`, `tags`, `preview` asked for as soon as the place
-  is settled — in a scrolling middle; `route` and `previous · next` in a fixed foot. Two columns
+  is settled — in a scrolling middle; `route`, `previous` and `next` in a fixed foot. Two columns
   from 64rem, stacked below. A decision advances to the next item in the queue and returns to the
   queue when none is left; `esc` returns with the item selected. Phase 4 of
   [shell-redesign](../plans/shell-redesign.md); the first version of the redesign is complete.
 - 2026-09-14 — **The queue row and the quick tier.** The register is two columns and one rule; a
-  selected row is a box with its actions as the foot — `process · manual · discard` left, `edit ·
-  copy · open` right — and `manual` and `discard` act from the row at once with `undo` in the
+  selected row is a box with its actions as the foot — `process`, `manual` and `discard` left, `edit`,
+  `copy` and `open` right — and `manual` and `discard` act from the row at once with `undo` in the
   corner. No state word on the queue; a trigger tag is small caps of its name; `+` only on the
   selected row. The capture box replaces the capture row, the furl goes, an index view joins the
   timeline in a list head of its own, the drained queue is one line, and `j k ⏎ p m d + esc` work
@@ -314,7 +314,7 @@
   modal.
 - 2026-09-14 — **One face, one size, ink on white.** The shell is set in Bricolage Grotesque at
   15px throughout, black on white with one red for failure and destruction, the dark theme its
-  inversion. The bar is `queue · feed · log · settings` and one status glyph; the order control
+  inversion. The bar is `queue`, `feed`, `log` and `settings` and one status glyph; the order control
   moved into the head of each list, the palette into settings. Every retired role — the second
   face, the second size, muted ink, green, the accent — is gone from the tokens and gated out.
   Phase 2 of [shell-redesign](../plans/shell-redesign.md); the row and the composer are still the
@@ -429,10 +429,10 @@
   starts rather than a form. A **Templates** section in settings holds them, each row asking its own
   report as the page draws, a stranded one repointed by an ordinary edit. A tag that a template
   declared is **marked as one**, naming the template, everywhere a tag is offered — and putting one
-  on an item gives the corner `routing · research` with a real `cancel` while the window is open —
+  on an item gives the corner `routing **research**` with a real `cancel` while the window is open —
   said by the shell that tagged as soon as it can name the record, the log being polled more slowly
   than the window lasts, and drawn as news rather than as an alarm —
-  then `routed · research` once it lands.
+  then `routed **research**` once it lands.
   ([plan](../plans/routing-templates.md),
   [ADR 34](../adr/0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md),
   [37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md))
@@ -709,7 +709,7 @@ rail, and it survives a phone rather than collapsing into the first. *Amended 20
 layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
 `narrow`. The two columns stay; by day, below `narrow`, the rail narrows to the width of a time.
 
-Navigation names **four** surfaces — `queue · feed · log · settings` — as four equals at the
+Navigation names **four** surfaces — `queue`, `feed`, `log` and `settings` — as four equals at the
 bar's left, the current one bold, each holding its bold width so the one beside it does not move
 ([Motion](#visual-direction)). *Amended 2026-09-14*: the log and settings joined the two; the
 wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
@@ -835,15 +835,15 @@ typed against, with the template it fires beside it after an arrow: `route/journ
 
 **Selected, a row is a box.** One click anywhere on either cell, or `enter`, draws a rule around
 both columns — the rail's own rule running through it — with the **actions as the box's foot**:
-`process · manual · discard` on the left, `process` bold and `discard` in the alarm; `edit · copy
-· open` on the right, ruled on all four sides so the foot is a strip of its own. Words only, no
+`process`, `manual` and `discard` on the left, `process` bold and `discard` in the alarm; `edit`,
+`copy` and `open` on the right, ruled on all four sides so the foot is a strip of its own. Words only, no
 marks. The box reaches a little outside the columns so the text inside it does not move when it
 appears. **Nothing else changes**: no fill, no colour, no facts appear.
 
 **`edit` rewrites the capture where it is read** *(amended 2026-09-27; it drew a second ruled box
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
-for `close · revert · attach` on the left and a bold `save` on the right**, `revert` drawn only
+for `close`, `revert` and `attach` on the left and a bold `save` on the right**, `revert` drawn only
 while the edit holds something the item does not say — words, an attachment, or a trigger tag waiting
 for the save — sliding in beside `close` as it appears. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
@@ -979,7 +979,7 @@ away, and a capital is one deliberate press rather than a different gesture. Not
 guarded, the status line's `undo` being what makes the rest cheap to take back.
 
 **The index is a second view of the same list**, chosen in the list head as the order is —
-`timeline ▾` or `index ▾` *(amended 2026-10-01; it was `timeline · index` at the head's left, the
+`timeline ▾` or `index ▾` *(amended 2026-10-01; it was `timeline` and `index` at the head's left, the
 current one bold)* — and carried on the URL as `view=index`,
 remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
 the first words cut at a word with `…`, the tags at the right, dropped below the narrow
@@ -1004,7 +1004,7 @@ walked to by `j`/`k` stops clear of the line, by day or not, and clear of the st
 #### Rows by day
 
 *Added 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)).* **A register
-can be read by day**, the reader's choice under Appearance as `rows: auto · by day · rail`, held
+can be read by day**, the reader's choice under Appearance as `rows` with `auto`, `by day` or `rail`, held
 on the device like the palette. `rail` is everything above. `by day` is below. `auto`, the
 default, is by day below `narrow` and the rail above it, since the rail's width is what a phone
 cannot spare.
@@ -2210,7 +2210,7 @@ window closes the count gives way to the asking mark — the delivery is being a
 went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
 once each, timed by this device's clock as the countdown is, and only those still ahead for a
 firing first heard of from the log — rather than waiting on the watcher's ten-second tempo, since most deliveries land
-within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 · 4s`, the soonest window
+within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 4s`, the soonest window
 — and each is read and cancelled in the panel.
 
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
@@ -2427,8 +2427,8 @@ before. **A disabled destination is hidden** from the ordinary list; under it, `
 at the left and, where any are disabled, `show N disabled` at the right, `hide N disabled` once
 shown.
 Opening a row adds its facts — `ACTIONS`, `STATUS` with when it was last checked, then one fact per
-setting its kind asked for, **no id among them** — and the actions line: `check again · edit ·
-disable | delete`, `enable` on a disabled one. **The opened row is a box** *(2026-09-16, the
+setting its kind asked for, **no id among them** — and the actions line: `check again`, `edit` and
+`disable`, with `delete` at the right, `enable` on a disabled one. **The opened row is a box** *(2026-09-16, the
 drawing had it plain)*, drawn as the queue draws its selected row, so that among rows ruled only
 between them the one that is open is the one with edges; whatever the row holds — facts, actions,
 the ask, the form — is inside it. A row with its form or its ask open **does not close on a click
@@ -2447,7 +2447,7 @@ is named as what it comes out as** *(2026-09-16)*: `default (none)`, read off th
 never a sentence; what a field means is its label and its control.
 
 **Deleting is the one thing here that cannot be undone, so it is the one thing that asks — in the
-actions line itself, in alarm, with no sentence**: `Delete Obsidian vault? · delete · keep`.
+actions line itself, in alarm, with no sentence**: `Delete Obsidian vault?`, `delete`, `keep`.
 Where the pool refuses because a record names it, the refusal *is* the line, with `disable instead`
 beside it — only the pool knows whether a record has ever named a destination, so its refusal is the
 answer, and it lands where the alternative it leaves is already on screen. There is no modal; a
@@ -2463,15 +2463,15 @@ of a grid.
 
 **Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
 template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
-after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG ·
-DESTINATION · ACTION · PLACE` — `OUTPUT attachments only` in place of `ACTION` for a template that
+after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG`,
+`DESTINATION`, `ACTION` and `PLACE` — `OUTPUT attachments only` in place of `ACTION` for a template that
 places the attachments alone *(2026-10-08)* — then **one fact per setting the template takes for its deliveries**
-— `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING ·
-USED` *(the folder mode, retitled from `FOLDER` 2026-10-08, which read the same as a folder
+— `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING` and
+`USED` *(the folder mode, retitled from `FOLDER` 2026-10-08, which read the same as a folder
 field)*, `used` naming the count and when it last fired. The place leaves those settings out, on the
 line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
-ordinary edit of its destination field; the actions are `check again · edit | delete`.
+ordinary edit of its destination field; the actions are `check again` and `edit`, with `delete` at the right.
 
 **Accounts** sits under Destinations *(2026-09-23)*: the logins the daemon holds on other systems,
 under a sub-head per kind. Each is one row: its name, then its fields in bold, then `secret set` or `no secret`
@@ -2484,8 +2484,8 @@ field that is a password input and is never filled from the daemon. On an edit o
 leaving it blank keeps the secret held. Editing a config account seeds the form from its fields and
 requires a secret; once saved, its row says the config entry is ignored.
 
-**Access** *(was Account, renamed 2026-09-23 so the word keeps its one meaning)* is one row — `signed in · this browser holds a session`, with `sign out` at the row's
-right — or, on a daemon nobody has set a password on, `open · no password is set…`, naming the
+**Access** *(was Account, renamed 2026-09-23 so the word keeps its one meaning)* is one row — `SIGNED IN this browser holds a session`, with `sign out` at the row's
+right — or, on a daemon nobody has set a password on, `OPEN no password is set…`, naming the
 command that closes the door. Under it, **access tokens**, drawn only for a session, as before: one
 row per token with when it was made and last used and `revoke` at its right, the once-shown minted
 string boxed in alarm with `copy` and `done`, and `+ add a token` opening a name field and `create`
@@ -2552,7 +2552,7 @@ than the word. The blobs row says how many assets the pool holds beside the blob
 as, and `SAVED` says what holding identical bytes once saved, where that is anything — **the
 registry's own figure** *(2026-10-12)*, so it is drawn with the cheap read rather than waiting out
 the walk, and never the difference between the two totals: the store also holds what deliveries
-wrote. The mirror row says `1,204 records · 2,408 files` — the pair per item, so any other ratio is
+wrote. The mirror row says `1,204 records / 2,408 files` — the pair per item, so any other ratio is
 a rendering that never landed.
 
 **`RECLAIMABLE` carries what a reclaim would take now** — its bytes in the size column, `2 files
@@ -2579,9 +2579,9 @@ and a sum missing them would be the largest number on the screen and wrong.
 Unavailable rather than guessing while the pool is out of reach, on Pool settings' own terms: a cold
 client has no measurement to draw and says so.
 
-**Appearance** is `THEME auto · light · dark` on the facts grid — the same three-way choice, moved
-under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS auto · by
-day · rail` under it, the same control ([Rows by day](#rows-by-day)).
+**Appearance** is `THEME` with `auto`, `light` and `dark` on the facts grid — the same three-way choice, moved
+under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS` with `auto`, `by
+day` and `rail` under it, the same control ([Rows by day](#rows-by-day)).
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts
@@ -2798,7 +2798,7 @@ and the gate fails a duration, delay or easing named anywhere else. Ground and i
 inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
 
 **Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
-words, `auto · light · dark`, the chosen one bold. `auto` is the browser's own answer and the
+words, `auto`, `light` and `dark`, the chosen one bold. `auto` is the browser's own answer and the
 default, because it is the only one that can be right before a person has said anything. The
 choice is remembered and applied **before first paint**, or the page shows one palette and
 corrects itself in front of the reader.

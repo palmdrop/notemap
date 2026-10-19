@@ -13,7 +13,7 @@ supposed to leave.
 | [adr/](adr/) | The decisions, and why. Read one before re-opening its question — then re-open it if you have the better argument. |
 | [standards.md](standards.md) | Principles, formats and the interop contract. |
 | [running.md](running.md) | Deploying and operating it: the container, the proxy, the volume, destinations. |
-| [plans/](plans/) · [reviews/](reviews/) | Implementation plans and code reviews, as they happen. |
+| [plans/](plans/), [reviews/](reviews/) | Implementation plans and code reviews, as they happen. |
 
 All of it is written in decided language and none of it is closed; see
 [AGENTS.md](../AGENTS.md#how-settled-any-of-this-is) for how to disagree with it.
