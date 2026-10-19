@@ -7,6 +7,7 @@
   import Action from "$components/primitives/controls/Action.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import HeldAttachment from "$components/item/HeldAttachment.svelte";
+  import { askingFor, saidFor, type Supplied } from "$lib/asked";
   import { isImage } from "$lib/attachments";
   import { WEB } from "$lib/channels";
   import { client } from "$lib/client";
@@ -46,6 +47,8 @@
   const held = readDraft();
   let text = $state(held.text);
   let tags = $state<string[]>([...held.tags]);
+  /** By trigger tag, the values given for what its template asks. */
+  let given = $state<Record<string, Supplied>>({ ...held.arguments });
   let chosen = $state<readonly File[]>(heldFiles());
   let busy = $state(false);
   let said = $state("");
@@ -110,7 +113,14 @@
   });
 
   $effect(() => {
-    writeDraft({ text, tags });
+    const kept = Object.fromEntries(
+      Object.entries(given).filter(([tag]) => tags.includes(tag)),
+    );
+    writeDraft(
+      Object.keys(kept).length === 0
+        ? { text, tags }
+        : { text, tags, arguments: kept },
+    );
   });
 
   $effect(() => {
@@ -123,6 +133,7 @@
       const back = readDraft();
       text = back.text;
       tags = [...back.tags];
+      given = { ...back.arguments };
       chosen = heldFiles();
     }),
   );
@@ -172,15 +183,20 @@
       for (const file of chosen) assets.push(await client.attach(file));
 
       const sent = [...tags];
+      const values = Object.fromEntries(
+        Object.entries(given).filter(([tag]) => sent.includes(tag)),
+      );
       const item = await client.capture({
         channel: WEB,
         text,
         ...(assets.length === 0 ? {} : { assets }),
         ...(sent.length === 0 ? {} : { tags: sent }),
+        ...(Object.keys(values).length === 0 ? {} : { arguments: values }),
       });
 
       text = "";
       tags = [];
+      given = {};
       chosen = [];
       clearDraft();
 
@@ -267,8 +283,18 @@
             {offered}
             label="Tag the capture"
             fires={(name) => triggeredBy(name)?.name}
-            onadd={(name) => (tags = [...tags, name])}
-            onremove={(name) => (tags = tags.filter((one) => one !== name))}
+            ask={askingFor}
+            besides={(name) => saidFor(name, given[name])}
+            onadd={(name, supplied) => {
+              tags = [...tags, name];
+              if (supplied !== undefined)
+                given = { ...given, [name]: supplied };
+            }}
+            onremove={(name) => {
+              tags = tags.filter((one) => one !== name);
+              const { [name]: _dropped, ...rest } = given;
+              given = rest;
+            }}
           />
         </span>
 

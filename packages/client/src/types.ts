@@ -475,6 +475,8 @@ export interface Client {
     payload: Payload,
     source: string,
     tags?: readonly string[],
+    /** By tag among `tags`: values for what its template asks. */
+    supplied?: Readonly<Record<string, SuppliedArguments>>,
   ): Promise<void>;
   /** The payload an edit would carry for new words, whichever slot holds them. */
   saying(item: Item, said: string): Payload;

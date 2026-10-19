@@ -1969,6 +1969,27 @@ on another device since is drawn unmarked until the templates are read again. Dr
 that turns out to file something is the wrong direction to be wrong in, and the honest fix is
 reading the list rather than guessing; nothing here pretends to know more than it read.
 
+**A trigger tag whose template asks for something asks before it lands** *(2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. Taking it
+does not put it on the item: the chooser's own line asks for each asked field in turn, named by its
+label, with the default as the line's placeholder, and its panel is headed by the tag, the
+template and the label. What the panel offers is the field's own: the values a fixed field allows,
+and nothing else; for a field the destination can list, what it lists — a note's headings, asked
+with the template's own note — and, typed into, the typed words as a `+` row of their own, so a
+heading that is not there yet is taken knowingly; for any other field, nothing, the line being
+typed. Where the field the list depends on holds a pattern there is no one note to ask about, and
+the line is typed. `⏎` takes the walked row, else what was typed, else the default on an empty
+line; with no default an empty line stays and asks again. `esc` steps back a field, then back to
+the tags; leaving the line takes nothing. **The tag lands with its values once the last is
+given**, as one operation, which is the same whether it drains now or tomorrow. The destination is
+asked to describe itself for at most two seconds first, and one that does not answer leaves every
+field typed. **Below `narrow` the panel is a sheet across the foot of the screen** while it asks.
+
+**A trigger tag carried with values says them after it** — `route/todo` then `list Next`, label
+then value, a value left out reading as the default it will take — wherever the tag has not yet
+gone: in the capture box, and on a row whose edit holds it until the save. A tag already on an item
+says nothing more: where it filed is on the routing line.
+
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why a destination is settled before anything is asked of it, rather
 than a flattened destination×capability list being offered up front.
@@ -2201,7 +2222,9 @@ Putting a trigger tag on an item reserves a delivery and waits a configured wind
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
 Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
-**`research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
+**`research`**, the seconds left in the window, and **`cancel`**. Where the template asked for
+something, what it was given follows the name, label then value — `routing **todo** list Next`
+*(2026-10-19)* — read from the record the tag made, or from `template-fired`'s `arguments`. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the

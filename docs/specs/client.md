@@ -793,7 +793,7 @@ would be for any tag.
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. `tag` takes
 them as a third argument, and the `tag` operation holds them so an offline tag drains with the
 values it was given; `capture` takes `arguments` keyed by tag, and sends only those whose tag it
-still carries. Neither changes what the operation is about or what opposes it: a `tag` still pairs
+still carries, and `edit` takes them beside the tags it sends once the edit has landed. Neither changes what the operation is about or what opposes it: a `tag` still pairs
 with its `untag` on the tag alone. Whether a value fits is the pool's to say on drain, on the terms
 a stale template already is.
 

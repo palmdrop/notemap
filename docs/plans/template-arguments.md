@@ -140,19 +140,25 @@ Depends on Phase 3.
 Depends on Phase 3. Phase 4 is only needed to make a template that asks without writing one by
 hand.
 
-- [ ] Taking a trigger tag whose template asks turns the chooser's panel into a step per asked
+- [x] Taking a trigger tag whose template asks turns the chooser's panel into a step per asked
       field, in dependency order. Each step has a heading naming the template and the field's
-      label, a field prefilled with the default, and the list the field's kind allows (closed
-      enum, candidates with a typed row, or nothing). `⏎` takes, `esc` steps back to the tags, and
-      a second `esc` closes without tagging. The tag lands with its arguments, as one operation.
-- [ ] The same step on the row, in the capture box (the draft holds the values beside the tags,
-      and pressing the carried tag reopens the step until the capture commits), and on an item's
-      tags. Below `narrow` the panel is a full-width sheet.
-- [ ] A carried trigger tag with a value reads `route/todo under Next`, label then value.
-- [ ] The status line reads `routing **todo** under Next` while the window is open.
-- [ ] Tests: `TagSet`, `Capture.test.ts`, the row, the status line.
-- [ ] Spec: `shell.md` § Tagging, § Capture, § The status line.
-- [ ] Verify: tests, typecheck, lint. Commit.
+      label, the default as the line's placeholder (prefilled would narrow the list to it), and
+      the list the field's kind allows (closed enum, candidates with a typed row, or nothing). `⏎`
+      takes, `esc` steps back to the tags, and a second `esc` closes without tagging. The tag
+      lands with its arguments, as one operation. _(2026-10-19)_
+- [x] The same step on the row, in the capture box (the draft holds the values beside the tags,
+      and a refused capture put back restores them), and on a row whose edit holds the tag until
+      the save. Below `narrow` the panel is a full-width sheet. _(2026-10-19)_
+- [-] Pressing a carried tag reopens the step until the capture commits _(dropped — `×` and taking
+      the tag again does the same in two presses, and a press on a carried tag already means
+      select-for-removal everywhere else)_
+- [x] A carried trigger tag with a value reads `route/todo` then `list Next`, label then value,
+      where the tag has not gone yet. _(2026-10-19)_
+- [x] The status line reads `routing **todo** list Next` while the window is open, and the panel
+      says the same. _(2026-10-19)_
+- [x] Tests: `Capture.test.ts`, `Queue.test.ts`, `action-log.test.ts`. _(2026-10-19)_
+- [x] Spec: `shell.md` § Tagging, § The status line. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
 
 ### Phase 6: the process surface
 

@@ -144,6 +144,7 @@
           <Entry
             what="routing"
             subject={firing.name}
+            {...firing.where === undefined ? {} : { why: firing.where }}
             href={firing.href}
             offer={{ label: "cancel", take: () => oncancel(firing) }}
           >

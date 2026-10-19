@@ -2,6 +2,7 @@
   import type { Item } from "@notemap/client";
 
   import TagSet from "$components/primitives/controls/TagSet.svelte";
+  import { askingFor, saidFor, type Supplied } from "$lib/asked";
   import { client } from "$lib/client";
   import { tagged } from "$lib/firing";
   import { offerable, triggeredBy } from "$lib/templates";
@@ -49,11 +50,11 @@
   }
 
   /** A trigger tag files the item, so one taken mid-edit files what the save says. */
-  function take(name: string): void {
+  function take(name: string, supplied?: Supplied): void {
     if (editing !== undefined && name.startsWith(TRIGGER_NAMESPACE)) {
-      editing.wait(name);
+      editing.wait(name, supplied);
     } else {
-      void tagged(item.id, name);
+      void tagged(item.id, name, supplied);
     }
   }
 
@@ -83,6 +84,9 @@
       );
     }}
     waiting={(name) => waiting.includes(name)}
+    ask={askingFor}
+    besides={(name) =>
+      waiting.includes(name) ? saidFor(name, editing?.given[name]) : undefined}
     onadd={take}
     onremove={drop}
   />

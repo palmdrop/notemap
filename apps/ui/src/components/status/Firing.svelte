@@ -41,7 +41,8 @@
   {@const seconds = left(firing, now)}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
     <span class="max-narrow:hidden"
-      >routing <span class="font-semibold">{firing.name}</span></span
+      >routing <span class="font-semibold">{firing.name}</span
+      >{#if firing.where !== undefined}&nbsp;{firing.where}{/if}</span
     >
     <span class="narrow:hidden">routing</span>
     {#if seconds !== undefined}

@@ -108,6 +108,11 @@ export function firingOf(
   said: {
     /** A template's name where it is known, falling back to the one the entry carries. */
     templateOf?: (template: string) => string | undefined;
+    /** Where the values a template was given put the item, where it asks for any. */
+    whereOf?: (
+      template: string,
+      values: Readonly<Record<string, unknown>>,
+    ) => string | undefined;
     about: (item: string) => string;
   },
 ): { readonly opened: Firing } | { readonly closed: string } | undefined {
@@ -124,6 +129,11 @@ export function firingOf(
 
   const template = stringAt(detail, "template");
   const until = stringAt(detail, "until");
+  const values = detail["arguments"];
+  const where =
+    template === undefined || typeof values !== "object" || values === null
+      ? undefined
+      : said.whereOf?.(template, values as Record<string, unknown>);
   return {
     opened: {
       record,
@@ -132,6 +142,7 @@ export function firingOf(
         (template === undefined ? undefined : said.templateOf?.(template)) ??
         stringAt(detail, "name") ??
         "a template",
+      ...(where === undefined ? {} : { where }),
       href: said.about(action.subject),
       ...(until === undefined ? {} : { until: Date.parse(until) }),
     },

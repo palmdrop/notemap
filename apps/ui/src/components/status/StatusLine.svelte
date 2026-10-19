@@ -25,6 +25,7 @@
   } from "$lib/refused";
   import { reachable } from "$lib/reachable.svelte";
   import { discardedKey, keyFor } from "$lib/routing";
+  import { whereOf } from "$lib/asked";
   import { heldName } from "$lib/templates";
 
   import Counts from "./Counts.svelte";
@@ -201,6 +202,7 @@
 
     const firing = firingOf(action, {
       templateOf: heldName,
+      whereOf,
       about: itemHref,
     });
     if (firing === undefined) return;

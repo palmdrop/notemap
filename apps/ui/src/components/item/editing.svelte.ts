@@ -1,6 +1,7 @@
 import type { Item, ItemId } from "@notemap/client";
 import { saidBy } from "@notemap/client";
 
+import type { Supplied } from "$lib/asked";
 import { isImage, nameOf } from "$lib/attachments";
 import { WEB } from "$lib/channels";
 import { client } from "$lib/client";
@@ -63,6 +64,8 @@ export class Editing {
   attachments = $state<readonly Held[]>([]);
   busy = $state(false);
   waiting = $state<readonly string[]>([]);
+  /** By waiting tag, the values given for what its template asks. */
+  given = $state<Readonly<Record<string, Supplied>>>({});
 
   readonly item: Item;
   readonly #close: () => void;
@@ -92,12 +95,15 @@ export class Editing {
     );
   }
 
-  wait(tag: string): void {
+  wait(tag: string, supplied?: Supplied): void {
     if (!this.waiting.includes(tag)) this.waiting = [...this.waiting, tag];
+    if (supplied !== undefined) this.given = { ...this.given, [tag]: supplied };
   }
 
   unwait(tag: string): void {
     this.waiting = this.waiting.filter((held) => held !== tag);
+    const { [tag]: _dropped, ...rest } = this.given;
+    this.given = rest;
   }
 
   /** Holds each file after what the edit already carries; one the pool would refuse is said and left. */
@@ -118,6 +124,7 @@ export class Editing {
     this.text = this.#says;
     this.attachments = this.#carries;
     this.waiting = [];
+    this.given = {};
   }
 
   /** Asks first where there are changes to lose. */
@@ -147,11 +154,12 @@ export class Editing {
     try {
       const id = this.item.id;
       const waiting = this.waiting;
+      const given = this.given;
 
       // Read before anything is attached: an edit that says nothing new sends
       // its waiting tags and names no asset, so there is nothing to hold.
       if (!this.#rewritten) {
-        for (const tag of waiting) await client.tag(id, tag);
+        for (const tag of waiting) await client.tag(id, tag, given[tag]);
         this.#sent(id, waiting);
         return true;
       }
@@ -165,6 +173,7 @@ export class Editing {
           client.attached(client.saying(this.item, this.text), attached.named),
           WEB,
           waiting,
+          given,
         );
       } catch (error) {
         notices.raise({ what: saidBy(error), alarm: true });

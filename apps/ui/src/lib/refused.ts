@@ -74,8 +74,13 @@ export async function editRefused(held: RefusedCapture): Promise<void> {
     return;
   }
 
+  const { tags = [], arguments: given } = held.operation.envelope;
   const restored = restoreDraft(
-    { text: wordsOf(held), tags: held.operation.envelope.tags ?? [] },
+    {
+      text: wordsOf(held),
+      tags,
+      ...(given === undefined ? {} : { arguments: given }),
+    },
     files,
   );
   if (restored !== "restored") {

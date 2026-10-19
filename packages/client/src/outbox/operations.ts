@@ -27,6 +27,8 @@ export type Operation =
       readonly envelope: EditEnvelope;
       /** Sent only once the edit has landed, to whichever item then says its words. */
       readonly tags?: readonly string[];
+      /** By tag among `tags`: values for what its template asks. */
+      readonly arguments?: Readonly<Record<string, SuppliedArguments>>;
     }
   | {
       readonly kind: "tag";
