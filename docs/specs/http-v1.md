@@ -548,6 +548,12 @@ The request body is core's `CaptureEnvelope` **verbatim** — no wrapper, no ren
 }
 ```
 
+A capture carrying a trigger tag may carry values for what its template asks *(added 2026-10-19)*,
+in `arguments`, keyed by tag: `"arguments": { "route/todo": { "heading": "Next" } }`. A tag whose
+template cannot apply with them is dropped from the capture, as any trigger tag that cannot route
+is ([core.md](core.md#classification)). Like the tags, they are not part of what a replay is
+compared on.
+
 - `201 Created` on a first capture. The body is the `CaptureOutcome` verbatim —
   `{ "kind": "captured", "item": { … } }` — and `Location: /v1/items/<id>` names the item.
 - `200 OK` on a replay: `{ "kind": "already-captured", "item": { … }, "matchedOn": "id" }`,
@@ -915,7 +921,7 @@ Both answer `200 OK` with the `Item` as it now stands.
   (amended 2026-08-24): classification is not content, so nothing that seals a capture reaches it,
   and `409 item-superseded` is gone from this route with the word it was named for.
 - The body is required and strict: no `tag` is `400 malformed-envelope`, and so is a key the route
-  does not know. The route does not police the tag itself: core trims it, and one that trims to
+  does not know. `/tag` alone also takes `arguments`, below. The route does not police the tag itself: core trims it, and one that trims to
   nothing is `422 tag-invalid` carrying what was sent.
 - **A tag may apply a routing template** (added 2026-09-07). A tag under `route/` that some template
   declared as its trigger tag applies that template: the answer is still the `Item`, and the item
@@ -931,6 +937,12 @@ Both answer `200 OK` with the `Item` as it now stands.
   same tag applied after the repair would be absorbed
   ([core.md](core.md#classification)). A destination that could not be *reached* is not this case
   and does not refuse: the reservation is made and the delivery waits.
+- **A trigger tag carries values for what its template asks** *(added 2026-10-19,
+  [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*, as
+  `arguments` beside the tag: `{ "tag": "route/todo", "arguments": { "heading": "Next" } }`. The
+  tag itself is unchanged. Without them the template's defaults apply, and an asked field with
+  neither is `422 trigger-refused` whose `detail` names it, as is a value for a field the template
+  fixes. They are ignored where the tag fires nothing, absorbed or ordinary.
 - **`/untag` raises none of that, and one thing tagging cannot.** Removing a tag fires nothing and
   unroutes nothing, so `trigger-refused` is absent from its refusals rather than listed and
   unreachable. But a **trigger tag that filed this item is refused while what it filed still
@@ -1373,6 +1385,9 @@ terms: it answers at once, cannot fail, and asks no destination anything.
   did — on the terms `routing` on an `Item` is already derived. It rides on the row because a
   settings page draws a list and cannot ask per row.
 - **Not paginated**: there are as many templates as a person made.
+- **`asked` names the fields left to be supplied each time** *(added 2026-10-19)*, by field, each
+  with an optional `label`: `"asked": { "heading": { "label": "list" } }`. Absent where it asks for
+  nothing. A field's default is what `arguments` holds for it.
 
 `POST /v1/templates` — save a decision. `201 Created` with the template and a `Location` naming it.
 
@@ -1398,10 +1413,14 @@ terms: it answers at once, cannot fail, and asks no destination anything.
   nothing is `422 trigger-tag-invalid`.
 - A destination the pool does not hold is `422 unknown-destination`: the id is a fact inside a
   request about a template, not what the request is about.
+- **`asked` may not name the folder mode**, which is core's to write, nor a blank field:
+  `422 asked-invalid`, naming the `field`. Whether the capability declares an asked field as a
+  string is the report's to say, since saving asks the destination nothing.
 
 `PATCH /v1/templates/{id}` — every field a person supplied, in one operation. `200 OK` with the
 template as it now stands.
 
+- **`asked: {}` stops asking**, and absent leaves what it asks as it stands.
 - **`triggerTag: null` takes the tag off**, which an absent key cannot say. Absent leaves it as it
   stands, which is what every other field's absence means.
 - **Editing the arguments clears the establishment**, since a changed place is a different place
@@ -1544,6 +1563,19 @@ three fields:
 
 A template body takes `content` too. A template says where an item goes and never what it says, so
 the words are the request's rather than the template's, and a decision made from one may carry both.
+
+**A template body takes `arguments` for what the template asks** *(added 2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*: a map of
+strings by field, taken literally, a blank one falling back to the template's default.
+
+```json
+{ "template": "019a41b8-0e6e-7c31-9f3a-6b1f2d5c4a91", "arguments": { "heading": "Next" } }
+```
+
+The record still names the template. A field the template fixes is `422 argument-not-asked`, and
+an asked field left with neither a value nor a default is `422 argument-missing`, each naming the
+`field`; the merged set is then checked against the capability's schema as the destination
+shape's arguments are. `/route/preview` takes them on the same terms.
 
 - **Because it is one decision either way.** A second route would be a second path to the same
   effect, with the same refusals and the same record, differing only in who wrote down the

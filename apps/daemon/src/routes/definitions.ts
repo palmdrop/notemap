@@ -31,6 +31,7 @@ import {
   UNFURL_STATUS,
   UNTAG_STATUS,
   UPLOAD_STATUS,
+  TEMPLATE_ROUTING_STATUS,
   TEMPLATE_STATUS,
 } from "../errors/refusals";
 import {
@@ -1343,9 +1344,9 @@ export const routeItemRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
+      "The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined. Nothing was written.",
       422,
-      DELIVERY_STATUS,
+      TEMPLATE_ROUTING_STATUS,
     ),
   },
 });
@@ -1404,9 +1405,9 @@ export const previewRouteRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the arguments were declined.",
+      "The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined.",
       422,
-      DELIVERY_STATUS,
+      TEMPLATE_ROUTING_STATUS,
     ),
   },
 });

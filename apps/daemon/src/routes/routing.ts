@@ -87,10 +87,14 @@ export function routeHandler(pool: Pool) {
     const content = body.value.content as JsonObject | undefined;
 
     if ("template" in body.value) {
+      const supplied = body.value.arguments;
       const applied = await pool.templates.route(
         id as ItemId,
         body.value.template as RoutingTemplateId,
-        content === undefined ? undefined : { content },
+        {
+          ...(content === undefined ? {} : { content }),
+          ...(supplied === undefined ? {} : { arguments: supplied }),
+        },
       );
 
       return applied.kind === "refused"
@@ -131,6 +135,7 @@ export function previewHandler(pool: Pool) {
         ? await pool.templates.resolve(
             id as ItemId,
             body.value.template as RoutingTemplateId,
+            body.value.arguments,
           )
         : {
             destination: body.value.destination as DestinationId,

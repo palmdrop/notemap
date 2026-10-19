@@ -170,6 +170,12 @@ const SAID: {
     "that tag filed this item, and what it filed is still there — cancel the routing to take the tag back",
   "unknown-pattern-field": (facts) =>
     `there is no "${String(facts["field"])}" to put in a place; captured_at, item and source are what there is`,
+  "asked-invalid": (facts) =>
+    `a template cannot ask for "${String(facts["field"])}" each time; that one is notemap's to fill in`,
+  "argument-not-asked": (facts) =>
+    `that template fixes "${String(facts["field"])}", so it cannot be given a value when it is applied`,
+  "argument-missing": (facts) =>
+    `that template needs a value for "${String(facts["field"])}" and has no default`,
   "unknown-pattern-format": (facts) =>
     `"${String(facts["format"])}" is not one of the ways a date can be written here`,
   "unknown-destination-kind": (facts) =>

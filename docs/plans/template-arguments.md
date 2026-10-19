@@ -95,14 +95,18 @@ Depends on Phase 0.
 
 Depends on Phase 1.
 
-- [ ] Template schemas (record, draft, changes) carry `asked`. The tag request carries optional
+- [x] Template schemas (record, draft, changes) carry `asked`. The tag request carries optional
       `arguments`. The capture envelope carries the per-tag map. A route from a template carries
-      optional `arguments`. The new refusal details reach the existing statuses.
-- [ ] OpenAPI regenerated, and `packages/client/src/api/generated.d.ts` with it.
-- [ ] Tests in `routes/tags.test.ts`, `routes/routing.test.ts`, `routes/templates.test.ts`.
-- [ ] Spec: `http-v1.md`.
-- [ ] Verify: tests, typecheck, lint, then `pnpm test:stack`, since this crosses the HTTP surface.
-      Commit.
+      optional `arguments`, and so does a preview. The new refusal codes reach their statuses and
+      `/route`'s and `/route/preview`'s declared `422`s. `GET /route/resolve` is unchanged: the
+      composer draws asked fields from its own state. _(2026-10-19)_
+- [x] OpenAPI regenerated, and `packages/client/src/api/generated.d.ts` with it. The client's
+      wording for the three new codes. _(2026-10-19)_
+- [x] Tests in `routes/templates.test.ts`, beside the other trigger-tag and template-route cases.
+      _(2026-10-19)_
+- [x] Spec: `http-v1.md`. _(2026-10-19)_
+- [x] Verify: tests, typecheck, lint, then `pnpm test:stack`, since this crosses the HTTP surface.
+      Commit. _(2026-10-19)_
 
 ### Phase 3: client
 

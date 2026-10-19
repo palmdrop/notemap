@@ -91,6 +91,15 @@ const routeContent = jsonObject.optional().openapi({
   example: { text: "a thought, tidied" },
 });
 
+/** Values for a template's asked arguments, by field. Taken literally, never expanded. */
+export const suppliedArgumentsSchema = z
+  .record(z.string(), z.string())
+  .openapi("SuppliedArguments", {
+    description:
+      "Values for the template's asked arguments, by field name. Taken literally rather than expanded; a blank one falls back to the default. A field the template does not ask for is refused.",
+    example: { heading: "Next" },
+  });
+
 /**
  * One route, two bodies, because it is one decision either way: a destination
  * with its capability and arguments, or a template that already holds all
@@ -120,6 +129,7 @@ export const routeRequestSchema = z
         description: "One of the ids `GET /v1/templates` reports.",
         example: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
       }),
+      arguments: suppliedArgumentsSchema.optional(),
       content: routeContent,
     }),
   ])

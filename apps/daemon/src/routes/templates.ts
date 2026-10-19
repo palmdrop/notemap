@@ -14,6 +14,7 @@ import type {
 import { errorBody, templateStatus } from "../errors/refusals";
 import {
   createTemplateRequestSchema,
+  toAsked,
   updateTemplateRequestSchema,
 } from "../schemas/template";
 import { readBody } from "../utils/body";
@@ -27,6 +28,7 @@ function declared(template: RoutingTemplate) {
     destination: template.destination,
     capability: template.capability,
     arguments: template.arguments,
+    ...(template.asked === undefined ? {} : { asked: template.asked }),
     folder: template.folder,
     ...(template.triggerTag === undefined
       ? {}
@@ -49,12 +51,14 @@ export function createTemplateHandler(pool: Pool) {
     const body = await readBody(context, createTemplateRequestSchema);
     if (!body.ok) return refuse(body.refusal);
 
-    const { name, destination, capability, folder, triggerTag } = body.value;
+    const { name, destination, capability, asked, folder, triggerTag } =
+      body.value;
     const created = await pool.templates.create({
       name,
       destination: destination as DestinationId,
       capability: capability as CapabilityName,
       arguments: body.value.arguments as JsonObject,
+      ...(asked === undefined ? {} : { asked: toAsked(asked) }),
       ...(folder === undefined ? {} : { folder }),
       ...(triggerTag === undefined
         ? {}
@@ -75,7 +79,8 @@ export function updateTemplateHandler(pool: Pool) {
     if (!body.ok) return refuse(body.refusal);
 
     const id = (context.req.param("id") ?? "") as RoutingTemplateId;
-    const { name, destination, capability, folder, triggerTag } = body.value;
+    const { name, destination, capability, asked, folder, triggerTag } =
+      body.value;
 
     const edited = await pool.templates.edit(id, {
       ...(name === undefined ? {} : { name }),
@@ -88,6 +93,7 @@ export function updateTemplateHandler(pool: Pool) {
       ...(body.value.arguments === undefined
         ? {}
         : { arguments: body.value.arguments as JsonObject }),
+      ...(asked === undefined ? {} : { asked: toAsked(asked) }),
       ...(folder === undefined ? {} : { folder }),
       // `null` is the one thing absence cannot say: take the tag off.
       ...(triggerTag === undefined

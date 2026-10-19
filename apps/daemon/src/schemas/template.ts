@@ -1,10 +1,37 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
+import type { AskedArguments } from "@notemap/core";
+
 import { jsonObject } from "./json";
 
 /** The three a template may say. `establish` never leaves it: an adapter sees the other two. */
 const folderMode = z.enum(["create", "require", "establish"]);
+
+/** By field name. A field's default is what the template's arguments hold for it. */
+const asked = z
+  .record(
+    z.string(),
+    z.object({
+      /** What a person reads in place of the field's own name. */
+      label: z.string().min(1).optional(),
+    }),
+  )
+  .openapi({
+    description:
+      "Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.",
+    example: { heading: { label: "list" } },
+  });
+
+/** Where an untrusted body's asked fields become a domain value, an absent label left out. */
+export function toAsked(parsed: z.infer<typeof asked>): AskedArguments {
+  return Object.fromEntries(
+    Object.entries(parsed).map(([field, { label }]) => [
+      field,
+      label === undefined ? {} : { label },
+    ]),
+  );
+}
 
 export const templateSchema = z
   .object({
@@ -15,6 +42,7 @@ export const templateSchema = z
     capability: z.string(),
     /** Patterns until a decision is made, which is when the pool expands them. */
     arguments: jsonObject,
+    asked: asked.optional(),
     folder: folderMode,
     /** Declared rather than derived, so renaming disarms no tag already written. */
     triggerTag: z.string().optional(),
@@ -38,6 +66,7 @@ export const createTemplateRequestSchema = z
     destination: z.string().min(1),
     capability: z.string().min(1),
     arguments: jsonObject,
+    asked: asked.optional(),
     folder: folderMode.optional(),
     triggerTag: z.string().min(1).optional(),
   })
@@ -53,6 +82,8 @@ export const updateTemplateRequestSchema = z
     destination: z.string().min(1).optional(),
     capability: z.string().min(1).optional(),
     arguments: jsonObject.optional(),
+    /** An empty set asks for nothing. */
+    asked: asked.optional(),
     folder: folderMode.optional(),
     triggerTag: z.string().min(1).nullable().optional(),
   })

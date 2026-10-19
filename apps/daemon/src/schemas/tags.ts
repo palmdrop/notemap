@@ -1,8 +1,16 @@
 import "@hono/zod-openapi";
 import { z } from "zod";
 
+import { suppliedArgumentsSchema } from "./routing";
+
 export const tagRequestSchema = z
-  .strictObject({ tag: z.string() })
+  .strictObject({
+    tag: z.string(),
+    arguments: suppliedArgumentsSchema.optional().openapi({
+      description:
+        "Values for the asked arguments of the template this tag fires. Ignored where the tag fires nothing.",
+    }),
+  })
   .openapi("TagRequest");
 
 export const tagUseSchema = z

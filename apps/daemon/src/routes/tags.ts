@@ -22,6 +22,9 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
       half === "tag"
         ? await pool.items.tag(id as ItemId, tag, by, {
             signal: context.req.raw.signal,
+            ...(body.value.arguments === undefined
+              ? {}
+              : { arguments: body.value.arguments }),
           })
         : await pool.items.untag(id as ItemId, tag, by);
 
