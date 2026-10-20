@@ -1,8 +1,9 @@
 # Raycast capture form: drafts, attachments alone, attachments first
 
 **Date**: 2026-10-20
-**Status**: In progress
-**Closed**:
+**Status**: Done
+**Spec**: `docs/specs/shell.md`
+**Closed**: 2026-10-20
 
 ---
 
