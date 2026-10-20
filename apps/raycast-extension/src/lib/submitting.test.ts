@@ -29,16 +29,22 @@ type Watched = {
   readonly done: readonly string[];
   readonly said: readonly [string, string][];
   readonly tagged: readonly string[];
+  /** What each capture was asked to carry. */
+  readonly captures: readonly unknown[];
 };
 
 function watching(answers: Answers = {}): Watched {
   const done: string[] = [];
   const said: [string, string][] = [];
   const tagged: string[] = [];
+  const captures: unknown[] = [];
 
   const client = {
     attach: () => Promise.resolve("asset-1"),
-    capture: answers.capture ?? (() => Promise.resolve({ id: "item-1" })),
+    capture: (input: unknown) => {
+      captures.push(input);
+      return (answers.capture ?? (() => Promise.resolve({ id: "item-1" })))();
+    },
     tag: (_item: string, tag: string) => {
       tagged.push(tag);
       return (answers.tag ?? (() => Promise.resolve()))();
@@ -61,6 +67,7 @@ function watching(answers: Answers = {}): Watched {
     done,
     said,
     tagged,
+    captures,
     form: {
       open: () => client,
       failing: (title, message) => {
@@ -110,6 +117,9 @@ describe("what the capture form does with what it holds", () => {
       typed({ text: "", files: [await aFile("shot.png")] }),
     );
 
+    expect(watched.captures).toEqual([
+      { channel: "raycast", text: "", assets: ["asset-1"] },
+    ]);
     expect(watched.done[1]).toBe("Captured — shot.png");
   });
 

@@ -12,6 +12,10 @@ export type Storage = {
   readonly removeItem: (key: string) => Promise<void>;
 };
 
+/**
+ * `keep` and `drop` never reject: a draft that could not be written is worth
+ * a line in the log, not a form that stops answering.
+ */
 export type Drafts = {
   readonly read: () => Promise<Draft>;
   readonly keep: (draft: Draft) => Promise<void>;
@@ -46,25 +50,37 @@ function parsed(stored: unknown): Draft {
 }
 
 /**
- * Writes go one after another, so a keystroke's write still on its way cannot
- * land after the drop that a capture made.
+ * One write at a time, and only the latest waits behind it: the process ends
+ * the moment the form is left, so a queue of every keystroke would lose the
+ * newest words first. A drop waiting behind a keep is never overtaken by it.
  */
 export function drafts(storage: Storage): Drafts {
-  let last: Promise<unknown> = Promise.resolve();
-  const after = <T>(next: () => Promise<T>): Promise<T> => {
-    const run = last.then(next, next);
-    last = run.catch(() => undefined);
-    return run;
+  let waiting: (() => Promise<void>) | undefined;
+  let writing: Promise<void> | undefined;
+
+  const write = (next: () => Promise<void>): Promise<void> => {
+    waiting = next;
+    writing ??= (async () => {
+      while (waiting !== undefined) {
+        const one = waiting;
+        waiting = undefined;
+        await one().catch((error: unknown) => {
+          console.error(error);
+        });
+      }
+      writing = undefined;
+    })();
+    return writing;
   };
 
   return {
-    read: () => after(async () => parsed(await storage.getItem(KEY))),
+    read: async () => parsed(await storage.getItem(KEY)),
     keep: (draft) =>
-      after(() =>
+      write(() =>
         isEmpty(draft)
           ? storage.removeItem(KEY)
           : storage.setItem(KEY, JSON.stringify(draft)),
       ),
-    drop: () => after(() => storage.removeItem(KEY)),
+    drop: () => write(() => storage.removeItem(KEY)),
   };
 }

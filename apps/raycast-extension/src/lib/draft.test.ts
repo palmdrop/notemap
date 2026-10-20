@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { drafts, EMPTY, type Storage } from "./draft";
 
@@ -17,6 +17,10 @@ function memory(): Storage & { readonly held: Map<string, string> } {
     },
   };
 }
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("the capture form's draft", () => {
   it("is empty where nothing was kept", async () => {
@@ -73,6 +77,73 @@ describe("the capture form's draft", () => {
     await Promise.all([kept, dropped]);
 
     expect(storage.held.size).toBe(0);
+  });
+
+  it("writes only the latest of the keeps that waited behind one", async () => {
+    const storage = memory();
+    const written: string[] = [];
+    const slow: Storage = {
+      ...storage,
+      setItem: async (key, value) => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        written.push(value);
+        storage.held.set(key, value);
+      },
+    };
+    const shelf = drafts(slow);
+
+    const kept = ["a", "a n", "a no", "a note"].map((text) =>
+      shelf.keep({ text, picked: [], typed: "" }),
+    );
+    await Promise.all(kept);
+
+    expect(written.map((value) => JSON.parse(value).text)).toEqual([
+      "a",
+      "a note",
+    ]);
+    expect(await shelf.read()).toEqual({
+      text: "a note",
+      picked: [],
+      typed: "",
+    });
+  });
+
+  it("goes on writing after a write that failed", async () => {
+    const storage = memory();
+    let failing = true;
+    const flaky: Storage = {
+      ...storage,
+      setItem: (key, value) => {
+        if (failing) {
+          failing = false;
+          return Promise.reject(new Error("storage is unwell"));
+        }
+        return storage.setItem(key, value);
+      },
+    };
+    const shelf = drafts(flaky);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(
+      shelf.keep({ text: "lost", picked: [], typed: "" }),
+    ).resolves.toBeUndefined();
+    await shelf.keep({ text: "a note", picked: [], typed: "" });
+
+    expect(await shelf.read()).toEqual({
+      text: "a note",
+      picked: [],
+      typed: "",
+    });
+  });
+
+  it("lets a read that failed say so", async () => {
+    const storage = memory();
+    const broken: Storage = {
+      ...storage,
+      getItem: () => Promise.reject(new Error("storage is unwell")),
+    };
+
+    await expect(drafts(broken).read()).rejects.toThrow("storage is unwell");
   });
 
   it("reads anything it cannot make sense of as empty", async () => {

@@ -50,9 +50,16 @@ export function about(
   operation: Operation,
   held: (item: ItemId) => string | undefined,
 ): string | undefined {
-  if (operation.kind === "capture") return saidIn(operation.envelope.payload);
-  if (operation.kind === "edit") return saidIn(operation.envelope.payload);
-  return held(operation.item);
+  if (operation.kind !== "capture" && operation.kind !== "edit") {
+    return held(operation.item);
+  }
+
+  // A note with no words is said by what it carries; the pool keeps no file name to say instead.
+  const { payload } = operation.envelope;
+  const said = saidIn(payload);
+  const count = payload.assets.length;
+  if (said.trim() !== "" || count === 0) return said;
+  return count === 1 ? "1 attachment" : `${String(count)} attachments`;
 }
 
 const STATES: Readonly<Record<PendingOperation["state"], string>> = {

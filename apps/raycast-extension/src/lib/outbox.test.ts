@@ -3,10 +3,19 @@ import { describe, expect, it } from "vitest";
 
 import { about, done, inOrder, waitingSaid } from "./outbox";
 
-const captured = (text: string) =>
+const captured = (text: string, assets = 0) =>
   ({
     kind: "capture",
-    envelope: { payload: { type: "note", content: { text } } },
+    envelope: {
+      payload: {
+        type: "note",
+        content: { text },
+        assets: Array.from({ length: assets }, (_, at) => ({
+          slot: "attachments",
+          asset: `asset-${String(at)}`,
+        })),
+      },
+    },
   }) as unknown as Operation;
 
 const tagged: Operation = { kind: "tag", item: "item-1", tag: "reading" };
@@ -34,6 +43,17 @@ describe("what an operation says it does", () => {
 describe("the note an operation is about", () => {
   it("is a capture's own words", () => {
     expect(about(captured("its own words"), () => "held")).toBe(
+      "its own words",
+    );
+  });
+
+  it("is how many attachments a capture with no words carries", () => {
+    expect(about(captured("", 1), () => "held")).toBe("1 attachment");
+    expect(about(captured(" ", 3), () => "held")).toBe("3 attachments");
+  });
+
+  it("is a capture's words whatever it carries", () => {
+    expect(about(captured("its own words", 2), () => "held")).toBe(
       "its own words",
     );
   });

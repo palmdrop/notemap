@@ -9,7 +9,7 @@ import {
   Toast,
 } from "@raycast/api";
 import type { RoutingTemplate } from "@notemap/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { askedFor, fieldId, suppliedFrom, type AskedField } from "./lib/asked";
 import { openClient, openReader } from "./lib/client";
@@ -32,7 +32,10 @@ export default function Command() {
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [typed, setTyped] = useState("");
-  const [restored, setRestored] = useState(false);
+  /** Unknown while the draft is read; false where it could not be, so nothing writes over it. */
+  const [restored, setRestored] = useState<boolean>();
+  /** Set once a capture is on its way, so nothing typed after it comes back as a draft. */
+  const sent = useRef(false);
   /** By trigger tag, what its template asks; asked of the pool once a tag is chosen. */
   const [asking, setAsking] = useState<
     Readonly<Record<string, readonly AskedField[]>>
@@ -44,17 +47,22 @@ export default function Command() {
 
   useEffect(() => {
     let wanted = true;
-    void shelf
-      .read()
-      .then((draft) => {
+    // The form takes keys while the draft is read, and what was typed first wins.
+    shelf.read().then(
+      (draft) => {
         if (!wanted) return;
-        setText(draft.text);
-        setPicked([...draft.picked]);
-        setTyped(draft.typed);
-      })
-      .finally(() => {
-        if (wanted) setRestored(true);
-      });
+        setText((current) => (current === "" ? draft.text : current));
+        setPicked((current) =>
+          current.length === 0 ? [...draft.picked] : current,
+        );
+        setTyped((current) => (current === "" ? draft.typed : current));
+        setRestored(true);
+      },
+      (error: unknown) => {
+        console.error(error);
+        if (wanted) setRestored(false);
+      },
+    );
 
     return () => {
       wanted = false;
@@ -63,7 +71,9 @@ export default function Command() {
 
   // Not kept until the draft has been read, or the empty form would write over it.
   useEffect(() => {
-    if (restored) void shelf.keep({ text, picked, typed });
+    if (restored === true && !sent.current) {
+      void shelf.keep({ text, picked, typed });
+    }
   }, [restored, text, picked, typed]);
 
   useEffect(() => {
@@ -173,6 +183,7 @@ export default function Command() {
       return;
     }
 
+    sent.current = true;
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Capturing",
@@ -186,6 +197,7 @@ export default function Command() {
         // has been seen to.
         open: openClient,
         failing: (title, message) => {
+          sent.current = false;
           toast.style = Toast.Style.Failure;
           toast.title = title;
           toast.message = message;
@@ -208,7 +220,7 @@ export default function Command() {
 
   return (
     <Form
-      isLoading={!restored}
+      isLoading={restored === undefined}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Capture" onSubmit={submit} />
