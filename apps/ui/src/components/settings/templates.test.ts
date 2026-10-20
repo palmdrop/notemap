@@ -1280,7 +1280,7 @@ test("saves what an asked field holds as its default", async () => {
     target: { value: "inbox" },
   });
   await open("ask directory each time");
-  expect(screen.getByText("default")).toBeTruthy();
+  expect(screen.queryByText("no default")).toBeNull();
   await open("save");
 
   await vi.waitFor(() => {

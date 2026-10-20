@@ -2517,9 +2517,9 @@ ordinary edit of its destination field; the actions are `check again` and `edit`
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. In the form,
 every field that holds text ends in an `ask` option; taken, the field's label turns into a line to
 rename it by, blank meaning the field's own title, held where the label was as whatever the field
-lists opens below, and whatever the field holds becomes the default, which may be left empty. A line
-under the value says which: `default`, or `no default`. A destination's own setting is not one. The line names an asked field nowhere in the place and ends `asks each time` instead;
-opened, each asked field is a fact of its own under its label, reading `asked each time` and the
+lists opens below, and whatever the field holds becomes the default, which may be left empty. An
+asked field with none says `no default` under its value; a destination's own setting is not one.
+The line names an asked field nowhere in the place and ends `asks each time` instead; opened, each asked field is a fact of its own under its label, reading `asked each time` and the
 default or `no default`.
 
 **Accounts** sits under Destinations *(2026-09-23)*: the logins the daemon holds on other systems,

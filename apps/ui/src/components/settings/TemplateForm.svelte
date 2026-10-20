@@ -355,7 +355,7 @@
         bind:value={asked[field.name]}
         aria-label={`${field.title ?? field.name} label`}
         placeholder={field.title ?? field.name}
-        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent p-0 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
+        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
       />
     {:else}
       <span class="tracking-caps uppercase max-narrow:mt-1.5">
@@ -432,9 +432,9 @@
             class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
           />
         {/if}
-        {#if field.name in asked}
+        {#if field.name in asked && (typed[field.name] ?? "") === ""}
           <!-- Only the template's own value is a default: a destination's setting is not. -->
-          <p>{(typed[field.name] ?? "") === "" ? "no default" : "default"}</p>
+          <p>no default</p>
         {/if}
       </div>
       {#if askable(field)}

@@ -178,6 +178,11 @@
    */
   const shown = $derived(expanded ? matching : matching.slice(0, HANDFUL));
 
+  /** Nothing to draw beneath the line, which then takes no room either. */
+  const bare = $derived(
+    !loading && refusal === undefined && entries.length === 0,
+  );
+
   const rest = $derived(matching.length - shown.length);
 
   /**
@@ -586,7 +591,7 @@
         id="{id}-entries"
         role="listbox"
         aria-label="{label} candidates"
-        class={folded ? "" : "mt-2.5"}
+        class={folded || bare ? "" : "mt-2.5"}
       >
         {#if folded}
           <!-- Empty rather than gone: the field's `aria-controls` names it. -->

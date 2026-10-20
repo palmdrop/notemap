@@ -130,8 +130,8 @@ Depends on Phase 3.
 - [x] In `TemplateForm.svelte`, each field holding text can be marked `ask each time`, with a
       label. The value the field holds becomes its default, and may be left empty. _(2026-10-19)_
 - [x] The mark is an `ask` option at the end of the field's line, and the field's label becomes
-      the line that renames it, rather than an option row repeated under every field. A line under
-      the value says `default` or `no default`. _(2026-10-20)_
+      the line that renames it, rather than an option row repeated under every field. One with no
+      default says `no default` under its value. _(2026-10-20)_
 - [x] The template line and its opened facts draw an asked field by its label, with the default
       where there is one. _(2026-10-19)_
 - [x] Tests in `settings/templates.test.ts`. _(2026-10-19)_
