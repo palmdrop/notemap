@@ -995,9 +995,13 @@ current one bold)* — and carried on the URL as `view=index`,
 remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
 the first words cut at a word with `…`, the tags at the right, dropped below the narrow
 breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
-fixed size, the same whether a day or a month passed: time passing is read from the space. The
-selected line is bold; `enter` on it goes to process; `j`/`k` walk it; a double click goes to
-process. The feed has the same view. By day, the index takes the same headings as the timeline,
+fixed size, the same whether a day or a month passed: time passing is read from the space.
+**The selected line opens into the whole row** *(amended 2026-10-20; it was the line set bold)*:
+the same row the timeline draws, with its actions, its tags and its editable shape, growing out of
+the line where it stood rather than sliding in, and shrinking back into it when the selection
+leaves. Everything the selected row answers on the timeline it answers here — `enter` goes to
+process, `e` edits, `t` tags; `j`/`k` walk the lines; a double click on a line goes to process.
+The feed has the same view. By day, the index takes the same headings as the timeline,
 each line keeping its time alone, and opens no gap: the heading already says that a day passed.
 
 **The list head holds at the top** *(2026-10-01)*. It is three controls at the right —
@@ -1036,8 +1040,8 @@ above and below the date**, and the room between one day and the next is margin 
 at the top, the date sits as far from the top of the screen as from the rule under it.
 
 **The row keeps only its time**, the heading having said the day, **in bold** *(2026-10-02)*, so it
-stands apart from the tags under or beside it. The index's line keeps it plain, bold being how the
-index marks the selected line. The stamp still names the whole
+stands apart from the tags under or beside it. The index's line keeps it plain; a selected line has
+opened into the row, which keeps it bold. The stamp still names the whole
 instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
 wide as a time, and everything else it held **follows the capture** in the body: the state word,
 `pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
@@ -2940,9 +2944,10 @@ holds the disabled destinations, fading out of it — and a form grows and
 shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
 row's box fades in and out whole, its foot with its edges and the rail's rule it covers, the one
 leaving and the one arriving in step. The current surface in the
-bar, the current view and the selected index line **ease into bold and out of it** over `short`,
+bar and the current view **ease into bold and out of it** over `short`,
 each word holding its bold width throughout so nothing beside it moves. A surface is current
-anywhere under its own address — `settings` at a section's. No navigation moves: an item carried from its
+anywhere under its own address — `settings` at a section's. A selected index line grows into its row and shrinks back
+out of it, the one height easing into the other. No navigation moves: an item carried from its
 row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
 overlays — the order chooser, the path and candidate lists — do not move of themselves: they
 are used at typing speed, and a panel fading in behind a keystroke reads as lag. **The path and

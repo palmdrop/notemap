@@ -252,7 +252,14 @@
 {/snippet}
 
 {#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
-  {@const item = one.row}
+  {@render whole(one.row, one.opens, motion)}
+{/snippet}
+
+{#snippet whole(
+  item: Item,
+  opens: boolean,
+  motion: { readonly still: boolean } | undefined,
+)}
   <Row
     {motion}
     bind:this={drawn[item.id]}
@@ -264,10 +271,15 @@
     commands={selected === item.id ? commands : []}
     pending={undrained.has(item.id)}
     layout={layout.drawn}
-    opens={one.opens}
+    {opens}
     onselect={() => select(item.id)}
     onprocess={() => void goto(processHref(item.id))}
   />
+{/snippet}
+
+<!-- Opened in the index, the row grows out of its line rather than sliding in. -->
+{#snippet opened(item: Item, opens: boolean)}
+  {@render whole(item, opens, undefined)}
 {/snippet}
 
 {#if view === "index" && !bare}
@@ -282,6 +294,8 @@
     leads={refused === undefined}
     items={rows}
     {selected}
+    slim={layout.slim}
+    open={opened}
     onselect={select}
     onprocess={(id) => void goto(processHref(id))}
   />
