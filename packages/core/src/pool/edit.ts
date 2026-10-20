@@ -1,8 +1,7 @@
-import { dequal } from "dequal";
-
 import { recordAction } from "./actions";
+import { keptWord, lineSourceOf } from "./lines";
 import { enqueueMirrorWrite } from "./mirror";
-import { canonicalPayload, checkAssets, checkPayload } from "./payload";
+import { checkAssets, checkPayload, samePayload } from "./payload";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { Agent } from "#types/domain/agent";
@@ -12,6 +11,7 @@ import type { EditEnvelope } from "#types/domain/capture";
 import type { ItemId } from "#types/domain/ids";
 import type { EditOutcome, Item } from "#types/domain/item";
 import type { Payload } from "#types/domain/payload";
+import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
 import type { Result } from "#types/result";
 
 type EditResult = Result<EditOutcome, EditRefusal>;
@@ -30,9 +30,11 @@ export function edit(
     const invalid = await validate(config, ports, tx, item, envelope.payload);
     if (invalid !== undefined) return refused(invalid);
 
+    const bySource = envelope.source === (await lineSourceOf(tx, item));
+
     return (await sealed(tx, item))
-      ? revise(ports, tx, item, envelope, by)
-      : amend(ports, tx, item, envelope.payload, by);
+      ? revise(ports, tx, item, envelope, bySource, by)
+      : amend(ports, tx, item, envelope.payload, bySource, by);
   });
 }
 
@@ -78,10 +80,16 @@ async function amend(
   tx: PoolTx,
   item: Item,
   payload: Payload,
+  bySource: boolean,
   by: Agent,
 ): Promise<EditResult> {
   const at = ports.clock.now();
-  const amended = await tx.amendItem(item.id, payload, at);
+  const amended = await tx.amendItem(
+    item.id,
+    payload,
+    at,
+    keptWord(item, payload, bySource),
+  );
 
   await enqueueMirrorWrite(ports, tx, { kind: "item", item: item.id }, at);
   await recordAction(ports, tx, {
@@ -100,6 +108,7 @@ async function revise(
   tx: PoolTx,
   item: Item,
   envelope: EditEnvelope,
+  bySource: boolean,
   by: Agent,
 ): Promise<EditResult> {
   const replayed = await tx.itemBySourceIdentity(
@@ -111,10 +120,7 @@ async function revise(
     // words under a taken identity is capture's refusal, not a second revision.
     const replay =
       replayed.revisionOf === item.id &&
-      dequal(
-        canonicalPayload(replayed.payload),
-        canonicalPayload(envelope.payload),
-      );
+      samePayload(replayed.payload, envelope.payload);
 
     return replay
       ? ok({ kind: "revised", revision: replayed, revisionOf: item.id })
@@ -122,14 +128,19 @@ async function revise(
   }
 
   const at = ports.clock.now();
+  const word = keptWord(item, envelope.payload, bySource);
   const revision = await tx.insertItem({
     id: ports.ids.next<ItemId>(),
     source: envelope.source,
     sourceItemId: envelope.sourceItemId,
     payload: envelope.payload,
-    tags: item.tags,
+    // A trigger tag says what filed the item it is on, which a revision is not.
+    tags: item.tags.filter(
+      (tag) => !tag.name.startsWith(TRIGGER_TAG_NAMESPACE),
+    ),
     createdAt: at,
     revisionOf: item.id,
+    ...(word === undefined ? {} : { sourceWord: word }),
     // Archive state and routing records stay behind: a revision starts unprocessed.
   });
 

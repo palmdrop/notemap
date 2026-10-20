@@ -60,6 +60,7 @@ import {
   agentColumns,
   destinationParams,
   itemParams,
+  sourceWordColumn,
   poolSettingParams,
   routingRecordParams,
   routingTemplateParams,
@@ -126,7 +127,7 @@ export type SqlitePoolStoreConfig = {
 const ITEM_COLUMNS = `
   id, source_id, source_item_id, payload_type, payload_content,
   payload_metadata, created_at, utc_offset, content_updated_at, modified_at,
-  revision_of, archived_at, archive_reason
+  revision_of, archived_at, archive_reason, continues, source_word
 `;
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, width, height, stored_at`;
@@ -305,15 +306,15 @@ export function createSqlitePoolStore(
 
   const insertItem = write.query(`
     INSERT INTO items (${ITEM_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const amend = write.query<
     never,
-    [string, string, string, number, number, string]
+    [string, string, string, number, number, string | null, string]
   >(`
     UPDATE items
     SET payload_type = ?, payload_content = ?, payload_metadata = ?,
-        content_updated_at = ?, modified_at = ?
+        content_updated_at = ?, modified_at = ?, source_word = ?
     WHERE id = ?
   `);
   const dropReferences = write.query<never, [string]>(
@@ -476,6 +477,9 @@ export function createSqlitePoolStore(
     const itemBySource = source.query<ItemRow, [string, string]>(
       `SELECT ${ITEM_COLUMNS} FROM items
        WHERE source_id = ? AND source_item_id = ?`,
+    );
+    const continuation = source.query<ItemRow, [string]>(
+      `SELECT ${ITEM_COLUMNS} FROM items WHERE continues = ?`,
     );
     const assetById = source.query<AssetRow, [string]>(
       `SELECT ${ASSET_COLUMNS} FROM assets WHERE id = ?`,
@@ -895,6 +899,9 @@ export function createSqlitePoolStore(
       ): Promise<Item | undefined> =>
         one(itemBySource.get(sourceId, sourceItemId)),
 
+      continuationOf: async (id: ItemId): Promise<Item | undefined> =>
+        one(continuation.get(id)),
+
       feed: async (
         page: OrderedPage,
         filter?: TagFilter,
@@ -1023,6 +1030,7 @@ export function createSqlitePoolStore(
       ),
       routingTemplatesNaming: guard(uncommitted.routingTemplatesNaming),
       itemBySourceIdentity: guard(uncommitted.itemBySourceIdentity),
+      continuationOf: guard(uncommitted.continuationOf),
       feed: guard(uncommitted.feed),
       queue: guard(uncommitted.queue),
       archived: guard(uncommitted.archived),
@@ -1085,6 +1093,7 @@ export function createSqlitePoolStore(
           item: ItemId,
           payload: Payload,
           at: Timestamp,
+          sourceWord?: Payload,
         ): Promise<Item> => {
           amend.run(
             payload.type,
@@ -1092,6 +1101,7 @@ export function createSqlitePoolStore(
             JSON.stringify(payload.metadata),
             toMillis(at),
             nextModifiedAt(),
+            sourceWordColumn(sourceWord),
             item,
           );
 

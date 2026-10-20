@@ -2,7 +2,13 @@ import { dequal } from "dequal";
 
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { canonicalPayload, checkAssets, checkPayload } from "./payload";
+import { headOf, lineSourceOf } from "./lines";
+import {
+  canonicalPayload,
+  checkAssets,
+  checkPayload,
+  samePayload,
+} from "./payload";
 import { normalised } from "./tags";
 import { fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
@@ -160,6 +166,9 @@ function recorded(envelope: CaptureEnvelope, id: ItemId): ItemRecord {
     ...(envelope.utcOffset === undefined
       ? {}
       : { utcOffset: envelope.utcOffset }),
+    ...(envelope.continues === undefined
+      ? {}
+      : { continues: envelope.continues }),
   };
 }
 
@@ -196,10 +205,20 @@ async function append(
     envelope.source,
     envelope.sourceItemId,
   );
-  if (bySource !== undefined) {
-    return isReplayOf(bySource, envelope)
-      ? ok({ kind: "already-captured", item: bySource, matchedOn: "source" })
-      : refused({ kind: "source-item-changed", existing: bySource.id });
+  if (bySource !== undefined) return reread(tx, bySource, envelope);
+
+  if (envelope.continues !== undefined) {
+    const continued = await tx.item(envelope.continues);
+    if (
+      continued === undefined ||
+      (await headOf(tx, continued)).id !== continued.id ||
+      (await lineSourceOf(tx, continued)) !== envelope.source
+    ) {
+      return refused({
+        kind: "continues-not-head",
+        continues: envelope.continues,
+      });
+    }
   }
 
   const unknown = await checkAssets(tx, envelope.payload);
@@ -250,6 +269,41 @@ function isReplayOf(existing: Item, envelope: CaptureEnvelope): boolean {
   return dequal(fixedByItem(existing), fixedByEnvelope(envelope));
 }
 
+/**
+ * A source re-reading what it captured is answered by the head of its line,
+ * which is where every edit since has gone. What the head says and what the
+ * source last said are both a replay; anything else is an upstream edit, or a
+ * divergence where somebody else has changed the head too.
+ */
+async function reread(
+  tx: PoolTx,
+  holder: Item,
+  envelope: CaptureEnvelope,
+): Promise<CaptureResult> {
+  const { payload: _held, ...fixed } = fixedByItem(holder);
+  const { payload: _sent, ...sent } = fixedByEnvelope(envelope);
+  if (!dequal(fixed, sent)) {
+    return refused({ kind: "source-item-changed", existing: holder.id });
+  }
+
+  const head = await headOf(tx, holder);
+  const said =
+    samePayload(head.payload, envelope.payload) ||
+    (head.sourceWord !== undefined &&
+      samePayload(head.sourceWord, envelope.payload));
+  if (said) {
+    return ok({ kind: "already-captured", item: head, matchedOn: "source" });
+  }
+
+  return refused({
+    kind:
+      head.sourceWord === undefined
+        ? "source-item-changed"
+        : "source-item-diverged",
+    existing: head.id,
+  });
+}
+
 function fixedByEnvelope(envelope: CaptureEnvelope): FixedByCapture {
   const { id, tags, arguments: _supplied, capturedAt, ...fixed } = envelope;
   return {
@@ -265,6 +319,7 @@ function fixedByItem(item: Item): FixedByCapture {
     sourceItemId: item.sourceItemId,
     capturedAtMs: Date.parse(item.createdAt),
     ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
+    ...(item.continues === undefined ? {} : { continues: item.continues }),
     payload: canonicalPayload(item.payload),
   };
 }

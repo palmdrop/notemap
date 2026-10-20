@@ -1,8 +1,17 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-20
 **Shipped**:
+
+- 2026-10-20 — **A re-read answers to the source's word, and a divergence continues.** A source
+  re-reading an item that somebody else has edited is a replay while upstream is unchanged, so a
+  relay no longer writes its old words back over a person's edit or revises it once it is filed.
+  Upstream edits go to the head of the line and chain. Where both sides changed, the source
+  captures a continuation, which the line follows from then on. A revision leaves trigger tags
+  behind.
+  ([plan](../plans/relay-re-reads-and-local-edits.md),
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))
 
 - 2026-10-19 — **A template may ask for an argument each time it is applied.** A template names
   the fields it leaves open in `asked`, its arguments holding their defaults. Tagging, a capture and
@@ -544,7 +553,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   and it is the only thing that distinguishes a revision from anything else that arrives. A
   revision is not a newer version of what it names and does not replace it: the item it came from
   was delivered or set aside and stays exactly as it was.
-- Tags carry over to a revision, keeping their attribution. **Routing records, archive state and
+- Tags carry over to a revision, keeping their attribution, **except trigger tags** (amended
+  2026-10-20, [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md)).
+  A trigger tag on an item says that it filed the item, which a revision it did not file would
+  contradict. Adding it to the revision fires it. **Routing records, archive state and
   enrichment do not**, belonging to the item they were made about. A revision therefore starts
   unprocessed and appears in the queue whether or not the item it came from was routed.
 - Nothing that triggers routing carries over either. A proposed destination is a **suggestion**,
@@ -552,7 +564,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   pending suggestions attach to one item: rules re-propose against the revision's tags.
 - **An item may be revised more than once**, and the revisions are independent captures that
   happen to share an ancestor. There is no chain and no current end, so nothing has to say which
-  of them is authoritative. What the item they came from says about them is `revisedInto`, derived
+  of them is authoritative. The exception is a source's own edits to what it captured: those go to
+  the head of the line, which is the latest revision, so they form a chain (amended 2026-10-20). What the item they came from says about them is `revisedInto`, derived
   from the links and never stored, and it is what processes that item.
 - **A revision does not sit where its ancestor sits.** It carries its own capture time, so the
   feed places it when the person wrote it and the queue does the same. A surface wanting to draw a
@@ -655,7 +668,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a decision.
 - **Firing is on the tagging, not on the tag being present.** Adding the tag applies the template;
   the tag then stays on the item, saying why it went where it went. Nothing scans for items wearing
-  one. So an absorbed re-tag fires nothing, a revision carrying its original's tags fires nothing,
+  one. So an absorbed re-tag fires nothing, a revision does not carry a trigger tag to fire,
   and a tag drained from a client's outbox fires when it arrives, by the same path any tag takes.
   **Untagging does not unroute**: the record exists, and it is cancelled where cancelling lives.
 - **A trigger tag that filed an item cannot be taken off while what it filed still stands** (added
@@ -1780,6 +1793,33 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   content that differs, is refused** — for either identity (clarified 2026-08-04). An external
   change must not rewrite pool history, and a client whose replay disagrees with what the pool
   holds must be told rather than silently ignored.
+- **A re-read answers to the source's word** (decided 2026-10-20,
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md)). A
+  capture matching an identity that a source already captured under resolves to the **head** of
+  that identity's **line**, and is compared there. The line is the item holding the identity, the
+  revisions made from it, and the continuation made when it diverged. The head is reached by
+  following the latest revision, then the continuation, until there is neither. The comparison has
+  three outcomes:
+  - it says what the head says, or the head's **source's word** → `already-captured`, answering
+    the head
+  - it says something new, and the head says the source's word → `source-item-changed`, naming the
+    head, which the source edits
+  - it says something new, and so does the head → `source-item-diverged`, naming the head
+
+  The capture time, offset and source still compare against the item holding the identity, as
+  they always did, and a difference there is `source-item-changed` naming it.
+- **The source's word is what the line's source last said, kept while the item says something
+  else.** An edit from the line's own source makes its payload the source's word again, and the
+  item keeps none. An edit from anywhere else keeps the word the item had, or the payload it
+  replaced where it had none, and drops it where the edit writes the source's word back. A
+  revision made from anywhere else carries it forward, so the word follows the line rather than
+  the row. The line's source is the source of the item holding the identity, which a revision
+  does not share.
+- **A divergence continues** (decided 2026-10-20). Notemap does not branch. A source told
+  `source-item-diverged` captures afresh, under an identity of its own, naming the head it
+  `continues`. The continuation becomes the line's head and is otherwise an ordinary capture: it
+  starts unprocessed and processes nothing. A capture naming anything other than the head of a
+  line from its own source is refused `continues-not-head`, and a head is continued at most once.
 - Core's obligations to offline clients are idempotent operations and client-generated ids.
   The sync protocol — outbox replay, conflict resolution, delta reads, tombstones — is
   specified in [sync.md](sync.md).

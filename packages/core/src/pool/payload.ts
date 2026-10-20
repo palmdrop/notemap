@@ -1,3 +1,5 @@
+import { dequal } from "dequal";
+
 import type { SchemaIssue } from "#types/json";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
@@ -73,4 +75,8 @@ export function canonicalPayload(payload: Payload): Payload {
       a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0,
     ),
   };
+}
+
+export function samePayload(one: Payload, other: Payload): boolean {
+  return dequal(canonicalPayload(one), canonicalPayload(other));
 }

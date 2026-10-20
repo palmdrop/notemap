@@ -2,8 +2,15 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-20
 **Shipped**:
+
+- 2026-10-20 — **A capture may continue a line, and two `409`s name its head.**
+  `source-item-diverged` and `continues-not-head` join the capture refusals, `existing` names the
+  head of the line, the envelope takes `continues`, and an `Item` carries `continues` and
+  `sourceWord` where it has them.
+  ([plan](../plans/relay-re-reads-and-local-edits.md),
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))
 
 - 2026-10-19 — **Asked arguments on the wire.** Templates carry `asked`; `/tag`, a capture and a
   template `route` or `preview` carry `arguments` for them, a capture's keyed by tag.
@@ -564,6 +571,16 @@ compared on.
   where `matchedOn` is `"id"` or `"source"`. No `Location`: nothing was created.
 - A replay under an existing identity whose content differs is a refusal, not a success — `409`,
   see the table.
+- **A re-read under a source identity is answered by the head of its line** *(added 2026-10-20,
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))*, as
+  [core.md](core.md#intake-and-sync) decides. `already-captured` with `matchedOn: "source"` may
+  therefore carry a different item from the one holding the identity, and the two `409`s name the
+  head in `existing`: `source-item-changed` where it still says the source's word, so the source
+  edits it, and `source-item-diverged` where somebody else has changed it too.
+- **`continues`** names the head a diverged source continues. The capture is then an ordinary
+  one under an identity of its own, which the line follows from here on. Naming anything but the
+  head of a line from the same source is `409 continues-not-head`. Like `id`, it is part of what a
+  replay is compared on.
 
 **A client that mints its own capture id supplies that same value as `sourceItemId`.** One
 minted value fills both fields. The two identities answer different questions
@@ -616,6 +633,11 @@ archive, a capture outcome, an edit outcome:
   come off ([classifying an item](#classifying-an-item)) without a read of the records per row.
 - A summary saying nothing and one saying `records: 0` are the same claim, so only the first is
   spelled — a cancelled last reservation takes the field away again.
+
+**An `Item` carries `continues` and `sourceWord` where it has them** *(added 2026-10-20)*:
+`continues` is the id of the head a continuation was made to continue, and `sourceWord` is the
+payload its line's source last said, present only while the item says something else. Both are
+absent rather than empty otherwise.
 
 **An `Item` carries `assets` on the same terms** — every asset its payload references, resolved:
 
@@ -2050,6 +2072,8 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `asset-id-conflict` | `asset` | core |
 | `409` | `capture-id-conflict` | `existing` | core |
 | `409` | `source-item-changed` | `existing` | core |
+| `409` | `source-item-diverged` | `existing` | core |
+| `409` | `continues-not-head` | `continues` | core |
 | `409` | `already-archived` | `item`, `at` | core |
 | `409` | `not-archived` | `item` | core |
 | `409` | `not-pending` | `record` | core |

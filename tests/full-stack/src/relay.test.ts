@@ -101,6 +101,25 @@ async function itemAt(pool: Relaying, id: string): Promise<Item> {
   return (await response.json()) as Item;
 }
 
+/** An edit made in a shell, under the shell's own channel rather than the relay's. */
+async function editedByHand(
+  pool: Relaying,
+  id: string,
+  text: string,
+): Promise<void> {
+  const response = await pool.read(`/v1/items/${id}/edit`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      source: "web-manual",
+      sourceItemId: `edit-of-${id}`,
+      payload: { type: "note", content: { text }, metadata: {}, assets: [] },
+    }),
+  });
+  expect(response.status).toBe(200);
+  expect(((await response.json()) as { kind: string }).kind).toBe("amended");
+}
+
 describe("a relay feeding the pool from outside", () => {
   it("captures on its first run and nothing at all on its second", async () => {
     const pool = await relaying();
@@ -169,10 +188,10 @@ describe("a relay feeding the pool from outside", () => {
     expect(revised.kind).toBe("revised");
     expect(revised.item).not.toBe(captured.item);
 
-    // Every poll from here costs two requests and makes nothing new: the edit
-    // route matches its own replay on `(source, sourceItemId)`.
-    expect(await pool.relay.relay(changed)).toEqual(revised);
-    expect(await pool.relay.relay(changed)).toEqual(revised);
+    // A re-read resolves to the revision, which says what upstream says.
+    const unchanged = { kind: "already-captured", item: revised.item };
+    expect(await pool.relay.relay(changed)).toEqual(unchanged);
+    expect(await pool.relay.relay(changed)).toEqual(unchanged);
 
     expect((await itemAt(pool, captured.item)).revisedInto).toEqual([
       revised.item,
@@ -180,6 +199,94 @@ describe("a relay feeding the pool from outside", () => {
     expect((await itemAt(pool, revised.item)).sourceItemId).toBe(
       "u-1@2026-09-07T10:00:00Z",
     );
+  });
+
+  it("keeps a person's edit through a re-read of what upstream has not changed", async () => {
+    const pool = await relaying();
+    const memo = upstream();
+    const captured = await pool.relay.relay(memo);
+    await editedByHand(pool, captured.item, "as I meant it");
+
+    expect(await pool.relay.relay(memo)).toEqual({
+      kind: "already-captured",
+      item: captured.item,
+    });
+    expect((await itemAt(pool, captured.item)).payload.content).toEqual({
+      text: "as I meant it",
+    });
+  });
+
+  it("makes no revision of an item edited by hand and then processed, on a re-read of the same version", async () => {
+    const pool = await relaying();
+    const memo = upstream();
+    const captured = await pool.relay.relay(memo);
+    await editedByHand(pool, captured.item, "as I meant it");
+
+    const marked = await pool.read(
+      `/v1/items/${captured.item}/mark-processed`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
+    expect(marked.status).toBe(200);
+
+    await pool.relay.relay(memo);
+
+    expect((await itemAt(pool, captured.item)).revisedInto).toEqual([]);
+  });
+
+  it("continues an item changed both upstream and by hand, and follows the continuation after", async () => {
+    const pool = await relaying();
+    const captured = await pool.relay.relay(upstream());
+    await editedByHand(pool, captured.item, "as I meant it");
+
+    const changed = upstream({
+      version: "2026-09-07T10:00:00Z",
+      text: "rewritten since",
+    });
+    const continued = await pool.relay.relay(changed);
+    expect(continued.kind).toBe("continued");
+    expect(continued.item).not.toBe(captured.item);
+    expect(await pool.relay.relay(changed)).toEqual({
+      kind: "already-captured",
+      item: continued.item,
+    });
+
+    const again = await pool.relay.relay(
+      upstream({ version: "2026-09-07T11:00:00Z", text: "and again" }),
+    );
+    expect(again).toEqual({ kind: "amended", item: continued.item });
+    expect((await itemAt(pool, captured.item)).payload.content).toEqual({
+      text: "as I meant it",
+    });
+  });
+
+  it("chains a second upstream edit on the revision the first one made", async () => {
+    const pool = await relaying();
+    const captured = await pool.relay.relay(upstream());
+    const marking = (item: string) =>
+      pool.read(`/v1/items/${item}/mark-processed`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+    await marking(captured.item);
+    const first = await pool.relay.relay(
+      upstream({ version: "2026-09-07T10:00:00Z", text: "second" }),
+    );
+    await marking(first.item);
+    const second = await pool.relay.relay(
+      upstream({ version: "2026-09-07T11:00:00Z", text: "third" }),
+    );
+
+    expect(second.kind).toBe("revised");
+    expect((await itemAt(pool, captured.item)).revisedInto).toEqual([
+      first.item,
+    ]);
+    expect((await itemAt(pool, first.item)).revisedInto).toEqual([second.item]);
   });
 
   it("uploads an attachment once across three runs, and never mints a new id", async () => {

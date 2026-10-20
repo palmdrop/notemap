@@ -489,6 +489,50 @@
           "revisionOf": {
             "type": "string"
           },
+          "continues": {
+            "type": "string"
+          },
+          "sourceWord": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": {}
+              },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slot": {
+                      "type": "string"
+                    },
+                    "asset": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "slot",
+                    "asset"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "content",
+              "metadata",
+              "assets"
+            ]
+          },
           "archived": {
             "type": "object",
             "properties": {
@@ -735,6 +779,11 @@
                 "heading": "Next"
               }
             }
+          },
+          "continues": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The head of a line this source diverged from, which the capture continues."
           }
         },
         "required": [
@@ -3685,7 +3734,9 @@
                           "type": "string",
                           "enum": [
                             "capture-id-conflict",
-                            "source-item-changed"
+                            "source-item-changed",
+                            "source-item-diverged",
+                            "continues-not-head"
                           ]
                         }
                       },

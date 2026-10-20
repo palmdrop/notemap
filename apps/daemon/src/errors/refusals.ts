@@ -28,6 +28,8 @@ export type StatusMap = Readonly<Record<string, number>>;
 export const CAPTURE_STATUS = {
   "capture-id-conflict": 409,
   "source-item-changed": 409,
+  "source-item-diverged": 409,
+  "continues-not-head": 409,
   "unknown-payload-type": 422,
   "payload-invalid": 422,
   "unknown-asset": 422,

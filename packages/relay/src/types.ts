@@ -33,7 +33,8 @@ export type Relayed = {
 
 /** Where an item ended up. Every one of these is a success. */
 export type Landed = {
-  readonly kind: "captured" | "already-captured" | "amended" | "revised";
+  readonly kind:
+    "captured" | "already-captured" | "amended" | "revised" | "continued";
   readonly item: string;
 };
 

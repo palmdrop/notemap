@@ -24,11 +24,13 @@ const KEYS = {
   archived: "archived_at",
   tags: "tags",
   revisionOf: "wasRevisionOf",
+  continues: null,
+  sourceWord: null,
 } as const satisfies Record<keyof ItemRecord, string | null>;
 
 /** A renderer may add its own keys, but never shadow one of these. */
 export const FIXED_KEYS: readonly string[] = [
-  ...Object.values(KEYS),
+  ...Object.values(KEYS).filter((key) => key !== null),
   "wasAttributedTo",
 ];
 

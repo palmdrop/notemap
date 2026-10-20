@@ -115,6 +115,10 @@ function canonicalItem(item: Item): ItemRecord {
       ? {}
       : { contentUpdatedAt: instant(item.contentUpdatedAt) }),
     ...(item.revisionOf === undefined ? {} : { revisionOf: item.revisionOf }),
+    ...(item.continues === undefined ? {} : { continues: item.continues }),
+    ...(item.sourceWord === undefined
+      ? {}
+      : { sourceWord: canonicalPayload(item.sourceWord) }),
     ...(item.archived === undefined
       ? {}
       : {

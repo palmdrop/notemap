@@ -1,8 +1,13 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-20
 **Shipped**:
+
+- 2026-10-20 — **An item's record carries the head it continues and its source's word.** Both are
+  in the `.json` and neither in the rendering's frontmatter.
+  ([plan](../plans/relay-re-reads-and-local-edits.md),
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))
 
 - 2026-10-19 — **A template's record carries what it asks for.** ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
@@ -163,7 +168,10 @@ The unit is the **mirror record**: one item's complete durable state, sufficient
 restore that item. It carries
 
 - the item — its id, source and source item id, capture time, content time, revision link,
-  archive state, and its tags with their attribution;
+  the head it `continues` and the **source's word** where it keeps one (added 2026-10-20,
+  [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md)),
+  archive state, and its tags with their attribution. Neither of the two is in the frontmatter of
+  the rendering, whose keys are an interop contract, so the `.json` alone carries them;
 - the payload — type, content, metadata, and its asset references;
 - the assets those references reach, each with its id, filename, media type, size and blob
   hash, so a rebuild restores the same asset identities and a human can find the bytes. Not a
@@ -490,7 +498,8 @@ reason and one more: tagging now applies a template, and a rebuild replaying an 
 
 - **Order: destinations, then templates, then items.** A template names a destination and a routing
   record names both, so each is restored before the thing that refers to it. Within the items there
-  is no order to keep — a revision carries its own capture time and refers to its original by id.
+  is no order to keep — a revision carries its own capture time and refers to its original by id,
+  and a continuation names the head it continues by id the same way.
   **Pool settings have no order to keep either**, and none with the other three: a setting names
   nothing and is named by nothing, so its record can be restored whenever the reader hands it over.
 - **A record naming a pool setting the running code does not know is to be warned about and

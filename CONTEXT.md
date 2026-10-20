@@ -96,8 +96,30 @@ query
 An ordinary capture, made by editing a sealed item, carrying its own capture time, source and
 id plus a link to what it was made from. The link is a trace, not a replacement: the item it came
 from was delivered or archived and stays exactly as it was. One item may be revised more than once,
-and the revisions are independent of each other.
+and the revisions are independent of each other, except that a source's own edits revise the
+**head** of its **line**, so they form a chain. A revision carries every tag of what it was made
+from except trigger tags, which say what filed the item they are on.
 _Avoid_: version, update, edit
+
+**Source's word**:
+What an item's source last said for it, kept by the pool only while the item says something else,
+which is to say after somebody other than the source edited it. A re-read saying the source's word
+is a replay, however the item has been edited since.
+_Avoid_: original, upstream copy, base
+
+**Line**:
+An identity a source captured under, and everything that follows from it: the item holding the
+identity, the revisions made from it, and its **continuation**. Its source is the source of the
+item holding the identity. Its **head** is what a re-read of the identity resolves to: the latest
+revision, then the continuation, followed until there is neither.
+_Avoid_: chain (for the whole of it), history, branch
+
+**Continuation**:
+A capture a source makes when it has changed an item that somebody else has changed too. It names
+the head it **continues**, becomes the line's new head, and is otherwise an ordinary capture: it
+starts unprocessed and processes nothing. Notemap does not branch, so a conflict makes a second
+item instead.
+_Avoid_: fork, branch, conflict copy
 
 **Revised into**:
 Said of an item that one or more revisions were made from. Derived from the revision links, never

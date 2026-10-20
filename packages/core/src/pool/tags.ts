@@ -31,8 +31,8 @@ export function normalised(name: TagName): TagName | undefined {
  * queue — unless a template fires, which takes it out of the queue by reserving.
  *
  * Firing is on the **tagging**: the work is done here and nowhere else, so an
- * absorbed re-tag fires nothing, a revision carrying the tag fires nothing, and
- * a tag drained from an outbox fires by arriving on this path like any other.
+ * absorbed re-tag fires nothing, and a tag drained from an outbox fires by
+ * arriving on this path like any other.
  */
 export async function tag(
   config: PoolConfig,

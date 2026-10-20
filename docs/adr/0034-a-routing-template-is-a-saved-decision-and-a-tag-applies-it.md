@@ -3,7 +3,9 @@
 **Date**: 2026-09-05
 **Status**: Accepted — amends [ADR 17](0017-delivery-is-asynchronous-and-retried-on-evidence.md)'s
 neighbourhood in `core.md` and closes half of the routing-rule open question held since 2026-08-02.
-**Extended 2026-09-07** with what a tag does when its template cannot route (below)
+**Extended 2026-09-07** with what a tag does when its template cannot route (below).
+**Amended 2026-10-20** by [ADR 64](0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md):
+a revision no longer carries trigger tags at all.
 **Deciders**: palmdrop, with Claude
 
 ---

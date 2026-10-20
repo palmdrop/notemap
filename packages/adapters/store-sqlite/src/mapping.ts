@@ -21,6 +21,7 @@ import type {
   JobId,
   JobSubject,
   JsonObject,
+  Payload,
   PayloadTypeName,
   PoolSettingName,
   PoolSettingRecord,
@@ -167,6 +168,10 @@ export function toItem(
     ...(row.revision_of === null
       ? {}
       : { revisionOf: row.revision_of as ItemId }),
+    ...(row.continues === null ? {} : { continues: row.continues as ItemId }),
+    ...(row.source_word === null
+      ? {}
+      : { sourceWord: toSourceWord(row.source_word) }),
     ...(row.archived_at === null
       ? {}
       : {
@@ -202,6 +207,8 @@ export function itemParams(
   string | null,
   number | null,
   string | null,
+  string | null,
+  string | null,
 ] {
   return [
     record.id,
@@ -219,7 +226,17 @@ export function itemParams(
     record.revisionOf ?? null,
     record.archived === undefined ? null : toMillis(record.archived.archivedAt),
     record.archived?.reason ?? null,
+    record.continues ?? null,
+    sourceWordColumn(record.sourceWord),
   ];
+}
+
+export function sourceWordColumn(word: Payload | undefined): string | null {
+  return word === undefined ? null : JSON.stringify(word);
+}
+
+function toSourceWord(column: string): Payload {
+  return JSON.parse(column) as Payload;
 }
 
 export function toAsset(row: Omit<AssetRow, "stored_at">): Asset {

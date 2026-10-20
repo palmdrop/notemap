@@ -31,8 +31,37 @@ export function createRelay(options: RelayOptions): Relay {
         signal,
       );
 
-      if (captured.kind !== "changed") {
+      if (
+        captured.kind === "captured" ||
+        captured.kind === "already-captured"
+      ) {
         return { kind: captured.kind, item: captured.item.id };
+      }
+
+      if (captured.kind === "diverged") {
+        // Somebody changed it in the pool as well. Notemap does not branch, so
+        // the change upstream arrives as a capture of its own that the pool
+        // follows from here on.
+        const continued = await pool.capture(
+          {
+            source: options.source,
+            sourceItemId: `${one.sourceItemId}@${one.version}`,
+            capturedAt: one.capturedAt,
+            payload,
+            tags: one.tags,
+            continues: captured.existing,
+          },
+          signal,
+        );
+        if (
+          continued.kind !== "captured" &&
+          continued.kind !== "already-captured"
+        ) {
+          throw new Error(
+            `continuing ${captured.existing} answered ${continued.kind}`,
+          );
+        }
+        return { kind: "continued", item: continued.item.id };
       }
 
       // The identity is held by an item saying something else, which is what an

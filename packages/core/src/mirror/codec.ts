@@ -163,6 +163,13 @@ function readItem(value: unknown, at: string): ItemRecord {
       at,
       (raw, where) => text(raw, where) as ItemId,
     ),
+    ...present(
+      "continues",
+      row,
+      at,
+      (raw, where) => text(raw, where) as ItemId,
+    ),
+    ...present("sourceWord", row, at, readPayload),
     ...present("archived", row, at, readArchive),
   };
 }

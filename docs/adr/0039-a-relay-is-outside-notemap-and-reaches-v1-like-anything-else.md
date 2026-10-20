@@ -2,7 +2,9 @@
 
 **Date**: 2026-09-07
 **Status**: Accepted — bounds
-[ADR 8](0008-adapters-are-in-process-and-wired-by-the-host.md)
+[ADR 8](0008-adapters-are-in-process-and-wired-by-the-host.md). Amended 2026-10-20 by
+[ADR 64](0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md): a re-read is
+compared with what the source last said, and a second upstream edit revises the first revision.
 **Deciders**: palmdrop, with Claude
 
 ---

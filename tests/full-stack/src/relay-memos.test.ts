@@ -293,19 +293,20 @@ describe("the memos relay, over a real daemon", () => {
     expect(await polled(where)).toMatch(/revised=1/);
 
     // The same memo, now read with `hashtags`. The words differ from the ones
-    // the first reading sent, and the pool must take that as another revision
-    // rather than as a conflicting resubmission of the one it already has.
+    // the first reading sent, and the pool must take that as an edit of the
+    // revision, the head of the line, rather than as a conflicting
+    // resubmission of the one it already has.
     const stripping = where.alsoReading(true);
     const first = await stripping.poll();
     expect(first.output).not.toMatch(/could not/);
     expect(first.code).toBe(0);
-    expect(first.output).toMatch(/revised=1/);
+    expect(first.output).toMatch(/amended=1/);
 
-    // Three items: the archived original, the revision the first reading made,
-    // and the one this reading did.
-    const three = await where.items();
-    expect(three).toHaveLength(3);
-    expect(three.map((each) => each.payload.content["text"])).toContain(
+    // Two items: the archived original, and the revision the first reading
+    // made, which this reading amended since nothing had processed it.
+    const two = await where.items();
+    expect(two).toHaveLength(2);
+    expect(two.map((each) => each.payload.content["text"])).toContain(
       "rewritten since",
     );
 
@@ -320,7 +321,7 @@ describe("the memos relay, over a real daemon", () => {
     where.memos.memos.push(memo("empty", { content: "  " }), memo("said"));
 
     expect(await polled(where)).toMatch(
-      /captured=1 unchanged=0 amended=0 revised=0 empty=1/,
+      /captured=1 unchanged=0 amended=0 revised=0 continued=0 empty=1/,
     );
 
     expect((await where.items()).map((each) => each.sourceItemId)).toEqual([

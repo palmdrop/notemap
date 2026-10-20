@@ -544,8 +544,10 @@ describe("a trigger tag applying its template", () => {
     expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
   });
 
-  it("fires nothing for a revision that carries it over", async () => {
+  it("leaves the trigger tag behind on a revision, which fires once it is added again", async () => {
     const { pool, item, clock, deliver } = await tagged();
+    const READING = "reading" as TagName;
+    succeeded(await pool.items.tag(item.id, READING, PERSON));
     clock.set(AFTER);
     await deliver();
 
@@ -562,8 +564,11 @@ describe("a trigger tag applying its template", () => {
     );
     if (outcome.kind !== "revised") throw new Error("expected a revision");
 
-    expect(await tagsOn(pool, outcome.revision.id)).toEqual([RESEARCH]);
+    expect(await tagsOn(pool, outcome.revision.id)).toEqual([READING]);
     expect(await pool.routing.recordsFor(outcome.revision.id)).toEqual([]);
+
+    succeeded(await pool.items.tag(outcome.revision.id, RESEARCH, PERSON));
+    expect(await pool.routing.recordsFor(outcome.revision.id)).toHaveLength(1);
   });
 
   it("fires from a capture that arrives already carrying it", async () => {
