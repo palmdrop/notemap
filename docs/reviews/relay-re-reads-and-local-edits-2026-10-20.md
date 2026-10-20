@@ -1,7 +1,7 @@
 # Review: Relay re-reads and local edits
 
 **Date**: 2026-10-20
-**Status**: Open
+**Status**: Resolved
 **Scope**: `main...agent/relay-re-reads-and-local-edits`. Mainly `packages/core/src/pool/{capture,edit,lines,payload}.ts`,
 `packages/relay/src/{relay.ts,pool/pool.ts}`, `packages/adapters/{store-sqlite,mirror-fs}`,
 `packages/core/src/mirror/`, `apps/daemon/src/{schemas,errors}`, `packages/client`, and the tests
@@ -187,3 +187,29 @@ is also returned for a missing item and for a head from another source.
 ---
 
 ## Resolution
+
+All twelve resolved on 2026-10-20, with the developer's decisions on 1 and 3.
+
+1. **Only the head of a line is revised.** An edit that would revise an item already revised or
+   continued is refused `409 not-head`, naming the head; an amendment is not. Both paths are
+   tests in `rereads.test.ts`, and the line holds after each. The continuation's identity is
+   `<id>@<version>/continued`, apart from the relay's edits. ADR 64, core.md, http-v1.md,
+   client.md and CONTEXT.md say so, and ADR 21 is marked amended.
+2. A capture naming `continues` drops the trigger tags a template declares and fires none, in the
+   pool rather than the relay, so any source gets it.
+3. A re-read under a source identity is decided on the payload alone; a changed capture time or
+   offset is ignored and the first kept.
+4. `amendItem` takes `sourceWord: Payload | undefined`, required.
+5. `continues` must name a head that keeps a source's word, so only a head somebody else edited
+   can be continued.
+6. A revision drops only the `route/` tags a template declares. CONTEXT.md's **Trigger tag** no
+   longer says a revision carrying one fires nothing.
+7. http-v1.md's independence line and tag-count line are amended.
+8. Left throwing, as the review judged right, and now covered by `packages/relay/src/relay.test.ts`.
+9. Stated in core.md and ADR 64: the word is only compared, its asset ids hold no bytes, and a
+   source re-uploads what it names.
+10. Unit tests for `headOf`, `lineSourceOf` and `keptWord` in `packages/core/src/pool/lines.test.ts`;
+    the listed edge cases in `rereads.test.ts`; the refused continuation in `relay.test.ts`. The
+    plan's tick is annotated.
+11. The comment parses.
+12. The message covers all three causes.

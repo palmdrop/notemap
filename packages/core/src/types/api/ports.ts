@@ -422,13 +422,13 @@ export interface PoolTx extends PoolReads {
 
   /**
    * `at` is the content time the row takes, which is what moves it in the
-   * queue. The source's word is replaced, and an absent one clears it.
+   * queue. The source's word is replaced, and `undefined` clears it.
    */
   amendItem(
     item: ItemId,
     payload: Payload,
     at: Timestamp,
-    sourceWord?: Payload,
+    sourceWord: Payload | undefined,
   ): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;

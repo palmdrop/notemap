@@ -4,7 +4,7 @@ import type { SourceId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { Payload } from "#types/domain/payload";
 
-/** Where a re-read of the identity `item` belongs to lands: the latest revision, then the continuation. */
+/** What a re-read of `item`'s line resolves to: its latest revision, then its continuation, followed to the end. */
 export async function headOf(reads: PoolReads, item: Item): Promise<Item> {
   let head = item;
   for (;;) {

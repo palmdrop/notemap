@@ -303,7 +303,7 @@ describe("appending a revision", () => {
     expect(walked).toEqual([item.id, revised.id]);
   });
 
-  it("may be made twice from one item, into captures independent of each other", async () => {
+  it("is made once from one item, the next edit going to the revision", async () => {
     const opened = pool();
     const { pool: p } = opened;
     const item = await processed(opened);
@@ -312,19 +312,15 @@ describe("appending a revision", () => {
       succeeded(await p.items.edit(item.id, edit("one", "edit-1"), PERSON)),
     );
     opened.clock.set("2026-08-06T11:00:00.000Z");
-    const second = revision(
-      succeeded(await p.items.edit(item.id, edit("two", "edit-2"), PERSON)),
-    );
 
-    expect(await p.items.get(item.id)).toMatchObject({
-      revisedInto: [first.id, second.id],
+    expect(await p.items.edit(item.id, edit("two", "edit-2"), PERSON)).toEqual({
+      kind: "refused",
+      refusal: { kind: "not-head", head: first.id },
     });
-    expect(first.revisedInto).toEqual([]);
-    expect(second.revisedInto).toEqual([]);
-    expect(ids((await p.views.queue(OLDEST)).values)).toEqual([
-      first.id,
-      second.id,
-    ]);
+    expect(await p.items.get(item.id)).toMatchObject({
+      revisedInto: [first.id],
+    });
+    expect(ids((await p.views.queue(OLDEST)).values)).toEqual([first.id]);
   });
 
   it("answers the revision it already made when the edit is replayed", async () => {
@@ -395,8 +391,8 @@ describe("a decision that was withdrawn", () => {
     await p.routing.cancelDelivery(opened.record.id);
 
     expect(
-      succeeded(await p.items.edit(item.id, edit("thawed", "edit-2"), PERSON)),
-    ).toMatchObject({ kind: "revised" });
+      await p.items.edit(item.id, edit("thawed", "edit-2"), PERSON),
+    ).toMatchObject({ kind: "refused", refusal: { kind: "not-head" } });
   });
 
   it("makes an unrevised item a person's to edit again", async () => {

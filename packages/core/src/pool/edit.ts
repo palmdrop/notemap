@@ -1,7 +1,8 @@
 import { recordAction } from "./actions";
-import { keptWord, lineSourceOf } from "./lines";
+import { headOf, keptWord, lineSourceOf } from "./lines";
 import { enqueueMirrorWrite } from "./mirror";
 import { checkAssets, checkPayload, samePayload } from "./payload";
+import { triggersAmong } from "./tags";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { Agent } from "#types/domain/agent";
@@ -11,7 +12,6 @@ import type { EditEnvelope } from "#types/domain/capture";
 import type { ItemId } from "#types/domain/ids";
 import type { EditOutcome, Item } from "#types/domain/item";
 import type { Payload } from "#types/domain/payload";
-import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
 import type { Result } from "#types/result";
 
 type EditResult = Result<EditOutcome, EditRefusal>;
@@ -127,7 +127,12 @@ async function revise(
       : refused({ kind: "source-item-changed", existing: replayed.id });
   }
 
+  // Revising anything behind the head would fork the line.
+  const head = await headOf(tx, item);
+  if (head.id !== item.id) return refused({ kind: "not-head", head: head.id });
+
   const at = ports.clock.now();
+  const triggers = await triggersAmong(tx, item.tags);
   const word = keptWord(item, envelope.payload, bySource);
   const revision = await tx.insertItem({
     id: ports.ids.next<ItemId>(),
@@ -135,9 +140,7 @@ async function revise(
     sourceItemId: envelope.sourceItemId,
     payload: envelope.payload,
     // A trigger tag says what filed the item it is on, which a revision is not.
-    tags: item.tags.filter(
-      (tag) => !tag.name.startsWith(TRIGGER_TAG_NAMESPACE),
-    ),
+    tags: item.tags.filter((tag) => !triggers.includes(tag.name)),
     createdAt: at,
     revisionOf: item.id,
     ...(word === undefined ? {} : { sourceWord: word }),

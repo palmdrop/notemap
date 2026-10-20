@@ -154,7 +154,10 @@ const SAID: {
     "something else in the pool was captured under that id, saying something different",
   "source-item-diverged":
     "that was changed where it came from and here too, so it arrives as a capture of its own",
-  "continues-not-head": "that capture was continued, or revised, since",
+  "continues-not-head":
+    "that is not the latest of its line, edited here, from the same source",
+  "not-head":
+    "that was revised or continued since; edit the newest one instead",
   "arguments-invalid": "that destination needs different arguments",
   "content-invalid": "those words are not something this kind of item can hold",
   "too-many-attempts": (facts) =>

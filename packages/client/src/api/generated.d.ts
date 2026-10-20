@@ -2016,7 +2016,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "source-item-changed";
+                                code: "source-item-changed" | "not-head";
                             } & {
                                 [key: string]: unknown;
                             };

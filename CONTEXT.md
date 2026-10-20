@@ -95,10 +95,9 @@ query
 **Revision**:
 An ordinary capture, made by editing a sealed item, carrying its own capture time, source and
 id plus a link to what it was made from. The link is a trace, not a replacement: the item it came
-from was delivered or archived and stays exactly as it was. One item may be revised more than once,
-and the revisions are independent of each other, except that a source's own edits revise the
-**head** of its **line**, so they form a chain. A revision carries every tag of what it was made
-from except trigger tags, which say what filed the item they are on.
+from was delivered or archived and stays exactly as it was. Only the **head** of a **line** is
+revised, so an item is revised at most once and its revisions form a chain. A revision carries
+every tag of what it was made from except trigger tags, which say what filed the item they are on.
 _Avoid_: version, update, edit
 
 **Source's word**:
@@ -117,14 +116,15 @@ _Avoid_: chain (for the whole of it), history, branch
 **Continuation**:
 A capture a source makes when it has changed an item that somebody else has changed too. It names
 the head it **continues**, becomes the line's new head, and is otherwise an ordinary capture: it
-starts unprocessed and processes nothing. Notemap does not branch, so a conflict makes a second
+starts unprocessed, processes nothing, and leaves its trigger tags behind, so nothing files it
+before a person has looked. Notemap does not branch, so a conflict makes a second
 item instead.
 _Avoid_: fork, branch, conflict copy
 
 **Revised into**:
 Said of an item that one or more revisions were made from. Derived from the revision links, never
-stored. It processes the item, which is why a further edit appends another revision rather than
-changing it.
+stored. It processes the item, and puts it behind the head of its line, which is why a further
+edit of it is refused and goes to the revision instead.
 _Avoid_: superseded, outdated, replaced, stale
 
 **Mirror**:
@@ -492,7 +492,8 @@ _Avoid_: parameter, open argument, placeholder, variable
 The tag a routing template declares, under the reserved `route/` namespace, whose arrival on an item
 applies the template. Declared rather than derived from the name, so renaming a template disarms no
 tag already written, and unique across templates. Fires on the **tagging** and never on the tag
-being present, so a revision carrying one fires nothing. It stays on a delivered item, where it
+being present. A revision or a continuation arrives without one, since it is not what the tag
+filed. It stays on a delivered item, where it
 reads as why the item went where it went, and comes off again where the reservation it made was
 cancelled or abandoned. It is the pool's and not the item's, so a delivery leaves every `route/` tag
 behind unless asked to send them. A `route/` tag naming no template is an ordinary tag that fires

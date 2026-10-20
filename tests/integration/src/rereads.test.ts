@@ -310,3 +310,193 @@ describe("an edit upstream and one in the pool", () => {
     );
   });
 });
+
+describe("the edges of a line", () => {
+  it("takes no notice of a capture time that changed upstream", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    succeeded(await p.items.edit(item.id, byHand("as I meant it"), PERSON));
+
+    const again = succeeded(
+      await p.capture(
+        envelope({
+          source: WATCHED_FOLDER,
+          sourceItemId: UPSTREAM_ID,
+          capturedAt: "2026-08-07T09:00:00.000Z",
+          utcOffset: 120,
+          text: "as it was written",
+        }),
+      ),
+    );
+
+    expect(again).toMatchObject({
+      kind: "already-captured",
+      item: { id: item.id, createdAt: item.createdAt },
+    });
+  });
+
+  it("keeps no source's word on a revision the source made itself", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    succeeded(await p.items.edit(item.id, byHand("as I meant it"), PERSON));
+    await p.routing.markProcessed(item.id, "filed by hand");
+
+    const made = revision(
+      succeeded(
+        await p.items.edit(item.id, upstream("from upstream", "v2"), PERSON),
+      ),
+    );
+
+    expect(made.sourceWord).toBeUndefined();
+  });
+
+  it("carries the source's word down a chain of revisions made by hand", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    await p.routing.markProcessed(item.id, "filed by hand");
+    const first = revision(
+      succeeded(await p.items.edit(item.id, byHand("mine"), PERSON)),
+    );
+    await p.routing.markProcessed(first.id, "filed by hand");
+
+    const second = revision(
+      succeeded(
+        await p.items.edit(first.id, byHand("mine again", "edit-2"), PERSON),
+      ),
+    );
+
+    expect(second.sourceWord).toEqual(text("as it was written"));
+    expect(succeeded(await reread(p, "as it was written"))).toMatchObject({
+      kind: "already-captured",
+      item: { id: second.id },
+    });
+  });
+
+  it("answers a continuation's resend after a person edited it", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    succeeded(await p.items.edit(item.id, byHand("as I meant it"), PERSON));
+    const continuing = {
+      sourceItemId: `${UPSTREAM_ID}@v2`,
+      continues: item.id,
+    };
+    const continuation = succeeded(
+      await reread(p, "rewritten upstream", continuing),
+    ).item;
+    succeeded(
+      await p.items.edit(continuation.id, byHand("and mine", "edit-2"), PERSON),
+    );
+
+    expect(
+      succeeded(await reread(p, "rewritten upstream", continuing)),
+    ).toMatchObject({
+      kind: "already-captured",
+      item: { id: continuation.id },
+    });
+  });
+
+  it("refuses to continue a head nobody else has edited", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+
+    expect(
+      await reread(p, "rewritten upstream", {
+        sourceItemId: `${UPSTREAM_ID}@v2`,
+        continues: item.id,
+      }),
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "continues-not-head", continues: item.id },
+    });
+  });
+
+  it("still refuses a shell's replay of a capture it has since edited", async () => {
+    const { pool: p } = pool();
+    const typed = envelope({
+      id: "typed",
+      source: SHELL,
+      sourceItemId: "typed",
+    });
+    const item = succeeded(await p.capture(typed)).item;
+    succeeded(
+      await p.items.edit(
+        item.id,
+        {
+          source: SHELL,
+          sourceItemId: "edit-1",
+          payload: text("as I meant it"),
+        },
+        PERSON,
+      ),
+    );
+
+    expect(await p.capture(typed)).toEqual({
+      kind: "refused",
+      refusal: { kind: "capture-id-conflict", existing: item.id },
+    });
+  });
+});
+
+describe("an edit behind the head of a line", () => {
+  it("is refused once the source has revised the item, and the line holds", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    await p.routing.markProcessed(item.id, "filed by hand");
+    const first = revision(
+      succeeded(
+        await p.items.edit(item.id, upstream("from upstream", "v2"), PERSON),
+      ),
+    );
+
+    expect(await p.items.edit(item.id, byHand("mine"), PERSON)).toEqual({
+      kind: "refused",
+      refusal: { kind: "not-head", head: first.id },
+    });
+    expect(succeeded(await reread(p, "from upstream"))).toMatchObject({
+      kind: "already-captured",
+      item: { id: first.id },
+    });
+  });
+
+  it("is refused once the item has been continued, and the line holds", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    succeeded(await p.items.edit(item.id, byHand("as I meant it"), PERSON));
+    const continuation = succeeded(
+      await reread(p, "rewritten upstream", {
+        sourceItemId: `${UPSTREAM_ID}@v2`,
+        continues: item.id,
+      }),
+    ).item;
+    await p.routing.markProcessed(item.id, "filed by hand");
+
+    expect(
+      await p.items.edit(item.id, byHand("mine again", "edit-2"), PERSON),
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "not-head", head: continuation.id },
+    });
+    expect(succeeded(await reread(p, "rewritten upstream"))).toMatchObject({
+      kind: "already-captured",
+      item: { id: continuation.id },
+    });
+  });
+
+  it("still amends an unprocessed item behind its continuation in place", async () => {
+    const { pool: p } = pool();
+    const item = await relayed(p);
+    succeeded(await p.items.edit(item.id, byHand("as I meant it"), PERSON));
+    succeeded(
+      await reread(p, "rewritten upstream", {
+        sourceItemId: `${UPSTREAM_ID}@v2`,
+        continues: item.id,
+      }),
+    );
+
+    expect(
+      succeeded(
+        await p.items.edit(item.id, byHand("and again", "edit-2"), PERSON),
+      ).kind,
+    ).toBe("amended");
+  });
+});

@@ -45,7 +45,7 @@ export function createRelay(options: RelayOptions): Relay {
         const continued = await pool.capture(
           {
             source: options.source,
-            sourceItemId: `${one.sourceItemId}@${one.version}`,
+            sourceItemId: `${one.sourceItemId}@${one.version}/continued`,
             capturedAt: one.capturedAt,
             payload,
             tags: one.tags,

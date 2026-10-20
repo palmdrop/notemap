@@ -124,7 +124,9 @@ Depends on Phase 3.
   - full-stack: a local edit plus an upstream edit gives a new capture holding the upstream words
   - re-runs answer `already-captured`
   - a further upstream edit amends or revises the continuation, not the original
-  - core unit tests for each resolution branch
+  - core unit tests for each resolution branch _(2026-10-20: the branches are tested from
+    `tests/integration/src/rereads.test.ts`; `packages/core` holds unit tests for the line
+    helpers only, added after review)_
 - [x] Commit
 
 Verify: `pnpm -r --no-sort --silent test`, `pnpm test:stack`.
@@ -181,6 +183,12 @@ check does. It is kept only while it differs from what the item says, so an abse
 item says what its source said", and that is also why there is no backfill. The Unknowns' first
 item holds as written. The phases landed as one code commit, not one per phase, because
 `edit.ts` and `capture.ts` carry pieces of three of them.
+
+**After review** ([relay-re-reads-and-local-edits-2026-10-20](../reviews/relay-re-reads-and-local-edits-2026-10-20.md)).
+Only the head of a line is revised, which closes a fork the shape above left open, and a re-read
+is decided on its payload alone. A continuation drops the trigger tags a template declares, and so
+does a revision, where it had dropped the whole `route/` namespace. Only a head somebody else has
+edited can be continued, and a continuation's identity is `<id>@<version>/continued`.
 
 
 DO NOT IMPLEMENT until clearly stated by the developer.

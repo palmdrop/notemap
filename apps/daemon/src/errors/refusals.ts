@@ -109,13 +109,15 @@ export const UNTAG_STATUS = {
 
 /**
  * `source-item-changed` is `409` on capture's terms: the envelope's identity
- * names an item the pool already holds and did not revise from this one. The
- * rest are `422`, the request having been understood and declined.
+ * names an item the pool already holds and did not revise from this one.
+ * `not-head` is `409` too, the item having moved on since the caller read it.
+ * The rest are `422`, the request having been understood and declined.
  */
 export const EDIT_STATUS = {
   "no-such-item": 404,
   "item-purged": 404,
   "source-item-changed": 409,
+  "not-head": 409,
   "payload-invalid": 422,
   "payload-type-changed": 422,
   "unknown-asset": 422,

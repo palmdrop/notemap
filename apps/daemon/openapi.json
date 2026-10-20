@@ -5177,7 +5177,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "source-item-changed"
+                            "source-item-changed",
+                            "not-head"
                           ]
                         }
                       },

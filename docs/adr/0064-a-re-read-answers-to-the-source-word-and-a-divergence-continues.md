@@ -2,9 +2,10 @@
 
 **Date**: 2026-10-20
 **Status**: Accepted. Amends [ADR 39](0039-a-relay-is-outside-notemap-and-reaches-v1-like-anything-else.md)
-on what a second upstream edit does, and
+on what a second upstream edit does,
 [ADR 34](0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md) on what a revision
-carries.
+carries, and [ADR 21](0021-an-item-is-editable-until-it-is-processed.md) on how many times an item
+is revised.
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -63,7 +64,9 @@ the item holding the identity. Its **head** is reached by following the latest r
 continuation, until there is neither. A revision made from another source carries the source's word
 forward, so the word belongs to the line rather than to one row.
 
-**A re-read resolves to the head of its line**, and is compared there:
+**A re-read resolves to the head of its line**, and is compared on its payload alone. A capture
+time or offset that differs is ignored and the first one kept, since no edit can change one and a
+source told it had changed would edit on every read. The three outcomes:
 
 - It says what the head says, or what the source last said → `already-captured`, answering the head.
 - It says something new, and the head still says the source's word → `source-item-changed`,
@@ -74,9 +77,21 @@ forward, so the word belongs to the line rather than to one row.
 **A divergence continues.** The relay captures afresh under an identity of its own, naming the
 head it **continues**. The continuation is an ordinary capture: it starts unprocessed, processes
 nothing, and becomes the line's head, so later re-reads resolve to it. A line has at most one
-continuation per item. The person's edit stays exactly where they made it.
+continuation per item, and only a head somebody else has edited can be continued. The person's
+edit stays exactly where they made it.
 
-**A revision does not carry trigger tags.** Every other tag carries over as before.
+**Only the head of a line is revised.** An edit that would revise an item already revised or
+continued is refused `not-head`, naming the head. Without it a line forks: a revision of an item
+behind the head becomes the head, carrying a source's word that is out of date, and the next
+unchanged re-read reads as a divergence the relay cannot continue. This brings back the refusal
+ADR 21 retired as `item-superseded`, without what ADR 21 retired alongside it: the head is derived
+by walking the links, not stored. A retried edit still answers the revision it made, because the
+replay is matched before the head is asked for. An amendment is not refused, since it adds nothing
+to the line.
+
+**Trigger tags stay behind.** A revision and a continuation carry every tag except those a
+template declares. A continuation is a conflict for a person to look at, and filing it unasked
+would deliver both sides of it.
 
 ### Consequences
 
@@ -92,6 +107,11 @@ continuation per item. The person's edit stays exactly where they made it.
 - **Neutral**: an item amended before this decision has no source's word, so its amendment reads as
   the source's. Its first re-read after the change still looks like an upstream edit, once.
 - **Neutral**: re-adding a trigger tag to a revision fires it, which is how a revision gets filed.
+- **Bad**: two devices editing one processed item no longer make two revisions. The second edit is
+  refused `not-head` and the client rolls it back, so a person meets the refusal where they used to
+  meet a duplicate.
+- **Neutral**: the source's word names assets nothing holds the bytes of. It is only compared, and
+  a source re-uploads what it names.
 
 ---
 

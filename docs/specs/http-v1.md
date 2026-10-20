@@ -8,7 +8,7 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 - 2026-10-20 — **A capture may continue a line, and two `409`s name its head.**
   `source-item-diverged` and `continues-not-head` join the capture refusals, `existing` names the
   head of the line, the envelope takes `continues`, and an `Item` carries `continues` and
-  `sourceWord` where it has them.
+  `sourceWord` where it has them. Revising an item revised or continued since is `409 not-head`.
   ([plan](../plans/relay-re-reads-and-local-edits.md),
   [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))
 
@@ -578,9 +578,11 @@ compared on.
   head in `existing`: `source-item-changed` where it still says the source's word, so the source
   edits it, and `source-item-diverged` where somebody else has changed it too.
 - **`continues`** names the head a diverged source continues. The capture is then an ordinary
-  one under an identity of its own, which the line follows from here on. Naming anything but the
-  head of a line from the same source is `409 continues-not-head`. Like `id`, it is part of what a
-  replay is compared on.
+  one under an identity of its own, which the line follows from here on, and its trigger tags are
+  dropped rather than fired. Naming anything but a head somebody else has edited, in a line from
+  the same source, is `409 continues-not-head`.
+- **A capture time or offset that differs under a known source identity is ignored**, and the one
+  the pool first took is kept. A re-read is decided on its payload.
 
 **A client that mints its own capture id supplies that same value as `sourceItemId`.** One
 minted value fills both fields. The two identities answer different questions
@@ -1009,8 +1011,8 @@ person to remember it.
 - **It takes no `tag` filter.** A person may filter a surface by any set of tags, including one no
   item carries all of, and an empty surface then says so; what they choose from is the whole set.
 - `items` counts every item carrying the tag (amended 2026-08-24), archived and revised alike.
-  Tags carry over to a revision, so a tag is counted for the item it came from and again for the
-  revision, which is two items both carrying it. The exclusion this replaces was for a revision
+  Tags carry over to a revision, trigger tags apart, so a tag is counted for the item it came from
+  and again for the revision, which is two items both carrying it. The exclusion this replaces was for a revision
   chain counting one note once per link, and there is no chain any more.
 - This route offers; it never limits. A tag no item carries is simply absent, and
   `POST /v1/items/{id}/tag` takes any tag that trims to something whether it is here or not.
@@ -1073,7 +1075,7 @@ when it last captured. It is how a **relay** left running is seen to still be ru
   clear.
 - **A revision is an ordinary capture with a new id**, carrying its own capture time of now and its
   own source identity from the envelope, plus the tags of the item it came from with their
-  attribution, and no archive state or routing records. It sits in the feed at its own time rather
+  attribution, trigger tags apart, and no archive state or routing records. It sits in the feed at its own time rather
   than beside what it names ([core.md](core.md#editing)).
 - **The envelope is what makes a retried edit safe.** A revision is matched for replay on
   `(source, sourceItemId)` exactly as a capture is, so an edit resent after a lost response answers
@@ -1084,14 +1086,15 @@ when it last captured. It is how a **relay** left running is seen to still be ru
   capture's whole match, payload included, so an envelope naming an identity that belongs to
   anything other than a revision of this item *saying these same words* is a caller's mistake
   rather than a resend.
-- **An item may be revised more than once.** The revisions are independent captures sharing an
-  ancestor; neither is the current one, and the item they came from names both.
+- **Only the head of a line is revised** *(amended 2026-10-20, [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md))*. An edit that
+  would revise an item revised or continued since is `409 not-head`, carrying the head's id in
+  `head`, which is where the edit belongs. An item is therefore revised at most once.
 - `200` rather than `201`, although a revision creates an item. The outcome carries the whole item,
   and a client that wants its URL has its id; a `Location` on the amended half would name the item
   the request already named.
-- **Editing an item something was revised from appends another revision** (amended 2026-08-24)
-  rather than answering `409 item-superseded`, which is gone. Being revised is one of the three
-  things that process an item, and a processed item is revised rather than refused.
+- **Editing an item something was revised from is `409 not-head`** (amended 2026-10-20). It
+  appended another revision from 2026-08-24, which replaced `409 item-superseded`, and that let
+  a line fork.
 - **An edit is refused what a capture's payload is refused for**, less one: a `content` that fails
   its type's schema is `422 payload-invalid`, and a reference to an asset the pool does not hold
   is `422 unknown-asset`. There is no `unknown-payload-type`, because a `type` that is not the item's
@@ -2074,6 +2077,7 @@ Every error, from core or from the daemon, is one shape:
 | `409` | `source-item-changed` | `existing` | core |
 | `409` | `source-item-diverged` | `existing` | core |
 | `409` | `continues-not-head` | `continues` | core |
+| `409` | `not-head` | `head` | core |
 | `409` | `already-archived` | `item`, `at` | core |
 | `409` | `not-archived` | `item` | core |
 | `409` | `not-pending` | `record` | core |
@@ -2376,7 +2380,7 @@ remains the interop surface; `/docs` is a convenience over it.
   and a capture time of now, which the queue holds at its newest end while the routed item stays
   where it was.
 - Repeating that call with the same `sourceItemId` answers the revision already made; repeating it
-  with a fresh one appends a second, independent revision.
+  with a fresh one is `409 not-head`, naming that revision.
 - A payload naming a different type is `422 payload-type-changed` and changes nothing, on either
   outcome.
 - `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the

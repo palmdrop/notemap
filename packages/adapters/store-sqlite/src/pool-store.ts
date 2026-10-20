@@ -1093,7 +1093,7 @@ export function createSqlitePoolStore(
           item: ItemId,
           payload: Payload,
           at: Timestamp,
-          sourceWord?: Payload,
+          sourceWord: Payload | undefined,
         ): Promise<Item> => {
           amend.run(
             payload.type,

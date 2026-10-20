@@ -966,8 +966,10 @@ A capture is the client's own until it reaches the pool, and immutable once it d
   therefore unsafe, and the client does not offer it as a free edit.
 - **After the seal, an edit is a domain edit.** The client sends an `edit` and lets the pool
   decide its shape: an in-place amendment while the item is unprocessed, a revision once it is
-  routed, archived or revised
-  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), and an amendment still
+  routed or archived
+  ([ADR 21](../adr/0021-an-item-is-editable-until-it-is-processed.md)), a refusal `not-head` once
+  it has been revised, which the edit belongs to instead
+  ([ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md)), and an amendment still
   where all that routed it is a reservation nothing has tried
   ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). *Amended
   2026-08-24, and again 2026-09-30*: `archived`, `routing` and `revisedInto` ride on the item it

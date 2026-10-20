@@ -9,7 +9,7 @@ import {
   checkPayload,
   samePayload,
 } from "./payload";
-import { normalised } from "./tags";
+import { normalised, triggersAmong } from "./tags";
 import { fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
@@ -43,13 +43,15 @@ export async function capture(
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
   const proposed = recorded(envelope, id);
-  const { firings, spent } = await fired(
-    config,
-    ports,
-    proposed,
-    suppliedByTag(envelope),
-    signal,
-  );
+  // A continuation is a conflict for a person to look at, so nothing it carries
+  // files it before they have.
+  const { firings, spent } =
+    envelope.continues === undefined
+      ? await fired(config, ports, proposed, suppliedByTag(envelope), signal)
+      : {
+          firings: [],
+          spent: await triggersAmong(ports.store, proposed.tags),
+        };
   const record = without(proposed, spent);
 
   return ports.store.transaction((tx) =>
@@ -211,6 +213,7 @@ async function append(
     const continued = await tx.item(envelope.continues);
     if (
       continued === undefined ||
+      continued.sourceWord === undefined ||
       (await headOf(tx, continued)).id !== continued.id ||
       (await lineSourceOf(tx, continued)) !== envelope.source
     ) {
@@ -274,18 +277,15 @@ function isReplayOf(existing: Item, envelope: CaptureEnvelope): boolean {
  * which is where every edit since has gone. What the head says and what the
  * source last said are both a replay; anything else is an upstream edit, or a
  * divergence where somebody else has changed the head too.
+ *
+ * Decided on the payload alone. No edit can change a capture time, so a source
+ * told that one had changed would send the same edit on every read.
  */
 async function reread(
   tx: PoolTx,
   holder: Item,
   envelope: CaptureEnvelope,
 ): Promise<CaptureResult> {
-  const { payload: _held, ...fixed } = fixedByItem(holder);
-  const { payload: _sent, ...sent } = fixedByEnvelope(envelope);
-  if (!dequal(fixed, sent)) {
-    return refused({ kind: "source-item-changed", existing: holder.id });
-  }
-
   const head = await headOf(tx, holder);
   const said =
     samePayload(head.payload, envelope.payload) ||
