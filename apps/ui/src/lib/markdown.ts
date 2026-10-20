@@ -26,6 +26,7 @@ export function rendered(text: string): string {
       link.removeAttribute("href");
     } else {
       link.setAttribute("rel", "noreferrer");
+      link.setAttribute("target", "_blank");
     }
   }
 
