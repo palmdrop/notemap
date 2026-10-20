@@ -1,6 +1,11 @@
 # Developer TODOs
 
+- [ ] still, there is a bug where if you revise an item, then route it, the original might be left it the queue, with the trigger tag attached, but no routing record, not hidden from the queue even though the revised entry has been successfully routed and received at the destination
+  looking at the logs, I see a routing record for the revised capture, and then ANOTHER "revised" event on the original, appearing after (in time) the routing record
+
 ## Shell — layout and interaction
+
+- [ ] "Queue is empty" shows before the last capture is hidden from the queue when the last capture is selected and held
 
 - [ ] add ability to order feed by order of processing, which is more intuitive since the user might expect the capture they processed latest to appear on top
 - [ ] destination fields should provide succinct placeholder texts
@@ -40,6 +45,8 @@
   dropped as the reader scrolls back).
 
 - [ ] add way to open a capture from the index view, for example, have it expand when selected, grow to a regular capture row size
+
+- [ ] drag-and-drop for adding assets
 
 ## Composer and capture
 
@@ -164,6 +171,9 @@
     answers only the single-destination case. **Conditions** need a place to be written and a
     vocabulary to be written in, neither of which exists. **Precedence** is only a question once two
     things can match, so it follows conditions rather than standing beside them.
+
+- [ ] when routing, if the destination is reachable, and if content is INSERTED into a pre-existing file, show snippet BEFORE and AFTER the inserted content, to show how it would look
+  also, maybe worth revisting file backups on append/insertion/rewriting, the routing record saves the state of the file BEFORE routing
 
 ## Output
 
