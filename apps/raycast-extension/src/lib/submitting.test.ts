@@ -102,6 +102,17 @@ describe("what the capture form does with what it holds", () => {
     expect(watched.said).toEqual([]);
   });
 
+  it("names the file of a capture that is only an attachment", async () => {
+    const watched = watching({ waiting: 0 });
+
+    await submitting(
+      watched.form,
+      typed({ text: "", files: [await aFile("shot.png")] }),
+    );
+
+    expect(watched.done[1]).toBe("Captured — shot.png");
+  });
+
   it("says it is waiting to send where the pool did not answer in time", async () => {
     const watched = watching({ waiting: 1 });
 

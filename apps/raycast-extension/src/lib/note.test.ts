@@ -19,7 +19,7 @@ import {
 } from "@notemap/client/testing";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { attached, capturing, chosen, excerpt } from "./note";
+import { attached, capturing, chosen, described, excerpt } from "./note";
 
 const UPLOAD = "PUT /v1/assets/";
 const CAPTURE = "POST /v1/captures";
@@ -33,6 +33,24 @@ beforeEach(async () => {
 });
 
 afterEach(() => rm(directory, { recursive: true, force: true }));
+
+describe("what a toast says a capture with no words was", () => {
+  it("is the note where there is one, whatever it carries", () => {
+    expect(described("a note", ["/tmp/photo.png"])).toBe("a note");
+  });
+
+  it("is the file's name where it carries one", () => {
+    expect(described("", ["/tmp/shots/photo.png"])).toBe("photo.png");
+  });
+
+  it("is how many where it carries several", () => {
+    expect(described("", ["/tmp/a.png", "/tmp/b.pdf"])).toBe("2 attachments");
+  });
+
+  it("takes words that are only space as no words", () => {
+    expect(described(" \n ", ["/tmp/photo.png"])).toBe("photo.png");
+  });
+});
 
 describe("what a toast says was captured", () => {
   it("is the note itself where it is short enough to be", () => {

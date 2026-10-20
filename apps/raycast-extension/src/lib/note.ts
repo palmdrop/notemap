@@ -30,6 +30,17 @@ export function excerpt(text: string, at = 60): string {
   return line.length <= at ? line : `${line.slice(0, at - 1).trimEnd()}…`;
 }
 
+/**
+ * What a toast says was captured: the note where there is one, otherwise the
+ * file it carried or how many.
+ */
+export function described(text: string, files: readonly string[]): string {
+  if (text.trim() !== "" || files.length === 0) return excerpt(text);
+  return files.length === 1
+    ? excerpt(basename(files[0] ?? ""))
+    : `${String(files.length)} attachments`;
+}
+
 /** What the picker offered and what was typed, as one list without repeats. */
 export function chosen(
   picked: readonly string[],

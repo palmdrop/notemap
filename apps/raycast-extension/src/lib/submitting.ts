@@ -1,7 +1,7 @@
 import type { Client } from "@notemap/client";
 
 import type { Supplied } from "./asked";
-import { capturing, chosen, excerpt, landing } from "./note";
+import { capturing, chosen, described, landing } from "./note";
 
 /** What the form holds when it is submitted. */
 export type Values = {
@@ -45,7 +45,7 @@ const pause = (ms: number) =>
  * back first rather than left leased.
  */
 export async function submitting(form: Form, values: Values): Promise<void> {
-  const said = excerpt(values.text);
+  const said = described(values.text, values.files);
   const client = form.open();
   let line: string | undefined;
 
