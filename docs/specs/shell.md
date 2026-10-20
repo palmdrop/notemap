@@ -5,7 +5,7 @@
 **Shipped**:
 
 - 2026-10-19 — **A trigger tag asks what its template asks before it lands.** The template form
-  marks a field asked with the `?` at the end of its line; the tag chooser then asks for each in turn, offering a fixed set or
+  marks a field asked with the `ask` at the end of its line; the tag chooser then asks for each in turn, offering a fixed set or
   what the destination lists, on the row, in the capture box and in a held edit. The process surface
   draws a taken template's asked fields open with the caret in the first, and the status line says
   where a firing goes. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
@@ -2515,9 +2515,10 @@ ordinary edit of its destination field; the actions are `check again` and `edit`
 
 **A template may ask for a field each time it is applied** *(2026-10-19,
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. In the form,
-every field that holds text ends in a `?`, titled `ask each time`; pressed, it goes bold, the field's
-label turns into a line to rename it by, blank meaning the field's own title, and whatever the field
-holds becomes the default, which may be left empty. The line names an asked field nowhere in the place and ends `asks each time` instead;
+every field that holds text ends in an `ask` option; taken, the field's label turns into a line to
+rename it by, blank meaning the field's own title, held where the label was as whatever the field
+lists opens below, and whatever the field holds becomes the default, which may be left empty. A line
+under the value says which: `default`, or `no default`. A destination's own setting is not one. The line names an asked field nowhere in the place and ends `asks each time` instead;
 opened, each asked field is a fact of its own under its label, reading `asked each time` and the
 default or `no default`.
 

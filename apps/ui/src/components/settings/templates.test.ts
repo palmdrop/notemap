@@ -1248,6 +1248,7 @@ test("asks for a field each time, under a label, leaving it without a default", 
       .getByRole("button", { name: "ask directory each time" })
       .getAttribute("aria-pressed"),
   ).toBe("true");
+  expect(screen.getByText("no default")).toBeTruthy();
   await fireEvent.input(await screen.findByLabelText("directory label"), {
     target: { value: "project" },
   });
@@ -1279,6 +1280,7 @@ test("saves what an asked field holds as its default", async () => {
     target: { value: "inbox" },
   });
   await open("ask directory each time");
+  expect(screen.getByText("default")).toBeTruthy();
   await open("save");
 
   await vi.waitFor(() => {

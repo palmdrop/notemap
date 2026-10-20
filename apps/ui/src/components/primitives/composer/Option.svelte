@@ -14,6 +14,8 @@
    *
    * `working` is this option having been taken and not yet answered for: it
    * cannot be taken again, and the asking mark stands where a remark would.
+   *
+   * `name` is what it is called aloud, where the label is one of several alike.
    */
   let {
     label,
@@ -22,6 +24,7 @@
     why,
     note,
     working = false,
+    name,
     onchoose,
   }: {
     label: string;
@@ -30,6 +33,7 @@
     why?: string;
     note?: string;
     working?: boolean;
+    name?: string;
     onchoose: () => void;
   } = $props();
 
@@ -42,6 +46,7 @@
   disabled={why !== undefined || working}
   aria-busy={working || undefined}
   aria-pressed={chosen}
+  aria-label={name}
   class="flex w-full items-baseline gap-2.5 py-px text-left"
 >
   <span aria-hidden="true" class="w-[1ch] flex-none">

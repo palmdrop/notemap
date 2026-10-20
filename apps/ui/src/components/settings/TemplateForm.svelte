@@ -355,7 +355,7 @@
         bind:value={asked[field.name]}
         aria-label={`${field.title ?? field.name} label`}
         placeholder={field.title ?? field.name}
-        class="w-[calc(100%-2ch)] border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
+        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent p-0 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
       />
     {:else}
       <span class="tracking-caps uppercase max-narrow:mt-1.5">
@@ -425,27 +425,27 @@
             bind:value={typed[field.name]}
             aria-label={field.title ?? field.name}
             placeholder={field.name in asked
-              ? "default"
+              ? undefined
               : field.required
                 ? "required"
                 : "optional"}
             class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
           />
         {/if}
+        {#if field.name in asked}
+          <!-- Only the template's own value is a default: a destination's setting is not. -->
+          <p>{(typed[field.name] ?? "") === "" ? "no default" : "default"}</p>
+        {/if}
       </div>
       {#if askable(field)}
-        <!-- Taken, the value beside it is what applying the template falls back to. -->
-        <button
-          type="button"
-          aria-pressed={field.name in asked}
-          aria-label={`ask ${field.title ?? field.name} each time`}
-          title="ask each time"
-          onclick={() => ask(field.name)}
-          class="flex-none hover:underline"
-          class:font-semibold={field.name in asked}
-        >
-          ?
-        </button>
+        <span class="flex-none">
+          <Option
+            label="ask"
+            name={`ask ${field.title ?? field.name} each time`}
+            chosen={field.name in asked}
+            onchoose={() => ask(field.name)}
+          />
+        </span>
       {/if}
     </div>
     <!-- Said once, terse, rather than a paragraph per pattern: what each comes
