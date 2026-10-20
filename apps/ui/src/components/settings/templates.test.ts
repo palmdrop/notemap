@@ -1242,7 +1242,12 @@ test("asks for a field each time, under a label, leaving it without a default", 
   await fireEvent.input(await screen.findByLabelText("name"), {
     target: { value: "Projects" },
   });
-  await open("ask each time");
+  await open("ask directory each time");
+  expect(
+    screen
+      .getByRole("button", { name: "ask directory each time" })
+      .getAttribute("aria-pressed"),
+  ).toBe("true");
   await fireEvent.input(await screen.findByLabelText("directory label"), {
     target: { value: "project" },
   });
@@ -1273,7 +1278,7 @@ test("saves what an asked field holds as its default", async () => {
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "inbox" },
   });
-  await open("ask each time");
+  await open("ask directory each time");
   await open("save");
 
   await vi.waitFor(() => {
@@ -1300,7 +1305,8 @@ test("an edit that stops asking says so, rather than leaving it as it was", asyn
       .value,
   ).toBe("project");
 
-  await open("ask each time");
+  await open("ask directory each time");
+  expect(screen.queryByLabelText("directory label")).toBeNull();
   await open("save");
 
   await vi.waitFor(() => {

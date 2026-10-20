@@ -350,44 +350,54 @@
   {/if}
 
   {#each typeable as field (field.name)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">
-      {field.title ?? field.name}
-    </span>
-    <div>
-      {#if fixed(field) !== undefined}
-        <!-- Taking the option already taken gives it back: absent inherits,
+    {#if field.name in asked}
+      <input
+        bind:value={asked[field.name]}
+        aria-label={`${field.title ?? field.name} label`}
+        placeholder={field.title ?? field.name}
+        class="w-[calc(100%-2ch)] border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
+      />
+    {:else}
+      <span class="tracking-caps uppercase max-narrow:mt-1.5">
+        {field.title ?? field.name}
+      </span>
+    {/if}
+    <div class="flex items-baseline gap-x-[1ch]">
+      <div class="min-w-0 flex-1">
+        {#if fixed(field) !== undefined}
+          <!-- Taking the option already taken gives it back: absent inherits,
              and the hollow mark says what that comes out as. A required field
              has no absent to go back to. -->
-        {@const implied =
-          (typed[field.name] ?? "") === ""
-            ? impliedOf(field, inherited)
-            : undefined}
-        <div class="flex flex-wrap gap-x-[2ch]">
-          {#each fixed(field) ?? [] as one (one)}
-            <Option
-              label={labelOf(field, one)}
-              chosen={typed[field.name] === one}
-              implied={implied === one}
-              onchoose={() =>
-                (typed[field.name] =
-                  typed[field.name] === one && !field.required ? "" : one)}
-            />
-          {/each}
-        </div>
-      {:else if field.askable && destination !== "" && field.path !== undefined}
-        <!-- No forecast and no remembered continuation: a pattern names no
+          {@const implied =
+            (typed[field.name] ?? "") === ""
+              ? impliedOf(field, inherited)
+              : undefined}
+          <div class="flex flex-wrap gap-x-[2ch]">
+            {#each fixed(field) ?? [] as one (one)}
+              <Option
+                label={labelOf(field, one)}
+                chosen={typed[field.name] === one}
+                implied={implied === one}
+                onchoose={() =>
+                  (typed[field.name] =
+                    typed[field.name] === one && !field.required ? "" : one)}
+              />
+            {/each}
+          </div>
+        {:else if field.askable && destination !== "" && field.path !== undefined}
+          <!-- No forecast and no remembered continuation: a pattern names no
              one note, so neither has anything to read off it. -->
-        <PathLine
-          {destination}
-          {capability}
-          field={field.name}
-          label={field.title ?? field.name}
-          value={typed[field.name] ?? ""}
-          claims={false}
-          onchange={(value) => (typed[field.name] = value)}
-        />
-      {:else if field.askable && destination !== ""}
-        <!--
+          <PathLine
+            {destination}
+            {capability}
+            field={field.name}
+            label={field.title ?? field.name}
+            value={typed[field.name] ?? ""}
+            claims={false}
+            onchange={(value) => (typed[field.name] = value)}
+          />
+        {:else if field.askable && destination !== ""}
+          <!--
           `durable`, because this is the decision that fires again: a template
           sits on a tag for months, and a value that rots takes the template
           with it. Where a destination offers no second name for a thing this
@@ -398,54 +408,46 @@
           channel, not a number, and the form is the only thing that can say
           which one it was.
         -->
-        <CandidateBrowser
-          {destination}
-          {capability}
-          field={field.name}
-          label={field.title ?? field.name}
-          value={typed[field.name] ?? ""}
-          durable
-          naming={field.offeredOnly}
-          given={givenFor(field, typed)}
-          claims={false}
-          onchange={(value) => (typed[field.name] = value)}
-        />
-      {:else}
-        <input
-          bind:value={typed[field.name]}
-          aria-label={field.title ?? field.name}
-          placeholder={field.name in asked
-            ? "default"
-            : field.required
-              ? "required"
-              : "optional"}
-          class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
-        />
-      {/if}
-    </div>
-    {#if askable(field)}
-      <!-- The value above becomes what applying the template falls back to. -->
-      <span></span>
-      <div
-        class="col-start-2 grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch] max-narrow:col-start-1"
-      >
-        <Option
-          label="ask each time"
-          chosen={field.name in asked}
-          onchoose={() => ask(field.name)}
-        />
-        {#if field.name in asked}
-          <input
-            bind:value={asked[field.name]}
-            aria-label={`${field.title ?? field.name} label`}
-            placeholder={`label, ${field.title ?? field.name} if blank`}
-            class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
+          <CandidateBrowser
+            {destination}
+            {capability}
+            field={field.name}
+            label={field.title ?? field.name}
+            value={typed[field.name] ?? ""}
+            durable
+            naming={field.offeredOnly}
+            given={givenFor(field, typed)}
+            claims={false}
+            onchange={(value) => (typed[field.name] = value)}
           />
         {:else}
-          <span></span>
+          <input
+            bind:value={typed[field.name]}
+            aria-label={field.title ?? field.name}
+            placeholder={field.name in asked
+              ? "default"
+              : field.required
+                ? "required"
+                : "optional"}
+            class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
+          />
         {/if}
       </div>
-    {/if}
+      {#if askable(field)}
+        <!-- Taken, the value beside it is what applying the template falls back to. -->
+        <button
+          type="button"
+          aria-pressed={field.name in asked}
+          aria-label={`ask ${field.title ?? field.name} each time`}
+          title="ask each time"
+          onclick={() => ask(field.name)}
+          class="flex-none hover:underline"
+          class:font-semibold={field.name in asked}
+        >
+          ?
+        </button>
+      {/if}
+    </div>
     <!-- Said once, terse, rather than a paragraph per pattern: what each comes
          out as is the pool's answer, and the pool refuses one it does not know. -->
     {#if field.name === patterned}
