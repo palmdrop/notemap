@@ -1460,6 +1460,9 @@ now.
   **literal prefix** of that field, the part with no pattern in it, which is exactly the part that
   moves when somebody renames a folder. A destination with no paths at all answers `fits`: there is
   nothing above its places to be missing.
+- **An asked field is not required by it, and must hold a string** *(added 2026-10-19)*: one the
+  capability's schema does not declare as a string is `arguments-invalid`, with an issue whose
+  `keyword` is `asked` at that field's `path`.
 - `404 unknown-template` for an id no template has: here the id is what the request is about.
 
 ### Routing an item to a destination
@@ -1579,7 +1582,9 @@ strings by field, taken literally, a blank one falling back to the template's de
 The record still names the template. A field the template fixes is `422 argument-not-asked`, and
 an asked field left with neither a value nor a default is `422 argument-missing`, each naming the
 `field`; the merged set is then checked against the capability's schema as the destination
-shape's arguments are. `/route/preview` takes them on the same terms.
+shape's arguments are. `/route/preview` takes them too, and refuses `argument-not-asked` as this
+does, but not a value left out: it previews the decision as far as it was given, which is what a
+composer draws before anything is filled in.
 
 - **Because it is one decision either way.** A second route would be a second path to the same
   effect, with the same refusals and the same record, differing only in who wrote down the
@@ -2074,6 +2079,9 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `trigger-tag-unreserved` | `tag` | core |
 | `422` | `unknown-pattern-field` | `field` | core |
 | `422` | `unknown-pattern-format` | `field`, `format` | core |
+| `422` | `asked-invalid` | `field` | core |
+| `422` | `argument-not-asked` | `field` | core (routing from a template) |
+| `422` | `argument-missing` | `field` | core (routing from a template) |
 | `422` | `unknown-payload-type` | `type` | core |
 | `422` | `payload-invalid` | `issues` | core |
 | `422` | `payload-type-changed` | `from` | core |

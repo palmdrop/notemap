@@ -11,7 +11,11 @@ import type {
   TagName,
 } from "@notemap/core";
 
-import { errorBody, templateStatus } from "../errors/refusals";
+import {
+  errorBody,
+  templateResolveStatus,
+  templateStatus,
+} from "../errors/refusals";
 import {
   createTemplateRequestSchema,
   toAsked,
@@ -141,10 +145,11 @@ export function resolveTemplateHandler(pool: Pool) {
     const template = (context.req.query("template") ?? "") as RoutingTemplateId;
 
     const resolved = await pool.templates.resolve(item, template);
-    if (resolved !== undefined) return json(resolved, 200);
-
-    return (await pool.templates.get(template)) === undefined
-      ? json(errorBody({ kind: "unknown-template", template }), 404)
-      : json(errorBody({ kind: "no-such-item", item }), 404);
+    return resolved.kind === "refused"
+      ? json(
+          errorBody(resolved.refusal),
+          templateResolveStatus(resolved.refusal),
+        )
+      : json(resolved.value, 200);
   };
 }

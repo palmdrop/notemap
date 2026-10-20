@@ -1419,7 +1419,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A template may leave a field to be supplied each time it is applied** (added 2026-10-19,
   [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md)): an **asked
   argument**, named in the template's `asked` with an optional label. Its **default** is what the
-  template's arguments hold for it, patterns included; a field they leave out has none. The folder
+  template's arguments hold for it, patterns included; a field they leave out or hold blank has
+  none. The folder
   mode cannot be asked, being core's to write, and the template's report says so where the
   capability does not declare an asked field as a string. A field with no default may be required
   by the schema and still fit, since applying the template supplies it.
@@ -1427,7 +1428,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   for asked fields only and never expanded itself, and a blank one is no value, falling back to
   the default. A value for a field the template fixes is refused as `argument-not-asked`, and an
   asked field left with neither a value nor a default as `argument-missing`. What the value says is
-  the schema's to check, on the merged set, exactly as for a hand-made route.
+  the schema's to check, on the merged set, exactly as for a hand-made route. Resolving a template
+  for an item, which reserves nothing, refuses `argument-not-asked` as routing does and merges as
+  far as it was given, never refusing a value left out.
 - **Values travel beside the tag, never in it.** Tagging takes `arguments` for the template the tag
   fires, a capture carries a map from trigger tag to arguments beside its tags, and routing from a
   template takes them too, still naming the template. A refusal over a value is a trigger tag

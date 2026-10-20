@@ -136,7 +136,9 @@ function askedIn(
     return {};
   }
   const args = record.target.arguments;
-  const asked = Object.keys(template.asked).filter((field) => field in args);
+  const asked = Object.keys(template.asked).filter((field) =>
+    Object.hasOwn(args, field),
+  );
   return asked.length === 0
     ? {}
     : {

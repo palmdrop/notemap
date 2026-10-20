@@ -263,6 +263,12 @@ export type CancelRefusal =
 
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
+/** What resolving a template refuses: never a value missing, since it answers as far as it was given. */
+export type TemplateResolveRefusal =
+  | { readonly kind: "no-such-item"; readonly item: ItemId }
+  | { readonly kind: "unknown-template"; readonly template: RoutingTemplateId }
+  | Extract<SuppliedArgumentsRefusal, { readonly kind: "argument-not-asked" }>;
+
 /**
  * Routing from a template is routing, plus what only a template can be refused
  * for. Nothing about the patterns is here: what saved expands.

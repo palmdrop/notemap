@@ -5,6 +5,7 @@ import type { PoolPorts } from "#types/api/ports";
 import type { TemplateRouting } from "#types/api/pool";
 import type {
   SuppliedArgumentsRefusal,
+  TemplateResolveRefusal,
   TemplateRoutingRefusal,
 } from "#types/api/refusal";
 import type { ItemId, RoutingTemplateId } from "#types/domain/ids";
@@ -27,8 +28,9 @@ export type ResolvedTemplate = DeliveryRequest;
  * and what `route/resolve` answers: one expander, drawn rather than
  * reimplemented on the other side of the wire.
  *
- * Asked arguments are taken as far as they are supplied, and never refused: the
- * question is what the decision says so far, not whether it is complete.
+ * Asked arguments are taken as far as they are supplied, and a missing one is
+ * not refused: the question is what the decision says so far, not whether it
+ * is complete.
  */
 export async function resolve(
   config: PoolConfig,
@@ -36,18 +38,34 @@ export async function resolve(
   item: ItemId,
   id: RoutingTemplateId,
   supplied: SuppliedArguments = {},
-): Promise<ResolvedTemplate | undefined> {
+): Promise<Result<ResolvedTemplate, TemplateResolveRefusal>> {
   const [held, template] = await Promise.all([
     ports.store.item(item),
     ports.store.routingTemplate(id),
   ]);
-  if (held === undefined || template === undefined) return undefined;
+  if (held === undefined) {
+    return refused<ResolvedTemplate, TemplateResolveRefusal>({
+      kind: "no-such-item",
+      item,
+    });
+  }
+  if (template === undefined) {
+    return refused<ResolvedTemplate, TemplateResolveRefusal>({
+      kind: "unknown-template",
+      template: id,
+    });
+  }
+
+  const fixed = notAsked(template, supplied);
+  if (fixed !== undefined) {
+    return refused<ResolvedTemplate, TemplateResolveRefusal>(fixed);
+  }
 
   const request = requestFor(config, held, template);
-  return {
+  return ok<ResolvedTemplate, TemplateResolveRefusal>({
     ...request,
     arguments: merged(template, request.arguments, supplied),
-  };
+  });
 }
 
 /**
@@ -137,16 +155,13 @@ export function withSupplied(
 ): Result<DeliveryRequest, SuppliedArgumentsRefusal> {
   const asked = template.asked ?? {};
 
-  const fixed = Object.keys(supplied).find((field) => !(field in asked));
+  const fixed = notAsked(template, supplied);
   if (fixed !== undefined) {
-    return refused<DeliveryRequest, SuppliedArgumentsRefusal>({
-      kind: "argument-not-asked",
-      field: fixed,
-    });
+    return refused<DeliveryRequest, SuppliedArgumentsRefusal>(fixed);
   }
 
   const args = merged(template, request.arguments, supplied);
-  const missing = Object.keys(asked).find((field) => !(field in args));
+  const missing = Object.keys(asked).find((field) => blank(args[field]));
   if (missing !== undefined) {
     return refused<DeliveryRequest, SuppliedArgumentsRefusal>({
       kind: "argument-missing",
@@ -158,6 +173,27 @@ export function withSupplied(
     ...request,
     arguments: args,
   });
+}
+
+/** A value for a field the template fixes, which no application of it may change. */
+function notAsked(
+  template: RoutingTemplate,
+  supplied: SuppliedArguments = {},
+): { readonly kind: "argument-not-asked"; readonly field: string } | undefined {
+  const asked = template.asked ?? {};
+  const field = Object.keys(supplied).find(
+    (name) => !Object.hasOwn(asked, name),
+  );
+  return field === undefined
+    ? undefined
+    : { kind: "argument-not-asked", field };
+}
+
+/** A blank default is none, as a blank supplied value is no value. */
+function blank(value: unknown): boolean {
+  return (
+    value === undefined || (typeof value === "string" && value.trim() === "")
+  );
 }
 
 /**
@@ -172,7 +208,7 @@ function merged(
 ): JsonObject {
   const asked = template.asked ?? {};
   const given = Object.entries(supplied).filter(
-    ([field, value]) => field in asked && value.trim() !== "",
+    ([field, value]) => Object.hasOwn(asked, field) && !blank(value),
   );
   return given.length === 0 ? args : { ...args, ...Object.fromEntries(given) };
 }

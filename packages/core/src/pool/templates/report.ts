@@ -130,7 +130,7 @@ function unrequiring(
   return {
     ...schema,
     required: required.filter(
-      (field) => typeof field !== "string" || !(field in asked),
+      (field) => typeof field !== "string" || !Object.hasOwn(asked, field),
     ),
   };
 }

@@ -14,6 +14,7 @@ import type {
   RoutingRefusal,
   RoutingTemplateRefusal,
   TagRefusal,
+  TemplateResolveRefusal,
   TemplateRoutingRefusal,
 } from "@notemap/core";
 
@@ -228,6 +229,13 @@ export const TEMPLATE_ROUTING_STATUS = {
   "argument-missing": 422,
 } as const satisfies Record<TemplateRoutingRefusal["kind"], number>;
 
+/** Resolving one, which a preview from a template does first. */
+export const TEMPLATE_RESOLVE_STATUS = {
+  "no-such-item": 404,
+  "unknown-template": 404,
+  "argument-not-asked": 422,
+} as const satisfies Record<TemplateResolveRefusal["kind"], number>;
+
 /** The two `409`s conflict with state the caller can already read — a record that has landed, and one somebody holds a lease on. */
 export const CANCEL_STATUS = {
   "no-such-record": 404,
@@ -378,6 +386,10 @@ export function poolSettingStatus(refusal: PoolSettingRefusal): number {
 
 export function templateRoutingStatus(refusal: TemplateRoutingRefusal): number {
   return TEMPLATE_ROUTING_STATUS[refusal.kind];
+}
+
+export function templateResolveStatus(refusal: TemplateResolveRefusal): number {
+  return TEMPLATE_RESOLVE_STATUS[refusal.kind];
 }
 
 export function unfurlStatus(refusal: RouteUnfurlRefusal): number {

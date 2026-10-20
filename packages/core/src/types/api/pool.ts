@@ -94,6 +94,7 @@ import type {
   DestinationDeletionRefusal,
   DestinationRefusal,
   RoutingTemplateRefusal,
+  TemplateResolveRefusal,
   TemplateRoutingRefusal,
   EditRefusal,
   EnrichmentRefusal,
@@ -284,14 +285,13 @@ export interface TemplatesApi {
   /**
    * What this template would route this item as — the destination, the
    * capability and the expanded arguments — reserving nothing. A different
-   * question from a preview, which answers bytes. Absent means no such item or
-   * no such template.
+   * question from a preview, which answers bytes.
    */
   resolve(
     item: ItemId,
     id: RoutingTemplateId,
     supplied?: SuppliedArguments,
-  ): Promise<ResolvedTemplate | undefined>;
+  ): Promise<Result<ResolvedTemplate, TemplateResolveRefusal>>;
 
   /**
    * The decision, made from a template. Lands in the same path a hand-made one

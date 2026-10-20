@@ -7194,7 +7194,7 @@
             }
           },
           "422": {
-            "description": "The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined. Nothing was written.",
+            "description": "The destination, the capability, the payload type, the arguments or the values given for a template's asked ones were declined. Nothing was written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7305,7 +7305,7 @@
             }
           },
           "404": {
-            "description": "No item has that id.",
+            "description": "No item has that id, or no template does.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7318,7 +7318,8 @@
                           "type": "string",
                           "enum": [
                             "no-such-item",
-                            "item-purged"
+                            "item-purged",
+                            "unknown-template"
                           ]
                         }
                       },
@@ -7400,7 +7401,7 @@
             }
           },
           "422": {
-            "description": "The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined.",
+            "description": "The destination, the capability, the payload type or the arguments were declined, or a value was given for a field the template does not ask. A value left out is not: the preview is of the decision as far as it was given.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7421,8 +7422,7 @@
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
                             "unreachable",
-                            "argument-not-asked",
-                            "argument-missing"
+                            "argument-not-asked"
                           ]
                         }
                       },

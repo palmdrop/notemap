@@ -553,4 +553,53 @@ describe("a template that asks for an argument, over the wire", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("previews with nothing given, as far as it goes", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: made.id },
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("refuses to preview with a value for a field the template fixes", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: made.id, arguments: { path: "elsewhere.md" } },
+    );
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "argument-not-asked" },
+    });
+  });
+
+  it("refuses to preview from a template that is not there", async () => {
+    const host = serving();
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: "tpl-nobody" },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-template" },
+    });
+  });
 });

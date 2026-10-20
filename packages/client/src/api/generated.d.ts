@@ -3571,7 +3571,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined. Nothing was written. */
+                /** @description The destination, the capability, the payload type, the arguments or the values given for a template's asked ones were declined. Nothing was written. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3654,7 +3654,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description No item has that id. */
+                /** @description No item has that id, or no template does. */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3664,7 +3664,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "no-such-item" | "item-purged";
+                                code: "no-such-item" | "item-purged" | "unknown-template";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3705,7 +3705,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The destination, the capability, the payload type the arguments or the values given for a template's asked ones were declined. */
+                /** @description The destination, the capability, the payload type or the arguments were declined, or a value was given for a field the template does not ask. A value left out is not: the preview is of the decision as far as it was given. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3715,7 +3715,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked" | "argument-missing";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked";
                             } & {
                                 [key: string]: unknown;
                             };

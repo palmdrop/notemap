@@ -55,7 +55,8 @@ Chosen: **option 2**.
 
 A template's field may be **asked**: named in the template's `asked`, with an optional **label** a
 person reads in place of the field's own name. Its **default** is whatever the template's arguments
-already hold for it, patterns included, and a field the arguments leave out has none. Only a field
+already hold for it, patterns included, and a field the arguments leave out has none. *(Amended
+2026-10-20: nor does one they hold blank, as a blank supplied value is no value.)* Only a field
 the capability's schema declares as a string may be asked. Saving cannot check that without asking
 the destination, so the template's report says so instead, and saving refuses only the folder mode,
 which is core's to write.
