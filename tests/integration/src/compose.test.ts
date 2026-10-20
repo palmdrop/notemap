@@ -102,4 +102,8 @@ describe("the compose file for a stage", () => {
       );
     }
   });
+
+  it("gives each stage its own subnet, so two can run at once", () => {
+    expect(file).toMatch(/^\s*- subnet: 44\.128\.\$\{STAGE_INDEX:\?\}\.0\/24$/m);
+  });
 });

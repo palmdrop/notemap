@@ -63,7 +63,8 @@ behind it. The app is reached over Twingate at `$STAGE_URL`. `agent stage` refus
 which a branch-built service joins a network that is not internal or publishes a port, and
 `tests/integration/src/compose.test.ts` checks this file for the same.
 
-`stack` has a subnet from publicly routable space, `44.128.0.0/24`. The unfurl guard refuses every
+`stack` has a subnet from publicly routable space, `44.128.$STAGE_INDEX.0/24`: a /24 per stage,
+because podman will not give two networks the same one. The unfurl guard refuses every
 private and reserved range, so on a default subnet `pages` would be refused and no link would have
 a preview. The guard is unchanged: on this subnet `pages` simply is public, as far as it can tell.
 Nothing outside reaches the range, because nothing routes it to this machine and the bridge lives

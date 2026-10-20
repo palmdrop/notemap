@@ -13,10 +13,11 @@ networks:
     # link to it to have a preview. Nothing routes this range to the host, the
     # bridge lives in podman's rootless namespace, and the network has no route
     # out, so the only addresses it shadows are the range's real ones, and only
-    # from containers that cannot reach them anyway.
+    # from containers that cannot reach them anyway. One /24 per stage, so two
+    # stages can be up at once.
     ipam:
       config:
-        - subnet: 44.128.0.0/24
+        - subnet: 44.128.${STAGE_INDEX:?}.0/24
 
 volumes:
   state:
