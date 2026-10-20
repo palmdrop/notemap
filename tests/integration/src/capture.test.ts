@@ -181,6 +181,25 @@ describe("submitting the same capture twice", () => {
     });
   });
 
+  it("is the same capture whatever its trigger tags were given the second time", async () => {
+    const { pool: p } = pool();
+    const replayed = envelope({ id: "client-1", tags: ["route/todo"] });
+
+    await p.capture({
+      ...replayed,
+      arguments: { "route/todo": { heading: "Next" } },
+    });
+    const second = await p.capture({
+      ...replayed,
+      arguments: { "route/todo": { heading: "Someday" } },
+    });
+
+    expect(second).toMatchObject({
+      kind: "ok",
+      value: { kind: "already-captured", matchedOn: "id" },
+    });
+  });
+
   it("matches on the source's identity when no id was supplied", async () => {
     const { pool: p } = pool();
     const reread = envelope({
