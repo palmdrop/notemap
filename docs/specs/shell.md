@@ -1,8 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-20
 **Shipped**:
+
+- 2026-10-20 — **The Raycast form keeps a draft and takes attachments alone.** A note left with
+  Escape comes back on the next launch with its tags, until a capture is made; a refused one keeps
+  it. A capture with attachments and no words is taken, and says the file it carried, or how many.
+  Attachments sit under the note. ([plan](../plans/raycast-capture-form.md))
 
 - 2026-10-19 — **A trigger tag asks what its template asks before it lands.** The template form
   marks a field asked with the `ask` at the end of its line; the tag chooser then asks for each in turn, offering a fixed set or

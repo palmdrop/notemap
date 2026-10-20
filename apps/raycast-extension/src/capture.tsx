@@ -2,21 +2,25 @@ import {
   Action,
   ActionPanel,
   Form,
+  LocalStorage,
   PopToRootType,
   showHUD,
   showToast,
   Toast,
 } from "@raycast/api";
 import type { RoutingTemplate } from "@notemap/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { askedFor, fieldId, suppliedFrom, type AskedField } from "./lib/asked";
 import { openClient, openReader } from "./lib/client";
-import { chosen, excerpt } from "./lib/note";
+import { drafts } from "./lib/draft";
+import { chosen, described } from "./lib/note";
 import { submitting, type Values } from "./lib/submitting";
 
 /** Long enough for a pool that answers to answer, short enough not to hold the form. */
 const SETTLE_MS = 2_000;
+
+const shelf = drafts(LocalStorage);
 
 /**
  * The capture form. What it does with what it holds is `submitting`; this is
@@ -25,8 +29,13 @@ const SETTLE_MS = 2_000;
 export default function Command() {
   const [known, setKnown] = useState<readonly string[]>([]);
   const [templates, setTemplates] = useState<readonly RoutingTemplate[]>([]);
+  const [text, setText] = useState("");
   const [picked, setPicked] = useState<string[]>([]);
   const [typed, setTyped] = useState("");
+  /** Unknown while the draft is read; false where it could not be, so nothing writes over it. */
+  const [restored, setRestored] = useState<boolean>();
+  /** Set once a capture is on its way, so nothing typed after it comes back as a draft. */
+  const sent = useRef(false);
   /** By trigger tag, what its template asks; asked of the pool once a tag is chosen. */
   const [asking, setAsking] = useState<
     Readonly<Record<string, readonly AskedField[]>>
@@ -35,6 +44,37 @@ export default function Command() {
   const [searching, setSearching] = useState<Readonly<Record<string, string>>>(
     {},
   );
+
+  useEffect(() => {
+    let wanted = true;
+    // The form takes keys while the draft is read, and what was typed first wins.
+    shelf.read().then(
+      (draft) => {
+        if (!wanted) return;
+        setText((current) => (current === "" ? draft.text : current));
+        setPicked((current) =>
+          current.length === 0 ? [...draft.picked] : current,
+        );
+        setTyped((current) => (current === "" ? draft.typed : current));
+        setRestored(true);
+      },
+      (error: unknown) => {
+        console.error(error);
+        if (wanted) setRestored(false);
+      },
+    );
+
+    return () => {
+      wanted = false;
+    };
+  }, []);
+
+  // Not kept until the draft has been read, or the empty form would write over it.
+  useEffect(() => {
+    if (restored === true && !sent.current) {
+      void shelf.keep({ text, picked, typed });
+    }
+  }, [restored, text, picked, typed]);
 
   useEffect(() => {
     const client = openReader();
@@ -104,6 +144,12 @@ export default function Command() {
 
   /** The trigger tags declared, offered beside those in use: one set up today has filed nothing yet. */
   const offered = [
+    // A tag a draft brought back stays on offer before, or without, the pool.
+    ...picked.filter(
+      (tag) =>
+        !known.includes(tag) &&
+        !templates.some((one) => one.triggerTag === tag),
+    ),
     ...templates.flatMap((one) =>
       one.triggerTag === undefined || known.includes(one.triggerTag)
         ? []
@@ -115,7 +161,7 @@ export default function Command() {
   const askedFields = tags.flatMap((tag) => asking[tag] ?? []);
 
   async function submit(values: Values & Record<string, unknown>) {
-    if (values.text.trim() === "") {
+    if (values.text.trim() === "" && values.files.length === 0) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Nothing to capture",
@@ -137,10 +183,11 @@ export default function Command() {
       return;
     }
 
+    sent.current = true;
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: "Capturing",
-      message: excerpt(values.text),
+      message: described(values.text, values.files),
     });
 
     await submitting(
@@ -150,12 +197,14 @@ export default function Command() {
         // has been seen to.
         open: openClient,
         failing: (title, message) => {
+          sent.current = false;
           toast.style = Toast.Style.Failure;
           toast.title = title;
           toast.message = message;
         },
         leaving: async (said) => {
           await toast.hide();
+          await shelf.drop();
           // The form is left behind as well as closed: without this the next
           // launch comes back to it, still holding the note already sent.
           await showHUD(said, {
@@ -171,6 +220,7 @@ export default function Command() {
 
   return (
     <Form
+      isLoading={restored === undefined}
       actions={
         <ActionPanel>
           <Action.SubmitForm title="Capture" onSubmit={submit} />
@@ -182,7 +232,10 @@ export default function Command() {
         title="Note"
         placeholder="What's on your mind?"
         autoFocus
+        value={text}
+        onChange={setText}
       />
+      <Form.FilePicker id="files" title="Attachments" />
       <Form.TagPicker
         id="tags"
         title="Tags"
@@ -258,7 +311,6 @@ export default function Command() {
           </Form.Dropdown>
         );
       })}
-      <Form.FilePicker id="files" title="Attachments" />
     </Form>
   );
 }

@@ -77,7 +77,7 @@
 
 ## Templates
 
-- [ ] trigger tags with arguments, for example, I might need to insert a todo in a todo file after a specific headline... how to do that? routing tag arguments? templates with arguments? 
+- [x] trigger tags with arguments, for example, I might need to insert a todo in a todo file after a specific headline... how to do that? routing tag arguments? templates with arguments? 
 
 - [ ] add template descriptions
     - and show description, or excerpt, when template is minimized in the settings view
@@ -212,7 +212,7 @@
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
-- [ ] raycast extension need to support empty note bodies, just attachments. Move attachments above tags
+- [x] raycast extension need to support empty note bodies, just attachments. Move attachments above tags
 
 - [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 
@@ -226,7 +226,7 @@
   keeps the edit in the pool and the feed and out of the queue. A relay reading a block differently
   after an upgrade looks like an edit too, and the same policy would quiet that.
 
-- [ ] raycast, when escaped, cancels the input in the capture  note. Cache it temporarily and restore when command is opened again
+- [x] raycast, when escaped, cancels the input in the capture  note. Cache it temporarily and restore when command is opened again
 
 ## Pool, store and correctness
 
