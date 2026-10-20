@@ -28,7 +28,11 @@ import type {
   MirrorRecord,
 } from "#types/domain/mirror";
 import type { Payload } from "#types/domain/payload";
-import type { FolderMode, RoutingTemplateRecord } from "#types/domain/template";
+import type {
+  AskedArguments,
+  FolderMode,
+  RoutingTemplateRecord,
+} from "#types/domain/template";
 import type {
   AppliedTemplate,
   RoutingTarget,
@@ -107,6 +111,7 @@ function readTemplate(value: unknown, at: string): RoutingTemplateRecord {
     destination: text(row["destination"], `${at}.destination`) as DestinationId,
     capability: text(row["capability"], `${at}.capability`) as CapabilityName,
     arguments: object(row["arguments"], `${at}.arguments`) as JsonObject,
+    ...present("asked", row, at, readAsked),
     folder: readFolderMode(row["folder"], `${at}.folder`),
     ...present(
       "triggerTag",
@@ -117,6 +122,15 @@ function readTemplate(value: unknown, at: string): RoutingTemplateRecord {
     ...present("establishedAt", row, at, stamp),
     createdAt: stamp(row["createdAt"], `${at}.createdAt`),
   };
+}
+
+function readAsked(value: unknown, at: string): AskedArguments {
+  return Object.fromEntries(
+    Object.entries(object(value, at)).map(([field, raw]) => {
+      const where = `${at}.${field}`;
+      return [field, present("label", object(raw, where), where, text)];
+    }),
+  );
 }
 
 /** `establish` is carried as written: what it resolves to is decided when a decision is made. */

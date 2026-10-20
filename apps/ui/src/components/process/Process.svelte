@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -346,7 +346,28 @@
   /** Nothing to pick among is nothing to draw: the line and the fields are the whole decision. */
   const chooses = $derived(capabilities.length > 1 && implied === undefined);
 
-  const ready = $derived(chosen !== undefined && capability !== undefined);
+  /** What a taken template asks for each time, by field. */
+  const asking = $derived(applied?.asked ?? {});
+  /** The fields it asks for, drawn open while the rest of what it resolved to is read-only. */
+  const askedFields = $derived(fields.filter((one) => one.name in asking));
+  /** Every asked field holds a value, given or the default it resolved with. */
+  const askedSettled = $derived(
+    askedFields.every((one) => (args[one.name] ?? "").trim() !== ""),
+  );
+  let askedBox = $state<HTMLElement | undefined>(undefined);
+
+  /** The arguments without what the template asks, which are the only ones taking it may change. */
+  function fixedOf(
+    values: Readonly<Record<string, unknown>>,
+  ): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(values).filter(([name]) => !(name in asking)),
+    );
+  }
+
+  const ready = $derived(
+    chosen !== undefined && capability !== undefined && askedSettled,
+  );
 
   const line = $derived(fields.find((one) => one.name === LINE_FIELD));
 
@@ -399,9 +420,10 @@
 
   /** The place a taken template resolved to, read the way a record's row reads it. */
   const settled = $derived(
-    lined
+    lined && !(LINE_FIELD in asking)
       ? (args[LINE_FIELD] ?? "")
-      : (placeNamed(valuesFrom(fields, args), undefined, reading) ?? ""),
+      : (placeNamed(fixedOf(valuesFrom(fields, args)), undefined, reading) ??
+          ""),
   );
 
   function placeFor(value: string): string {
@@ -568,10 +590,20 @@
       applied !== undefined &&
       resolved !== undefined &&
       capability === resolved.capability &&
-      sameArguments(wanted, offeredOf(resolved.arguments));
+      sameArguments(fixedOf(wanted), fixedOf(offeredOf(resolved.arguments)));
 
     if (untouched) {
-      return { template: (applied as RoutingTemplate).id, ...carried() };
+      const given = Object.fromEntries(
+        Object.entries(wanted).filter(
+          (entry): entry is [string, string] =>
+            entry[0] in asking && typeof entry[1] === "string",
+        ),
+      );
+      return {
+        template: (applied as RoutingTemplate).id,
+        ...(Object.keys(given).length === 0 ? {} : { arguments: given }),
+        ...carried(),
+      };
     }
 
     return {
@@ -731,6 +763,11 @@
       // describe itself has said so on its own line, and leaves nothing applied.
       if (chosen !== undefined) {
         placing = false;
+        // What it asks for is the one thing left to decide, so the caret goes there.
+        if (Object.keys(one.asked ?? {}).length > 0) {
+          await tick();
+          askedBox?.querySelector<HTMLElement>("input, button")?.focus();
+        }
       } else {
         applied = undefined;
         resolved = undefined;
@@ -911,7 +948,11 @@
       id: "route",
       label: "route",
       whileWriting: true,
-      refusal: ready ? undefined : "nowhere to send it",
+      refusal: ready
+        ? undefined
+        : askedSettled
+          ? "nowhere to send it"
+          : "the template asks for something",
       run: () => void send(),
     },
     {
@@ -938,7 +979,7 @@
 
 {#snippet control(field: (typeof fields)[number])}
   {@const title = field.title ?? field.name}
-  {#if field.askable && chosen !== undefined && capability !== undefined}
+  {#if field.listable && chosen !== undefined && capability !== undefined}
     {@const Browser = browserFor(field)}
     <Browser
       destination={chosen}
@@ -1181,6 +1222,17 @@
             edit
           </button>
         </div>
+        {#if askedFields.length > 0}
+          <!-- What the template asks each time, open beside what it fixed. -->
+          <div bind:this={askedBox}>
+            {#each askedFields as field (field.name)}
+              {@render labelled(
+                asking[field.name]?.label ?? field.title ?? field.name,
+                field,
+              )}
+            {/each}
+          </div>
+        {/if}
       {:else if lined && line !== undefined && chosen !== undefined && capability !== undefined}
         <PathLine
           destination={chosen}
@@ -1217,6 +1269,7 @@
         names={tags}
         templates={summary?.templates ?? []}
         onfired={() => void advance()}
+        onasks={(template) => void take(template)}
       />
     </Section>
 

@@ -14,7 +14,10 @@ import type { CaptureEnvelope, CaptureOutcome } from "#types/domain/capture";
 import type { ItemId, TagName } from "#types/domain/ids";
 import type { Item, ItemRecord, Tag } from "#types/domain/item";
 import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
-import type { RoutingTemplate } from "#types/domain/template";
+import type {
+  RoutingTemplate,
+  SuppliedArguments,
+} from "#types/domain/template";
 import type { RoutingRecord } from "#types/domain/routing";
 import type { Result } from "#types/result";
 
@@ -34,7 +37,13 @@ export async function capture(
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
   const proposed = recorded(envelope, id);
-  const { firings, spent } = await fired(config, ports, proposed, signal);
+  const { firings, spent } = await fired(
+    config,
+    ports,
+    proposed,
+    suppliedByTag(envelope),
+    signal,
+  );
   const record = without(proposed, spent);
 
   return ports.store.transaction((tx) =>
@@ -63,6 +72,7 @@ async function fired(
   config: PoolConfig,
   ports: PoolPorts,
   record: ItemRecord,
+  supplied: ReadonlyMap<TagName, SuppliedArguments>,
   signal?: AbortSignal,
 ): Promise<{ firings: readonly Firing[]; spent: readonly TagName[] }> {
   const triggers = record.tags.filter((held) =>
@@ -85,7 +95,14 @@ async function fired(
     // Nothing claims it, so it is an ordinary tag that happens to be namespaced.
     if (template === undefined) continue;
 
-    const firing = await firingFor(config, ports, item, template, signal);
+    const firing = await firingFor(
+      config,
+      ports,
+      item,
+      template,
+      supplied.get(held.name),
+      signal,
+    );
     if (firing.kind === "fires") {
       firings.push({ tag: held.name, template, record: firing.record });
     } else {
@@ -94,6 +111,18 @@ async function fired(
   }
 
   return { firings, spent };
+}
+
+/** Keyed as the tags are once trimmed, so a value finds the tag it was given with. */
+function suppliedByTag(
+  envelope: CaptureEnvelope,
+): ReadonlyMap<TagName, SuppliedArguments> {
+  return new Map(
+    Object.entries(envelope.arguments ?? {}).flatMap(([name, values]) => {
+      const tag = normalised(name as TagName);
+      return tag === undefined ? [] : [[tag, values] as const];
+    }),
+  );
 }
 
 function without(record: ItemRecord, spent: readonly TagName[]): ItemRecord {
@@ -207,9 +236,12 @@ async function append(
  * By exclusion rather than enumeration, so a field added to the envelope is
  * compared by default. Tags are dropped because they go on changing after
  * capture, and an item classified since would otherwise read as a conflicting
- * resubmission of itself.
+ * resubmission of itself. The arguments they were given go with them.
  */
-type FixedByCapture = Omit<CaptureEnvelope, "id" | "tags" | "capturedAt"> & {
+type FixedByCapture = Omit<
+  CaptureEnvelope,
+  "id" | "tags" | "arguments" | "capturedAt"
+> & {
   /** As an instant: a timestamp's spelling is not part of what it means. */
   readonly capturedAtMs: number;
 };
@@ -219,7 +251,7 @@ function isReplayOf(existing: Item, envelope: CaptureEnvelope): boolean {
 }
 
 function fixedByEnvelope(envelope: CaptureEnvelope): FixedByCapture {
-  const { id, tags, capturedAt, ...fixed } = envelope;
+  const { id, tags, arguments: _supplied, capturedAt, ...fixed } = envelope;
   return {
     ...fixed,
     capturedAtMs: Date.parse(capturedAt),

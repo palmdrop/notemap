@@ -1,5 +1,5 @@
 import { answered, type Api } from "#api/http";
-import type { Item, Tag } from "#api/types";
+import type { Item, SuppliedArguments, Tag } from "#api/types";
 import { unchanged, type Applied } from "#state/applied";
 import { cached, reconciled, type ClientState } from "#state/state";
 import { replacing, type Handler, type Settlement } from "../handler";
@@ -45,12 +45,13 @@ function send(
   half: "tag" | "untag",
   item: string,
   tag: string,
+  supplied?: SuppliedArguments,
 ): Promise<Settlement> {
   return answered(
     half === "tag"
       ? api.POST("/v1/items/{id}/tag", {
           params: { path: { id: item } },
-          body: { tag },
+          body: supplied === undefined ? { tag } : { tag, arguments: supplied },
         })
       : api.POST("/v1/items/{id}/untag", {
           params: { path: { id: item } },
@@ -74,7 +75,8 @@ export const tag: Handler<"tag"> = {
           ],
     ),
 
-  send: ({ api }, operation) => send(api, "tag", operation.item, operation.tag),
+  send: ({ api }, operation) =>
+    send(api, "tag", operation.item, operation.tag, operation.arguments),
 };
 
 export const untag: Handler<"untag"> = {

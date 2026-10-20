@@ -6,7 +6,12 @@ import type { PoolPorts } from "#types/api/ports";
 import type { Capability } from "#types/domain/destination";
 import type { CapabilityName, RoutingTemplateId } from "#types/domain/ids";
 import type { RoutingTemplate } from "#types/domain/template";
-import type { JsonObject, SchemaIssue } from "#types/json";
+import type {
+  JsonObject,
+  JsonSchema,
+  JsonValue,
+  SchemaIssue,
+} from "#types/json";
 
 /**
  * Whether a template's destination can support it *now*, asked per template and
@@ -69,10 +74,13 @@ export async function report(
     return { kind: "capability-undeclared", capability: template.capability };
   }
 
-  const issues = ports.schemas.validate(
-    capability.argumentsSchema,
-    asWritten(template),
-  );
+  const issues = [
+    ...unaskable(capability, template),
+    ...ports.schemas.validate(
+      unrequiring(capability.argumentsSchema, template),
+      asWritten(template),
+    ),
+  ];
   if (issues.length > 0) return { kind: "arguments-invalid", issues };
 
   return folderReport(ports, template, capability, signal);
@@ -89,6 +97,46 @@ function asWritten(template: RoutingTemplate): JsonObject {
     (template.folder === "establish" && template.establishedAt !== undefined)
     ? { ...template.arguments, [FOLDER_ARGUMENT]: "require" }
     : template.arguments;
+}
+
+/**
+ * An asked field takes a value a person types or picks, which is a string, so
+ * one the capability does not declare as a string cannot be asked.
+ */
+function unaskable(
+  capability: Capability,
+  template: RoutingTemplate,
+): readonly SchemaIssue[] {
+  const properties = capability.argumentsSchema["properties"];
+  return Object.keys(template.asked ?? {}).flatMap((field) => {
+    const declared =
+      isObject(properties) && isObject(properties[field])
+        ? properties[field]
+        : undefined;
+    return declared?.["type"] === "string"
+      ? []
+      : [{ path: `/${field}`, keyword: "asked" }];
+  });
+}
+
+/** An asked field may be left without a default, since applying it supplies one. */
+function unrequiring(
+  schema: JsonSchema,
+  template: RoutingTemplate,
+): JsonSchema {
+  const asked = template.asked ?? {};
+  const required = schema["required"];
+  if (!Array.isArray(required)) return schema;
+  return {
+    ...schema,
+    required: required.filter(
+      (field) => typeof field !== "string" || !Object.hasOwn(asked, field),
+    ),
+  };
+}
+
+function isObject(value: JsonValue | undefined): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**

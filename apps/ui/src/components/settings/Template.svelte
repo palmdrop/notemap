@@ -10,6 +10,7 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { carriesAssets } from "$lib/capability";
   import { argumentsOf } from "$lib/arguments";
+  import { askedOf } from "$lib/asked";
   import {
     capabilityHeld,
     described,
@@ -134,12 +135,14 @@
     reading === "asking" ? "" : placeOf(one, called, reading),
   );
 
+  const asks = $derived(askedOf(one, capability?.argumentsSchema));
+
   /** The settings this template takes for its deliveries, each its own fact. */
   const taken = $derived(
     argumentsOf(
       Object.fromEntries(
-        Object.entries(one.arguments).filter(([name]) =>
-          settings.includes(name),
+        Object.entries(one.arguments).filter(
+          ([name]) => settings.includes(name) && !(name in (one.asked ?? {})),
         ),
       ),
       capability?.argumentsSchema,
@@ -209,6 +212,16 @@
         <Fact name="action">{one.capability}</Fact>
       {/if}
       <Fact name="place">{place}</Fact>
+      {#each asks as asked (asked.field)}
+        <Fact name={asked.label}>
+          <Lead
+            lead="asked each time"
+            rest={asked.default === undefined
+              ? "no default"
+              : `default ${asked.default}`}
+          />
+        </Fact>
+      {/each}
       {#each taken as setting (setting.name)}
         <Fact name={setting.name}>{setting.said}</Fact>
       {/each}

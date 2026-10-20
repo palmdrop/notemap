@@ -7,7 +7,10 @@ background every ten minutes and can be run by hand.
 ## Commands
 
 - **Capture** — a note, tags already in use or new ones, and any number of attachments. The notice
-  says whether it reached the pool or is waiting to be sent.
+  says whether it reached the pool or is waiting to be sent. A trigger tag whose template asks for
+  something, a todo list's heading say, adds a field for it under the tags, listing what the
+  destination holds where it can. A place is typed rather than listed. A field with no default
+  starts on `choose`, and the capture asks for it until something is chosen.
 - **Drain Outbox** — sends what is waiting. Run by hand, it says how much is left.
 
 ## Preferences

@@ -1,4 +1,4 @@
-import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -214,6 +214,95 @@ describe("seeding a daemon behind a password", () => {
     ).json()) as { values: unknown[] };
     expect(listed.values).toHaveLength(3);
     expect(stage.arena.blocks()).toHaveLength(1);
+  });
+});
+
+describe("a fixture holding a todo list and a template that asks for its heading", () => {
+  function todoFixture(stage: Stage): Fixture {
+    return readFixture({
+      destinations: [
+        {
+          name: "Vault",
+          kind: "filesystem",
+          settings: { root: stage.host.vaultRoot },
+        },
+      ],
+      templates: [
+        {
+          name: "Todo",
+          destination: "Vault",
+          capability: "append",
+          arguments: { path: "todo.md", conversion: "task" },
+          asked: { heading: { label: "list" } },
+          triggerTag: "route/todo",
+          firedWith: { heading: "Next" },
+        },
+      ],
+      notes: [
+        {
+          destination: "Vault",
+          capability: "create",
+          arguments: { filename: "todo.md" },
+          text: "## Next\n\n- [ ] book the dentist\n\n## Someday\n\n- [ ] learn to sharpen a knife",
+        },
+      ],
+    });
+  }
+
+  it("writes the list first, then files the fired capture under the heading it was given", async () => {
+    const stage = await staged();
+
+    await seed("http://stage.test", {
+      fetch: stage.fetch,
+      password: PASSWORD,
+      fixture: todoFixture(stage),
+    });
+    await stage.host.deliver();
+
+    const todo = readFileSync(join(stage.host.vaultRoot, "todo.md"), "utf8");
+    const next = todo.slice(
+      todo.indexOf("## Next"),
+      todo.indexOf("## Someday"),
+    );
+    expect(next).toContain("- [ ] book the dentist");
+    expect(next).toMatch(/- \[ \] [^\n]+\n- \[ \] /);
+    expect(todo.slice(todo.indexOf("## Someday"))).not.toContain(
+      "book the dentist",
+    );
+  });
+
+  it("saves what the template asks for", async () => {
+    const stage = await staged();
+
+    await seed("http://stage.test", {
+      fetch: stage.fetch,
+      password: PASSWORD,
+      fixture: todoFixture(stage),
+    });
+
+    const listed = (await (
+      await stage.fetch("http://stage.test/v1/templates", {
+        headers: { cookie: await cookie(stage) },
+      })
+    ).json()) as { values: { asked?: unknown }[] };
+    expect(listed.values[0]?.asked).toEqual({ heading: { label: "list" } });
+  });
+
+  it("refuses a note naming a destination the fixture does not hold", () => {
+    expect(() =>
+      readFixture({
+        destinations: [],
+        templates: [],
+        notes: [
+          {
+            destination: "Nowhere",
+            capability: "create",
+            arguments: {},
+            text: "x",
+          },
+        ],
+      }),
+    ).toThrow(/Nowhere/);
   });
 });
 

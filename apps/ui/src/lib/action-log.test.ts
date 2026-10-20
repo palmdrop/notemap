@@ -337,6 +337,19 @@ test("a fired template opens a firing, named for the template, with its window",
   });
 });
 
+test("a firing says where the values its template asked for put the item", () => {
+  const said = firingOf(
+    anAction("template-fired", { ...fired, arguments: { heading: "Next" } }),
+    {
+      ...withTemplates,
+      whereOf: (template, values) =>
+        template === "t1" ? `under ${String(values["heading"])}` : undefined,
+    },
+  );
+
+  expect(said).toMatchObject({ opened: { where: "under Next" } });
+});
+
 test("a firing the shell has no template for is named by the entry", () => {
   const said = firingOf(anAction("template-fired", fired), reading);
 

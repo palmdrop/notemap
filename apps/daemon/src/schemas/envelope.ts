@@ -10,6 +10,7 @@ import type {
 } from "@notemap/core";
 
 import { editEnvelopeSchema, payloadSchema, toPayload } from "./item";
+import { suppliedArgumentsSchema } from "./routing";
 import { instant, toTimestamp } from "./timestamp";
 
 /**
@@ -26,6 +27,15 @@ export const captureEnvelopeSchema = z
     utcOffset: z.number().int().min(-1440).max(1440).optional(),
     payload: payloadSchema,
     tags: z.array(z.string().min(1)).optional(),
+    /** By trigger tag: values for the asked arguments of the template it fires. */
+    arguments: z
+      .record(z.string(), suppliedArgumentsSchema)
+      .optional()
+      .openapi({
+        description:
+          "Values for the asked arguments of the templates the capture's trigger tags fire, keyed by tag.",
+        example: { "route/todo": { heading: "Next" } },
+      }),
   })
   .openapi("CaptureEnvelope");
 
@@ -44,6 +54,7 @@ export function toEnvelope(
     ...(parsed.utcOffset === undefined ? {} : { utcOffset: parsed.utcOffset }),
     payload: toPayload(parsed.payload),
     ...(parsed.tags === undefined ? {} : { tags: parsed.tags as TagName[] }),
+    ...(parsed.arguments === undefined ? {} : { arguments: parsed.arguments }),
   };
 }
 

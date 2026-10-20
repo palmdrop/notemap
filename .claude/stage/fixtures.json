@@ -4,21 +4,35 @@
     {
       "name": "Vault",
       "kind": "filesystem",
-      "settings": { "root": "/var/lib/notemap/vaults/stage" }
+      "settings": {
+        "root": "/var/lib/notemap/vaults/stage"
+      }
     },
     {
       "name": "Cloud",
       "kind": "webdav",
-      "settings": { "account": "webdav", "root": "" }
+      "settings": {
+        "account": "webdav",
+        "root": ""
+      }
     },
-    { "name": "Board", "kind": "arena", "settings": { "account": "arena" } }
+    {
+      "name": "Board",
+      "kind": "arena",
+      "settings": {
+        "account": "arena"
+      }
+    }
   ],
   "templates": [
     {
       "name": "To the vault",
       "destination": "Vault",
       "capability": "create",
-      "arguments": { "directory": "seeded", "filename": "{{item}}.md" },
+      "arguments": {
+        "directory": "seeded",
+        "filename": "{{item}}.md"
+      },
       "folder": "create",
       "triggerTag": "route/vault"
     },
@@ -26,7 +40,10 @@
       "name": "To the cloud",
       "destination": "Cloud",
       "capability": "create",
-      "arguments": { "directory": "seeded", "filename": "{{item}}.md" },
+      "arguments": {
+        "directory": "seeded",
+        "filename": "{{item}}.md"
+      },
       "folder": "create",
       "triggerTag": "route/cloud"
     },
@@ -34,8 +51,38 @@
       "name": "To the board",
       "destination": "Board",
       "capability": "create",
-      "arguments": { "channel": "seeded" },
+      "arguments": {
+        "channel": "seeded"
+      },
       "triggerTag": "route/board"
+    },
+    {
+      "name": "Todo",
+      "destination": "Vault",
+      "capability": "append",
+      "arguments": {
+        "path": "todo.md",
+        "conversion": "task"
+      },
+      "asked": {
+        "heading": {
+          "label": "list"
+        }
+      },
+      "triggerTag": "route/todo",
+      "firedWith": {
+        "heading": "Next"
+      }
+    }
+  ],
+  "notes": [
+    {
+      "destination": "Vault",
+      "capability": "create",
+      "arguments": {
+        "filename": "todo.md"
+      },
+      "text": "## Inbox\n\n- [ ] answer the landlord about the lease\n\n## Next\n\n- [ ] book the dentist\n- [ ] renew the passport\n\n## Waiting on\n\n- [ ] the refund from the airline\n\n## Someday\n\n- [ ] learn to sharpen a knife properly"
     }
   ]
 }

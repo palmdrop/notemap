@@ -29,6 +29,7 @@ type Declared = {
   destination: string;
   capability: string;
   arguments: Record<string, unknown>;
+  asked?: Record<string, { label?: string }>;
   folder: "create" | "require" | "establish";
   triggerTag?: string;
   establishedAt?: string;
@@ -56,6 +57,7 @@ async function create(
     destination,
     capability: overrides.capability ?? "create-or-append",
     arguments: overrides.arguments ?? { path: "research/{{captured_at}}.md" },
+    ...(overrides.asked === undefined ? {} : { asked: overrides.asked }),
     ...(overrides.folder === undefined ? {} : { folder: overrides.folder }),
     ...(overrides.triggerTag === undefined
       ? {}
@@ -391,5 +393,213 @@ describe("a trigger tag arriving over the wire", () => {
       await host.app.request(`/v1/items/${String(item)}/routing`),
     )) as { values: unknown[] };
     expect(records.values).toEqual([]);
+  });
+});
+
+describe("a template that asks for an argument, over the wire", () => {
+  const TODO = {
+    capability: "append",
+    arguments: { path: "todo.md", conversion: "task" },
+    asked: { heading: { label: "list" } },
+    triggerTag: "route/todo",
+  };
+
+  async function recordsOf(host: Daemon, item: string) {
+    return (
+      (await body(await host.app.request(`/v1/items/${item}/routing`))) as {
+        values: { target: { arguments: Record<string, unknown> } }[];
+      }
+    ).values;
+  }
+
+  it("saves and answers what it asks for", async () => {
+    const host = serving();
+    const destination = await vault(host);
+
+    const made = await created(host, destination, TODO);
+
+    expect(made.asked).toEqual({ heading: { label: "list" } });
+    expect((await list(host))[0]?.asked).toEqual({
+      heading: { label: "list" },
+    });
+  });
+
+  it("stops asking where an edit sends an empty set", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+
+    const response = await host.app.request(`/v1/templates/${made.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ asked: {} }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).not.toHaveProperty("asked");
+  });
+
+  it("refuses asking for the folder mode", async () => {
+    const host = serving();
+    const destination = await vault(host);
+
+    const response = await create(host, destination, {
+      ...TODO,
+      asked: { folder: {} },
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "asked-invalid" },
+    });
+  });
+
+  it("files under the value a tag carries", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/tag`, {
+      tag: "route/todo",
+      arguments: { heading: "Next" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await recordsOf(host, String(item))).toMatchObject([
+      { target: { arguments: { path: "todo.md", heading: "Next" } } },
+    ]);
+  });
+
+  it("declines a tag carrying nothing where there is no default", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/tag`, {
+      tag: "route/todo",
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "trigger-refused" },
+    });
+  });
+
+  it("files a capture under the value it carries beside its tags", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    await created(host, destination, TODO);
+
+    const response = await post(host.app, {
+      ...envelope({ tags: ["route/todo"] }),
+      arguments: { "route/todo": { heading: "Next" } },
+    });
+
+    expect(response.status).toBe(201);
+    const { item } = (await body(response)) as { item: { id: string } };
+    expect(await recordsOf(host, item.id)).toMatchObject([
+      { target: { arguments: { heading: "Next" } } },
+    ]);
+  });
+
+  it("routes from the template with the value, still naming it", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/route`, {
+      template: made.id,
+      arguments: { heading: "Next" },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await body(response)).toMatchObject({
+      target: { arguments: { heading: "Next" } },
+      applied: { template: made.id, firedByTag: false },
+    });
+  });
+
+  it("refuses a value for a field the template fixes", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(host.app, `/v1/items/${String(item)}/route`, {
+      template: made.id,
+      arguments: { heading: "Next", path: "elsewhere.md" },
+    });
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "argument-not-asked" },
+    });
+  });
+
+  it("previews with the value it was given", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: made.id, arguments: { heading: "Next" } },
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("previews with nothing given, as far as it goes", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: made.id },
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("refuses to preview with a value for a field the template fixes", async () => {
+    const host = serving();
+    const destination = await vault(host);
+    const made = await created(host, destination, TODO);
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: made.id, arguments: { path: "elsewhere.md" } },
+    );
+
+    expect(response.status).toBe(422);
+    expect(await body(response)).toMatchObject({
+      error: { code: "argument-not-asked" },
+    });
+  });
+
+  it("refuses to preview from a template that is not there", async () => {
+    const host = serving();
+    const [item] = await captureMany(host.app, 1);
+
+    const response = await send(
+      host.app,
+      `/v1/items/${String(item)}/route/preview`,
+      { template: "tpl-nobody" },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await body(response)).toMatchObject({
+      error: { code: "unknown-template" },
+    });
   });
 });

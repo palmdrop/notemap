@@ -641,10 +641,16 @@ export function createClient(config: ClientConfig): Client {
 
     unarchive: (item) => mutate({ kind: "unarchive", item }),
 
-    tag: (item, tag) => mutate({ kind: "tag", item, tag }),
+    tag: (item, tag, supplied) =>
+      mutate({
+        kind: "tag",
+        item,
+        tag,
+        ...(supplied === undefined ? {} : { arguments: supplied }),
+      }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
 
-    edit: (item, payload, source, tags = []) =>
+    edit: (item, payload, source, tags = [], supplied = {}) =>
       mutate({
         kind: "edit",
         item,
@@ -652,6 +658,7 @@ export function createClient(config: ClientConfig): Client {
         // claims the same identity and the pool answers one revision.
         envelope: { source, sourceItemId: uuidv7(), payload },
         ...(tags.length === 0 ? {} : { tags }),
+        ...(Object.keys(supplied).length === 0 ? {} : { arguments: supplied }),
       }),
 
     /** What an edit starts from: the payload as it stands, with new words in it. */

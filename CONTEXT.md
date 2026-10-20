@@ -457,6 +457,14 @@ goes and never what shape it arrives in, which is **conversion**.
 _Avoid_: rule, preset, macro. A rule is the conditional thing this deliberately is not; the other
 two say nothing about routing.
 
+**Asked argument**:
+A field a **routing template** leaves to be supplied each time it is applied — the heading of a todo
+list, say. Carries an optional label a person reads in place of the field's name, and its default
+is whatever the template's arguments hold for it. The value supplied is an ordinary argument, given
+beside the **trigger tag** or in the composer, never inside the tag, and taken literally rather than
+expanded. Without a value or a default the template cannot apply.
+_Avoid_: parameter, open argument, placeholder, variable
+
 **Trigger tag**:
 The tag a routing template declares, under the reserved `route/` namespace, whose arrival on an item
 applies the template. Declared rather than derived from the name, so renaming a template disarms no

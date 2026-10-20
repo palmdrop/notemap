@@ -8,6 +8,10 @@
 export type Draft = {
   readonly text: string;
   readonly tags: readonly string[];
+  /** By trigger tag: the values given for what its template asks. */
+  readonly arguments?: Readonly<
+    Record<string, Readonly<Record<string, string>>>
+  >;
 };
 
 const KEY = "notemap:draft";
@@ -31,10 +35,32 @@ export function readDraft(): Draft {
     if (!shaped(held)) return EMPTY;
     // A name twice is a key twice to the chooser this restores into, and only
     // a hand-edited store can hold one.
-    return { text: held.text, tags: [...new Set(held.tags)] };
+    const tags = [...new Set(held.tags)];
+    const given = suppliedOf(held.arguments, tags);
+    return given === undefined
+      ? { text: held.text, tags }
+      : { text: held.text, tags, arguments: given };
   } catch {
     return EMPTY;
   }
+}
+
+/** What a store holds for the tags' values, kept only for a tag still held and only where it is all strings. */
+function suppliedOf(
+  held: unknown,
+  tags: readonly string[],
+): Draft["arguments"] | undefined {
+  if (typeof held !== "object" || held === null) return undefined;
+  const kept = Object.entries(held).filter(
+    ([tag, values]) =>
+      tags.includes(tag) &&
+      typeof values === "object" &&
+      values !== null &&
+      Object.values(values).every((value) => typeof value === "string"),
+  );
+  return kept.length === 0
+    ? undefined
+    : (Object.fromEntries(kept) as Draft["arguments"]);
 }
 
 export function writeDraft(draft: Draft): void {
@@ -94,8 +120,13 @@ export function restoreDraft(
         ? current.text
         : `${current.text}\n\n${draft.text}`;
   const tags = [...new Set([...current.tags, ...draft.tags])];
+  const given = { ...current.arguments, ...draft.arguments };
 
-  writeDraft({ text, tags });
+  writeDraft(
+    Object.keys(given).length === 0
+      ? { text, tags }
+      : { text, tags, arguments: given },
+  );
   if (text.trim() !== "" && readDraft().text !== text) return "unwritable";
 
   files = [...files, ...restored];

@@ -3160,7 +3160,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format" | "asked-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3392,7 +3392,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format";
+                                code: "unknown-destination" | "trigger-tag-invalid" | "trigger-tag-unreserved" | "unknown-pattern-field" | "unknown-pattern-format" | "asked-invalid";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3571,7 +3571,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The destination, the capability, the payload type or the arguments were declined. Nothing was written. */
+                /** @description The destination, the capability, the payload type, the arguments or the values given for a template's asked ones were declined. Nothing was written. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3581,7 +3581,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked" | "argument-missing";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3654,7 +3654,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description No item has that id. */
+                /** @description No item has that id, or no template does. */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3664,7 +3664,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "no-such-item" | "item-purged";
+                                code: "no-such-item" | "item-purged" | "unknown-template";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3705,7 +3705,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The destination, the capability, the payload type or the arguments were declined. */
+                /** @description The destination, the capability, the payload type or the arguments were declined, or a value was given for a field the template does not ask. A value left out is not: the preview is of the decision as far as it was given. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -3715,7 +3715,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -4643,6 +4643,26 @@ export interface components {
                 }[];
             };
             tags?: string[];
+            /**
+             * @description Values for the asked arguments of the templates the capture's trigger tags fire, keyed by tag.
+             * @example {
+             *       "route/todo": {
+             *         "heading": "Next"
+             *       }
+             *     }
+             */
+            arguments?: {
+                [key: string]: components["schemas"]["SuppliedArguments"];
+            };
+        };
+        /**
+         * @description Values for the template's asked arguments, by field name. Taken literally rather than expanded; a blank one falls back to the default. A field the template does not ask for is refused.
+         * @example {
+         *       "heading": "Next"
+         *     }
+         */
+        SuppliedArguments: {
+            [key: string]: string;
         };
         ItemSlice: {
             values: components["schemas"]["Item"][];
@@ -4715,6 +4735,7 @@ export interface components {
         UnarchiveRequest: Record<string, never>;
         TagRequest: {
             tag: string;
+            arguments?: components["schemas"]["SuppliedArguments"] & unknown;
         };
         TagsInUse: {
             values: components["schemas"]["TagUse"][];
@@ -4964,6 +4985,19 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+            /**
+             * @description Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.
+             * @example {
+             *       "heading": {
+             *         "label": "list"
+             *       }
+             *     }
+             */
+            asked?: {
+                [key: string]: {
+                    label?: string;
+                };
+            };
             /** @enum {string} */
             folder: "create" | "require" | "establish";
             triggerTag?: string;
@@ -4979,6 +5013,19 @@ export interface components {
             capability: string;
             arguments: {
                 [key: string]: unknown;
+            };
+            /**
+             * @description Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.
+             * @example {
+             *       "heading": {
+             *         "label": "list"
+             *       }
+             *     }
+             */
+            asked?: {
+                [key: string]: {
+                    label?: string;
+                };
             };
             /** @enum {string} */
             folder?: "create" | "require" | "establish";
@@ -5024,6 +5071,19 @@ export interface components {
             capability?: string;
             arguments?: {
                 [key: string]: unknown;
+            };
+            /**
+             * @description Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.
+             * @example {
+             *       "heading": {
+             *         "label": "list"
+             *       }
+             *     }
+             */
+            asked?: {
+                [key: string]: {
+                    label?: string;
+                };
             };
             /** @enum {string} */
             folder?: "create" | "require" | "establish";
@@ -5072,6 +5132,7 @@ export interface components {
              * @example 019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77
              */
             template: string;
+            arguments?: components["schemas"]["SuppliedArguments"];
             /**
              * @description What this delivery says, in place of the item's own payload content. Must satisfy the item's payload type's `contentSchema`. Absent means the item's own words; the item is never changed either way.
              * @example {

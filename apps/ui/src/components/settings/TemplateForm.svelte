@@ -13,6 +13,7 @@
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
+  import { askable } from "$lib/asked";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
@@ -39,6 +40,14 @@
     disabled: boolean;
     done: () => void;
   } = $props();
+
+  const id = $props.id();
+
+  /** Where an asked field says it has no default, for the inputs that ask it to be read out. */
+  const undefaulted = (field: Field): string | undefined =>
+    Object.hasOwn(asked, field.name) && (typed[field.name] ?? "") === ""
+      ? `${id}-${field.name}-default`
+      : undefined;
 
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
 
@@ -67,6 +76,26 @@
   let capability = $state(untrack(() => editing?.capability ?? ""));
   let folder = $state(untrack(() => editing?.folder ?? "create"));
   let typed = $state(untrack(() => typedFrom(editing?.arguments)));
+  /** Asked fields by name, each holding the label typed for it, blank for none. */
+  let asked = $state<Record<string, string>>(
+    untrack(() =>
+      Object.fromEntries(
+        Object.entries(editing?.asked ?? {}).map(([field, one]) => [
+          field,
+          one.label ?? "",
+        ]),
+      ),
+    ),
+  );
+
+  function ask(field: string): void {
+    if (Object.hasOwn(asked, field)) {
+      const { [field]: _dropped, ...rest } = asked;
+      asked = rest;
+    } else {
+      asked = { ...asked, [field]: "" };
+    }
+  }
 
   let nameField = $state<HTMLInputElement | undefined>(undefined);
   $effect(() => nameField?.focus());
@@ -189,16 +218,41 @@
     };
   });
 
+  /** What is asked among the fields still drawn, each label trimmed and a blank one left out. */
+  function asking(): Record<string, { label?: string }> {
+    return Object.fromEntries(
+      typeable
+        .filter((field) => askable(field) && Object.hasOwn(asked, field.name))
+        .map((field) => {
+          const label = (asked[field.name] ?? "").trim();
+          return [field.name, label === "" ? {} : { label }];
+        }),
+    );
+  }
+
+  /** An asked field left empty has no default, which is absence rather than an empty string. */
+  function argumentsFor(
+    asks: Record<string, unknown>,
+  ): Record<string, unknown> {
+    return Object.fromEntries(
+      Object.entries(valuesFrom(typeable, typed)).filter(
+        ([field, value]) => !(field in asks) || value !== "",
+      ),
+    );
+  }
+
   async function save() {
     if (busy) return;
     busy = true;
     said = "";
 
+    const asks = asking();
     const wanted = {
       name: name.trim(),
       destination,
       capability,
-      arguments: valuesFrom(typeable, typed),
+      arguments: argumentsFor(asks),
+      asked: asks,
       // A capability with no folders has nothing to establish, and a mode left
       // over from the one chosen before would be refused as an argument.
       folder: folders ? folder : ("create" as const),
@@ -213,6 +267,9 @@
           destination: wanted.destination,
           capability: wanted.capability,
           arguments: wanted.arguments,
+          ...(Object.keys(wanted.asked).length === 0
+            ? {}
+            : { asked: wanted.asked }),
           folder: wanted.folder,
           ...(wanted.triggerTag === undefined
             ? {}
@@ -301,44 +358,55 @@
   {/if}
 
   {#each typeable as field (field.name)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">
-      {field.title ?? field.name}
-    </span>
-    <div>
-      {#if fixed(field) !== undefined}
-        <!-- Taking the option already taken gives it back: absent inherits,
+    {#if Object.hasOwn(asked, field.name)}
+      <input
+        bind:value={asked[field.name]}
+        aria-label={`${field.title ?? field.name} label`}
+        aria-describedby={undefaulted(field)}
+        placeholder={field.title ?? field.name}
+        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
+      />
+    {:else}
+      <span class="tracking-caps uppercase max-narrow:mt-1.5">
+        {field.title ?? field.name}
+      </span>
+    {/if}
+    <div class="flex items-baseline gap-x-[1ch]">
+      <div class="min-w-0 flex-1">
+        {#if fixed(field) !== undefined}
+          <!-- Taking the option already taken gives it back: absent inherits,
              and the hollow mark says what that comes out as. A required field
              has no absent to go back to. -->
-        {@const implied =
-          (typed[field.name] ?? "") === ""
-            ? impliedOf(field, inherited)
-            : undefined}
-        <div class="flex flex-wrap gap-x-[2ch]">
-          {#each fixed(field) ?? [] as one (one)}
-            <Option
-              label={labelOf(field, one)}
-              chosen={typed[field.name] === one}
-              implied={implied === one}
-              onchoose={() =>
-                (typed[field.name] =
-                  typed[field.name] === one && !field.required ? "" : one)}
-            />
-          {/each}
-        </div>
-      {:else if field.askable && destination !== "" && field.path !== undefined}
-        <!-- No forecast and no remembered continuation: a pattern names no
+          {@const implied =
+            (typed[field.name] ?? "") === ""
+              ? impliedOf(field, inherited)
+              : undefined}
+          <div class="flex flex-wrap gap-x-[2ch]">
+            {#each fixed(field) ?? [] as one (one)}
+              <Option
+                label={labelOf(field, one)}
+                chosen={typed[field.name] === one}
+                implied={implied === one}
+                onchoose={() =>
+                  (typed[field.name] =
+                    typed[field.name] === one && !field.required ? "" : one)}
+              />
+            {/each}
+          </div>
+        {:else if field.listable && destination !== "" && field.path !== undefined}
+          <!-- No forecast and no remembered continuation: a pattern names no
              one note, so neither has anything to read off it. -->
-        <PathLine
-          {destination}
-          {capability}
-          field={field.name}
-          label={field.title ?? field.name}
-          value={typed[field.name] ?? ""}
-          claims={false}
-          onchange={(value) => (typed[field.name] = value)}
-        />
-      {:else if field.askable && destination !== ""}
-        <!--
+          <PathLine
+            {destination}
+            {capability}
+            field={field.name}
+            label={field.title ?? field.name}
+            value={typed[field.name] ?? ""}
+            claims={false}
+            onchange={(value) => (typed[field.name] = value)}
+          />
+        {:else if field.listable && destination !== ""}
+          <!--
           `durable`, because this is the decision that fires again: a template
           sits on a tag for months, and a value that rots takes the template
           with it. Where a destination offers no second name for a thing this
@@ -349,25 +417,45 @@
           channel, not a number, and the form is the only thing that can say
           which one it was.
         -->
-        <CandidateBrowser
-          {destination}
-          {capability}
-          field={field.name}
-          label={field.title ?? field.name}
-          value={typed[field.name] ?? ""}
-          durable
-          naming={field.offeredOnly}
-          given={givenFor(field, typed)}
-          claims={false}
-          onchange={(value) => (typed[field.name] = value)}
-        />
-      {:else}
-        <input
-          bind:value={typed[field.name]}
-          aria-label={field.title ?? field.name}
-          placeholder={field.required ? "required" : "optional"}
-          class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
-        />
+          <CandidateBrowser
+            {destination}
+            {capability}
+            field={field.name}
+            label={field.title ?? field.name}
+            value={typed[field.name] ?? ""}
+            durable
+            naming={field.offeredOnly}
+            given={givenFor(field, typed)}
+            claims={false}
+            onchange={(value) => (typed[field.name] = value)}
+          />
+        {:else}
+          <input
+            bind:value={typed[field.name]}
+            aria-label={field.title ?? field.name}
+            aria-describedby={undefaulted(field)}
+            placeholder={Object.hasOwn(asked, field.name)
+              ? undefined
+              : field.required
+                ? "required"
+                : "optional"}
+            class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
+          />
+        {/if}
+        {#if undefaulted(field) !== undefined}
+          <!-- Only the template's own value is a default: a destination's setting is not. -->
+          <p id={undefaulted(field)}>no default</p>
+        {/if}
+      </div>
+      {#if askable(field)}
+        <span class="flex-none">
+          <Option
+            label="ask"
+            name={`ask ${field.title ?? field.name} each time`}
+            chosen={Object.hasOwn(asked, field.name)}
+            onchoose={() => ask(field.name)}
+          />
+        </span>
       {/if}
     </div>
     <!-- Said once, terse, rather than a paragraph per pattern: what each comes

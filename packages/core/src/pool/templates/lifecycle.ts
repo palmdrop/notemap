@@ -1,6 +1,7 @@
 import { recordAction } from "../actions";
 import { enqueueMirrorRemove, enqueueMirrorWrite } from "../mirror";
 import { normalised } from "../tags";
+import { FOLDER_ARGUMENT } from "../destinations/vocabulary";
 import { checkPatterns } from "./patterns";
 import { sameJson } from "#utils/json";
 import { ok, refused } from "#utils/result";
@@ -9,6 +10,7 @@ import type { RoutingTemplateRefusal } from "#types/api/refusal";
 import type { ActionKind } from "#types/domain/action-log";
 import type { RoutingTemplateId, TagName, Timestamp } from "#types/domain/ids";
 import type {
+  AskedArguments,
   RoutingTemplate,
   RoutingTemplateChanges,
   RoutingTemplateDraft,
@@ -48,6 +50,11 @@ export function create(
       return refused<RoutingTemplate, RoutingTemplateRefusal>(unwritable);
     }
 
+    const unaskable = checkAsked(draft.asked);
+    if (unaskable !== undefined) {
+      return refused<RoutingTemplate, RoutingTemplateRefusal>(unaskable);
+    }
+
     const trigger = await triggerTag(tx, draft.triggerTag, undefined);
     if (trigger.kind === "refused") return trigger;
 
@@ -58,6 +65,7 @@ export function create(
       destination: draft.destination,
       capability: draft.capability,
       arguments: draft.arguments,
+      ...asking(draft.asked),
       folder: draft.folder ?? "create",
       ...(trigger.value === undefined ? {} : { triggerTag: trigger.value }),
       createdAt: at,
@@ -107,6 +115,11 @@ export function edit(
       }
     }
 
+    const unaskable = checkAsked(changes.asked);
+    if (unaskable !== undefined) {
+      return refused<RoutingTemplate, RoutingTemplateRefusal>(unaskable);
+    }
+
     const trigger =
       changes.triggerTag === undefined
         ? ok<TagName | undefined, RoutingTemplateRefusal>(held.triggerTag)
@@ -129,7 +142,12 @@ export function edit(
         : { arguments: changes.arguments }),
       ...(changes.folder === undefined ? {} : { folder: changes.folder }),
     };
-    const { triggerTag: _held, ...without } = wanted;
+    const { asked: _asked, ...unasked } = wanted;
+    const asked: RoutingTemplateRecord =
+      changes.asked === undefined
+        ? wanted
+        : { ...unasked, ...asking(changes.asked) };
+    const { triggerTag: _held, ...without } = asked;
     const tagged: RoutingTemplateRecord =
       trigger.value === undefined
         ? without
@@ -248,8 +266,31 @@ function unchanged(
     held.capability === next.capability &&
     held.folder === next.folder &&
     held.triggerTag === next.triggerTag &&
-    sameJson(held.arguments, next.arguments)
+    sameJson(held.arguments, next.arguments) &&
+    sameJson(held.asked ?? {}, next.asked ?? {})
   );
+}
+
+/**
+ * The folder mode is core's to write, so applying a template cannot be given a
+ * value for it.
+ */
+function checkAsked(
+  asked: AskedArguments | undefined,
+): RoutingTemplateRefusal | undefined {
+  const field = Object.keys(asked ?? {}).find(
+    (name) => name.trim() === "" || name === FOLDER_ARGUMENT,
+  );
+  return field === undefined ? undefined : { kind: "asked-invalid", field };
+}
+
+/** An empty set is a template that asks for nothing, which is stored as absence. */
+function asking(asked: AskedArguments | undefined): {
+  asked?: AskedArguments;
+} {
+  return asked === undefined || Object.keys(asked).length === 0
+    ? {}
+    : { asked };
 }
 
 /** Every field the store writes, taken off what it last answered with. */

@@ -31,6 +31,8 @@ import {
   UNFURL_STATUS,
   UNTAG_STATUS,
   UPLOAD_STATUS,
+  TEMPLATE_RESOLVE_STATUS,
+  TEMPLATE_ROUTING_STATUS,
   TEMPLATE_STATUS,
 } from "../errors/refusals";
 import {
@@ -1304,10 +1306,12 @@ export const resolveTemplateRoute = createRoute({
       description: "What routing it now would record.",
       content: { [JSON_MEDIA_TYPE]: { schema: resolvedTemplateSchema } },
     },
-    404: errorResponse("No item has that id, or no template does.", 404, {
-      ...ROUTING_STATUS,
-      ...TEMPLATE_STATUS,
-    }),
+    404: errorResponse(
+      "No item has that id, or no template does.",
+      404,
+      ROUTING_STATUS,
+      TEMPLATE_RESOLVE_STATUS,
+    ),
   },
 });
 
@@ -1343,9 +1347,9 @@ export const routeItemRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
+      "The destination, the capability, the payload type, the arguments or the values given for a template's asked ones were declined. Nothing was written.",
       422,
-      DELIVERY_STATUS,
+      TEMPLATE_ROUTING_STATUS,
     ),
   },
 });
@@ -1396,7 +1400,12 @@ export const previewRouteRoute = createRoute({
       400,
       BODY_STATUS,
     ),
-    404: errorResponse("No item has that id.", 404, ROUTING_STATUS),
+    404: errorResponse(
+      "No item has that id, or no template does.",
+      404,
+      ROUTING_STATUS,
+      TEMPLATE_RESOLVE_STATUS,
+    ),
     409: errorResponse(
       "The destination is retired, or the running code cannot make sense of it.",
       409,
@@ -1404,9 +1413,10 @@ export const previewRouteRoute = createRoute({
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
     422: errorResponse(
-      "The destination, the capability, the payload type or the arguments were declined.",
+      "The destination, the capability, the payload type or the arguments were declined, or a value was given for a field the template does not ask. A value left out is not: the preview is of the decision as far as it was given.",
       422,
       DELIVERY_STATUS,
+      TEMPLATE_RESOLVE_STATUS,
     ),
   },
 });

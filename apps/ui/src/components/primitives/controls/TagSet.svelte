@@ -2,7 +2,8 @@
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
-  import { completed, narrowed } from "$lib/candidate-list";
+  import type { Ask, Supplied } from "$lib/asked";
+  import { completed, narrowed, takenAs } from "$lib/candidate-list";
   import { drawOut, fade, grow, pinned, slide, unfold } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
@@ -16,6 +17,12 @@
    * the offer, `↑↓` and the pointer walk it too, `⏎` takes the marked row, and
    * `esc` or leaving the line puts it away and takes nothing — a name
    * half-typed is not a decision.
+   *
+   * A trigger tag whose template asks for something does not land when it is
+   * taken: the line asks for each value in turn, the panel offering what the
+   * field allows, and the tag lands with them once the last is given. `⏎` on
+   * an empty line takes the default, `esc` steps back a field and then back to
+   * the tags.
    */
   let {
     names,
@@ -24,6 +31,8 @@
     held,
     waiting,
     marked,
+    ask,
+    besides,
     addable = true,
     label = "Add a tag",
     onadd,
@@ -48,11 +57,18 @@
     waiting?: (name: string) => boolean;
     /** A carried tag this answers true for is underlined: the surface is filtered by it. */
     marked?: (name: string) => boolean;
+    /**
+     * What taking this tag asks before it can land. Absent, at once, for a tag
+     * that asks nothing, so an ordinary tag lands on the keystroke.
+     */
+    ask?: (name: string) => Promise<Ask | undefined> | undefined;
+    /** Said after a carried tag: where the values it was given put the item. */
+    besides?: (name: string) => string | undefined;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
     /** What the `+` and the line are called, where two sets share a page. */
     label?: string;
-    onadd: (name: string) => void;
+    onadd: (name: string, supplied?: Supplied) => void;
     onremove: (name: string) => void;
   } = $props();
 
@@ -81,7 +97,41 @@
   function close(): void {
     adding = false;
     draft = "";
+    stepping = undefined;
   }
+
+  /** A trigger tag taken, and the values it is being given before it lands. */
+  type Stepping = {
+    readonly tag: string;
+    readonly ask: Ask;
+    readonly at: number;
+    readonly values: Supplied;
+  };
+
+  let stepping = $state<Stepping | undefined>(undefined);
+  const step = $derived(
+    stepping === undefined ? undefined : stepping.ask.steps[stepping.at],
+  );
+
+  /** What the destination answered for the field being asked, while it is the one asked. */
+  let listed = $state<readonly CandidateEntry[]>([]);
+  let listing = 0;
+
+  $effect(() => {
+    const asked = step;
+    const earlier = stepping?.values ?? {};
+    const mine = (listing += 1);
+    listed = [];
+    if (asked?.listed === undefined) return;
+    void asked.listed(earlier).then(
+      (entries) => {
+        if (mine === listing) listed = entries;
+      },
+      () => {
+        // A destination that cannot answer leaves the field typed.
+      },
+    );
+  });
 
   // The row is the only caller that toggles this, and a `×` left on a row
   // nobody is on is a control nobody asked for.
@@ -99,10 +149,41 @@
 
   type Row = {
     readonly label: string;
+    /** What taking it gives, where that is not the label: a heading's own words under its `#`s. */
+    readonly value?: string;
     readonly fresh?: boolean;
     /** The first trigger tag of an empty line's offer, ruled off from the rest. */
     readonly apart?: boolean;
   };
+
+  /** What may be given for the field being asked, narrowed as the line is typed into. */
+  const offeredValues = $derived<readonly CandidateEntry[]>(
+    step?.closed !== undefined
+      ? step.closed.map((one) => ({ label: one, value: one }))
+      : listed,
+  );
+
+  /**
+   * A closed field offers only what it holds. A listed one offers what the
+   * destination answered and, typed into, the typed words as a row of their
+   * own, so a heading that is not there yet is taken knowingly.
+   */
+  function valueRows(): readonly Row[] {
+    const typed = draft.trim();
+    const base: Row[] = narrowed(offeredValues, draft).map((entry) => ({
+      label: entry.label,
+      value: takenAs(entry),
+    }));
+    if (typed === "" || step?.closed !== undefined) return base;
+    const known = offeredValues.some((entry) =>
+      [takenAs(entry), entry.label].some(
+        (one) => one.toLowerCase() === typed.toLowerCase(),
+      ),
+    );
+    return known
+      ? base
+      : [...base, { label: typed, value: typed, fresh: true }];
+  }
 
   /**
    * While the line is empty, a handful of the most used, then every trigger
@@ -112,6 +193,7 @@
    * all.
    */
   const rows = $derived.by((): readonly Row[] => {
+    if (step !== undefined) return valueRows();
     const typed = draft.trim();
     if (typed === "") {
       const firing = (entry: CandidateEntry) =>
@@ -178,8 +260,75 @@
   }
 
   function take(name: string): void {
+    if (name === "" || names.includes(name)) {
+      close();
+      return;
+    }
+    const asking = ask?.(name);
+    if (asking === undefined) {
+      close();
+      onadd(name);
+      return;
+    }
+
+    draft = "";
+    void asking.then((found) => {
+      if (!adding) return;
+      if (found === undefined || found.steps.length === 0) {
+        close();
+        onadd(name);
+        return;
+      }
+      stepping = { tag: name, ask: found, at: 0, values: {} };
+    });
+  }
+
+  /**
+   * One field given: the next is asked, or the tag lands with them all. A
+   * value left out is the default, which is the pool's to fill in.
+   */
+  function give(value: string | undefined): void {
+    if (stepping === undefined || step === undefined) return;
+    const values =
+      value === undefined
+        ? stepping.values
+        : { ...stepping.values, [step.field]: value };
+
+    if (stepping.at + 1 < stepping.ask.steps.length) {
+      stepping = { ...stepping, at: stepping.at + 1, values };
+      draft = "";
+      return;
+    }
+    const tag = stepping.tag;
     close();
-    if (name !== "" && !names.includes(name)) onadd(name);
+    onadd(tag, Object.keys(values).length === 0 ? undefined : values);
+  }
+
+  /**
+   * What `⏎` gives: the row walked to, else what was typed where the field
+   * takes it, else the default where the line is empty. Nothing, where there is
+   * nothing to fall back on — the line stays and asks again.
+   */
+  function given(): void {
+    if (step === undefined) return;
+    const picked = at === undefined ? undefined : rows[at];
+    if (picked !== undefined) {
+      give(picked.value ?? picked.label);
+      return;
+    }
+    const typed = draft.trim();
+    if (typed !== "") {
+      if (step.closed === undefined || step.closed.includes(typed)) give(typed);
+      return;
+    }
+    if (step.default !== undefined) give(undefined);
+  }
+
+  function stepBack(): void {
+    if (stepping === undefined) return;
+    draft = "";
+    stepping =
+      stepping.at === 0 ? undefined : { ...stepping, at: stepping.at - 1 };
   }
 
   /** Pressing a carried tag selects it, or clears the selection where it already was. */
@@ -202,7 +351,11 @@
       // The line is what the control is for, so the key never leaves it.
       event.preventDefault();
 
-      const finished = completed(entries, draft, "label");
+      const finished = completed(
+        step === undefined ? entries : offeredValues,
+        draft,
+        "label",
+      );
       if (finished !== undefined) {
         draft = finished;
         return;
@@ -219,6 +372,10 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
+      if (step !== undefined) {
+        given();
+        return;
+      }
       const picked = at === undefined ? undefined : rows[at];
       if (picked === undefined) close();
       else take(picked.label);
@@ -229,7 +386,8 @@
       // Putting this away is what the key did here, so nothing above it — a
       // composer stepping back, a row closing — also acts on the one press.
       event.stopPropagation();
-      close();
+      if (stepping !== undefined) stepBack();
+      else close();
     }
   }
 </script>
@@ -251,6 +409,7 @@
   {@const inert = held?.(name) === true}
   {@const filtered = marked?.(name) === true}
   {@const pending = waiting?.(name) === true}
+  {@const where = besides?.(name)}
   <span
     class="whitespace-nowrap"
     data-marked={filtered ? "" : undefined}
@@ -317,6 +476,7 @@
           </button>{/if}
       </span>
     {/if}
+    {#if where !== undefined}<span class="pr-tag">{where}</span>{/if}
   </span>
 {/each}
 
@@ -339,12 +499,16 @@
         spellcheck="false"
         autocapitalize="off"
         autocomplete="off"
-        aria-label={label}
+        aria-label={step === undefined ? label : step.label}
+        placeholder={step?.default ?? ""}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={rows.length > 0}
         aria-controls="{id}-tags"
         aria-activedescendant={active}
+        aria-describedby={stepping !== undefined && step !== undefined
+          ? `${id}-step`
+          : undefined}
         class="h-full w-full border-b border-ink px-1 outline-none"
         in:drawOut
       />
@@ -364,7 +528,7 @@
   </span>
 </span>
 
-{#if adding && rows.length > 0}
+{#if adding && (rows.length > 0 || step !== undefined)}
   <!-- Rows taken on `mousedown` with the default prevented, so taking one
        never blurs the line out from under the click. -->
   <!-- Hung from the line where the browser can tie it there, and from the
@@ -372,42 +536,71 @@
        what it is placed against, so callers make that container relative.
        Outside the line's own block, so the line goes the moment it closes
        while the offer slides shut where it stood. -->
+  <!-- Asking for a value, a narrow screen draws the panel as a sheet across
+       its foot rather than hung from a line it may not have room beside. -->
   <div
-    class="offer z-30"
+    class="offer z-30 {step === undefined
+      ? ''
+      : 'max-narrow:fixed max-narrow:inset-x-0 max-narrow:top-auto max-narrow:bottom-0'}"
     style="position-anchor: {anchor}"
     in:slide|global={{ magnitude: "short" }}
     out:pinned|global={{ magnitude: "short" }}
   >
     <div
       bind:this={panel}
-      id="{id}-tags"
-      role="listbox"
-      aria-label="Tags in use"
-      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1"
+      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1 {step ===
+      undefined
+        ? ''
+        : 'max-narrow:w-full'}"
     >
-      {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-        {@const on = at === index}
-        {@const fired = row.fresh ? undefined : fires?.(row.label)}
-        {#if row.apart}
-          <div
-            aria-hidden="true"
-            class="-mx-2.5 my-1 border-t border-ink"
-          ></div>
-        {/if}
-        <Walked
-          id={on ? `${id}-tag-${index}` : undefined}
-          {on}
-          onhover={() => (at = index)}
-          ontake={() => take(row.label)}
+      {#if stepping !== undefined && step !== undefined}
+        <!-- What is being asked, and for which template, since the line holds
+             only the value. -->
+        <div
+          id="{id}-step"
+          class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
         >
-          {#if row.fresh}
-            + {row.label}
-          {:else}
-            <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-            >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
+          <span class={TRIGGER}>{trigger(stepping.tag)}</span>
+          → {stepping.ask.template},
+          <span class="font-semibold">{step.label}</span>
+          {#if step.default !== undefined}
+            <span>default {step.default}</span>
           {/if}
-        </Walked>
-      {/each}
+        </div>
+      {/if}
+      <div
+        id="{id}-tags"
+        role="listbox"
+        aria-label={step === undefined ? "Tags in use" : step.label}
+      >
+        {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+          {@const on = at === index}
+          {@const fired =
+            row.fresh || step !== undefined ? undefined : fires?.(row.label)}
+          {#if row.apart}
+            <div
+              aria-hidden="true"
+              class="-mx-2.5 my-1 border-t border-ink"
+            ></div>
+          {/if}
+          <Walked
+            id={on ? `${id}-tag-${index}` : undefined}
+            {on}
+            onhover={() => (at = index)}
+            ontake={() =>
+              step === undefined
+                ? take(row.label)
+                : give(row.value ?? row.label)}
+          >
+            {#if row.fresh}
+              + {row.label}
+            {:else}
+              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
+              >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
+            {/if}
+          </Walked>
+        {/each}
+      </div>
     </div>
   </div>
 {/if}

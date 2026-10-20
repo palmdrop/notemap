@@ -723,6 +723,18 @@
               "type": "string",
               "minLength": 1
             }
+          },
+          "arguments": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SuppliedArguments"
+            },
+            "description": "Values for the asked arguments of the templates the capture's trigger tags fire, keyed by tag.",
+            "example": {
+              "route/todo": {
+                "heading": "Next"
+              }
+            }
           }
         },
         "required": [
@@ -732,6 +744,16 @@
           "payload"
         ],
         "additionalProperties": false
+      },
+      "SuppliedArguments": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Values for the template's asked arguments, by field name. Taken literally rather than expanded; a blank one falls back to the default. A field the template does not ask for is refused.",
+        "example": {
+          "heading": "Next"
+        }
       },
       "ItemSlice": {
         "type": "object",
@@ -1012,6 +1034,16 @@
         "properties": {
           "tag": {
             "type": "string"
+          },
+          "arguments": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuppliedArguments"
+              },
+              {
+                "description": "Values for the asked arguments of the template this tag fires. Ignored where the tag fires nothing."
+              }
+            ]
           }
         },
         "required": [
@@ -1876,6 +1908,24 @@
             "type": "object",
             "additionalProperties": {}
           },
+          "asked": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.",
+            "example": {
+              "heading": {
+                "label": "list"
+              }
+            }
+          },
           "folder": {
             "type": "string",
             "enum": [
@@ -1934,6 +1984,24 @@
           "arguments": {
             "type": "object",
             "additionalProperties": {}
+          },
+          "asked": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.",
+            "example": {
+              "heading": {
+                "label": "list"
+              }
+            }
           },
           "folder": {
             "type": "string",
@@ -2129,6 +2197,24 @@
             "type": "object",
             "additionalProperties": {}
           },
+          "asked": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "Fields left to be supplied each time the template is applied, by name. A field's default is what `arguments` holds for it; a field `arguments` leaves out has none.",
+            "example": {
+              "heading": {
+                "label": "list"
+              }
+            }
+          },
           "folder": {
             "type": "string",
             "enum": [
@@ -2217,6 +2303,9 @@
                 "minLength": 1,
                 "description": "One of the ids `GET /v1/templates` reports.",
                 "example": "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77"
+              },
+              "arguments": {
+                "$ref": "#/components/schemas/SuppliedArguments"
               },
               "content": {
                 "type": "object",
@@ -6540,7 +6629,8 @@
                             "trigger-tag-invalid",
                             "trigger-tag-unreserved",
                             "unknown-pattern-field",
-                            "unknown-pattern-format"
+                            "unknown-pattern-format",
+                            "asked-invalid"
                           ]
                         }
                       },
@@ -6797,7 +6887,8 @@
                             "trigger-tag-invalid",
                             "trigger-tag-unreserved",
                             "unknown-pattern-field",
-                            "unknown-pattern-format"
+                            "unknown-pattern-format",
+                            "asked-invalid"
                           ]
                         }
                       },
@@ -7103,7 +7194,7 @@
             }
           },
           "422": {
-            "description": "The destination, the capability, the payload type or the arguments were declined. Nothing was written.",
+            "description": "The destination, the capability, the payload type, the arguments or the values given for a template's asked ones were declined. Nothing was written.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7123,7 +7214,9 @@
                             "unknown-payload-type",
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
-                            "unreachable"
+                            "unreachable",
+                            "argument-not-asked",
+                            "argument-missing"
                           ]
                         }
                       },
@@ -7212,7 +7305,7 @@
             }
           },
           "404": {
-            "description": "No item has that id.",
+            "description": "No item has that id, or no template does.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7225,7 +7318,8 @@
                           "type": "string",
                           "enum": [
                             "no-such-item",
-                            "item-purged"
+                            "item-purged",
+                            "unknown-template"
                           ]
                         }
                       },
@@ -7307,7 +7401,7 @@
             }
           },
           "422": {
-            "description": "The destination, the capability, the payload type or the arguments were declined.",
+            "description": "The destination, the capability, the payload type or the arguments were declined, or a value was given for a field the template does not ask. A value left out is not: the preview is of the decision as far as it was given.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7327,7 +7421,8 @@
                             "unknown-payload-type",
                             "rejected-by-destination",
                             "delivery-outcome-unknown",
-                            "unreachable"
+                            "unreachable",
+                            "argument-not-asked"
                           ]
                         }
                       },

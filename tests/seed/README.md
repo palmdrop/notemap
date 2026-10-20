@@ -48,6 +48,24 @@ routes it after the trigger window. The one-item-per-destination routing below d
 `links` puts a link under that address into each text capture, so a stage's page server has
 something to preview.
 
+A template may carry `asked`, as `POST /v1/templates` takes it, and `firedWith`, the values its
+seeded capture gives for those fields. `firedWith` is the seed's and is not sent with the template.
+
+`notes` are written before any template fires, so a template can file into one: each is captured
+with its `text` and routed by hand to its destination with its `capability` and `arguments`. That is
+the only way `/v1` can put a file somewhere, so each note is also an item in the pool, routed.
+
+```json
+"notes": [
+  {
+    "destination": "Vault",
+    "capability": "create",
+    "arguments": { "filename": "todo.md" },
+    "text": "## Next\n\n- [ ] book the dentist\n\n## Someday\n"
+  }
+]
+```
+
 ## What it leaves behind
 
 Seven captures, deterministic: fixed ids, fixed times, fixed words. Two sit in the queue, one is

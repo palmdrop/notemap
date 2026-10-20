@@ -1,6 +1,7 @@
 import type { ItemId, SourceId, TagName, Timestamp } from "./ids";
 import type { Item } from "./item";
 import type { Payload } from "./payload";
+import type { SuppliedArguments } from "./template";
 
 export type CaptureEnvelope = {
   /** Absent from a source that is re-read rather than replayed; core mints one. */
@@ -17,6 +18,8 @@ export type CaptureEnvelope = {
   readonly utcOffset?: number;
   readonly payload: Payload;
   readonly tags?: readonly TagName[];
+  /** Values for the asked arguments of the templates its trigger tags fire, by tag. */
+  readonly arguments?: Readonly<Record<string, SuppliedArguments>>;
 };
 
 /**

@@ -253,6 +253,32 @@ describe("a capture made from the form", () => {
     await client.close();
   });
 
+  it("sends a trigger tag with the values given for what its template asks", async () => {
+    const transport = mockTransport(taking());
+    const client = createClient({ transport, store: createMemoryStore() });
+
+    await capturing(client, {
+      channel: "raycast",
+      text: "buy milk",
+      files: [],
+      tags: ["reading", "route/todo"],
+      arguments: { "route/todo": { heading: "Next" } },
+    });
+
+    await vi.waitFor(async () => {
+      const bodies = await Promise.all(
+        asked(transport)
+          .filter((request) => routeOf(request).endsWith("/tag"))
+          .map((request) => request.clone().json()),
+      );
+      expect(bodies).toEqual([
+        { tag: "reading" },
+        { tag: "route/todo", arguments: { heading: "Next" } },
+      ]);
+    });
+    await client.close();
+  });
+
   /** A client that answers what each test needs of it, and records what it was asked. */
   function stub(answers: Partial<Client>): {
     readonly client: Client;

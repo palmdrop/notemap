@@ -3,6 +3,7 @@ import { basename, extname } from "node:path";
 
 import type { AssetId, Client, ItemId } from "@notemap/client";
 
+import type { Supplied } from "./asked";
 import { remaining } from "./outbox";
 
 /**
@@ -62,6 +63,8 @@ export type Capturing = {
   readonly text: string;
   readonly files: readonly string[];
   readonly tags: readonly string[];
+  /** By trigger tag, values for what its template asks. */
+  readonly arguments?: Supplied;
 };
 
 /**
@@ -75,7 +78,8 @@ export type Captured =
 
 /**
  * Attaches every file in the order it was picked, captures, then applies the
- * tags one at a time, a tag that fails leaving the capture itself made.
+ * tags one at a time, a tag that fails leaving the capture itself made. A
+ * trigger tag goes with the values given for what its template asks.
  *
  * Bytes attached for a capture that never happened are let go of: a refused
  * capture keeps them, its outbox entry being the only copy of what it carried,
@@ -83,7 +87,7 @@ export type Captured =
  */
 export async function capturing(
   client: Client,
-  { channel, text, files, tags }: Capturing,
+  { channel, text, files, tags, arguments: supplied = {} }: Capturing,
 ): Promise<Captured> {
   // Pushed one at a time, so a file that cannot be held leaves the ones before
   // it to let go of rather than out of reach.
@@ -99,7 +103,7 @@ export async function capturing(
     });
     item = captured.id;
 
-    for (const tag of tags) await client.tag(item, tag);
+    for (const tag of tags) await client.tag(item, tag, supplied[tag]);
     return { kind: "captured", item };
   } catch (error) {
     if (item !== undefined) return { kind: "partly", item, error };

@@ -37,7 +37,7 @@ describe("the fields a schema asks for", () => {
         kind: "text",
         title: "Path",
         description: "Where it goes.",
-        askable: true,
+        listable: true,
         offeredOnly: false,
         inherits: false,
       },
@@ -45,7 +45,7 @@ describe("the fields a schema asks for", () => {
         name: "tags",
         required: false,
         kind: "list",
-        askable: false,
+        listable: false,
         offeredOnly: false,
         inherits: false,
       },
@@ -167,7 +167,7 @@ test("reads a field that may hold only what its destination already has", () => 
     },
   });
 
-  expect(only).toMatchObject({ askable: true, offeredOnly: true });
+  expect(only).toMatchObject({ listable: true, offeredOnly: true });
 });
 
 describe("what a field starts at", () => {

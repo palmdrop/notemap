@@ -1,11 +1,15 @@
-import { layOut, type Fixture } from "./fixtures.ts";
+import {
+  layOut,
+  type Fixture,
+  type FixtureNote,
+  type LaidOut,
+} from "./fixtures.ts";
 import { httpAt, HttpFailure, type Http } from "./http.ts";
 import type {
   CaptureOutcome,
   DestinationDescription,
   Destinations,
   RoutingRecords,
-  Template,
 } from "./types.ts";
 
 export type SeedOptions = {
@@ -48,9 +52,16 @@ type Payload = {
   readonly content: Record<string, unknown>;
   readonly assets?: readonly { slot: string; asset: string }[];
   readonly tags?: readonly string[];
+  /** By trigger tag, what the capture gives for the fields its template asks. */
+  readonly arguments?: Readonly<
+    Record<string, Readonly<Record<string, string>>>
+  >;
 };
 
 const DEFAULT_NAME = "admin";
+
+/** Where the fixture's notes are captured from, clear of every other seeded index. */
+const NOTES_FROM = 30;
 
 const SAID = [
   "the reading list is a graveyard, not a plan",
@@ -117,8 +128,7 @@ export async function seed(
   if (options.password !== undefined) {
     await http.signIn(options.name ?? DEFAULT_NAME, options.password);
   }
-  const templates =
-    fixture === undefined ? undefined : await layOut(http, fixture);
+  const laid = fixture === undefined ? undefined : await layOut(http, fixture);
 
   const linked = (text: string, index: number): string =>
     fixture?.links === undefined
@@ -143,16 +153,36 @@ export async function seed(
         assets: payload.assets ?? [],
       },
       ...(payload.tags === undefined ? {} : { tags: payload.tags }),
+      ...(payload.arguments === undefined
+        ? {}
+        : { arguments: payload.arguments }),
     });
     return outcome.item.id;
   };
 
-  const said = (index: number, tags?: readonly string[]): Promise<string> =>
+  const said = (
+    index: number,
+    tags?: readonly string[],
+    given?: Payload["arguments"],
+  ): Promise<string> =>
     capture(index, {
       type: options.payloadType ?? "note",
       content: { text: linked(SAID[(index - 1) % SAID.length] ?? "", index) },
       ...(tags === undefined ? {} : { tags }),
+      ...(given === undefined ? {} : { arguments: given }),
     });
+
+  // Before anything fires, so a template can file into what they hold.
+  const written =
+    laid === undefined
+      ? []
+      : await writeEach(
+          http,
+          capture,
+          fixture?.notes ?? [],
+          laid.destinations,
+          options,
+        );
 
   const queued = [await said(1), await said(2)];
 
@@ -178,10 +208,45 @@ export async function seed(
     archived: [archived],
     withImage,
     routed:
-      templates === undefined
+      laid === undefined
         ? await routeEach(http, [await said(5), await said(6)], options)
-        : await fireEach(said, templates, 8),
+        : [...written, ...(await fireEach(said, laid.templates, 8))],
   };
+}
+
+/**
+ * Each note captured with its own words and routed where it belongs, by hand,
+ * so the delivery is attempted at once. One already routed is left alone.
+ */
+async function writeEach(
+  http: Http,
+  capture: (index: number, payload: Payload) => Promise<string>,
+  notes: readonly FixtureNote[],
+  destinations: ReadonlyMap<string, string>,
+  options: SeedOptions,
+): Promise<readonly { item: string; destination: string }[]> {
+  const sent: { item: string; destination: string }[] = [];
+
+  for (const [at, note] of notes.entries()) {
+    const destination = destinations.get(note.destination);
+    if (destination === undefined) continue;
+
+    const item = await capture(NOTES_FROM + at, {
+      type: options.payloadType ?? "note",
+      content: { text: note.text },
+    });
+    const records = await http.get<RoutingRecords>(`/v1/items/${item}/routing`);
+    if (records.values.length === 0) {
+      await http.post(`/v1/items/${item}/route`, {
+        destination,
+        capability: note.capability,
+        arguments: note.arguments,
+      });
+    }
+    sent.push({ item, destination });
+  }
+
+  return sent;
 }
 
 /**
@@ -189,16 +254,27 @@ export async function seed(
  * A capture already made matches rather than firing a second time.
  */
 async function fireEach(
-  said: (index: number, tags?: readonly string[]) => Promise<string>,
-  templates: readonly Template[],
+  said: (
+    index: number,
+    tags?: readonly string[],
+    given?: Payload["arguments"],
+  ) => Promise<string>,
+  templates: readonly LaidOut[],
   from: number,
 ): Promise<readonly { item: string; destination: string }[]> {
   const sent: { item: string; destination: string }[] = [];
 
-  for (const [at, template] of templates.entries()) {
-    if (template.triggerTag === undefined) continue;
-    const item = await said(from + at, [template.triggerTag]);
-    sent.push({ item, destination: template.destination });
+  for (const [at, { fixture, held }] of templates.entries()) {
+    const tag = held.triggerTag;
+    if (tag === undefined) continue;
+    const item = await said(
+      from + at,
+      [tag],
+      fixture.firedWith === undefined
+        ? undefined
+        : { [tag]: fixture.firedWith },
+    );
+    sent.push({ item, destination: held.destination });
   }
 
   return sent;

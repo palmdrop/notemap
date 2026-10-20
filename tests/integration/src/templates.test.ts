@@ -158,7 +158,9 @@ describe("what a template would route an item as", () => {
       ),
     );
 
-    expect(await pool.templates.resolve(item.id, template.id)).toEqual({
+    expect(
+      succeeded(await pool.templates.resolve(item.id, template.id)),
+    ).toEqual({
       destination: VAULT,
       capability: CREATE_NOTE,
       arguments: { path: "research/2026-09-05.md" },
@@ -175,13 +177,28 @@ describe("what a template would route an item as", () => {
     expect(await pool.routing.recordsFor(item.id)).toEqual([]);
   });
 
-  it("says nothing about a template that is not there", async () => {
+  it("refuses a template that is not there", async () => {
     const { pool } = await pooled();
     const item = captured(await pool.capture(envelope()));
 
     expect(
       await pool.templates.resolve(item.id, "tpl-nobody" as RoutingTemplateId),
-    ).toBeUndefined();
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "unknown-template", template: "tpl-nobody" },
+    });
+  });
+
+  it("refuses an item that is not there", async () => {
+    const { pool } = await pooled();
+    const template = succeeded(await pool.templates.create(draft()));
+
+    expect(
+      await pool.templates.resolve("nobody" as ItemId, template.id),
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "no-such-item", item: "nobody" },
+    });
   });
 });
 
@@ -191,9 +208,11 @@ describe("the folder a template asks for", () => {
     const template = succeeded(await pool.templates.create(draft()));
     const item = captured(await pool.capture(envelope()));
 
-    const resolved = await pool.templates.resolve(item.id, template.id);
+    const resolved = succeeded(
+      await pool.templates.resolve(item.id, template.id),
+    );
 
-    expect(resolved?.arguments["folder"]).toBeUndefined();
+    expect(resolved.arguments["folder"]).toBeUndefined();
   });
 
   it("asks for the folder outright where it requires one", async () => {
@@ -203,9 +222,11 @@ describe("the folder a template asks for", () => {
     );
     const item = captured(await pool.capture(envelope()));
 
-    const resolved = await pool.templates.resolve(item.id, template.id);
+    const resolved = succeeded(
+      await pool.templates.resolve(item.id, template.id),
+    );
 
-    expect(resolved?.arguments["folder"]).toBe("require");
+    expect(resolved.arguments["folder"]).toBe("require");
   });
 
   it("creates once and requires after, which is what establish means", async () => {
@@ -216,12 +237,16 @@ describe("the folder a template asks for", () => {
     const first = captured(await pool.capture(envelope({ id: "item-1" })));
     const second = captured(await pool.capture(envelope({ id: "item-2" })));
 
-    const before = await pool.templates.resolve(first.id, template.id);
+    const before = succeeded(
+      await pool.templates.resolve(first.id, template.id),
+    );
     succeeded(await pool.templates.route(first.id, template.id));
-    const after = await pool.templates.resolve(second.id, template.id);
+    const after = succeeded(
+      await pool.templates.resolve(second.id, template.id),
+    );
 
-    expect(before?.arguments["folder"]).toBeUndefined();
-    expect(after?.arguments["folder"]).toBe("require");
+    expect(before.arguments["folder"]).toBeUndefined();
+    expect(after.arguments["folder"]).toBe("require");
     expect((await pool.templates.get(template.id))?.establishedAt).toEqual(
       expect.any(String),
     );
@@ -1149,5 +1174,305 @@ describe("a destination that is not filesystem-shaped", () => {
     );
 
     expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
+  });
+});
+
+/**
+ * One template for a todo list whose headings change: the heading is left to be
+ * supplied each time the template is applied, beside the tag rather than in it.
+ */
+describe("a template that asks for an argument", () => {
+  const TODO = "route/todo" as TagName;
+
+  const HEADING_SCHEMA = {
+    type: "object",
+    required: ["path", "heading"],
+    properties: {
+      path: { type: "string" },
+      heading: { type: "string" },
+      conversion: { type: "string", enum: ["block", "task"] },
+      folder: { type: "string", enum: ["create", "require"] },
+    },
+    additionalProperties: false,
+  };
+
+  async function asking(overrides: Partial<RoutingTemplateDraft> = {}) {
+    const opened = await pooled(HEADING_SCHEMA);
+    const template = succeeded(
+      await opened.pool.templates.create(
+        draft({
+          triggerTag: TODO,
+          arguments: { path: "todo.md" },
+          asked: { heading: { label: "list" } },
+          ...overrides,
+        }),
+      ),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    return { ...opened, template, item };
+  }
+
+  const argumentsOf = async (pool: Pool, item: ItemId) =>
+    (await pool.routing.recordsFor(item))[0]?.target;
+
+  it("keeps what it asks for, with the label a person reads", async () => {
+    const { pool, template } = await asking();
+
+    expect((await pool.templates.get(template.id))?.asked).toEqual({
+      heading: { label: "list" },
+    });
+  });
+
+  it("refuses to ask for the folder mode, which is core's to write", async () => {
+    const { pool } = await pooled(HEADING_SCHEMA);
+
+    expect(
+      await pool.templates.create(draft({ asked: { folder: {} } })),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "asked-invalid", field: "folder" },
+    });
+  });
+
+  it("stops asking where an edit asks for nothing", async () => {
+    const { pool, template } = await asking();
+
+    const edited = succeeded(
+      await pool.templates.edit(template.id, { asked: {} }),
+    );
+
+    expect(edited.asked).toBeUndefined();
+  });
+
+  it("files under the value a tag was given", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { path: "todo.md", heading: "Next" },
+    });
+  });
+
+  it("takes the value literally rather than as a pattern", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "{{captured_at}}" },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "{{captured_at}}" },
+    });
+  });
+
+  it("files under the default where the tag was given nothing", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md", heading: "Inbox" },
+    });
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Inbox" },
+    });
+  });
+
+  it("reads a blank value as none, and falls back to the default", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md", heading: "Inbox" },
+    });
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "  " },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Inbox" },
+    });
+  });
+
+  it("refuses a tag given nothing where there is no default, and writes nothing", async () => {
+    const { pool, item, template } = await asking();
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: {
+        kind: "trigger-refused",
+        template: template.id,
+        detail: "argument-missing: heading",
+      },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await queued(pool)).toEqual([item.id]);
+  });
+
+  it("reads a blank default as none, and refuses a tag given nothing", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md", heading: " " },
+    });
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-missing: heading" },
+    });
+  });
+
+  it("refuses a value named like something every object has", async () => {
+    const { pool, item } = await asking();
+
+    expect(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next", constructor: "x" },
+      }),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-not-asked: constructor" },
+    });
+  });
+
+  it("refuses a value for a field the template fixes", async () => {
+    const { pool, item } = await asking();
+
+    expect(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next", path: "elsewhere.md" },
+      }),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-not-asked: path" },
+    });
+  });
+
+  it("validates the value against the capability, as a hand-made route is", async () => {
+    const { pool, item } = await asking({
+      arguments: { path: "todo.md" },
+      asked: { conversion: {}, heading: {} },
+    });
+
+    expect(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next", conversion: "fold" },
+      }),
+    ).toMatchObject({
+      kind: "refused",
+      refusal: { kind: "trigger-refused" },
+    });
+  });
+
+  it("says where it filed, in the log, so the status line can", async () => {
+    const { pool, item } = await asking();
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    const fired = (await logFor(pool, item.id)).find(
+      (action) => action.kind === "template-fired",
+    );
+    expect(fired?.detail).toMatchObject({ arguments: { heading: "Next" } });
+  });
+
+  it("fires from a capture that carries the value beside its tags", async () => {
+    const { pool } = await asking();
+
+    const item = captured(
+      await pool.capture({
+        ...envelope({ sourceItemId: "src-2", tags: [TODO] }),
+        arguments: { [TODO]: { heading: "Next" } },
+      }),
+    );
+
+    expect(await argumentsOf(pool, item.id)).toMatchObject({
+      arguments: { heading: "Next" },
+    });
+  });
+
+  it("drops a capture's tag that was given nothing and has no default", async () => {
+    const { pool } = await asking();
+
+    const item = captured(
+      await pool.capture(envelope({ sourceItemId: "src-2", tags: [TODO] })),
+    );
+
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+  });
+
+  it("is applied as the template from the composer, with the value", async () => {
+    const { pool, item, template } = await asking();
+
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    expect(record.applied).toEqual({
+      template: template.id,
+      firedByTag: false,
+    });
+    expect(record.target).toMatchObject({ arguments: { heading: "Next" } });
+  });
+
+  it("resolves as far as it was given, refusing nothing missing", async () => {
+    const { pool, item, template } = await asking();
+
+    expect(
+      succeeded(await pool.templates.resolve(item.id, template.id)).arguments,
+    ).toEqual({ path: "todo.md" });
+    expect(
+      succeeded(
+        await pool.templates.resolve(item.id, template.id, {
+          heading: "Next",
+        }),
+      ).arguments,
+    ).toEqual({ path: "todo.md", heading: "Next" });
+  });
+
+  it("refuses to resolve with a value for a field the template fixes", async () => {
+    const { pool, item, template } = await asking();
+
+    expect(
+      await pool.templates.resolve(item.id, template.id, {
+        path: "elsewhere.md",
+      }),
+    ).toEqual({
+      kind: "refused",
+      refusal: { kind: "argument-not-asked", field: "path" },
+    });
+  });
+
+  it("fits where the only gap is the field it asks for", async () => {
+    const { pool, template } = await asking();
+
+    expect(await pool.templates.report(template.id)).toEqual({ kind: "fits" });
+  });
+
+  it("reports a field the capability does not declare as a string", async () => {
+    const { pool } = await pooled(HEADING_SCHEMA);
+    const template = succeeded(
+      await pool.templates.create(
+        draft({
+          arguments: { path: "todo.md", heading: "Inbox" },
+          asked: { position: {} },
+        }),
+      ),
+    );
+
+    expect(await pool.templates.report(template.id)).toEqual({
+      kind: "arguments-invalid",
+      issues: [{ path: "/position", keyword: "asked" }],
+    });
   });
 });

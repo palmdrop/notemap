@@ -2,6 +2,7 @@ import type { Context } from "hono";
 
 import type {
   CapabilityName,
+  DeliveryRequest,
   DestinationId,
   ItemId,
   JsonObject,
@@ -17,6 +18,7 @@ import {
   errorBody,
   outputStatus,
   routingStatus,
+  templateResolveStatus,
   templateRoutingStatus,
 } from "../errors/refusals";
 import {
@@ -87,10 +89,14 @@ export function routeHandler(pool: Pool) {
     const content = body.value.content as JsonObject | undefined;
 
     if ("template" in body.value) {
+      const supplied = body.value.arguments;
       const applied = await pool.templates.route(
         id as ItemId,
         body.value.template as RoutingTemplateId,
-        content === undefined ? undefined : { content },
+        {
+          ...(content === undefined ? {} : { content }),
+          ...(supplied === undefined ? {} : { arguments: supplied }),
+        },
       );
 
       return applied.kind === "refused"
@@ -126,33 +132,29 @@ export function previewHandler(pool: Pool) {
 
     // A template is resolved first and previewed as what it resolved to:
     // previewing one costs nothing the composer does not already ask for.
-    const resolved =
-      "template" in body.value
-        ? await pool.templates.resolve(
-            id as ItemId,
-            body.value.template as RoutingTemplateId,
-          )
-        : {
-            destination: body.value.destination as DestinationId,
-            capability: body.value.capability as CapabilityName,
-            arguments: body.value.arguments as JsonObject,
-          };
-
-    const request =
-      resolved === undefined || content === undefined
-        ? resolved
-        : { ...resolved, content };
-
-    if (request === undefined) {
-      return json(
-        errorBody({
-          kind: "unknown-template",
-          template: (body.value as { template: string })
-            .template as RoutingTemplateId,
-        }),
-        404,
+    let resolved: DeliveryRequest;
+    if ("template" in body.value) {
+      const from = await pool.templates.resolve(
+        id as ItemId,
+        body.value.template as RoutingTemplateId,
+        body.value.arguments,
       );
+      if (from.kind === "refused") {
+        return json(
+          errorBody(from.refusal),
+          templateResolveStatus(from.refusal),
+        );
+      }
+      resolved = from.value;
+    } else {
+      resolved = {
+        destination: body.value.destination as DestinationId,
+        capability: body.value.capability as CapabilityName,
+        arguments: body.value.arguments as JsonObject,
+      };
     }
+
+    const request = content === undefined ? resolved : { ...resolved, content };
 
     const result = await pool.routing.preview(
       id as ItemId,

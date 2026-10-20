@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-16
+**Last updated**: 2026-10-19
 **Shipped**:
+
+- 2026-10-19 — **A trigger tag asks what its template asks before it lands.** The template form
+  marks a field asked with the `ask` at the end of its line; the tag chooser then asks for each in turn, offering a fixed set or
+  what the destination lists, on the row, in the capture box and in a held edit. The process surface
+  draws a taken template's asked fields open with the caret in the first, and the status line says
+  where a firing goes. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 
 - 2026-10-16 — **One place line in the composer and the template form, and `⏎` never routes.** A
   template's path field draws the composer's typed line rather than the schema-driven browser,
@@ -1190,8 +1196,19 @@ that cannot apply is drawn with its reason and not removed** — stranded, its d
 (`its destination is disabled`), its capability no longer declared. A template is the person's own
 decision, and hiding it because of a setting elsewhere is the worse surprise. Never a pattern: expansion is statically total.
 
+**A taken template that asks for something draws those fields open** *(2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*, under the
+read-only place, each under its label with the control its field draws anywhere else here — the
+note's headings to pick from, a fixed set to choose among, a line to type — and holding the default
+it resolved with. The first takes the caret, being the one thing left to decide. `route` waits until
+each holds a value, and commits as the template with them: changing what it asks is applying it,
+and only correcting what it fixed makes the decision the person's own. The place line leaves the
+asked fields out.
+
 **A trigger tag taken in the surface's own tags section files the item**, and the surface moves on
-rather than leaving a second decision half-made beside a route already on its way. Said on the
+rather than leaving a second decision half-made beside a route already on its way. *Amended
+2026-10-19*: one whose template asks for something files nothing there; it takes the template in
+`place`, which is where this surface asks. Said on the
 press rather than on the pool's answer, so whoever is holding a half-made decision is told before
 they can press it into a second copy.
 
@@ -1969,6 +1986,30 @@ on another device since is drawn unmarked until the templates are read again. Dr
 that turns out to file something is the wrong direction to be wrong in, and the honest fix is
 reading the list rather than guessing; nothing here pretends to know more than it read.
 
+**A trigger tag whose template asks for something asks before it lands** *(2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. Taking it
+does not put it on the item: the chooser's own line asks for each asked field in turn, named by its
+label, with the default as the line's placeholder, and its panel is headed by the tag, the
+template and the label, above the list rather than in it, the line described by it. What the panel
+offers is the field's own: the values a fixed field allows, and nothing else; for a field the
+destination can list, what it lists — a note's headings, asked with the note an earlier step gave,
+else the template's own — and, typed into, the typed words as a `+` row of their own, so a heading
+that is not there yet is taken knowingly; for any other field, nothing, the line being typed. Words
+typed as a listed row reads or as its value are that row, not a `+` one. An entry that is only
+somewhere to look further, a folder, is not offered, and **a place is typed**, since a list one
+level deep is no way to walk it. Where the field the list depends on holds a pattern there is no
+one note to ask about, and the line is typed. `⏎` takes the walked row, else what was typed, else the default on an empty
+line; with no default an empty line stays and asks again. `esc` steps back a field, then back to
+the tags; leaving the line takes nothing. **The tag lands with its values once the last is
+given**, as one operation, which is the same whether it drains now or tomorrow. The destination is
+asked to describe itself for at most two seconds first, and one that does not answer leaves every
+field typed. **Below `narrow` the panel is a sheet across the foot of the screen** while it asks.
+
+**A trigger tag carried with values says them after it** — `route/todo` then `list Next`, label
+then value, a value left out reading as the default it will take — wherever the tag has not yet
+gone: in the capture box, and on a row whose edit holds it until the save. A tag already on an item
+says nothing more: where it filed is on the routing line.
+
 Describing a destination is I/O that can hang on an unmounted drive, so **only the chosen one is
 ever described** — which is why a destination is settled before anything is asked of it, rather
 than a flattened destination×capability list being offered up front.
@@ -2201,7 +2242,9 @@ Putting a trigger tag on an item reserves a delivery and waits a configured wind
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
 Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
-**`research`**, the seconds left in the window, and **`cancel`**. It names the **template**, not the
+**`research`**, the seconds left in the window, and **`cancel`**. Where the template asked for
+something, what it was given follows the name, label then value — `routing **todo** list Next`
+*(2026-10-19)* — read from the record the tag made, or from `template-fired`'s `arguments`. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
@@ -2472,6 +2515,15 @@ field)*, `used` naming the count and when it last fired. The place leaves those 
 line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again` and `edit`, with `delete` at the right.
+
+**A template may ask for a field each time it is applied** *(2026-10-19,
+[ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. In the form,
+every field that holds text ends in an `ask` option; taken, the field's label turns into a line to
+rename it by, blank meaning the field's own title, held where the label was as whatever the field
+lists opens below, and whatever the field holds becomes the default, which may be left empty. An
+asked field with none says `no default` under its value; a destination's own setting is not one.
+The line names an asked field nowhere in the place and ends `asks each time` instead; opened, each asked field is a fact of its own under its label, reading `asked each time` and the
+default or `no default`.
 
 **Accounts** sits under Destinations *(2026-09-23)*: the logins the daemon holds on other systems,
 under a sub-head per kind. Each is one row: its name, then its fields in bold, then `secret set` or `no secret`

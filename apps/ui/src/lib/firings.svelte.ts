@@ -6,6 +6,8 @@ export type Firing = {
   readonly item: string;
   /** The template's name: what the person pressed. */
   readonly name: string;
+  /** Where the values given for what it asks put the item, label then value. */
+  readonly where?: string;
   /** When the window closes, in epoch milliseconds, where the shell was told. */
   readonly until?: number;
   /** Where the whole of it can be read. */

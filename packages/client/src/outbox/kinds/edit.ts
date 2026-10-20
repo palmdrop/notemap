@@ -1,13 +1,22 @@
 import { answered } from "#api/http";
-import type { Item, ItemId, Tag } from "#api/types";
+import type { Item, ItemId, SuppliedArguments, Tag } from "#api/types";
 import { uploaded } from "#assets/assets";
 import { unchanged, type Applied } from "#state/applied";
 import { cached, reconciled, revised, type ClientState } from "#state/state";
 import { replacing, type Handler, type Landed } from "../handler";
 import type { Operation } from "../operations";
 
-function tagging(item: ItemId, tags: readonly string[]): readonly Operation[] {
-  return tags.map((tag) => ({ kind: "tag", item, tag }));
+function tagging(
+  item: ItemId,
+  tags: readonly string[],
+  supplied: Readonly<Record<string, SuppliedArguments>> = {},
+): readonly Operation[] {
+  return tags.map((tag) => {
+    const values = supplied[tag];
+    return values === undefined
+      ? { kind: "tag", item, tag }
+      : { kind: "tag", item, tag, arguments: values };
+  });
 }
 
 export const edit: Handler<"edit"> = {
@@ -82,7 +91,7 @@ export const edit: Handler<"edit"> = {
     if (outcome.kind === "amended") {
       return {
         settle: replacing(outcome.item),
-        next: tagging(outcome.item.id, tags),
+        next: tagging(outcome.item.id, tags, operation.arguments),
       };
     }
 
@@ -91,7 +100,7 @@ export const edit: Handler<"edit"> = {
     return {
       settle: (state: ClientState, revert) =>
         revised(revert(state), operation.item, revision),
-      next: tagging(revision.id, tags),
+      next: tagging(revision.id, tags, operation.arguments),
     };
   },
 };

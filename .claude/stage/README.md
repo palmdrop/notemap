@@ -16,7 +16,13 @@ notemap built from one branch, with something at every destination and a pool al
 
 `seed` makes three destinations (a filesystem vault, a WebDAV folder, an are.na channel) and a
 routing template for each, then captures the usual seed items plus one per template carrying its
-trigger tag. Those three are routed by the pool, and land once the trigger window has passed. Each
+trigger tag. Those are routed by the pool, and land once the trigger window has passed.
+
+The vault also holds `todo.md`, a list under four headings, and a fourth template, `Todo`
+(`route/todo`), that files a capture into it as a task under a heading **asked each time**. Its
+seeded capture gives `Next`. Tagging an item `route/todo` in the shell asks for the heading,
+listing the note's own. `todo.md` is written by a capture routed there by hand, so it is in the
+feed as a routed item too. Each
 text capture links to `pages`, so it has a preview. `edge` waits for `seed` to finish, so the URL
 answers only once the pool is seeded.
 

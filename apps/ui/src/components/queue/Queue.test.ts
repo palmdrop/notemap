@@ -10,7 +10,7 @@ import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
@@ -1774,4 +1774,50 @@ test("the index reads by day too: headings, the time alone, and no gap", async (
   await tick();
   expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
   expect(container.querySelectorAll("[data-gap]")).toHaveLength(1);
+});
+
+test("a trigger tag on a row asks what its template asks, and sends it with the tag", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/templates") {
+      return json(200, {
+        values: [
+          {
+            id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a90",
+            name: "todo",
+            destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+            capability: "append",
+            arguments: { path: "todo.md" },
+            asked: { heading: { label: "list" } },
+            folder: "create",
+            triggerTag: "route/todo",
+            fired: { records: 0 },
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [] });
+    }
+    return queued("one")(request);
+  });
+  await client.templates.load();
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "j" });
+  await tagWith("route/todo");
+
+  const line = await screen.findByRole("combobox", { name: "list" });
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
+  await fireEvent.input(line, { target: { value: "Next" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(await sent()).toContainEqual({
+    tag: "route/todo",
+    arguments: { heading: "Next" },
+  });
 });

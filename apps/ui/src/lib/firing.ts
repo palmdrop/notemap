@@ -2,6 +2,7 @@ import type { RoutingRecord, RoutingTemplate } from "@notemap/client";
 
 import { itemHref } from "$components/item/href";
 
+import { whereOf, type Supplied } from "./asked";
 import { client } from "./client";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
@@ -37,8 +38,12 @@ export function cancelRouting(
 }
 
 /** Tags an item, and says what the tag filed where it filed something. */
-export async function tagged(item: string, tag: string): Promise<void> {
-  await client.tag(item, tag);
+export async function tagged(
+  item: string,
+  tag: string,
+  supplied?: Supplied,
+): Promise<void> {
+  await client.tag(item, tag, supplied);
   await sayItFired(item, tag);
 }
 
@@ -68,10 +73,15 @@ export async function sayItFired(item: string, tag: string): Promise<void> {
   if (fired === undefined) return;
 
   const until = await windowOf(item, fired.id);
+  const where =
+    fired.target.kind === "destination"
+      ? whereOf(template.id, fired.target.arguments)
+      : undefined;
   firings.opened({
     record: fired.id,
     item,
     name: nameOf(template.id),
+    ...(where === undefined ? {} : { where }),
     href: itemHref(item),
     ...(until === undefined ? {} : { until }),
   });

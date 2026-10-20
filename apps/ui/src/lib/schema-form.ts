@@ -10,7 +10,7 @@ export type Field = {
   readonly title?: string;
   readonly description?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
-  readonly askable: boolean;
+  readonly listable: boolean;
   /**
    * Carries `x-notemap-candidates-given`: the fields the answer depends on, so
    * a browse waits until they are filled and carries them when it asks.
@@ -110,7 +110,7 @@ export function fieldsOf(schema: Schema): readonly Field[] {
           ? { description: meta["description"] }
           : {}),
         ...(preset === undefined ? {} : { preset, fallback: meta["default"] }),
-        askable: meta["x-notemap-candidates"] === true,
+        listable: meta["x-notemap-candidates"] === true,
         ...(given === undefined ? {} : { given }),
         offeredOnly: meta["x-notemap-offered-only"] === true,
         inherits: meta["x-notemap-inherits"] === true,

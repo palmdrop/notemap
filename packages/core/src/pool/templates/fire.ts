@@ -1,6 +1,6 @@
 import { recordAction } from "../actions";
 import { checkFor } from "../routing/prepare";
-import { requestFor } from "./apply";
+import { requestFor, withSupplied } from "./apply";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type {
@@ -13,7 +13,11 @@ import type {
 } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { RoutingRecord } from "#types/domain/routing";
-import type { RoutingTemplate } from "#types/domain/template";
+import type {
+  RoutingTemplate,
+  SuppliedArguments,
+} from "#types/domain/template";
+import type { JsonObject, JsonValue } from "#types/json";
 import { later } from "#utils/time";
 
 /**
@@ -42,9 +46,19 @@ export async function firingFor(
   ports: PoolPorts,
   item: Item,
   template: RoutingTemplate,
+  supplied: SuppliedArguments | undefined,
   signal?: AbortSignal,
 ): Promise<Firing> {
-  const request = requestFor(config, item, template);
+  const supplying = withSupplied(
+    template,
+    requestFor(config, item, template),
+    supplied,
+  );
+  if (supplying.kind === "refused") {
+    return { kind: "refused", detail: said(supplying.refusal) };
+  }
+
+  const request = supplying.value;
   const checked = await checkFor(config, ports, item, request, signal);
 
   if (checked.kind === "refused" && checked.refusal.kind !== "unreachable") {
@@ -108,8 +122,30 @@ export async function fire(
       tag,
       // When the window closes, so a shell can say how long is left to cancel.
       until,
+      ...askedIn(record, template),
     },
   });
+}
+
+/** What the asked arguments came out as, given or defaulted, so a shell can say where. */
+function askedIn(
+  record: RoutingRecord,
+  template: RoutingTemplate,
+): { arguments?: JsonObject } {
+  if (template.asked === undefined || record.target.kind !== "destination") {
+    return {};
+  }
+  const args = record.target.arguments;
+  const asked = Object.keys(template.asked).filter((field) =>
+    Object.hasOwn(args, field),
+  );
+  return asked.length === 0
+    ? {}
+    : {
+        arguments: Object.fromEntries(
+          asked.map((field) => [field, args[field] as JsonValue]),
+        ),
+      };
 }
 
 /**
@@ -175,8 +211,7 @@ export async function releaseTriggerTag(
 }
 
 function said(refusal: { readonly kind: string }): string {
-  const detail = (refusal as { detail?: unknown }).detail;
-  return typeof detail === "string"
-    ? `${refusal.kind}: ${detail}`
-    : refusal.kind;
+  const { detail, field } = refusal as { detail?: unknown; field?: unknown };
+  const about = typeof detail === "string" ? detail : field;
+  return typeof about === "string" ? `${refusal.kind}: ${about}` : refusal.kind;
 }

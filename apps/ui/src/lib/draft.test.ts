@@ -101,6 +101,53 @@ describe("the capture draft", () => {
     expect(told).toHaveBeenCalledOnce();
   });
 
+  it("reads back what was given a trigger tag, for a tag still held", () => {
+    writeDraft({
+      text: "a thought",
+      tags: ["route/todo"],
+      arguments: { "route/todo": { heading: "Next" } },
+    });
+
+    expect(readDraft().arguments).toEqual({
+      "route/todo": { heading: "Next" },
+    });
+  });
+
+  it("drops what was given a tag no longer held, or anything not a string", () => {
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        text: "a thought",
+        tags: ["route/todo"],
+        arguments: {
+          "route/todo": { heading: 3 },
+          "route/gone": { heading: "Next" },
+        },
+      }),
+    );
+
+    expect(readDraft()).toEqual({ text: "a thought", tags: ["route/todo"] });
+  });
+
+  it("puts back what a capture gave its tags beside what the box gave its own", () => {
+    writeDraft({
+      text: "mine",
+      tags: ["route/todo"],
+      arguments: { "route/todo": { heading: "Next" } },
+    });
+
+    restoreDraft({
+      text: "refused",
+      tags: ["route/journal"],
+      arguments: { "route/journal": { day: "monday" } },
+    });
+
+    expect(readDraft().arguments).toEqual({
+      "route/todo": { heading: "Next" },
+      "route/journal": { day: "monday" },
+    });
+  });
+
   it("puts attachments back after the ones the box already holds", () => {
     const shot = new File(["bytes"], "shot.png", { type: "image/png" });
     const paper = new File(["%PDF"], "paper.pdf", { type: "application/pdf" });
