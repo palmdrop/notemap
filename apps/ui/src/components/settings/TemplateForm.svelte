@@ -41,6 +41,14 @@
     done: () => void;
   } = $props();
 
+  const id = $props.id();
+
+  /** Where an asked field says it has no default, for the inputs that ask it to be read out. */
+  const undefaulted = (field: Field): string | undefined =>
+    Object.hasOwn(asked, field.name) && (typed[field.name] ?? "") === ""
+      ? `${id}-${field.name}-default`
+      : undefined;
+
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
 
   const PATTERNS = [
@@ -81,7 +89,7 @@
   );
 
   function ask(field: string): void {
-    if (field in asked) {
+    if (Object.hasOwn(asked, field)) {
       const { [field]: _dropped, ...rest } = asked;
       asked = rest;
     } else {
@@ -214,7 +222,7 @@
   function asking(): Record<string, { label?: string }> {
     return Object.fromEntries(
       typeable
-        .filter((field) => askable(field) && field.name in asked)
+        .filter((field) => askable(field) && Object.hasOwn(asked, field.name))
         .map((field) => {
           const label = (asked[field.name] ?? "").trim();
           return [field.name, label === "" ? {} : { label }];
@@ -350,10 +358,11 @@
   {/if}
 
   {#each typeable as field (field.name)}
-    {#if field.name in asked}
+    {#if Object.hasOwn(asked, field.name)}
       <input
         bind:value={asked[field.name]}
         aria-label={`${field.title ?? field.name} label`}
+        aria-describedby={undefaulted(field)}
         placeholder={field.title ?? field.name}
         class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
       />
@@ -384,7 +393,7 @@
               />
             {/each}
           </div>
-        {:else if field.askable && destination !== "" && field.path !== undefined}
+        {:else if field.listable && destination !== "" && field.path !== undefined}
           <!-- No forecast and no remembered continuation: a pattern names no
              one note, so neither has anything to read off it. -->
           <PathLine
@@ -396,7 +405,7 @@
             claims={false}
             onchange={(value) => (typed[field.name] = value)}
           />
-        {:else if field.askable && destination !== ""}
+        {:else if field.listable && destination !== ""}
           <!--
           `durable`, because this is the decision that fires again: a template
           sits on a tag for months, and a value that rots takes the template
@@ -424,7 +433,8 @@
           <input
             bind:value={typed[field.name]}
             aria-label={field.title ?? field.name}
-            placeholder={field.name in asked
+            aria-describedby={undefaulted(field)}
+            placeholder={Object.hasOwn(asked, field.name)
               ? undefined
               : field.required
                 ? "required"
@@ -432,9 +442,9 @@
             class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
           />
         {/if}
-        {#if field.name in asked && (typed[field.name] ?? "") === ""}
+        {#if undefaulted(field) !== undefined}
           <!-- Only the template's own value is a default: a destination's setting is not. -->
-          <p>no default</p>
+          <p id={undefaulted(field)}>no default</p>
         {/if}
       </div>
       {#if askable(field)}
@@ -442,7 +452,7 @@
           <Option
             label="ask"
             name={`ask ${field.title ?? field.name} each time`}
-            chosen={field.name in asked}
+            chosen={Object.hasOwn(asked, field.name)}
             onchoose={() => ask(field.name)}
           />
         </span>

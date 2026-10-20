@@ -6,7 +6,7 @@ import type { Said } from "$lib/forecast";
 import type { Field } from "$lib/schema-form";
 
 /**
- * A control for one askable field, and the whole of it — the text the field
+ * A control for one listable field, and the whole of it — the text the field
  * holds is typed into the control rather than into an input beside it. Two
  * places holding one value is what the composer used to do, and neither could
  * see the other.

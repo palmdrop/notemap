@@ -979,7 +979,7 @@
 
 {#snippet control(field: (typeof fields)[number])}
   {@const title = field.title ?? field.name}
-  {#if field.askable && chosen !== undefined && capability !== undefined}
+  {#if field.listable && chosen !== undefined && capability !== undefined}
     {@const Browser = browserFor(field)}
     <Browser
       destination={chosen}

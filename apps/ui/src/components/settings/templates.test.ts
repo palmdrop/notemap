@@ -1248,7 +1248,9 @@ test("asks for a field each time, under a label, leaving it without a default", 
       .getByRole("button", { name: "ask directory each time" })
       .getAttribute("aria-pressed"),
   ).toBe("true");
-  expect(screen.getByText("no default")).toBeTruthy();
+  expect(
+    screen.getByLabelText("directory label").getAttribute("aria-describedby"),
+  ).toBe(screen.getByText("no default").id);
   await fireEvent.input(await screen.findByLabelText("directory label"), {
     target: { value: "project" },
   });

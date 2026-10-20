@@ -548,7 +548,9 @@ test("a tag set that cannot be added to still holds the +'s place, unreachable",
 test("the offer's panel grows and shrinks with the narrowing, from the height it stood at", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();
-  const list = screen.getByRole("listbox", { name: "Tags in use" });
+  const list = screen.getByRole("listbox", {
+    name: "Tags in use",
+  }).parentElement!;
 
   const tall = () => list.querySelectorAll("[role='option']").length * 20;
   Object.defineProperty(list, "offsetHeight", { get: tall });
@@ -580,7 +582,7 @@ test("the offer hangs from the line's place, which outlives the line", async () 
 
   const offer = screen.getByRole("listbox", {
     name: "Tags in use",
-  }).parentElement!;
+  }).parentElement!.parentElement!;
   const place = line.parentElement!;
   const named = /anchor-name:\s*(--[\w-]+)/.exec(
     place.getAttribute("style") ?? "",

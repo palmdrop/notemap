@@ -3,7 +3,7 @@
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import type { Ask, Supplied } from "$lib/asked";
-  import { completed, narrowed } from "$lib/candidate-list";
+  import { completed, narrowed, takenAs } from "$lib/candidate-list";
   import { drawOut, fade, grow, pinned, slide, unfold } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
@@ -172,13 +172,13 @@
     const typed = draft.trim();
     const base: Row[] = narrowed(offeredValues, draft).map((entry) => ({
       label: entry.label,
-      value: String(entry.value ?? entry.label),
+      value: takenAs(entry),
     }));
     if (typed === "" || step?.closed !== undefined) return base;
-    const known = offeredValues.some(
-      (entry) =>
-        String(entry.value ?? entry.label).toLowerCase() ===
-        typed.toLowerCase(),
+    const known = offeredValues.some((entry) =>
+      [takenAs(entry), entry.label].some(
+        (one) => one.toLowerCase() === typed.toLowerCase(),
+      ),
     );
     return known
       ? base
@@ -506,6 +506,9 @@
         aria-expanded={rows.length > 0}
         aria-controls="{id}-tags"
         aria-activedescendant={active}
+        aria-describedby={stepping !== undefined && step !== undefined
+          ? `${id}-step`
+          : undefined}
         class="h-full w-full border-b border-ink px-1 outline-none"
         in:drawOut
       />
@@ -545,9 +548,6 @@
   >
     <div
       bind:this={panel}
-      id="{id}-tags"
-      role="listbox"
-      aria-label={step === undefined ? "Tags in use" : step.label}
       class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1 {step ===
       undefined
         ? ''
@@ -556,7 +556,10 @@
       {#if stepping !== undefined && step !== undefined}
         <!-- What is being asked, and for which template, since the line holds
              only the value. -->
-        <div class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1">
+        <div
+          id="{id}-step"
+          class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
+        >
           <span class={TRIGGER}>{trigger(stepping.tag)}</span>
           → {stepping.ask.template},
           <span class="font-semibold">{step.label}</span>
@@ -565,31 +568,39 @@
           {/if}
         </div>
       {/if}
-      {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-        {@const on = at === index}
-        {@const fired =
-          row.fresh || step !== undefined ? undefined : fires?.(row.label)}
-        {#if row.apart}
-          <div
-            aria-hidden="true"
-            class="-mx-2.5 my-1 border-t border-ink"
-          ></div>
-        {/if}
-        <Walked
-          id={on ? `${id}-tag-${index}` : undefined}
-          {on}
-          onhover={() => (at = index)}
-          ontake={() =>
-            step === undefined ? take(row.label) : give(row.value ?? row.label)}
-        >
-          {#if row.fresh}
-            + {row.label}
-          {:else}
-            <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-            >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
+      <div
+        id="{id}-tags"
+        role="listbox"
+        aria-label={step === undefined ? "Tags in use" : step.label}
+      >
+        {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+          {@const on = at === index}
+          {@const fired =
+            row.fresh || step !== undefined ? undefined : fires?.(row.label)}
+          {#if row.apart}
+            <div
+              aria-hidden="true"
+              class="-mx-2.5 my-1 border-t border-ink"
+            ></div>
           {/if}
-        </Walked>
-      {/each}
+          <Walked
+            id={on ? `${id}-tag-${index}` : undefined}
+            {on}
+            onhover={() => (at = index)}
+            ontake={() =>
+              step === undefined
+                ? take(row.label)
+                : give(row.value ?? row.label)}
+          >
+            {#if row.fresh}
+              + {row.label}
+            {:else}
+              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
+              >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
+            {/if}
+          </Walked>
+        {/each}
+      </div>
     </div>
   </div>
 {/if}

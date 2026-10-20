@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
@@ -522,7 +522,11 @@ const APPEND = {
     type: "object",
     required: ["path"],
     properties: {
-      path: { type: "string", "x-notemap-path": true },
+      path: {
+        type: "string",
+        "x-notemap-path": true,
+        "x-notemap-candidates": true,
+      },
       heading: {
         type: "string",
         title: "under",
@@ -551,6 +555,7 @@ async function servingTodo(template: Record<string, unknown>) {
         entries: [
           { label: "## Next", value: "Next" },
           { label: "## Someday", value: "Someday" },
+          { label: "archive", scope: "archive" },
         ],
         truncated: false,
       });
@@ -646,6 +651,68 @@ test("an empty line with no default keeps asking", async () => {
 
   expect(screen.getByRole("combobox", { name: "list" })).toBe(line);
   expect(screen.queryByRole("button", { name: /route\/todo/ })).toBeNull();
+});
+
+test("says what it asks beside the list rather than in it, and the line points at it", async () => {
+  await servingTodo(todo({ path: "todo.md", heading: "Inbox" }));
+
+  await takeTag("route/todo");
+  const line = await screen.findByRole("combobox", { name: "list" });
+  const said = document.getElementById(
+    line.getAttribute("aria-describedby") ?? "",
+  );
+
+  expect(said?.textContent).toContain("default Inbox");
+  expect(
+    within(screen.getByRole("listbox", { name: "list" })).queryByText(
+      /default Inbox/,
+    ),
+  ).toBeNull();
+});
+
+test("offers no entry that is only somewhere to look further", async () => {
+  await servingTodo(todo());
+
+  await takeTag("route/todo");
+  expect(await screen.findByText("## Next")).toBeDefined();
+  expect(screen.queryByText("archive")).toBeNull();
+});
+
+test("a heading typed as the list reads it is the listed one, not a new one", async () => {
+  const { sent } = await servingTodo(todo());
+
+  await takeTag("route/todo");
+  const line = await screen.findByRole("combobox", { name: "list" });
+  expect(await screen.findByText("## Next")).toBeDefined();
+  await fireEvent.input(line, { target: { value: "## Next" } });
+  expect(screen.queryByText("+ ## Next")).toBeNull();
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  await capture("a thought");
+  await vi.waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0]?.["arguments"]).toEqual({
+    "route/todo": { heading: "Next" },
+  });
+});
+
+test("an asked place is typed rather than listed a level deep", async () => {
+  const { sent, asking } = await servingTodo({
+    ...todo({ heading: "Inbox" }),
+    asked: { path: { label: "note" } },
+  });
+
+  await takeTag("route/todo");
+  const line = await screen.findByRole("combobox", { name: "note" });
+  expect(screen.queryByRole("option")).toBeNull();
+  await fireEvent.input(line, { target: { value: "lists/todo.md" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  await capture("a thought");
+  await vi.waitFor(() => expect(sent).toHaveLength(1));
+  expect(sent[0]?.["arguments"]).toEqual({
+    "route/todo": { path: "lists/todo.md" },
+  });
+  expect(asking.some((query) => query.includes("field=path"))).toBe(false);
 });
 
 test("esc steps back to the tags without taking one", async () => {

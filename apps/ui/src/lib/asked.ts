@@ -20,7 +20,8 @@ export type Supplied = Readonly<Record<string, string>>;
 /**
  * One field to ask for, and where its values come from. `closed` is the whole
  * of what may be taken; `listed` is what the destination holds, offered beside
- * whatever is typed. Neither, and the field is typed.
+ * whatever is typed, asked with what the field depends on as the earlier steps
+ * gave it. Neither, and the field is typed.
  */
 export type Step = Asked & {
   readonly closed?: readonly string[];
@@ -46,7 +47,7 @@ export function askedOf(
   const fields = fieldsOf(schema);
   const declared = fields.map((one) => one.name);
   const order = [
-    ...declared.filter((name) => name in asked),
+    ...declared.filter((name) => Object.hasOwn(asked, name)),
     ...Object.keys(asked).filter((name) => !declared.includes(name)),
   ];
 
@@ -129,8 +130,11 @@ export async function askFor(tag: string): Promise<Ask | undefined> {
       if (field?.options !== undefined) {
         return { ...asked, closed: field.options };
       }
+      // A place is walked into, folder by folder, and one level of it is no list.
       const listed =
-        field?.askable === true ? listing(template, field) : undefined;
+        field?.listable === true && field.path === undefined
+          ? listing(template, field)
+          : undefined;
       return listed === undefined ? asked : { ...asked, listed };
     }),
   };
@@ -152,7 +156,8 @@ function listing(
   const depends = field.given ?? [];
   if (
     depends.some(
-      (name) => !(name in (template.asked ?? {})) && fixed(name) === undefined,
+      (name) =>
+        !Object.hasOwn(template.asked ?? {}, name) && fixed(name) === undefined,
     )
   ) {
     return undefined;
@@ -169,7 +174,10 @@ function listing(
       field: field.name,
       ...(depends.length === 0 ? {} : { given }),
     });
-    return answer.kind === "answered" ? answer.entries : [];
+    // An entry holding no value is somewhere to look further, not an answer.
+    return answer.kind === "answered"
+      ? answer.entries.filter((entry) => entry.value !== undefined)
+      : [];
   };
 }
 

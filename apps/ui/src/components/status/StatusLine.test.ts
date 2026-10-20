@@ -328,6 +328,37 @@ test("a refused capture edited goes back to the capture box, and is let go", asy
   clearDraft();
 });
 
+test("a refused capture edited puts back what it gave its trigger tags", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? refusal(422, "payload-invalid")
+      : quiet(),
+  );
+  render(StatusLine);
+
+  await client.capture({
+    channel: "web-manual",
+    text: "a thought",
+    tags: ["route/todo"],
+    arguments: { "route/todo": { heading: "Next" } },
+  });
+  await client.drain();
+  await screen.findByRole("alert");
+
+  const panel = await opened();
+  await fireEvent.click(within(panel).getByRole("button", { name: "edit" }));
+
+  await vi.waitFor(async () => {
+    expect(await refusedOf()).toHaveLength(0);
+  });
+  expect(readDraft()).toEqual({
+    text: "a thought",
+    tags: ["route/todo"],
+    arguments: { "route/todo": { heading: "Next" } },
+  });
+  clearDraft();
+});
+
 test("counts the work this device holds, and lists it in the panel", async () => {
   const transport = pool(quiet);
   transport.unreachable(true);

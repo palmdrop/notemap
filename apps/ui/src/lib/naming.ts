@@ -22,7 +22,7 @@ import { fieldsOf } from "./schema-form";
  */
 function nameable(capability: Capability): readonly string[] {
   return fieldsOf(capability.argumentsSchema)
-    .filter((field) => field.askable && field.offeredOnly)
+    .filter((field) => field.listable && field.offeredOnly)
     .map((field) => field.name);
 }
 

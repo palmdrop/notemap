@@ -1990,12 +1990,15 @@ reading the list rather than guessing; nothing here pretends to know more than i
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. Taking it
 does not put it on the item: the chooser's own line asks for each asked field in turn, named by its
 label, with the default as the line's placeholder, and its panel is headed by the tag, the
-template and the label. What the panel offers is the field's own: the values a fixed field allows,
-and nothing else; for a field the destination can list, what it lists — a note's headings, asked
-with the template's own note — and, typed into, the typed words as a `+` row of their own, so a
-heading that is not there yet is taken knowingly; for any other field, nothing, the line being
-typed. Where the field the list depends on holds a pattern there is no one note to ask about, and
-the line is typed. `⏎` takes the walked row, else what was typed, else the default on an empty
+template and the label, above the list rather than in it, the line described by it. What the panel
+offers is the field's own: the values a fixed field allows, and nothing else; for a field the
+destination can list, what it lists — a note's headings, asked with the note an earlier step gave,
+else the template's own — and, typed into, the typed words as a `+` row of their own, so a heading
+that is not there yet is taken knowingly; for any other field, nothing, the line being typed. Words
+typed as a listed row reads or as its value are that row, not a `+` one. An entry that is only
+somewhere to look further, a folder, is not offered, and **a place is typed**, since a list one
+level deep is no way to walk it. Where the field the list depends on holds a pattern there is no
+one note to ask about, and the line is typed. `⏎` takes the walked row, else what was typed, else the default on an empty
 line; with no default an empty line stays and asks again. `esc` steps back a field, then back to
 the tags; leaving the line takes nothing. **The tag lands with its values once the last is
 given**, as one operation, which is the same whether it drains now or tomorrow. The destination is
