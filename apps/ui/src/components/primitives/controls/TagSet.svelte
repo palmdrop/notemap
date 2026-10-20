@@ -172,11 +172,13 @@
     const typed = draft.trim();
     const base: Row[] = narrowed(offeredValues, draft).map((entry) => ({
       label: entry.label,
-      value: entry.value,
+      value: String(entry.value ?? entry.label),
     }));
     if (typed === "" || step?.closed !== undefined) return base;
     const known = offeredValues.some(
-      (entry) => entry.value.toLowerCase() === typed.toLowerCase(),
+      (entry) =>
+        String(entry.value ?? entry.label).toLowerCase() ===
+        typed.toLowerCase(),
     );
     return known
       ? base
