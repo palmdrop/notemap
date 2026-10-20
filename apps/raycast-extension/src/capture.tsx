@@ -232,9 +232,15 @@ export default function Command() {
               setSearching((current) => ({ ...current, [id]: text }))
             }
           >
-            {one.default !== undefined && (
-              <Form.Dropdown.Item value="" title={`default ${one.default}`} />
-            )}
+            {/* First, so nothing listed is taken for want of a choice. */}
+            <Form.Dropdown.Item
+              value=""
+              title={
+                one.default === undefined
+                  ? `choose ${one.label}`
+                  : `default ${one.default}`
+              }
+            />
             {(
               one.listed ??
               one.closed?.map((value) => ({ label: value, value })) ??

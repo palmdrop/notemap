@@ -66,7 +66,7 @@ export async function askedFor(
   const properties = await propertiesOf(client, template);
   const declared = Object.keys(properties);
   const order = [
-    ...declared.filter((name) => name in asked),
+    ...declared.filter((name) => Object.hasOwn(asked, name)),
     ...Object.keys(asked).filter((name) => !declared.includes(name)),
   ];
 
@@ -92,7 +92,13 @@ export async function askedFor(
           ),
         };
       }
-      if (property["x-notemap-candidates"] !== true) return base;
+      // A place is walked into, folder by folder, and one level of it is no list.
+      if (
+        property["x-notemap-candidates"] !== true ||
+        property["x-notemap-path"] !== undefined
+      ) {
+        return base;
+      }
 
       const listed = await listing(client, template, field, property);
       return listed === undefined ? base : { ...base, listed };
@@ -152,11 +158,11 @@ async function listing(
         ? {}
         : { given: given as Record<string, string> }),
     });
+    // An entry holding no value is somewhere to look further, not an answer.
     return answer.kind === "answered"
-      ? answer.entries.map(({ label, value }) => ({
-          label,
-          value: String(value),
-        }))
+      ? answer.entries.flatMap(({ label, value }) =>
+          value === undefined ? [] : [{ label, value: String(value) }],
+        )
       : undefined;
   } catch {
     return undefined;

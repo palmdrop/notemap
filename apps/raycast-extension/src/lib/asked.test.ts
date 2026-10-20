@@ -21,7 +21,11 @@ const APPEND = {
   argumentsSchema: {
     type: "object",
     properties: {
-      path: { type: "string" },
+      path: {
+        type: "string",
+        "x-notemap-path": true,
+        "x-notemap-candidates": true,
+      },
       conversion: { type: "string", title: "as", enum: ["block", "task"] },
       heading: {
         type: "string",
@@ -42,7 +46,10 @@ function answering(asked: unknown[] = []): Client {
         asked.push(request);
         return Promise.resolve({
           kind: "answered",
-          entries: [{ label: "## Next", value: "Next" }],
+          entries: [
+            { label: "## Next", value: "Next" },
+            { label: "archive", scope: "archive" },
+          ],
           truncated: false,
         });
       },
@@ -78,6 +85,24 @@ describe("what a chosen trigger tag's template asks", () => {
     expect(asked).toEqual([
       { capability: "append", field: "heading", given: { path: "todo.md" } },
     ]);
+  });
+
+  it("lists no entry that is only somewhere to look further", async () => {
+    const [, heading] = await askedFor(answering(), "route/todo", TODO);
+
+    expect(heading?.listed).toEqual([{ label: "## Next", value: "Next" }]);
+  });
+
+  it("leaves an asked place typed rather than listed a level deep", async () => {
+    const asked: unknown[] = [];
+    const [path] = await askedFor(answering(asked), "route/todo", {
+      ...TODO,
+      asked: { path: {} },
+    } as RoutingTemplate);
+
+    expect(path?.field).toBe("path");
+    expect(path?.listed).toBeUndefined();
+    expect(asked).toEqual([]);
   });
 
   it("lists nothing where the note it depends on is a pattern", async () => {
