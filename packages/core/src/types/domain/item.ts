@@ -64,6 +64,10 @@ export type ItemRecord = {
   readonly utcOffset?: number;
   readonly contentUpdatedAt?: Timestamp;
   readonly revisionOf?: ItemId;
+  /** The head of the line this capture was made to continue, where the source had diverged from it. */
+  readonly continues?: ItemId;
+  /** What the line's source last said, where the item now says something else. */
+  readonly sourceWord?: Payload;
   readonly archived?: ArchiveState;
 };
 

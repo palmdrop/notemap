@@ -16,7 +16,13 @@ import { PATH_FIELD } from "@notemap/core";
 import { fakeCapability, fakeDestinations } from "@notemap/core/testing";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { deliverWith, envelope, harness, type Harness } from "./fixture";
+import {
+  deliverWith,
+  envelope,
+  harness,
+  WATCHED_FOLDER,
+  type Harness,
+} from "./fixture";
 
 const VAULT = "vault" as DestinationId;
 const CREATE_NOTE = "create-note" as CapabilityName;
@@ -544,8 +550,10 @@ describe("a trigger tag applying its template", () => {
     expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
   });
 
-  it("fires nothing for a revision that carries it over", async () => {
+  it("leaves the trigger tag behind on a revision, which fires once it is added again", async () => {
     const { pool, item, clock, deliver } = await tagged();
+    const READING = "reading" as TagName;
+    succeeded(await pool.items.tag(item.id, READING, PERSON));
     clock.set(AFTER);
     await deliver();
 
@@ -562,8 +570,72 @@ describe("a trigger tag applying its template", () => {
     );
     if (outcome.kind !== "revised") throw new Error("expected a revision");
 
-    expect(await tagsOn(pool, outcome.revision.id)).toEqual([RESEARCH]);
+    expect(await tagsOn(pool, outcome.revision.id)).toEqual([READING]);
     expect(await pool.routing.recordsFor(outcome.revision.id)).toEqual([]);
+
+    succeeded(await pool.items.tag(outcome.revision.id, RESEARCH, PERSON));
+    expect(await pool.routing.recordsFor(outcome.revision.id)).toHaveLength(1);
+  });
+
+  it("carries a route/ tag no template declares over to a revision", async () => {
+    const { pool, item, clock, deliver } = await tagged();
+    const UNCLAIMED = "route/nowhere" as TagName;
+    succeeded(await pool.items.tag(item.id, UNCLAIMED, PERSON));
+    clock.set(AFTER);
+    await deliver();
+
+    const outcome = succeeded(
+      await pool.items.edit(
+        item.id,
+        {
+          source: item.source,
+          sourceItemId: "edit-1",
+          payload: { ...item.payload, content: { text: "a second thought" } },
+        },
+        PERSON,
+      ),
+    );
+    if (outcome.kind !== "revised") throw new Error("expected a revision");
+
+    expect(await tagsOn(pool, outcome.revision.id)).toEqual([UNCLAIMED]);
+  });
+
+  it("fires nothing from a continuation, which arrives without its trigger tags", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const reread = (text: string, extra = {}) =>
+      pool.capture({
+        ...envelope({
+          source: WATCHED_FOLDER,
+          sourceItemId: "upstream-1",
+          capturedAt: CAPTURED_AT,
+          text,
+          tags: ["route/research", "route/nowhere"],
+        }),
+        ...extra,
+      });
+    const item = captured(await reread("as it was written"));
+    succeeded(
+      await pool.items.edit(
+        item.id,
+        {
+          source: "shell/web" as typeof WATCHED_FOLDER,
+          sourceItemId: "edit-1",
+          payload: { ...item.payload, content: { text: "as I meant it" } },
+        },
+        PERSON,
+      ),
+    );
+
+    const continuation = captured(
+      await reread("rewritten upstream", {
+        sourceItemId: "upstream-1@v2/continued",
+        continues: item.id,
+      }),
+    );
+
+    expect(await tagsOn(pool, continuation.id)).toEqual(["route/nowhere"]);
+    expect(await pool.routing.recordsFor(continuation.id)).toEqual([]);
   });
 
   it("fires from a capture that arrives already carrying it", async () => {

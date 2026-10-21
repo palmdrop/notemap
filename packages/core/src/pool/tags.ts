@@ -4,11 +4,11 @@ import { alreadyApplied, fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
 import type { Tagging } from "#types/api/pool";
-import type { PoolPorts, PoolTx } from "#types/api/ports";
+import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type { TagRefusal } from "#types/api/refusal";
 import type { Agent } from "#types/domain/agent";
 import type { ItemId, TagName } from "#types/domain/ids";
-import type { Item } from "#types/domain/item";
+import type { Item, Tag } from "#types/domain/item";
 import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
 import type { RoutingTemplate } from "#types/domain/template";
 import type { Result } from "#types/result";
@@ -26,13 +26,28 @@ export function normalised(name: TagName): TagName | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+/** Of these tags, the ones a template declares: the trigger tags, and not merely the namespace. */
+export async function triggersAmong(
+  reads: PoolReads,
+  tags: readonly Tag[],
+): Promise<TagName[]> {
+  const triggers: TagName[] = [];
+  for (const held of tags) {
+    if (!held.name.startsWith(TRIGGER_TAG_NAMESPACE)) continue;
+    if ((await reads.routingTemplateByTriggerTag(held.name)) !== undefined) {
+      triggers.push(held.name);
+    }
+  }
+  return triggers;
+}
+
 /**
  * `content_updated_at` is untouched, so a tagged item keeps its place in the
  * queue — unless a template fires, which takes it out of the queue by reserving.
  *
  * Firing is on the **tagging**: the work is done here and nowhere else, so an
- * absorbed re-tag fires nothing, a revision carrying the tag fires nothing, and
- * a tag drained from an outbox fires by arriving on this path like any other.
+ * absorbed re-tag fires nothing, and a tag drained from an outbox fires by
+ * arriving on this path like any other.
  */
 export async function tag(
   config: PoolConfig,

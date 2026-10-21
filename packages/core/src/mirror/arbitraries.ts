@@ -5,7 +5,11 @@ import type { Agent } from "#types/domain/agent";
 import type { Asset, AssetRef } from "#types/domain/asset";
 import type { Destination } from "#types/domain/destination";
 import type { Artifact } from "#types/domain/enrichment";
-import type { DestinationId, Timestamp } from "#types/domain/ids";
+import type {
+  DestinationId,
+  PayloadTypeName,
+  Timestamp,
+} from "#types/domain/ids";
 import type { Item, RoutingSummary } from "#types/domain/item";
 import type { PoolSettingRecord } from "#types/domain/pool-setting";
 import type { RoutingRecord } from "#types/domain/routing";
@@ -117,18 +121,21 @@ const routingSummary = (): fc.Arbitrary<RoutingSummary> =>
       })),
     );
 
+const payload = () =>
+  fc.record({
+    type: branded<PayloadTypeName>(),
+    content: jsonObject(),
+    metadata: jsonObject(),
+    assets: assetRefs(),
+  });
+
 export const item = (): fc.Arbitrary<Item> =>
   fc.record(
     {
       id: branded(),
       source: branded(),
       sourceItemId: name(),
-      payload: fc.record({
-        type: branded(),
-        content: jsonObject(),
-        metadata: jsonObject(),
-        assets: assetRefs(),
-      }),
+      payload: payload(),
       tags: fc.uniqueArray(
         fc.record({ name: branded<never>(), by: agent(), addedAt: stamp() }),
         { maxLength: 3, selector: (tag) => tag.name },
@@ -137,6 +144,8 @@ export const item = (): fc.Arbitrary<Item> =>
       utcOffset: fc.integer({ min: -720, max: 840 }),
       contentUpdatedAt: stamp(),
       revisionOf: branded(),
+      continues: branded(),
+      sourceWord: payload(),
       archived: fc.record(
         { archivedAt: stamp(), reason: name() },
         { requiredKeys: ["archivedAt"] },

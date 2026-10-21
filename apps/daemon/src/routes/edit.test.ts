@@ -91,7 +91,7 @@ describe("editing over the wire", () => {
     });
   });
 
-  it("names both revisions on the item they were made from", async () => {
+  it("refuses a second revision of an item, naming the one made first", async () => {
     const app = serving();
     const [first] = await captureMany(app, 1);
     await send(app, `/v1/items/${first}/mark-processed`);
@@ -99,14 +99,18 @@ describe("editing over the wire", () => {
     const one = (await body(
       await send(app, `/v1/items/${first}/edit`, envelope("one", "edit-1")),
     )) as { revision: { id: string } };
-    const two = (await body(
-      await send(app, `/v1/items/${first}/edit`, envelope("two", "edit-2")),
-    )) as { revision: { id: string } };
+    const response = await send(
+      app,
+      `/v1/items/${first}/edit`,
+      envelope("two", "edit-2"),
+    );
 
-    const held = await (await app.request(`/v1/items/${first}`)).json();
-    expect(held).toMatchObject({
-      revisedInto: [one.revision.id, two.revision.id],
+    expect(response.status).toBe(409);
+    expect(await body(response)).toEqual({
+      error: { code: "not-head", head: one.revision.id },
     });
+    const held = await (await app.request(`/v1/items/${first}`)).json();
+    expect(held).toMatchObject({ revisedInto: [one.revision.id] });
   });
 
   it("refuses a source identity another item already claims", async () => {

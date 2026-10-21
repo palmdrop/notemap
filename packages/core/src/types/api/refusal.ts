@@ -36,7 +36,11 @@ export type CaptureRefusal =
     }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId }
   | { readonly kind: "capture-id-conflict"; readonly existing: ItemId }
-  | { readonly kind: "source-item-changed"; readonly existing: ItemId };
+  | { readonly kind: "source-item-changed"; readonly existing: ItemId }
+  /** Upstream and somebody else have both changed the head, which a continuation answers. */
+  | { readonly kind: "source-item-diverged"; readonly existing: ItemId }
+  /** What it names is not the head, edited by somebody else, of a line from this source. */
+  | { readonly kind: "continues-not-head"; readonly continues: ItemId };
 
 /**
  * Everything a capture's payload is refused for, less `unknown-payload-type`: the
@@ -51,7 +55,9 @@ export type EditRefusal =
   | { readonly kind: "payload-type-changed"; readonly from: PayloadTypeName }
   | { readonly kind: "unknown-asset"; readonly asset: AssetId }
   /** The envelope's identity already names an item that is not a revision of this one. */
-  | { readonly kind: "source-item-changed"; readonly existing: ItemId };
+  | { readonly kind: "source-item-changed"; readonly existing: ItemId }
+  /** The item has been revised or continued since, and only the head of a line is revised. */
+  | { readonly kind: "not-head"; readonly head: ItemId };
 
 /** A filter naming a tag that trims to nothing, which no item could carry. */
 export type TagFilterRefusal = {

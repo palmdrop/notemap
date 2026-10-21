@@ -47,23 +47,25 @@ function warnings(said: string[]): string[] {
 describe("one scan of everything upstream", () => {
   it("counts what each memo came to", async () => {
     const tally = await relayEverything(
-      upstream([memo("a"), memo("b"), memo("c"), memo("d")]),
+      upstream([memo("a"), memo("b"), memo("c"), memo("d"), memo("e")]),
       landing({
         a: "captured",
         b: "already-captured",
         c: "amended",
         d: "revised",
+        e: "continued",
       }),
       capturedLog().log,
       { hashtags: false },
     );
 
     expect(tally).toEqual({
-      read: 4,
+      read: 5,
       captured: 1,
       unchanged: 1,
       amended: 1,
       revised: 1,
+      continued: 1,
       empty: 0,
       failed: 0,
     });

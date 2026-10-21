@@ -868,7 +868,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "capture-id-conflict" | "source-item-changed";
+                                code: "capture-id-conflict" | "source-item-changed" | "source-item-diverged" | "continues-not-head";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -2016,7 +2016,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "source-item-changed";
+                                code: "source-item-changed" | "not-head";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -4586,6 +4586,20 @@ export interface components {
             utcOffset?: number;
             contentUpdatedAt?: string;
             revisionOf?: string;
+            continues?: string;
+            sourceWord?: {
+                type: string;
+                content: {
+                    [key: string]: unknown;
+                };
+                metadata: {
+                    [key: string]: unknown;
+                };
+                assets: {
+                    slot: string;
+                    asset: string;
+                }[];
+            };
             archived?: {
                 archivedAt: string;
                 reason?: string;
@@ -4654,6 +4668,8 @@ export interface components {
             arguments?: {
                 [key: string]: components["schemas"]["SuppliedArguments"];
             };
+            /** @description The head of a line this source diverged from, which the capture continues. */
+            continues?: string;
         };
         /**
          * @description Values for the template's asked arguments, by field name. Taken literally rather than expanded; a blank one falls back to the default. A field the template does not ask for is refused.

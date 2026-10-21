@@ -1103,6 +1103,7 @@ describe("the queue and the archive", () => {
           assets: [],
         },
         at("2026-08-03T11:00:00.000Z"),
+        undefined,
       ),
     );
 

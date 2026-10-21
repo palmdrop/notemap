@@ -20,6 +20,8 @@ export type CaptureEnvelope = {
   readonly tags?: readonly TagName[];
   /** Values for the asked arguments of the templates its trigger tags fire, by tag. */
   readonly arguments?: Readonly<Record<string, SuppliedArguments>>;
+  /** The head of a line this source diverged from, which this capture continues. */
+  readonly continues?: ItemId;
 };
 
 /**

@@ -68,7 +68,7 @@ const shallow = { full: false, hashtags: false };
 describe("one scan of every watched channel", () => {
   it("counts what each block came to", async () => {
     const reports = await relayEverything(
-      upstream({ c: [block(1), block(2), block(3), block(4)] }),
+      upstream({ c: [block(1), block(2), block(3), block(4), block(5)] }),
       [
         channel(
           "arena/x",
@@ -78,6 +78,7 @@ describe("one scan of every watched channel", () => {
             "2": "already-captured",
             "3": "amended",
             "4": "revised",
+            "5": "continued",
           }),
         ),
       ],
@@ -90,11 +91,12 @@ describe("one scan of every watched channel", () => {
         source: "arena/x",
         readFailed: false,
         tally: {
-          read: 4,
+          read: 5,
           captured: 1,
           unchanged: 1,
           amended: 1,
           revised: 1,
+          continued: 1,
           empty: 0,
           failed: 0,
         },
@@ -204,6 +206,7 @@ describe("one scan of every watched channel", () => {
           unchanged: 0,
           amended: 0,
           revised: 0,
+          continued: 0,
           empty: 0,
           failed: 0,
         },
@@ -217,6 +220,7 @@ describe("one scan of every watched channel", () => {
           unchanged: 0,
           amended: 0,
           revised: 0,
+          continued: 0,
           empty: 0,
           failed: 0,
         },

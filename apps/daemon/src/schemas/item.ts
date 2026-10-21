@@ -76,6 +76,10 @@ export const itemSchema = z
     utcOffset: z.number().int().optional(),
     contentUpdatedAt: z.string().optional(),
     revisionOf: z.string().optional(),
+    /** The head of the line this capture continues. */
+    continues: z.string().optional(),
+    /** What the line's source last said, where the item now says something else. */
+    sourceWord: payloadSchema.optional(),
     archived: z
       .object({ archivedAt: z.string(), reason: z.string().optional() })
       .optional(),

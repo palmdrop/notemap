@@ -7,7 +7,9 @@ export type CaptureAnswer =
   | { readonly kind: "captured"; readonly item: Item }
   | { readonly kind: "already-captured"; readonly item: Item }
   /** The identity is taken by an item saying something else: the upstream item changed. */
-  | { readonly kind: "changed"; readonly existing: string };
+  | { readonly kind: "changed"; readonly existing: string }
+  /** The upstream item changed, and so did the item it resolves to. */
+  | { readonly kind: "diverged"; readonly existing: string };
 
 export type EditAnswer =
   | { readonly kind: "amended"; readonly item: Item }
@@ -26,6 +28,7 @@ export type CaptureEnvelope = {
   readonly capturedAt: string;
   readonly payload: unknown;
   readonly tags: readonly string[];
+  readonly continues?: string;
 };
 
 export type EditEnvelope = {
@@ -196,10 +199,16 @@ export function poolAt(target: PoolTarget) {
         | { error: { code: string; existing?: string } };
 
       if ("error" in body) {
-        if (body.error.code !== "source-item-changed" || !body.error.existing) {
-          throw new PoolRefused(409, body.error.code, route);
+        const { code, existing } = body.error;
+        if (existing === undefined || existing === "") {
+          throw new PoolRefused(409, code, route);
         }
-        return { kind: "changed", existing: body.error.existing };
+        if (code === "source-item-changed")
+          return { kind: "changed", existing };
+        if (code === "source-item-diverged") {
+          return { kind: "diverged", existing };
+        }
+        throw new PoolRefused(409, code, route);
       }
 
       return body;

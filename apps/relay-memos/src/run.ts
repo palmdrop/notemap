@@ -17,6 +17,8 @@ export type Tally = {
   unchanged: number;
   amended: number;
   revised: number;
+  /** Changed upstream and in the pool both, so captured again to continue it. */
+  continued: number;
   /** Memos holding neither prose nor an attachment, which are not captured. */
   empty: number;
   failed: number;
@@ -45,6 +47,7 @@ export async function relayEverything(
     unchanged: 0,
     amended: 0,
     revised: 0,
+    continued: 0,
     empty: 0,
     failed: 0,
   };
@@ -63,6 +66,7 @@ export async function relayEverything(
       if (landed.kind === "already-captured") tally.unchanged += 1;
       else if (landed.kind === "captured") tally.captured += 1;
       else if (landed.kind === "amended") tally.amended += 1;
+      else if (landed.kind === "continued") tally.continued += 1;
       else tally.revised += 1;
 
       log.debug(

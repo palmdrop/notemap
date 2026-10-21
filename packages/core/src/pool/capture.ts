@@ -2,8 +2,14 @@ import { dequal } from "dequal";
 
 import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
-import { canonicalPayload, checkAssets, checkPayload } from "./payload";
-import { normalised } from "./tags";
+import { headOf, lineSourceOf } from "./lines";
+import {
+  canonicalPayload,
+  checkAssets,
+  checkPayload,
+  samePayload,
+} from "./payload";
+import { normalised, triggersAmong } from "./tags";
 import { fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
@@ -37,13 +43,15 @@ export async function capture(
   // to become. A replay leaves it unused, which costs a number.
   const id = envelope.id ?? ports.ids.next<ItemId>();
   const proposed = recorded(envelope, id);
-  const { firings, spent } = await fired(
-    config,
-    ports,
-    proposed,
-    suppliedByTag(envelope),
-    signal,
-  );
+  // A continuation is a conflict for a person to look at, so nothing it carries
+  // files it before they have.
+  const { firings, spent } =
+    envelope.continues === undefined
+      ? await fired(config, ports, proposed, suppliedByTag(envelope), signal)
+      : {
+          firings: [],
+          spent: await triggersAmong(ports.store, proposed.tags),
+        };
   const record = without(proposed, spent);
 
   return ports.store.transaction((tx) =>
@@ -160,6 +168,9 @@ function recorded(envelope: CaptureEnvelope, id: ItemId): ItemRecord {
     ...(envelope.utcOffset === undefined
       ? {}
       : { utcOffset: envelope.utcOffset }),
+    ...(envelope.continues === undefined
+      ? {}
+      : { continues: envelope.continues }),
   };
 }
 
@@ -196,10 +207,21 @@ async function append(
     envelope.source,
     envelope.sourceItemId,
   );
-  if (bySource !== undefined) {
-    return isReplayOf(bySource, envelope)
-      ? ok({ kind: "already-captured", item: bySource, matchedOn: "source" })
-      : refused({ kind: "source-item-changed", existing: bySource.id });
+  if (bySource !== undefined) return reread(tx, bySource, envelope);
+
+  if (envelope.continues !== undefined) {
+    const continued = await tx.item(envelope.continues);
+    if (
+      continued === undefined ||
+      continued.sourceWord === undefined ||
+      (await headOf(tx, continued)).id !== continued.id ||
+      (await lineSourceOf(tx, continued)) !== envelope.source
+    ) {
+      return refused({
+        kind: "continues-not-head",
+        continues: envelope.continues,
+      });
+    }
   }
 
   const unknown = await checkAssets(tx, envelope.payload);
@@ -250,6 +272,38 @@ function isReplayOf(existing: Item, envelope: CaptureEnvelope): boolean {
   return dequal(fixedByItem(existing), fixedByEnvelope(envelope));
 }
 
+/**
+ * A source re-reading what it captured is answered by the head of its line,
+ * which is where every edit since has gone. What the head says and what the
+ * source last said are both a replay; anything else is an upstream edit, or a
+ * divergence where somebody else has changed the head too.
+ *
+ * Decided on the payload alone. No edit can change a capture time, so a source
+ * told that one had changed would send the same edit on every read.
+ */
+async function reread(
+  tx: PoolTx,
+  holder: Item,
+  envelope: CaptureEnvelope,
+): Promise<CaptureResult> {
+  const head = await headOf(tx, holder);
+  const said =
+    samePayload(head.payload, envelope.payload) ||
+    (head.sourceWord !== undefined &&
+      samePayload(head.sourceWord, envelope.payload));
+  if (said) {
+    return ok({ kind: "already-captured", item: head, matchedOn: "source" });
+  }
+
+  return refused({
+    kind:
+      head.sourceWord === undefined
+        ? "source-item-changed"
+        : "source-item-diverged",
+    existing: head.id,
+  });
+}
+
 function fixedByEnvelope(envelope: CaptureEnvelope): FixedByCapture {
   const { id, tags, arguments: _supplied, capturedAt, ...fixed } = envelope;
   return {
@@ -265,6 +319,7 @@ function fixedByItem(item: Item): FixedByCapture {
     sourceItemId: item.sourceItemId,
     capturedAtMs: Date.parse(item.createdAt),
     ...(item.utcOffset === undefined ? {} : { utcOffset: item.utcOffset }),
+    ...(item.continues === undefined ? {} : { continues: item.continues }),
     payload: canonicalPayload(item.payload),
   };
 }

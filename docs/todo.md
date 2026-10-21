@@ -1,8 +1,5 @@
 # Developer TODOs
 
-- [ ] still, there is a bug where if you revise an item, then route it, the original might be left it the queue, with the trigger tag attached, but no routing record, not hidden from the queue even though the revised entry has been successfully routed and received at the destination
-  looking at the logs, I see a routing record for the revised capture, and then ANOTHER "revised" event on the original, appearing after (in time) the routing record
-
 ## Shell — layout and interaction
 
 - [ ] "Queue is empty" shows before the last capture is hidden from the queue when the last capture is selected and held
@@ -97,14 +94,13 @@
 
 ## Seeing what happened — log, routing records, revisions
 
-- [ ] **Nothing in the shell can ask for a revision.** Editing is offered on the queue, which holds
-  unprocessed items only, and the feed offers no edit at all — so the revision path is reachable
-  only when another device processes an item between the draw and the send. Either the feed row
-  grows an edit, or rewriting a processed note is deliberately not a thing this shell does and
-  shell.md should keep saying so. Raised reviewing
-  [editable-until-processed](plans/editable-until-processed.md). The composer's `rewrite` did not
-  reach it (2026-09-10): it changes what one delivery says and never what the item says, so it
-  makes no revision and nothing in the shell can still ask for one.
+- [ ] **Decide whether the shell rewrites a processed note.** A row offers `edit` only while its
+  item is unprocessed, in the queue and the feed alike, so the shell never sets out to make a
+  revision. The ones in a pool come from a relay re-reading a processed item, and from an edit that
+  crosses a seal on its way. Either a processed row grows an edit that makes a revision, or not
+  rewriting a processed note becomes this shell's stated decision in shell.md, which today lists it
+  under **Not shipped**. The composer's `rewrite` is not this: it changes one delivery and never the
+  item.
 - [ ] Reconsider where revisions *appear*. Half-answered on 2026-08-24: a revision now carries its
   own capture time, so it sorts at the moment it was written and no longer ties with what it came
   from — which is what removed the chain columns from the feed key. Showing it beside its ancestor
@@ -208,7 +204,9 @@
   them beside destinations and templates, warns about and skips a record naming a setting the
   running code does not know, and adds the integration test that changes a setting, rebuilds, and
   reads it back ([mirror.md](specs/mirror.md#rebuild),
-  [a-pool-holds-settings](plans/a-pool-holds-settings.md)).
+  [a-pool-holds-settings](plans/a-pool-holds-settings.md)). The same rebuild restores an item's
+  `continues` and `sourceWord`, which only the `.json` carries: a pool rebuilt without the source's
+  word reads every edit made in notemap as the source's own.
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
@@ -219,12 +217,18 @@
 - [ ] browser extension: create notemap browser extension 
     - for now, in personal flow, this is covered by are.na browser extension + are.na->notemap relay
 
-- [ ] relays: an upstream edit to a *processed* item becomes a revision and resurfaces in the queue,
-  which may not be what a person who already dealt with it expects. It is also the only way the edit
-  reaches a destination, so dropping it would let the vault diverge silently. If it bites, a
-  per-source policy in `packages/relay` rather than per relay: archiving the revision on arrival
-  keeps the edit in the pool and the feed and out of the queue. A relay reading a block differently
-  after an upgrade looks like an edit too, and the same policy would quiet that.
+- [ ] relays: an upstream edit to a *processed* item becomes a revision of the line's head and
+  resurfaces in the queue, and one to an item somebody also edited in notemap becomes a
+  continuation that does the same. Either may not be what a person who already dealt with it
+  expects. It is also the only way the edit reaches a destination, so dropping it would let the
+  vault diverge silently. If it bites, a per-source policy in `packages/relay` rather than per
+  relay: archiving the revision on arrival keeps the edit in the pool and the feed and out of the
+  queue. A relay reading a block differently after an upgrade looks like an edit too, and the same
+  policy would quiet that.
+- [ ] A continuation takes the upstream item's capture time, so it is drawn where the original was
+  rather than at the top. It has to: the relay re-reads it under that time, and a different one
+  would read as a changed capture. If continuations get lost far down the queue, the fix is on the
+  drawing side, not the capture time.
 
 - [x] raycast, when escaped, cancels the input in the capture  note. Cache it temporarily and restore when command is opened again
 

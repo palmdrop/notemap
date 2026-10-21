@@ -916,6 +916,16 @@ export const MIGRATIONS: readonly string[] = [
   -- JSON, by field name. NULL is a template that asks for nothing.
   ALTER TABLE routing_templates ADD COLUMN asked TEXT;
   `,
+  `
+  -- The whole payload as JSON, NULL while the item says what its source said.
+  ALTER TABLE items ADD COLUMN source_word TEXT;
+
+  -- A head is continued at most once, which is what keeps a line from forking.
+  ALTER TABLE items ADD COLUMN continues TEXT REFERENCES items (id);
+  CREATE UNIQUE INDEX items_continues
+    ON items (continues)
+    WHERE continues IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

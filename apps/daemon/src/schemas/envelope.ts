@@ -36,6 +36,10 @@ export const captureEnvelopeSchema = z
           "Values for the asked arguments of the templates the capture's trigger tags fire, keyed by tag.",
         example: { "route/todo": { heading: "Next" } },
       }),
+    continues: z.string().min(1).optional().openapi({
+      description:
+        "The head of a line this source diverged from, which the capture continues.",
+    }),
   })
   .openapi("CaptureEnvelope");
 
@@ -55,6 +59,9 @@ export function toEnvelope(
     payload: toPayload(parsed.payload),
     ...(parsed.tags === undefined ? {} : { tags: parsed.tags as TagName[] }),
     ...(parsed.arguments === undefined ? {} : { arguments: parsed.arguments }),
+    ...(parsed.continues === undefined
+      ? {}
+      : { continues: parsed.continues as ItemId }),
   };
 }
 

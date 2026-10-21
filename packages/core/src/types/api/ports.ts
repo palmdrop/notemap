@@ -313,6 +313,8 @@ export interface PoolReads {
     source: SourceId,
     sourceItemId: string,
   ): Promise<Item | undefined>;
+  /** The capture made to continue this one, which a head never has. */
+  continuationOf(id: ItemId): Promise<Item | undefined>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
   feed(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
@@ -418,8 +420,16 @@ export interface PoolTx extends PoolReads {
   addTag(item: ItemId, tag: Tag): Promise<Item>;
   removeTag(item: ItemId, tag: TagName): Promise<Item>;
 
-  /** `at` is the content time the row takes, which is what moves it in the queue. */
-  amendItem(item: ItemId, payload: Payload, at: Timestamp): Promise<Item>;
+  /**
+   * `at` is the content time the row takes, which is what moves it in the
+   * queue. The source's word is replaced, and `undefined` clears it.
+   */
+  amendItem(
+    item: ItemId,
+    payload: Payload,
+    at: Timestamp,
+    sourceWord: Payload | undefined,
+  ): Promise<Item>;
 
   insertRoutingRecord(record: RoutingRecord): Promise<void>;
 

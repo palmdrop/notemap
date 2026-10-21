@@ -48,3 +48,42 @@ describe("whether a failure was the item's", () => {
     expect(notThisItem(new Error("a mapping bug"))).toBe(false);
   });
 });
+
+describe("a capture the pool holds under that identity already", () => {
+  const answering = (code: string) =>
+    reaching(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ error: { code, existing: "head" } }), {
+          status: 409,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+  const envelope = {
+    source: "s",
+    sourceItemId: "u-1",
+    capturedAt: "2026-09-04T14:23:05.000Z",
+    payload: {},
+    tags: [],
+  };
+
+  it("names the head an upstream edit goes to", async () => {
+    expect(await answering("source-item-changed").capture(envelope)).toEqual({
+      kind: "changed",
+      existing: "head",
+    });
+  });
+
+  it("names the head a divergence continues", async () => {
+    expect(await answering("source-item-diverged").capture(envelope)).toEqual({
+      kind: "diverged",
+      existing: "head",
+    });
+  });
+
+  it("throws anything else it was refused", async () => {
+    await expect(
+      answering("continues-not-head").capture(envelope),
+    ).rejects.toBeInstanceOf(PoolRefused);
+  });
+});
