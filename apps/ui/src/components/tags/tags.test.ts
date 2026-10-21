@@ -130,7 +130,7 @@ test("takes a tag already in the filter back out of it", async () => {
   expect(went.to).toEqual(["http://localhost/feed?tag=project%2Fa"]);
 });
 
-test("shuts the dropdown on escape without touching the filter", async () => {
+test("shuts the dropdown on escape without byProcessed the filter", async () => {
   address.path = "/feed?tag=kind%2Fquote";
   serving();
 

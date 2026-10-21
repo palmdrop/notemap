@@ -496,6 +496,11 @@ items directly, enqueues nothing and logs nothing. **Nor does it go through `tag
 reason and one more: tagging now applies a template, and a rebuild replaying an item that carries
 `route/research` must restore a tag, not file the note somewhere a second time.
 
+- **When an item was processed is recomputed, never restored** *(added 2026-10-21)*. It is derived
+  from the capture time, archive state and delivered records an item's record already carries and
+  the revision links its revisions' records carry, so the mirror holds no copy of it, and a rebuild
+  computes it from what it wrote ([core.md](core.md#the-pool-and-the-feed)). A pending reservation
+  is not restored, so neither is the decision time it set.
 - **Order: destinations, then templates, then items.** A template names a destination and a routing
   record names both, so each is restored before the thing that refers to it. Within the items there
   is no order to keep — a revision carries its own capture time and refers to its original by id,

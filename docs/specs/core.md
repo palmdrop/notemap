@@ -515,7 +515,33 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **Capture time comes from the source, never from arrival.** A note written offline and synced
   three days later occupies its true chronological position. A file picked up by an import path
   is placed at its recording time, read from file metadata or the source's naming pattern.
-- Feed order never changes. Editing, archiving, routing and enrichment do not move an item.
+- Feed order never changes. Editing, archiving, routing and enrichment do not move an item. That
+  holds for the feed read by capture time, which is the default and the only reading the queue,
+  the archive and the log have.
+- **The feed may be read by when each item was processed instead** (added 2026-10-21,
+  [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md)). A read names its key, capture time or processed at, beside its order.
+  An item is **processed at** its latest processing decision: the decision time of each routing
+  record it holds (a pending reservation and a mark by hand included), its archive time while it is
+  archived, and the capture time of each revision made from it. An unprocessed item's is its
+  capture time. An edit, classification, deciding a suggestion, enrichment and a delivery landing
+  are not decisions and move nothing. Read that way the feed still holds every item and hides
+  none; only the order differs.
+- **Processed at is derived, and moves backwards when a decision is undone** (added 2026-10-21). A
+  cancelled reservation, an abandoned delivery or an unarchive takes away the fact that set it, and
+  it falls back to the latest one left. The pool answers it on every item as `processedAt`, so a
+  caller can rank an item under either key from the item alone, and the store is expected to index
+  it for keyset paging rather than compute it per page. A rebuild recomputes it from what it
+  restores ([mirror.md](mirror.md#rebuild)).
+- **A read by processed at continues from a processed-at time and an id** (added 2026-10-21). A
+  position is the key of the read it came from. One taken from a read by capture time and handed to
+  a read by processed at is compared as an instant on that key, which is a valid read of a
+  different place.
+- **Keyset paging by processed at is sound for every item whose key holds still** (added
+  2026-10-21). A decision moves an item to the newest end: a reader walking newest first who had not
+  reached it does not meet it again in this walk, and one walking oldest first meets it at the end.
+  A key falling back is a return, on the queue's terms ([the queue](#the-queue)). No row is
+  skipped or repeated except one whose key changed during the walk, and a fresh read shows that one
+  where it now sorts.
 - Items never merge with one another. There is no item-to-item combination anywhere in the
   model.
 - Every item carries the identity of the source it came from and that source's own id for it,
@@ -866,6 +892,17 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   item carries is an empty read rather than a refusal, a filter being a question and not a claim
   that the tag exists. The key and the position are the surface's own, so a filtered read pages
   on the same terms and a position continues from where it names whatever the filter.
+- **The feed's filter also takes states, destinations and sources** (added 2026-10-20). A state is
+  `unprocessed`, `routed` (holding a routing record, pending included), `archived` or `revised`
+  (something was revised from it), on the same clauses that make an item processed. A destination
+  is matched by any routing record naming it, pending included; a source by the source an item was
+  captured through. Within each kind any one named is enough, since one item can be both routed
+  and archived and "routed or archived" is the useful question; tags stay every one of. The kinds
+  named all hold at once. A destination or source nothing names is an empty read, on the terms an
+  unknown tag is. `unprocessed` on the feed reads the queue's items in the feed's key and order,
+  and that is allowed. The queue and the archive take tags and sources *(sources amended
+  2026-10-21)*, a source being as good a question of a work list as a tag; a state on either would
+  restate or contradict the surface, and a destination on the queue could match nothing.
 - An item is **processed** when it has been routed, archived or revised. Being **marked processed
   by hand** — the user carried its content onward themselves — is routing: it appends a routing
   record whose destination is the user, with an optional note of where it went. Passing over
@@ -2045,6 +2082,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   10's key clause. *Its sealing clause is amended by
   [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)*: a reservation
   nothing has tried seals nothing, since nothing could have left.
+- **[The feed may be read by when each item was processed](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md)** — a reader's choice of
+  key on the feed, beside capture time, which stays the default. It counts processing decisions
+  alone and leaves out edits, classification, enrichment and deliveries landing, so it is not
+  `modifiedAt`. Supersedes ADR 10's feed-key clause for that reading only.
 
 ---
 
@@ -2135,6 +2176,14 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Read through a filter of two tags, the feed, the queue and the archive each answer only the items
   carrying both, paged from a position in either order; a tag nothing carries answers an empty
   page, and a tag that trims to nothing is refused as `tag-invalid`.
+- Read through `routed` and `archived` and a tag, the feed answers the items carrying the tag that
+  are routed, archived or both; through a destination, only items holding a record naming it,
+  pending included; through a source, only items captured through it.
+- Read by processed at, the feed puts first the item most recently routed, marked, archived or
+  revised from; editing or tagging an item or a delivery landing does not move it; cancelling the
+  reservation that set it moves it back to the latest decision left. Read by capture time, none of
+  these move it.
+- Every item answers `processedAt`, equal to its capture time where nothing has processed it.
 - Tagging an item that has been routed and revised succeeds, and the tag does not appear on the
   revision.
 - Routing to a reachable destination answers a delivered record with a pointer, and enqueues no

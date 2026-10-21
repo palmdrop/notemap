@@ -1000,7 +1000,7 @@ export function createSqlitePoolStore(
     };
 
     /** A change to an item that owns no column of its own, then the row it left. */
-    async function touched(item: ItemId, what: string): Promise<Item> {
+    async function processedLater(item: ItemId, what: string): Promise<Item> {
       touchItem.run(nextModifiedAt(), item);
 
       const stored = await uncommitted.item(item);
@@ -1124,12 +1124,12 @@ export function createSqlitePoolStore(
           ...agentColumns(added.by),
           toMillis(added.addedAt),
         );
-        return touched(item, "add a tag to");
+        return processedLater(item, "add a tag to");
       }),
 
       removeTag: guard(async (item: ItemId, name: TagName): Promise<Item> => {
         deleteTag.run(item, name);
-        return touched(item, "remove a tag from");
+        return processedLater(item, "remove a tag from");
       }),
 
       insertDestination: guard(
