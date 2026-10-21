@@ -45,6 +45,7 @@ import {
   rebuilt,
   heard,
   sameFilter,
+  WHOLE,
   settle,
   settledDestination,
   settledTemplate,
@@ -73,6 +74,7 @@ function sameList(one: ListState, other: ListState): boolean {
   return (
     one.loading === other.loading &&
     one.order === other.order &&
+    one.by === other.by &&
     sameFilter(one.filter, other.filter) &&
     one.more === other.more &&
     one.fromCache === other.fromCache &&
@@ -142,7 +144,8 @@ function listOf(state: ClientState, surface: Surface): ListState {
   return {
     items,
     order: page.order,
-    filter: page.filter ?? [],
+    by: page.by,
+    filter: page.filter ?? WHOLE,
     loading: page.loading,
     more: !page.exhausted,
     fromCache: drawn,
@@ -591,10 +594,11 @@ export function createClient(config: ClientConfig): Client {
       (current) => waiting(current.outbox).length,
     ),
 
-    loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
+    loadFeed: (order, by) =>
+      after(() => loadMore(state, api, "feed", order, by)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order, tags) =>
-      after(() => enter(state, api, surface, order, tags)),
+    enter: (surface, order, filter, by) =>
+      after(() => enter(state, api, surface, order, filter, by)),
 
     item: (id) =>
       after(async () => {

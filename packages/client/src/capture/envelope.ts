@@ -59,6 +59,7 @@ export function optimisticItem(envelope: CaptureEnvelope): Item {
       ? {}
       : { utcOffset: envelope.utcOffset }),
     modifiedAt: envelope.capturedAt,
+    processedAt: envelope.capturedAt,
     revisedInto: [],
   };
 }

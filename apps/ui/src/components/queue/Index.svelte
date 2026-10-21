@@ -27,6 +27,7 @@
     items,
     selected,
     byDay = false,
+    dayAt,
     leads = false,
     motion,
     slim = false,
@@ -37,6 +38,8 @@
     items: readonly Item[];
     selected: string | undefined;
     byDay?: boolean;
+    /** The instant a line is headed by, where it is not its capture time. */
+    dayAt?: (item: Item) => string;
     /** Straight under the list head, whose line the first heading then shares. */
     leads?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
@@ -61,7 +64,7 @@
   }
 
   const lines = $derived(
-    (byDay ? headed(items) : plain(items)).map((one, at, all) => {
+    (byDay ? headed(items, dayAt) : plain(items)).map((one, at, all) => {
       if (one.kind === "day") return one;
       const item = one.row;
       const before = all[at - 1];

@@ -32,6 +32,7 @@ function anItem(id: string, overrides: Partial<Item> = {}): Item {
     tags: [],
     createdAt: at,
     modifiedAt: at,
+    processedAt: at,
     revisedInto: [],
     ...overrides,
   };

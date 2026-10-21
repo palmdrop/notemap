@@ -1,8 +1,10 @@
 import type {
+  FeedFilter,
+  FeedKey,
   Position,
   ReadOrder,
   SchemaIssue,
-  TagFilter,
+  SurfaceFilter,
   TagFilterRefusal,
 } from "@notemap/core";
 
@@ -38,7 +40,20 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | { readonly kind: "bad-position"; readonly after: string }
+  | {
+      readonly kind: "bad-by";
+      readonly by: string;
+      readonly allowed: readonly string[];
+    }
   | TagFilterRefusal
+  | {
+      readonly kind: "bad-state";
+      readonly value: string;
+      readonly allowed: readonly string[];
+    }
+  | { readonly kind: "bad-destination"; readonly value: string }
+  | { readonly kind: "bad-source"; readonly value: string }
+  | { readonly kind: "unsupported-parameter"; readonly parameter: string }
   | {
       readonly kind: "bad-kind";
       readonly value: string;
@@ -92,8 +107,15 @@ export type PageQuery =
     }
   | { readonly ok: false; readonly refusal: DaemonRefusal };
 
-export type TagFilterQuery =
-  | { readonly ok: true; readonly filter: TagFilter }
+export type FilterQuery<F> =
+  | { readonly ok: true; readonly filter: F }
+  | { readonly ok: false; readonly refusal: DaemonRefusal };
+
+export type FeedFilterQuery = FilterQuery<FeedFilter>;
+export type SurfaceFilterQuery = FilterQuery<SurfaceFilter>;
+
+export type FeedKeyQuery =
+  | { readonly ok: true; readonly by: FeedKey }
   | { readonly ok: false; readonly refusal: DaemonRefusal };
 
 export type OrderedPageQuery =

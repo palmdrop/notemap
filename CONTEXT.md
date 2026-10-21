@@ -63,7 +63,8 @@ _Avoid_: channel, origin, importer, client
 
 **Feed**:
 The pool read chronologically and completely. Accumulates forever; its job is that nothing is
-ever lost.
+ever lost. Read by capture time unless the reader asks for **processed at**, which reorders it
+and hides nothing.
 _Avoid_: timeline, stream, history
 
 **Queue**:
@@ -73,22 +74,38 @@ starts from is the reader's, as it is for the feed. Editing never moves an item 
 the person editing is already looking at it; a revision resurfaces on its own, being a new capture.
 _Avoid_: inbox, backlog, todo list
 
+**Processed at**:
+When an item was **processed**: the latest of the decision time of each routing record it holds
+(a pending reservation and a mark by hand count), its archive time while archived, and the capture
+time of each revision made from it. An unprocessed item's is its capture time. Not a decision, and
+so not counted: an edit, classification, a suggestion decided, enrichment, a delivery landing.
+Derived, so undoing the decision that set it (a cancelled reservation, an abandoned delivery, an
+unarchive) moves it back to the latest decision left. A reader's choice of key on the feed, never
+the default and never on the queue. Carried on every item as `processedAt`, read by
+`by=processed`.
+_Avoid_: last touch, modified, updated, last activity. `modifiedAt` is the last change of any kind,
+a tag included, and orders nothing.
+
 **Position**:
-The sort-key fields of the last row a paginated read handed out, named in domain terms. Each
-surface names its own: the feed and the queue both continue from a capture time and an id, the
-abandoned surface from the time it was given up on. A parameter of a read, never stored, and never
-the frontend's idea of how far processing has got, which notemap's core does not hold. A position
-belongs to the ordering it names rather than to the surface that issued it.
+The sort-key fields of the last row a paginated read handed out, named in domain terms. Each read
+names its own: the feed and the queue both continue from a capture time and an id, a feed read by
+**processed at** from a processed-at time and an id, the abandoned surface from the time it was
+given up on. A parameter of a read, never stored, and never the frontend's idea of how far
+processing has got, which notemap's core does not hold. A position belongs to the ordering it names,
+key included, rather than to the surface that issued it.
 _Avoid_: cursor, offset, page number. Not "token" either, though the word is taken: an
 **access token** is a credential and nothing to do with a place in a list.
 
 **Filter**:
 A condition a reader puts on a surface, which an item or action must meet to be read there — on the
-queue and the feed, a set of tags every one of which an item must carry; on the log, a view of
-kinds or one item. Answered by the pool, so it reaches as far back as the pool does. A question of
-the moment rather than a preference: it lasts as long as the address that names it, and a surface
-opened afresh is always the whole of it. What makes a surface what it is — the queue holding the
-unprocessed, the archive the archived — is not a filter: it is the surface.
+queue and the feed, a set of tags every one of which an item must carry; on the feed also states,
+destinations and sources, an item meeting any one of each kind named (unprocessed, routed, archived
+or revised; routed to one of the destinations; captured through one of the sources), every kind
+named holding at once; on the log, a view of kinds or one item. Answered by the pool, so it reaches
+as far back as the pool does. A question of the moment rather than a preference: it lasts as long as
+the address that names it, and a surface opened afresh is always the whole of it. What makes a
+surface what it is — the queue holding the unprocessed, the archive the archived — is not a filter:
+it is the surface.
 _Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, search, facet,
 query
 

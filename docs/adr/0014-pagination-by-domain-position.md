@@ -53,6 +53,7 @@ is unchanged from ADR 10.
 | Surface | Position |
 |---|---|
 | `feed` | `{ at: createdAt, id }` |
+| `feed`, read by `processed` | `{ at: processedAt, id }` *(added 2026-10-21, [ADR 65](0065-the-feed-may-be-read-by-when-each-item-was-processed.md))* |
 | `queue`, `archived` | `{ at: content time, id }` |
 | `actions.*` | `{ at, id }` |
 | `abandoned` | `{ at: abandonedAt, item, enrichment }` |

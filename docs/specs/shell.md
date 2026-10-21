@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **The feed reads by `processed` as well as by capture, and filters by state,
+  destination and source.** The order chooser has `captured` and `processed` bands, kept on the
+  address as `by=processed`; `tags ▾` is `filter ▾`, with bands above the tags. A row moved by its
+  own decision waits while selected, and by day the headings head the day each row was processed.
+  ([plan](../plans/feed-reading-options.md))
 
 - 2026-10-20 — **The Raycast form keeps a draft and takes attachments alone.** A note left with
   Escape comes back on the next launch with its tags, until a capture is made; a refused one keeps
@@ -1060,9 +1066,11 @@ line where the heading's rule and its box meet, not two, and nothing asks which 
 
 *Added 2026-09-28.* **The list head holds a `tags ▾` control beside the order**, the way to a
 **filter** ([CONTEXT.md](../../CONTEXT.md)) and what answers which tags exist at all, which nothing
-did before. It reads `tags 2 ▾` while two tags filter the list. A tags view — a third view beside
-`timeline` and `index`, taken a tag at a time — was built first and replaced the same day: a filter
-of several tags meant going back and forth between it and the list once per tag.
+did before. It reads `tags 2 ▾` while two tags filter the list. *(It is `filter ▾` since 2026-10-20,
+the feed's taking more than tags: [below](#a-filter-by-state-destination-and-source).)* A tags view
+— a third view beside `timeline` and `index`, taken a tag at a time — was built first and replaced
+the same day: a filter of several tags meant going back and forth between it and the list once per
+tag.
 
 - **It opens a panel with a line to find a tag in**, the caret on it, and every tag beneath with
   how many items on this surface carry it: the queue counts the unprocessed ones, the feed every
@@ -1121,6 +1129,36 @@ address last said.
   them: `Nothing matches both a and b.`, `Nothing matches all of a, b and c.`
 - Nothing on a row filters by its tag yet: pressing a tag still selects it for its `×`, and the
   `tags ▾` panel is the one way in.
+
+#### A filter by state, destination and source
+
+*Added 2026-10-20 ([plan](../plans/feed-reading-options.md)).* **On the feed, the filter takes what
+became of an item and where it came from, as well as its tags.** The control is `filter ▾` on both
+surfaces, `filter 3 ▾` while three things filter the list, counting each state, destination,
+source and tag it holds, and `f` still opens it.
+
+- **The feed's panel holds bands above the tags**: `state`, then `destination`, then `source`, each
+  under its label, then the tags as before. The queue's holds `source` and the tags *(2026-10-21)*:
+  what makes the queue is its state, and nothing on it was routed anywhere.
+- **`state` offers `unprocessed`, `routed`, `discarded` and `revised`**, the shell's word for
+  archived as everywhere else ([CONTEXT.md](../../CONTEXT.md)), on the address as `state=archived`.
+  `routed` includes a mark by hand and a delivery still pending, as processed does.
+- **`destination` offers every destination the pool knows, retired ones under them**, by name.
+  **`source` offers the sources in use**, most recently captured first, each with how many items
+  came through it. Neither band draws a line to find in; both are short.
+- **Within a band, any one taken is enough; across bands, and with the tags, every band holds.**
+  Taking `routed` and `discarded` reads what was either. The panel says it nowhere: a band's lines
+  are marked `▸` as tags are, and the count says how much is on.
+- **It lives on the address beside the tags**, `state=routed&destination=…&source=…`, pushed,
+  never remembered, and taken off by `clear 3` or by back, all on the terms a tag filter is.
+- **An emptied filter names what it holds** in the sentence a tag filter already says: the states
+  by their word, a destination as `to` its name, a source as `from` its name, joined by `or` within
+  a band, and the bands as the tags are joined: `Nothing matches routed or discarded, to
+  obsidian and kind/quote.`
+- **A row is not marked for the state, destination or source it matches.** The row already says
+  its state and where it went, which is why it is on the list.
+- With the pool out of reach the feed draws the filter from what it holds, and says so as any
+  cache-drawn surface does ([client.md](client.md#a-filtered-surface)).
 
 #### The process surface
 
@@ -2441,6 +2479,27 @@ than failing. Turning a surface **replaces** the URL rather than pushing it: whi
 from is not a place to go back to. The view is kept the same way, and the plain address is the
 timeline.
 
+**The feed's chooser offers the key as well as the end** *(added 2026-10-21,
+[ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))*. Its panel holds two bands: `captured`, offering `newest` and `oldest`,
+and `processed`, offering `latest` and `earliest`. The control reads `newest` or `oldest` as
+before, and `latest processed` or `earliest processed` while the feed is read by when each item
+was **processed**. The queue's and the log's choosers offer the end alone. The key is named on the
+URL as `by=processed`, absent for capture time, remembered per surface with the order, and
+replaced rather than pushed, as the order is.
+
+- **A row processed while the feed is read by it moves with it.** Routed, marked or discarded, it
+  goes to the head of a list read latest first, and an edit moves it nowhere, and slides there the
+  way an arriving row does. **A selected row is held where it stood** until the selection leaves it,
+  as a row leaving a filtered list is held ([Tags, and a filter](#tags-and-a-filter)), so a decision
+  does not snatch the row out from under the person making it.
+- **An undo waits for the pool.** Undiscarding or cancelling a delivery moves the row back only
+  once the pool says where to, and the row stays put until then.
+- **Read by day, the headings head the day each row was processed**, which is the order the list is
+  in, and **a row's stamp stays its capture time** *(2026-10-21)*. So a row under today's heading
+  may say `07:02` and mean a week ago; its stamp names the whole capture instant to assistive
+  technology, as it always has. A day heading goes before the first row processed
+  that day.
+
 ### Settings
 
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
@@ -3165,6 +3224,11 @@ view is how a reader sees more at once.
 ---
 
 ## Acceptance criteria
+
+- On the feed read `latest processed`, routing a row moves it to the head once the selection leaves
+  it, and a reload at `/feed?by=processed` reads the same way; the queue's chooser offers no key.
+- `/feed?state=routed&state=archived` draws only rows that were routed or discarded, the control
+  reads `filter 2 ▾`, and the queue's panel draws a source band and no state or destination band.
 
 - An unfurl arriving, or failing, moves nothing on the page: the block is the same height asking
   as answered, and its words stand in the same place with a picture as without one.

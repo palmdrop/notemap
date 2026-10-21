@@ -3,7 +3,12 @@ import type { Context } from "hono";
 import type { Pool } from "@notemap/core";
 
 import { pageUrl } from "../utils/positions";
-import { readPageQuery, readTagFilter } from "../utils/query";
+import {
+  filterParameters,
+  readFeedFilter,
+  readFeedKey,
+  readPageQuery,
+} from "../utils/query";
 import { json, refuse } from "../utils/responses";
 
 export function feedHandler(pool: Pool) {
@@ -11,16 +16,19 @@ export function feedHandler(pool: Pool) {
     const url = new URL(context.req.url);
     const query = readPageQuery(url);
     if (!query.ok) return refuse(query.refusal);
-    const tags = readTagFilter(url);
-    if (!tags.ok) return refuse(tags.refusal);
+    const key = readFeedKey(url);
+    if (!key.ok) return refuse(key.refusal);
+    const filter = readFeedFilter(url);
+    if (!filter.ok) return refuse(filter.refusal);
 
     const slice = await pool.views.feed(
       {
         order: query.order,
+        by: key.by,
         limit: query.limit,
         ...(query.after === undefined ? {} : { after: query.after }),
       },
-      tags.filter,
+      filter.filter,
     );
 
     return json(
@@ -33,8 +41,9 @@ export function feedHandler(pool: Pool) {
                 "/v1/feed",
                 {
                   order: query.order,
+                  by: key.by,
                   limit: String(query.limit),
-                  tag: tags.filter,
+                  ...filterParameters(filter.filter),
                 },
                 slice.next,
               ),

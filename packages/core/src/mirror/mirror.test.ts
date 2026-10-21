@@ -52,6 +52,7 @@ function anItem(overrides: Partial<Item> = {}): Item {
     tags: [],
     createdAt: at("2026-08-11T09:00:00.000Z"),
     modifiedAt: at("2026-08-11T09:00:00.000Z"),
+    processedAt: at("2026-08-11T09:00:00.000Z"),
     revisedInto: [],
     ...overrides,
   };

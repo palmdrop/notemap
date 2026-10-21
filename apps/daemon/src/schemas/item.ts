@@ -84,6 +84,8 @@ export const itemSchema = z
       .object({ archivedAt: z.string(), reason: z.string().optional() })
       .optional(),
     modifiedAt: z.string(),
+    /** When it was processed: what a feed read `by=processed` is ordered on. */
+    processedAt: z.string(),
     /** Empty rather than absent, so a reader asks for its length and nothing else. */
     revisedInto: z.array(z.string()),
     routing: routingSummary.optional(),

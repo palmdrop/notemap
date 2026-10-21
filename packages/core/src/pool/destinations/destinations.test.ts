@@ -553,6 +553,7 @@ describe("retiring a destination", () => {
       tags: [],
       createdAt: "2026-08-17T09:00:00.000Z" as Timestamp,
       modifiedAt: "2026-08-17T09:00:00.000Z" as Timestamp,
+      processedAt: "2026-08-17T09:00:00.000Z" as Timestamp,
       revisedInto: [],
     };
     const record: RoutingRecord = {
@@ -637,6 +638,7 @@ describe("resolving what a record still has to carry out", () => {
     tags: [],
     createdAt: "2026-08-17T09:00:00.000Z" as Timestamp,
     modifiedAt: "2026-08-17T09:00:00.000Z" as Timestamp,
+    processedAt: "2026-08-17T09:00:00.000Z" as Timestamp,
     revisedInto: [],
   };
 

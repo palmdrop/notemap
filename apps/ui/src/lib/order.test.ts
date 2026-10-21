@@ -1,6 +1,13 @@
 import { expect, test } from "vitest";
 
-import { orderFor, remember, withOrder } from "./order";
+import {
+  keyFor,
+  orderFor,
+  remember,
+  rememberKey,
+  withKey,
+  withOrder,
+} from "./order";
 
 const at = (query = "") => new URL(`http://localhost/${query}`);
 
@@ -37,4 +44,20 @@ test("names the order on a URL without disturbing the rest of it", () => {
 
   expect(url.searchParams.get("order")).toBe("newest-first");
   expect(url.searchParams.get("furled")).toBe("yes");
+});
+
+test("reads the feed's key off the address, then what was remembered, then capture time", () => {
+  expect(keyFor(at())).toBe("capture");
+  expect(keyFor(at("?by=processed"))).toBe("processed");
+
+  rememberKey("processed");
+  expect(keyFor(at())).toBe("processed");
+  expect(keyFor(at("?by=capture"))).toBe("capture");
+  expect(keyFor(at("?by=sideways"))).toBe("processed");
+});
+
+test("names processed on the address and leaves capture time off it", () => {
+  const named = withKey(at("?order=newest-first"), "processed");
+  expect(named.searchParams.get("by")).toBe("processed");
+  expect(withKey(named, "capture").search).toBe("?order=newest-first");
 });

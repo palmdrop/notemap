@@ -27,6 +27,7 @@ export type ItemRow = {
   readonly continues: string | null;
   /** The whole payload, as JSON. */
   readonly source_word: string | null;
+  readonly processed_at: number;
 };
 
 export type ItemTagRow = AgentColumns & {
@@ -201,6 +202,7 @@ export const TABLE_COLUMNS = {
     "archive_reason",
     "continues",
     "source_word",
+    "processed_at",
   ],
   item_tags: ["item_id", "name", "by_kind", "by_ref", "added_at"],
   item_assets: ["item_id", "slot", "asset_id"],

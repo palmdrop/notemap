@@ -8,7 +8,7 @@ import { read, until } from "#testing/observing";
 import { anItem } from "#testing/pool";
 import { json, mockTransport } from "#testing/transport";
 import { HISTORY, retained } from "./retention";
-import { cached, emptyPage, emptyState } from "./state";
+import { cached, emptyPage, emptyState, filterOf } from "./state";
 
 /** Feed history: processed, so it is nobody's working set. */
 function history(id: string, at: string): Item {
@@ -79,7 +79,10 @@ describe("retention", () => {
       ...empty,
       items: cached(empty, [...old, drawn]),
       filtered: {
-        feed: { ...emptyPage("newest-first", ["kind/quote"]), ids: ["drawn"] },
+        feed: {
+          ...emptyPage("newest-first", filterOf({ tags: ["kind/quote"] })),
+          ids: ["drawn"],
+        },
       },
     };
 

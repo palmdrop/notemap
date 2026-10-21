@@ -4,7 +4,7 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
+  import { isWhole, type Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
@@ -18,7 +18,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import ClearFilters from "$components/tags/ClearFilters.svelte";
-  import TagFilter from "$components/tags/TagFilter.svelte";
+  import FilterPanel from "$components/tags/FilterPanel.svelte";
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -26,7 +26,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain, type Drawn } from "$lib/days";
+  import { byDay, dayAtFor, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -38,6 +38,7 @@
   import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
+  import { nameOf } from "$lib/destinations";
   import { NOTHING_CAPTURED, nothingMatches } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -61,7 +62,7 @@
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
-  let tagFilter = $state<TagFilter | undefined>(undefined);
+  let filterPanel = $state<FilterPanel | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -113,33 +114,47 @@
   const rows = $derived.by(() => {
     const live = $feed.items;
     const kept = $heldRow;
-    if (
-      selected === undefined ||
-      kept === undefined ||
-      live.some((row) => row.id === selected)
-    ) {
-      return live;
+    if (selected === undefined || kept === undefined) return live;
+
+    // Read by when rows were processed, a decision moves its own row; it waits where it
+    // stood until the selection leaves it, as one leaving a list does.
+    const at = live.findIndex((row) => row.id === selected);
+    const was = untrack(() => stood);
+    if (at !== -1) {
+      if ($feed.by !== "processed" || was === undefined || was === at)
+        return live;
+      const others = live.filter((row) => row.id !== selected);
+      const place = Math.min(was, others.length);
+      return [...others.slice(0, place), live[at]!, ...others.slice(place)];
     }
+
     const place = Math.min(
-      untrack(() => stood) ?? placeOf(live, kept, $feed.order),
+      was ?? placeOf(live, kept, $feed.order, $feed.by),
       live.length,
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
+  let stoodFor: string | undefined;
+
   $effect(() => {
+    if (selected === undefined) stoodFor = undefined;
     const at = rows.findIndex((row) => row.id === selected);
     // Only the feed's own place for it: one this surface chose for a held
     // row would outlive a read that has not landed yet.
-    if (at !== -1 && $feed.items.some((row) => row.id === selected)) {
-      stood = at;
-    }
+    if (at === -1 || !$feed.items.some((row) => row.id === selected)) return;
+    // A row moved by its own decision keeps the place it was selected at.
+    if ($feed.by === "processed" && stoodFor === selected) return;
+    stood = at;
+    stoodFor = selected;
   });
 
   const current = $derived(rows.find((row) => row.id === selected));
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+  const headed = $derived(
+    layout.byDay ? byDay(rows, dayAtFor($feed.by)) : plain(rows),
+  );
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -222,7 +237,7 @@
       ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),
-    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
     {
       id: "view",
       label: "view",
@@ -233,8 +248,8 @@
 
 <Head>
   <ViewChooser {view} onchoose={read} />
-  <TagFilter
-    bind:this={tagFilter}
+  <FilterPanel
+    bind:this={filterPanel}
     surface={SURFACE}
     filter={reading.filter}
     ontoggle={reading.toggle}
@@ -265,7 +280,7 @@
     bind:this={drawn[item.id]}
     {item}
     surface="feed"
-    filter={$feed.filter}
+    filter={$feed.filter.tags}
     selected={selected === item.id}
     offline={!pool.yes}
     commands={selected === item.id ? commands : []}
@@ -291,6 +306,7 @@
     {motion}
     bind:this={index}
     byDay={layout.byDay}
+    dayAt={dayAtFor($feed.by)}
     leads={refused === undefined}
     items={rows}
     {selected}
@@ -318,10 +334,10 @@
     {#if bare}
       <Rail>feed</Rail>
       <Body>
-        {#if $feed.filter.length === 0}
+        {#if isWhole($feed.filter)}
           <Prose text={NOTHING_CAPTURED} />
         {:else}
-          {nothingMatches($feed.filter)}
+          {nothingMatches($feed.filter, nameOf)}
           <ClearFilters onclick={reading.clear} />
         {/if}
       </Body>

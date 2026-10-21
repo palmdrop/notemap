@@ -5,7 +5,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   captureMany,
   daemon,
+  envelope,
   ids,
+  post,
   send,
   slice,
   type Daemon,
@@ -230,5 +232,146 @@ describe("a tag filter on the surfaces", () => {
         error: { code: "tag-invalid", tag: "" },
       });
     }
+  });
+});
+
+describe("the feed's state, destination and source filters", () => {
+  const RELAY = "0198f0c2-0000-7000-8000-0000000000a0";
+
+  /** Four captures: the first archived, the second marked, the third from a relay. */
+  async function decided(app: Hono<AppEnv>): Promise<string[]> {
+    const captured = await captureMany(app, 3);
+    const [first, second] = captured;
+    await send(app, `/v1/items/${first}/archive`);
+    await send(app, `/v1/items/${second}/mark-processed`);
+    await post(
+      app,
+      envelope({
+        id: RELAY,
+        source: "memos",
+        capturedAt: "2026-08-08T09:09:00.000Z",
+      }),
+    );
+    return [...captured, RELAY];
+  }
+
+  it("reads any one of the states named, and carries them on next", async () => {
+    const app = serving();
+    const [first, second, third, relayed] = await decided(app);
+
+    const page = await slice(
+      app,
+      "/v1/feed?state=routed&state=archived&limit=1",
+    );
+    expect(ids(page)).toEqual([second]);
+    expect(
+      new URL(page.next ?? "", "http://pool").searchParams.getAll("state"),
+    ).toEqual(["routed", "archived"]);
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([first]);
+
+    expect(ids(await slice(app, "/v1/feed?state=unprocessed"))).toEqual([
+      relayed,
+      third,
+    ]);
+  });
+
+  it("reads the source named on the feed, the queue and the archive", async () => {
+    const app = serving();
+    const [first, , , relayed] = await decided(app);
+
+    expect(ids(await slice(app, "/v1/feed?source=memos"))).toEqual([relayed]);
+    expect(ids(await slice(app, "/v1/queue?source=memos"))).toEqual([relayed]);
+    expect(ids(await slice(app, "/v1/archived?source=memos"))).toEqual([]);
+
+    const page = await slice(app, "/v1/archived?source=web&limit=1");
+    expect(ids(page)).toEqual([first]);
+  });
+
+  it("answers nothing for a destination nothing was routed to", async () => {
+    const app = serving();
+    await decided(app);
+
+    expect(await slice(app, "/v1/feed?destination=elsewhere")).toEqual({
+      values: [],
+    });
+  });
+
+  it("refuses a state that is not one, and an empty destination or source", async () => {
+    const app = serving();
+    const refused = async (query: string) => {
+      const response = await app.request(`/v1/feed?${query}`);
+      expect(response.status).toBe(422);
+      return body(response);
+    };
+
+    expect(await refused("state=processed")).toEqual({
+      error: {
+        code: "bad-state",
+        value: "processed",
+        allowed: ["unprocessed", "routed", "archived", "revised"],
+      },
+    });
+    expect(await refused("destination=")).toEqual({
+      error: { code: "bad-destination", value: "" },
+    });
+    expect(await refused("source=")).toEqual({
+      error: { code: "bad-source", value: "" },
+    });
+  });
+
+  it("is refused on the queue and the archive, rather than ignored", async () => {
+    const app = serving();
+
+    for (const path of ["/v1/queue", "/v1/archived"]) {
+      for (const parameter of ["by", "state", "destination"]) {
+        const response = await app.request(`${path}?${parameter}=x`);
+        expect(response.status).toBe(422);
+        expect(await body(response)).toEqual({
+          error: { code: "unsupported-parameter", parameter },
+        });
+      }
+    }
+  });
+});
+
+describe("the feed read by when each item was processed", () => {
+  it("puts the item most recently decided about first, and carries by on next", async () => {
+    const app = serving();
+    const [first, second, third] = await captureMany(app, 3);
+    await send(app, `/v1/items/${first}/mark-processed`);
+
+    const page = await slice(app, "/v1/feed?by=processed&limit=2");
+    expect(ids(page)).toEqual([first, third]);
+    expect(new URL(page.next ?? "", "http://pool").searchParams.get("by")).toBe(
+      "processed",
+    );
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([second]);
+
+    expect(ids(await slice(app, "/v1/feed?limit=1"))).toEqual([third]);
+  });
+
+  it("answers processedAt on every item, its capture time where nothing processed it", async () => {
+    const app = serving();
+    await captureMany(app, 1);
+
+    const response = await app.request("/v1/feed");
+    const { values } = (await response.json()) as {
+      values: { createdAt: string; processedAt: string }[];
+    };
+    expect(values[0]?.processedAt).toBe(values[0]?.createdAt);
+  });
+
+  it("refuses a key that is not one", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/feed?by=modified");
+    expect(response.status).toBe(422);
+    expect(await body(response)).toEqual({
+      error: {
+        code: "bad-by",
+        by: "modified",
+        allowed: ["capture", "processed"],
+      },
+    });
   });
 });

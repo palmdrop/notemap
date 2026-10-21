@@ -550,6 +550,9 @@
           "modifiedAt": {
             "type": "string"
           },
+          "processedAt": {
+            "type": "string"
+          },
           "revisedInto": {
             "type": "array",
             "items": {
@@ -574,6 +577,7 @@
           "tags",
           "createdAt",
           "modifiedAt",
+          "processedAt",
           "revisedInto"
         ]
       },
@@ -3824,7 +3828,7 @@
     "/v1/feed": {
       "get": {
         "summary": "Read the feed",
-        "description": "Every item chronologically by capture time, including archived items and the items revisions were made from, or only those carrying every `tag` named. Follow `next` until it is absent; it carries the filter.",
+        "description": "Every item chronologically by capture time, or by when each was processed with `by=processed`, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
         "parameters": [
           {
             "schema": {
@@ -3876,6 +3880,72 @@
             "in": "query",
             "style": "form",
             "explode": true
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+              "example": [
+                "memos"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+            "name": "source",
+            "in": "query",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+              "example": "processed"
+            },
+            "required": false,
+            "description": "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+            "name": "by",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated; `unprocessed`, `routed`, `archived` or `revised`, and an item is read where it is any one of them. Anything else is refused with `422 bad-state`.",
+              "example": [
+                "routed",
+                "archived"
+              ]
+            },
+            "required": false,
+            "description": "Repeated; `unprocessed`, `routed`, `archived` or `revised`, and an item is read where it is any one of them. Anything else is refused with `422 bad-state`.",
+            "name": "state",
+            "in": "query",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per destination id; an item is read where a routing record, pending included, names any one of them. An empty one is refused with `422 bad-destination`.",
+              "example": [
+                "0198f0c2-0000-7000-8000-000000000000"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per destination id; an item is read where a routing record, pending included, names any one of them. An empty one is refused with `422 bad-destination`.",
+            "name": "destination",
+            "in": "query",
+            "style": "form",
+            "explode": true
           }
         ],
         "responses": {
@@ -3906,7 +3976,11 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "tag-invalid"
+                            "tag-invalid",
+                            "bad-source",
+                            "bad-by",
+                            "bad-state",
+                            "bad-destination"
                           ]
                         }
                       },
@@ -3930,7 +4004,7 @@
     "/v1/queue": {
       "get": {
         "summary": "Read the queue",
-        "description": "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named.",
+        "description": "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named, `source` those captured through any one named. `by`, `state` and `destination` are the feed's, refused here with `422 unsupported-parameter`.",
         "parameters": [
           {
             "schema": {
@@ -3979,6 +4053,24 @@
             "required": false,
             "description": "Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal.",
             "name": "tag",
+            "in": "query",
+            "style": "form",
+            "explode": true
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+              "example": [
+                "memos"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+            "name": "source",
             "in": "query",
             "style": "form",
             "explode": true
@@ -4012,7 +4104,9 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "tag-invalid"
+                            "tag-invalid",
+                            "bad-source",
+                            "unsupported-parameter"
                           ]
                         }
                       },
@@ -4036,7 +4130,7 @@
     "/v1/archived": {
       "get": {
         "summary": "Read the archive",
-        "description": "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
+        "description": "Every archived item, on the queue's key and default, and its filters. Archiving hides an item from the queue; it stays in the feed and stays processable.",
         "parameters": [
           {
             "schema": {
@@ -4088,6 +4182,24 @@
             "in": "query",
             "style": "form",
             "explode": true
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+              "example": [
+                "memos"
+              ]
+            },
+            "required": false,
+            "description": "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+            "name": "source",
+            "in": "query",
+            "style": "form",
+            "explode": true
           }
         ],
         "responses": {
@@ -4118,7 +4230,9 @@
                             "bad-limit",
                             "bad-order",
                             "bad-position",
-                            "tag-invalid"
+                            "tag-invalid",
+                            "bad-source",
+                            "unsupported-parameter"
                           ]
                         }
                       },

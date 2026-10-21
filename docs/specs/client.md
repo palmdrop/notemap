@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **A filter is states, destinations and sources as well as tags, and the feed may
+  be read by when each item was processed.** A page is kept by its key, order and filter, all
+  answered from held copies offline; a decision this client makes moves the row on a page read by
+  it, and an undo waits for the pool's item. ([plan](../plans/feed-reading-options.md))
 
 - 2026-10-19 — **A tag, a capture and an edit carry values for what a template asks.** The `tag`
   operation holds them, so an offline tag drains with what it was given. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
@@ -430,14 +435,19 @@ A client presents four surfaces, each a thin projection of core:
   client's alone (see [editing](#editing-and-the-hand-over-seal)).
 - **The feed** — the pool read chronologically and completely ([core.md](core.md)), newest first
   by default, paginated by a capture-time **position** and walked by following the `next` link
-  [http-v1.md](http-v1.md) hands back. A read surface: it never drains.
+  [http-v1.md](http-v1.md) hands back. A read surface: it never drains. It may be read by when each
+  item was **processed** instead *(2026-10-21)*, and its position is then a processed-at time (see
+  [reading the feed by when items were processed](#reading-the-feed-by-when-items-were-processed)).
 - **The queue** — the pool read as unprocessed, unarchived items, oldest first by default.
   Presented as **one scrollable list** (see [the queue](#the-queue)).
 - Either may be **drawn from the cache** rather than from the pool (see
   [surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), and carries which it is.
 - **An order** — which end of a surface a reader starts from. A default per surface and a
   parameter of a read, never a stored preference.
-- **A filter** *(2026-09-28)* — a set of tags every item on the surface carries
+- **A key** *(2026-10-21)* — which instant the feed is ranked by, capture time or processed at.
+  Capture time by default, and the only key the queue has. A parameter of a read, as the order is.
+- **A filter** *(2026-09-28, widened 2026-10-20)* — a set of tags every item on the surface
+  carries, and on the feed also the states, destinations and sources an item meets one of each
   ([CONTEXT.md](../../CONTEXT.md)). Named when a surface is arrived at, never stored, and carried
   by the surface's state so a shell draws what it is filtered by from the same place it draws the
   rows (see [a filtered surface](#a-filtered-surface)).
@@ -521,7 +531,9 @@ processed — routed or archived — which the pool decides, not the scroll.
   is why it is a queue, newest first for the feed — and a read may name another. Naming an order
   the surface is not already in **turns it around and reads it again from the start**: a position
   belongs to the order that produced it, and two orders cannot be stitched into one list. The order
-  a surface is in is part of what it reports, so a control can draw it.
+  a surface is in is part of what it reports, so a control can draw it. **Naming another key turns
+  the feed the same way** *(2026-10-20)*, and for the same reason: a position belongs to its key as
+  well as its order.
 - **How many items the queue holds is a count, not a page** *(added 2026-09-30)*. A surface that
   has read two pages knows two pages, so the client reads the pool's own count from
   `GET /v1/counts` rather than counting what it walked. It is `undefined` until the pool has
@@ -551,19 +563,28 @@ has walked, so a filtered reading made from them would be silently short of what
   the whole one, and keeps its filter: the shell still names it.
 - **The filter is the client's to tidy.** Each tag is trimmed, a blank one is dropped and the same
   tag named twice is one, so what the pool is asked and what the page is kept by are the same set.
+  States, destinations and sources are tidied the same way, without the trim, an id being matched
+  exactly *(2026-10-20)*. States and destinations are the feed's, and a filter naming one is never
+  asked of the queue; a source is asked of either *(2026-10-21)*.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
   anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
-  by, judged against the copy the client holds. Every change that could move an item between pages
-  asks it: an arrival, a settlement, a decision, an archive and its undo, and a tag or an untag.
-  So taking a filter's tag off a row takes the row off the filtered page and leaves it on the whole
-  one, and tagging an item the client holds into a filter places it on the filtered page where the
-  page reaches, on the terms a returned item is placed ([the queue](#the-queue)).
+  by, judged against the copy the client holds. It also meets one of each kind of the rest the
+  filter names *(2026-10-20)*: a state, read from its archive state, its routing summary
+  and `revisedInto` as the queue's own condition is; a destination, read from the ids its routing
+  summary's `to` names; a source, read from its own. Every change that could move an item between
+  pages asks it: an arrival, a settlement, a decision, an archive and its undo, and a tag or an
+  untag. So taking a filter's tag off a row takes the row off the filtered page and leaves it on the
+  whole one, and tagging an item the client holds into a filter places it on the filtered page where
+  the page reaches, on the terms a returned item is placed ([the queue](#the-queue)).
 - **The watcher applies tags as well as processing** ([the action log](#the-action-log)): an
   action saying a tag was added or taken off changes the copy held of its item, and the pages follow
   by the rule above. An item the client does not hold is not read for a tag, and is on the next
   read. Nor is a tag this
   client has its own change to still unsent: the copy already says what the person did last, and
   an older action from the log would undo it until the change settled.
+- **A filter on a destination is answered offline too** *(2026-10-20)*. The routing summary names
+  each destination by id, so the copy the client holds says where an item was routed without its
+  records, and a route this client makes is folded into it from the record the pool answers.
 - **A filtered page is not persisted**, and neither are the whole pages; a reload arrives through
   whatever filter the shell names and reads it again. With the pool out of reach it is **drawn from
   the cache** ([surfaces drawn from the cache](#surfaces-drawn-from-the-cache)), filtered by the
@@ -574,7 +595,38 @@ has walked, so a filtered reading made from them would be silently short of what
   draws.
 - **What a filter is chosen from is the whole list of tags in use**, the read cache it was
   ([the outbox](#the-outbox)) and what completion offers. There is no reading of the tags beside a
-  filter: any set may be put on a surface, one no item carries all of included.
+  filter: any set may be put on a surface, one no item carries all of included. Destinations and
+  sources are chosen from the destinations and the sources in use the client already reads, on
+  the same terms *(2026-10-20)*.
+
+### Reading the feed by when items were processed
+
+*Added 2026-10-21 ([ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md)).* The feed may be read by when each item was
+**processed**, which the pool answers on every item as `processedAt`.
+
+- **A page is kept by its key, its order and its filter.** A page read by one key is never
+  extended by a read under another, and a read lands on the page it was asked for, on the terms a
+  filtered read does ([a filtered surface](#a-filtered-surface)). Rank, placement and what a page
+  is drawn from all read the key the page was read by.
+- **`processedAt` is the pool's.** The client takes it from every item the pool answers and never
+  works it out from what it holds, which cannot: the routing summary carries no record times.
+- **A decision this client makes moves the copy's `processedAt` forward.** A route or a mark
+  reaches the pool before it is anything, and the record it answers carries its decision time,
+  which is the key itself: the copy takes it exactly. An archive may wait in the outbox, so the copy
+  takes the operation's own time until the pool's item replaces it. An edit moves nothing. A row
+  read by when it was processed moves to the newest end then, live, as an arriving row does.
+- **An undo waits for the pool.** A cancel or an unarchive takes away a fact the key may have come
+  from, and the client cannot tell which fact is left. The row keeps its place until the pool's
+  item says where it now sorts.
+- **The watcher reads the item again** for an action that can move its key: a capture, a
+  revision, an archive or an unarchive, a template firing, a delivery failing or abandoned or
+  cancelled, and a delivery landing. Several of these say nothing about the instant the key took
+  (a landing's `at` is when it landed, not when it was decided), so the item read is what moves the
+  row, through `GET /v1/items?id=…` as an arrival's is. A revision, an archive and a delivery
+  failing are read for this alone, so only while a feed page is read by when items were processed,
+  and only for an item the client holds; the rest are read anyway. An amendment moves nothing.
+- **Drawn from the cache, the feed read this way ranks by the `processedAt` each copy holds**,
+  in whichever order it is read.
 
 ### The action log
 
@@ -1176,8 +1228,8 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
 - **The queue is what the client can see is unprocessed** — no routing records, not archived,
   nothing revised from it — which is the same three anti-joins the pool's own queue read makes,
   asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
-  time, in whichever order the surface is being read, and a **filtered** one holds only what
-  carries every tag in its filter.
+  time, in whichever order the surface is being read, the feed by processed at where it is read
+  by that, and a **filtered** one holds only what meets its filter.
 - **A cache-drawn surface is marked as one.** A shell that drew it as the pool's reading would tell
   a person that three rows means they are nearly done, so the state carries the claim and what a
   shell draws from it is [shell.md](shell.md)'s. *(Amended 2026-08-26: it draws nothing above the
@@ -1518,8 +1570,9 @@ that logic out of the one place it is meant to live.
   prod it, and the client does not poll while the daemon is answering.
 - A daemon answering a different pool identity from the one the store holds leaves the client with
   no cached items, the outbox intact, and something reported.
-- Cached history past the cap is evicted oldest-touched-first, and an item that is unprocessed or
-  has an undrained operation is not evicted whatever the cap says, nor one a filtered page holds.
+- Cached history past the cap is evicted oldest-touched-first, and an item that is
+  unprocessed or has an undrained operation is not evicted whatever the cap says, nor one a filtered
+  page holds.
 - A surface arrived at through a filter asks the pool for every tag in it and draws only what
   carries them all; arriving through none draws the whole page as it stood, without reading the
   feed again.
@@ -1528,5 +1581,12 @@ that logic out of the one place it is meant to live.
   the filter places it there.
 - With the pool out of reach, a filtered surface is drawn from what the client holds, and says
   so.
+- A feed filtered by `routed`, by a destination or by a source is drawn offline from the copies
+  held, the destination read from the routing summary.
+- A feed read by processed at keeps its page apart from the feed read by capture time; routing a
+  row this client holds moves it to the head of the one read newest first by processed at and
+  leaves the other where it was. Editing a row moves it on neither.
+- An unarchive on a feed read by processed at leaves the row where it was until the pool's item
+  arrives, and then places it where that item's `processedAt` sorts.
 - The shared client builds and runs with no UI framework imported, and a shell observes its state
   through the subscribe contract alone.

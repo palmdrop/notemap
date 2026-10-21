@@ -7,6 +7,7 @@ import { anItem, routeOf } from "#testing/pool";
 import { json, mockTransport, type Handler } from "#testing/transport";
 import type { Item } from "#api/types";
 import type { Client, ListState } from "../types";
+import { filterOf, WHOLE } from "#state/state";
 
 const ids = (list: ListState) => list.items.map((item) => item.id);
 
@@ -65,10 +66,14 @@ describe("a surface read through a filter", () => {
   it("asks the pool for every tag, and says what it is filtered by", async () => {
     const { client, transport } = clientOver(pool());
 
-    await client.enter("queue", undefined, ["kind/quote", " project/a "]);
+    await client.enter("queue", undefined, {
+      tags: ["kind/quote", " project/a "],
+    });
 
     expect(ids(read(client.queue))).toEqual(["three"]);
-    expect(read(client.queue).filter).toEqual(["kind/quote", "project/a"]);
+    expect(read(client.queue).filter).toEqual(
+      filterOf({ tags: ["kind/quote", "project/a"] }),
+    );
     expect(tagsAsked(transport.sent, "GET /v1/queue")).toEqual([
       ["kind/quote", "project/a"],
     ]);
@@ -78,13 +83,13 @@ describe("a surface read through a filter", () => {
     const { client, transport } = clientOver(pool());
 
     await client.enter("feed");
-    await client.enter("feed", undefined, ["project/a"]);
+    await client.enter("feed", undefined, { tags: ["project/a"] });
     expect(ids(read(client.feed))).toEqual(["two", "three"]);
 
     await client.enter("feed");
 
     expect(ids(read(client.feed))).toEqual(["one", "two", "three"]);
-    expect(read(client.feed).filter).toEqual([]);
+    expect(read(client.feed).filter).toEqual(WHOLE);
     expect(tagsAsked(transport.sent, "GET /v1/feed")).toEqual([
       [],
       ["project/a"],
@@ -94,7 +99,7 @@ describe("a surface read through a filter", () => {
   it("drops a row whose filter tag is taken off, and keeps it on the whole page", async () => {
     const { client } = clientOver(pool());
     await client.enter("queue");
-    await client.enter("queue", undefined, ["kind/quote"]);
+    await client.enter("queue", undefined, { tags: ["kind/quote"] });
     expect(ids(read(client.queue))).toEqual(["one", "three"]);
 
     await client.untag("one", "kind/quote");
@@ -107,7 +112,7 @@ describe("a surface read through a filter", () => {
   it("takes an item tagged into the filter where the page reaches", async () => {
     const { client } = clientOver(pool());
     await client.enter("queue");
-    await client.enter("queue", undefined, ["kind/quote"]);
+    await client.enter("queue", undefined, { tags: ["kind/quote"] });
 
     await client.tag("two", "kind/quote");
 
@@ -119,7 +124,7 @@ describe("a surface read through a filter", () => {
     await client.enter("queue");
 
     transport.unreachable(true);
-    await client.enter("queue", undefined, ["project/a"]);
+    await client.enter("queue", undefined, { tags: ["project/a"] });
 
     const list = read(client.queue);
     expect(list.fromCache).toBe(true);
@@ -151,7 +156,7 @@ describe("a surface read through a filter", () => {
       return json(200, { values: turns === 1 ? [mark] : [untagged, mark] });
     });
 
-    await client.enter("queue", undefined, ["kind/quote"]);
+    await client.enter("queue", undefined, { tags: ["kind/quote"] });
     const held = client.actions.watch().subscribe(() => undefined);
     for (let turn = 0; turn < 20; turn += 1)
       await vi.advanceTimersByTimeAsync(0);
@@ -202,7 +207,7 @@ describe("a surface read through a filter", () => {
     });
 
     await client.enter("feed");
-    await client.enter("feed", undefined, ["kind/quote"]);
+    await client.enter("feed", undefined, { tags: ["kind/quote"] });
     await client.enter("feed");
 
     expect(read(client.feed).items).toHaveLength(25);
@@ -223,7 +228,7 @@ describe("a surface read through a filter", () => {
     });
 
     const whole = client.enter("feed");
-    await client.enter("feed", undefined, ["kind/quote"]);
+    await client.enter("feed", undefined, { tags: ["kind/quote"] });
     release();
     await whole;
     await client.enter("feed");
@@ -243,14 +248,46 @@ describe("a surface read through a filter", () => {
       return answer(request);
     });
 
-    const first = client.enter("queue", undefined, ["kind/quote"]);
-    await client.enter("queue", undefined, ["project/a"]);
+    const first = client.enter("queue", undefined, { tags: ["kind/quote"] });
+    await client.enter("queue", undefined, { tags: ["project/a"] });
     release();
     await first;
 
     const list = read(client.queue);
-    expect(list.filter).toEqual(["project/a"]);
+    expect(list.filter).toEqual(filterOf({ tags: ["project/a"] }));
     expect(ids(list)).toEqual(["two", "three"]);
     expect(list.loading).toBe(false);
+  });
+});
+
+describe("a feed read through states, destinations and sources", () => {
+  it("asks the pool for each of them, and the queue for its sources alone", async () => {
+    const { client, transport } = clientOver(pool());
+
+    await client.enter("feed", undefined, {
+      states: ["routed", "archived", "nothing"],
+      destinations: ["vault"],
+      sources: ["memos", "memos"],
+    });
+    await client.enter("queue", undefined, {
+      states: ["routed"],
+      destinations: ["vault"],
+      sources: ["memos"],
+    });
+
+    const query = (route: string) => {
+      const request = transport.sent.find((one) => routeOf(one) === route);
+      const params = new URL(request?.url ?? "http://pool").searchParams;
+      return ["state", "destination", "source"].map((name) =>
+        params.getAll(name),
+      );
+    };
+    expect(query("GET /v1/feed")).toEqual([
+      ["routed", "archived"],
+      ["vault"],
+      ["memos"],
+    ]);
+    expect(query("GET /v1/queue")).toEqual([[], [], ["memos"]]);
+    expect(read(client.queue).filter).toEqual(filterOf({ sources: ["memos"] }));
   });
 });

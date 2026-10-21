@@ -14,7 +14,7 @@ import type {
   RoutingRecord,
   RoutingRecordId,
   SourceId,
-  TagFilter,
+  FeedFilter,
   TagName,
   Timestamp,
 } from "@notemap/core";
@@ -40,6 +40,7 @@ import {
   revisionOf,
   SCRATCHPAD,
   store,
+  VAULT,
   TEXT,
 } from "./testing/fixture";
 
@@ -1612,10 +1613,10 @@ describe("a tag filter", () => {
     });
   }
 
-  function only(...names: readonly string[]): TagFilter {
+  function only(...names: readonly string[]): FeedFilter {
     const filter = tagFilter(names);
     if (filter.kind === "refused") throw new Error("expected a filter");
-    return filter.value;
+    return { tags: filter.value };
   }
 
   /** Four items, of which the ones carrying both tags are 1 and 3. */
@@ -1696,6 +1697,126 @@ describe("a tag filter", () => {
     await classified(p);
 
     expect((await p.feed(ALL, only())).values).toHaveLength(4);
+  });
+});
+
+describe("a feed filter by state, destination and source", () => {
+  const MEMOS = "memos" as SourceId;
+  const OTHER = "other" as DestinationId;
+
+  function item(id: string, minute: number, source?: SourceId) {
+    return capture({
+      id,
+      createdAt: `2026-08-03T09:0${minute}:00.000Z`,
+      ...(source === undefined ? {} : { source }),
+    });
+  }
+
+  /**
+   * 0 unprocessed; 1 reserved to the vault; 2 archived and reserved elsewhere;
+   * 3 revised into 4, both through memos; 5 marked by hand.
+   */
+  async function decided(p: SqlitePoolStore): Promise<void> {
+    await putDestinations(p, destination(), destination({ id: OTHER }));
+    const items = [
+      item("item-0", 0),
+      item("item-1", 1),
+      item("item-2", 2),
+      item("item-3", 3, MEMOS),
+      { ...item("item-4", 4, MEMOS), revisionOf: "item-3" as ItemId },
+      item("item-5", 5),
+    ];
+    for (const each of items) await appendCapture(p, each);
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(reserved(items[1]!));
+      await tx.insertRoutingRecord({
+        ...reserved(items[2]!),
+        target: {
+          kind: "destination",
+          destination: OTHER,
+          capability: "create-note" as CapabilityName,
+          arguments: {},
+        },
+      });
+      await tx.setArchiveState("item-2" as ItemId, {
+        archivedAt: at("2026-08-03T12:00:00.000Z"),
+      });
+      await tx.insertRoutingRecord(markedProcessed(items[5]!));
+    });
+  }
+
+  async function read(p: SqlitePoolStore, filter: FeedFilter) {
+    return ids((await p.feed(ALL, filter)).values);
+  }
+
+  it("reads any one of the states it names", async () => {
+    const { pool: p } = pool();
+    await decided(p);
+
+    expect(await read(p, { states: ["unprocessed"] })).toEqual([
+      "item-4",
+      "item-0",
+    ]);
+    expect(await read(p, { states: ["routed"] })).toEqual([
+      "item-5",
+      "item-2",
+      "item-1",
+    ]);
+    expect(await read(p, { states: ["archived"] })).toEqual(["item-2"]);
+    expect(await read(p, { states: ["revised"] })).toEqual(["item-3"]);
+    expect(await read(p, { states: ["archived", "revised"] })).toEqual([
+      "item-3",
+      "item-2",
+    ]);
+  });
+
+  it("reads the items routed to any destination it names, and no mark by hand", async () => {
+    const { pool: p } = pool();
+    await decided(p);
+
+    expect(await read(p, { destinations: [VAULT] })).toEqual(["item-1"]);
+    expect(await read(p, { destinations: [VAULT, OTHER] })).toEqual([
+      "item-2",
+      "item-1",
+    ]);
+    expect(
+      await read(p, { destinations: ["nowhere" as DestinationId] }),
+    ).toEqual([]);
+  });
+
+  it("reads the items captured through any source it names", async () => {
+    const { pool: p } = pool();
+    await decided(p);
+
+    expect(await read(p, { sources: [MEMOS] })).toEqual(["item-4", "item-3"]);
+    expect(await read(p, { sources: [MEMOS, SCRATCHPAD] })).toHaveLength(6);
+  });
+
+  it("holds every kind it names at once", async () => {
+    const { pool: p } = pool();
+    await decided(p);
+
+    expect(
+      await read(p, { states: ["unprocessed"], sources: [MEMOS] }),
+    ).toEqual(["item-4"]);
+    expect(
+      await read(p, { states: ["routed"], destinations: [OTHER] }),
+    ).toEqual(["item-2"]);
+    expect(
+      await read(p, { states: ["revised"], sources: [SCRATCHPAD] }),
+    ).toEqual([]);
+  });
+
+  it("reads the queue and the archive through a source", async () => {
+    const { pool: p } = pool();
+    await decided(p);
+
+    expect(
+      ids((await p.queue(ALL_OLDEST, { sources: [MEMOS] })).values),
+    ).toEqual(["item-4"]);
+    expect(
+      ids((await p.archived(ALL_OLDEST, { sources: [SCRATCHPAD] })).values),
+    ).toEqual(["item-2"]);
   });
 });
 
@@ -2136,6 +2257,152 @@ describe("the sources in use", () => {
     expect((await p.sourcesInUse()).map((use) => use.id)).toEqual([
       SCRATCHPAD,
       "memos",
+    ]);
+  });
+});
+
+describe("when an item was processed", () => {
+  const BY_PROCESSED = { ...ALL, by: "processed" } as const;
+  const minute = (m: number) =>
+    `2026-08-03T09:${String(m).padStart(2, "0")}:00.000Z`;
+
+  /** Three captures a minute apart: item-0 oldest. */
+  async function captures(p: SqlitePoolStore) {
+    await putDestinations(p, destination());
+    const items = [0, 1, 2].map((m) =>
+      capture({ id: `item-${m}`, createdAt: minute(m) }),
+    );
+    for (const each of items) await appendCapture(p, each);
+    return items;
+  }
+
+  async function processedAt(p: SqlitePoolStore, id: string) {
+    return (await p.item(id as ItemId))?.processedAt;
+  }
+
+  it("is the capture time where nothing has processed an item", async () => {
+    const { pool: p } = pool();
+    await captures(p);
+
+    expect(await processedAt(p, "item-1")).toBe(minute(1));
+    expect(ids((await p.feed(BY_PROCESSED)).values)).toEqual([
+      "item-2",
+      "item-1",
+      "item-0",
+    ]);
+  });
+
+  it("moves to a routing record's decision, a pending one included, and back when it is removed", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    const record = reserved(first!, { at: minute(10) });
+    await p.transaction((tx) => tx.insertRoutingRecord(record));
+
+    expect(await processedAt(p, "item-0")).toBe(minute(10));
+    expect(ids((await p.feed(BY_PROCESSED)).values)[0]).toBe("item-0");
+    expect(ids((await p.feed(ALL)).values)[0]).toBe("item-2");
+
+    await p.transaction((tx) => tx.removeRoutingRecord(record.id));
+    expect(await processedAt(p, "item-0")).toBe(minute(0));
+  });
+
+  it("does not move for a delivery landing or a tag", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    const record = reserved(first!, { at: minute(10) });
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(record);
+      await tx.resolveRoutingRecord(record.id, { pointer: "inbox/a.md" });
+      await tx.addTag("item-0" as ItemId, {
+        name: "kind/quote" as TagName,
+        by: { kind: "person" },
+        addedAt: at(minute(20)),
+      });
+    });
+
+    expect(await processedAt(p, "item-0")).toBe(minute(10));
+  });
+
+  it("moves to the archiving while archived, and back on unarchiving", async () => {
+    const { pool: p } = pool();
+    await captures(p);
+
+    await p.transaction((tx) =>
+      tx.setArchiveState("item-1" as ItemId, { archivedAt: at(minute(30)) }),
+    );
+    expect(await processedAt(p, "item-1")).toBe(minute(30));
+
+    await p.transaction((tx) => tx.setArchiveState("item-1" as ItemId));
+    expect(await processedAt(p, "item-1")).toBe(minute(1));
+  });
+
+  it("moves to a revision made from the item, and never for an amendment", async () => {
+    const { pool: p } = pool();
+    const [first, second] = await captures(p);
+
+    await p.transaction((tx) =>
+      tx.amendItem(
+        "item-0" as ItemId,
+        first!.payload,
+        at(minute(40)),
+        undefined,
+      ),
+    );
+    expect(await processedAt(p, "item-0")).toBe(minute(0));
+
+    await appendCapture(
+      p,
+      revisionOf(second!, { id: "item-3", text: "again", at: minute(50) }),
+    );
+    expect(await processedAt(p, "item-1")).toBe(minute(50));
+    expect(await processedAt(p, "item-3")).toBe(minute(50));
+  });
+
+  it("is the latest decision, not the last written", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    await p.transaction(async (tx) => {
+      await tx.setArchiveState("item-0" as ItemId, {
+        archivedAt: at(minute(30)),
+      });
+      await tx.insertRoutingRecord(reserved(first!, { at: minute(20) }));
+    });
+
+    expect(await processedAt(p, "item-0")).toBe(minute(30));
+  });
+
+  it("pages by it across a page boundary, each item once", async () => {
+    const { pool: p } = pool();
+    const items = await captures(p);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(reserved(items[0]!, { at: minute(10) })),
+    );
+
+    const page = { ...BY_PROCESSED, limit: 2 };
+    const first = await p.feed(page);
+    expect(ids(first.values)).toEqual(["item-0", "item-2"]);
+    expect(first.next).toEqual({ at: minute(2), id: "item-2" });
+    const second = await p.feed(nextPage(first.next, page));
+    expect(ids(second.values)).toEqual(["item-1"]);
+    expect(second.next).toBeUndefined();
+  });
+
+  it("reads a position from the other key as an instant on its own", async () => {
+    const { pool: p } = pool();
+    const items = await captures(p);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(reserved(items[0]!, { at: minute(10) })),
+    );
+
+    const after = { at: at(minute(5)), id: "item-0" };
+    expect(ids((await p.feed({ ...BY_PROCESSED, after })).values)).toEqual([
+      "item-2",
+      "item-1",
+    ]);
+    expect(ids((await p.feed({ ...ALL, after })).values)).toEqual([
+      "item-2",
+      "item-1",
+      "item-0",
     ]);
   });
 });

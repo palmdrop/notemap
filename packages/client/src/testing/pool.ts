@@ -12,6 +12,10 @@ export function anItem(id: string, overrides: Partial<Item> = {}): Item {
     modifiedAt: "2026-08-17T10:00:00.000Z",
     revisedInto: [],
     ...overrides,
+    processedAt:
+      overrides.processedAt ??
+      overrides.createdAt ??
+      "2026-08-17T10:00:00.000Z",
   };
 }
 

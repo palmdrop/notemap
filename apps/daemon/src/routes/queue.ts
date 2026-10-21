@@ -3,7 +3,11 @@ import type { Context } from "hono";
 import type { PageRequest, Pool } from "@notemap/core";
 
 import { pageUrl } from "../utils/positions";
-import { readPageQuery, readTagFilter } from "../utils/query";
+import {
+  filterParameters,
+  readPageQuery,
+  readSurfaceFilter,
+} from "../utils/query";
 import { json, refuse } from "../utils/responses";
 
 export type ItemView = Extract<keyof Pool["views"], "queue" | "archived">;
@@ -13,15 +17,15 @@ export function itemViewHandler(pool: Pool, view: ItemView) {
     const url = new URL(context.req.url);
     const query = readPageQuery(url, "oldest-first");
     if (!query.ok) return refuse(query.refusal);
-    const tags = readTagFilter(url);
-    if (!tags.ok) return refuse(tags.refusal);
+    const filter = readSurfaceFilter(url);
+    if (!filter.ok) return refuse(filter.refusal);
 
     const page: PageRequest = {
       limit: query.limit,
       order: query.order,
       ...(query.after === undefined ? {} : { after: query.after }),
     };
-    const slice = await pool.views[view](page, tags.filter);
+    const slice = await pool.views[view](page, filter.filter);
 
     return json(
       {
@@ -34,7 +38,7 @@ export function itemViewHandler(pool: Pool, view: ItemView) {
                 {
                   order: query.order,
                   limit: String(query.limit),
-                  tag: tags.filter,
+                  ...filterParameters(filter.filter),
                 },
                 slice.next,
               ),

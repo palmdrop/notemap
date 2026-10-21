@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 
-import type { ListState } from "@notemap/client";
+import { WHOLE, type ListState } from "@notemap/client";
 
 import { readPast, settled } from "./paging";
 
@@ -9,7 +9,8 @@ function surface(state: Partial<ListState> = {}) {
   let held: ListState = {
     items: [],
     order: "newest-first",
-    filter: [],
+    by: "capture",
+    filter: WHOLE,
     loading: false,
     more: true,
     fromCache: false,

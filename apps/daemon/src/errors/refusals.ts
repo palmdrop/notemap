@@ -276,6 +276,21 @@ export const KIND_FILTER_STATUS = { "bad-kind": 422 } as const;
 /** A surface's own parameter, which the log does not take. */
 export const TAG_FILTER_STATUS = { "tag-invalid": 422 } as const;
 
+/** Every surface reading items takes a source. */
+export const SOURCE_FILTER_STATUS = { "bad-source": 422 } as const;
+
+/** What only the feed is filtered by, and the key it alone may be read by. */
+export const FEED_FILTER_STATUS = {
+  "bad-by": 422,
+  "bad-state": 422,
+  "bad-destination": 422,
+} as const;
+
+/** One of the feed's own parameters, sent to a surface that does not take it. */
+export const UNSUPPORTED_PARAMETER_STATUS = {
+  "unsupported-parameter": 422,
+} as const;
+
 export const SUBJECT_STATUS = { "no-such-item": 404 } as const;
 
 /** Reading several items, which names them rather than paging. */
@@ -321,6 +336,9 @@ const DAEMON_STATUS = {
   ...PARAMETER_STATUS,
   ...KIND_FILTER_STATUS,
   ...TAG_FILTER_STATUS,
+  ...SOURCE_FILTER_STATUS,
+  ...FEED_FILTER_STATUS,
+  ...UNSUPPORTED_PARAMETER_STATUS,
   ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
   ...ITEMS_READ_STATUS,

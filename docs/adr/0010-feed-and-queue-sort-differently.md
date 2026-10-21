@@ -2,7 +2,15 @@
 
 **Date**: 2026-08-02
 **Status**: Accepted, key clause superseded by
-[ADR 21](0021-an-item-is-editable-until-it-is-processed.md)
+[ADR 21](0021-an-item-is-editable-until-it-is-processed.md), feed-key clause superseded for one
+reading by [ADR 65](0065-the-feed-may-be-read-by-when-each-item-was-processed.md)
+
+> *Superseded 2026-10-21, for one reading of the feed.* The feed may be read by when each item was
+> **processed** as well as by capture time, the reader choosing per read as they choose the
+> direction. Capture time stays the default, and what this ADR says about it holds for that
+> reading: an offline capture sits where it was written, and nothing moves it. The processed-at
+> time is not `modified_at`, which still orders nothing; it counts decisions about an item alone,
+> and leaves out edits, classification, enrichment and deliveries landing.
 
 > *Superseded 2026-08-24, for the key alone.* The queue sorts by capture time now, as the feed
 > does, so the two surfaces are one ordering read through two filters. The reason this ADR gives

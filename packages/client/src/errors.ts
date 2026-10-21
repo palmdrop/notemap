@@ -96,6 +96,10 @@ const SAID: {
   "bad-kind": "the app asked for a kind of entry this daemon does not write",
   "bad-order": "the app asked for an order this daemon does not have",
   "bad-position": "the app lost its place in the list; reload",
+  "bad-by": "the app asked for an order this daemon does not have",
+  "bad-state": "the app asked for a state this daemon does not know",
+  "bad-destination": "a destination filter needs a destination",
+  "bad-source": "a source filter needs a source",
   "bad-url": "that is not a link this daemon will read",
   "blob-missing": "the stored file is gone from this daemon's disk",
   "blob-reclaimed":
@@ -192,6 +196,8 @@ const SAID: {
     `this daemon has no "${String(facts["setting"])}" setting`,
   "unfurl-off": "showing link previews is turned off for this pool",
   unreachable: "the destination could not be reached",
+  "unsupported-parameter": (facts) =>
+    `this list does not take ${String(facts["parameter"])}`,
   "unsupported-media-type": "this daemon does not accept that kind of request",
 };
 

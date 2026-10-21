@@ -74,6 +74,12 @@ export type ItemRecord = {
 /** A record plus what the store derives from the rest of the pool around it. */
 export type Item = ItemRecord & {
   readonly modifiedAt: Timestamp;
+  /**
+   * The latest processing decision: each routing record's, the archiving while
+   * archived, each revision's capture. The capture itself where there is none.
+   * Derived, so undoing a decision moves it back.
+   */
+  readonly processedAt: Timestamp;
   readonly revisedInto: readonly ItemId[];
   readonly routing?: RoutingSummary;
   /**

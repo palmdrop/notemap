@@ -50,7 +50,7 @@ import type { Attachment } from "./capture/attachments";
 import type { Refused } from "./errors";
 
 import type { SessionState } from "./session/session";
-import type { Surface } from "./state/state";
+import type { Filter, FilterNamed, Surface } from "./state/state";
 
 import type { ActionsSince } from "./actions/watching";
 import type { OperationId, PendingOperation } from "./outbox/operations";
@@ -63,6 +63,12 @@ import type { Transport } from "./ports/transport";
  * a queue, but the choice is the reader's, and it is the reader's on the feed too.
  */
 export type Order = "oldest-first" | "newest-first";
+
+/**
+ * Which instant the feed is ranked by: capture time, or when it was processed. The queue
+ * has capture time alone.
+ */
+export type Key = "capture" | "processed";
 
 /**
  * Why a read of a surface failed. `refused` is the pool having answered and
@@ -78,8 +84,9 @@ export type ReadFailure = {
 export type ListState = {
   readonly items: readonly Item[];
   readonly order: Order;
-  /** The tags every item carries; empty for the whole surface. */
-  readonly filter: readonly string[];
+  readonly by: Key;
+  /** What every item meets; every list empty for the whole surface. */
+  readonly filter: Filter;
   readonly loading: boolean;
   readonly more: boolean;
   /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
@@ -423,7 +430,8 @@ export interface Client {
    * Reads the next page. Naming an order the surface is not already in turns it
    * around and starts again, because a position belongs to the order that made it.
    */
-  loadFeed(order?: Order): Promise<void>;
+  /** Naming another order or key turns the feed and reads it from the start. */
+  loadFeed(order?: Order, by?: Key): Promise<void>;
   loadQueue(order?: Order): Promise<void>;
   /**
    * Somebody has arrived at a surface. The queue is read again from the start,
@@ -431,14 +439,17 @@ export interface Client {
    * keeps what it walked, nothing ever leaving it. A surface nobody has read is
    * read for the first time either way.
    *
-   * `tags` is the filter the surface is read through. Arriving through another
-   * starts a filtered page, keeping the whole one aside; arriving through none
-   * goes back to the whole page as it stood.
+   * `filter` is what the surface is read through, tidied here; the queue keeps
+   * its tags and sources alone. Arriving through another starts a filtered
+   * page, keeping the whole one aside; arriving through none goes back to the
+   * whole page as it stood.
    */
   enter(
     surface: Surface,
     order?: Order,
-    tags?: readonly string[],
+    filter?: FilterNamed,
+    /** The feed's key; the queue has capture time alone. */
+    by?: Key,
   ): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the

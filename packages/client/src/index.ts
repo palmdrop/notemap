@@ -12,7 +12,16 @@ export * from "./adapters/memory-store";
 
 export type { Writable } from "./observable/observable";
 
-export { filterOf, rank, unprocessed } from "./state/state";
+export {
+  FILTER_STATES,
+  filterOf,
+  filterSize,
+  isWhole,
+  rank,
+  unprocessed,
+  WHOLE,
+} from "./state/state";
+export type { Filter, FilterNamed, FilterState } from "./state/state";
 export type { Surface } from "./state/state";
 
 export type {

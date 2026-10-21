@@ -23,6 +23,9 @@ import {
   KIND_FILTER_STATUS,
   PARAMETER_STATUS,
   TAG_FILTER_STATUS,
+  SOURCE_FILTER_STATUS,
+  FEED_FILTER_STATUS,
+  UNSUPPORTED_PARAMETER_STATUS,
   POOL_SETTING_STATUS,
   RETIRE_STATUS,
   ROUTING_STATUS,
@@ -156,7 +159,52 @@ const tagFilterQuery = z.object({
     }),
 });
 
-const feedQuery = pageQuery.extend(tagFilterQuery.shape);
+const sourceFilterQuery = z.object({
+  source: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      param: { name: "source", in: "query", style: "form", explode: true },
+      description:
+        "Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing.",
+      example: ["memos"],
+    }),
+});
+
+const feedFilterQuery = z.object({
+  by: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "by", in: "query" },
+      description:
+        "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+      example: "processed",
+    }),
+  state: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      param: { name: "state", in: "query", style: "form", explode: true },
+      description:
+        "Repeated; `unprocessed`, `routed`, `archived` or `revised`, and an item is read where it is any one of them. Anything else is refused with `422 bad-state`.",
+      example: ["routed", "archived"],
+    }),
+  destination: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      param: { name: "destination", in: "query", style: "form", explode: true },
+      description:
+        "Repeated once per destination id; an item is read where a routing record, pending included, names any one of them. An empty one is refused with `422 bad-destination`.",
+      example: ["0198f0c2-0000-7000-8000-000000000000"],
+    }),
+});
+
+const feedQuery = pageQuery
+  .extend(tagFilterQuery.shape)
+  .extend(sourceFilterQuery.shape)
+  .extend(feedFilterQuery.shape);
 
 const itemViewQuery = pageQuery.extend({
   order: z
@@ -168,6 +216,7 @@ const itemViewQuery = pageQuery.extend({
       example: "oldest-first",
     }),
   ...tagFilterQuery.shape,
+  ...sourceFilterQuery.shape,
 });
 
 const actionsQuery = pageQuery.extend({
@@ -398,7 +447,7 @@ export const feedRoute = createRoute({
   path: "/v1/feed",
   summary: "Read the feed",
   description:
-    "Every item chronologically by capture time, including archived items and the items revisions were made from, or only those carrying every `tag` named. Follow `next` until it is absent; it carries the filter.",
+    "Every item chronologically by capture time, or by when each was processed with `by=processed`, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
   request: { query: feedQuery },
   responses: {
     200: {
@@ -410,6 +459,8 @@ export const feedRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      SOURCE_FILTER_STATUS,
+      FEED_FILTER_STATUS,
     ),
   },
 });
@@ -419,7 +470,7 @@ export const queueRoute = createRoute({
   path: "/v1/queue",
   summary: "Read the queue",
   description:
-    "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named.",
+    "Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named, `source` those captured through any one named. `by`, `state` and `destination` are the feed's, refused here with `422 unsupported-parameter`.",
   request: { query: itemViewQuery },
   responses: {
     200: {
@@ -431,6 +482,8 @@ export const queueRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      SOURCE_FILTER_STATUS,
+      UNSUPPORTED_PARAMETER_STATUS,
     ),
   },
 });
@@ -440,7 +493,7 @@ export const archivedRoute = createRoute({
   path: "/v1/archived",
   summary: "Read the archive",
   description:
-    "Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.",
+    "Every archived item, on the queue's key and default, and its filters. Archiving hides an item from the queue; it stays in the feed and stays processable.",
   request: { query: itemViewQuery },
   responses: {
     200: {
@@ -452,6 +505,8 @@ export const archivedRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      SOURCE_FILTER_STATUS,
+      UNSUPPORTED_PARAMETER_STATUS,
     ),
   },
 });

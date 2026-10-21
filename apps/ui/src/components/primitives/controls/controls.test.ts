@@ -98,8 +98,31 @@ test("the order selector reports which end the reader wants to start from", asyn
   await fireEvent.click(control);
   await fireEvent.click(screen.getByRole("button", { name: "newest" }));
 
-  expect(chose).toHaveBeenCalledWith("newest-first");
+  expect(chose).toHaveBeenCalledWith("newest-first", "capture");
   expect(control.getAttribute("aria-expanded")).toBe("false");
+});
+
+test("offers the feed the key as well as the end", async () => {
+  const chose = vi.fn();
+  render(OrderSelector, {
+    order: "newest-first",
+    by: "processed",
+    keyed: true,
+    onchoose: chose,
+  });
+
+  const control = screen.getByLabelText("Order");
+  expect(control.textContent).toContain("latest processed");
+
+  await fireEvent.click(control);
+  expect(screen.getByText("captured")).toBeTruthy();
+  expect(screen.getByText("processed")).toBeTruthy();
+  for (const word of ["newest", "oldest", "latest", "earliest"]) {
+    expect(screen.getByRole("button", { name: word })).toBeTruthy();
+  }
+
+  await fireEvent.click(screen.getByRole("button", { name: "earliest" }));
+  expect(chose).toHaveBeenCalledWith("oldest-first", "processed");
 });
 
 test("marks the end it is already reading from, and offers the other", async () => {

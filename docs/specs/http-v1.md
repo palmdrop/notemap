@@ -2,8 +2,13 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **`by`, `state`, `destination` and `source` on the feed; `source` on the queue and
+  the archive; `processedAt` on every item.** `bad-by`, `bad-state`, `bad-destination`,
+  `bad-source` and `unsupported-parameter` are new refusals, and `next` carries every one of the
+  parameters. ([plan](../plans/feed-reading-options.md), [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))
 
 - 2026-10-20 — **A capture may continue a line, and two `409`s name its head.**
   `source-item-diverged` and `continues-not-head` join the capture refusals, `existing` names the
@@ -641,6 +646,12 @@ archive, a capture outcome, an edit outcome:
 payload its line's source last said, present only while the item says something else. Both are
 absent rather than empty otherwise.
 
+**An `Item` carries `processedAt`, always** *(added 2026-10-21)*: when it was **processed**
+([core.md](core.md#the-pool-and-the-feed)), an instant in the same form as `createdAt`, and equal to
+it where nothing has processed the item. A client ranks a row under either key of the feed from
+the item alone, and takes the value from the pool rather than working it out: the routing summary
+carries no record times, so a decision taken back is not something it could recompute.
+
 **An `Item` carries `assets` on the same terms** — every asset its payload references, resolved:
 
 ```json
@@ -679,6 +690,10 @@ absent rather than empty otherwise.
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
 | `tag` | *(absent)* | Repeated; an item is read only where it carries every one |
+| `by` | `capture` | `capture` or `processed`: the key the feed is read by |
+| `state` | *(absent)* | Repeated; `unprocessed`, `routed`, `archived` or `revised`, any one of them |
+| `destination` | *(absent)* | Repeated; a destination id, any routing record naming one of them |
+| `source` | *(absent)* | Repeated; a source id, an item captured through one of them |
 
 - **`limit` above 500 is refused, never clamped** — `422 limit-too-large`, carrying `limit` and
   `max`. A page silently smaller than asked for is a bug a client finds late, in production,
@@ -696,19 +711,38 @@ absent rather than empty otherwise.
   trimmed as tagging trims and the same tag named twice is one; a `tag` that trims to nothing is
   `422 tag-invalid` carrying what was sent, the refusal tagging already answers for the same name.
   A tag no item carries is an empty page rather than a refusal, a filter being a question.
+- **`by` names the key** *(added 2026-10-21, [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))*: `capture`, the default, or
+  `processed`, which reads the feed by `processedAt`. It is a parameter of its own rather than a third
+  `order`, because which instant and which end are separate questions, and `order` means the same
+  under either. Anything else is `422 bad-by` carrying what was sent and `allowed`.
+- **Under `by=processed` the position is a processed-at time**, spelled `<at>,<id>` as every
+  position is, the instant being the last row's `processedAt`. A position from one key handed to a read by the other is
+  read as an instant on that key: a valid request for a different place, and not a refusal.
+- **`state`, `destination` and `source` filter the feed** *(added 2026-10-20; `source` the queue
+  and the archive too)*, on core's terms
+  ([core.md](core.md#the-queue)). Each is repeated, and within one parameter any value matches;
+  `tag` stays every one of, and the parameters all hold at once.
+  `state=routed&state=archived&tag=kind%2Fquote` reads the quotes that were routed, archived or
+  both. A `state` that is not one of the four is `422 bad-state` carrying the `value` and
+  `allowed`, as the log's `kind` is refused. `archived` is the wire's word, as the archive route's
+  is, whatever a shell calls it.
+- **`destination` and `source` are ids, matched exactly.** One nothing names is an empty page, as a
+  tag nothing carries is. An empty one is `422 bad-destination` or `422 bad-source`, carrying the
+  `value`: a parameter naming nothing at all is a client's mistake, where one naming a destination
+  since retired is a question.
 
 The response is a slice:
 
 ```json
 {
   "values": [ { … Item … } ],
-  "next": "/v1/feed?order=newest-first&limit=50&after=2026-08-08T09%3A00%3A00.000Z%2C0198f0c2-..."
+  "next": "/v1/feed?order=newest-first&by=capture&limit=50&after=2026-08-08T09%3A00%3A00.000Z%2C0198f0c2-..."
 }
 ```
 
-- `next` is a **ready-to-fetch relative URL** carrying the order, the limit, every `tag` and the
-  next position, so a client pages by following a link rather than by reassembling a query it has to
-  keep the parameters of.
+- `next` is a **ready-to-fetch relative URL** carrying the order, the key, the limit, every
+  `tag`, `state`, `destination` and `source`, and the next position, so a client pages by
+  following a link rather than by reassembling a query it has to keep the parameters of.
 - `next` is **absent on the last page**. There is never a trailing empty page: the daemon knows
   a page is the last one because core's slice says so, not because the next one came back
   empty.
@@ -716,6 +750,9 @@ The response is a slice:
   ([ADR 14](../adr/0014-pagination-by-domain-position.md)).
 - Both orders may be read from one position. It names a place in the feed, not a direction of
   travel — `newest-first` continues below it, `oldest-first` above it.
+- **A read by `processed` reorders under its reader.** A row processed while a reader walks moves
+  to the newest end, and one whose decision is undone moves back; following `next` never repeats or
+  skips a row whose `processedAt` held still ([core.md](core.md#the-pool-and-the-feed)).
 
 ### The queue and the archive
 
@@ -730,23 +767,31 @@ whole of what it holds: archived, routed and revised items are all processed.
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
 | `tag` | *(absent)* | Repeated; an item is read only where it carries every one |
+| `source` | *(absent)* | Repeated; a source id, an item captured through one of them |
 
 - **Both take `order`, defaulting to oldest first** (decided 2026-08-17). Oldest first is what
   makes the queue a queue and stays the default, but which end a reader starts from is the
   reader's, as it is for the feed and the log — a person clearing a backlog may want the newest
   captures first, and core imposes no interface policy
   ([ADR 10](../adr/0010-feed-and-queue-sort-differently.md), superseded in part).
-- `order`, `limit`, `after` and `tag` mean what they mean on the feed and are refused in the same ways: an
-  `order` that is neither value is `422 bad-order` carrying the ones that are.
+- `order`, `limit`, `after`, `tag` and `source` mean what they mean on the feed and are refused in
+  the same ways: an `order` that is neither value is `422 bad-order` carrying the ones that are.
+  `source` on both *(added 2026-10-21)*: a reader triages one relay's backlog on the queue, and
+  the archive takes what the queue takes, the two being read on the same terms.
+- **`by`, `state` and `destination` are the feed's alone** *(added 2026-10-20)*, and either route
+  refuses one with `422 unsupported-parameter` naming it. Ignoring it, as an unknown parameter is
+  ignored, would answer a filtered question with an unfiltered page.
 - The response is a slice of items with a `next` URL, on the same terms as the feed's: ready to
   fetch, and absent on the last page.
 
-**The queue's position is a capture time** (amended 2026-08-24), spelled `<at>,<id>` exactly as
-the feed's is and meaning the same thing. The queue, the feed and the archive are now one ordering
-read three ways, so a position taken from any of them continues any other from the same
-place. It says less than it looks: an item is in exactly one of the queue and the archive, so a
-position carried across still lands where it belongs in the order and answers about a different
-set. A client pages by following `next`, which is issued by the surface it came from.
+**The queue's position is a capture time** (amended 2026-08-24), spelled `<at>,<id>` exactly as the
+feed's is and meaning the same thing. The queue, the feed and the archive are now one ordering read
+three ways, so a position taken from any of them continues any other from the same place. That holds
+for the feed read by capture time; one taken from a feed read by `processed` names a processed-at
+time, and is read here as a capture instant. It says less than it looks: an item is in exactly one of the queue
+and the archive, so a position carried across still lands where it belongs in the order and answers
+about a different set. A client pages by following `next`, which is issued by the surface it came
+from.
 
 This replaces the content-time key, which existed so that a revised item resurfaced where it would
 be met. A revision is an ordinary capture now and arrives at the newest end by its own time, so the
@@ -2097,6 +2142,11 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `bad-limit` | `limit` | daemon |
 | `422` | `bad-order` | `order`, `allowed` | daemon |
 | `422` | `bad-position` | `after` | daemon |
+| `422` | `bad-by` | `by`, `allowed` | daemon |
+| `422` | `bad-state` | `value`, `allowed` | daemon |
+| `422` | `bad-destination` | `value` | daemon |
+| `422` | `bad-source` | `value` | daemon |
+| `422` | `unsupported-parameter` | `parameter` | daemon |
 | `422` | `bad-kind` | `value`, `allowed` | daemon |
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
@@ -2325,6 +2375,16 @@ remains the interop surface; `/docs` is a convenience over it.
 - `tag` repeated on `GET /v1/feed`, `/v1/queue` or `/v1/archived` answers only the items carrying
   every tag named, and `next` carries each of them; a tag nothing carries answers an empty page,
   and one that trims to nothing is `422 tag-invalid`.
+- `GET /v1/feed?by=processed` puts first the item most recently routed, marked, archived or revised
+  from, never one merely edited; its `next` carries `by=processed`, and following it yields each
+  item once where nothing was processed meanwhile. Every item answers `processedAt`.
+- `state`, `destination` and `source` repeated on `GET /v1/feed` each match any value named, all
+  three and `tag` holding at once, and `next` carries each of them; `state=processed` is
+  `422 bad-state`, an empty `destination` or `source` is `422 bad-destination` or `422 bad-source`,
+  and a destination nothing was routed to answers an empty page.
+- `by`, `state` or `destination` on `GET /v1/queue` or `/v1/archived` is
+  `422 unsupported-parameter`; `source` there answers only the items captured through it, and
+  `next` carries it.
 - `GET /v1/tags` answers `items` and `unprocessed` for each tag.
 - `GET /v1/counts` answers `queue`, the number of items `GET /v1/queue` would answer, and it falls
   as items are archived or marked processed.
