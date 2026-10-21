@@ -93,13 +93,6 @@
     () => !$queue.loading && !$queue.fromCache && $queue.failure === undefined,
   );
 
-  const drained = $derived(
-    !$queue.loading &&
-      !$queue.fromCache &&
-      $queue.failure === undefined &&
-      $queue.items.length === 0,
-  );
-
   /** The selected row's own copy, which outlives its place on the queue. */
   const heldRow = $derived(client.held(selected ?? ""));
 
@@ -124,6 +117,14 @@
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
+
+  /** A held row is still drawn, so the queue is not empty until it is let go. */
+  const drained = $derived(
+    !$queue.loading &&
+      !$queue.fromCache &&
+      $queue.failure === undefined &&
+      rows.length === 0,
+  );
 
   // A selected row the client no longer holds at all is gone for good. The
   // selection moves to the row that took its place rather than leaving
@@ -342,7 +343,14 @@
 {/snippet}
 
 {#snippet entry(one: Extract<Drawn<Item>, { kind: "row" }>)}
-  {@const row = one.row}
+  {@render whole(one.row, one.opens, motion)}
+{/snippet}
+
+{#snippet whole(
+  row: Item,
+  opens: boolean,
+  motion: { readonly still: boolean } | undefined,
+)}
   <Row
     {motion}
     bind:this={drawn[row.id]}
@@ -354,10 +362,15 @@
     commands={selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
     layout={layout.drawn}
-    opens={one.opens}
+    {opens}
     onselect={() => select(row.id)}
     onprocess={() => process(row)}
   />
+{/snippet}
+
+<!-- Opened in the index, the row grows out of its line rather than sliding in. -->
+{#snippet opened(row: Item, opens: boolean)}
+  {@render whole(row, opens, undefined)}
 {/snippet}
 
 <!-- The list stays drawn while the queue is drained, so the first row into it
@@ -374,6 +387,8 @@
     leads={refused === undefined}
     items={rows}
     {selected}
+    slim={layout.slim}
+    open={opened}
     onselect={select}
     onprocess={(id) => {
       const item = rows.find((row) => row.id === id);

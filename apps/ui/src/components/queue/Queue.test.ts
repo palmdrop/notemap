@@ -716,6 +716,30 @@ test("a discarded row stays where it stood while it is selected, and leaves when
   expect(screen.getByText("two")).toBeDefined();
 });
 
+test("the queue is not empty while its last row is held", async () => {
+  let queued = [anItem("one")];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") return json(200, { values: queued });
+    if (route === "POST /v1/items/one/archive") {
+      queued = [];
+      return json(204, undefined);
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  await open(0);
+  await discard();
+  await screen.findByText("discarded");
+
+  expect(screen.queryByText("Queue is empty.")).toBeNull();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await screen.findByText("Queue is empty.");
+});
+
 test("walking off a held row leaves it behind", async () => {
   let queued = [anItem("one"), anItem("two")];
   pool((request) => {
@@ -1044,15 +1068,43 @@ test("an index line is selected from its stamp as from anywhere else on it", asy
   pool(queued("one"));
   rememberView("queue", "index");
 
-  render(Queue);
-  const words = await screen.findByText("one");
-  const line = words.closest(".grid-cols-subgrid")!;
+  const { container } = render(Queue);
+  await screen.findByText("one");
 
-  await fireEvent.click(line.querySelector("button")!);
-  expect(line.className).toContain("font-semibold");
+  await fireEvent.click(stamps(false)[0]!);
+  expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
 
-  await fireEvent.click(words);
-  expect(line.className).not.toContain("font-semibold");
+  await fireEvent.click(container.querySelector("[data-row] [data-body]")!);
+  expect(container.querySelector("[data-rail]")).toBeNull();
+
+  await fireEvent.click(screen.getByText("one"));
+  expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
+});
+
+/** Selected, an index line is the row the timeline draws, and does what it does. */
+test("the selected index line opens into the whole row, actions and all", async () => {
+  pool(queued("one", "two"));
+  rememberView("queue", "index");
+
+  const { container } = render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(container.querySelectorAll("[data-row]")).toHaveLength(1);
+  expect(container.querySelector("[data-row]")?.textContent).toContain("one");
+  expect(screen.getByRole("button", { name: "discard" })).toBeDefined();
+
+  await fireEvent.keyDown(window, { key: "e" });
+  expect(await screen.findByLabelText("What it says")).toBeTruthy();
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  await fireEvent.keyDown(window, { key: "j" });
+  expect(container.querySelector("[data-row]")?.textContent).toContain("two");
+  expect(screen.getByText("one").closest("[data-row]")).toBeNull();
+
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(went.to).toEqual(["/items/two/process"]);
 });
 
 /** Shift is the guard on the one decision that sends an item away. */

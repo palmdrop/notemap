@@ -114,6 +114,27 @@ test("the view is chosen in the head, and v turns it", async () => {
   expect(localStorage.getItem("notemap:view:feed")).toBe("timeline");
 });
 
+test("an index line opens into its whole row in place, without sliding", async () => {
+  rememberView("feed", "index");
+  pool(
+    held(
+      anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
+    ),
+  );
+
+  const { container } = render(Feed);
+  await screen.findByText("gone");
+
+  await open();
+  expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
+  expect(screen.getByText("discarded")).toBeDefined();
+  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(slid.calls.some((call) => call.still === false)).toBe(false);
+
+  await fireEvent.keyDown(window, { key: "Enter" });
+  expect(went.to).toEqual(["/items/gone/process"]);
+});
+
 test("says an archived row is discarded, and offers the way back", async () => {
   pool(
     held(

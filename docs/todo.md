@@ -2,7 +2,7 @@
 
 ## Shell — layout and interaction
 
-- [ ] "Queue is empty" shows before the last capture is hidden from the queue when the last capture is selected and held
+- [x] "Queue is empty" shows before the last capture is hidden from the queue when the last capture is selected and held
 
 - [ ] add ability to order feed by order of processing, which is more intuitive since the user might expect the capture they processed latest to appear on top
 - [ ] destination fields should provide succinct placeholder texts
@@ -41,7 +41,7 @@
   bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
   dropped as the reader scrolls back).
 
-- [ ] add way to open a capture from the index view, for example, have it expand when selected, grow to a regular capture row size
+- [x] add way to open a capture from the index view, for example, have it expand when selected, grow to a regular capture row size
 
 - [ ] drag-and-drop for adding assets
 
