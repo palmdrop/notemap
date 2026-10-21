@@ -1,9 +1,9 @@
 # Feed reading options: order by when processed, filter by state
 
 **Date**: 2026-10-20
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-10-21
 
 ---
 
@@ -116,43 +116,40 @@ Verify: `pnpm -r --no-sort --silent test`, typecheck and lint green. Run `pnpm t
 this crosses the HTTP surface. In the running shell, `/feed?state=routed` draws only routed rows
 and survives a reload.
 
-### Phase 3: the last-touch key in the pool (depends on 1)
+### Phase 3: the processed-at key in the pool (depends on 1)
 
-- [x] Migration: `touched_at` column, backfill, index on `(touched_at, id)`
-- [x] Write `touched_at` in every transaction that moves it: capture, amend, route reservation,
+- [x] Migration: `processed_at` column, backfill, index on `(processed_at, id)`
+- [x] Write `processed_at` in every transaction that moves it: capture, route reservation,
       reservation removed (the tag given back), archive, unarchive, revise (on the item revised
-      from). Find each path by searching the store's writes, not from memory. The list found in
-      phase 1 is under Unknowns.
-- [x] Rename the store's `touchItem`/`touched()` to say they bump `modified_at`, so "touch" means
-      one thing in the store
-- [x] Store/core: feed read keyed by `capture` or `touch`, keyset paging on the chosen column
-- [x] Wire: `touchedAt` on the item. HTTP `by`, refused on queue and archive (`422 unsupported-parameter`; `bad-by` for an unknown value),
-      carried on `next`.
-- [x] Tests: each write moves the key as the Decided section says. Paging under `by=touch` is
+      from). An amendment does not move it. Find each path by searching the store's writes, not
+      from memory. The list found in phase 1 is under Unknowns.
+- [x] Store/core: feed read keyed by `capture` or `processed`, keyset paging on the chosen column
+- [x] Wire: `processedAt` on the item. HTTP `by`, refused on queue and archive
+      (`422 unsupported-parameter`; `bad-by` for an unknown value), carried on `next`.
+- [x] Tests: each write moves the key as the Decided section says. Paging under `by=processed` is
       stable across a page boundary. A position from one key is read under the other only as an
       instant.
 - [x] `git commit`
 
-Verify: store, core and daemon tests green. `GET /v1/feed?by=touch` against a seeded pool puts
+Verify: store, core and daemon tests green. `GET /v1/feed?by=processed` against a seeded pool puts
 the last-routed item first.
 
-### Phase 4: the last-touch key in the client and shell (depends on 3; extends 2 if landed)
+### Phase 4: the processed-at key in the client and shell (depends on 3; extends 2 if landed)
 
-- [ ] Client: a page carries its key beside its order. `rank`, `loaded`, `intoPage` and
+- [x] Client: a page carries its key beside its order. `rank`, `loaded`, `intoPage` and
       `drawnFrom` read the key the page is read by. A cache read offline sorts by it the same way.
-- [ ] Client: a decision this client makes (route, archive, unarchive, edit) moves the item's
-      `touchedAt` in the cache, so its row moves live. Watcher-applied actions do the same.
-- [ ] Client: rename `oldestTouchedFirst` in `state/retention.ts`, which sorts by `modifiedAt`
-- [ ] Shell: the order chooser's four choices, kept on the URL (`by=touch`) and remembered per
-      surface beside the order. A row processed while read by touch moves to the head, and moves
-      the way any arriving row does.
-- [ ] Shell: the held row keeps its place while selected, even though its key moved (`placeOf`
+- [x] Client: a decision this client makes (route, mark, archive) moves the item's `processedAt`
+      in the cache, so its row moves live. Watcher-applied actions do the same.
+- [x] Shell: the order chooser's four choices, kept on the URL (`by=processed`) and remembered
+      beside the order. A row processed while read by it moves to the head, and moves the way any
+      arriving row does.
+- [x] Shell: the held row keeps its place while selected, even though its key moved (`placeOf`
       in `lib/held.ts` reads the page's key)
-- [ ] Tests at each layer
-- [ ] `git commit`
+- [x] Tests at each layer
+- [x] `git commit`
 
 Verify: unit tests, typecheck, lint and `pnpm test:stack` green. In the running shell, route a row
-on `/feed?by=touch`: it stays held while selected, then sits first.
+on `/feed?by=processed`: it stays held while selected, then sits first.
 
 ---
 

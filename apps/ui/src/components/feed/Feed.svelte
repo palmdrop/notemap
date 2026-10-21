@@ -26,7 +26,7 @@
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain, type Drawn } from "$lib/days";
+  import { byDay, dayAtFor, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -114,33 +114,47 @@
   const rows = $derived.by(() => {
     const live = $feed.items;
     const kept = $heldRow;
-    if (
-      selected === undefined ||
-      kept === undefined ||
-      live.some((row) => row.id === selected)
-    ) {
-      return live;
+    if (selected === undefined || kept === undefined) return live;
+
+    // Read by when rows were processed, a decision moves its own row; it waits where it
+    // stood until the selection leaves it, as one leaving a list does.
+    const at = live.findIndex((row) => row.id === selected);
+    const was = untrack(() => stood);
+    if (at !== -1) {
+      if ($feed.by !== "processed" || was === undefined || was === at)
+        return live;
+      const others = live.filter((row) => row.id !== selected);
+      const place = Math.min(was, others.length);
+      return [...others.slice(0, place), live[at]!, ...others.slice(place)];
     }
+
     const place = Math.min(
-      untrack(() => stood) ?? placeOf(live, kept, $feed.order),
+      was ?? placeOf(live, kept, $feed.order, $feed.by),
       live.length,
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
+  let stoodFor: string | undefined;
+
   $effect(() => {
+    if (selected === undefined) stoodFor = undefined;
     const at = rows.findIndex((row) => row.id === selected);
     // Only the feed's own place for it: one this surface chose for a held
     // row would outlive a read that has not landed yet.
-    if (at !== -1 && $feed.items.some((row) => row.id === selected)) {
-      stood = at;
-    }
+    if (at === -1 || !$feed.items.some((row) => row.id === selected)) return;
+    // A row moved by its own decision keeps the place it was selected at.
+    if ($feed.by === "processed" && stoodFor === selected) return;
+    stood = at;
+    stoodFor = selected;
   });
 
   const current = $derived(rows.find((row) => row.id === selected));
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+  const headed = $derived(
+    layout.byDay ? byDay(rows, dayAtFor($feed.by)) : plain(rows),
+  );
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -292,6 +306,7 @@
     {motion}
     bind:this={index}
     byDay={layout.byDay}
+    dayAt={dayAtFor($feed.by)}
     leads={refused === undefined}
     items={rows}
     {selected}

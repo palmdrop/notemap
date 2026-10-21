@@ -21,7 +21,7 @@ import {
   type ListPage,
   type Surface,
 } from "#state/state";
-import type { Order } from "../types";
+import type { Key, Order } from "../types";
 
 const SURFACES: readonly Surface[] = ["feed", "queue"];
 
@@ -49,6 +49,7 @@ function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
           params: {
             query: {
               ...query,
+              by: page.by,
               ...(states.length === 0 ? {} : { state: [...states] }),
               ...(destinations.length === 0
                 ? {}
@@ -74,6 +75,7 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
 
   return {
     order: page.order,
+    by: page.by,
     ...(page.filter === undefined ? {} : { filter: page.filter }),
     ids: [...page.ids, ...arriving],
     exhausted: slice.next === undefined,
@@ -93,7 +95,9 @@ function extended(page: ListPage, slice: ItemSlice): ListPage {
  * surface that failed to turn claiming an order its cursor is not in.
  */
 function whileReading(page: ListPage, held: ListPage): ListPage {
-  return loading(page.order === held.order ? held : page);
+  return loading(
+    page.order === held.order && page.by === held.by ? held : page,
+  );
 }
 
 /**
@@ -186,8 +190,10 @@ export async function loadMore(
   api: Api,
   surface: Surface,
   order?: Order,
+  by?: Key,
 ): Promise<void> {
   const held = reading(state.get(), surface);
+  const key = surface === "feed" ? (by ?? held.by) : "capture";
 
   // A read in flight is answering for the page as it was; letting a second one
   // start would let the first land its rows and its position in whatever the
@@ -201,9 +207,12 @@ export async function loadMore(
   // than dropped: giving it up here is what made an ordinary reorder flash the
   // whole cache in between.
   const page =
-    order === undefined || order === held.order
+    (order === undefined || order === held.order) && key === held.by
       ? held
-      : { ...emptyPage(order, held.filter), answered: held.answered };
+      : {
+          ...emptyPage(order ?? held.order, held.filter, key),
+          answered: held.answered,
+        };
   if (page.exhausted) return;
 
   await walk(state, api, surface, page);
@@ -233,6 +242,7 @@ export async function enter(
   surface: Surface,
   order?: Order,
   named: FilterNamed = {},
+  by?: Key,
 ): Promise<void> {
   const filter = filterFor(surface, filterOf(named));
   const before = reading(state.get(), surface);
@@ -245,7 +255,11 @@ export async function enter(
         : withReading(
             current,
             surface,
-            emptyPage(order ?? before.order, filter),
+            emptyPage(
+              order ?? before.order,
+              filter,
+              surface === "feed" ? (by ?? before.by) : "capture",
+            ),
           ),
     );
   }
@@ -258,7 +272,7 @@ export async function enter(
 
   const wanted = order ?? held.order;
   if (surface !== "queue" || unpositioned(held))
-    return loadMore(state, api, surface, order);
+    return loadMore(state, api, surface, order, by);
 
   await walk(state, api, surface, emptyPage(wanted, held.filter), true);
 }
@@ -291,7 +305,12 @@ export async function readAfterReturn(
       if (unpositioned(page) && page.failure === undefined) return;
 
       if (fromCache(page))
-        await walk(state, api, surface, emptyPage(page.order, page.filter));
+        await walk(
+          state,
+          api,
+          surface,
+          emptyPage(page.order, page.filter, page.by),
+        );
       else
         state.update((current) => {
           const held = answering(current, surface, page);

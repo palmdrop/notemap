@@ -18,7 +18,17 @@
   }: {
     label: string;
     value: T;
-    options: readonly { value: T; word: string }[];
+    /**
+     * `said` is what the control reads while the option is chosen, where the
+     * option's own word needs its band to be understood; `band` heads a run of
+     * options under a label.
+     */
+    options: readonly {
+      value: T;
+      word: string;
+      said?: string;
+      band?: string;
+    }[];
     disabled?: boolean;
     onchoose: (value: T) => void;
   } = $props();
@@ -28,9 +38,10 @@
   /** Named so the word can say what it opens, there being more than one drawn. */
   const panel = $derived(`chooser-${label.toLowerCase().replace(/\W+/g, "-")}`);
 
-  const word = $derived(
-    options.find((one) => one.value === value)?.word ?? String(value),
-  );
+  const word = $derived.by(() => {
+    const chosen = options.find((one) => one.value === value);
+    return chosen?.said ?? chosen?.word ?? String(value);
+  });
 
   function take(taken: T): void {
     open = false;
@@ -81,7 +92,17 @@
       onmousedown={(event) => event.preventDefault()}
       class="absolute top-full right-0 z-30 mt-1 w-max min-w-36 border border-ink bg-ground px-2.5 py-1"
     >
-      {#each options as one (one.value)}
+      {#each options as one, at (one.value)}
+        {#if one.band !== undefined && one.band !== options[at - 1]?.band}
+          <div
+            class="tracking-caps uppercase {at === 0
+              ? ''
+              : 'mt-1 border-t border-ink pt-1'}"
+            aria-hidden="true"
+          >
+            {one.band}
+          </div>
+        {/if}
         <Option
           label={one.word}
           chosen={one.value === value}

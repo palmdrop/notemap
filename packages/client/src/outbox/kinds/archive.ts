@@ -4,7 +4,9 @@ import { unchanged, type Applied } from "#state/applied";
 import {
   cached,
   leaving,
+  resorted,
   sameFilter,
+  processedLater,
   withIds,
   type ClientState,
 } from "#state/state";
@@ -31,7 +33,7 @@ export const archive: Handler<"archive"> = {
 
     const { reason } = operation;
     const archived: Item = {
-      ...previous,
+      ...processedLater(previous, at),
       archived: { archivedAt: at, ...(reason === undefined ? {} : { reason }) },
     };
 
@@ -52,22 +54,31 @@ export const archive: Handler<"archive"> = {
         ),
       };
       if (held === undefined || !sameFilter(held.filter, filtered?.filter)) {
-        return back;
+        return resorted(back, operation.item);
       }
-      return {
-        ...back,
-        filtered: {
-          ...back.filtered,
-          queue: withIds(held, replaced(held.ids, operation.item, wasFiltered)),
+      return resorted(
+        {
+          ...back,
+          filtered: {
+            ...back.filtered,
+            queue: withIds(
+              held,
+              replaced(held.ids, operation.item, wasFiltered),
+            ),
+          },
         },
-      };
+        operation.item,
+      );
     };
 
     return {
-      state: leaving(
-        { ...state, items: cached(state, [archived]) },
+      state: resorted(
+        leaving(
+          { ...state, items: cached(state, [archived]) },
+          operation.item,
+          "queue",
+        ),
         operation.item,
-        "queue",
       ),
       undo: restored,
     };

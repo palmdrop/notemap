@@ -65,6 +65,12 @@ import type { Transport } from "./ports/transport";
 export type Order = "oldest-first" | "newest-first";
 
 /**
+ * Which instant the feed is ranked by: capture time, or when it was processed. The queue
+ * has capture time alone.
+ */
+export type Key = "capture" | "processed";
+
+/**
  * Why a read of a surface failed. `refused` is the pool having answered and
  * said no, which coming back into reach does not undo; the other kind is the
  * pool not answering, and it is over the moment one does.
@@ -78,6 +84,7 @@ export type ReadFailure = {
 export type ListState = {
   readonly items: readonly Item[];
   readonly order: Order;
+  readonly by: Key;
   /** What every item meets; every list empty for the whole surface. */
   readonly filter: Filter;
   readonly loading: boolean;
@@ -423,7 +430,8 @@ export interface Client {
    * Reads the next page. Naming an order the surface is not already in turns it
    * around and starts again, because a position belongs to the order that made it.
    */
-  loadFeed(order?: Order): Promise<void>;
+  /** Naming another order or key turns the feed and reads it from the start. */
+  loadFeed(order?: Order, by?: Key): Promise<void>;
   loadQueue(order?: Order): Promise<void>;
   /**
    * Somebody has arrived at a surface. The queue is read again from the start,
@@ -436,7 +444,13 @@ export interface Client {
    * page, keeping the whole one aside; arriving through none goes back to the
    * whole page as it stood.
    */
-  enter(surface: Surface, order?: Order, filter?: FilterNamed): Promise<void>;
+  enter(
+    surface: Surface,
+    order?: Order,
+    filter?: FilterNamed,
+    /** The feed's key; the queue has capture time alone. */
+    by?: Key,
+  ): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the
    * cache has never held is still somewhere a person can go. A pool that does

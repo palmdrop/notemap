@@ -4,9 +4,9 @@ import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sentUrls } from "$testing/pool";
 import { keyboard, online, viewport } from "$testing/dom";
-import { remember } from "$lib/order";
+import { remember, rememberKey } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import Feed from "./Feed.svelte";
@@ -689,4 +689,51 @@ test("reads by day on a narrow screen, as the queue does", async () => {
   expect(
     stamps(false).map((stamp) => stamp.querySelector("time")?.textContent),
   ).toEqual(["09:00", "09:00"]);
+});
+
+test("read by when rows were processed, a row marked processed waits where it stood while selected, then goes first", async () => {
+  rememberKey("processed");
+  const at = (hour: number) =>
+    `2026-09-12T${String(hour).padStart(2, "0")}:00:00.000Z`;
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/feed")
+      return json(200, {
+        values: [
+          anItem("three", { createdAt: at(10) }),
+          anItem("two", { createdAt: at(9) }),
+          anItem("one", { createdAt: at(8) }),
+        ],
+      });
+    if (route.endsWith("/mark-processed"))
+      return json(200, {
+        id: "record-1",
+        item: "two",
+        target: { kind: "user" },
+        state: "delivered",
+        at: at(12),
+      });
+    return json(200, { values: [] });
+  });
+
+  render(Feed);
+  await screen.findByText("one");
+  const sent = sentUrls().find((url) => url.includes("/v1/feed"));
+  expect(new URL(sent ?? "http://x").searchParams.get("by")).toBe("processed");
+
+  const order = () =>
+    ["one", "two", "three"].sort((a, b) =>
+      screen.getByText(a).compareDocumentPosition(screen.getByText(b)) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1,
+    );
+
+  await open(1);
+  await client.routing.markProcessed("two");
+  await tick();
+  expect(order()).toEqual(["three", "two", "one"]);
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await vi.waitFor(() => expect(order()).toEqual(["two", "three", "one"]));
 });

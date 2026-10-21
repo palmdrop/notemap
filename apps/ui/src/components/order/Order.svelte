@@ -2,12 +2,18 @@
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
   import type { RouteId } from "$app/types";
-  import type { Order } from "@notemap/client";
+  import type { Key, Order } from "@notemap/client";
 
   import OrderSelector from "$components/primitives/controls/OrderSelector.svelte";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
-  import { remember, withOrder, type Surface } from "$lib/order";
+  import {
+    remember,
+    rememberKey,
+    withKey,
+    withOrder,
+    type Surface,
+  } from "$lib/order";
 
   const queue = client.queue;
   const feed = client.feed;
@@ -41,18 +47,29 @@
         : $queue.loading,
   );
 
-  function turn(wanted: Order) {
+  function turn(wanted: Order, by: Key) {
     if (reading === undefined) return;
 
     remember(reading, wanted);
+    if (reading === "feed") {
+      rememberKey(by);
+      replaceState(withKey(withOrder(page.url, wanted), by), {});
+      void client.loadFeed(wanted, by);
+      return;
+    }
     replaceState(withOrder(page.url, wanted), {});
 
-    if (reading === "feed") void client.loadFeed(wanted);
-    else if (reading === "queue") void client.loadQueue(wanted);
+    if (reading === "queue") void client.loadQueue(wanted);
     else log.turn(wanted);
   }
 </script>
 
 {#if order !== undefined}
-  <OrderSelector {order} reading={reloading} onchoose={turn} />
+  <OrderSelector
+    {order}
+    by={reading === "feed" ? $feed.by : "capture"}
+    keyed={reading === "feed"}
+    reading={reloading}
+    onchoose={turn}
+  />
 {/if}

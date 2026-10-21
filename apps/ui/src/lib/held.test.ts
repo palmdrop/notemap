@@ -19,3 +19,9 @@ test("puts a row past every other at the end", () => {
   expect(placeOf([one, two], three, "oldest-first")).toBe(2);
   expect(placeOf([], three, "newest-first")).toBe(0);
 });
+
+test("puts a row back by when it was processed on a list read by it", () => {
+  const decided = anItem("decided", { createdAt: at(7), processedAt: at(11) });
+  expect(placeOf([three, two], decided, "newest-first", "processed")).toBe(0);
+  expect(placeOf([three, two], decided, "newest-first")).toBe(2);
+});

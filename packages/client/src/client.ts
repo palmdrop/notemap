@@ -74,6 +74,7 @@ function sameList(one: ListState, other: ListState): boolean {
   return (
     one.loading === other.loading &&
     one.order === other.order &&
+    one.by === other.by &&
     sameFilter(one.filter, other.filter) &&
     one.more === other.more &&
     one.fromCache === other.fromCache &&
@@ -143,6 +144,7 @@ function listOf(state: ClientState, surface: Surface): ListState {
   return {
     items,
     order: page.order,
+    by: page.by,
     filter: page.filter ?? WHOLE,
     loading: page.loading,
     more: !page.exhausted,
@@ -592,10 +594,11 @@ export function createClient(config: ClientConfig): Client {
       (current) => waiting(current.outbox).length,
     ),
 
-    loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
+    loadFeed: (order, by) =>
+      after(() => loadMore(state, api, "feed", order, by)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order, filter) =>
-      after(() => enter(state, api, surface, order, filter)),
+    enter: (surface, order, filter, by) =>
+      after(() => enter(state, api, surface, order, filter, by)),
 
     item: (id) =>
       after(async () => {

@@ -45,6 +45,7 @@ function page(
 ): ListPage {
   return {
     order,
+    by: "capture",
     ...(tags === undefined ? {} : { filter: filterOf({ tags }) }),
     ids,
     exhausted: true,

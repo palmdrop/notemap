@@ -1,8 +1,12 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **Nothing new is mirrored for when an item was processed**: it is derived from
+  what a record already carries, which is what a rebuild will recompute it from.
+  ([plan](../plans/feed-reading-options.md))
 
 - 2026-10-20 — **An item's record carries the head it continues and its source's word.** Both are
   in the `.json` and neither in the rendering's frontmatter.

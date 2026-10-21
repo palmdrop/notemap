@@ -2,8 +2,13 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **`by`, `state`, `destination` and `source` on the feed; `source` on the queue and
+  the archive; `processedAt` on every item.** `bad-by`, `bad-state`, `bad-destination`,
+  `bad-source` and `unsupported-parameter` are new refusals, and `next` carries every one of the
+  parameters. ([plan](../plans/feed-reading-options.md), [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))
 
 - 2026-10-20 — **A capture may continue a line, and two `409`s name its head.**
   `source-item-diverged` and `continues-not-head` join the capture refusals, `existing` names the

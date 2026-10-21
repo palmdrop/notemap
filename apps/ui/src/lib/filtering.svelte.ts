@@ -15,7 +15,7 @@ import {
   type FilterKind,
 } from "$lib/filter";
 import { leave } from "$lib/leaving.svelte";
-import { orderFor } from "$lib/order";
+import { keyFor, orderFor } from "$lib/order";
 import { keepPlace, restorePlace } from "$lib/scroll-mark";
 import type { View } from "$lib/view";
 
@@ -66,7 +66,12 @@ export function filtering(
       kept = undefined;
       onmove();
       void (async () => {
-        await client.enter(surface, orderFor(surface, page.url), named);
+        await client.enter(
+          surface,
+          orderFor(surface, page.url),
+          named,
+          surface === "feed" ? keyFor(page.url) : undefined,
+        );
         await tick();
         if (entered !== now) return;
         restorePlace(now);
@@ -90,7 +95,12 @@ export function filtering(
     },
 
     async arrive() {
-      await client.enter(surface, orderFor(surface, page.url), filter);
+      await client.enter(
+        surface,
+        orderFor(surface, page.url),
+        filter,
+        surface === "feed" ? keyFor(page.url) : undefined,
+      );
       await tick();
     },
 

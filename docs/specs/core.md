@@ -1,8 +1,14 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **The feed may be read by when each item was processed, and filtered by state,
+  destination and source.** A feed read names `capture` or `processed`; every item carries
+  `processedAt`, which the store holds and works out again in every transaction that moves it. The
+  feed's filter takes states, destinations and sources, any one of each; the queue and the archive
+  take sources beside tags. ([plan](../plans/feed-reading-options.md), [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))
 
 - 2026-10-20 — **A re-read answers to the source's word, and a divergence continues.** A source
   re-reading an item that somebody else has edited is a replay while upstream is unchanged, so a

@@ -6,14 +6,19 @@ import {
   arrived,
   belongs,
   cached,
+  drawnFrom,
   emptyPage,
   emptyState,
   filterFor,
   filterOf,
   filterSize,
+  heard,
   isWhole,
   processed,
+  reconciled,
+  resorted,
   sameFilter,
+  processedLater,
   summarise,
   withIds,
   type ClientState,
@@ -241,5 +246,113 @@ describe("a filter", () => {
     expect(through({ sources: ["memos"] })).toEqual(["relayed"]);
     expect(through({ sources: ["memos"], states: ["routed"] })).toEqual([]);
     expect(through({})).toHaveLength(ALL.length);
+  });
+});
+
+describe("a page read by when items were processed", () => {
+  const minute = (m: number) =>
+    `2026-08-17T10:${String(m).padStart(2, "0")}:00.000Z`;
+  const ONE = anItem("one", { createdAt: minute(1), processedAt: minute(9) });
+  const TWO = anItem("two", { createdAt: minute(2) });
+
+  function holding(by: "capture" | "processed"): ClientState {
+    const empty = emptyState();
+    const page = {
+      ...emptyPage("newest-first", undefined, by),
+      exhausted: true,
+    };
+    return {
+      ...empty,
+      items: cached(empty, [ONE, TWO]),
+      feed: { ...page, answered: false },
+    };
+  }
+
+  it("is drawn from the cache by when each copy says it was processed", () => {
+    expect(
+      drawnFrom(holding("processed"), "feed").map((item) => item.id),
+    ).toEqual(["one", "two"]);
+    expect(
+      drawnFrom(holding("capture"), "feed").map((item) => item.id),
+    ).toEqual(["two", "one"]);
+  });
+
+  it("moves a held row where its key now sorts, and only on a page read by it", () => {
+    const answered = (by: "capture" | "processed"): ClientState => {
+      const state = holding(by);
+      return {
+        ...state,
+        feed: { ...state.feed, ids: ["one", "two"], answered: true },
+      };
+    };
+    const moved = (state: ClientState) =>
+      resorted(
+        { ...state, items: cached(state, [processedLater(TWO, minute(30))]) },
+        TWO.id,
+      ).feed.ids;
+
+    expect(moved(answered("processed"))).toEqual(["two", "one"]);
+    expect(moved(answered("capture"))).toEqual(["one", "two"]);
+  });
+
+  it("puts a row the pool answered for where its key now sorts, on a page read by it alone", () => {
+    const answered = (by: "capture" | "processed"): ClientState => {
+      const state = holding(by);
+      return {
+        ...state,
+        feed: { ...state.feed, ids: ["one", "two"], answered: true },
+      };
+    };
+    const settled = (state: ClientState) =>
+      reconciled(
+        { ...state, items: cached(state, [processedLater(TWO, minute(30))]) },
+        TWO.id,
+      ).feed.ids;
+
+    expect(settled(answered("processed"))).toEqual(["two", "one"]);
+    expect(settled(answered("capture"))).toEqual(["one", "two"]);
+  });
+
+  it("never moves the key back for a guess", () => {
+    expect(processedLater(ONE, minute(5)).processedAt).toBe(minute(9));
+    expect(processedLater(ONE, minute(10)).processedAt).toBe(minute(10));
+  });
+
+  it("reads an archived item again only while the feed is read by it, and never for an amendment", () => {
+    const amended = {
+      id: "a-0",
+      kind: "amended",
+      subject: "one",
+      by: { kind: "person" },
+      at: minute(40),
+      detail: {},
+    } as const;
+    expect(
+      heard(holding("processed"), [amended], new Set(), new Set()).read,
+    ).toEqual([]);
+
+    const action = {
+      id: "a-1",
+      kind: "archived",
+      subject: "one",
+      by: { kind: "person" },
+      at: minute(40),
+      detail: {},
+    } as const;
+
+    const read = (by: "capture" | "processed") =>
+      heard(holding(by), [action], new Set(), new Set()).read;
+    expect(read("processed")).toEqual(["one"]);
+    expect(read("capture")).toEqual([]);
+
+    const filteredByProcessed: ClientState = {
+      ...holding("capture"),
+      filtered: {
+        feed: emptyPage("newest-first", filterOf({ tags: ["a"] }), "processed"),
+      },
+    };
+    expect(
+      heard(filteredByProcessed, [action], new Set(), new Set()).read,
+    ).toEqual(["one"]);
   });
 });

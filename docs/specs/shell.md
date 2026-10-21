@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **The feed reads by `processed` as well as by capture, and filters by state,
+  destination and source.** The order chooser has `captured` and `processed` bands, kept on the
+  address as `by=processed`; `tags ▾` is `filter ▾`, with bands above the tags. A row moved by its
+  own decision waits while selected, and by day the headings head the day each row was processed.
+  ([plan](../plans/feed-reading-options.md))
 
 - 2026-10-20 — **The Raycast form keeps a draft and takes attachments alone.** A note left with
   Escape comes back on the next launch with its tags, until a capture is made; a refused one keeps

@@ -16,7 +16,7 @@ import type {
   TagUse,
 } from "#api/types";
 import type { PendingOperation } from "#outbox/operations";
-import type { Order, ReadFailure } from "../types";
+import type { Key, Order, ReadFailure } from "../types";
 
 type RoutedTo = RoutingSummary["to"][number];
 
@@ -58,6 +58,8 @@ export const WHOLE: Filter = {
 
 export type ListPage = {
   readonly order: Order;
+  /** What the rows are ranked by, and the position is a time of. */
+  readonly by: Key;
   /** Absent on the whole surface. */
   readonly filter?: Filter;
   readonly ids: readonly ItemId[];
@@ -111,9 +113,14 @@ export type HeldBlob = {
   readonly url?: string;
 };
 
-export function emptyPage(order: Order, filter: Filter = WHOLE): ListPage {
+export function emptyPage(
+  order: Order,
+  filter: Filter = WHOLE,
+  by: Key = "capture",
+): ListPage {
   return {
     order,
+    by,
     ...(isWhole(filter) ? {} : { filter }),
     ids: [],
     exhausted: false,
@@ -241,7 +248,8 @@ function startedOver(
   const kept: { [surface in Surface]?: ListPage } = {};
   for (const surface of ["feed", "queue"] as const) {
     const page = filtered[surface];
-    if (page !== undefined) kept[surface] = emptyPage(page.order, page.filter);
+    if (page !== undefined)
+      kept[surface] = emptyPage(page.order, page.filter, page.by);
   }
   return kept;
 }
@@ -252,7 +260,7 @@ export function rebuilt(state: ClientState, pool: PoolIdentity): ClientState {
     ...rest,
     pool,
     items: new Map(),
-    feed: emptyPage(state.feed.order),
+    feed: emptyPage(state.feed.order, WHOLE, state.feed.by),
     queue: emptyPage(state.queue.order),
     filtered: startedOver(state.filtered),
   };
@@ -271,7 +279,7 @@ export function forgotten(state: ClientState): ClientState {
   return {
     ...rest,
     items: new Map(),
-    feed: emptyPage(state.feed.order),
+    feed: emptyPage(state.feed.order, WHOLE, state.feed.by),
     queue: emptyPage(state.queue.order),
     filtered: startedOver(state.filtered),
     destinations: [],
@@ -328,8 +336,12 @@ export function settledTemplate(
  * Where every surface reads an item: its capture time, with the id only to
  * break a tie, since mint order is not guaranteed to follow it.
  */
-export function rank(item: Item): string {
-  return `${item.createdAt}|${item.id}`;
+export function rank(item: Item, by: Key = "capture"): string {
+  return `${keyOf(item, by)}|${item.id}`;
+}
+
+function keyOf(item: Item, by: Key): string {
+  return by === "processed" ? item.processedAt : item.createdAt;
 }
 
 /**
@@ -433,9 +445,13 @@ export function reconciled(state: ClientState, id: ItemId): ClientState {
     if (!belongs(surface, page, item)) {
       return held ? withIds(page, without(page.ids, id)) : page;
     }
-    if (held) return page;
+    // Read by when it was processed, a row whose key moved goes where it now sorts, or off
+    // the page where that is past what the page has read.
+    if (held && page.by === "capture") return page;
+    const from = held ? withIds(page, without(page.ids, id)) : page;
 
-    const ids = intoPage(page, id, state.items);
+    const ids = intoPage(from, id, state.items);
+    if (held) return withIds(page, ids);
     return ids === page.ids ? page : withIds(page, ids);
   });
 }
@@ -466,7 +482,7 @@ export function drawnFrom(
   );
 
   return held.sort((one, other) =>
-    behind(order, rank(one), rank(other)) ? 1 : -1,
+    behind(order, rank(one, page.by), rank(other, page.by)) ? 1 : -1,
   );
 }
 
@@ -487,7 +503,7 @@ function loaded(page: ListPage, item: Item): boolean {
   const at = comma === -1 ? page.after : page.after.slice(0, comma);
   const id = comma === -1 ? undefined : page.after.slice(comma + 1);
 
-  const time = item.createdAt;
+  const time = keyOf(item, page.by);
   if (time === at) return id === undefined || !behind(page.order, item.id, id);
   return behind(page.order, at, time);
 }
@@ -510,11 +526,13 @@ export function intoPage(
   if (inserted === undefined || page.ids.includes(id)) return page.ids;
   if (!loaded(page, inserted)) return page.ids;
 
-  const arriving = rank(inserted);
+  const arriving = rank(inserted, page.by);
 
   const at = page.ids.findIndex((held) => {
     const item = items.get(held);
-    return item !== undefined && behind(page.order, rank(item), arriving);
+    return (
+      item !== undefined && behind(page.order, rank(item, page.by), arriving)
+    );
   });
 
   return at === -1
@@ -547,7 +565,8 @@ export function rejoined(
           if (fresh.ids.includes(id)) return false;
           const item = items.get(id);
           return (
-            item !== undefined && behind(fresh.order, rank(item), rank(far))
+            item !== undefined &&
+            behind(fresh.order, rank(item, fresh.by), rank(far, fresh.by))
           );
         });
 
@@ -665,20 +684,40 @@ export function processed(
   record: RoutingRecord,
 ): ClientState {
   const held = state.items.get(id)?.routing;
+  const routed = withRouting(state, id, {
+    records: (held?.records ?? 0) + 1,
+    pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
+    to: targets(held?.to ?? [], [wentTo(record)]),
+    templates: applied(held?.templates ?? [], [record]),
+  });
+  const item = routed.get(id);
+  // The record's decision time is the key itself, so this is no guess.
+  const items =
+    item === undefined
+      ? routed
+      : cached({ ...state, items: routed }, [processedLater(item, record.at)]);
 
-  return leaving(
-    {
-      ...state,
-      items: withRouting(state, id, {
-        records: (held?.records ?? 0) + 1,
-        pending: (held?.pending ?? 0) + (record.state === "pending" ? 1 : 0),
-        to: targets(held?.to ?? [], [wentTo(record)]),
-        templates: applied(held?.templates ?? [], [record]),
-      }),
-    },
-    id,
-    "queue",
-  );
+  return resorted(leaving({ ...state, items }, id, "queue"), id);
+}
+
+/** An item processed at `at`, which moves its key on and never back. */
+export function processedLater(item: Item, at: string): Item {
+  return at > item.processedAt ? { ...item, processedAt: at } : item;
+}
+
+/**
+ * The held copy of an item moved on every page read by when it was processed to where it
+ * now sorts. Pages read by capture time are left alone: nothing moves there.
+ */
+export function resorted(state: ClientState, id: ItemId): ClientState {
+  const item = state.items.get(id);
+  if (item === undefined) return state;
+
+  return eachPage(state, (surface, page) => {
+    if (page.by !== "processed" || !belongs(surface, page, item)) return page;
+    const from = withIds(page, without(page.ids, id));
+    return withIds(page, intoPage(from, id, state.items));
+  });
 }
 
 /**
@@ -783,6 +822,23 @@ const RETURNING: ReadonlySet<string> = new Set([
   "work-abandoned",
 ]);
 
+/**
+ * The kinds that may move when a held item was processed, beyond the ones above.
+ * Several say nothing of the instant it took, so the item is read again; only
+ * while a page is read by it, where a row's place depends on it.
+ */
+const REPROCESSING: ReadonlySet<string> = new Set([
+  "archived",
+  "revised",
+  "delivery-failed",
+]);
+
+function readByProcessed(state: ClientState): boolean {
+  return (
+    state.feed.by === "processed" || state.filtered.feed?.by === "processed"
+  );
+}
+
 export type Heard = {
   /** Every item to read, each once, which the reads place where they belong. */
   readonly read: readonly ItemId[];
@@ -812,10 +868,20 @@ export function heard(
 ): Heard {
   const read = new Set<ItemId>();
   const arrived = new Set<ItemId>();
+  const byProcessed = readByProcessed(state);
 
   for (const action of actions) {
     const subject = action.subject;
     if (subject === undefined) continue;
+
+    if (
+      byProcessed &&
+      REPROCESSING.has(action.kind) &&
+      state.items.has(subject) &&
+      !unsent.has(subject)
+    ) {
+      read.add(subject);
+    }
 
     if (action.kind === "captured" || action.kind === "revised") {
       if (action.kind === "revised" && editing.has(subject)) continue;

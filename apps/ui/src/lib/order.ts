@@ -1,4 +1,4 @@
-import type { Order } from "@notemap/client";
+import type { Key, Order } from "@notemap/client";
 
 /**
  * Every surface a reader starts from one end of. An item is not one: it is one
@@ -51,5 +51,37 @@ export function remember(surface: Surface, order: Order): void {
 export function withOrder(url: URL, order: Order): URL {
   const next = new URL(url);
   next.searchParams.set(PARAM, order);
+  return next;
+}
+
+/** The feed's key on the address: named `processed`, absent for capture time. */
+export const KEY_PARAM = "by";
+
+const KEY_KEY = "notemap:by:feed";
+
+function knownKey(said: string | null): Key | undefined {
+  return said === "processed" || said === "capture" ? said : undefined;
+}
+
+/**
+ * What the feed is read by, on the order's own terms: the URL, then what this
+ * shell was last told, then capture time. Only the feed has a key.
+ */
+export function keyFor(url: URL): Key {
+  return (
+    knownKey(url.searchParams.get(KEY_PARAM)) ??
+    knownKey(localStorage.getItem(KEY_KEY)) ??
+    "capture"
+  );
+}
+
+export function rememberKey(key: Key): void {
+  localStorage.setItem(KEY_KEY, key);
+}
+
+export function withKey(url: URL, key: Key): URL {
+  const next = new URL(url);
+  if (key === "processed") next.searchParams.set(KEY_PARAM, key);
+  else next.searchParams.delete(KEY_PARAM);
   return next;
 }

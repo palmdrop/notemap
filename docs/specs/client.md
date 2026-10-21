@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-20
+**Last updated**: 2026-10-21
 **Shipped**:
+
+- 2026-10-21 — **A filter is states, destinations and sources as well as tags, and the feed may
+  be read by when each item was processed.** A page is kept by its key, order and filter, all
+  answered from held copies offline; a decision this client makes moves the row on a page read by
+  it, and an undo waits for the pool's item. ([plan](../plans/feed-reading-options.md))
 
 - 2026-10-19 — **A tag, a capture and an edit carry values for what a template asks.** The `tag`
   operation holds them, so an offline tag drains with what it was given. ([plan](../plans/template-arguments.md), [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
@@ -617,7 +622,9 @@ has walked, so a filtered reading made from them would be silently short of what
   revision, an archive or an unarchive, a template firing, a delivery failing or abandoned or
   cancelled, and a delivery landing. Several of these say nothing about the instant the key took
   (a landing's `at` is when it landed, not when it was decided), so the item read is what moves the
-  row, through `GET /v1/items?id=…` as an arrival's is. An amendment moves nothing.
+  row, through `GET /v1/items?id=…` as an arrival's is. A revision, an archive and a delivery
+  failing are read for this alone, so only while a feed page is read by when items were processed,
+  and only for an item the client holds; the rest are read anyway. An amendment moves nothing.
 - **Drawn from the cache, the feed read this way ranks by the `processedAt` each copy holds**,
   in whichever order it is read.
 

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { byDay, plain } from "./days";
+import { byDay, dayAtFor, plain } from "./days";
 import { weekdayOf } from "./stamp";
 
 const at = (day: number, hour: number) =>
@@ -50,4 +50,23 @@ test("draws no headings on the rail", () => {
 
 test("names the weekday, lowercase", () => {
   expect(weekdayOf(at(13, 12))).toBe("sunday");
+});
+
+test("heads each row by the instant it is told, as a list read by when rows were processed is", () => {
+  const processed = [
+    { ...row("a", 14, 9), processedAt: at(15, 9) },
+    { ...row("b", 13, 9), processedAt: at(14, 9) },
+  ];
+  const headings = (drawn: ReturnType<typeof byDay>) =>
+    drawn.filter((one) => one.kind === "day").length;
+
+  expect(headings(byDay(processed))).toBe(2);
+  expect(
+    read(byDay(processed, dayAtFor("processed"))).filter((key) =>
+      key.startsWith("day:"),
+    ),
+  ).toHaveLength(2);
+  expect(
+    byDay(processed, dayAtFor("processed")).find((one) => one.kind === "day"),
+  ).toMatchObject({ at: at(15, 9) });
 });
