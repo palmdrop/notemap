@@ -1,5 +1,7 @@
 /** Every sentence the shell says in its own voice. A capture's words are not here. */
 
+import type { Filter, FilterState } from "@notemap/client";
+
 export const NOTHING_CAPTURED = "Nothing captured yet.";
 
 export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
@@ -26,10 +28,32 @@ export const NO_NOTICES = "No notices.";
 
 export const CLEAR_FILTERS = "clear filters";
 
-/** An emptied filter, its tags said as a sentence says them. */
-export function nothingMatches(names: readonly string[]): string {
+/** What became of an item, in this shell's words: archive is said as discard. */
+export const STATE_WORD: Readonly<Record<FilterState, string>> = {
+  unprocessed: "unprocessed",
+  routed: "routed",
+  archived: "discarded",
+  revised: "revised",
+};
+
+/**
+ * An emptied filter said as a sentence says it: any one of a band joined by
+ * `or`, the bands and the tags joined as a list is.
+ */
+export function nothingMatches(
+  filter: Filter,
+  destinationName: (id: string) => string = (id) => id,
+): string {
+  const anyOf = (words: readonly string[]) => words.join(" or ");
+  const bands = [
+    anyOf(filter.states.map((state) => STATE_WORD[state])),
+    anyOf(filter.destinations.map((id) => `to ${destinationName(id)}`)),
+    anyOf(filter.sources.map((source) => `from ${source}`)),
+  ].filter((band) => band !== "");
+  const names = [...bands, ...filter.tags];
+
   const which =
-    names.length === 1
+    names.length === 1 || bands.length > 0
       ? everyOf(names)
       : `${names.length === 2 ? "both" : "all of"} ${everyOf(names)}`;
   return `Nothing matches ${which}.`;

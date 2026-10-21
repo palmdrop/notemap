@@ -45,6 +45,7 @@ import {
   rebuilt,
   heard,
   sameFilter,
+  WHOLE,
   settle,
   settledDestination,
   settledTemplate,
@@ -142,7 +143,7 @@ function listOf(state: ClientState, surface: Surface): ListState {
   return {
     items,
     order: page.order,
-    filter: page.filter ?? [],
+    filter: page.filter ?? WHOLE,
     loading: page.loading,
     more: !page.exhausted,
     fromCache: drawn,
@@ -593,8 +594,8 @@ export function createClient(config: ClientConfig): Client {
 
     loadFeed: (order) => after(() => loadMore(state, api, "feed", order)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order, tags) =>
-      after(() => enter(state, api, surface, order, tags)),
+    enter: (surface, order, filter) =>
+      after(() => enter(state, api, surface, order, filter)),
 
     item: (id) =>
       after(async () => {

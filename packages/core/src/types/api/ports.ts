@@ -44,7 +44,7 @@ import type {
   Tag,
   TagUse,
 } from "../domain/item";
-import type { TagFilter } from "../domain/filter";
+import type { FeedFilter, SurfaceFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type {
   AssetsHeld,
@@ -317,9 +317,9 @@ export interface PoolReads {
   continuationOf(id: ItemId): Promise<Item | undefined>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
-  feed(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
-  queue(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
-  archived(page: OrderedPage, filter?: TagFilter): Promise<Slice<Item>>;
+  feed(page: OrderedPage, filter?: FeedFilter): Promise<Slice<Item>>;
+  queue(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
+  archived(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
   counts(): Promise<Counts>;
 
   /**

@@ -926,7 +926,7 @@ export interface paths {
         };
         /**
          * Read the feed
-         * @description Every item chronologically by capture time, including archived items and the items revisions were made from, or only those carrying every `tag` named. Follow `next` until it is absent; it carries the filter.
+         * @description Every item chronologically by capture time, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.
          */
         get: {
             parameters: {
@@ -939,6 +939,12 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
+                    source?: string[];
+                    /** @description Repeated; `unprocessed`, `routed`, `archived` or `revised`, and an item is read where it is any one of them. Anything else is refused with `422 bad-state`. */
+                    state?: string[];
+                    /** @description Repeated once per destination id; an item is read where a routing record, pending included, names any one of them. An empty one is refused with `422 bad-destination`. */
+                    destination?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -965,7 +971,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "bad-state" | "bad-destination";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -991,7 +997,7 @@ export interface paths {
         };
         /**
          * Read the queue
-         * @description Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named.
+         * @description Every item that is unprocessed — unarchived, unrouted, and nothing revised from it — oldest first by default. Paginated by a **capture-time** position, the feed's own: the queue, the feed and the archive are one ordering read three ways. `tag` reads only the unprocessed items carrying every tag named, `source` those captured through any one named. `by`, `state` and `destination` are the feed's, refused here with `422 unsupported-parameter`.
          */
         get: {
             parameters: {
@@ -1004,6 +1010,8 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
+                    source?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -1030,7 +1038,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "unsupported-parameter";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1056,7 +1064,7 @@ export interface paths {
         };
         /**
          * Read the archive
-         * @description Every archived item, on the queue's key and default. Archiving hides an item from the queue; it stays in the feed and stays processable.
+         * @description Every archived item, on the queue's key and default, and its filters. Archiving hides an item from the queue; it stays in the feed and stays processable.
          */
         get: {
             parameters: {
@@ -1069,6 +1077,8 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
+                    source?: string[];
                 };
                 header?: never;
                 path?: never;
@@ -1095,7 +1105,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "unsupported-parameter";
                             } & {
                                 [key: string]: unknown;
                             };

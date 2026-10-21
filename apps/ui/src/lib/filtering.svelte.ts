@@ -3,22 +3,29 @@ import { tick, untrack } from "svelte";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 
-import type { Order } from "@notemap/client";
+import { WHOLE, type Filter, type Order } from "@notemap/client";
 
 import { client } from "$lib/client";
-import { filtered, filterFor, GOING, placeKey } from "$lib/filter";
+import {
+  filtered,
+  filterFor,
+  GOING,
+  placeKey,
+  toggled,
+  type FilterKind,
+} from "$lib/filter";
 import { leave } from "$lib/leaving.svelte";
 import { orderFor } from "$lib/order";
 import { keepPlace, restorePlace } from "$lib/scroll-mark";
 import type { View } from "$lib/view";
 
 export type Filtering = {
-  readonly filter: readonly string[];
+  readonly filter: Filter;
   /** Where this reading keeps its scroll, apart from every other filter's. */
   readonly place: string;
   /** Reads the surface through the filter its address names, for its first drawing. */
   arrive(): Promise<void>;
-  toggle(tag: string): void;
+  toggle(kind: FilterKind, value: string): void;
   clear(): void;
 };
 
@@ -34,7 +41,14 @@ export function filtering(
   /** The address has named another filter, and the surface is read through it. */
   onmove: () => void,
 ): Filtering {
-  const filter = $derived(filterFor(page.url));
+  // The queue takes tags and sources alone; anything else on its address is
+  // not what it is read through.
+  const filter = $derived.by(() => {
+    const named = filterFor(page.url);
+    return surface === "feed"
+      ? named
+      : { ...named, states: [], destinations: [] };
+  });
   const place = $derived(placeKey(surface, filter));
 
   // Let go of while another filter's rows replace these: a list shrinking under
@@ -45,14 +59,14 @@ export function filtering(
   let entered = untrack(() => place);
   $effect(() => {
     const now = place;
-    const tags = filter;
+    const named = filter;
     if (now === entered) return;
     entered = now;
     untrack(() => {
       kept = undefined;
       onmove();
       void (async () => {
-        await client.enter(surface, orderFor(surface, page.url), tags);
+        await client.enter(surface, orderFor(surface, page.url), named);
         await tick();
         if (entered !== now) return;
         restorePlace(now);
@@ -61,9 +75,9 @@ export function filtering(
     });
   });
 
-  function go(tags: readonly string[]): void {
+  function go(to: Filter): void {
     const { view, order } = how();
-    leave(() => void goto(filtered(page.url, tags, view, order), GOING));
+    leave(() => void goto(filtered(page.url, to, view, order), GOING));
   }
 
   return {
@@ -80,16 +94,12 @@ export function filtering(
       await tick();
     },
 
-    toggle(tag) {
-      go(
-        filter.includes(tag)
-          ? filter.filter((each) => each !== tag)
-          : [...filter, tag],
-      );
+    toggle(kind, value) {
+      go(toggled(filter, kind, value));
     },
 
     clear() {
-      go([]);
+      go(WHOLE);
     },
   };
 }

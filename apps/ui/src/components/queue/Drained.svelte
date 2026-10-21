@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { isWhole, WHOLE, type Filter } from "@notemap/client";
+
   import ClearFilters from "$components/tags/ClearFilters.svelte";
+  import { nameOf } from "$lib/destinations";
   import { nothingMatches, QUEUE_EMPTY } from "$lib/said";
 
   /**
@@ -8,19 +11,19 @@
    * says what is not waiting, and never that the queue is empty.
    */
   let {
-    filter = [],
+    filter = WHOLE,
     onwhole,
   }: {
-    filter?: readonly string[];
+    filter?: Filter;
     onwhole?: () => void;
   } = $props();
 </script>
 
 <div>
-  {#if filter.length === 0}
+  {#if isWhole(filter)}
     {QUEUE_EMPTY}
   {:else}
-    {nothingMatches(filter)}
+    {nothingMatches(filter, nameOf)}
     <ClearFilters onclick={onwhole} />
   {/if}
 </div>

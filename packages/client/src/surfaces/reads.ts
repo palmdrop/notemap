@@ -5,15 +5,19 @@ import type { Writable } from "../observable/observable";
 import {
   cached,
   emptyPage,
+  filterFor,
   filterOf,
   fromCache,
+  isWhole,
   reading,
   rejoined,
   sameFilter,
   unfiltered,
   unpositioned,
   withReading,
+  WHOLE,
   type ClientState,
+  type FilterNamed,
   type ListPage,
   type Surface,
 } from "#state/state";
@@ -30,17 +34,28 @@ function positionIn(next: string): string | undefined {
 
 function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
   const after = page.after;
-  const tag = page.filter ?? [];
+  const { tags, states, destinations, sources } = page.filter ?? WHOLE;
   const query = {
     order: page.order,
     limit: String(PAGE),
     ...(after === undefined ? {} : { after }),
-    ...(tag.length === 0 ? {} : { tag: [...tag] }),
+    ...(tags.length === 0 ? {} : { tag: [...tags] }),
+    ...(sources.length === 0 ? {} : { source: [...sources] }),
   };
 
   return answered(
     surface === "feed"
-      ? api.GET("/v1/feed", { params: { query } })
+      ? api.GET("/v1/feed", {
+          params: {
+            query: {
+              ...query,
+              ...(states.length === 0 ? {} : { state: [...states] }),
+              ...(destinations.length === 0
+                ? {}
+                : { destination: [...destinations] }),
+            },
+          },
+        })
       : api.GET("/v1/queue", { params: { query } }),
   );
 }
@@ -103,7 +118,7 @@ function answering(
   surface: Surface,
   page: ListPage,
 ): ListPage | undefined {
-  if (filterOf(page.filter ?? []).length === 0) return current[surface];
+  if (isWhole(page.filter)) return current[surface];
   const held = current.filtered[surface];
   return held !== undefined && sameFilter(held.filter, page.filter)
     ? held
@@ -217,15 +232,15 @@ export async function enter(
   api: Api,
   surface: Surface,
   order?: Order,
-  tags: readonly string[] = [],
+  named: FilterNamed = {},
 ): Promise<void> {
-  const filter = filterOf(tags);
+  const filter = filterFor(surface, filterOf(named));
   const before = reading(state.get(), surface);
-  const lifted = filter.length === 0 && (before.filter ?? []).length > 0;
+  const lifted = isWhole(filter) && !isWhole(before.filter);
 
-  if (!sameFilter(before.filter, filter)) {
+  if (!sameFilter(before.filter ?? WHOLE, filter)) {
     state.update((current) =>
-      filter.length === 0
+      isWhole(filter)
         ? unfiltered(current, surface)
         : withReading(
             current,

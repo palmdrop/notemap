@@ -4,7 +4,7 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
+  import { isWhole, type Item } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
@@ -18,7 +18,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import ClearFilters from "$components/tags/ClearFilters.svelte";
-  import TagFilter from "$components/tags/TagFilter.svelte";
+  import FilterPanel from "$components/tags/FilterPanel.svelte";
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -38,6 +38,7 @@
   import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
+  import { nameOf } from "$lib/destinations";
   import { NOTHING_CAPTURED, nothingMatches } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -61,7 +62,7 @@
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
-  let tagFilter = $state<TagFilter | undefined>(undefined);
+  let filterPanel = $state<FilterPanel | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -222,7 +223,7 @@
       ondeselect: () => leave(() => (selected = undefined)),
     }),
     ...reached(),
-    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
     {
       id: "view",
       label: "view",
@@ -233,8 +234,8 @@
 
 <Head>
   <ViewChooser {view} onchoose={read} />
-  <TagFilter
-    bind:this={tagFilter}
+  <FilterPanel
+    bind:this={filterPanel}
     surface={SURFACE}
     filter={reading.filter}
     ontoggle={reading.toggle}
@@ -265,7 +266,7 @@
     bind:this={drawn[item.id]}
     {item}
     surface="feed"
-    filter={$feed.filter}
+    filter={$feed.filter.tags}
     selected={selected === item.id}
     offline={!pool.yes}
     commands={selected === item.id ? commands : []}
@@ -318,10 +319,10 @@
     {#if bare}
       <Rail>feed</Rail>
       <Body>
-        {#if $feed.filter.length === 0}
+        {#if isWhole($feed.filter)}
           <Prose text={NOTHING_CAPTURED} />
         {:else}
-          {nothingMatches($feed.filter)}
+          {nothingMatches($feed.filter, nameOf)}
           <ClearFilters onclick={reading.clear} />
         {/if}
       </Body>

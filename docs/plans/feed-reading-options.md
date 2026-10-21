@@ -1,7 +1,7 @@
 # Feed reading options: order by when processed, filter by state
 
 **Date**: 2026-10-20
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: In progress <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`, `docs/specs/mirror.md`
 **Closed**:
 
@@ -95,21 +95,22 @@ Verify: the developer has approved the ADR, CONTEXT.md and the spec diffs.
 Independent of the ordering work. It ships value first and exercises the filter plumbing that
 phase 4 extends.
 
-- [ ] Store: clauses beside `carrying()` for state, destination and source, in `pool-store.ts` and
+- [x] Store: clauses beside `carrying()` for state, destination and source, in `pool-store.ts` and
       kept to small helpers
-- [ ] Core: the feed's filter type widens from a tag list to a record of tags, states,
+- [x] Core: the feed's filter type widens from a tag list to a record of tags, states,
       destinations and sources. Queue and archive take tags and sources.
-- [ ] HTTP: parse, validate (`422 bad-state`, `bad-destination`, `bad-source`,
+- [x] HTTP: parse, validate (`422 bad-state`, `bad-destination`, `bad-source`,
       `unsupported-parameter`), and carry the new
       parameters on `next`. Update the OpenAPI document, and regenerate the client's
       `generated.d.ts` with the project's existing script.
-- [ ] Client: `Filter` widens. Update `carries()`/`belongs()` so the cache answers the same filter
+- [x] Client: `Filter` widens. Update `carries()`/`belongs()` so the cache answers the same filter
       offline, routed-to-destination read from the routing summary's `to`. Update `filterOf`, and
       the URL form the shell reads.
-- [ ] Shell: the filter panel's bands, the head's count, `ClearFilters`, the emptied-filter
+- [x] Shell: the filter panel's bands, the head's count, `ClearFilters`, the emptied-filter
       sentence (`Nothing matches routed and kind/quote.`)
-- [ ] Tests at each layer. One integration test reading a filtered feed through the daemon.
-- [ ] `git commit`
+- [x] Tests at each layer. One integration test reading a filtered feed through the daemon
+      (the daemon's route tests run real core and SQLite; `tests/integration` reads it through core).
+- [x] `git commit`
 
 Verify: `pnpm -r --no-sort --silent test`, typecheck and lint green. Run `pnpm test:stack`, since
 this crosses the HTTP surface. In the running shell, `/feed?state=routed` draws only routed rows

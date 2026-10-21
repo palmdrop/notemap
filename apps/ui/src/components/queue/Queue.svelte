@@ -16,7 +16,7 @@
   import Refused from "$components/primitives/register/Refused.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
-  import TagFilter from "$components/tags/TagFilter.svelte";
+  import FilterPanel from "$components/tags/FilterPanel.svelte";
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -74,7 +74,7 @@
   /** Each row as drawn, so a key can reach into the one that is selected. */
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
-  let tagFilter = $state<TagFilter | undefined>(undefined);
+  let filterPanel = $state<FilterPanel | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -300,7 +300,7 @@
           { id: "capture", label: "capture", run: () => capture?.commit() },
         ]
       : []),
-    { id: "filter", label: "filter", run: () => void tagFilter?.show() },
+    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
     {
       id: "view",
       label: "view",
@@ -324,8 +324,8 @@
 
 <Head>
   <ViewChooser {view} onchoose={read} />
-  <TagFilter
-    bind:this={tagFilter}
+  <FilterPanel
+    bind:this={filterPanel}
     surface={SURFACE}
     filter={reading.filter}
     ontoggle={reading.toggle}
@@ -356,7 +356,7 @@
     bind:this={drawn[row.id]}
     item={row}
     surface="queue"
-    filter={$queue.filter}
+    filter={$queue.filter.tags}
     selected={selected === row.id}
     offline={!pool.yes}
     commands={selected === row.id ? commands : []}

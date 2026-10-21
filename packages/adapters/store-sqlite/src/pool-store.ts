@@ -48,7 +48,9 @@ import type {
   SourceId,
   SourceUse,
   Tag,
-  TagFilter,
+  FeedFilter,
+  ItemState,
+  SurfaceFilter,
   TagName,
   TagUse,
   Timestamp,
@@ -174,24 +176,36 @@ const TEMPLATE_READ = `
 /** What every surface orders on: capture time, and the id only to break a tie. */
 const CAPTURE_KEY = `created_at`;
 
-const QUEUED = `
-  item.archived_at IS NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM routing_records AS routed WHERE routed.item_id = item.id
-  )
-`;
+const REVISED = `EXISTS (
+  SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
+)`;
+
+const ROUTED = `EXISTS (
+  SELECT 1 FROM routing_records AS routed WHERE routed.item_id = item.id
+)`;
 
 const ARCHIVED = `item.archived_at IS NOT NULL`;
 
-/** One `EXISTS` per tag, so an item is read only where it carries every one. */
-function carrying(filter: TagFilter | undefined): {
+const QUEUED = `
+  item.archived_at IS NULL
+  AND NOT ${REVISED}
+  AND NOT ${ROUTED}
+`;
+
+const STATE_CLAUSES: Record<ItemState, string> = {
+  unprocessed: `(${QUEUED})`,
+  routed: ROUTED,
+  archived: ARCHIVED,
+  revised: REVISED,
+};
+
+type Clauses = {
   readonly sql: readonly string[];
   readonly params: Bindable[];
-} {
-  const tags = filter ?? [];
+};
+
+/** One `EXISTS` per tag, so an item is read only where it carries every one. */
+function carrying(tags: readonly TagName[]): Clauses {
   return {
     sql: tags.map(
       () =>
@@ -199,6 +213,45 @@ function carrying(filter: TagFilter | undefined): {
                  WHERE carried.item_id = item.id AND carried.name = ?)`,
     ),
     params: [...tags],
+  };
+}
+
+function inStates(states: readonly ItemState[]): Clauses {
+  if (states.length === 0) return { sql: [], params: [] };
+  const any = [...new Set(states)].map((state) => STATE_CLAUSES[state]);
+  return { sql: [`(${any.join(" OR ")})`], params: [] };
+}
+
+function routedTo(destinations: readonly DestinationId[]): Clauses {
+  if (destinations.length === 0) return { sql: [], params: [] };
+  return {
+    sql: [
+      `EXISTS (SELECT 1 FROM routing_records AS sent
+               WHERE sent.item_id = item.id
+                 AND sent.destination IN (${placeholders(destinations.length)}))`,
+    ],
+    params: [...destinations],
+  };
+}
+
+function capturedThrough(sources: readonly SourceId[]): Clauses {
+  if (sources.length === 0) return { sql: [], params: [] };
+  return {
+    sql: [`item.source_id IN (${placeholders(sources.length)})`],
+    params: [...sources],
+  };
+}
+
+function filtered(filter: FeedFilter = {}): Clauses {
+  const parts = [
+    carrying(filter.tags ?? []),
+    inStates(filter.states ?? []),
+    routedTo(filter.destinations ?? []),
+    capturedThrough(filter.sources ?? []),
+  ];
+  return {
+    sql: parts.flatMap((part) => part.sql),
+    params: parts.flatMap((part) => part.params),
   };
 }
 
@@ -692,11 +745,11 @@ export function createSqlitePoolStore(
 
     function byCaptureTime(
       page: OrderedPage,
-      filter: TagFilter | undefined,
+      filter: FeedFilter | undefined,
       where?: string,
     ): Slice<Item> {
       const way = direction(page.order);
-      const within = carrying(filter);
+      const within = filtered(filter);
 
       const { rows, next } = keysetPage(page, (after, limit) => {
         const keyset =
@@ -904,17 +957,17 @@ export function createSqlitePoolStore(
 
       feed: async (
         page: OrderedPage,
-        filter?: TagFilter,
+        filter?: FeedFilter,
       ): Promise<Slice<Item>> => byCaptureTime(page, filter),
 
       queue: async (
         page: OrderedPage,
-        filter?: TagFilter,
+        filter?: SurfaceFilter,
       ): Promise<Slice<Item>> => byCaptureTime(page, filter, QUEUED),
 
       archived: async (
         page: OrderedPage,
-        filter?: TagFilter,
+        filter?: SurfaceFilter,
       ): Promise<Slice<Item>> => byCaptureTime(page, filter, ARCHIVED),
 
       counts: async (): Promise<Counts> => ({

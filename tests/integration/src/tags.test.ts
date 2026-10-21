@@ -4,7 +4,8 @@ import type {
   ItemId,
   Page,
   Pool,
-  TagFilter,
+  SourceId,
+  FeedFilter,
   TagName,
 } from "@notemap/core";
 import { tagFilter } from "@notemap/core";
@@ -316,10 +317,10 @@ describe("tagging", () => {
 });
 
 describe("reading through a tag filter", () => {
-  function only(...tags: readonly string[]): TagFilter {
+  function only(...tags: readonly string[]): FeedFilter {
     const filter = tagFilter(tags);
     if (filter.kind === "refused") throw new Error("expected a filter");
-    return filter.value;
+    return { tags: filter.value };
   }
 
   it("reads each surface through it", async () => {
@@ -346,5 +347,46 @@ describe("reading through a tag filter", () => {
     expect(ids((await p.views.archived(ALL, filter)).values)).toEqual([
       quoted.id,
     ]);
+  });
+});
+
+describe("reading the feed through states and sources", () => {
+  it("reads any one of the states named, and the sources named, together with the tags", async () => {
+    const { pool: p } = pool();
+    const archived = await captured(p);
+    const marked = await captured(p, {
+      id: "item-1",
+      capturedAt: "2026-08-06T09:01:00.000Z",
+    });
+    const relayed = await captured(p, {
+      id: "item-2",
+      source: "memos" as SourceId,
+      capturedAt: "2026-08-06T09:02:00.000Z",
+    });
+    await p.items.archive(archived.id);
+    await p.routing.markProcessed(marked.id);
+    await p.items.tag(relayed.id, KIND_QUOTE, PERSON);
+
+    const ids = (items: readonly Item[]) => items.map((item) => item.id);
+
+    expect(
+      ids((await p.views.feed(ALL, { states: ["routed", "archived"] })).values),
+    ).toEqual([marked.id, archived.id]);
+    expect(
+      ids(
+        (
+          await p.views.feed(ALL, {
+            states: ["unprocessed"],
+            sources: ["memos" as SourceId],
+            tags: succeeded(tagFilter(["kind/quote"])),
+          })
+        ).values,
+      ),
+    ).toEqual([relayed.id]);
+    expect(
+      ids(
+        (await p.views.queue(ALL, { sources: ["memos" as SourceId] })).values,
+      ),
+    ).toEqual([relayed.id]);
   });
 });

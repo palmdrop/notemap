@@ -4,9 +4,16 @@ import type { ItemId, RoutingRecord } from "#api/types";
 import { anItem } from "#testing/pool";
 import {
   arrived,
+  belongs,
   cached,
+  emptyPage,
   emptyState,
+  filterFor,
+  filterOf,
+  filterSize,
+  isWhole,
   processed,
+  sameFilter,
   summarise,
   withIds,
   type ClientState,
@@ -143,5 +150,96 @@ describe("where an arrival lands", () => {
       arriving(),
     );
     expect(state.feed.ids).toEqual(["held", "new"]);
+  });
+});
+
+describe("a filter", () => {
+  const ROUTED = anItem("routed", {
+    routing: {
+      records: 1,
+      pending: 1,
+      to: [{ kind: "destination", destination: "vault" }],
+      templates: [],
+    },
+  });
+  const MARKED = anItem("marked", {
+    routing: { records: 1, pending: 0, to: [{ kind: "user" }], templates: [] },
+  });
+  const ARCHIVED = anItem("archived", {
+    archived: { archivedAt: "2026-08-17T11:00:00.000Z" },
+  });
+  const REVISED = anItem("revised", { revisedInto: ["later"] });
+  const RELAYED = anItem("relayed", { source: "memos" });
+  const ALL = [ROUTED, MARKED, ARCHIVED, REVISED, RELAYED];
+
+  const through = (named: Parameters<typeof filterOf>[0]) =>
+    ALL.filter((item) =>
+      belongs("feed", emptyPage("newest-first", filterOf(named)), item),
+    ).map((item) => item.id);
+
+  it("is tidied: tags trimmed, ids not, blanks and unknown states dropped, one of each", () => {
+    expect(
+      filterOf({
+        tags: [" kind/quote ", "kind/quote", ""],
+        states: ["routed", "processed", "routed"],
+        destinations: [" vault", ""],
+        sources: ["memos", "memos"],
+      }),
+    ).toEqual({
+      tags: ["kind/quote"],
+      states: ["routed"],
+      destinations: [" vault"],
+      sources: ["memos"],
+    });
+  });
+
+  it("counts everything it names, and is whole naming nothing", () => {
+    const filter = filterOf({
+      tags: ["a"],
+      states: ["routed"],
+      sources: ["m"],
+    });
+    expect(filterSize(filter)).toBe(3);
+    expect(
+      filterSize(filterOf({ destinations: ["v", "w"], sources: ["m"] })),
+    ).toBe(3);
+    expect(isWhole(filter)).toBe(false);
+    expect(isWhole(filterOf({ tags: [" "] }))).toBe(true);
+    expect(sameFilter(filter, filterOf({ tags: ["a"], sources: ["m"] }))).toBe(
+      false,
+    );
+  });
+
+  it("keeps the queue to its tags and sources", () => {
+    const named = filterOf({
+      tags: ["a"],
+      states: ["routed"],
+      destinations: ["vault"],
+      sources: ["m"],
+    });
+    expect(filterFor("queue", named)).toEqual(
+      filterOf({ tags: ["a"], sources: ["m"] }),
+    );
+    expect(filterFor("feed", named)).toEqual(named);
+  });
+
+  it("holds an item in any one of the states named", () => {
+    expect(through({ states: ["routed"] })).toEqual(["routed", "marked"]);
+    expect(through({ states: ["archived", "revised"] })).toEqual([
+      "archived",
+      "revised",
+    ]);
+    expect(through({ states: ["unprocessed"] })).toEqual(["relayed"]);
+  });
+
+  it("reads a destination from the routing summary, and never a mark by hand", () => {
+    expect(through({ destinations: ["vault"] })).toEqual(["routed"]);
+    expect(through({ destinations: ["elsewhere"] })).toEqual([]);
+  });
+
+  it("reads the source an item came through, and holds every kind at once", () => {
+    expect(through({ sources: ["memos"] })).toEqual(["relayed"]);
+    expect(through({ sources: ["memos"], states: ["routed"] })).toEqual([]);
+    expect(through({})).toHaveLength(ALL.length);
   });
 });

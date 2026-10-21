@@ -8,6 +8,7 @@ import {
   arrived,
   caughtUp,
   emptyState,
+  filterOf,
   forgotten,
   rebuilt,
   settle,
@@ -40,11 +41,11 @@ function item(id: string, minute: number, ...tags: string[]): Item {
 function page(
   order: ListPage["order"],
   ids: readonly string[],
-  filter?: readonly string[],
+  tags?: readonly string[],
 ): ListPage {
   return {
     order,
-    ...(filter === undefined ? {} : { filter }),
+    ...(tags === undefined ? {} : { filter: filterOf({ tags }) }),
     ids,
     exhausted: true,
     loading: false,
@@ -225,7 +226,9 @@ describe("a pool changed or signed out of", () => {
       rebuilt(state, { id: "other" } as never),
       forgotten(state),
     ]) {
-      expect(after.filtered.queue?.filter).toEqual(["kind/quote"]);
+      expect(after.filtered.queue?.filter).toEqual(
+        filterOf({ tags: ["kind/quote"] }),
+      );
       expect(after.filtered.queue?.ids).toEqual([]);
       expect(after.filtered.feed?.answered).toBe(false);
     }

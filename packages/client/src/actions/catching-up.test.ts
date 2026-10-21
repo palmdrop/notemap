@@ -350,7 +350,7 @@ describe("what arrived from elsewhere", () => {
       }),
     );
     await client.enter("feed");
-    await client.enter("feed", undefined, ["kind/quote"]);
+    await client.enter("feed", undefined, { tags: ["kind/quote"] });
 
     const stop = watch(client);
     await turn();

@@ -52,7 +52,7 @@ import type {
   Timestamp,
 } from "../domain/ids";
 import type { Counts, EditOutcome, Item, TagUse } from "../domain/item";
-import type { TagFilter } from "../domain/filter";
+import type { FeedFilter, SurfaceFilter } from "../domain/filter";
 import type { MirrorRecord, MirrorSubject } from "../domain/mirror";
 import type { AbandonedPosition } from "../domain/position";
 import type { PoolSetting } from "../domain/pool-setting";
@@ -136,10 +136,10 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
+  feed(page: PageRequest, filter?: FeedFilter): Promise<Slice<Item>>;
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
-  queue(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
-  archived(page: PageRequest, filter?: TagFilter): Promise<Slice<Item>>;
+  queue(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
+  archived(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
   counts(): Promise<Counts>;
 }
 

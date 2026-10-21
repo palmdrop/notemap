@@ -1,16 +1,26 @@
 <script lang="ts">
   import { tick } from "svelte";
 
+  import {
+    FILTER_STATES,
+    filterSize,
+    type Filter,
+    type SourceUse,
+  } from "@notemap/client";
+
   import Walked from "$components/primitives/composer/Walked.svelte";
   import { client } from "$lib/client";
   import { narrowed } from "$lib/candidate-list";
+  import type { FilterKind } from "$lib/filter";
+  import { STATE_WORD } from "$lib/said";
   import { triggeredBy } from "$lib/templates";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
-   * The tags a surface's items carry, counted for this surface, taken into the
-   * filter and out of it again from one panel. A tag this surface holds none
-   * of is not offered, unless it is already in the filter.
+   * What a surface is read through, taken into the filter and out of it again
+   * from one panel: on the feed, bands of states, destinations and sources
+   * above the tags; on the queue, sources and tags. A tag this surface holds
+   * none of is not offered, unless it is already in the filter.
    */
   let {
     surface,
@@ -19,8 +29,8 @@
     onclear,
   }: {
     surface: "queue" | "feed";
-    filter: readonly string[];
-    ontoggle: (tag: string) => void;
+    filter: Filter;
+    ontoggle: (kind: FilterKind, value: string) => void;
     onclear: () => void;
   } = $props();
 
@@ -29,6 +39,73 @@
     "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
 
   const inUse = client.tags.inUse;
+  const destinations = client.destinations.all;
+
+  let sources = $state<readonly SourceUse[]>([]);
+
+  type BandLine = {
+    readonly value: string;
+    readonly said: string;
+    readonly count?: number;
+  };
+
+  type Band = {
+    readonly kind: FilterKind;
+    readonly label: string;
+    readonly lines: readonly BandLine[];
+  };
+
+  /** A value in the filter that the band no longer offers stays, so it can be taken off. */
+  function withHeld(
+    lines: readonly BandLine[],
+    held: readonly string[],
+  ): readonly BandLine[] {
+    const unoffered = held
+      .filter((value) => !lines.some((line) => line.value === value))
+      .map((value) => ({ value, said: value }));
+    return [...lines, ...unoffered];
+  }
+
+  const bands = $derived.by((): readonly Band[] => {
+    const state: Band = {
+      kind: "states",
+      label: "state",
+      lines: FILTER_STATES.map((value) => ({
+        value,
+        said: STATE_WORD[value],
+      })),
+    };
+    const live = $destinations.filter((one) => one.retired !== true);
+    const retired = $destinations.filter((one) => one.retired === true);
+    const destination: Band = {
+      kind: "destinations",
+      label: "destination",
+      lines: withHeld(
+        [
+          ...live.map((one) => ({ value: one.id, said: one.name })),
+          ...retired.map((one) => ({ value: one.id, said: one.name })),
+        ],
+        filter.destinations,
+      ),
+    };
+    const source: Band = {
+      kind: "sources",
+      label: "source",
+      lines: withHeld(
+        sources.map((one) => ({
+          value: one.id,
+          said: one.id,
+          count: one.items,
+        })),
+        filter.sources,
+      ),
+    };
+    return (
+      surface === "feed" ? [state, destination, source] : [source]
+    ).filter((band) => band.lines.length > 0);
+  });
+
+  const size = $derived(filterSize(filter));
 
   let open = $state(false);
   let draft = $state("");
@@ -47,12 +124,12 @@
       name: use.name,
       count: surface === "queue" ? use.unprocessed : use.items,
     }));
-    const unheld = filter
+    const unheld = filter.tags
       .filter((tag) => !counted.some((use) => use.name === tag))
       .map((name) => ({ name, count: 0 }));
 
     return [...counted, ...unheld]
-      .filter((use) => use.count > 0 || filter.includes(use.name))
+      .filter((use) => use.count > 0 || filter.tags.includes(use.name))
       .map((use) => ({ ...use, template: triggeredBy(use.name)?.name }));
   });
 
@@ -89,6 +166,10 @@
     // Counts go stale as items are processed here and elsewhere; the held set
     // stands where the pool does not answer.
     void client.tags.load().catch(() => undefined);
+    void client.sources
+      .inUse()
+      .then((read) => (sources = read))
+      .catch(() => undefined);
     await tick();
     line?.focus();
   }
@@ -120,7 +201,7 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
-      if (marked !== undefined) ontoggle(marked);
+      if (marked !== undefined) ontoggle("tags", marked);
     }
   }
 
@@ -133,14 +214,14 @@
 
 {#snippet row(one: Line)}
   {@const index = walked.indexOf(one.name)}
-  {@const taken = filter.includes(one.name)}
+  {@const taken = filter.tags.includes(one.name)}
   <div bind:this={rows[one.name]} data-tag={one.name} role="none">
     <Walked
       id={marked === one.name ? `${id}-tag-${index}` : undefined}
       on={marked === one.name}
       selected={taken}
       onhover={() => (at = index)}
-      ontake={() => ontoggle(one.name)}
+      ontake={() => ontoggle("tags", one.name)}
     >
       <span class="flex items-baseline gap-2.5">
         <span aria-hidden="true" class="w-[1ch] flex-none">
@@ -189,9 +270,8 @@
     onclick={() => (open ? shut() : void show())}
     class="flex items-baseline gap-1 tabular-nums"
   >
-    <span class="sr-only">Filter by</span>
-    <span>tags</span>
-    {#if filter.length > 0}<span>{filter.length}</span>{/if}
+    <span>filter</span>
+    {#if size > 0}<span>{size}</span>{/if}
     <span aria-hidden="true">▾</span>
   </button>
 
@@ -218,7 +298,7 @@
             : `${id}-tag-${at}`}
           class="min-w-0 flex-1 border-b border-ink px-1 outline-none"
         />
-        {#if filter.length > 0}
+        {#if size > 0}
           <!-- Taken on `mousedown` with the default prevented, so the caret stays
              in the line and the panel open for what is taken next. -->
           <button
@@ -232,10 +312,43 @@
             }}
             class="flex-none tabular-nums hover:underline"
           >
-            clear {filter.length}
+            clear {size}
           </button>
         {/if}
       </div>
+      {#each bands as band (band.kind)}
+        <div
+          role="listbox"
+          aria-label={band.label}
+          aria-multiselectable="true"
+          class="mb-1 border-b border-ink pb-1"
+        >
+          <div class="tracking-caps uppercase" aria-hidden="true">
+            {band.label}
+          </div>
+          {#each band.lines as one (one.value)}
+            {@const taken = (filter[band.kind] as readonly string[]).includes(
+              one.value,
+            )}
+            <div data-filter={band.kind} role="none">
+              <Walked
+                selected={taken}
+                ontake={() => ontoggle(band.kind, one.value)}
+              >
+                <span class="flex items-baseline gap-2.5">
+                  <span aria-hidden="true" class="w-[1ch] flex-none">
+                    {taken ? "▸" : ""}
+                  </span>
+                  <span>{one.said}</span>
+                  {#if one.count !== undefined}
+                    <span class="ml-auto pl-4 tabular-nums">{one.count}</span>
+                  {/if}
+                </span>
+              </Walked>
+            </div>
+          {/each}
+        </div>
+      {/each}
       {#if walked.length === 0}
         <div class="py-px">
           {lines.length === 0 ? "No tags." : "No tag matches."}

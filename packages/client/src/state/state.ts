@@ -22,8 +22,39 @@ type RoutedTo = RoutingSummary["to"][number];
 
 export type Surface = "feed" | "queue";
 
-/** Tags every item on a page carries. Empty is the whole surface. */
-export type Filter = readonly string[];
+/** What became of an item, as the feed is filtered by it. */
+export type FilterState = "unprocessed" | "routed" | "archived" | "revised";
+
+export const FILTER_STATES: readonly FilterState[] = [
+  "unprocessed",
+  "routed",
+  "archived",
+  "revised",
+];
+
+/**
+ * What a page is read through: every tag, and any one of each of the rest.
+ * Every list empty is the whole surface. States and destinations are the
+ * feed's alone.
+ */
+export type Filter = {
+  readonly tags: readonly string[];
+  readonly states: readonly FilterState[];
+  readonly destinations: readonly DestinationId[];
+  readonly sources: readonly string[];
+};
+
+/** A filter as an address or a caller names it, before it is tidied. */
+export type FilterNamed = {
+  readonly [kind in keyof Filter]?: readonly string[];
+};
+
+export const WHOLE: Filter = {
+  tags: [],
+  states: [],
+  destinations: [],
+  sources: [],
+};
 
 export type ListPage = {
   readonly order: Order;
@@ -80,10 +111,10 @@ export type HeldBlob = {
   readonly url?: string;
 };
 
-export function emptyPage(order: Order, filter: Filter = []): ListPage {
+export function emptyPage(order: Order, filter: Filter = WHOLE): ListPage {
   return {
     order,
-    ...(filter.length === 0 ? {} : { filter }),
+    ...(isWhole(filter) ? {} : { filter }),
     ids: [],
     exhausted: false,
     loading: false,
@@ -91,18 +122,66 @@ export function emptyPage(order: Order, filter: Filter = []): ListPage {
   };
 }
 
-/** Trimmed as the pool trims, blanks dropped, one of each, in the order named. */
-export function filterOf(tags: readonly string[]): Filter {
+/** Blanks dropped, one of each, in the order named. */
+function tidied(values: readonly string[]): string[] {
   const kept: string[] = [];
-  for (const tag of tags.map((each) => each.trim())) {
-    if (tag !== "" && !kept.includes(tag)) kept.push(tag);
+  for (const value of values) {
+    if (value !== "" && !kept.includes(value)) kept.push(value);
   }
   return kept;
 }
 
-export function sameFilter(one: Filter = [], other: Filter = []): boolean {
+/**
+ * Tags trimmed as the pool trims them; ids matched exactly, so not trimmed; a
+ * state that is not one dropped, as a blank tag is.
+ */
+export function filterOf(named: FilterNamed = {}): Filter {
+  return {
+    tags: tidied((named.tags ?? []).map((tag) => tag.trim())),
+    states: tidied(named.states ?? []).filter((state): state is FilterState =>
+      FILTER_STATES.includes(state as FilterState),
+    ),
+    destinations: tidied(named.destinations ?? []) as DestinationId[],
+    sources: tidied(named.sources ?? []),
+  };
+}
+
+/** The filter a surface may be read through: the queue takes tags and sources alone. */
+export function filterFor(surface: Surface, filter: Filter): Filter {
+  return surface === "feed"
+    ? filter
+    : { ...filter, states: [], destinations: [] };
+}
+
+export function isWhole(filter: Filter = WHOLE): boolean {
+  return filterSize(filter) === 0;
+}
+
+/** How many things a filter names, counted across its kinds. */
+export function filterSize(filter: Filter = WHOLE): number {
   return (
-    one.length === other.length && one.every((tag, at) => tag === other[at])
+    filter.tags.length +
+    filter.states.length +
+    filter.destinations.length +
+    filter.sources.length
+  );
+}
+
+function sameList(one: readonly string[], other: readonly string[]): boolean {
+  return (
+    one.length === other.length && one.every((value, at) => value === other[at])
+  );
+}
+
+export function sameFilter(
+  one: Filter = WHOLE,
+  other: Filter = WHOLE,
+): boolean {
+  return (
+    sameList(one.tags, other.tags) &&
+    sameList(one.states, other.states) &&
+    sameList(one.destinations, other.destinations) &&
+    sameList(one.sources, other.sources)
   );
 }
 
@@ -117,7 +196,7 @@ export function withReading(
   surface: Surface,
   page: ListPage,
 ): ClientState {
-  return (page.filter ?? []).length === 0
+  return isWhole(page.filter)
     ? { ...state, [surface]: page }
     : { ...state, filtered: { ...state.filtered, [surface]: page } };
 }
@@ -266,19 +345,46 @@ export function unprocessed(item: Item): boolean {
   );
 }
 
-function carries(item: Item, filter: Filter = []): boolean {
+function stateOf(item: Item, state: FilterState): boolean {
+  switch (state) {
+    case "unprocessed":
+      return unprocessed(item);
+    case "routed":
+      return item.routing !== undefined;
+    case "archived":
+      return item.archived !== undefined;
+    case "revised":
+      return item.revisedInto.length > 0;
+  }
+}
+
+function routedTo(item: Item, destination: DestinationId): boolean {
+  return (item.routing?.to ?? []).some(
+    (to) => to.kind === "destination" && to.destination === destination,
+  );
+}
+
+/** Any one of `named`, or no condition at all where it names nothing. */
+function anyOf<T>(named: readonly T[], holds: (each: T) => boolean): boolean {
+  return named.length === 0 || named.some(holds);
+}
+
+function meets(item: Item, filter: Filter = WHOLE): boolean {
   const tags = item.tags ?? [];
-  return filter.every((name) => tags.some((held) => held.name === name));
+  return (
+    filter.tags.every((name) => tags.some((held) => held.name === name)) &&
+    anyOf(filter.states, (state) => stateOf(item, state)) &&
+    anyOf(filter.destinations, (destination) => routedTo(item, destination)) &&
+    anyOf(filter.sources, (source) => item.source === source)
+  );
 }
 
 /**
- * Whether an item is a page's to hold: the surface's own condition, and every
- * tag the page is filtered by. The one rule every page is kept by.
+ * Whether an item is a page's to hold: the surface's own condition, and the
+ * filter the page is read through. The one rule every page is kept by.
  */
 export function belongs(surface: Surface, page: ListPage, item: Item): boolean {
-  return (
-    (surface === "feed" || unprocessed(item)) && carries(item, page.filter)
-  );
+  return (surface === "feed" || unprocessed(item)) && meets(item, page.filter);
 }
 
 /** Every page the state holds, whole and filtered, rewritten by one function. */

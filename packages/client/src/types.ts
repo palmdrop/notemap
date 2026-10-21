@@ -50,7 +50,7 @@ import type { Attachment } from "./capture/attachments";
 import type { Refused } from "./errors";
 
 import type { SessionState } from "./session/session";
-import type { Surface } from "./state/state";
+import type { Filter, FilterNamed, Surface } from "./state/state";
 
 import type { ActionsSince } from "./actions/watching";
 import type { OperationId, PendingOperation } from "./outbox/operations";
@@ -78,8 +78,8 @@ export type ReadFailure = {
 export type ListState = {
   readonly items: readonly Item[];
   readonly order: Order;
-  /** The tags every item carries; empty for the whole surface. */
-  readonly filter: readonly string[];
+  /** What every item meets; every list empty for the whole surface. */
+  readonly filter: Filter;
   readonly loading: boolean;
   readonly more: boolean;
   /** What the client holds rather than what the pool holds, the pool not having answered for this surface. */
@@ -431,15 +431,12 @@ export interface Client {
    * keeps what it walked, nothing ever leaving it. A surface nobody has read is
    * read for the first time either way.
    *
-   * `tags` is the filter the surface is read through. Arriving through another
-   * starts a filtered page, keeping the whole one aside; arriving through none
-   * goes back to the whole page as it stood.
+   * `filter` is what the surface is read through, tidied here; the queue keeps
+   * its tags and sources alone. Arriving through another starts a filtered
+   * page, keeping the whole one aside; arriving through none goes back to the
+   * whole page as it stood.
    */
-  enter(
-    surface: Surface,
-    order?: Order,
-    tags?: readonly string[],
-  ): Promise<void>;
+  enter(surface: Surface, order?: Order, filter?: FilterNamed): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the
    * cache has never held is still somewhere a person can go. A pool that does
