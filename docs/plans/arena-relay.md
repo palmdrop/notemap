@@ -1,14 +1,12 @@
 # A block in an are.na channel reaches the pool by itself
 
 **Date**: 2026-09-23
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/core.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-10-21 <!-- YYYY-MM-DD, set when Status becomes Done -->
 
-All eight phases are implemented, tested and documented. What's left is phase 6's hand
-verification — running the real binary against a real are.na channel and a real daemon — which
-the developer is doing themselves rather than in this session. Flip to **Done** once that's
-confirmed.
+All eight phases are implemented, tested and documented. Phase 6's hand verification — the real
+binary against a real are.na channel and a real daemon — was confirmed by the developer on 2026-10-21.
 
 ---
 
@@ -210,8 +208,8 @@ _Depends on phase 5._
       to this file, present before this session touched it), not what the plan text above describes.
 - [x] **Verify**: image built (`docker build -f Dockerfile.relay-arena`), `--help` and a
       config-less `--once` both behave (usage text; `exit 1` naming the missing config file). The
-      hand run against a real are.na channel and a real daemon is yours to do — see the plan's own
-      note below.
+      hand run against a real are.na channel and a real daemon was confirmed by the developer on
+      2026-10-21.
 - [x] `git commit`
 
 ### Phase 7 — the full-stack test

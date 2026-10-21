@@ -151,8 +151,8 @@ Depends on Phases 1 and 3. Codes against the annotation, not the kind.
       form keeps offering it: what item a template will meet is not known.
 - [x] Tests beside it: a kind that settles nothing offers both capabilities for an item with
       attachments and only the other for an item without.
-- [ ] Verify: `pnpm --filter @notemap/ui test` passes; **by hand against a real board, left for the
-      developer** — attach two pictures, route to a channel, see two blocks with the words on the
+- [x] Verify: `pnpm --filter @notemap/ui test` passes; by hand against a real board, confirmed by
+      the developer 2026-10-21 — attach two pictures, route to a channel, see two blocks with the words on the
       first.
 - [x] Commit _(2026-10-10)_
 

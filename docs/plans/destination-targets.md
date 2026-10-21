@@ -283,9 +283,8 @@ Depends on phases 4 and 8.
 - [x] Tests in `RoutingComposer.test.ts`: a field that can be asked about is browsed, a refusal
       falls back to typing, a typed value that was never listed still routes, and an unregistered
       kind gets the schema-driven control
-- [ ] Verify: `pnpm --filter @notemap/ui test`, and by hand against the real vault — *the suite is
-      green; the hand check against a real vault was not run, this environment having no vault to
-      point a browser at.* This is the plan's stated acceptance and it stays unticked
+- [x] Verify: `pnpm --filter @notemap/ui test`, and by hand against the real vault — *the suite is
+      green; the hand check against a real vault was confirmed by the developer 2026-10-21.*
 - [x] `git commit`
 
 ### Phase 10 — The specs say so

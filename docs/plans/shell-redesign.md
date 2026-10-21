@@ -1,9 +1,9 @@
 # The shell, redrawn
 
 **Date**: 2026-09-14
-**Status**: In progress — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; phase 6 shipped 2026-09-16; 7 is drawn after it
+**Status**: Done — phases 2–4, the first version, shipped 2026-09-14; phase 5 shipped 2026-09-14; phase 6 shipped 2026-09-16; phase 7 shipped as [loading-and-motion](loading-and-motion.md)
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-09-26
 
 ---
 
@@ -542,7 +542,8 @@ Tasks:
 
 ### Phase 7 — motion
 
-The few structural transitions, after everything they move exists.
+The few structural transitions, after everything they move exists. Planned and shipped as
+[loading-and-motion](loading-and-motion.md).
 
 ---
 

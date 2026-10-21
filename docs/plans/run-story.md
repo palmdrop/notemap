@@ -170,11 +170,10 @@ Depends on phases 1–4: it describes them.
       capture's own markdown. It says plainly that Nextcloud is not reachable yet and names the
       webdav plan
 - [x] `docs/README.md`'s table gains the running doc
-- [ ] Verify: follow it from a clone on the host, capture from a phone over the proxy, route into a
-      directory in a volume, and read the file back — *done except the phone and the proxy, which
-      this machine has neither of. Capture, route and read-back were driven against the compose
-      service over its network on 2026-08-27.* This is the plan's stated acceptance and it stays
-      unticked; it is carried below as the one thing the plan shipped without
+- [x] Verify: follow it from a clone on the host, capture from a phone over the proxy, route into a
+      directory in a volume, and read the file back — *capture, route and read-back were driven against the compose
+      service over its network on 2026-08-27; the phone and the proxy were confirmed by the developer
+      on 2026-10-21.*
 - [x] `git commit`
 
 ### Phase 6 — published, and versioned
@@ -204,8 +203,8 @@ Depends on phases 1 and 2, and amends them: the box that runs notemap does not b
 - **Whether the proxy terminates at a host root.** Still open, and the running doc takes the
   fallback: give it a hostname of its own. Note that the app is served from `/`, not `/ui` —
   `/ui` answers only because every extensionless path falls through to the shell.
-- **Capture from a phone over the proxy.** Still unperformed, and it is the acceptance the Goal
-  names. The client is offline-capable and the shell is same-origin, so nothing here should be new —
+- ~~**Capture from a phone over the proxy.**~~ Confirmed by the developer 2026-10-21. It is the
+  acceptance the Goal names. The client is offline-capable and the shell is same-origin, so nothing here should be new —
   but it has never been used across a real network, and this machine has neither a phone nor a proxy
   to try it with. The plan is Done on everything a machine here can reach: the image, the two
   compose files, the config, the specs, the docs and a published `v0.1.0`. Whatever the first real

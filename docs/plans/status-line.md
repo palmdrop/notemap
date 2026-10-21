@@ -1,9 +1,10 @@
 # Status line
 
 **Date**: 2026-09-30
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`
 **ADR**: [54](../adr/0054-the-shell-speaks-from-a-status-line.md)
+**Closed**: 2026-10-01
 
 ---
 

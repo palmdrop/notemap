@@ -1,9 +1,9 @@
 # An account can be set from the settings page
 
 **Date**: 2026-09-23
-**Status**: In progress <!-- Todo | In progress | Done -->
+**Status**: Done <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/security.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-10-21 <!-- YYYY-MM-DD, set when Status becomes Done -->
 
 ---
 
@@ -187,8 +187,9 @@ _Depends on phase 4._
 - [x] A secret field that is never populated from the server, shows only set / not set, and where
       left blank on an edit leaves the stored secret alone rather than clearing it.
 - [x] Tests beside the components, on the terms `Destinations.test.ts` sets.
-- [ ] **Verify**: `pnpm --filter @notemap/ui test` green (done); by hand, create a webdav account in the
+- [x] **Verify**: `pnpm --filter @notemap/ui test` green (done); by hand, create a webdav account in the
       UI, point a destination at it, and check the destination — it reaches.
+      _(by hand, confirmed by the developer 2026-10-21)_
 - [x] `git commit`
 
 ### Phase 6 — docs and the ADR

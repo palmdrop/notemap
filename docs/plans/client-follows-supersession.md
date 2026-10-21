@@ -1,9 +1,12 @@
 # The client follows supersession
 
 **Date**: 2026-08-17
-**Status**: Todo <!-- Todo | In progress | Done -->
+**Status**: Invalid <!-- Todo | In progress | Done -->
 **Spec**: `docs/specs/client.md`
-**Closed**: <!-- YYYY-MM-DD, set when Status becomes Done -->
+**Closed**: 2026-10-21 <!-- YYYY-MM-DD, set when Status becomes Done -->
+
+Invalid: [editable-until-processed](editable-until-processed.md) edits a queued item in place and
+removed the `item-superseded` refusal, so the window this plan closes no longer exists.
 
 ---
 

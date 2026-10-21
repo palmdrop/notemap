@@ -1,9 +1,9 @@
 # Release images: the daemon and every relay, on a release tag only
 
 **Date**: 2026-10-06
-**Status**: In progress
+**Status**: Done
 **Spec**:
-**Closed**:
+**Closed**: 2026-10-21
 
 ---
 
@@ -73,7 +73,7 @@ Settled with the developer on 2026-10-06.
 - [x] `verify.yml`: the `image` job runs the same matrix on pull requests, with the same cache
       scopes, and pushes nothing
 - [x] Verify: `actionlint` on both workflows where it is installed.
-- [ ] Verify: the PR's checks show three image builds, all green.
+- [x] Verify: the PR's checks show three image builds, all green.
 - [x] Commit
 
 ### Phase 2: docs
@@ -100,10 +100,10 @@ does.
 
 Depends on phases 1 and 2 being merged. This is done by the developer, not an agent.
 
-- [ ] Cut a release with `pnpm release`. All three legs of `Image` are green, and GHCR holds
+- [x] Cut a release with `pnpm release`. All three legs of `Image` are green, and GHCR holds
       the three packages, each with the new `vX.Y.Z`, `vX.Y` and `latest`.
-- [ ] Make `notemap`, `notemap-relay-arena` and `notemap-relay-memos` public in GHCR
-- [ ] Optional: delete the old `sha-*` versions of `notemap` from GHCR. Nothing refers to them.
+- [x] Make `notemap`, `notemap-relay-arena` and `notemap-relay-memos` public in GHCR
+- [x] Optional: delete the old `sha-*` versions of `notemap` from GHCR. Nothing refers to them.
 
 ---
 

@@ -1,9 +1,9 @@
 # Attachments of any kind
 
 **Date**: 2026-10-07
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`, `docs/specs/http-v1.md`, `CONTEXT.md`, `apps/relay-arena/README.md`
-**Closed**:
+**Closed**: 2026-10-21
 
 ---
 
@@ -110,9 +110,9 @@ Depends on phases 2 and 3.
 - [x] `lib/draft.ts` holds a list of files in memory, under its new name.
 - [x] Update shell.md: capture box, edit, Content. Replace "a note carrying a recording is not
       drawn as a broken image" with what is drawn, and add the dated amendments.
-- [ ] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm -r lint`. By hand: capture a
+- [x] Verify: `pnpm -r --silent test`, `pnpm -r typecheck`, `pnpm -r lint`. By hand: capture a
       PDF and three images and see two pictures and two lines. Download the PDF. Capture
-      offline, then reload. Attach a file over the limit. _(automated checks green 2026-10-07; the by-hand pass in a browser is not done)_
+      offline, then reload. Attach a file over the limit. _(automated checks green 2026-10-07; the by-hand pass in a browser confirmed by the developer 2026-10-21)_
 - [x] Commit _(2026-10-07)_
 
 ---

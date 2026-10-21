@@ -1,7 +1,8 @@
 # A template that asks for an argument each time it is applied
 
 **Date**: 2026-10-19
-**Status**: In progress
+**Status**: Done
+**Closed**: 2026-10-21
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`,
 `docs/specs/mirror.md`, `docs/specs/shell.md`
 
@@ -192,7 +193,7 @@ Depends on Phase 3.
 - [x] `lib/note.ts` tags with the arguments. _(2026-10-19)_
 - [x] Tests in `lib/asked.test.ts` and `lib/note.test.ts`. _(2026-10-19)_
 - [x] Verify: tests, typecheck, lint. Commit. _(2026-10-19)_
-- [ ] A manual run in Raycast. _(not done: no Raycast in this session)_
+- [x] A manual run in Raycast. _(confirmed by the developer 2026-10-21)_
 
 ---
 
