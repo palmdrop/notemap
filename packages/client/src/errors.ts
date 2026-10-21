@@ -96,6 +96,7 @@ const SAID: {
   "bad-kind": "the app asked for a kind of entry this daemon does not write",
   "bad-order": "the app asked for an order this daemon does not have",
   "bad-position": "the app lost its place in the list; reload",
+  "bad-by": "the app asked for an order this daemon does not have",
   "bad-state": "the app asked for a state this daemon does not know",
   "bad-destination": "a destination filter needs a destination",
   "bad-source": "a source filter needs a source",

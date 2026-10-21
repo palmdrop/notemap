@@ -172,6 +172,15 @@ const sourceFilterQuery = z.object({
 });
 
 const feedFilterQuery = z.object({
+  by: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "by", in: "query" },
+      description:
+        "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+      example: "processed",
+    }),
   state: z
     .array(z.string())
     .optional()
@@ -438,7 +447,7 @@ export const feedRoute = createRoute({
   path: "/v1/feed",
   summary: "Read the feed",
   description:
-    "Every item chronologically by capture time, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
+    "Every item chronologically by capture time, or by when each was processed with `by=processed`, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
   request: { query: feedQuery },
   responses: {
     200: {

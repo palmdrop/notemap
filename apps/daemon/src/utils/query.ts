@@ -1,8 +1,10 @@
 import {
+  FEED_KEYS,
   ITEM_STATES,
   tagFilter,
   type DestinationId,
   type FeedFilter,
+  type FeedKey,
   type ItemState,
   type ReadOrder,
   type SourceId,
@@ -13,6 +15,7 @@ import { DEFAULT_LIMIT, MAX_LIMIT, READ_ORDERS } from "../constants";
 import type {
   DaemonRefusal,
   FeedFilterQuery,
+  FeedKeyQuery,
   OrderedPageQuery,
   PageQuery,
   SurfaceFilterQuery,
@@ -68,6 +71,14 @@ export function readPageQuery(
 
   const page = readPage(url);
   return page.ok ? { ...page, order } : page;
+}
+
+/** Capture time unless the read names the other key. */
+export function readFeedKey(url: URL): FeedKeyQuery {
+  const by = url.searchParams.get("by") ?? "capture";
+  return FEED_KEYS.includes(by as FeedKey)
+    ? { ok: true, by: by as FeedKey }
+    : { ok: false, refusal: { kind: "bad-by", by, allowed: FEED_KEYS } };
 }
 
 type Read<T> =

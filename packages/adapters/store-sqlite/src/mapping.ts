@@ -183,6 +183,7 @@ export function toItem(
           },
         }),
     modifiedAt: toTimestamp(row.modified_at),
+    processedAt: toTimestamp(row.processed_at),
     revisedInto: revisedInto as readonly ItemId[],
     ...(routing === undefined ? {} : { routing }),
     ...(resolved.length === 0 ? {} : { assets: resolved }),
@@ -209,6 +210,7 @@ export function itemParams(
   string | null,
   string | null,
   string | null,
+  number,
 ] {
   return [
     record.id,
@@ -228,6 +230,8 @@ export function itemParams(
     record.archived?.reason ?? null,
     record.continues ?? null,
     sourceWordColumn(record.sourceWord),
+    // Where it stands until the store works it out in the same transaction.
+    toMillis(record.createdAt),
   ];
 }
 

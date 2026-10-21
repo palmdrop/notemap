@@ -1,5 +1,6 @@
 import type {
   FeedFilter,
+  FeedKey,
   Position,
   ReadOrder,
   SchemaIssue,
@@ -39,6 +40,11 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | { readonly kind: "bad-position"; readonly after: string }
+  | {
+      readonly kind: "bad-by";
+      readonly by: string;
+      readonly allowed: readonly string[];
+    }
   | TagFilterRefusal
   | {
       readonly kind: "bad-state";
@@ -107,6 +113,10 @@ export type FilterQuery<F> =
 
 export type FeedFilterQuery = FilterQuery<FeedFilter>;
 export type SurfaceFilterQuery = FilterQuery<SurfaceFilter>;
+
+export type FeedKeyQuery =
+  | { readonly ok: true; readonly by: FeedKey }
+  | { readonly ok: false; readonly refusal: DaemonRefusal };
 
 export type OrderedPageQuery =
   | (Extract<PageQuery, { ok: true }> & { readonly order: ReadOrder })

@@ -42,6 +42,9 @@ const BEFORE_GENERIC_CAPABILITIES = 21;
 /** The version before a pool held its own settings. */
 const BEFORE_POOL_SETTINGS = 24;
 
+/** The version at which an item held no processed-at time of its own. */
+const BEFORE_PROCESSED_AT = 30;
+
 const directories: string[] = [];
 const opened: SqlitePoolStore[] = [];
 
@@ -758,5 +761,71 @@ describe("capability names that stopped being file-shaped", () => {
       { id: "r-owed", capability: "create", state: "pending" },
       { id: "r-owed-append", capability: "append", state: "pending" },
     ]);
+  });
+});
+
+describe("holding when each item was processed", () => {
+  const minute = (m: number) => Date.parse(`2026-08-03T09:0${m}:00.000Z`);
+
+  function processedBefore(): string {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+    directories.push(directory);
+    const file = join(directory, "pool.db");
+
+    const raw = unsynced(file);
+    for (const migration of MIGRATIONS.slice(0, BEFORE_PROCESSED_AT)) {
+      raw.exec(migration);
+    }
+    raw.exec(`PRAGMA user_version = ${BEFORE_PROCESSED_AT}`);
+
+    const item = raw.prepare(
+      `INSERT INTO items (id, source_id, source_item_id, payload_type,
+         payload_content, payload_metadata, created_at, content_updated_at,
+         modified_at, revision_of, archived_at)
+       VALUES (?, 'web', ?, 'note', '{}', '{}', ?, ?, ?, ?, ?)`,
+    );
+    item.run("plain", "plain", minute(0), null, minute(0), null, null);
+    item.run("edited", "edited", minute(1), minute(5), minute(5), null, null);
+    item.run(
+      "archived",
+      "archived",
+      minute(1),
+      null,
+      minute(6),
+      null,
+      minute(6),
+    );
+    item.run("marked", "marked", minute(1), null, minute(7), null, null);
+    item.run("revised", "revised", minute(1), null, minute(8), null, null);
+    item.run(
+      "revision",
+      "revision",
+      minute(8),
+      null,
+      minute(8),
+      "revised",
+      null,
+    );
+    raw
+      .prepare(
+        `INSERT INTO routing_records (id, item_id, target_kind, state, at)
+         VALUES ('r-1', 'marked', 'user', 'delivered', ?)`,
+      )
+      .run(minute(7));
+
+    raw.close();
+    return file;
+  }
+
+  it("works out when each item was processed from what it already holds, edits aside", async () => {
+    const pool = migrated(processedBefore());
+    const processed = async (id: string) =>
+      (await pool.item(id as ItemId))?.processedAt;
+
+    expect(await processed("plain")).toBe("2026-08-03T09:00:00.000Z");
+    expect(await processed("edited")).toBe("2026-08-03T09:01:00.000Z");
+    expect(await processed("archived")).toBe("2026-08-03T09:06:00.000Z");
+    expect(await processed("marked")).toBe("2026-08-03T09:07:00.000Z");
+    expect(await processed("revised")).toBe("2026-08-03T09:08:00.000Z");
   });
 });

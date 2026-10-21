@@ -2260,3 +2260,149 @@ describe("the sources in use", () => {
     ]);
   });
 });
+
+describe("when an item was processed", () => {
+  const BY_PROCESSED = { ...ALL, by: "processed" } as const;
+  const minute = (m: number) =>
+    `2026-08-03T09:${String(m).padStart(2, "0")}:00.000Z`;
+
+  /** Three captures a minute apart: item-0 oldest. */
+  async function captures(p: SqlitePoolStore) {
+    await putDestinations(p, destination());
+    const items = [0, 1, 2].map((m) =>
+      capture({ id: `item-${m}`, createdAt: minute(m) }),
+    );
+    for (const each of items) await appendCapture(p, each);
+    return items;
+  }
+
+  async function processedAt(p: SqlitePoolStore, id: string) {
+    return (await p.item(id as ItemId))?.processedAt;
+  }
+
+  it("is the capture time where nothing has processed an item", async () => {
+    const { pool: p } = pool();
+    await captures(p);
+
+    expect(await processedAt(p, "item-1")).toBe(minute(1));
+    expect(ids((await p.feed(BY_PROCESSED)).values)).toEqual([
+      "item-2",
+      "item-1",
+      "item-0",
+    ]);
+  });
+
+  it("moves to a routing record's decision, a pending one included, and back when it is removed", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    const record = reserved(first!, { at: minute(10) });
+    await p.transaction((tx) => tx.insertRoutingRecord(record));
+
+    expect(await processedAt(p, "item-0")).toBe(minute(10));
+    expect(ids((await p.feed(BY_PROCESSED)).values)[0]).toBe("item-0");
+    expect(ids((await p.feed(ALL)).values)[0]).toBe("item-2");
+
+    await p.transaction((tx) => tx.removeRoutingRecord(record.id));
+    expect(await processedAt(p, "item-0")).toBe(minute(0));
+  });
+
+  it("does not move for a delivery landing or a tag", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    const record = reserved(first!, { at: minute(10) });
+    await p.transaction(async (tx) => {
+      await tx.insertRoutingRecord(record);
+      await tx.resolveRoutingRecord(record.id, { pointer: "inbox/a.md" });
+      await tx.addTag("item-0" as ItemId, {
+        name: "kind/quote" as TagName,
+        by: { kind: "person" },
+        addedAt: at(minute(20)),
+      });
+    });
+
+    expect(await processedAt(p, "item-0")).toBe(minute(10));
+  });
+
+  it("moves to the archiving while archived, and back on unarchiving", async () => {
+    const { pool: p } = pool();
+    await captures(p);
+
+    await p.transaction((tx) =>
+      tx.setArchiveState("item-1" as ItemId, { archivedAt: at(minute(30)) }),
+    );
+    expect(await processedAt(p, "item-1")).toBe(minute(30));
+
+    await p.transaction((tx) => tx.setArchiveState("item-1" as ItemId));
+    expect(await processedAt(p, "item-1")).toBe(minute(1));
+  });
+
+  it("moves to a revision made from the item, and never for an amendment", async () => {
+    const { pool: p } = pool();
+    const [first, second] = await captures(p);
+
+    await p.transaction((tx) =>
+      tx.amendItem(
+        "item-0" as ItemId,
+        first!.payload,
+        at(minute(40)),
+        undefined,
+      ),
+    );
+    expect(await processedAt(p, "item-0")).toBe(minute(0));
+
+    await appendCapture(
+      p,
+      revisionOf(second!, { id: "item-3", text: "again", at: minute(50) }),
+    );
+    expect(await processedAt(p, "item-1")).toBe(minute(50));
+    expect(await processedAt(p, "item-3")).toBe(minute(50));
+  });
+
+  it("is the latest decision, not the last written", async () => {
+    const { pool: p } = pool();
+    const [first] = await captures(p);
+    await p.transaction(async (tx) => {
+      await tx.setArchiveState("item-0" as ItemId, {
+        archivedAt: at(minute(30)),
+      });
+      await tx.insertRoutingRecord(reserved(first!, { at: minute(20) }));
+    });
+
+    expect(await processedAt(p, "item-0")).toBe(minute(30));
+  });
+
+  it("pages by it across a page boundary, each item once", async () => {
+    const { pool: p } = pool();
+    const items = await captures(p);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(reserved(items[0]!, { at: minute(10) })),
+    );
+
+    const page = { ...BY_PROCESSED, limit: 2 };
+    const first = await p.feed(page);
+    expect(ids(first.values)).toEqual(["item-0", "item-2"]);
+    expect(first.next).toEqual({ at: minute(2), id: "item-2" });
+    const second = await p.feed(nextPage(first.next, page));
+    expect(ids(second.values)).toEqual(["item-1"]);
+    expect(second.next).toBeUndefined();
+  });
+
+  it("reads a position from the other key as an instant on its own", async () => {
+    const { pool: p } = pool();
+    const items = await captures(p);
+    await p.transaction((tx) =>
+      tx.insertRoutingRecord(reserved(items[0]!, { at: minute(10) })),
+    );
+
+    const after = { at: at(minute(5)), id: "item-0" };
+    expect(ids((await p.feed({ ...BY_PROCESSED, after })).values)).toEqual([
+      "item-2",
+      "item-1",
+    ]);
+    expect(ids((await p.feed({ ...ALL, after })).values)).toEqual([
+      "item-2",
+      "item-1",
+      "item-0",
+    ]);
+  });
+});

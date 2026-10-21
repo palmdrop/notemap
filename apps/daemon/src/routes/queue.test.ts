@@ -333,3 +333,45 @@ describe("the feed's state, destination and source filters", () => {
     }
   });
 });
+
+describe("the feed read by when each item was processed", () => {
+  it("puts the item most recently decided about first, and carries by on next", async () => {
+    const app = serving();
+    const [first, second, third] = await captureMany(app, 3);
+    await send(app, `/v1/items/${first}/mark-processed`);
+
+    const page = await slice(app, "/v1/feed?by=processed&limit=2");
+    expect(ids(page)).toEqual([first, third]);
+    expect(new URL(page.next ?? "", "http://pool").searchParams.get("by")).toBe(
+      "processed",
+    );
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([second]);
+
+    expect(ids(await slice(app, "/v1/feed?limit=1"))).toEqual([third]);
+  });
+
+  it("answers processedAt on every item, its capture time where nothing processed it", async () => {
+    const app = serving();
+    await captureMany(app, 1);
+
+    const response = await app.request("/v1/feed");
+    const { values } = (await response.json()) as {
+      values: { createdAt: string; processedAt: string }[];
+    };
+    expect(values[0]?.processedAt).toBe(values[0]?.createdAt);
+  });
+
+  it("refuses a key that is not one", async () => {
+    const app = serving();
+
+    const response = await app.request("/v1/feed?by=modified");
+    expect(response.status).toBe(422);
+    expect(await body(response)).toEqual({
+      error: {
+        code: "bad-by",
+        by: "modified",
+        allowed: ["capture", "processed"],
+      },
+    });
+  });
+});

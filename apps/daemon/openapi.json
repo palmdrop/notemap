@@ -550,6 +550,9 @@
           "modifiedAt": {
             "type": "string"
           },
+          "processedAt": {
+            "type": "string"
+          },
           "revisedInto": {
             "type": "array",
             "items": {
@@ -574,6 +577,7 @@
           "tags",
           "createdAt",
           "modifiedAt",
+          "processedAt",
           "revisedInto"
         ]
       },
@@ -3824,7 +3828,7 @@
     "/v1/feed": {
       "get": {
         "summary": "Read the feed",
-        "description": "Every item chronologically by capture time, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
+        "description": "Every item chronologically by capture time, or by when each was processed with `by=processed`, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.",
         "parameters": [
           {
             "schema": {
@@ -3897,6 +3901,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+              "example": "processed"
+            },
+            "required": false,
+            "description": "`capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`.",
+            "name": "by",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "array",
               "items": {
                 "type": "string"
@@ -3963,6 +3978,7 @@
                             "bad-position",
                             "tag-invalid",
                             "bad-source",
+                            "bad-by",
                             "bad-state",
                             "bad-destination"
                           ]

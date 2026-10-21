@@ -93,6 +93,7 @@ async function fired(
   const item: Item = {
     ...record,
     modifiedAt: record.createdAt,
+    processedAt: record.createdAt,
     revisedInto: [],
   };
   const firings: Firing[] = [];

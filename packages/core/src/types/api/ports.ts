@@ -1,5 +1,5 @@
 import type { JsonSchema, JsonValue, SchemaIssue } from "../json";
-import type { OrderedPage, Page, Result, Slice } from "../result";
+import type { FeedPage, OrderedPage, Page, Result, Slice } from "../result";
 import type { Action, ActionQuery } from "../domain/action-log";
 import type {
   Asset,
@@ -317,7 +317,7 @@ export interface PoolReads {
   continuationOf(id: ItemId): Promise<Item | undefined>;
   tombstone(id: ItemId): Promise<Tombstone | undefined>;
 
-  feed(page: OrderedPage, filter?: FeedFilter): Promise<Slice<Item>>;
+  feed(page: FeedPage, filter?: FeedFilter): Promise<Slice<Item>>;
   queue(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
   archived(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
   counts(): Promise<Counts>;

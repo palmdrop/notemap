@@ -27,6 +27,19 @@ export type OrderedPage<P = Position> = Page<P> & {
   readonly order: ReadOrder;
 };
 
+/**
+ * Which instant the feed is read by: capture time, or when it was processed. A position
+ * belongs to the key of the read it came from.
+ */
+export type FeedKey = "capture" | "processed";
+
+export const FEED_KEYS: readonly FeedKey[] = ["capture", "processed"];
+
+export type FeedPageRequest = PageRequest & { readonly by?: FeedKey };
+
+/** Capture time where it names no key. */
+export type FeedPage = OrderedPage & { readonly by?: FeedKey };
+
 export type Slice<T, P = Position> = {
   readonly values: readonly T[];
   readonly next?: P;

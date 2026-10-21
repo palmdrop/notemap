@@ -279,8 +279,9 @@ export const TAG_FILTER_STATUS = { "tag-invalid": 422 } as const;
 /** Every surface reading items takes a source. */
 export const SOURCE_FILTER_STATUS = { "bad-source": 422 } as const;
 
-/** What only the feed is filtered by. */
+/** What only the feed is filtered by, and the key it alone may be read by. */
 export const FEED_FILTER_STATUS = {
+  "bad-by": 422,
   "bad-state": 422,
   "bad-destination": 422,
 } as const;

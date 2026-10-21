@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolStore } from "#types/api/ports";
 import type { ItemId } from "#types/domain/ids";
-import type { OrderedPage } from "#types/result";
+import type { FeedPage, OrderedPage } from "#types/result";
 
 import { createPool } from "./pool";
 
@@ -30,6 +30,21 @@ describe("the pool's views", () => {
       "newest-first",
       "oldest-first",
     ]);
+  });
+
+  it("reads the feed by capture time unless the page names processed", async () => {
+    const seen: FeedPage[] = [];
+    const pool = poolOverStore({
+      feed: (page) => {
+        seen.push(page);
+        return Promise.resolve({ values: [] });
+      },
+    });
+
+    await pool.views.feed({ limit: 10 });
+    await pool.views.feed({ limit: 10, by: "processed" });
+
+    expect(seen.map((page) => page.by)).toEqual(["capture", "processed"]);
   });
 
   it("reads the queue oldest first unless the page says otherwise, which is the only way it differs from the feed", async () => {

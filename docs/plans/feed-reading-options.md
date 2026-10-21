@@ -118,20 +118,20 @@ and survives a reload.
 
 ### Phase 3: the last-touch key in the pool (depends on 1)
 
-- [ ] Migration: `touched_at` column, backfill, index on `(touched_at, id)`
-- [ ] Write `touched_at` in every transaction that moves it: capture, amend, route reservation,
+- [x] Migration: `touched_at` column, backfill, index on `(touched_at, id)`
+- [x] Write `touched_at` in every transaction that moves it: capture, amend, route reservation,
       reservation removed (the tag given back), archive, unarchive, revise (on the item revised
       from). Find each path by searching the store's writes, not from memory. The list found in
       phase 1 is under Unknowns.
-- [ ] Rename the store's `touchItem`/`touched()` to say they bump `modified_at`, so "touch" means
+- [x] Rename the store's `touchItem`/`touched()` to say they bump `modified_at`, so "touch" means
       one thing in the store
-- [ ] Store/core: feed read keyed by `capture` or `touch`, keyset paging on the chosen column
-- [ ] Wire: `touchedAt` on the item. HTTP `by`, refused on queue and archive (`422 unsupported-parameter`; `bad-by` for an unknown value),
+- [x] Store/core: feed read keyed by `capture` or `touch`, keyset paging on the chosen column
+- [x] Wire: `touchedAt` on the item. HTTP `by`, refused on queue and archive (`422 unsupported-parameter`; `bad-by` for an unknown value),
       carried on `next`.
-- [ ] Tests: each write moves the key as the Decided section says. Paging under `by=touch` is
+- [x] Tests: each write moves the key as the Decided section says. Paging under `by=touch` is
       stable across a page boundary. A position from one key is read under the other only as an
       instant.
-- [ ] `git commit`
+- [x] `git commit`
 
 Verify: store, core and daemon tests green. `GET /v1/feed?by=touch` against a seeded pool puts
 the last-routed item first.

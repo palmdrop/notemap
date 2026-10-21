@@ -926,7 +926,7 @@ export interface paths {
         };
         /**
          * Read the feed
-         * @description Every item chronologically by capture time, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.
+         * @description Every item chronologically by capture time, or by when each was processed with `by=processed`, including archived items and the items revisions were made from, or only those the filter names: every `tag`, and any one of each `state`, `destination` and `source`. Follow `next` until it is absent; it carries the filter.
          */
         get: {
             parameters: {
@@ -941,6 +941,8 @@ export interface paths {
                     tag?: string[];
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
+                    /** @description `capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`. */
+                    by?: string;
                     /** @description Repeated; `unprocessed`, `routed`, `archived` or `revised`, and an item is read where it is any one of them. Anything else is refused with `422 bad-state`. */
                     state?: string[];
                     /** @description Repeated once per destination id; an item is read where a routing record, pending included, names any one of them. An empty one is refused with `422 bad-destination`. */
@@ -971,7 +973,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "bad-state" | "bad-destination";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "bad-by" | "bad-state" | "bad-destination";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -4615,6 +4617,7 @@ export interface components {
                 reason?: string;
             };
             modifiedAt: string;
+            processedAt: string;
             revisedInto: string[];
             routing?: components["schemas"]["RoutingSummary"];
             assets?: components["schemas"]["Asset"][];

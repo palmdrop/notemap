@@ -926,6 +926,22 @@ export const MIGRATIONS: readonly string[] = [
     ON items (continues)
     WHERE continues IS NOT NULL;
   `,
+  `
+  -- When an item was processed, derived from its archiving and the records
+  -- and revisions naming it, and held so a feed read by it pages on an index.
+  ALTER TABLE items ADD COLUMN processed_at INTEGER NOT NULL DEFAULT 0;
+
+  UPDATE items SET processed_at = MAX(
+    created_at,
+    COALESCE(archived_at, created_at),
+    COALESCE((SELECT MAX(record.at) FROM routing_records AS record
+              WHERE record.item_id = items.id), created_at),
+    COALESCE((SELECT MAX(revision.created_at) FROM items AS revision
+              WHERE revision.revision_of = items.id), created_at)
+  );
+
+  CREATE INDEX items_processed ON items (processed_at, id);
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

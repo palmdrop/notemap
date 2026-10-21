@@ -49,6 +49,8 @@ import type {
   SourceUse,
   Tag,
   FeedFilter,
+  FeedKey,
+  FeedPage,
   ItemState,
   SurfaceFilter,
   TagName,
@@ -129,7 +131,8 @@ export type SqlitePoolStoreConfig = {
 const ITEM_COLUMNS = `
   id, source_id, source_item_id, payload_type, payload_content,
   payload_metadata, created_at, utc_offset, content_updated_at, modified_at,
-  revision_of, archived_at, archive_reason, continues, source_word
+  revision_of, archived_at, archive_reason, continues, source_word,
+  processed_at
 `;
 
 const ASSET_COLUMNS = `id, filename, mime, blob, bytes, width, height, stored_at`;
@@ -175,6 +178,13 @@ const TEMPLATE_READ = `
 
 /** What every surface orders on: capture time, and the id only to break a tie. */
 const CAPTURE_KEY = `created_at`;
+
+/** What the feed may be read by instead. */
+const PROCESSED_KEY = `processed_at`;
+
+function keyColumn(by: FeedKey): string {
+  return by === "processed" ? PROCESSED_KEY : CAPTURE_KEY;
+}
 
 const REVISED = `EXISTS (
   SELECT 1 FROM items AS revision WHERE revision.revision_of = item.id
@@ -359,7 +369,22 @@ export function createSqlitePoolStore(
 
   const insertItem = write.query(`
     INSERT INTO items (${ITEM_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  /**
+   * Worked out from scratch rather than moved, so a decision taken back moves
+   * the key back as surely as one made moves it on.
+   */
+  const reprocess = write.query<never, [string]>(`
+    UPDATE items SET processed_at = MAX(
+      created_at,
+      COALESCE(archived_at, created_at),
+      COALESCE((SELECT MAX(record.at) FROM routing_records AS record
+                WHERE record.item_id = items.id), created_at),
+      COALESCE((SELECT MAX(revision.created_at) FROM items AS revision
+                WHERE revision.revision_of = items.id), created_at)
+    )
+    WHERE id = ?
   `);
   const amend = write.query<
     never,
@@ -743,10 +768,11 @@ export function createSqlitePoolStore(
       return row === undefined ? undefined : hydrate([row])[0];
     }
 
-    function byCaptureTime(
+    function byKey(
       page: OrderedPage,
       filter: FeedFilter | undefined,
       where?: string,
+      key = CAPTURE_KEY,
     ): Slice<Item> {
       const way = direction(page.order);
       const within = filtered(filter);
@@ -755,7 +781,7 @@ export function createSqlitePoolStore(
         const keyset =
           after === undefined
             ? undefined
-            : keysetClause(CAPTURE_KEY, after, way.comparison);
+            : keysetClause(key, after, way.comparison);
         const clauses = [
           ...(where === undefined ? [] : [where]),
           ...within.sql,
@@ -769,9 +795,9 @@ export function createSqlitePoolStore(
 
         return source
           .query<ItemRow & { at: number }, Bindable[]>(
-            `SELECT ${ITEM_COLUMNS}, ${CAPTURE_KEY} AS at FROM items AS item
+            `SELECT ${ITEM_COLUMNS}, ${key} AS at FROM items AS item
              ${clauses.length === 0 ? "" : `WHERE ${clauses.join(" AND ")}`}
-             ORDER BY ${CAPTURE_KEY} ${way.sql}, id ${way.sql} LIMIT ?`,
+             ORDER BY ${key} ${way.sql}, id ${way.sql} LIMIT ?`,
           )
           .all(...params);
       });
@@ -955,20 +981,18 @@ export function createSqlitePoolStore(
       continuationOf: async (id: ItemId): Promise<Item | undefined> =>
         one(continuation.get(id)),
 
-      feed: async (
-        page: OrderedPage,
-        filter?: FeedFilter,
-      ): Promise<Slice<Item>> => byCaptureTime(page, filter),
+      feed: async (page: FeedPage, filter?: FeedFilter): Promise<Slice<Item>> =>
+        byKey(page, filter, undefined, keyColumn(page.by ?? "capture")),
 
       queue: async (
         page: OrderedPage,
         filter?: SurfaceFilter,
-      ): Promise<Slice<Item>> => byCaptureTime(page, filter, QUEUED),
+      ): Promise<Slice<Item>> => byKey(page, filter, QUEUED),
 
       archived: async (
         page: OrderedPage,
         filter?: SurfaceFilter,
-      ): Promise<Slice<Item>> => byCaptureTime(page, filter, ARCHIVED),
+      ): Promise<Slice<Item>> => byKey(page, filter, ARCHIVED),
 
       counts: async (): Promise<Counts> => ({
         queue: queueCount.get()?.count ?? 0,
@@ -1053,7 +1077,7 @@ export function createSqlitePoolStore(
     };
 
     /** A change to an item that owns no column of its own, then the row it left. */
-    async function processedLater(item: ItemId, what: string): Promise<Item> {
+    async function touched(item: ItemId, what: string): Promise<Item> {
       touchItem.run(nextModifiedAt(), item);
 
       const stored = await uncommitted.item(item);
@@ -1097,11 +1121,13 @@ export function createSqlitePoolStore(
 
       insertItem: guard(async (record: ItemRecord): Promise<Item> => {
         insertItem.run(...itemParams(record, nextModifiedAt()));
+        reprocess.run(record.id);
 
         if (record.revisionOf !== undefined) {
           // Being revised takes the item it came from out of the queue, which a
           // delta read that missed it would leave a client still showing.
           touchItem.run(nextModifiedAt(), record.revisionOf);
+          reprocess.run(record.revisionOf);
         }
 
         for (const tag of record.tags) {
@@ -1132,6 +1158,7 @@ export function createSqlitePoolStore(
             nextModifiedAt(),
             item,
           );
+          reprocess.run(item);
 
           const stored = await uncommitted.item(item);
           if (stored === undefined) {
@@ -1177,12 +1204,12 @@ export function createSqlitePoolStore(
           ...agentColumns(added.by),
           toMillis(added.addedAt),
         );
-        return processedLater(item, "add a tag to");
+        return touched(item, "add a tag to");
       }),
 
       removeTag: guard(async (item: ItemId, name: TagName): Promise<Item> => {
         deleteTag.run(item, name);
-        return processedLater(item, "remove a tag from");
+        return touched(item, "remove a tag from");
       }),
 
       insertDestination: guard(
@@ -1240,6 +1267,7 @@ export function createSqlitePoolStore(
           insertRouting.run(...routingRecordParams(record));
           // Routing is a change to the item, and a delta read has to carry it.
           touchItem.run(nextModifiedAt(), record.item);
+          reprocess.run(record.item);
         },
       ),
 
@@ -1274,6 +1302,7 @@ export function createSqlitePoolStore(
           deleteRouting.run(record);
           // The item is back in the queue, which is a change a delta carries.
           touchItem.run(nextModifiedAt(), row.item_id);
+          reprocess.run(row.item_id);
         },
       ),
 

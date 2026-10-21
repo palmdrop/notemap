@@ -1,5 +1,11 @@
 import type { JsonObject, JsonValue } from "../json";
-import type { Page, PageRequest, Result, Slice } from "../result";
+import type {
+  FeedPageRequest,
+  Page,
+  PageRequest,
+  Result,
+  Slice,
+} from "../result";
 import type { Action, ActionQuery } from "../domain/action-log";
 import type { Agent } from "../domain/agent";
 import type {
@@ -136,7 +142,7 @@ export interface ItemsApi {
 }
 
 export interface ViewsApi {
-  feed(page: PageRequest, filter?: FeedFilter): Promise<Slice<Item>>;
+  feed(page: FeedPageRequest, filter?: FeedFilter): Promise<Slice<Item>>;
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
   queue(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
   archived(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
