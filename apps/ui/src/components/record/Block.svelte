@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { untrack, type Snippet } from "svelte";
   import {
     Refused,
     saidBy,
@@ -10,7 +10,6 @@
 
   import AttachedLines from "$components/item/AttachedLines.svelte";
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
-  import { itemHref } from "$components/item/href";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { argumentsOf, type Argument } from "$lib/arguments";
@@ -18,9 +17,11 @@
   import { client } from "$lib/client";
   import { aboutItem } from "$lib/excerpt";
   import { followable } from "$lib/link";
+  import { following } from "$lib/motion";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
+  import { pickable } from "$lib/pick";
   import { keepOutput, outputOf } from "$lib/outputs";
   import { described, readingHeld } from "$lib/described.svelte";
   import { sizeOf } from "$lib/attachments";
@@ -38,16 +39,18 @@
    * was written, exactly as it was sent. Not rendered: a path in the output
    * is the destination's and resolves nowhere here, and the item's own
    * attachments are drawn above it as the preview of what went with it.
-   * Drawn on the item, on the record's own page and under a routing kind in
-   * the log.
+   * Folded, it is the head alone, on one line. Drawn folded on the item and
+   * as a routing kind's row in the log, and open on the record's own page.
    */
   let {
     record,
     held,
     said,
     alarm = false,
-    inLog = false,
     blind = false,
+    folds = true,
+    lead,
+    end,
     onundone,
   }: {
     record: RoutingRecord;
@@ -56,17 +59,27 @@
     /** A body said in place of the output — a failure's detail, a cancellation. */
     said?: string;
     alarm?: boolean;
-    /** The log draws the way to the item in the foot; the item's own surfaces need none. */
-    inLog?: boolean;
     /**
      * The surface does not know whether a copy was kept — the log's detail does
      * not say — so the output is asked for regardless, and a refusal saying
      * there is none is read as none rather than as a failure.
      */
     blind?: boolean;
+    /** Drawn folded and opened by a press; where it does not fold it is always open. */
+    folds?: boolean;
+    /**
+     * Drawn ahead of the folded line, which then stays as the open block's
+     * heading rather than giving way to it.
+     */
+    lead?: Snippet;
+    /** What the folded line says at its right, in place of what was done. */
+    end?: Snippet;
     /** A record cancelled here leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
+
+  let opened = $state(false);
+  const open = $derived(!folds || opened);
 
   const destinations = client.destinations.all;
   const templates = client.templates.all;
@@ -153,15 +166,15 @@
   });
 
   /**
-   * Read on arrival: whoever is looking at a record came to see what was sent.
-   * A read that failed is not tried again on its own — `read it` is offered.
+   * Read on opening: whoever opens a record came to see what was sent. A read
+   * that failed is not tried again on its own — `read it` is offered.
    */
   let none = $state(
     untrack(() => outputOf(record.id) === null || (blind && byHand)),
   );
 
   $effect(() => {
-    if (!kept) return;
+    if (!open || !kept) return;
     if (output !== undefined || unreadable !== "" || none || reading) return;
     void read();
   });
@@ -207,6 +220,7 @@
       (kept && !blind && unreadable === ""),
   );
   const delivered = $derived(record.state === "delivered");
+  const cancellable = $derived(!delivered && said === undefined);
 
   /**
    * How much the delivery wrote, measured off the copy this read rather than
@@ -243,6 +257,13 @@
     naming = false;
   }
 
+  const footed = $derived(
+    hasArguments ||
+      link !== undefined ||
+      cancellable ||
+      (byHand && said === undefined),
+  );
+
   let failed = $state("");
 
   /** Both are the one call: a reservation not yet landed, or a decision made by hand. */
@@ -263,107 +284,190 @@
   }
 </script>
 
-<div class="max-w-read divide-y divide-ink border border-ink">
-  <div class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 px-3 py-1.5">
-    <div class="flex min-w-0 flex-wrap gap-x-[0.6ch]">
-      <span class="font-semibold">{destination}</span>
-      {#if place !== undefined}
-        <span aria-hidden="true">/</span>
-        {#if link === undefined}
-          <span class="min-w-0 break-words">{place}</span>
-        {:else}
-          <a href={link} rel="noreferrer" class="min-w-0 break-words">{place}</a
-          >
-        {/if}
-      {/if}
-    </div>
-    <div class="flex flex-wrap gap-x-[2ch]">
-      <span>{did}</span>
-      {#if via !== undefined}
-        <span>via {via}</span>
-      {/if}
-    </div>
-  </div>
-
-  {#if said !== undefined}
-    <div class="px-3 py-2.5 break-words {alarm ? 'text-alarm' : ''}">
-      {said}
-    </div>
-  {:else if !delivered}
-    <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
+{#snippet name(inLine: boolean)}
+  {#if folds}
+    <button
+      type="button"
+      aria-expanded={open}
+      onclick={() => (opened = !opened)}
+      class="text-left font-semibold hover:underline {inLine ? 'shrink-0' : ''}"
+      >{destination}</button
+    >
   {:else}
-    {#if attachments.length > 0 || written}
-      <div class="px-3 py-2.5">
-        <AttachedPictures {attachments} picture="max-h-48" />
-        {#if body !== undefined}
-          <pre class="break-words whitespace-pre-wrap">{body}</pre>
-          {#if wrote !== undefined}
-            <div data-wrote class="mt-1">{sizeOf(wrote)} written</div>
-          {/if}
-        {:else if !kept && !byHand}
-          <div>{NOTHING_KEPT}</div>
-        {:else if kept && !blind && unreadable === ""}
-          <!-- The line the output will take, held while it is read. -->
-          <Asking />
-        {/if}
-        <AttachedLines {attachments} ruled={written} />
-      </div>
-    {/if}
+    <span class="font-semibold">{destination}</span>
+  {/if}
+{/snippet}
 
-    {#if unreadable !== ""}
-      <div class="px-3 py-2.5">
-        <div role="status">{unreadable}</div>
-        <div class="mt-2">
-          <Action working={reading} onclick={() => void read()}>read it</Action>
+<!-- The box moves, the content inside it is what is measured: a line opening
+     into a block grows into it rather than jumping. -->
+<div {@attach following}>
+  <div class="flow-root">
+    {#if folds && (!open || lead !== undefined)}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        data-folded
+        class="flex cursor-pointer items-baseline justify-between gap-x-[2ch] {lead ===
+        undefined
+          ? 'max-w-read'
+          : ''}"
+        onclick={pickable(() => (opened = !opened))}
+      >
+        <div
+          class="flex min-w-0 items-baseline gap-x-[0.6ch] whitespace-nowrap"
+        >
+          {#if lead !== undefined}
+            <!-- The excerpt gives way first: where it went is what the line is for. -->
+            <span class="min-w-[6ch] shrink-[1000] truncate"
+              >{@render lead()}</span
+            >
+            <span aria-hidden="true" class="ml-[0.4ch] shrink-0">→</span>
+          {/if}
+          {@render name(true)}
+          {#if place !== undefined}
+            <span aria-hidden="true" class="shrink-0">/</span>
+            <span class="min-w-0 truncate">{place}</span>
+          {/if}
+        </div>
+        <div class="flex shrink-0 items-baseline gap-x-[2ch]">
+          {#if end !== undefined}
+            {@render end()}
+          {:else}
+            <span>{did}</span>
+          {/if}
+          {#if cancellable}
+            <Action alarm onclick={() => void takeBack("cancelled")}
+              >cancel</Action
+            >
+          {/if}
         </div>
       </div>
+
+      {#if failed !== "" && !open}
+        <div role="status" class="mt-1 text-alarm">{failed}</div>
+      {/if}
     {/if}
-  {/if}
 
-  {#if target.kind === "user" && target.note !== undefined}
-    <div class="px-3 py-2.5 break-words">{target.note}</div>
-  {/if}
-  {#if record.output?.note !== undefined}
-    <div class="px-3 py-2.5 break-words">{record.output.note}</div>
-  {/if}
+    {#if open}
+      <div
+        class="max-w-read divide-y divide-ink border border-ink {lead !==
+          undefined && folds
+          ? 'mt-2.5'
+          : ''}"
+      >
+        <div
+          class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 px-3 py-1.5"
+        >
+          <div class="flex min-w-0 flex-wrap gap-x-[0.6ch]">
+            {@render name(false)}
+            {#if place !== undefined}
+              <span aria-hidden="true">/</span>
+              {#if link === undefined}
+                <span class="min-w-0 break-words">{place}</span>
+              {:else}
+                <a href={link} rel="noreferrer" class="min-w-0 break-words"
+                  >{place}</a
+                >
+              {/if}
+            {/if}
+          </div>
+          <div class="flex flex-wrap gap-x-[2ch]">
+            <span>{did}</span>
+            {#if via !== undefined}
+              <span>via {via}</span>
+            {/if}
+          </div>
+        </div>
 
-  {#if named !== undefined}
-    <div
-      class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-narrow:grid-cols-1"
-    >
-      {#each named as argument (argument.name)}
-        <span class="tracking-caps uppercase">{argument.name}</span>
-        <span class="min-w-0 break-words">{argument.said}</span>
-      {/each}
-    </div>
-  {/if}
+        {#if said !== undefined}
+          <div class="px-3 py-2.5 break-words {alarm ? 'text-alarm' : ''}">
+            {said}
+          </div>
+        {:else if !delivered}
+          <div class="px-3 py-2.5">{NOT_YET_DELIVERED}</div>
+        {:else}
+          {#if attachments.length > 0 || written}
+            <div class="px-3 py-2.5">
+              <AttachedPictures {attachments} picture="max-h-48" />
+              {#if body !== undefined}
+                <pre class="break-words whitespace-pre-wrap">{body}</pre>
+                {#if wrote !== undefined}
+                  <div data-wrote class="mt-1">{sizeOf(wrote)} written</div>
+                {/if}
+              {:else if !kept && !byHand}
+                <div>{NOTHING_KEPT}</div>
+              {:else if kept && !blind && unreadable === ""}
+                <!-- The line the output will take, held while it is read. -->
+                <Asking />
+              {/if}
+              <AttachedLines {attachments} ruled={written} />
+            </div>
+          {/if}
 
-  <div class="flex flex-wrap items-baseline justify-between gap-x-5 px-3 py-1">
-    <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
-      {#if hasArguments}
-        <Action disabled={naming} onclick={() => void showArguments()}>
-          arguments
-        </Action>
-      {/if}
-      {#if inLog}
-        <Action href={itemHref(record.item)}>item</Action>
-      {/if}
-    </div>
-    <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
-      {#if link !== undefined}
-        <a href={link} rel="noreferrer" class="hover:underline">open ↗</a>
-      {/if}
-      {#if !delivered && said === undefined}
-        <Action alarm onclick={() => void takeBack("cancelled")}>cancel</Action>
-      {:else if byHand && said === undefined}
-        <Action onclick={() => void takeBack("undone")}>undo</Action>
-      {/if}
-    </div>
+          {#if unreadable !== ""}
+            <div class="px-3 py-2.5">
+              <div role="status">{unreadable}</div>
+              <div class="mt-2">
+                <Action working={reading} onclick={() => void read()}
+                  >read it</Action
+                >
+              </div>
+            </div>
+          {/if}
+        {/if}
+
+        {#if target.kind === "user" && target.note !== undefined}
+          <div class="px-3 py-2.5 break-words">{target.note}</div>
+        {/if}
+        {#if record.output?.note !== undefined}
+          <div class="px-3 py-2.5 break-words">{record.output.note}</div>
+        {/if}
+
+        {#if named !== undefined}
+          <div
+            class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-narrow:grid-cols-1"
+          >
+            {#each named as argument (argument.name)}
+              <span class="tracking-caps uppercase">{argument.name}</span>
+              <span class="min-w-0 break-words">{argument.said}</span>
+            {/each}
+          </div>
+        {/if}
+
+        {#if footed}
+          <div
+            class="flex flex-wrap items-baseline justify-between gap-x-5 px-3 py-1"
+          >
+            <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
+              {#if hasArguments}
+                <Action disabled={naming} onclick={() => void showArguments()}>
+                  arguments
+                </Action>
+              {/if}
+            </div>
+            <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
+              {#if link !== undefined}
+                <a href={link} rel="noreferrer" class="hover:underline"
+                  >open ↗</a
+                >
+              {/if}
+              {#if cancellable}
+                <Action alarm onclick={() => void takeBack("cancelled")}
+                  >cancel</Action
+                >
+              {:else if byHand && said === undefined}
+                <Action onclick={() => void takeBack("undone")}>undo</Action>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        {#if failed !== ""}
+          <div role="status" class="px-3 py-1.5 text-alarm">
+            {failed}
+          </div>
+        {/if}
+      </div>
+    {/if}
   </div>
-
-  {#if failed !== ""}
-    <div role="status" class="px-3 py-1.5 text-alarm">
-      {failed}
-    </div>
-  {/if}
 </div>

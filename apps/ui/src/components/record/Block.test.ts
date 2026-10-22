@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { createRawSnippet } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { RoutingRecord } from "@notemap/client";
@@ -116,7 +117,7 @@ async function named() {
 test("reads as a file: destination, place, what was done, and the template", async () => {
   await named();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
 
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(
@@ -145,7 +146,7 @@ test("reads as a file: destination, place, what was done, and the template", asy
 test("draws what was sent exactly as it was sent, and the note beneath", async () => {
   await named();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
 
   const sent = await screen.findByText(/# a thought/);
   expect(sent.tagName).toBe("PRE");
@@ -160,6 +161,7 @@ test("draws the item's attachments above what was sent, once", async () => {
   await named();
 
   render(Block, {
+    folds: false,
     record: KEPT,
     held: anItem("one", {
       payload: {
@@ -184,10 +186,10 @@ test("draws the item's attachments above what was sent, once", async () => {
   expect(document.querySelectorAll("img")).toHaveLength(1);
 });
 
-test("reads what was sent on arrival, once", async () => {
+test("an open record reads what was sent on arrival, once", async () => {
   await named();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
 
   await screen.findByText(/# a thought/);
   expect(
@@ -199,7 +201,7 @@ test("reads what was sent on arrival, once", async () => {
 test("asks for nothing where the record kept no copy, and says so", async () => {
   await named();
 
-  render(Block, { record: RECORD });
+  render(Block, { folds: false, record: RECORD });
 
   expect(await screen.findByText(NOTHING_KEPT)).toBeDefined();
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
@@ -216,7 +218,7 @@ test("says why what was sent could not be read, and does not ask again on its ow
   );
   await client.destinations.load();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
 
   expect(await screen.findByText(/could not be read/)).toBeDefined();
   const again = await screen.findByRole("button", { name: "read it" });
@@ -232,7 +234,7 @@ test("says why what was sent could not be read, and does not ask again on its ow
 test("keeps the arguments behind a press", async () => {
   await named();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
   await screen.findByText(/# a thought/);
 
   expect(screen.queryByText("Directory")).toBeNull();
@@ -250,6 +252,7 @@ test("a pending record says so and offers cancel, and nothing else does", async 
   await named();
 
   const { rerender } = render(Block, {
+    folds: false,
     record: { ...RECORD, state: "pending", pointer: undefined },
   });
 
@@ -296,6 +299,7 @@ test("a decision made by hand reads as one, with its note, and offers undo", asy
   await named();
 
   render(Block, {
+    folds: false,
     record: {
       id: "rec",
       item: "one",
@@ -323,6 +327,7 @@ test("draws one rule between sections, never a doubled one with an empty middle"
   await named();
 
   const { container } = render(Block, {
+    folds: false,
     record: {
       id: "rec",
       item: "one",
@@ -340,23 +345,11 @@ test("draws one rule between sections, never a doubled one with an empty middle"
   expect(container.querySelectorAll(".border-t, .border-b")).toHaveLength(0);
 });
 
-test("offers the way to the item only in the log", async () => {
-  await named();
-
-  const { rerender } = render(Block, { record: RECORD });
-  await screen.findByText("Fiction vault");
-  expect(screen.queryByRole("link", { name: "item" })).toBeNull();
-
-  await rerender({ record: RECORD, inLog: true });
-  expect(screen.getByRole("link", { name: "item" }).getAttribute("href")).toBe(
-    "/items/one",
-  );
-});
-
 test("draws the words a delivery carried where it kept no copy of what it sent", async () => {
   await named();
 
   render(Block, {
+    folds: false,
     record: {
       ...RECORD,
       target: { ...TARGET, content: { text: "a note, tidied" } },
@@ -422,7 +415,10 @@ test("names the channel a record went to rather than its handle", async () => {
 test("leaves the place as text where the url is not one to follow", async () => {
   await named();
 
-  render(Block, { record: { ...KEPT, url: "javascript:alert(1)" } });
+  render(Block, {
+    folds: false,
+    record: { ...KEPT, url: "javascript:alert(1)" },
+  });
 
   expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
   expect(screen.queryByRole("link", { name: "open ↗" })).toBeNull();
@@ -441,11 +437,11 @@ test("says a capability it has never heard of by its name", async () => {
 test("draws what was sent at once the second time, without asking again", async () => {
   await named();
 
-  const first = render(Block, { record: KEPT });
+  const first = render(Block, { folds: false, record: KEPT });
   await screen.findByText(/# a thought/);
   first.unmount();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
   expect(screen.getByText(/# a thought/)).toBeDefined();
   expect(
     asked().filter((route) => route === "GET /v1/routing/rec/output"),
@@ -461,7 +457,7 @@ test("holds the line what was sent will take while it is read", async () => {
       : json(200, { values: [] }),
   );
 
-  const { container } = render(Block, { record: KEPT });
+  const { container } = render(Block, { folds: false, record: KEPT });
   await vi.waitFor(() => {
     expect(asked()).toContain("GET /v1/routing/rec/output");
   });
@@ -476,6 +472,7 @@ test("the log asks nothing of a decision made by hand, which never sends anythin
   await named();
 
   render(Block, {
+    folds: false,
     record: {
       id: "rec",
       item: "one",
@@ -483,7 +480,6 @@ test("the log asks nothing of a decision made by hand, which never sends anythin
       state: "delivered",
       at: "2026-08-19T22:14:00.000Z",
     },
-    inLog: true,
     blind: true,
   });
 
@@ -494,7 +490,7 @@ test("the log asks nothing of a decision made by hand, which never sends anythin
 test("says how much the delivery wrote, and nothing for words no output kept", async () => {
   await named();
 
-  render(Block, { record: KEPT });
+  render(Block, { folds: false, record: KEPT });
 
   await screen.findByText(/# a thought/);
   // The bytes of the copy it just read, which is the only size anything holds.
@@ -509,6 +505,7 @@ test("says nothing about size where the words are the delivery's own and nothing
   await named();
 
   render(Block, {
+    folds: false,
     record: {
       ...RECORD,
       target: { ...TARGET, content: { type: "text", text: "what went" } },
@@ -517,4 +514,155 @@ test("says nothing about size where the words are the delivery's own and nothing
 
   await screen.findByText("what went");
   expect(screen.queryByText(/written/)).toBeNull();
+});
+
+const outputAsked = () =>
+  asked().filter((route) => route === "GET /v1/routing/rec/output");
+
+const opener = () =>
+  screen.getByRole("button", { name: "Fiction vault", expanded: false });
+
+test("folded, reads as one line: where it went and what was done, and nothing read", async () => {
+  await named();
+
+  render(Block, {
+    record: KEPT,
+    held: anItem("one", {
+      payload: {
+        type: "image",
+        content: { text: "the whiteboard" },
+        metadata: {},
+        assets: [{ slot: "image", asset: "asset-1" }],
+      },
+      assets: [
+        {
+          id: "asset-1",
+          filename: "whiteboard.jpg",
+          mime: "image/jpeg",
+          blob: "sha-256:whatever",
+          bytes: 5,
+        },
+      ],
+    }),
+  });
+
+  expect(await screen.findByText("Fiction vault")).toBeDefined();
+  expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
+  expect(screen.getByText("created")).toBeDefined();
+  expect(opener().getAttribute("aria-expanded")).toBe("false");
+
+  for (const gone of ["via Research", "the two pictures were not carried"]) {
+    expect(screen.queryByText(gone)).toBeNull();
+  }
+  expect(screen.queryByRole("link", { name: "open ↗" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
+  expect(document.querySelectorAll("img")).toHaveLength(0);
+  expect(outputAsked()).toHaveLength(0);
+});
+
+test("opens into the block, reading what was sent once however often it is opened", async () => {
+  await named();
+
+  render(Block, { record: KEPT });
+  await screen.findByText("Fiction vault");
+
+  await fireEvent.click(opener());
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(screen.getByText("via Research")).toBeDefined();
+  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Fiction vault", expanded: true }),
+  );
+  expect(screen.queryByText(/# a thought/)).toBeNull();
+
+  await fireEvent.click(opener());
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+  expect(outputAsked()).toHaveLength(1);
+});
+
+test("opens on a press anywhere on the line", async () => {
+  await named();
+
+  render(Block, { record: KEPT });
+
+  await fireEvent.click(await screen.findByText("created"));
+  expect(await screen.findByText(/# a thought/)).toBeDefined();
+});
+
+test("a folded pending record offers cancel on its line, and says nothing else", async () => {
+  await named();
+
+  render(Block, { record: { ...RECORD, state: "pending" } });
+
+  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
+  expect(screen.queryByText(NOT_YET_DELIVERED)).toBeNull();
+});
+
+test("a folded decision made by hand keeps its note and its undo for when it is opened", async () => {
+  await named();
+
+  render(Block, {
+    record: {
+      id: "rec",
+      item: "one",
+      target: { kind: "user", note: "pasted into the fiction-a vault" },
+      state: "delivered",
+      at: "2026-08-19T22:14:00.000Z",
+    },
+  });
+
+  const name = await screen.findByRole("button", { name: "by hand" });
+  expect(screen.getByText("marked processed")).toBeDefined();
+  expect(screen.queryByText("pasted into the fiction-a vault")).toBeNull();
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+
+  await fireEvent.click(name);
+  expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
+  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+});
+
+test("with a lead, the line stays above the opened block and says what it is given to say", async () => {
+  await named();
+
+  const lead = createRawSnippet(() => ({
+    render: () => "<span>a thought</span>",
+  }));
+  const end = createRawSnippet(() => ({
+    render: () => "<span>unreachable</span>",
+  }));
+  const { container } = render(Block, { record: KEPT, lead, end });
+
+  expect(await screen.findByText("a thought")).toBeDefined();
+  expect(screen.getByText("unreachable")).toBeDefined();
+  expect(screen.queryByText("created")).toBeNull();
+
+  await fireEvent.click(opener());
+  await screen.findByText(/# a thought/);
+  expect(container.querySelector("[data-folded]")).not.toBeNull();
+  expect(screen.getAllByRole("button", { name: "Fiction vault" })).toHaveLength(
+    2,
+  );
+});
+
+test("draws no foot where there is nothing to press", async () => {
+  await named();
+
+  const { container } = render(Block, {
+    folds: false,
+    record: { ...RECORD, target: { ...TARGET, arguments: {} } },
+  });
+
+  await screen.findByText(NOTHING_KEPT);
+  expect(container.querySelector(".max-w-read")?.children).toHaveLength(2);
+  expect(screen.queryByRole("link", { name: "item" })).toBeNull();
+});
+
+test("where it does not fold, the destination is no press", async () => {
+  await named();
+
+  render(Block, { folds: false, record: RECORD });
+
+  await screen.findByText("Fiction vault");
+  expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
 });

@@ -18,8 +18,8 @@
 
   /**
    * One row of the log on the register: when and what kind in the rail; what
-   * it was about and the one fact the kind carries in the body; and under a
-   * routing kind, the record itself as the block the item draws.
+   * it was about and the one fact the kind carries in the body; and for a
+   * routing kind, the record itself, folded to a line beside what it was about.
    */
   let {
     action,
@@ -123,6 +123,27 @@
   );
 </script>
 
+{#snippet subject()}
+  {#if action.subject !== undefined}
+    <Says id={action.subject} href={itemHref(action.subject)} />
+  {/if}
+{/snippet}
+
+{#snippet factLine()}
+  {#if fact !== undefined}
+    <span
+      class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
+      true
+        ? 'text-alarm'
+        : ''} {trigger === undefined
+        ? ''
+        : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"
+    >
+      {trigger ?? fact.said}
+    </span>
+  {/if}
+{/snippet}
+
 <div
   data-heard={heard ? "" : undefined}
   class="col-span-full grid grid-cols-subgrid"
@@ -138,45 +159,33 @@
     </Rail>
 
     <Body {gap}>
-      <div
-        class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col"
-      >
-        {#if action.subject !== undefined}
-          <span class="min-w-0 truncate">
-            <Says id={action.subject} href={itemHref(action.subject)} />
-          </span>
-        {:else}
-          <span></span>
-        {/if}
+      {#if record !== undefined}
+        <Block
+          {record}
+          {said}
+          alarm={bad}
+          blind={action.kind === "routed"}
+          lead={subject}
+          end={fact === undefined ? undefined : factLine}
+        />
+      {:else}
+        <div
+          class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col"
+        >
+          {#if action.subject !== undefined}
+            <span class="min-w-0 truncate">{@render subject()}</span>
+          {:else}
+            <span></span>
+          {/if}
 
-        {#if fact !== undefined}
-          <span
-            class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
-            true
-              ? 'text-alarm'
-              : ''} {trigger === undefined
-              ? ''
-              : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"
-          >
-            {trigger ?? fact.said}
-          </span>
-        {/if}
-      </div>
+          {#if fact !== undefined}
+            {@render factLine()}
+          {/if}
+        </div>
+      {/if}
 
       {#if pairs.length > 0}
         <Detail {pairs} failed={bad} />
-      {/if}
-
-      {#if record !== undefined}
-        <div class="mt-2.5">
-          <Block
-            {record}
-            {said}
-            alarm={bad}
-            inLog
-            blind={action.kind === "routed"}
-          />
-        </div>
       {/if}
     </Body>
   </div>

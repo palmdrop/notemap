@@ -164,7 +164,12 @@
           {/if}
         </Rail>
         <Body>
-          <Block {record} held={item} onundone={() => records.reread()} />
+          <Block
+            {record}
+            held={item}
+            folds={only === undefined}
+            onundone={() => records.reread()}
+          />
           {#if layout.slim}
             <StateWord word={record.state} />
           {/if}

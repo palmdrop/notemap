@@ -254,7 +254,7 @@ test("turning the log around walks it again rather than stitching two orders", a
   expect(turned.has("after")).toBe(false);
 });
 
-test("spends the accent on a failure: the kind, the code, and the block's word", () => {
+test("spends the accent on a failure: the kind, the code, and the block's word", async () => {
   render(LogRow, {
     action: {
       id: "one",
@@ -274,6 +274,9 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
 
   expect(screen.getByText("delivery failed").className).toContain("text-alarm");
   expect(screen.getByText("unreachable").className).toContain("text-alarm");
+  expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
   // The failure's own words are the block's body, said in alarm.
   expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
     "text-alarm",
@@ -558,7 +561,7 @@ const VAULT = {
   retired: false,
 };
 
-test("draws the record as a block under routed, reading what was sent, and none under tagged", async () => {
+test("draws routed as a line beside what it was about, opening into the block, and none under tagged", async () => {
   pool((request) => {
     switch (routeOf(request)) {
       case "GET /v1/destinations":
@@ -588,17 +591,20 @@ test("draws the record as a block under routed, reading what was sent, and none 
   render(Log);
   reading();
 
-  expect(await screen.findByText("Fiction vault")).toBeDefined();
+  const line = (await screen.findByText("Fiction vault")).closest(
+    "[data-folded]",
+  );
+  expect(line).not.toBeNull();
   expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.getByText("created")).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
   expect(await screen.findByText("# what went")).toBeDefined();
-  // The way to the item is in the block's foot, in the log alone.
-  expect(screen.getByRole("link", { name: "item" })).toHaveProperty(
-    "pathname",
-    `/items/${SUBJECT}`,
-  );
-  // One block: the tag's row has none.
-  expect(screen.getAllByText("created")).toHaveLength(1);
+  // The excerpt on the line is the way to the item, so the block offers none.
+  expect(screen.queryByRole("link", { name: "item" })).toBeNull();
+  // One record: the tag's row has none.
+  expect(screen.getAllByText("created")).toHaveLength(2);
   expect(screen.queryByText("target")).toBeNull();
 });
 
@@ -622,6 +628,9 @@ test("says nothing kept where the pool has no copy of what a routed row sent", a
   render(Log);
   reading();
 
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "a destination" }),
+  );
   expect(await screen.findByText("nothing kept")).toBeDefined();
   expect(screen.queryByText(/could not be read/)).toBeNull();
 });
@@ -638,6 +647,7 @@ test("draws a cancelled delivery as called off", async () => {
   render(Log);
   reading();
 
+  await fireEvent.click(await screen.findByRole("button", { name: "by hand" }));
   expect(await screen.findByText("called off")).toBeDefined();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
