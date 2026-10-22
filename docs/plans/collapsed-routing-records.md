@@ -9,7 +9,7 @@
 
 ## Goal
 
-On an item's page and in the log, every routing record is drawn as one line. The line reads destination / place, what was done and `via <template>`, and nothing about the record is read from the pool until the line is opened. A pending record keeps `cancel` on that line. Opening it shows the block as it is drawn today, and the record's own address still draws the block open.
+On an item's page and in the log, every routing record is drawn as one line. The line reads destination / place and what was done, and nothing about the record is read from the pool until the line is opened. A pending record keeps `cancel` on that line. Opening it shows the block as it is drawn today, and the record's own address still draws the block open.
 
 ---
 

@@ -39,8 +39,7 @@
    * was written, exactly as it was sent. Not rendered: a path in the output
    * is the destination's and resolves nowhere here, and the item's own
    * attachments are drawn above it as the preview of what went with it.
-   * Folded, it is the head alone, on one line. Drawn folded on the item and
-   * as a routing kind's row in the log, and open on the record's own page.
+   * Folded, it is the head alone, on one line.
    */
   let {
     record,
@@ -298,9 +297,8 @@
   {/if}
 {/snippet}
 
-<!-- The box moves, the content inside it is what is measured: a line opening
-     into a block grows into it rather than jumping. -->
-<div {@attach following}>
+<!-- A box of its own, so the margins inside it are in the height measured. -->
+<div {@attach folds && following}>
   <div class="flow-root">
     {#if folds && (!open || lead !== undefined)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -314,14 +312,16 @@
         onclick={pickable(() => (opened = !opened))}
       >
         {#if lead !== undefined}
-          <!-- The excerpt gives way first: where it went is what the line is
-               for. Below narrow it has a line of its own. -->
+          <!-- The excerpt gives way first: where it went is what the line is for. -->
           <span class="min-w-[6ch] shrink-[1000] truncate max-narrow:basis-full"
             >{@render lead()}</span
           >
         {/if}
         <div
-          class="flex min-w-0 items-baseline gap-x-[0.6ch] whitespace-nowrap"
+          class="flex min-w-0 items-baseline gap-x-[0.6ch] whitespace-nowrap {lead ===
+          undefined
+            ? ''
+            : 'max-narrow:grow max-narrow:basis-0'}"
         >
           {#if lead !== undefined}
             <span aria-hidden="true" class="shrink-0">→</span>
@@ -332,7 +332,9 @@
             <span class="min-w-0 truncate">{place}</span>
           {/if}
         </div>
-        <div class="ml-auto flex shrink-0 items-baseline gap-x-[2ch] pl-[1ch]">
+        <div
+          class="ml-auto flex max-w-full min-w-0 shrink-0 items-baseline gap-x-[2ch] pl-[1ch]"
+        >
           {#if end !== undefined}
             {@render end()}
           {:else}

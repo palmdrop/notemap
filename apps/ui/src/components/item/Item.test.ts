@@ -495,20 +495,28 @@ test("takes back a decision the person made by hand, and reads the records again
 });
 
 test("draws each record folded, reading nothing it sent until it is opened", async () => {
-  pool(
-    routed([
-      {
-        ...RECORD,
-        output: { content: { blob: "abc", mediaType: "text/markdown" } },
-      },
-    ]),
-  );
+  const kept = {
+    ...RECORD,
+    output: { content: { blob: "abc", mediaType: "text/markdown" } },
+  };
+  pool(routed([kept, { ...kept, id: "rec-2" }]));
 
   const { container } = render(Item, { id: "routed" });
-  await screen.findByText("drafts");
+  await screen.findAllByText("drafts");
 
-  expect(container.querySelector("[data-folded]")).not.toBeNull();
+  expect(container.querySelectorAll("[data-folded]")).toHaveLength(2);
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
+
+  const [first] = screen.getAllByRole("button", {
+    name: "a destination",
+    expanded: false,
+  });
+  await fireEvent.click(first!);
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/routing/rec/output");
+  });
+  expect(asked()).not.toContain("GET /v1/routing/rec-2/output");
+  expect(container.querySelectorAll("[data-folded]")).toHaveLength(1);
 });
 
 /** A delivery is the pool's; only what the person did by hand is theirs to undo. */

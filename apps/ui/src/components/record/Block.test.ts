@@ -666,3 +666,33 @@ test("where it does not fold, the destination is no press", async () => {
   await screen.findByText("Fiction vault");
   expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
 });
+
+test("a cancel refused from the folded line says why under it", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/routing/rec/cancel"
+      ? json(409, { error: { code: "already-delivered", facts: {} } })
+      : answering()(request),
+  );
+  await client.destinations.load();
+  const undone = vi.fn();
+
+  render(Block, { record: { ...RECORD, state: "pending" }, onundone: undone });
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+
+  expect(await screen.findByRole("status")).toBeDefined();
+  expect(opener()).toBeDefined();
+  expect(undone).not.toHaveBeenCalled();
+});
+
+test("a press on a link in the lead follows it and leaves the line folded", async () => {
+  await named();
+
+  const lead = createRawSnippet(() => ({
+    render: () => '<a href="#capture">a thought</a>',
+  }));
+  render(Block, { record: KEPT, lead });
+
+  await fireEvent.click(await screen.findByRole("link", { name: "a thought" }));
+  expect(opener()).toBeDefined();
+  expect(outputAsked()).toHaveLength(0);
+});

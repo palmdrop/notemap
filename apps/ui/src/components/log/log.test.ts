@@ -275,6 +275,8 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
   expect(screen.getByText("delivery failed").className).toContain("text-alarm");
   expect(screen.getByText("unreachable").className).toContain("text-alarm");
   expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
+  // Pending, but what failed is no reservation to call off.
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
   // The failure's own words are the block's body, said in alarm.
@@ -647,7 +649,9 @@ test("draws a cancelled delivery as called off", async () => {
   render(Log);
   reading();
 
-  await fireEvent.click(await screen.findByRole("button", { name: "by hand" }));
+  const name = await screen.findByRole("button", { name: "by hand" });
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  await fireEvent.click(name);
   expect(await screen.findByText("called off")).toBeDefined();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();

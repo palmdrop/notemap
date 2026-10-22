@@ -1774,11 +1774,11 @@ out of room, and at the right what was done. The place is text and never a link.
 a manual record's note, the attachments, what was sent and every press but one wait for the record
 to be opened. The one is **`cancel` on a pending record**, which is the only urgent thing about a
 record: a fired template is waiting out its window. Pressing the destination's name, or anywhere
-else on the line, opens it into the block, and the name in the block's head folds it again; the
-record's height grows from the one into the other rather than jumping. **Every record on the item
+else on the line, opens it into the block, and the name in the block's head folds it again; the record's height grows from the one into the other, and into what was sent as it lands, rather
+than jumping. **Every record on the item
 is drawn folded** and none is opened for the reader *(provisional: whether the newest, or a lone
 one, should be is left until the folded register has been lived with)*. A record's own address
-draws it open, and there it does not fold, being where a record is read.
+draws it open, and there it does not fold, being where a record is read, and stands still.
 
 **A record reads as the file it became.** The block is a ruled frame whose head is the
 destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
@@ -2477,7 +2477,8 @@ that changes height in place grows or shrinks into it** *(2026-09-25)* — its r
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
 rather than jumping, over the short duration, and a change that lands while it is still moving is
 turned toward from wherever it stands; a change of width is the window's and moves nothing. On the
-log only a heard row grows: what a read brought, and what it goes on to fill in, stands still.
+log only a heard row grows, and a record opened by a press *(2026-10-22)*: what a read brought,
+and what it goes on to fill in unasked, stands still.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view chooser, and acts on the list it heads; settings and an item have no end to
@@ -2795,8 +2796,10 @@ row of its own. The block is the item's, drawn once and the same wherever a reco
 **Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
 slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
 Everything a read brings — a view chosen, the order turned, a page, a re-read — stands still, and
-so does all it fills in afterwards, what was sent included: a view switched while every row
-settled its height at once read as motion about nothing. **A turned reading fades** — another
+so does all it fills in afterwards: a view switched while every row settled its height at once
+read as motion about nothing. **A record opened by a press grows** into its block, and into what
+was sent as it lands, the press being what asked for it *(amended 2026-10-22; what was sent was
+read with the row and stood still)*. **A turned reading fades** — another
 view, the order, the subject, a reading the person chose; the watcher's re-read and a retry stand
 still, and entering the log draws nothing held from a reading nobody was looking at: what was drawn fades out over `short` and is held while it does, and
 the answer fades in, so a quick answer is never a frame of empty log. One slower than the fade

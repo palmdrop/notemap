@@ -170,7 +170,7 @@
         />
       {:else}
         <div
-          class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col"
+          class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
         >
           {#if action.subject !== undefined}
             <span class="min-w-0 truncate">{@render subject()}</span>
@@ -178,9 +178,7 @@
             <span></span>
           {/if}
 
-          {#if fact !== undefined}
-            {@render factLine()}
-          {/if}
+          {@render factLine()}
         </div>
       {/if}
 
