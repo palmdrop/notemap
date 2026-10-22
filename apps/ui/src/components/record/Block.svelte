@@ -307,21 +307,24 @@
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         data-folded
-        class="flex cursor-pointer items-baseline justify-between gap-x-[2ch] {lead ===
+        class="flex cursor-pointer items-baseline gap-x-[1ch] {lead ===
         undefined
           ? 'max-w-read'
-          : ''}"
+          : 'max-narrow:flex-wrap'}"
         onclick={pickable(() => (opened = !opened))}
       >
+        {#if lead !== undefined}
+          <!-- The excerpt gives way first: where it went is what the line is
+               for. Below narrow it has a line of its own. -->
+          <span class="min-w-[6ch] shrink-[1000] truncate max-narrow:basis-full"
+            >{@render lead()}</span
+          >
+        {/if}
         <div
           class="flex min-w-0 items-baseline gap-x-[0.6ch] whitespace-nowrap"
         >
           {#if lead !== undefined}
-            <!-- The excerpt gives way first: where it went is what the line is for. -->
-            <span class="min-w-[6ch] shrink-[1000] truncate"
-              >{@render lead()}</span
-            >
-            <span aria-hidden="true" class="ml-[0.4ch] shrink-0">→</span>
+            <span aria-hidden="true" class="shrink-0">→</span>
           {/if}
           {@render name(true)}
           {#if place !== undefined}
@@ -329,7 +332,7 @@
             <span class="min-w-0 truncate">{place}</span>
           {/if}
         </div>
-        <div class="flex shrink-0 items-baseline gap-x-[2ch]">
+        <div class="ml-auto flex shrink-0 items-baseline gap-x-[2ch] pl-[1ch]">
           {#if end !== undefined}
             {@render end()}
           {:else}

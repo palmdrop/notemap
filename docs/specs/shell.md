@@ -2780,7 +2780,8 @@ item, and a row of the log offers nothing about narrowing.
 the capture's words)*. The body is the capture's words, `→`, then the folded record — the
 destination bold and the place — with what was done at the right where the kind has no fact of its
 own; `delivery-failed` and `delivery-cancelled` keep theirs there. The words give way before the
-destination does, since where it went is what the line is for. **Opened, the line stays** as the
+destination does, since where it went is what the line is for, and below `narrow` they take a line
+of their own, the record's under them. **Opened, the line stays** as the
 row's heading and the block is drawn under it, built from what the action says — destination,
 capability, place, template — with what was sent read by the record's id on opening, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
 failure. **What was sent is read once a page** *(2026-09-25)*: it never changes, so a record read
