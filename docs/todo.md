@@ -2,17 +2,12 @@
 
 ## Shell — layout and interaction
 
-- [x] "Queue is empty" shows before the last capture is hidden from the queue when the last capture is selected and held
-
-- [ ] add ability to order feed by order of processing, which is more intuitive since the user might expect the capture they processed latest to appear on top
 - [ ] destination fields should provide succinct placeholder texts
 
 - [ ] fuzzy search for captures, feed, tags, other views
 
 - [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
 - [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
-
-- [ ] feed, filter on routed and non-routed
 
 - [ ] mobile view improvements (this might be deferred until we do the app?):
     - action button for adding a new capture
@@ -40,8 +35,6 @@
   fix; this is the note that it is now reachable by anyone who reads far back, and that whatever
   bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
   dropped as the reader scrolls back).
-
-- [x] add way to open a capture from the index view, for example, have it expand when selected, grow to a regular capture row size
 
 - [ ] drag-and-drop for adding assets
 
@@ -73,8 +66,6 @@
 - [ ] consider source to destination auto routing: for example, I might have an inbox that I *always* want routed to a specific destination, using a template.
 
 ## Templates
-
-- [x] trigger tags with arguments, for example, I might need to insert a todo in a todo file after a specific headline... how to do that? routing tag arguments? templates with arguments? 
 
 - [ ] add template descriptions
     - and show description, or excerpt, when template is minimized in the settings view
@@ -210,7 +201,6 @@
 
 ## Inboxes
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
-- [x] raycast extension need to support empty note bodies, just attachments. Move attachments above tags
 
 - [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 
@@ -229,8 +219,6 @@
   rather than at the top. It has to: the relay re-reads it under that time, and a different one
   would read as a changed capture. If continuations get lost far down the queue, the fix is on the
   drawing side, not the capture time.
-
-- [x] raycast, when escaped, cancels the input in the capture  note. Cache it temporarily and restore when command is opened again
 
 ## Pool, store and correctness
 
