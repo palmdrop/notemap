@@ -705,14 +705,22 @@ test("draws a cancelled delivery as called off", async () => {
     held([
       anAction("one", {
         kind: "delivery-cancelled",
-        detail: { record: "rec", template: "tpl", tag: "route/research" },
+        detail: {
+          record: "rec",
+          target: "destination",
+          destination: "vault",
+          capability: "create",
+          template: "tpl",
+          tag: "route/research",
+        },
       }),
     ]),
   );
   render(Log);
   reading();
 
-  const name = await screen.findByRole("button", { name: "by hand" });
+  // Where it was going, which is no decision made by hand.
+  const name = await screen.findByRole("button", { name: "a destination" });
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
   await fireEvent.click(name);
   expect(await screen.findByText("called off")).toBeDefined();

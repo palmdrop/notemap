@@ -318,6 +318,8 @@ function appendCancelled(
     detail: {
       record: record.id,
       target: record.target.kind,
+      // The record is gone with this entry, which is all a shell has left to name where it was going.
+      ...destinationDetail(record),
       // Which template this called off, so a shell saying one is on its way
       // knows this is the entry that ends it.
       ...templateDetail(record),

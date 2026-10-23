@@ -1167,7 +1167,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is append-only, and a reservation is not in it yet. A record joins the log when its delivery
   lands, so a record that is not pending means bytes reached somewhere. Removing one that never
   delivered erases no fact.
-- A person may **cancel a pending delivery** before it resolves, by the same path.
+- A person may **cancel a pending delivery** before it resolves, by the same path. The record is
+  removed, so `delivery-cancelled` carries the `destination` and `capability` it was going to, as
+  `routed` does *(2026-10-23; it carried neither, and a log could only call it `by hand`)*.
 - **A mark made by hand is cancelled by the same path** *(added 2026-09-15)*. `markProcessed`
   writes a record born delivered, and a delivered record is otherwise not cancellable — but
   nothing reached anywhere, so there is nothing that already happened to leave standing. Cancelling
