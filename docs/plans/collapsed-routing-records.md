@@ -108,6 +108,7 @@ Added 2026-10-23 at the developer's request.
 - [x] What a record sent is drawn in the shell's face rather than the browser's monospace. _(2026-10-23)_
 - [x] `delivery-cancelled` carries the destination and capability, so a cancelled delivery stops reading `by hand` (`core.md`). _(2026-10-23)_
 - [x] A log subject is never a shortened id: `client.hold(ids)` reads the subjects the cache does not hold, a page's in one request; one with no words is named by its payload type, and one the pool no longer holds says `purged` (`shell.md`, `client.md`). _(2026-10-23)_
+- [x] First words are read without their Markdown marks — `## Inbox` reads `Inbox` — on the log, the index and the status line (`shell.md`). _(2026-10-23)_
 - [x] Tests, typecheck, lint _(2026-10-23)_
 
 ---
