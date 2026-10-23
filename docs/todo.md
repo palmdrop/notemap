@@ -6,9 +6,6 @@
 
 - [ ] fuzzy search for captures, feed, tags, other views
 
-- [ ] more compact routing record view, capture excerpt->destination+place, link to opening capture if such a link is valid
-- [ ] more compact routing records when opening an item. We do not need to see the preview material on each, but it should be expandable.
-
 - [ ] mobile view improvements (this might be deferred until we do the app?):
     - action button for adding a new capture
     - full-screen for editing and capturing

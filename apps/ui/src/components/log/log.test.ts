@@ -108,13 +108,14 @@ function saying(words: string) {
 }
 
 /** An id is what the pool says; the capture is what a person came to find. */
-test("links a subject to the capture it is about", async () => {
+test("links a subject to the capture it is about, and says purged where the pool holds none", async () => {
   pool(held([anAction("one")]));
   render(Log);
   reading();
 
-  const link = await screen.findByRole("link", { name: "0198f0c2…5e6f" });
+  const link = await screen.findByRole("link", { name: "purged" });
   expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
+  expect(screen.queryByText(/0198f0c2/)).toBeNull();
 });
 
 /**
@@ -135,14 +136,55 @@ test("says the capture's own first words where the shell holds them", async () =
   expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
 });
 
-/** Nothing is read for it: a hundred rows are a hundred lookups and no requests. */
-test("asks the pool for nothing to say what an entry is about", async () => {
-  pool(held([anAction("one")]));
+/** What the cache does not hold is read, every subject on a page in one request. */
+test("reads the words of the captures the shell does not hold", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/items"
+      ? json(200, {
+          values: [
+            anItem(SUBJECT, {
+              payload: {
+                type: "text",
+                content: { text: "the picker needs a trail" },
+                metadata: {},
+                assets: [],
+              },
+            }),
+          ],
+        })
+      : held([anAction("one"), anAction("two", { kind: "tagged" })])(request),
+  );
   render(Log);
   reading();
-  await screen.findByText("captured");
 
+  expect(
+    await screen.findAllByRole("link", { name: "the picker needs a trail" }),
+  ).toHaveLength(2);
+  expect(asked().filter((route) => route === "GET /v1/items")).toHaveLength(1);
   expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}`);
+});
+
+test("names a capture with no words by what it is", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/items"
+      ? json(200, {
+          values: [
+            anItem(SUBJECT, {
+              payload: {
+                type: "image",
+                content: {},
+                metadata: {},
+                assets: [],
+              },
+            }),
+          ],
+        })
+      : held([anAction("one")])(request),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByRole("link", { name: "image" })).toBeDefined();
 });
 
 /** The same words where a person has committed to one item, not the id again. */
@@ -254,7 +296,7 @@ test("turning the log around walks it again rather than stitching two orders", a
   expect(turned.has("after")).toBe(false);
 });
 
-test("spends the accent on a failure: the kind, the code, and the block's word", () => {
+test("spends the accent on a failure: the kind, the code, and the block's word", async () => {
   render(LogRow, {
     action: {
       id: "one",
@@ -274,6 +316,11 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
 
   expect(screen.getByText("delivery failed").className).toContain("text-alarm");
   expect(screen.getByText("unreachable").className).toContain("text-alarm");
+  expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
+  // Pending, but what failed is no reservation to call off.
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+
+  await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
   // The failure's own words are the block's body, said in alarm.
   expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
     "text-alarm",
@@ -373,7 +420,9 @@ test("narrows to a view's kinds, asking the pool rather than sifting the page", 
 
   const read = asked().find((route) => route === "GET /v1/actions");
   expect(read).toBeDefined();
-  expect(sentUrls().at(-1)).toContain("kind=routed%2Ctemplate-fired");
+  expect(sentUrls().findLast((url) => url.includes("/v1/actions"))).toContain(
+    "kind=routed%2Ctemplate-fired",
+  );
 
   log.arrived(arriving(anAction("two", { kind: "tagged" })));
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
@@ -558,7 +607,7 @@ const VAULT = {
   retired: false,
 };
 
-test("draws the record as a block under routed, reading what was sent, and none under tagged", async () => {
+test("draws routed as a line beside what it was about, opening into the block, and none under tagged", async () => {
   pool((request) => {
     switch (routeOf(request)) {
       case "GET /v1/destinations":
@@ -588,18 +637,84 @@ test("draws the record as a block under routed, reading what was sent, and none 
   render(Log);
   reading();
 
-  expect(await screen.findByText("Fiction vault")).toBeDefined();
+  const line = (await screen.findByText("Fiction vault")).closest(
+    "[data-folded]",
+  );
+  expect(line).not.toBeNull();
   expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.getByText("created")).toBeDefined();
+  expect(asked()).not.toContain("GET /v1/routing/rec/output");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
   expect(await screen.findByText("# what went")).toBeDefined();
-  // The way to the item is in the block's foot, in the log alone.
-  expect(screen.getByRole("link", { name: "item" })).toHaveProperty(
-    "pathname",
-    `/items/${SUBJECT}`,
-  );
-  // One block: the tag's row has none.
-  expect(screen.getAllByText("created")).toHaveLength(1);
+  // The excerpt on the line is the way to the item, so the block offers none.
+  expect(screen.queryByRole("link", { name: "item" })).toBeNull();
+  // One record: the tag's row has none.
+  expect(screen.getAllByText("created")).toHaveLength(2);
   expect(screen.queryByText("target")).toBeNull();
+});
+
+test("opens a routed row into the record itself, as its item draws it", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/destinations":
+        return json(200, { values: [VAULT] });
+      case `GET /v1/items/${SUBJECT}/routing`:
+        return json(200, {
+          values: [
+            {
+              id: "rec",
+              item: SUBJECT,
+              target: {
+                kind: "destination",
+                destination: "vault",
+                capability: "create",
+                arguments: { directory: "drafts" },
+              },
+              state: "delivered",
+              at: "2026-09-02T11:14:00.000Z",
+              pointer: "drafts/note.md",
+              url: "https://vault.example/drafts/note.md",
+            },
+          ],
+        });
+      case "GET /v1/routing/rec/output":
+        return json(404, { error: { code: "no-output", facts: {} } });
+      default:
+        return held([
+          anAction("one", {
+            kind: "routed",
+            detail: {
+              record: "rec",
+              target: "destination",
+              destination: "vault",
+              capability: "create",
+              pointer: "drafts/note.md",
+            },
+          }),
+        ])(request);
+    }
+  });
+  await client.destinations.load();
+  render(Log);
+  reading();
+
+  await screen.findByText("Fiction vault");
+  expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}/routing`);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
+  expect(await screen.findByText("drafts")).toBeDefined();
+  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+  expect(await screen.findByText("nothing kept")).toBeDefined();
+  expect(screen.queryByText(/could not be read/)).toBeNull();
+
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "Fiction vault" })[0]!,
+  );
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
+  expect(
+    asked().filter((route) => route === `GET /v1/items/${SUBJECT}/routing`),
+  ).toHaveLength(1);
 });
 
 /** The detail does not say whether a copy was kept, so a refusal saying none is none. */
@@ -622,6 +737,9 @@ test("says nothing kept where the pool has no copy of what a routed row sent", a
   render(Log);
   reading();
 
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "a destination" }),
+  );
   expect(await screen.findByText("nothing kept")).toBeDefined();
   expect(screen.queryByText(/could not be read/)).toBeNull();
 });
@@ -631,13 +749,24 @@ test("draws a cancelled delivery as called off", async () => {
     held([
       anAction("one", {
         kind: "delivery-cancelled",
-        detail: { record: "rec", template: "tpl", tag: "route/research" },
+        detail: {
+          record: "rec",
+          target: "destination",
+          destination: "vault",
+          capability: "create",
+          template: "tpl",
+          tag: "route/research",
+        },
       }),
     ]),
   );
   render(Log);
   reading();
 
+  // Where it was going, which is no decision made by hand.
+  const name = await screen.findByRole("button", { name: "a destination" });
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  await fireEvent.click(name);
   expect(await screen.findByText("called off")).toBeDefined();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
   expect(screen.queryByRole("button", { name: "undo" })).toBeNull();

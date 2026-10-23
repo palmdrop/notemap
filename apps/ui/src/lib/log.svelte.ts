@@ -8,7 +8,7 @@ import {
   type Order,
 } from "@notemap/client";
 
-import { SvelteSet } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { client } from "./client";
 
@@ -37,6 +37,36 @@ let chosen = $state(false);
  * turned around is answering for a page that no longer exists.
  */
 let walking = 0;
+
+/**
+ * The subjects the cache did not hold: being read, or with nothing for the
+ * pool to give. One whose read failed is left out, to be asked again with the
+ * next read that names it.
+ */
+const sought = new SvelteMap<ItemId, "asking" | "gone">();
+
+function seek(ids: readonly (ItemId | undefined)[]): void {
+  const wanted = [
+    ...new Set(ids.filter((id): id is ItemId => id !== undefined)),
+  ].filter((id) => !sought.has(id));
+  if (wanted.length === 0) return;
+
+  for (const id of wanted) sought.set(id, "asking");
+  client.hold(wanted).then(
+    (gone) => {
+      for (const id of wanted) {
+        if (gone.includes(id)) sought.set(id, "gone");
+        else sought.delete(id);
+      }
+    },
+    () => {
+      for (const id of wanted) sought.delete(id);
+    },
+  );
+}
+
+const subjects = (actions: readonly Action[]) =>
+  actions.map((action) => action.subject);
 
 /** Whether anything has ever asked. Plain, so no effect can take a dependency on it. */
 let asked = false;
@@ -78,6 +108,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     if (mine !== walking) return;
 
     rows = from === undefined ? page.values : joined(rows, page.values);
+    seek(subjects(page.values));
     after = page.after;
     more = page.after !== undefined;
     answered = true;
@@ -119,6 +150,7 @@ function restart(
   after = undefined;
   more = false;
   answered = false;
+  seek([subject]);
   void walk(undefined);
 }
 
@@ -157,6 +189,10 @@ export const log = {
   },
   get shown() {
     return rows.length;
+  },
+  /** Where a subject the cache did not hold stands: being read, or gone from the pool. */
+  sought(id: ItemId): "asking" | "gone" | undefined {
+    return sought.get(id);
   },
   /** Whether a row arrived from the watcher rather than with a read. */
   heard(id: Action["id"]): boolean {
@@ -204,6 +240,7 @@ export const log = {
       if (!rows.some((one) => one.id === action.id)) heard.add(action.id);
     }
     rows = ahead(rows, [...wanted].reverse());
+    seek(subjects(wanted));
   },
 
   /**
@@ -256,6 +293,7 @@ export const log = {
     kinds = undefined;
     rows = [];
     heard.clear();
+    sought.clear();
     chosen = false;
     after = undefined;
     more = false;

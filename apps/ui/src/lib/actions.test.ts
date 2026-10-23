@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { failed, flattened, isCode, shortened, factOf, known } from "./actions";
+import { failed, flattened, isCode, factOf, known } from "./actions";
 
 describe("flattening a detail", () => {
   it("writes strings unquoted and everything else as it reads", () => {
@@ -92,18 +92,6 @@ describe("the accent", () => {
     expect(isCode("failure.code")).toBe(true);
     expect(isCode("capability")).toBe(false);
     expect(isCode("codex")).toBe(false);
-  });
-});
-
-describe("an id", () => {
-  it("keeps its head and its tail", () => {
-    expect(shortened("0198f0c2-9d3a-7b21-8e4f-112233445e6f")).toBe(
-      "0198f0c2…5e6f",
-    );
-  });
-
-  it("is left alone when there is nothing to save", () => {
-    expect(shortened("short")).toBe("short");
   });
 });
 

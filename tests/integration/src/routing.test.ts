@@ -531,7 +531,16 @@ describe("cancelling a delivery", () => {
     expect(logged.values[0]).toMatchObject({
       kind: "delivery-cancelled",
       by: { kind: "person" },
-      detail: { record: record.id },
+      detail: {
+        record: record.id,
+        target: "destination",
+        ...(record.target.kind === "destination"
+          ? {
+              destination: record.target.destination,
+              capability: record.target.capability,
+            }
+          : {}),
+      },
     });
   });
 

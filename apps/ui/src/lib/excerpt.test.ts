@@ -67,3 +67,25 @@ test("cuts a line at a word, and leaves a short one alone", () => {
 test("takes the first line only", () => {
   expect(lineOf("first\nsecond")).toBe("first");
 });
+
+test("reads a line as it reads, with what Markdown marks it with taken off", () => {
+  for (const [typed, read] of [
+    ["## Inbox", "Inbox"],
+    ["> a quote", "a quote"],
+    ["- [ ] call the landlord", "call the landlord"],
+    ["1. first", "first"],
+    ["**bold** and _leaning_ and `code`", "bold and leaning and code"],
+    ["see [the plan](https://example.com) now", "see the plan now"],
+    ["![whiteboard](assets/a.jpg)", "whiteboard"],
+    ["snake_case_name stays", "snake_case_name stays"],
+  ] as const) {
+    expect(excerptOf(typed)).toBe(read);
+    expect(lineOf(typed)).toBe(read);
+  }
+});
+
+test("passes over a line that says nothing once its marks are off", () => {
+  expect(excerptOf("#\nthe note itself")).toBe("the note itself");
+  expect(excerptOf("---\nbelow the rule")).toBe("below the rule");
+  expect(excerptOf("- \n> ")).toBeUndefined();
+});

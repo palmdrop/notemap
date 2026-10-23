@@ -1,8 +1,17 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-21
+**Last updated**: 2026-10-23
 **Shipped**:
+
+- 2026-10-23 — **A routing record is one line until it is opened.** On the item and in the log,
+  a record reads as its destination, its place and what was done, and opens in place into the
+  block; what was sent is read on opening. A pending record keeps `cancel` on its line. A log row
+  of a routing kind is the capture's words, `→`, and that line; the block's `item` is gone, and the
+  log's block is the record itself, read on opening. What the delivery was given and how much it
+  wrote are at the bottom of the block rather than behind `arguments`. A log row names its capture
+  by its words and never by a shortened id, and first words are read without their Markdown marks.
+  ([plan](../plans/collapsed-routing-records.md))
 
 - 2026-10-21 — **The feed reads by `processed` as well as by capture, and filters by state,
   destination and source.** The order chooser has `captured` and `processed` bands, kept on the
@@ -1749,7 +1758,8 @@ the row has `open`. It says no routing line, its records being the rows beneath 
 foot is the edge between the capture and its records** *(amended 2026-10-02; a rule of its own was
 drawn across both columns under the foot, and the two read as one doubled line)*, and under it
 **one row per routing record**: the record's own stamp and its
-state in the rail, and the record itself, as a block, in the body. The state is said on every
+state in the rail, and the record itself in the body, folded to one line until it is opened
+*(amended 2026-10-22; it was the whole block)*. The state is said on every
 record row, `delivered` included: the rule that a state is said only where it is not that was a
 rule for a summary line, and a row of its own is not a summary. The record's stamp is the way into
 its own address, `/items/{id}/records/{recordId}`, which is the same register narrowed to that one
@@ -1758,6 +1768,20 @@ does not have is said plainly there, and is not a failure. Records out of reach,
 said in the first record row's place, under the box; nothing about the records is said at all
 where the item was never routed. **Above the box is the room a day heading would hold**
 *(2026-10-02)*, in the rail as by day, so its top edge is not drawn against the bar's rule.
+
+**A record is one line until it is opened** *(2026-10-22,
+[collapsed-routing-records](../plans/collapsed-routing-records.md); until then every record was
+drawn whole, and an item routed three times was three outputs deep)*. Folded, it is the block's
+head without its frame: the destination's name, bold, then `/` and the place, cut where it runs
+out of room, and at the right what was done. The place is text and never a link. `via <template>`,
+a manual record's note, the attachments, what was sent and every press but one wait for the record
+to be opened. The one is **`cancel` on a pending record**, which is the only urgent thing about a
+record: a fired template is waiting out its window. Pressing the destination's name, or anywhere
+else on the line, opens it into the block, and the name in the block's head folds it again; the record's height grows from the one into the other, and into what was sent as it lands, rather
+than jumping. **Every record on the item
+is drawn folded** and none is opened for the reader *(provisional: whether the newest, or a lone
+one, should be is left until the folded register has been lived with)*. A record's own address
+draws it open, and there it does not fold, being where a record is read, and stands still.
 
 **A record reads as the file it became.** The block is a ruled frame whose head is the
 destination's name, bold, then `/`, then the place inside it — the pointer the destination handed
@@ -1776,7 +1800,8 @@ which is worse than a sentence and better than silence. Nothing says `routing re
 landed`, `what was sent`, `its tags did not go` or `the decision`, and no id is drawn anywhere.
 
 **Under the head, what was written, exactly as it was sent.** The output is a fetch rather than
-something the record carries, and looking at the record is the asking: the read runs on arrival,
+something the record carries, and opening the record is the asking *(amended 2026-10-22; looking
+at it was, the read running on arrival)*: the read runs when the block is first drawn open,
 once, and a read that fails says why and offers `read it`, never retrying on its own. What comes
 back is drawn as it is — front matter, asterisks, image paths and all — in the one face,
 pre-wrapped. *Not rendered (2026-09-14, after a first version that was)*: the file is the
@@ -1784,25 +1809,27 @@ destination's, and a path in it — `![](research/assets/whiteboard.jpg)` — re
 and nowhere here, so rendering it drew a broken picture beside the real one. True to the output is
 the honest reading; the capture itself is rendered where it is a capture, on the queue, the feed
 and the item's own row. **The item's attachments are drawn above the words** as the preview of
-what went with them; where the assets landed is not on the record and is not drawn. The
-destination's **note** about what it could not carry is on the record and is drawn beneath. **How
-much it wrote is said under the words** *(2026-10-12)* — `4.2 KB written` — measured off the copy
-this read, since the record keeps no size; a delivery whose words are its own and whose copy was
-never kept says nothing about size, there being nothing written anywhere this can speak for. A
+what went with them; where the assets landed is not on the record and is not drawn. The destination's **note** about what it could not carry is on the record and is drawn beneath.
+**At the bottom, what the delivery was given and how much it wrote** *(amended 2026-10-23; the
+arguments were behind a press in the foot, and the size read `4.2 KB written` under the words)*,
+one fact a line, the name in small capitals at the left: the arguments, named against the
+capability's own schema where the destination has been described — `Directory` rather than
+`directory` — and by their own keys until it has, with anything the record carries that the schema
+does not name drawn all the same; then `size`, measured off the copy this read, since the record
+keeps no size. A delivery whose words are its own and whose copy was never kept says nothing about
+size, there being nothing written anywhere this can speak for. Where there is neither, nothing is
+drawn. A
 delivery that kept no copy says `nothing kept`, in two words, since that is ordinary; a delivery
 that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
 so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-**The foot holds the presses.** `arguments` shows what the delivery was given, named
-against the capability's own schema where the destination can be described — `Directory` rather
-than `directory` — and by their own keys where it cannot, with anything the record carries that
-the schema does not name drawn all the same; it is offered only where there are any. `open ↗`
-follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
+**The foot holds the presses.** `open ↗` follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
 record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
 a decision made by hand, which is the same call; both say so in the status line and the surface reads
-its records again. In the log alone the foot also offers `item`, the way to the capture; on the
-item's own surfaces the capture is the row above.
+its records again. A foot with nothing in it is not drawn. *Retired 2026-10-22*: `item` in the
+foot, in the log alone — the log's line leads with the capture's words, which are already the way
+to it.
 
 **Marking processed is routing whose destination is the person**, and reads as one: the head says
 `by hand` and `marked processed`, the note the person wrote is the body, and nothing at all is
@@ -2454,7 +2481,8 @@ that changes height in place grows or shrinks into it** *(2026-09-25)* — its r
 as it is selected, a tag wrapping onto a line of its own, what a record sent arriving in the log —
 rather than jumping, over the short duration, and a change that lands while it is still moving is
 turned toward from wherever it stands; a change of width is the window's and moves nothing. On the
-log only a heard row grows: what a read brought, and what it goes on to fill in, stands still.
+log only a heard row grows, and a record opened by a press *(2026-10-22)*: what a read brought,
+and what it goes on to fill in unasked, stands still.
 
 The reader's **order control** sits in the head of each list — the queue's, the feed's, the log's
 — beside the view chooser, and acts on the list it heads; settings and an item have no end to
@@ -2721,8 +2749,8 @@ last heard. Choosing the option already chosen sends nothing.
 
 `/log` is the register *(redrawn 2026-09-14, [shell-redesign](../plans/shell-redesign.md) phase
 5b)*: the rail carries the stamp and, under it, **the kind**; the body carries what the action was
-about and the one fact the kind is worth; and under a routing kind, the record itself as the block
-the item draws. One vertical rule between the two, as on the queue and the feed, and no rule
+about and the one fact the kind is worth; and for a routing kind, the record itself, folded to
+the line the item draws *(amended 2026-10-22; the whole block stood under the row)*. One vertical rule between the two, as on the queue and the feed, and no rule
 between rows. It is a surface of this shell like any other *(2026-09-02; it was the daemon's
 markup, drawn in this language, until then)*, so there is no leaving the app and coming back, and
 no second copy of anything to hold in step.
@@ -2747,19 +2775,35 @@ kind nobody has written yet is not lost, only plainer.
 
 **A subject leads to the capture it is about** *(amended 2026-09-09; it led to the log narrowed to
 that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote,
-so the **capture's own first words** are drawn in place of the id wherever this shell already
-holds it — never read for: what the cache has, or the shortened id it has instead. The words are
+so the **capture's own first words** are drawn, and **never the id** *(amended 2026-10-23; the
+words were drawn only where the cache already held the item, and a shortened id everywhere else,
+which was most routed rows)*. The subjects a read or the watcher brings that the cache does not
+hold are read, every one a page names in one request, and their line holds the asking mark until
+they land. **First words are read, not typed** *(2026-10-23)*, here, on the index and in the
+status line alike: the first line that says anything, with what Markdown opens it with — a heading,
+a quote, a list item, a task box — and its emphasis, code marks and link targets taken off, so
+`## Inbox` reads `Inbox` and a rule is passed over. A capture with no words is named by what it is — `image` — and one the pool no longer
+holds says `purged`; where the pool cannot be reached it is `a capture`. The words are
 a link to the item, at the body's left; the fact is at its right, and stacks under the words below
 `narrow`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
 item, and a row of the log offers nothing about narrowing.
 
-**A routing kind draws the record.** `routed` draws the block under its row from what the action
-says — destination, capability, place, template — with what was sent read by the record's id on
-arrival, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
+**A routing kind is the record's line** *(amended 2026-10-22; the row drew the whole block under
+the capture's words)*. The body is the capture's words, `→`, then the folded record — the
+destination bold and the place — with what was done at the right where the kind has no fact of its
+own; `delivery-failed` and `delivery-cancelled` keep theirs there. The words give way before the
+destination does, since where it went is what the line is for, and below `narrow` they take a line
+of their own, the record's under them. **Opened, the line stays** as the
+row's heading and the block is drawn under it: **the record itself**, read with the item's records
+on opening *(amended 2026-10-23; the block was built from the action alone and drew no arguments,
+no link and no note)*, so a record reads the same in the log as on its item. Where the record is
+gone — a delivery called off, one given up on — the block is built from what the action says,
+destination, capability, place and template. What was sent is read by the record's id on
+opening, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
 failure. **What was sent is read once a page** *(2026-09-25)*: it never changes, so a record read
 before — or read and found to have kept nothing — is drawn at once and asked for again by no one,
 and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known
-to hold what it sent, its line is held with the asking mark until it lands; `item` in the block's foot is the way to the capture. `delivery-failed` draws the head and
+to hold what it sent, its line is held with the asking mark until it lands. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
 `template-fired` draws no block — its fact is the template's name, and the routing it began is a
 row of its own. The block is the item's, drawn once and the same wherever a record is read.
@@ -2767,8 +2811,10 @@ row of its own. The block is the item's, drawn once and the same wherever a reco
 **Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
 slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
 Everything a read brings — a view chosen, the order turned, a page, a re-read — stands still, and
-so does all it fills in afterwards, what was sent included: a view switched while every row
-settled its height at once read as motion about nothing. **A turned reading fades** — another
+so does all it fills in afterwards: a view switched while every row settled its height at once
+read as motion about nothing. **A record opened by a press grows** into its block, and into what
+was sent as it lands, the press being what asked for it *(amended 2026-10-22; what was sent was
+read with the row and stood still)*. **A turned reading fades** — another
 view, the order, the subject, a reading the person chose; the watcher's re-read and a retry stand
 still, and entering the log draws nothing held from a reading nobody was looking at: what was drawn fades out over `short` and is held while it does, and
 the answer fades in, so a quick answer is never a frame of empty log. One slower than the fade
@@ -3361,6 +3407,8 @@ view is how a reader sees more at once.
   keys when it cannot be described; its pointer is never a link.
 - A routing record says what happened to the item in a sentence, and says it by the capability's
   name only where this shell has no sentence for it.
+- A routing record on the item or in the log is one line, and nothing it sent is read until it is
+  opened; a pending one can be cancelled from that line.
 - No surface draws an item's id or its source, and no label in a rail runs under the value beside
   it however long the label is.
 - Every address this shell builds is a route id checked against the route tree, so a path that no
