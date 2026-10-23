@@ -394,7 +394,8 @@
             <div class="px-3 py-2.5">
               <AttachedPictures {attachments} picture="max-h-48" />
               {#if body !== undefined}
-                <pre class="break-words whitespace-pre-wrap">{body}</pre>
+                <pre
+                  class="font-shell break-words whitespace-pre-wrap">{body}</pre>
               {:else if !kept && !byHand}
                 <div>{NOTHING_KEPT}</div>
               {:else if kept && !blind && unreadable === ""}
