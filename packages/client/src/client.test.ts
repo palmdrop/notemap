@@ -773,6 +773,57 @@ describe("reading a surface", () => {
   });
 });
 
+describe("holding items named by id", () => {
+  it("reads what it does not hold in one request, and says what the pool has none of", async () => {
+    const asking: string[][] = [];
+    const { client } = clientOver((request) => {
+      const url = new URL(request.url);
+      if (url.pathname === "/v1/feed") {
+        return json(200, { values: [anItem("one")] });
+      }
+      const ids = url.searchParams.getAll("id");
+      asking.push(ids);
+      return json(200, {
+        values: ids.filter((id) => id !== "purged").map((id) => anItem(id)),
+      });
+    });
+    await client.loadFeed();
+
+    await expect(client.hold(["one", "two", "purged", "two"])).resolves.toEqual(
+      ["purged"],
+    );
+
+    expect(asking).toEqual([["two", "purged"]]);
+    expect(read(client.held("two"))?.id).toBe("two");
+  });
+
+  it("asks for no more than a hundred at a time", async () => {
+    const asking: number[] = [];
+    const { client } = clientOver((request) => {
+      const ids = new URL(request.url).searchParams.getAll("id");
+      asking.push(ids.length);
+      return json(200, { values: ids.map((id) => anItem(id)) });
+    });
+
+    const ids = Array.from({ length: 150 }, (_, at) => `item-${String(at)}`);
+    await expect(client.hold(ids)).resolves.toEqual([]);
+
+    expect(asking).toEqual([100, 50]);
+  });
+
+  it("asks nothing where everything is held", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, { values: [anItem("one")] }),
+    );
+    await client.loadFeed();
+    const before = asked(transport).length;
+
+    await expect(client.hold(["one"])).resolves.toEqual([]);
+
+    expect(asked(transport)).toHaveLength(before);
+  });
+});
+
 describe("a pool that did not decide", () => {
   it("keeps a 5xx out of the refusal grammar and drains again", async () => {
     let broken = true;

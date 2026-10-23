@@ -1,8 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-21
+**Last updated**: 2026-10-23
 **Shipped**:
+
+- 2026-10-23 — **`hold(ids)` reads into the cache the items a reader names by id.** One request
+  for up to a hundred, answering the ids the pool holds none of, so the log can name every subject
+  by its words. ([plan](../plans/collapsed-routing-records.md))
 
 - 2026-10-21 — **A filter is states, destinations and sources as well as tags, and the feed may
   be read by when each item was processed.** A page is kept by its key, order and filter, all
@@ -643,8 +647,13 @@ goes when they do.
   page, which is what says it is the last.
 - **It is not in the cache and not in the store.** The log is read for diagnosis rather than
   drained, so persisting it would grow what every client writes to disk for no offline gain, and a
-  pool out of reach answers nothing rather than a stale page. Reading it does not seed the item
-  cache either: the subjects it names are ids, not items.
+  pool out of reach answers nothing rather than a stale page. Reading it does not seed the item cache either: the subjects it names are ids, not items.
+  **`hold(ids)` is how a reader seeds it** *(2026-10-23)*: the items among `ids` the cache does
+  not hold are read in as few requests as the pool allows, a hundred ids to one
+  ([http-v1.md](http-v1.md#items)), and kept as any item read is — one already held is not asked
+  for, and one held by the time the answer lands keeps its own copy. It answers the ids the pool
+  holds none of, which is how a shell tells a purged item from one still being read. The history
+  [retention](#what-the-cache-keeps) bounds what this adds.
 - **A subject filter is never validated.** The log outlives the material it describes
   ([core.md](core.md#the-action-log)), so an id no item has is a filter matching nothing.
 - A refusal and an unreachable pool are told apart here as they are everywhere else; the caller

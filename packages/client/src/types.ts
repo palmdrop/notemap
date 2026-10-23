@@ -463,6 +463,12 @@ export interface Client {
    * archive made there marks the item the way it marks a row.
    */
   held(id: ItemId): Observable<Item | undefined>;
+  /**
+   * Reads into the cache those of these items it does not hold, in as few
+   * requests as the pool allows, for a surface that names items by id. Answers
+   * the ids the pool holds none of.
+   */
+  hold(ids: readonly ItemId[]): Promise<readonly ItemId[]>;
 
   /** Answers as soon as the operation is applied, not when the pool agrees. */
   capture(input: CaptureInput): Promise<Item>;

@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-22
 **Status**: Done
-**Spec**: `docs/specs/shell.md`
+**Spec**: `docs/specs/shell.md`, `docs/specs/client.md`, `docs/specs/core.md`
 **Closed**: 2026-10-22
 
 ---
@@ -99,6 +99,15 @@ Added 2026-10-23, after the developer tried the branch.
 - [x] `Block.svelte`: the arguments and the size are drawn at the bottom of the open block as one list of facts, `size` among them. `arguments` is gone from the foot, and so is `… written` under the words. _(2026-10-23)_
 - [x] `LogRow.svelte`: opening a routing row reads the item's records and draws the record itself. Where it is gone, the block is built from the action as before. _(2026-10-23)_
 - [x] `shell.md`: the body, the foot and *The log* amended; the `Shipped:` entry and **Last updated** moved to 2026-10-23. _(2026-10-23)_
+- [x] Tests, typecheck, lint _(2026-10-23)_
+
+### Phase 5: bugs found on the way
+
+Added 2026-10-23 at the developer's request.
+
+- [x] What a record sent is drawn in the shell's face rather than the browser's monospace. _(2026-10-23)_
+- [x] `delivery-cancelled` carries the destination and capability, so a cancelled delivery stops reading `by hand` (`core.md`). _(2026-10-23)_
+- [x] A log subject is never a shortened id: `client.hold(ids)` reads the subjects the cache does not hold, a page's in one request; one with no words is named by its payload type, and one the pool no longer holds says `purged` (`shell.md`, `client.md`). _(2026-10-23)_
 - [x] Tests, typecheck, lint _(2026-10-23)_
 
 ---

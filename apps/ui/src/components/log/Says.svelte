@@ -1,30 +1,40 @@
 <script lang="ts">
-  import { shortened } from "$lib/actions";
+  import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { excerptOf } from "$lib/excerpt";
+  import { log } from "$lib/log.svelte";
 
   /**
-   * What to call a capture where all a surface has is its id. The capture's own
-   * first words where this shell already holds them, and the shortened id where
-   * it does not — an id being what the pool says and nothing a person wrote.
-   *
-   * Nothing is read for it: the cache is asked and answered from, so a log of a
-   * hundred rows is a hundred lookups and no requests.
+   * What to call a capture where all a surface has is its id: the capture's
+   * own first words, which the log reads for the subjects the cache does not
+   * hold. An id is what the pool says and nothing a person wrote, so it is
+   * never drawn.
    */
   let { id, href }: { id: string; href?: string } = $props();
 
   const held = $derived(client.held(id));
   const item = $derived($held);
+  const sought = $derived(log.sought(id));
 
   const said = $derived(
     item === undefined
-      ? shortened(id)
-      : (excerptOf(client.says(item)) ?? shortened(id)),
+      ? sought === "gone"
+        ? "purged"
+        : "a capture"
+      : (excerptOf(client.says(item)) ?? item.payload.type),
   );
 </script>
 
+{#snippet words()}
+  {#if item === undefined && sought === "asking"}
+    <Asking />
+  {:else}
+    {said}
+  {/if}
+{/snippet}
+
 {#if href === undefined}
-  <span class="underline">{said}</span>
+  <span class="underline">{@render words()}</span>
 {:else}
-  <a {href} class="underline">{said}</a>
+  <a {href} class="underline">{@render words()}</a>
 {/if}

@@ -108,13 +108,14 @@ function saying(words: string) {
 }
 
 /** An id is what the pool says; the capture is what a person came to find. */
-test("links a subject to the capture it is about", async () => {
+test("links a subject to the capture it is about, and says purged where the pool holds none", async () => {
   pool(held([anAction("one")]));
   render(Log);
   reading();
 
-  const link = await screen.findByRole("link", { name: "0198f0c2…5e6f" });
+  const link = await screen.findByRole("link", { name: "purged" });
   expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
+  expect(screen.queryByText(/0198f0c2/)).toBeNull();
 });
 
 /**
@@ -135,14 +136,55 @@ test("says the capture's own first words where the shell holds them", async () =
   expect(link).toHaveProperty("pathname", `/items/${SUBJECT}`);
 });
 
-/** Nothing is read for it: a hundred rows are a hundred lookups and no requests. */
-test("asks the pool for nothing to say what an entry is about", async () => {
-  pool(held([anAction("one")]));
+/** What the cache does not hold is read, every subject on a page in one request. */
+test("reads the words of the captures the shell does not hold", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/items"
+      ? json(200, {
+          values: [
+            anItem(SUBJECT, {
+              payload: {
+                type: "text",
+                content: { text: "the picker needs a trail" },
+                metadata: {},
+                assets: [],
+              },
+            }),
+          ],
+        })
+      : held([anAction("one"), anAction("two", { kind: "tagged" })])(request),
+  );
   render(Log);
   reading();
-  await screen.findByText("captured");
 
+  expect(
+    await screen.findAllByRole("link", { name: "the picker needs a trail" }),
+  ).toHaveLength(2);
+  expect(asked().filter((route) => route === "GET /v1/items")).toHaveLength(1);
   expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}`);
+});
+
+test("names a capture with no words by what it is", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/items"
+      ? json(200, {
+          values: [
+            anItem(SUBJECT, {
+              payload: {
+                type: "image",
+                content: {},
+                metadata: {},
+                assets: [],
+              },
+            }),
+          ],
+        })
+      : held([anAction("one")])(request),
+  );
+  render(Log);
+  reading();
+
+  expect(await screen.findByRole("link", { name: "image" })).toBeDefined();
 });
 
 /** The same words where a person has committed to one item, not the id again. */
@@ -378,7 +420,9 @@ test("narrows to a view's kinds, asking the pool rather than sifting the page", 
 
   const read = asked().find((route) => route === "GET /v1/actions");
   expect(read).toBeDefined();
-  expect(sentUrls().at(-1)).toContain("kind=routed%2Ctemplate-fired");
+  expect(sentUrls().findLast((url) => url.includes("/v1/actions"))).toContain(
+    "kind=routed%2Ctemplate-fired",
+  );
 
   log.arrived(arriving(anAction("two", { kind: "tagged" })));
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);

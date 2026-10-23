@@ -9,7 +9,8 @@
   block; what was sent is read on opening. A pending record keeps `cancel` on its line. A log row
   of a routing kind is the capture's words, `→`, and that line; the block's `item` is gone, and the
   log's block is the record itself, read on opening. What the delivery was given and how much it
-  wrote are at the bottom of the block rather than behind `arguments`.
+  wrote are at the bottom of the block rather than behind `arguments`. A log row names its capture
+  by its words and never by a shortened id.
   ([plan](../plans/collapsed-routing-records.md))
 
 - 2026-10-21 — **The feed reads by `processed` as well as by capture, and filters by state,
@@ -2774,8 +2775,12 @@ kind nobody has written yet is not lost, only plainer.
 
 **A subject leads to the capture it is about** *(amended 2026-09-09; it led to the log narrowed to
 that subject)*. An entry naming an id is an entry a person cannot connect to anything they wrote,
-so the **capture's own first words** are drawn in place of the id wherever this shell already
-holds it — never read for: what the cache has, or the shortened id it has instead. The words are
+so the **capture's own first words** are drawn, and **never the id** *(amended 2026-10-23; the
+words were drawn only where the cache already held the item, and a shortened id everywhere else,
+which was most routed rows)*. The subjects a read or the watcher brings that the cache does not
+hold are read, every one a page names in one request, and their line holds the asking mark until
+they land. A capture with no words is named by what it is — `image` — and one the pool no longer
+holds says `purged`; where the pool cannot be reached it is `a capture`. The words are
 a link to the item, at the body's left; the fact is at its right, and stacks under the words below
 `narrow`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
 item, and a row of the log offers nothing about narrowing.

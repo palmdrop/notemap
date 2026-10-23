@@ -159,6 +159,9 @@ function listOf(state: ClientState, surface: Surface): ListState {
  */
 const TIMEOUT_MS = 30_000;
 
+/** What one read of several items may name. */
+const MOST_IDS = 100;
+
 function timeoutOf(config: ClientConfig): number {
   const timeout = config.timeout ?? TIMEOUT_MS;
   if (timeout >= LEASE_MS) {
@@ -627,6 +630,31 @@ export function createClient(config: ClientConfig): Client {
       }),
 
     held: (id) => derived(state.changes, (current) => current.items.get(id)),
+
+    hold: (ids) =>
+      after(async () => {
+        const wanted = [...new Set(ids)].filter(
+          (id) => !state.get().items.has(id),
+        );
+        const found = new Set<ItemId>();
+        for (let from = 0; from < wanted.length; from += MOST_IDS) {
+          const { values } = await answered(
+            api.GET("/v1/items", {
+              params: { query: { id: wanted.slice(from, from + MOST_IDS) } },
+            }),
+          );
+          for (const item of values) found.add(item.id);
+          // One held since it was asked for is newer than this answer.
+          state.update((current) => ({
+            ...current,
+            items: cached(
+              current,
+              values.filter((item) => !current.items.has(item.id)),
+            ),
+          }));
+        }
+        return wanted.filter((id) => !found.has(id));
+      }),
 
     async capture(input) {
       const id = uuidv7();

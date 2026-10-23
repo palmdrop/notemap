@@ -1,8 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-21
+**Last updated**: 2026-10-23
 **Shipped**:
+
+- 2026-10-23 — **A cancelled delivery's entry names where it was going.** `delivery-cancelled`
+  carries the `destination` and `capability`, as `routed` does, since the record goes with it.
+  ([plan](../plans/collapsed-routing-records.md))
 
 - 2026-10-21 — **The feed may be read by when each item was processed, and filtered by state,
   destination and source.** A feed read names `capture` or `processed`; every item carries

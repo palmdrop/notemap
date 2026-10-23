@@ -66,16 +66,6 @@ export function flattened(detail: Record<string, unknown>): readonly Pair[] {
   return pairs;
 }
 
-const HEAD = 8;
-const TAIL = 4;
-
-/** Enough of an id to recognise and to tell two apart, and no more. */
-export function shortened(id: string): string {
-  return id.length <= HEAD + TAIL + 1
-    ? id
-    : `${id.slice(0, HEAD)}…${id.slice(-TAIL)}`;
-}
-
 /**
  * The one fact a row carries beside the words it is about. `trigger` is a
  * tag drawn as the trigger it is; `alarm` is the refusal's own name.
