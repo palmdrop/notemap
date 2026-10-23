@@ -9,6 +9,7 @@
   import { factOf, failed, flattened, known } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
+  import { recordsOf } from "$lib/records.svelte";
   import { following, slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
@@ -62,10 +63,9 @@
 
   /**
    * The record a routing kind is about, as far as the action's detail says:
-   * enough for the block's head, the output read by the record's id. The
-   * arguments, the URL and the notes are the record's own and are not here.
+   * enough for the line, and for the block where the record itself is gone.
    */
-  const record = $derived.by((): RoutingRecord | undefined => {
+  const told = $derived.by((): RoutingRecord | undefined => {
     const kind = action.kind;
     if (
       kind !== "routed" &&
@@ -104,6 +104,20 @@
       ...(pointer === undefined ? {} : { pointer }),
     };
   });
+
+  let opened = $state(false);
+  let asked = $state(false);
+  $effect(() => {
+    if (opened) asked = true;
+  });
+
+  // Kept once asked: closing it would drop the record back to the detail.
+  const records = recordsOf(
+    () => (told === undefined ? undefined : action.subject),
+    () => asked,
+  );
+  const held = $derived(records.all.find((one) => one.id === told?.id));
+  const record = $derived(held ?? told);
 
   const failure = $derived.by(() => {
     const held = action.detail["failure"];
@@ -164,7 +178,8 @@
           {record}
           {said}
           alarm={bad}
-          blind={action.kind === "routed"}
+          blind={held === undefined && action.kind === "routed"}
+          bind:opened
           lead={subject}
           end={fact === undefined ? undefined : factLine}
         />

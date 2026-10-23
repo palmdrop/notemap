@@ -12,7 +12,7 @@
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
-  import { argumentsOf, type Argument } from "$lib/arguments";
+  import { argumentsOf } from "$lib/arguments";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
   import { aboutItem } from "$lib/excerpt";
@@ -23,7 +23,11 @@
   import { notices } from "$lib/notices.svelte";
   import { pickable } from "$lib/pick";
   import { keepOutput, outputOf } from "$lib/outputs";
-  import { described, readingHeld } from "$lib/described.svelte";
+  import {
+    capabilityHeld,
+    described,
+    readingHeld,
+  } from "$lib/described.svelte";
   import { sizeOf } from "$lib/attachments";
   import { cancelledKey, keyFor, placeIn } from "$lib/routing";
   import {
@@ -48,6 +52,7 @@
     alarm = false,
     blind = false,
     folds = true,
+    opened = $bindable(false),
     lead,
     end,
     onundone,
@@ -66,6 +71,7 @@
     blind?: boolean;
     /** Drawn folded and opened by a press; where it does not fold it is always open. */
     folds?: boolean;
+    opened?: boolean;
     /**
      * Drawn ahead of the folded line, which then stays as the open block's
      * heading rather than giving way to it.
@@ -77,7 +83,6 @@
     onundone?: () => void;
   } = $props();
 
-  let opened = $state(false);
   const open = $derived(!folds || opened);
 
   const destinations = client.destinations.all;
@@ -161,7 +166,6 @@
     output = known ?? undefined;
     unreadable = "";
     none = known === null || (blind && byHand);
-    named = undefined;
   });
 
   /**
@@ -188,7 +192,11 @@
       if (asked === record.id) output = bytes;
     } catch (error) {
       if (asked !== record.id) return;
-      if (blind && error instanceof Refused && error.code === "no-output") {
+      if (
+        (blind || !kept) &&
+        error instanceof Refused &&
+        error.code === "no-output"
+      ) {
         keepOutput(asked, null);
         none = true;
       } else {
@@ -233,34 +241,25 @@
       : new TextEncoder().encode(output).byteLength,
   );
 
-  /** The arguments named against the capability's schema, asked for on the press and kept. */
-  let named = $state<readonly Argument[] | undefined>(undefined);
-  let naming = $state(false);
-
-  const hasArguments = $derived(
-    target.kind === "destination" && Object.keys(target.arguments).length > 0,
-  );
-
-  async function showArguments() {
-    if (named !== undefined) {
-      named = undefined;
-      return;
-    }
-    if (target.kind !== "destination") return;
-    const where = target;
-    naming = true;
-    const schema = (await described(where.destination))?.find(
-      (one) => one.name === where.capability,
-    )?.argumentsSchema;
-    named = argumentsOf(where.arguments, schema, called);
-    naming = false;
-  }
+  /**
+   * What the delivery was given, named against the capability's schema once
+   * the destination has been described and by its own keys until then, and
+   * how much it wrote.
+   */
+  const facts = $derived([
+    ...(target.kind === "destination"
+      ? argumentsOf(
+          target.arguments,
+          capabilityHeld(target.destination, target.capability)
+            ?.argumentsSchema,
+          called,
+        )
+      : []),
+    ...(wrote === undefined ? [] : [{ name: "size", said: sizeOf(wrote) }]),
+  ]);
 
   const footed = $derived(
-    hasArguments ||
-      link !== undefined ||
-      cancellable ||
-      (byHand && said === undefined),
+    link !== undefined || cancellable || (byHand && said === undefined),
   );
 
   let failed = $state("");
@@ -396,9 +395,6 @@
               <AttachedPictures {attachments} picture="max-h-48" />
               {#if body !== undefined}
                 <pre class="break-words whitespace-pre-wrap">{body}</pre>
-                {#if wrote !== undefined}
-                  <div data-wrote class="mt-1">{sizeOf(wrote)} written</div>
-                {/if}
               {:else if !kept && !byHand}
                 <div>{NOTHING_KEPT}</div>
               {:else if kept && !blind && unreadable === ""}
@@ -428,11 +424,12 @@
           <div class="px-3 py-2.5 break-words">{record.output.note}</div>
         {/if}
 
-        {#if named !== undefined}
+        {#if facts.length > 0}
           <div
+            data-facts
             class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-narrow:grid-cols-1"
           >
-            {#each named as argument (argument.name)}
+            {#each facts as argument, index (index)}
               <span class="tracking-caps uppercase">{argument.name}</span>
               <span class="min-w-0 break-words">{argument.said}</span>
             {/each}
@@ -440,16 +437,7 @@
         {/if}
 
         {#if footed}
-          <div
-            class="flex flex-wrap items-baseline justify-between gap-x-5 px-3 py-1"
-          >
-            <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
-              {#if hasArguments}
-                <Action disabled={naming} onclick={() => void showArguments()}>
-                  arguments
-                </Action>
-              {/if}
-            </div>
+          <div class="flex items-baseline justify-end px-3 py-1">
             <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
               {#if link !== undefined}
                 <a href={link} rel="noreferrer" class="hover:underline"

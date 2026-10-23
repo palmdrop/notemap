@@ -610,6 +610,69 @@ test("draws routed as a line beside what it was about, opening into the block, a
   expect(screen.queryByText("target")).toBeNull();
 });
 
+test("opens a routed row into the record itself, as its item draws it", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/destinations":
+        return json(200, { values: [VAULT] });
+      case `GET /v1/items/${SUBJECT}/routing`:
+        return json(200, {
+          values: [
+            {
+              id: "rec",
+              item: SUBJECT,
+              target: {
+                kind: "destination",
+                destination: "vault",
+                capability: "create",
+                arguments: { directory: "drafts" },
+              },
+              state: "delivered",
+              at: "2026-09-02T11:14:00.000Z",
+              pointer: "drafts/note.md",
+              url: "https://vault.example/drafts/note.md",
+            },
+          ],
+        });
+      case "GET /v1/routing/rec/output":
+        return json(404, { error: { code: "no-output", facts: {} } });
+      default:
+        return held([
+          anAction("one", {
+            kind: "routed",
+            detail: {
+              record: "rec",
+              target: "destination",
+              destination: "vault",
+              capability: "create",
+              pointer: "drafts/note.md",
+            },
+          }),
+        ])(request);
+    }
+  });
+  await client.destinations.load();
+  render(Log);
+  reading();
+
+  await screen.findByText("Fiction vault");
+  expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}/routing`);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
+  expect(await screen.findByText("drafts")).toBeDefined();
+  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+  expect(await screen.findByText("nothing kept")).toBeDefined();
+  expect(screen.queryByText(/could not be read/)).toBeNull();
+
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "Fiction vault" })[0]!,
+  );
+  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
+  expect(
+    asked().filter((route) => route === `GET /v1/items/${SUBJECT}/routing`),
+  ).toHaveLength(1);
+});
+
 /** The detail does not say whether a copy was kept, so a refusal saying none is none. */
 test("says nothing kept where the pool has no copy of what a routed row sent", async () => {
   pool((request) =>

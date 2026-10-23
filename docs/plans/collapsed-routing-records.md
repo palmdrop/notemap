@@ -92,6 +92,15 @@ Depends on phase 2.
 
 **Verify:** `grep -n "more compact routing record" docs/todo.md` prints nothing.
 
+### Phase 4: the block's facts, and the log's block is the record
+
+Added 2026-10-23, after the developer tried the branch.
+
+- [x] `Block.svelte`: the arguments and the size are drawn at the bottom of the open block as one list of facts, `size` among them. `arguments` is gone from the foot, and so is `… written` under the words. _(2026-10-23)_
+- [x] `LogRow.svelte`: opening a routing row reads the item's records and draws the record itself. Where it is gone, the block is built from the action as before. _(2026-10-23)_
+- [x] `shell.md`: the body, the foot and *The log* amended; the `Shipped:` entry and **Last updated** moved to 2026-10-23. _(2026-10-23)_
+- [x] Tests, typecheck, lint _(2026-10-23)_
+
 ---
 
 ## Testing

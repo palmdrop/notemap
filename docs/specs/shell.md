@@ -1,13 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-22
+**Last updated**: 2026-10-23
 **Shipped**:
 
-- 2026-10-22 — **A routing record is one line until it is opened.** On the item and in the log,
+- 2026-10-23 — **A routing record is one line until it is opened.** On the item and in the log,
   a record reads as its destination, its place and what was done, and opens in place into the
   block; what was sent is read on opening. A pending record keeps `cancel` on its line. A log row
-  of a routing kind is the capture's words, `→`, and that line; the block's `item` is gone.
+  of a routing kind is the capture's words, `→`, and that line; the block's `item` is gone, and the
+  log's block is the record itself, read on opening. What the delivery was given and how much it
+  wrote are at the bottom of the block rather than behind `arguments`.
   ([plan](../plans/collapsed-routing-records.md))
 
 - 2026-10-21 — **The feed reads by `processed` as well as by capture, and filters by state,
@@ -1806,21 +1808,22 @@ destination's, and a path in it — `![](research/assets/whiteboard.jpg)` — re
 and nowhere here, so rendering it drew a broken picture beside the real one. True to the output is
 the honest reading; the capture itself is rendered where it is a capture, on the queue, the feed
 and the item's own row. **The item's attachments are drawn above the words** as the preview of
-what went with them; where the assets landed is not on the record and is not drawn. The
-destination's **note** about what it could not carry is on the record and is drawn beneath. **How
-much it wrote is said under the words** *(2026-10-12)* — `4.2 KB written` — measured off the copy
-this read, since the record keeps no size; a delivery whose words are its own and whose copy was
-never kept says nothing about size, there being nothing written anywhere this can speak for. A
+what went with them; where the assets landed is not on the record and is not drawn. The destination's **note** about what it could not carry is on the record and is drawn beneath.
+**At the bottom, what the delivery was given and how much it wrote** *(amended 2026-10-23; the
+arguments were behind a press in the foot, and the size read `4.2 KB written` under the words)*,
+one fact a line, the name in small capitals at the left: the arguments, named against the
+capability's own schema where the destination has been described — `Directory` rather than
+`directory` — and by their own keys until it has, with anything the record carries that the schema
+does not name drawn all the same; then `size`, measured off the copy this read, since the record
+keeps no size. A delivery whose words are its own and whose copy was never kept says nothing about
+size, there being nothing written anywhere this can speak for. Where there is neither, nothing is
+drawn. A
 delivery that kept no copy says `nothing kept`, in two words, since that is ordinary; a delivery
 that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
 so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-**The foot holds the presses.** `arguments` shows what the delivery was given, named
-against the capability's own schema where the destination can be described — `Directory` rather
-than `directory` — and by their own keys where it cannot, with anything the record carries that
-the schema does not name drawn all the same; it is offered only where there are any. `open ↗`
-follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
+**The foot holds the presses.** `open ↗` follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
 record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
 a decision made by hand, which is the same call; both say so in the status line and the surface reads
 its records again. A foot with nothing in it is not drawn. *Retired 2026-10-22*: `item` in the
@@ -2783,8 +2786,12 @@ destination bold and the place — with what was done at the right where the kin
 own; `delivery-failed` and `delivery-cancelled` keep theirs there. The words give way before the
 destination does, since where it went is what the line is for, and below `narrow` they take a line
 of their own, the record's under them. **Opened, the line stays** as the
-row's heading and the block is drawn under it, built from what the action says — destination,
-capability, place, template — with what was sent read by the record's id on opening, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
+row's heading and the block is drawn under it: **the record itself**, read with the item's records
+on opening *(amended 2026-10-23; the block was built from the action alone and drew no arguments,
+no link and no note)*, so a record reads the same in the log as on its item. Where the record is
+gone — a delivery called off, one given up on — the block is built from what the action says,
+destination, capability, place and template. What was sent is read by the record's id on
+opening, and a refusal saying the pool kept no copy read as `nothing kept` rather than as a
 failure. **What was sent is read once a page** *(2026-09-25)*: it never changes, so a record read
 before — or read and found to have kept nothing — is drawn at once and asked for again by no one,
 and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known

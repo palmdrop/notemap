@@ -231,21 +231,28 @@ test("says why what was sent could not be read, and does not ask again on its ow
   expect(await screen.findByText(/# a thought/)).toBeDefined();
 });
 
-test("keeps the arguments behind a press", async () => {
+test("draws what the delivery was given at the bottom, by the schema's names once described", async () => {
   await named();
 
   render(Block, { folds: false, record: KEPT });
-  await screen.findByText(/# a thought/);
 
-  expect(screen.queryByText("Directory")).toBeNull();
-
-  await fireEvent.click(screen.getByRole("button", { name: "arguments" }));
   expect(await screen.findByText("Directory")).toBeDefined();
   expect(screen.getByText("drafts")).toBeDefined();
   expect(screen.getByText("Filename")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
+});
 
-  await fireEvent.click(screen.getByRole("button", { name: "arguments" }));
-  expect(screen.queryByText("Directory")).toBeNull();
+test("draws the arguments by their own keys until the destination is described", async () => {
+  pool((request) =>
+    routeOf(request).endsWith("/description")
+      ? json(404, { error: { code: "no-such-destination", facts: {} } })
+      : answering()(request),
+  );
+
+  render(Block, { folds: false, record: RECORD });
+
+  expect(await screen.findByText("directory")).toBeDefined();
+  expect(screen.getByText("filename")).toBeDefined();
 });
 
 test("a pending record says so and offers cancel, and nothing else does", async () => {
@@ -494,9 +501,11 @@ test("says how much the delivery wrote, and nothing for words no output kept", a
 
   await screen.findByText(/# a thought/);
   // The bytes of the copy it just read, which is the only size anything holds.
+  const size = screen.getByText("size");
+  expect(size.closest("[data-facts]")).not.toBeNull();
   expect(
     screen.getByText(
-      `${String(new TextEncoder().encode(NOTE).byteLength)} bytes written`,
+      `${String(new TextEncoder().encode(NOTE).byteLength)} bytes`,
     ),
   ).toBeDefined();
 });
@@ -513,7 +522,7 @@ test("says nothing about size where the words are the delivery's own and nothing
   });
 
   await screen.findByText("what went");
-  expect(screen.queryByText(/written/)).toBeNull();
+  expect(screen.queryByText("size")).toBeNull();
 });
 
 const outputAsked = () =>
@@ -555,7 +564,7 @@ test("folded, reads as one line: where it went and what was done, and nothing re
     expect(screen.queryByText(gone)).toBeNull();
   }
   expect(screen.queryByRole("link", { name: "open ↗" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
+  expect(screen.queryByText("Directory")).toBeNull();
   expect(document.querySelectorAll("img")).toHaveLength(0);
   expect(outputAsked()).toHaveLength(0);
 });
