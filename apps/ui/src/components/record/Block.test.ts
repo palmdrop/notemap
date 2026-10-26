@@ -722,7 +722,7 @@ function withdrawing(presence: () => Response) {
           ...RECORD,
           withdrawnAt: "2026-08-20T09:00:00.000Z",
         });
-      case "POST /v1/routing/rec/restore":
+      case "POST /v1/routing/rec/reinstate":
         return json(200, RECORD);
       case "GET /v1/items/one":
         return json(200, anItem("one"));
@@ -782,7 +782,7 @@ test("keeping it sends nothing and puts the offer back", async () => {
   expect(asked()).not.toContain("POST /v1/routing/rec/withdraw");
 });
 
-test("withdrawing marks the record, tells the surface, and offers restore here", async () => {
+test("withdrawing marks the record, tells the surface, and offers reinstate here", async () => {
   await withdrawingFrom();
   const undone = vi.fn();
   render(Block, { folds: false, record: RECORD, onundone: undone });
@@ -801,14 +801,16 @@ test("withdrawing marks the record, tells the surface, and offers restore here",
   expect(await screen.findByText("withdrawn")).toBeTruthy();
   expect(undone).toHaveBeenCalled();
 
-  await fireEvent.click(await screen.findByRole("button", { name: "restore" }));
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "reinstate" }),
+  );
   await vi.waitFor(() => {
-    expect(asked()).toContain("POST /v1/routing/rec/restore");
+    expect(asked()).toContain("POST /v1/routing/rec/reinstate");
   });
   expect(await screen.findByRole("button", { name: "withdraw" })).toBeTruthy();
 });
 
-test("stops offering restore once an edit begins", async () => {
+test("stops offering reinstate once an edit begins", async () => {
   await withdrawingFrom();
   const { rerender } = render(Block, { folds: false, record: RECORD });
 
@@ -819,16 +821,41 @@ test("stops offering restore once an edit begins", async () => {
   const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
   if (confirm === undefined) throw new Error("expected the confirming press");
   await fireEvent.click(confirm);
-  await screen.findByRole("button", { name: "restore" });
+  await screen.findByRole("button", { name: "reinstate" });
 
   await rerender({ folds: false, record: RECORD, editing: true });
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "restore" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
   });
 });
 
-test("a record read withdrawn offers neither withdraw nor restore", async () => {
+test("follows the record it is handed again once that agrees with what was done here", async () => {
+  await withdrawingFrom();
+  const { rerender } = render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  await screen.findByText(/still there/);
+  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  if (confirm === undefined) throw new Error("expected the confirming press");
+  await fireEvent.click(confirm);
+  await screen.findByRole("button", { name: "reinstate" });
+
+  await rerender({
+    folds: false,
+    record: { ...RECORD, withdrawnAt: "2026-08-20T09:00:00.000Z" },
+  });
+  // Reinstated from another device, and read again here.
+  await rerender({ folds: false, record: RECORD });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("withdrawn")).toBeNull();
+  });
+});
+
+test("a record read withdrawn offers neither withdraw nor reinstate", async () => {
   await withdrawingFrom();
   render(Block, {
     folds: false,
@@ -837,5 +864,5 @@ test("a record read withdrawn offers neither withdraw nor restore", async () => 
 
   expect(await screen.findByText("withdrawn")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "withdraw" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "restore" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
 });

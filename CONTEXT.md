@@ -491,11 +491,11 @@ _Avoid_: routing status, delivery flag
 What a person does to a delivered **routing record** that no longer stands — the note was deleted,
 the block removed. The record stays, marked with when, and the log says so; it stops counting for
 anything the item's routing decides, so the item reads as unrouted, returns to the queue, and is
-no longer sealed by it. A trigger tag that made it comes off with it. **Restoring** puts it back.
+no longer sealed by it. A trigger tag that made it comes off with it. **Reinstating** it puts it back.
 Only a delivered record naming a destination is withdrawn: a reservation and a mark by hand are
 **cancelled**, which removes them, since nothing reached anywhere.
 _Avoid_: invalidate, which says the record was wrong, where it was true when it was made; unroute;
-retract
+retract; restore for its inverse, which is a rebuild's word
 
 **Routing template**:
 A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its

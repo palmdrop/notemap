@@ -1928,6 +1928,59 @@ describe("reservations", () => {
     });
   });
 
+  it("becomes delivered naming every thing it made", async () => {
+    const { pool: p, reservation } = await reservedItem();
+
+    await p.transaction((tx) =>
+      tx.resolveRoutingRecord(reservation.id, {
+        pointer: "101",
+        pointers: ["101", "102", "103"],
+      }),
+    );
+
+    expect(await p.routingRecord(reservation.id)).toEqual({
+      ...reservation,
+      state: "delivered",
+      pointer: "101",
+      pointers: ["101", "102", "103"],
+    });
+  });
+
+  it("is withdrawn, and reinstated, putting its item back in the queue and out again", async () => {
+    const { pool: p, reservation } = await reservedItem();
+    await p.transaction((tx) => tx.resolveRoutingRecord(reservation.id, {}));
+    const withdrawnAt = "2026-08-03T11:00:00.000Z" as Timestamp;
+
+    await p.transaction((tx) =>
+      tx.setRoutingRecordWithdrawn(reservation.id, withdrawnAt),
+    );
+    expect(await p.routingRecord(reservation.id)).toMatchObject({
+      withdrawnAt,
+    });
+    expect(ids((await p.queue(OLDEST_FIRST)).values)).toEqual(["item-1"]);
+
+    await p.transaction((tx) =>
+      tx.setRoutingRecordWithdrawn(reservation.id, undefined),
+    );
+    expect(await p.routingRecord(reservation.id)).not.toHaveProperty(
+      "withdrawnAt",
+    );
+    expect((await p.queue(OLDEST_FIRST)).values).toEqual([]);
+  });
+
+  it("refuses to withdraw a record that is not there", async () => {
+    const { pool: p } = pool();
+
+    await expect(
+      p.transaction((tx) =>
+        tx.setRoutingRecordWithdrawn(
+          "nobody" as RoutingRecordId,
+          "2026-08-03T11:00:00.000Z" as Timestamp,
+        ),
+      ),
+    ).rejects.toThrow("no routing record nobody");
+  });
+
   it("answers nothing for a record no decision minted", async () => {
     const { pool: p } = pool();
 

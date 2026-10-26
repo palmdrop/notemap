@@ -35,7 +35,7 @@
     cancelledKey,
     keyFor,
     placeIn,
-    restoredKey,
+    reinstatedKey,
     withdrawnKey,
   } from "$lib/routing";
   import {
@@ -88,7 +88,7 @@
     lead?: Snippet;
     /** What the folded line says at its right, in place of what was done. */
     end?: Snippet;
-    /** The item is being edited here, which ends the offer to restore a withdrawal. */
+    /** The item is being edited here, which ends the offer to reinstate a withdrawal. */
     editing?: boolean;
     /** A record cancelled here leaves what was read of them out of date. */
     onundone?: () => void;
@@ -251,13 +251,22 @@
   const withdrawnAt = $derived(
     changed?.id === record.id ? changed.withdrawnAt : record.withdrawnAt,
   );
+  // Once the record handed in agrees, it is the one to follow again.
+  $effect(() => {
+    if (
+      changed?.id === record.id &&
+      changed.withdrawnAt === record.withdrawnAt
+    ) {
+      changed = undefined;
+    }
+  });
   const withdrawn = $derived(withdrawnAt !== undefined);
   const withdrawable = $derived(
     delivered && !byHand && !withdrawn && said === undefined,
   );
 
   /** Offered only in the view the withdrawal was made in, and only until an edit begins. */
-  let restorable = $state(false);
+  let reinstatable = $state(false);
   let confirming = $state(false);
   let looking = $state(false);
   let presence = $state<Presence | undefined>(undefined);
@@ -266,14 +275,16 @@
   $effect(() => {
     void recordId;
     untrack(() => {
-      restorable = false;
+      reinstatable = false;
       confirming = false;
+      looking = false;
       presence = undefined;
+      failed = "";
     });
   });
 
   $effect(() => {
-    if (editing) untrack(() => (restorable = false));
+    if (editing) untrack(() => (reinstatable = false));
   });
 
   const kind = $derived(
@@ -316,7 +327,7 @@
       cancellable ||
       (byHand && said === undefined) ||
       (withdrawable && !confirming) ||
-      (withdrawn && restorable),
+      (withdrawn && reinstatable),
   );
 
   let failed = $state("");
@@ -361,7 +372,7 @@
       const answer = await client.routing.withdraw(record.id, record.item);
       changed = { id: record.id, withdrawnAt: answer.withdrawnAt };
       confirming = false;
-      restorable = true;
+      reinstatable = true;
       notices.mark(withdrawnKey(record.id));
       onundone?.();
     } catch (error) {
@@ -369,13 +380,13 @@
     }
   }
 
-  async function restore() {
+  async function reinstate() {
     failed = "";
     try {
-      await client.routing.restore(record.id, record.item);
+      await client.routing.reinstate(record.id, record.item);
       changed = { id: record.id, withdrawnAt: undefined };
-      restorable = false;
-      notices.mark(restoredKey(record.id));
+      reinstatable = false;
+      notices.mark(reinstatedKey(record.id));
       onundone?.();
     } catch (error) {
       failed = saidBy(error);
@@ -562,8 +573,8 @@
                 <Action onclick={() => void takeBack("undone")}>undo</Action>
               {:else if withdrawable && !confirming}
                 <Action onclick={() => void askToWithdraw()}>withdraw</Action>
-              {:else if withdrawn && restorable}
-                <Action onclick={() => void restore()}>restore</Action>
+              {:else if withdrawn && reinstatable}
+                <Action onclick={() => void reinstate()}>reinstate</Action>
               {/if}
             </div>
           </div>

@@ -11,7 +11,7 @@ import {
   BODY_STATUS,
   CANCEL_STATUS,
   LOCATE_STATUS,
-  RESTORE_STATUS,
+  REINSTATE_STATUS,
   WITHDRAW_STATUS,
   CANDIDATES_REQUEST_STATUS,
   GIVEN_STATUS,
@@ -1460,9 +1460,9 @@ export const withdrawDeliveryRoute = createRoute({
   },
 });
 
-export const restoreDeliveryRoute = createRoute({
+export const reinstateDeliveryRoute = createRoute({
   method: "post",
-  path: "/v1/routing/{record}/restore",
+  path: "/v1/routing/{record}/reinstate",
   summary: "Put a withdrawn record back",
   description:
     "Undoes a withdrawal: the record counts again and the item leaves the queue. A trigger tag that came off with the withdrawal goes back on **without firing** its template, where the item does not already hold it.\n\nRefused once the item has been edited since the withdrawal, since the record would come back naming words the item no longer holds.",
@@ -1472,11 +1472,11 @@ export const restoreDeliveryRoute = createRoute({
       description: "The record, standing again.",
       content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
     },
-    404: errorResponse("No record has that id.", 404, RESTORE_STATUS),
+    404: errorResponse("No record has that id.", 404, REINSTATE_STATUS),
     409: errorResponse(
       "The record is not withdrawn, or its item was edited since it was.",
       409,
-      RESTORE_STATUS,
+      REINSTATE_STATUS,
     ),
   },
 });
@@ -1942,7 +1942,7 @@ export const ROUTES = [
   previewRouteRoute,
   cancelDeliveryRoute,
   withdrawDeliveryRoute,
-  restoreDeliveryRoute,
+  reinstateDeliveryRoute,
   deliveryPresenceRoute,
   routingOutputRoute,
   actionsRoute,

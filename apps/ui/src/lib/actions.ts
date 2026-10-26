@@ -130,7 +130,7 @@ const FACTS: Readonly<
   "delivery-failed": alarmed,
   "delivery-cancelled": tag,
   "delivery-withdrawn": tag,
-  "delivery-restored": tag,
+  "delivery-reinstated": tag,
   captured: () => undefined,
   amended: () => undefined,
   revised: () => undefined,

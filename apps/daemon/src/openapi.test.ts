@@ -69,7 +69,7 @@ describe("GET /v1/openapi.json", () => {
       "/v1/routing/{record}/cancel",
       "/v1/routing/{record}/output",
       "/v1/routing/{record}/presence",
-      "/v1/routing/{record}/restore",
+      "/v1/routing/{record}/reinstate",
       "/v1/routing/{record}/withdraw",
       "/v1/session",
       "/v1/sessions",

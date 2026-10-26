@@ -18,7 +18,7 @@ import {
   errorBody,
   locateStatus,
   outputStatus,
-  restoreStatus,
+  reinstateStatus,
   withdrawStatus,
   routingStatus,
   templateResolveStatus,
@@ -288,13 +288,13 @@ export function withdrawHandler(pool: Pool) {
   };
 }
 
-export function restoreHandler(pool: Pool) {
+export function reinstateHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const record = context.req.param("record") ?? "";
-    const result = await pool.routing.restore(record as RoutingRecordId);
+    const result = await pool.routing.reinstate(record as RoutingRecordId);
 
     return result.kind === "refused"
-      ? json(errorBody(result.refusal), restoreStatus(result.refusal))
+      ? json(errorBody(result.refusal), reinstateStatus(result.refusal))
       : json(result.value, 200);
   };
 }

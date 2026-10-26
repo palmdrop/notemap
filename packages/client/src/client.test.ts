@@ -570,14 +570,28 @@ describe("routing", () => {
     );
   });
 
-  it("takes the item out of the queue again when the withdrawal is restored", async () => {
+  it("answers a withdrawal the pool made although reading the item again failed", async () => {
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "POST /v1/routing/record-1/withdraw") {
+        return json(200, { ...record("record-1"), withdrawnAt: "later" });
+      }
+      return json(503, {});
+    });
+
+    await expect(
+      client.routing.withdraw("record-1", "one"),
+    ).resolves.toMatchObject({ id: "record-1", withdrawnAt: "later" });
+  });
+
+  it("takes the item out of the queue again when the withdrawn record is reinstated", async () => {
     let routing: Item["routing"] = undefined;
     const { client } = poolWithdrawing(() => routing);
     await client.loadQueue();
     expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
 
     routing = ROUTED;
-    await client.routing.restore("record-1", "one");
+    await client.routing.reinstate("record-1", "one");
 
     expect(read(client.queue).items).toEqual([]);
   });

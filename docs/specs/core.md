@@ -4,10 +4,10 @@
 **Last updated**: 2026-10-26
 **Shipped**:
 
-- 2026-10-26 — **A delivered record may be withdrawn, and restored.** The record stays with
+- 2026-10-26 — **A delivered record may be withdrawn, and reinstated.** The record stays with
   `withdrawnAt` and counts for nothing an item's routing decides, so the item is back in the queue
   and no longer sealed by it; its trigger tag comes off with it and goes back on, unfired, on
-  restore, which is refused once the item has been edited. A destination may be asked whether a
+  reinstate, which is refused once the item has been edited. A destination may be asked whether a
   delivery is still there (`locate`), which core never requires. A record keeps every pointer a
   delivery made. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
@@ -1202,9 +1202,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   refused, being cancelled instead, as is one already withdrawn. The mirror is owed the item.
 - **A withdrawn record's trigger tag comes off with it**, on the terms a cancelled reservation's
   does, so applying the tag again routes again.
-- **A withdrawal is restored by the same path**, appending `delivery-restored`, and refused once
-  the item has been edited since the withdrawal: the record would come back naming words the item
-  no longer holds, against an item that was edited in place while it held them. Restoring puts the
+- **A withdrawn record is reinstated by the same path**, appending `delivery-reinstated`, and refused once
+  the item has been edited since the withdrawal, in the same millisecond included: the record would
+  come back naming words the item no longer holds, against an item that was edited in place while it
+  held them. It is refused as `superseded` where the template that made it has a decision standing
+  on the item again — the tag applied once more since the withdrawal — since two standing decisions
+  from one template are two copies in somebody's vault. Reinstating puts the
   trigger tag back where the item no longer holds it, **without firing** its template, since the
   delivery the template would make is the one being put back.
 - **Core never asks a destination whether a record's delivery is still there.** A destination

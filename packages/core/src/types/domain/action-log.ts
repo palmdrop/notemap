@@ -19,7 +19,7 @@ export const ACTION_KINDS = [
   "delivery-failed",
   "delivery-cancelled",
   "delivery-withdrawn",
-  "delivery-restored",
+  "delivery-reinstated",
   "destination-created",
   "destination-renamed",
   "destination-reconfigured",

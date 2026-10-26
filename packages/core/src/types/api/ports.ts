@@ -463,7 +463,7 @@ export interface PoolTx extends PoolReads {
    */
   removeRoutingRecord(record: RoutingRecordId): Promise<void>;
 
-  /** `undefined` restores it. Throws on a record that is not there. */
+  /** `undefined` reinstates it. Throws on a record that is not there. */
   setRoutingRecordWithdrawn(
     record: RoutingRecordId,
     at: Timestamp | undefined,

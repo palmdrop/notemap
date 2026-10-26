@@ -728,7 +728,7 @@ export function resorted(state: ClientState, id: ItemId): ClientState {
 const PROCESSING: ReadonlySet<string> = new Set([
   "template-fired",
   "routed",
-  "delivery-restored",
+  "delivery-reinstated",
   "archived",
   "revised",
   "purged",
@@ -814,7 +814,7 @@ export function caughtUp(
 const REROUTING: ReadonlySet<string> = new Set([
   "template-fired",
   "routed",
-  "delivery-restored",
+  "delivery-reinstated",
 ]);
 
 /**

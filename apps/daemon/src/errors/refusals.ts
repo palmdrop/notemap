@@ -4,7 +4,7 @@ import type {
   AssetStoreRefusal,
   CancelRefusal,
   LocateRefusal,
-  RestoreRefusal,
+  ReinstateRefusal,
   WithdrawRefusal,
   CaptureRefusal,
   DeliveryRefusal,
@@ -258,11 +258,12 @@ export const WITHDRAW_STATUS = {
   "already-withdrawn": 409,
 } as const satisfies Record<WithdrawRefusal["kind"], number>;
 
-export const RESTORE_STATUS = {
+export const REINSTATE_STATUS = {
   "no-such-record": 404,
   "not-withdrawn": 409,
   "edited-since-withdrawal": 409,
-} as const satisfies Record<RestoreRefusal["kind"], number>;
+  superseded: 409,
+} as const satisfies Record<ReinstateRefusal["kind"], number>;
 
 export const LOCATE_STATUS = {
   "no-such-record": 404,
@@ -411,8 +412,8 @@ export function withdrawStatus(refusal: WithdrawRefusal): number {
   return WITHDRAW_STATUS[refusal.kind];
 }
 
-export function restoreStatus(refusal: RestoreRefusal): number {
-  return RESTORE_STATUS[refusal.kind];
+export function reinstateStatus(refusal: ReinstateRefusal): number {
+  return REINSTATE_STATUS[refusal.kind];
 }
 
 export function locateStatus(refusal: LocateRefusal): number {
@@ -476,7 +477,7 @@ export function errorBody(
     | EditRefusal
     | LocateRefusal
     | OutputRefusal
-    | RestoreRefusal
+    | ReinstateRefusal
     | WithdrawRefusal
     | PoolSettingRefusal
     | RetireRefusal

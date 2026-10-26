@@ -149,6 +149,8 @@ const SAID: {
   "not-withdrawn": "that delivery was never withdrawn",
   "edited-since-withdrawal":
     "this was edited after the delivery was withdrawn, so it cannot stand for it again",
+  superseded:
+    "the same template has routed this again since, so the withdrawn delivery stays withdrawn",
   "payload-invalid": "nothing to capture",
   "pool-setting-invalid": (facts) =>
     `that setting needs a ${String(facts["expected"])}, not what was sent`,

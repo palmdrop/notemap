@@ -13,8 +13,8 @@ export function askingToWithdraw(
   const block = kind === "arena";
 
   if (presence?.kind === "present") {
-    if (presence.of > 1) {
-      return `${String(presence.found)} of ${String(presence.of)} ${block ? "blocks" : "files"} are still there. Withdraw anyway?`;
+    if (block && presence.of > 1) {
+      return `${String(presence.found)} of ${String(presence.of)} blocks are still there. Withdraw anyway?`;
     }
     return `${thing(block, pointer)} is still there. Withdraw anyway?`;
   }

@@ -5,9 +5,9 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 **Last updated**: 2026-10-26
 **Shipped**:
 
-- 2026-10-26 — **`POST /v1/routing/{record}/withdraw` and `/restore`, and `GET
+- 2026-10-26 — **`POST /v1/routing/{record}/withdraw` and `/reinstate`, and `GET
   /v1/routing/{record}/presence`.** A record carries `withdrawnAt` and `pointers`;
-  `WithdrawRefusal`, `RestoreRefusal` and `LocateRefusal` joined the refusal table. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
+  `WithdrawRefusal`, `ReinstateRefusal` and `LocateRefusal` joined the refusal table. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-21 — **`by`, `state`, `destination` and `source` on the feed; `source` on the queue and
   the archive; `processedAt` on every item.** `bad-by`, `bad-state`, `bad-destination`,
@@ -365,16 +365,16 @@ Settled (2026-08-14): `GET /v1/destinations`, `POST /v1/items/{id}/route` — wh
 a delivery that has not happened yet — and `POST /v1/routing/{record}/cancel`
 ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
 
-Settled (2026-10-26): `POST /v1/routing/{record}/withdraw` and `/restore`, each answering the
+Settled (2026-10-26): `POST /v1/routing/{record}/withdraw` and `/reinstate`, each answering the
 record, and `GET /v1/routing/{record}/presence`, answering `present` with `found` of `of`,
 `absent`, or `unknown` with an optional `detail`
 ([ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md)). Presence is a `GET`: it asks the
 destination and changes nothing, and anything the destination could not say is an answer of
 `unknown` rather than a refusal, as `not-offered` and `unreachable` are on a preview. A record
 carries `withdrawnAt` where it is withdrawn and `pointers` where its delivery made several things.
-`WithdrawRefusal`, `RestoreRefusal` and `LocateRefusal` joined the refusal table: `no-such-record`
+`WithdrawRefusal`, `ReinstateRefusal` and `LocateRefusal` joined the refusal table: `no-such-record`
 at `404`; `not-delivered`, `marked-by-hand`, `already-withdrawn`, `not-withdrawn` and
-`edited-since-withdrawal` at `409`, each conflicting with state the caller can read.
+`edited-since-withdrawal` and `superseded` at `409`, each conflicting with state the caller can read.
 
 Settled (2026-08-17): `POST /v1/items/{id}/tag` and `/untag`, and `POST /v1/items/{id}/edit`,
 whose answer says whether the edit became an amendment or a revision.

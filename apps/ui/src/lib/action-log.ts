@@ -2,7 +2,7 @@ import type { Action, ActionsSince } from "@notemap/client";
 
 import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
-import { cancelledKey, keyFor, restoredKey, withdrawnKey } from "./routing";
+import { cancelledKey, keyFor, reinstatedKey, withdrawnKey } from "./routing";
 
 /**
  * The kinds worth saying to somebody who did not ask. Everything else the log
@@ -12,7 +12,7 @@ const SAID: ReadonlySet<string> = new Set([
   "routed",
   "delivery-cancelled",
   "delivery-withdrawn",
-  "delivery-restored",
+  "delivery-reinstated",
   "delivery-failed",
   "work-failed",
   "work-abandoned",
@@ -195,16 +195,16 @@ export function noticeOf(
     };
   }
 
-  /** Said where another device did it: the block it was done in already said so here. */
+  // Said where another device did it: the block it was done in already said so here.
   if (
     action.kind === "delivery-withdrawn" ||
-    action.kind === "delivery-restored"
+    action.kind === "delivery-reinstated"
   ) {
     const tag = stringAt(detail, "tag");
-    const back = action.kind === "delivery-restored";
+    const back = action.kind === "delivery-reinstated";
 
     return {
-      what: back ? "withdrawal restored" : "routing withdrawn",
+      what: back ? "routing reinstated" : "routing withdrawn",
       ...(named === undefined ? {} : { subject: named }),
       ...(tag === undefined
         ? {}
@@ -212,7 +212,7 @@ export function noticeOf(
       ...where,
       ...(record === undefined
         ? {}
-        : { key: back ? restoredKey(record) : withdrawnKey(record) }),
+        : { key: back ? reinstatedKey(record) : withdrawnKey(record) }),
     };
   }
 

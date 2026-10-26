@@ -252,13 +252,13 @@ test("a withdrawal made elsewhere says where and what it took back", () => {
   expect(said?.key).toBe("withdrawn:r1");
 });
 
-test("a restore says the tag went back", () => {
+test("a reinstate says the tag went back", () => {
   const said = noticeOf(
-    anAction("delivery-restored", { record: "r1", tag: "route/research" }),
+    anAction("delivery-reinstated", { record: "r1", tag: "route/research" }),
     reading,
   );
 
-  expect(said?.what).toBe("withdrawal restored");
+  expect(said?.what).toBe("routing reinstated");
   expect(said?.why).toBe("route/research put back");
 });
 

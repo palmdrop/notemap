@@ -364,7 +364,7 @@ export interface RoutingApi {
    */
   withdraw(record: RoutingRecord["id"], item: ItemId): Promise<RoutingRecord>;
   /** Undoes a withdrawal, putting the trigger tag back without firing it. */
-  restore(record: RoutingRecord["id"], item: ItemId): Promise<RoutingRecord>;
+  reinstate(record: RoutingRecord["id"], item: ItemId): Promise<RoutingRecord>;
   /** Asks the destination, every time. Not cached: the answer is about now. */
   presence(record: RoutingRecord["id"]): Promise<Presence>;
   /** As text; the record says what the bytes are, and one carrying none refuses. */

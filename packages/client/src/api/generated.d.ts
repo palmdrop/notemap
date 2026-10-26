@@ -3892,7 +3892,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/routing/{record}/restore": {
+    "/v1/routing/{record}/reinstate": {
         parameters: {
             query?: never;
             header?: never;
@@ -3954,7 +3954,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "not-withdrawn" | "edited-since-withdrawal";
+                                code: "not-withdrawn" | "edited-since-withdrawal" | "superseded";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5450,7 +5450,7 @@ export interface components {
         };
         Action: {
             /** @enum {string} */
-            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-restored" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
+            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
             by: {

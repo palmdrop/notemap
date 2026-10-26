@@ -408,7 +408,7 @@ describe("a route carrying words of its own", () => {
   });
 });
 
-describe("withdrawing and restoring over the wire", () => {
+describe("withdrawing and reinstating over the wire", () => {
   async function delivered(): Promise<{
     host: Vaulted;
     item: string;
@@ -433,11 +433,11 @@ describe("withdrawing and restoring over the wire", () => {
     expect(await queued(host)).toEqual([item]);
   });
 
-  it("puts it back on restore", async () => {
+  it("puts it back on reinstate", async () => {
     const { host, item, record } = await delivered();
     await send(host.app, `/v1/routing/${record.id}/withdraw`);
 
-    const response = await send(host.app, `/v1/routing/${record.id}/restore`);
+    const response = await send(host.app, `/v1/routing/${record.id}/reinstate`);
     expect(response.status).toBe(200);
     expect(await body(response)).not.toHaveProperty("withdrawnAt");
     expect(await queued(host)).not.toContain(item);
@@ -455,10 +455,10 @@ describe("withdrawing and restoring over the wire", () => {
     });
   });
 
-  it("refuses to restore a record that stands", async () => {
+  it("refuses to reinstate a record that stands", async () => {
     const { host, record } = await delivered();
 
-    const response = await send(host.app, `/v1/routing/${record.id}/restore`);
+    const response = await send(host.app, `/v1/routing/${record.id}/reinstate`);
     expect(response.status).toBe(409);
     expect(await body(response)).toMatchObject({
       error: { code: "not-withdrawn" },

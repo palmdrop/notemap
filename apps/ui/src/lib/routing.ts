@@ -227,13 +227,13 @@ export function cancelledKey(record: string): string {
   return `cancelled:${record}`;
 }
 
-/** Withdrawing and restoring are said by the block they were done in, and the log's echo is not news. */
+/** Withdrawing and reinstating are said by the block they were done in, and the log's echo is not news. */
 export function withdrawnKey(record: string): string {
   return `withdrawn:${record}`;
 }
 
-export function restoredKey(record: string): string {
-  return `restored:${record}`;
+export function reinstatedKey(record: string): string {
+  return `reinstated:${record}`;
 }
 
 /** An item discarded, which an `undo` would put back. */

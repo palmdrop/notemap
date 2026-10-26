@@ -130,4 +130,11 @@ describe("looking for what a record points at", () => {
     ).toEqual({ kind: "unknown" });
     expect(server.requests()).toEqual([]);
   });
+
+  it("cannot tell for a pointer that names no block", async () => {
+    expect(
+      await locate({ arguments: { channel: "reading" }, pointer: "" }),
+    ).toEqual({ kind: "unknown" });
+    expect(server.requests()).toEqual([]);
+  });
 });

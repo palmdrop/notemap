@@ -2,12 +2,16 @@ import { recordAction } from "../actions";
 import { enqueueMirrorWrite } from "../mirror";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
-import type { RestoreRefusal, WithdrawRefusal } from "#types/api/refusal";
+import type { ReinstateRefusal, WithdrawRefusal } from "#types/api/refusal";
 import type { RoutingRecordId, TagName, Timestamp } from "#types/domain/ids";
 import type { RoutingRecord } from "#types/domain/routing";
 import type { Result } from "#types/result";
 import { destinationDetail, templateDetail } from "./delivery";
-import { releaseTriggerTag, returnTriggerTag } from "../templates/fire";
+import {
+  alreadyApplied,
+  releaseTriggerTag,
+  returnTriggerTag,
+} from "../templates/fire";
 
 export function withdraw(
   ports: PoolPorts,
@@ -37,10 +41,10 @@ export function withdraw(
   });
 }
 
-export function restore(
+export function reinstate(
   ports: PoolPorts,
   id: RoutingRecordId,
-): Promise<Result<RoutingRecord, RestoreRefusal>> {
+): Promise<Result<RoutingRecord, ReinstateRefusal>> {
   return ports.store.transaction(async (tx) => {
     const record = await tx.routingRecord(id);
     if (record === undefined) {
@@ -53,17 +57,28 @@ export function restore(
 
     const item = await tx.item(record.item);
     const edited = item?.contentUpdatedAt;
-    if (edited !== undefined && Date.parse(edited) > Date.parse(withdrawnAt)) {
+    if (edited !== undefined && Date.parse(edited) >= Date.parse(withdrawnAt)) {
       return refused({ kind: "edited-since-withdrawal", record: id });
+    }
+
+    if (record.applied !== undefined) {
+      const since = await alreadyApplied(
+        tx,
+        record.item,
+        record.applied.template,
+      );
+      if (since !== undefined) {
+        return refused({ kind: "superseded", record: id, by: since.id });
+      }
     }
 
     const at = ports.clock.now();
     await tx.setRoutingRecordWithdrawn(id, undefined);
     const put = await returnTriggerTag(ports, tx, record, at);
-    await settled(ports, tx, record, at, "delivery-restored", put);
+    await settled(ports, tx, record, at, "delivery-reinstated", put);
 
-    const { withdrawnAt: _, ...restored } = record;
-    return ok<RoutingRecord, RestoreRefusal>(restored);
+    const { withdrawnAt: _, ...reinstated } = record;
+    return ok<RoutingRecord, ReinstateRefusal>(reinstated);
   });
 }
 
@@ -72,7 +87,7 @@ async function settled(
   tx: PoolTx,
   record: RoutingRecord,
   at: Timestamp,
-  kind: "delivery-withdrawn" | "delivery-restored",
+  kind: "delivery-withdrawn" | "delivery-reinstated",
   /** The trigger tag that came off or went back on with it. */
   tag: TagName | undefined,
 ): Promise<void> {

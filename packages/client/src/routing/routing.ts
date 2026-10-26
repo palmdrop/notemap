@@ -20,7 +20,7 @@ export type RoutingDeps = {
   /**
    * The item as the pool now has it, put back where it belongs. A withdrawal
    * moves its routing, its tags and when it was processed at once, and the
-   * pool's copy says all three.
+   * pool's copy says all three. Never throws: the pool has already decided.
    */
   readonly settled: (item: ItemId) => Promise<void>;
 };
@@ -92,7 +92,8 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       );
 
       // The pool deletes the record rather than marking it, and processed is
-      // derived from holding none — so an item routed twice is still not work.
+      // derived from holding none that stands — so an item routed twice is
+      // still not work.
       await deps.holding(item, await recordsFor(item));
       await deps.reread(item);
     },
@@ -107,14 +108,14 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       return withdrawn;
     },
 
-    async restore(record, item) {
-      const restored = await answered(
-        api.POST("/v1/routing/{record}/restore", {
+    async reinstate(record, item) {
+      const reinstated = await answered(
+        api.POST("/v1/routing/{record}/reinstate", {
           params: { path: { record } },
         }),
       );
       await deps.settled(item);
-      return restored;
+      return reinstated;
     },
 
     presence(record) {

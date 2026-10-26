@@ -4,8 +4,8 @@
 **Last updated**: 2026-10-26
 **Shipped**:
 
-- 2026-10-26 — **`routing.withdraw`, `routing.restore` and `routing.presence`.** Withdrawing and
-  restoring settle the item from the pool's copy; summaries the client works out leave withdrawn
+- 2026-10-26 — **`routing.withdraw`, `routing.reinstate` and `routing.presence`.** Withdrawing and
+  reinstating settle the item from the pool's copy; summaries the client works out leave withdrawn
   records out. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-23 — **`hold(ids)` reads into the cache the items a reader names by id.** One request
@@ -891,7 +891,7 @@ withdrawn ([core.md](core.md#the-queue)), never stored, so a client that assumed
 returns an item would show work that the pool still considers done. The client asks rather than
 assumes.
 
-**Withdrawing and restoring settle the item from the pool's own copy** (added 2026-10-26). Either
+**Withdrawing and reinstating settle the item from the pool's own copy** (added 2026-10-26). Either
 one moves the item's routing summary, its tags (a trigger tag comes off or goes back on) and when
 it was processed, all at once, so the client reads the item again after the answer and places it
 where it now belongs rather than folding the change in by hand. A summary the client works out

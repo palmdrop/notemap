@@ -276,14 +276,20 @@ export type WithdrawRefusal =
 
 /**
  * An item edited since the withdrawal no longer holds the words the record
- * says went, so the record cannot stand for it again.
+ * says went, so the record cannot stand for it again. Nor can it beside a
+ * decision its template has made since.
  */
-export type RestoreRefusal =
+export type ReinstateRefusal =
   | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
   | { readonly kind: "not-withdrawn"; readonly record: RoutingRecordId }
   | {
       readonly kind: "edited-since-withdrawal";
       readonly record: RoutingRecordId;
+    }
+  | {
+      readonly kind: "superseded";
+      readonly record: RoutingRecordId;
+      readonly by: RoutingRecordId;
     };
 
 /** Only a record that went somewhere can be looked for. */

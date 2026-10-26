@@ -60,16 +60,17 @@ refused.
 Making the next edit a revision would protect the record's account of what was sent, and that
 account is already held in the record's output.
 
-**A withdrawal is restored by the same path**, and `delivery-restored` is appended. It is refused
+**A withdrawn record is reinstated by the same path**, and `delivery-reinstated` is appended. It is refused
 once the item has been edited since the withdrawal. Otherwise the record would come back naming a
 delivery of words the item no longer holds, and the edit made in place would have been made to a
-sealed item. A shell offers restore only in the view the withdrawal was made in, until the person
+sealed item. It is refused too where the record's template has made a decision on the item since,
+which two standing records from one template would turn into a second copy. A shell offers reinstate only in the view the withdrawal was made in, until the person
 leaves that view or starts an edit.
 
 **A trigger tag goes with the record.** Withdrawing a record that its tag fired removes the tag, so
-applying it again routes again, as ADR 37 already does for a route that never landed. Restoring
+applying it again routes again, as ADR 37 already does for a route that never landed. Reinstating
 puts the tag back if the item does not hold it, through a tagging option that adds a tag **without
-firing** its template. Firing on restore would make a second delivery of a decision that is being
+firing** its template. Firing on reinstate would make a second delivery of a decision that is being
 put back.
 
 **A destination may be asked whether what a record points at is still there**, through an optional
@@ -89,7 +90,7 @@ in the output's prose. A record made before this answers `unknown`.
 - **Good** — a mistaken withdrawal is undone without a second delivery, tag included.
 - **Bad** — "every sealed item is processed" now holds because a withdrawn record seals nothing,
   rather than because no processed fact can be taken away from a sealed item. Accepted.
-- **Bad** — restore is refused after an edit, which a person who wanted the record back after
+- **Bad** — reinstate is refused after an edit, which a person who wanted the record back after
   fixing a typo will find surprising. Accepted. The alternative is a record that lies.
 - **Neutral** — `locate` is advisory. A kind without it answers `unknown`, and the shell asks
   plainly.
@@ -106,7 +107,7 @@ in the output's prose. A record made before this answers `unknown`.
 
 ### Option 2 — mark it withdrawn
 
-- **Good** — appends a fact and erases none. Restore is clearing one field.
+- **Good** — appends a fact and erases none. Reinstate is clearing one field.
 - **Bad** — every reader of records has to leave withdrawn ones out.
 
 ### Option 3 — a cancelling record

@@ -54,6 +54,5 @@ function blocksOf(request: LocateRequest, channel: string): readonly number[] {
       ? []
       : [request.pointer]);
 
-  const ids = named.map(Number);
-  return ids.every(Number.isSafeInteger) ? ids : [];
+  return named.every((one) => /^\d+$/.test(one)) ? named.map(Number) : [];
 }

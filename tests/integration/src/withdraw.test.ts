@@ -210,6 +210,15 @@ describe("withdrawing a delivered record", () => {
     ]);
   });
 
+  it("still holds its destination, which cannot be deleted under it", async () => {
+    const { pool, record } = await routed();
+    succeeded(await pool.routing.withdraw(record.id));
+
+    expect(await pool.destinations.delete(VAULT)).toMatchObject({
+      refusal: { kind: "destination-in-use", destination: VAULT },
+    });
+  });
+
   it("refuses a record already withdrawn", async () => {
     const { pool, record } = await routed();
     succeeded(await pool.routing.withdraw(record.id));
@@ -249,18 +258,18 @@ describe("withdrawing a delivered record", () => {
   });
 });
 
-describe("restoring a withdrawn record", () => {
+describe("reinstating a withdrawn record", () => {
   it("puts the record back, and takes the item out of the queue", async () => {
     const { pool, item, record, clock } = await routed();
     succeeded(await pool.routing.withdraw(record.id));
     clock.set(LATER);
 
-    expect(succeeded(await pool.routing.restore(record.id))).toEqual(record);
+    expect(succeeded(await pool.routing.reinstate(record.id))).toEqual(record);
     expect(await pool.routing.recordsFor(item)).toEqual([record]);
     expect(await queued(pool)).toEqual([]);
     expect((await pool.items.get(item))?.processedAt).toBe(record.at);
     expect((await logFor(pool, item))[0]).toMatchObject({
-      kind: "delivery-restored",
+      kind: "delivery-reinstated",
       at: LATER,
       detail: { record: record.id },
     });
@@ -272,7 +281,17 @@ describe("restoring a withdrawn record", () => {
     clock.set(LATER);
     succeeded(await pool.items.edit(item, edit("a second thought"), PERSON));
 
-    expect(await pool.routing.restore(record.id)).toMatchObject({
+    expect(await pool.routing.reinstate(record.id)).toMatchObject({
+      refusal: { kind: "edited-since-withdrawal", record: record.id },
+    });
+  });
+
+  it("refuses an edit made in the same millisecond as the withdrawal", async () => {
+    const { pool, item, record } = await routed();
+    succeeded(await pool.routing.withdraw(record.id));
+    succeeded(await pool.items.edit(item, edit("a second thought"), PERSON));
+
+    expect(await pool.routing.reinstate(record.id)).toMatchObject({
       refusal: { kind: "edited-since-withdrawal", record: record.id },
     });
   });
@@ -280,7 +299,7 @@ describe("restoring a withdrawn record", () => {
   it("refuses a record that stands", async () => {
     const { pool, record } = await routed();
 
-    expect(await pool.routing.restore(record.id)).toMatchObject({
+    expect(await pool.routing.reinstate(record.id)).toMatchObject({
       refusal: { kind: "not-withdrawn", record: record.id },
     });
   });
@@ -328,11 +347,11 @@ describe("withdrawing a record a trigger tag made", () => {
     expect(await queued(pool)).toEqual([]);
   });
 
-  it("puts the tag back on restore without firing the template", async () => {
+  it("puts the tag back on reinstate without firing the template", async () => {
     const { pool, item, record, deliver, clock } = await fired();
     succeeded(await pool.routing.withdraw(record.id));
 
-    succeeded(await pool.routing.restore(record.id));
+    succeeded(await pool.routing.reinstate(record.id));
     clock.set(LATER);
     await deliver();
 
@@ -342,18 +361,23 @@ describe("withdrawing a record a trigger tag made", () => {
     ]);
   });
 
-  it("leaves the tag alone on restore where the item already holds it again", async () => {
-    const { pool, item, record } = await fired();
+  it("refuses to reinstate once the tag has routed again, leaving the new decision to deliver", async () => {
+    const { pool, item, record, deliver, clock } = await fired();
     succeeded(await pool.routing.withdraw(record.id));
     succeeded(await pool.items.tag(item, RESEARCH, PERSON));
+    const [, again] = await pool.routing.recordsFor(item);
+    if (again === undefined) throw new Error("expected the tag to fire");
 
-    succeeded(await pool.routing.restore(record.id));
+    expect(await pool.routing.reinstate(record.id)).toMatchObject({
+      refusal: { kind: "superseded", record: record.id, by: again.id },
+    });
 
-    expect(
-      (await logFor(pool, item)).filter(
-        (one) => one.kind === "tagged" && one.detail["record"] === record.id,
-      ),
-    ).toEqual([]);
+    clock.set(LATER);
+    await deliver();
+    expect(await pool.routing.recordsFor(item)).toEqual([
+      { ...record, withdrawnAt: WITHDRAWN_AT },
+      expect.objectContaining({ id: again.id, state: "delivered" }),
+    ]);
   });
 
   it("stops counting it against the template's report", async () => {

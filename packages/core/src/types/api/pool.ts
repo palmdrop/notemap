@@ -97,7 +97,7 @@ import type {
   CaptureRefusal,
   CancelRefusal,
   LocateRefusal,
-  RestoreRefusal,
+  ReinstateRefusal,
   WithdrawRefusal,
   CompletionRefusal,
   DeliveryRefusal,
@@ -384,9 +384,9 @@ export interface RoutingApi {
     signal?: AbortSignal,
   ): Promise<Result<Presence, LocateRefusal>>;
   /** Puts back the trigger tag, without firing it, where the item no longer holds it. */
-  restore(
+  reinstate(
     record: RoutingRecordId,
-  ): Promise<Result<RoutingRecord, RestoreRefusal>>;
+  ): Promise<Result<RoutingRecord, ReinstateRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,

@@ -757,7 +757,7 @@ export function createClient(config: ClientConfig): Client {
         }),
       settled: (item) =>
         after(async () => {
-          await reread(item);
+          await reread(item).catch(() => undefined);
           counts.stale();
         }),
       reread: async (item) => {

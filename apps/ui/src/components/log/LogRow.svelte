@@ -72,7 +72,7 @@
       kind !== "delivery-failed" &&
       kind !== "delivery-cancelled" &&
       kind !== "delivery-withdrawn" &&
-      kind !== "delivery-restored"
+      kind !== "delivery-reinstated"
     ) {
       return undefined;
     }
