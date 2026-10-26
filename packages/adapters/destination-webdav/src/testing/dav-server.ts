@@ -44,6 +44,11 @@ export type DavServer = {
   weakenEtags(): void;
   /** Answer `PROPFIND` with no `getcontentlength` from here on, as some servers do. */
   withholdSizes(): void;
+  /**
+   * Answer a `GET` on a collection with a page listing it and no validator,
+   * as rclone and a server with a browser plugin do, rather than with `404`.
+   */
+  listCollections(): void;
   close(): Promise<void>;
 };
 
@@ -91,6 +96,7 @@ export async function startDavServer(): Promise<DavServer> {
 
   let versions = 0;
   let weak = false;
+  let listing = false;
   let sized = true;
   const etagOf = (entry: Entry & { kind: "file" }): string =>
     `${weak ? "W/" : ""}"v${entry.version}"`;
@@ -118,6 +124,12 @@ export async function startDavServer(): Promise<DavServer> {
     const entry = tree.get(path);
 
     if (method === "GET") {
+      if (listing && entry?.kind === "collection") {
+        response
+          .writeHead(200, { "content-type": "text/html" })
+          .end(`<html><body>${path}</body></html>`);
+        return;
+      }
       if (entry === undefined || entry.kind !== "file") {
         response.writeHead(404).end();
         return;
@@ -264,6 +276,10 @@ export async function startDavServer(): Promise<DavServer> {
 
     withholdSizes: () => {
       sized = false;
+    },
+
+    listCollections: () => {
+      listing = true;
     },
 
     interceptOnce: (method, run) => {

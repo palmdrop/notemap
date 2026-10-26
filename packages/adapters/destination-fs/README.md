@@ -92,6 +92,7 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | The disk is full, or the filesystem is read-only | `unreachable` | Same shape of problem |
 | The target escapes the root | `rejected` | No later attempt makes it legal |
 | The file is already there | `rejected` | It will be there next time too |
+| A folder is where the file would go | `rejected` | Likewise, and said as a folder rather than as the `EISDIR` it raises |
 | An appended note changed after it was read | `unreachable` | The next attempt reads it again |
 | The target is not the shape the capability declared | `rejected` | Likewise |
 | A renderer threw | `rejected` | It will throw identically |

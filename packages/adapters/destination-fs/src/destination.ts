@@ -399,7 +399,7 @@ async function folderMissing(
 
   const folder = dirname(composed.note.relative);
   const absolute = dirname(composed.note.absolute);
-  if (await exists(absolute)) return undefined;
+  if ((await found(absolute)) !== undefined) return undefined;
 
   return folder === "." ? "the destination's own folder" : `${folder}/`;
 }
@@ -497,7 +497,9 @@ async function create(
 ): Promise<Composition> {
   const note = await locate(wiring.realRoot, target);
 
-  if (await exists(note.absolute)) {
+  const there = await found(note.absolute);
+  if (there === "folder") throw folderRefusal(note);
+  if (there === "file") {
     throw new Refused(`${note.relative} is already there`);
   }
 
@@ -520,6 +522,7 @@ async function append(
   heading?: string,
 ): Promise<Composition> {
   const note = await locate(wiring.realRoot, target);
+  if ((await found(note.absolute)) === "folder") throw folderRefusal(note);
   const rendered = render(wiring, delivery, note);
 
   const existing = await readWithSnapshot(note.absolute);
@@ -586,14 +589,17 @@ async function locate(realRoot: string, target: string): Promise<Contained> {
   return contained.path;
 }
 
-async function exists(path: string): Promise<boolean> {
+async function found(path: string): Promise<"file" | "folder" | undefined> {
   try {
-    await stat(path);
-    return true;
+    return (await stat(path)).isDirectory() ? "folder" : "file";
   } catch (cause) {
-    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return false;
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return undefined;
     throw cause;
   }
+}
+
+function folderRefusal(note: Contained): Refused {
+  return new Refused(`${note.relative} is a folder, not a note`);
 }
 
 type Unreachable = { readonly kind: "unreachable"; readonly detail: string };
