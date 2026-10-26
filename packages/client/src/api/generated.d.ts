@@ -5203,7 +5203,7 @@ export interface components {
         };
         Action: {
             /** @enum {string} */
-            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
+            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-restored" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
             by: {

@@ -63,6 +63,7 @@ export type WorkOutcome =
   | {
       readonly kind: "delivered";
       readonly pointer?: string;
+      readonly pointers?: readonly string[];
       readonly url?: string;
       /** Core stores the content and the record names the blob; nothing durable holds an opener. */
       readonly output?: DeliveredOutput;

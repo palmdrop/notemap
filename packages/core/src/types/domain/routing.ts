@@ -100,6 +100,7 @@ export type DeliveryOutcome =
   | {
       readonly kind: "delivered";
       readonly pointer?: string;
+      readonly pointers?: readonly string[];
       readonly url?: string;
       readonly output?: DeliveredOutput;
     }
@@ -127,6 +128,7 @@ export type PreviewReport =
 /** What a delivery that landed adds to the reservation it resolves. */
 export type DeliveryLanding = {
   readonly pointer?: string;
+  readonly pointers?: readonly string[];
   readonly url?: string;
   readonly output?: StoredOutput;
 };
@@ -174,10 +176,17 @@ export type RoutingRecord = {
   /** Absent where the decision was made by hand. */
   readonly applied?: AppliedTemplate;
   readonly pointer?: string;
+  /** Each thing a delivery made, where it made several and the pointer names what holds them. */
+  readonly pointers?: readonly string[];
   /** A link to what the pointer names, where the destination could offer one. */
   readonly url?: string;
   /** What the delivery produced. Only a delivered record ever carries one. */
   readonly output?: StoredOutput;
+  /**
+   * Set where a person said the delivery no longer stands. The record stays,
+   * and stops counting for anything an item's routing decides.
+   */
+  readonly withdrawnAt?: Timestamp;
 };
 
 /**

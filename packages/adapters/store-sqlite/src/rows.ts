@@ -149,6 +149,9 @@ export type RoutingRecordRow = {
   /** The template the decision came from, which may since have been deleted. */
   readonly template_id: string | null;
   readonly fired_by_tag: number | null;
+  /** JSON, where a delivery made several things. */
+  readonly pointers: string | null;
+  readonly withdrawn_at: number | null;
 };
 
 /** What a page needs of an item's routing records, without their targets. */
@@ -272,6 +275,8 @@ export const TABLE_COLUMNS = {
     "output_note",
     "template_id",
     "fired_by_tag",
+    "pointers",
+    "withdrawn_at",
   ],
   actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
   pool_meta: ["key", "value"],

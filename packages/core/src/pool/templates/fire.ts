@@ -164,7 +164,10 @@ export async function alreadyApplied(
   template: RoutingTemplateId,
 ): Promise<RoutingRecord | undefined> {
   const records = await reads.routingRecords(item);
-  return records.find((record) => record.applied?.template === template);
+  return records.find(
+    (record) =>
+      record.applied?.template === template && record.withdrawnAt === undefined,
+  );
 }
 
 /**
@@ -203,6 +206,43 @@ export async function releaseTriggerTag(
     kind: "untagged",
     subject: record.item,
     by: { kind: by },
+    at,
+    detail: { tag, record: record.id, template: template.id },
+  });
+
+  return tag;
+}
+
+/**
+ * The way back from `releaseTriggerTag`, for a record put back after it was
+ * withdrawn. Added rather than tagged: tagging would fire the template, and
+ * the delivery it would make is the one being put back.
+ */
+export async function returnTriggerTag(
+  ports: PoolPorts,
+  tx: PoolTx,
+  record: RoutingRecord,
+  at: Timestamp,
+): Promise<TagName | undefined> {
+  if (record.applied === undefined) return undefined;
+
+  const template = await tx.routingTemplate(record.applied.template);
+  const tag = template?.triggerTag;
+  if (template === undefined || tag === undefined) return undefined;
+
+  const item = await tx.item(record.item);
+  if (item === undefined) return undefined;
+  if (item.tags.some((held) => held.name === tag)) return undefined;
+
+  await tx.addTag(record.item, {
+    name: tag,
+    by: { kind: "person" },
+    addedAt: at,
+  });
+  await recordAction(ports, tx, {
+    kind: "tagged",
+    subject: record.item,
+    by: { kind: "person" },
     at,
     detail: { tag, record: record.id, template: template.id },
   });

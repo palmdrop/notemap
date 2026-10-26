@@ -48,6 +48,9 @@ export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
       return {
         kind: "delivered",
         ...(outcome.pointer === undefined ? {} : { pointer: outcome.pointer }),
+        ...(outcome.pointers === undefined
+          ? {}
+          : { pointers: outcome.pointers }),
         ...(outcome.url === undefined ? {} : { url: outcome.url }),
         // The opener travels as it is: nothing durable holds one, and core
         // reads it into a blob before the transaction that names it.

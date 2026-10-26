@@ -95,6 +95,8 @@ import type {
   AssetStoreRefusal,
   CaptureRefusal,
   CancelRefusal,
+  RestoreRefusal,
+  WithdrawRefusal,
   CompletionRefusal,
   DeliveryRefusal,
   DestinationDeletionRefusal,
@@ -363,6 +365,17 @@ export interface RoutingApi {
   ): Promise<Result<PreviewReport, PreviewRefusal>>;
   /** Returns the item to the queue. */
   cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
+  /**
+   * The record stays and stops counting, so the item returns to the queue and
+   * is no longer sealed by it. A trigger tag it was made by comes off with it.
+   */
+  withdraw(
+    record: RoutingRecordId,
+  ): Promise<Result<RoutingRecord, WithdrawRefusal>>;
+  /** Puts back the trigger tag, without firing it, where the item no longer holds it. */
+  restore(
+    record: RoutingRecordId,
+  ): Promise<Result<RoutingRecord, RestoreRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,

@@ -193,7 +193,10 @@ restore that item. It carries
   the **content** it was decided with, where the delivery carried words of its own rather than the
   capture's (added 2026-09-10,
   [ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) — a record whose words were the
-  item's carries none, and reads exactly as every record written before this existed;
+  item's carries none, and reads exactly as every record written before this existed. A record
+  carries `pointers` where its delivery made several things, and `withdrawnAt` where a person
+  withdrew it, which a rebuild restores as it restores the rest of the record (added 2026-10-26,
+  [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md));
 - the item's `modified_at`, recorded for verification only and never restored.
 
 It does not carry suggestions, decided or pending; enrichment states; jobs, leases or the action

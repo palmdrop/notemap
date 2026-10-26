@@ -30,6 +30,8 @@ export const VIEWS: readonly View[] = covering([
       "template-fired",
       "delivery-failed",
       "delivery-cancelled",
+      "delivery-withdrawn",
+      "delivery-restored",
     ],
   },
   {

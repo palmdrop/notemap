@@ -146,8 +146,11 @@ const POOL_SETTING_COLUMNS = `name, value, changed_at`;
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, content,
   state, at, pointer, url, output_blob, output_mime, output_note, template_id,
-  fired_by_tag
+  fired_by_tag, pointers, withdrawn_at
 `;
+
+/** A record still standing: one a person withdrew counts for nothing an item's routing decides. */
+const STANDS = `withdrawn_at IS NULL`;
 
 /**
  * What a template is, and what the pool made from it. The two counts are a
@@ -169,10 +172,12 @@ const TEMPLATE_COLUMNS = `
 const TEMPLATE_READ = `
   ${TEMPLATE_COLUMNS},
   (SELECT COUNT(*) FROM routing_records r
-     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1
+       AND r.${STANDS})
     AS fired_records,
   (SELECT MAX(at) FROM routing_records r
-     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1)
+     WHERE r.template_id = routing_templates.id AND r.fired_by_tag = 1
+       AND r.${STANDS})
     AS fired_last_at
 `;
 
@@ -191,7 +196,8 @@ const REVISED = `EXISTS (
 )`;
 
 const ROUTED = `EXISTS (
-  SELECT 1 FROM routing_records AS routed WHERE routed.item_id = item.id
+  SELECT 1 FROM routing_records AS routed
+  WHERE routed.item_id = item.id AND routed.${STANDS}
 )`;
 
 const ARCHIVED = `item.archived_at IS NOT NULL`;
@@ -238,6 +244,7 @@ function routedTo(destinations: readonly DestinationId[]): Clauses {
     sql: [
       `EXISTS (SELECT 1 FROM routing_records AS sent
                WHERE sent.item_id = item.id
+                 AND sent.${STANDS}
                  AND sent.destination IN (${placeholders(destinations.length)}))`,
     ],
     params: [...destinations],
@@ -380,7 +387,8 @@ export function createSqlitePoolStore(
       created_at,
       COALESCE(archived_at, created_at),
       COALESCE((SELECT MAX(record.at) FROM routing_records AS record
-                WHERE record.item_id = items.id), created_at),
+                WHERE record.item_id = items.id AND record.${STANDS}),
+               created_at),
       COALESCE((SELECT MAX(revision.created_at) FROM items AS revision
                 WHERE revision.revision_of = items.id), created_at)
     )
@@ -490,7 +498,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<
     never,
@@ -500,14 +508,18 @@ export function createSqlitePoolStore(
       string | null,
       string | null,
       string | null,
+      string | null,
       string,
     ]
   >(`
     UPDATE routing_records
-    SET state = 'delivered', pointer = ?, url = ?, output_blob = ?,
-        output_mime = ?, output_note = ?
+    SET state = 'delivered', pointer = ?, pointers = ?, url = ?,
+        output_blob = ?, output_mime = ?, output_note = ?
     WHERE id = ?
   `);
+  const withdrawRouting = write.query<never, [number | null, string]>(
+    `UPDATE routing_records SET withdrawn_at = ? WHERE id = ?`,
+  );
   const deleteRouting = write.query<never, [string]>(
     `DELETE FROM routing_records WHERE id = ?`,
   );
@@ -657,6 +669,7 @@ export function createSqlitePoolStore(
         WHERE r.destination = ?
           AND r.capability = ?
           AND r.target_kind = 'destination'
+          AND r.${STANDS}
           AND json_extract(r.arguments, '$."' || ? || '"') IS NOT NULL
           AND (r.state = 'delivered'
                OR NOT EXISTS (SELECT 1 FROM jobs j
@@ -728,7 +741,7 @@ export function createSqlitePoolStore(
       const routingRows = source
         .query<ItemRoutingRow, Bindable[]>(
           `SELECT item_id, target_kind, destination, state, template_id FROM routing_records
-           WHERE item_id IN (${slots}) ORDER BY at, id`,
+           WHERE item_id IN (${slots}) AND ${STANDS} ORDER BY at, id`,
         )
         .all(...ids);
 
@@ -1284,6 +1297,9 @@ export function createSqlitePoolStore(
           const output = landing.output;
           deliverRouting.run(
             landing.pointer ?? null,
+            landing.pointers === undefined
+              ? null
+              : JSON.stringify(landing.pointers),
             landing.url ?? null,
             output?.content?.blob ?? null,
             output?.content?.mediaType ?? null,
@@ -1301,6 +1317,23 @@ export function createSqlitePoolStore(
 
           deleteRouting.run(record);
           // The item is back in the queue, which is a change a delta carries.
+          touchItem.run(nextModifiedAt(), row.item_id);
+          reprocess.run(row.item_id);
+        },
+      ),
+
+      setRoutingRecordWithdrawn: guard(
+        async (
+          record: RoutingRecordId,
+          at: Timestamp | undefined,
+        ): Promise<void> => {
+          const row = routingItem.get(record);
+          if (row === undefined) {
+            throw new Error(`no routing record ${record} to withdraw`);
+          }
+
+          withdrawRouting.run(at === undefined ? null : toMillis(at), record);
+          // In the queue or out of it again, which a delta has to carry.
           touchItem.run(nextModifiedAt(), row.item_id);
           reprocess.run(row.item_id);
         },

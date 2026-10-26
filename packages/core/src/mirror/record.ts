@@ -154,7 +154,16 @@ function canonicalDeliveredRouting(
   entry: RoutingRecord,
 ): DeliveredRoutingRecord[] {
   return entry.state === "delivered"
-    ? [{ ...entry, state: entry.state, at: instant(entry.at) }]
+    ? [
+        {
+          ...entry,
+          state: entry.state,
+          at: instant(entry.at),
+          ...(entry.withdrawnAt === undefined
+            ? {}
+            : { withdrawnAt: instant(entry.withdrawnAt) }),
+        },
+      ]
     : [];
 }
 

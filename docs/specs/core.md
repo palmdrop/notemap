@@ -537,7 +537,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   are not decisions and move nothing. Read that way the feed still holds every item and hides
   none; only the order differs.
 - **Processed at is derived, and moves backwards when a decision is undone** (added 2026-10-21). A
-  cancelled reservation, an abandoned delivery or an unarchive takes away the fact that set it, and
+  cancelled reservation, an abandoned delivery, a withdrawn record or an unarchive takes away the
+  fact that set it, and
   it falls back to the latest one left. The pool answers it on every item as `processedAt`, so a
   caller can rank an item under either key from the item alone, and the store is expected to index
   it for keyset paging rather than compute it per page. A rebuild recomputes it from what it
@@ -571,7 +572,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   [ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). In practice
   that is a trigger tag's reservation inside its window, since a composer route attempts once
   before it answers and a mark by hand is born delivered. So everything in the queue is a person's
-  to change, and outside it only an item nothing has yet been sent from.
+  to change, and outside it only an item nothing has yet been sent from. A **withdrawn** record
+  seals nothing (amended 2026-10-26), so an item whose deliveries were all withdrawn is in the
+  queue and amended in place.
 - **An edit to an untried reservation's item is what the delivery carries.** The delivery reads the
   item when it is tried, and a reservation's arguments expand from nothing an edit changes, so it
   stays valid. Whether a reservation is untried is read in the edit's own transaction, against its
@@ -903,9 +906,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   that the tag exists. The key and the position are the surface's own, so a filtered read pages
   on the same terms and a position continues from where it names whatever the filter.
 - **The feed's filter also takes states, destinations and sources** (added 2026-10-20). A state is
-  `unprocessed`, `routed` (holding a routing record, pending included), `archived` or `revised`
+  `unprocessed`, `routed` (holding a routing record, pending included and withdrawn not), `archived` or `revised`
   (something was revised from it), on the same clauses that make an item processed. A destination
-  is matched by any routing record naming it, pending included; a source by the source an item was
+  is matched by any routing record naming it, pending included and withdrawn not; a source by the source an item was
   captured through. Within each kind any one named is enough, since one item can be both routed
   and archived and "routed or archived" is the useful question; tags stay every one of. The kinds
   named all hold at once. A destination or source nothing names is an empty read, on the terms an
@@ -1180,6 +1183,26 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   it removes the record, returns the item to the queue, appends `delivery-cancelled` with
   `target: user`, and owes the mirror the item, which a reservation never does: the mark was
   mirrored when it was made.
+- **A delivered record may be withdrawn** *(added 2026-10-26,
+  [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))*, where a person says what it
+  delivered no longer stands. The record stays and gains `withdrawnAt`, so the routing log loses no
+  fact; `delivery-withdrawn` is appended, naming the destination and capability. A withdrawn record
+  counts for nothing an item's routing decides: not processed, not processed at, not the `routed`
+  state or the destination filter, not the item's routing summary, not a destination's remembered
+  places or a template's fired count, not whether a template already applied, and not sealing. So
+  the item returns to the queue, and an edit amends it in place unless something else seals it.
+  Only a delivered record naming a destination is withdrawn; a pending one or a mark by hand is
+  refused, being cancelled instead, as is one already withdrawn. The mirror is owed the item.
+- **A withdrawn record's trigger tag comes off with it**, on the terms a cancelled reservation's
+  does, so applying the tag again routes again.
+- **A withdrawal is restored by the same path**, appending `delivery-restored`, and refused once
+  the item has been edited since the withdrawal: the record would come back naming words the item
+  no longer holds, against an item that was edited in place while it held them. Restoring puts the
+  trigger tag back where the item no longer holds it, **without firing** its template, since the
+  delivery the template would make is the one being put back.
+- **Core never asks a destination whether a record's delivery is still there.** A destination
+  may answer it (`locate`), and a host may ask before withdrawing; a withdrawal never depends on
+  the answer, since a file still being there says nothing of what is in it.
 - **A failed delivery is nonetheless recorded**, so a destination failing silently and
   repeatedly is visible rather than invisible. The routing log says where an item went; a
   failed attempt is one kind of entry in the action log

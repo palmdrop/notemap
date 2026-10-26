@@ -349,7 +349,7 @@ _Avoid_: claim, inflight
 **Processed**:
 Said of an item that has been routed, archived or revised. It is the *decision* that processes an
 item, so a routing record still pending delivery counts, and an item whose delivery is abandoned
-resurfaces in the queue. Marking an item processed by hand is routing whose destination is the
+resurfaces in the queue, as does one whose only delivered records are **withdrawn**. Marking an item processed by hand is routing whose destination is the
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
 nothing. Every **sealed** item is processed, and nearly every processed one is sealed.
 _Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
@@ -358,8 +358,8 @@ what an item now is.
 
 **Sealed**:
 Said of an item whose capture can no longer be edited in place, so an edit of it makes a
-**revision**. An item is sealed when it is archived, revised, or holds a routing record other than
-an **untried reservation**: one still pending whose delivery has never been claimed or attempted,
+**revision**. An item is sealed when it is archived, revised, or holds a routing record, not
+**withdrawn**, other than an **untried reservation**: one still pending whose delivery has never been claimed or attempted,
 which in practice is a trigger tag's inside its window. So an item whose only routing is untried
 reservations is processed and not sealed, and an edit of it is what its delivery will carry. The
 client's **hand-over seal** is a different and earlier thing: a capture the client has sent and not
@@ -486,6 +486,16 @@ says whether a **trigger tag** made it — a decision a person made with the ite
 one a tag made are the same delivery and not the same act, and only the second gives its tag back
 where nothing landed.
 _Avoid_: routing status, delivery flag
+
+**Withdraw**:
+What a person does to a delivered **routing record** that no longer stands — the note was deleted,
+the block removed. The record stays, marked with when, and the log says so; it stops counting for
+anything the item's routing decides, so the item reads as unrouted, returns to the queue, and is
+no longer sealed by it. A trigger tag that made it comes off with it. **Restoring** puts it back.
+Only a delivered record naming a destination is withdrawn: a reservation and a mark by hand are
+**cancelled**, which removes them, since nothing reached anywhere.
+_Avoid_: invalidate, which says the record was wrong, where it was true when it was made; unroute;
+retract
 
 **Routing template**:
 A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its

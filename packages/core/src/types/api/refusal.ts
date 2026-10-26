@@ -267,6 +267,25 @@ export type CancelRefusal =
   | { readonly kind: "not-pending"; readonly record: RoutingRecordId }
   | { readonly kind: "delivery-in-flight"; readonly record: RoutingRecordId };
 
+/** A pending delivery is cancelled and a mark by hand is cancelled: neither is withdrawn. */
+export type WithdrawRefusal =
+  | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
+  | { readonly kind: "not-delivered"; readonly record: RoutingRecordId }
+  | { readonly kind: "marked-by-hand"; readonly record: RoutingRecordId }
+  | { readonly kind: "already-withdrawn"; readonly record: RoutingRecordId };
+
+/**
+ * An item edited since the withdrawal no longer holds the words the record
+ * says went, so the record cannot stand for it again.
+ */
+export type RestoreRefusal =
+  | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
+  | { readonly kind: "not-withdrawn"; readonly record: RoutingRecordId }
+  | {
+      readonly kind: "edited-since-withdrawal";
+      readonly record: RoutingRecordId;
+    };
+
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 /** What resolving a template refuses: never a value missing, since it answers as far as it was given. */
