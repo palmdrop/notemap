@@ -50,7 +50,7 @@ import {
   settledDestination,
   settledTemplate,
   withHeld,
-  withdrawn,
+  holding,
   type ClientState,
   type Surface,
 } from "./state/state";
@@ -750,9 +750,14 @@ export function createClient(config: ClientConfig): Client {
           state.update((current) => processed(current, item, record));
           counts.stale();
         }),
-      withdrawn: (item, records) =>
+      holding: (item, records) =>
         after(() => {
-          state.update((current) => withdrawn(current, item, records));
+          state.update((current) => holding(current, item, records));
+          counts.stale();
+        }),
+      settled: (item) =>
+        after(async () => {
+          await reread(item);
           counts.stale();
         }),
       reread: async (item) => {

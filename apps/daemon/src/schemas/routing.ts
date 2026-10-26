@@ -69,11 +69,30 @@ export const routingRecordSchema = z
     at: z.string(),
     /** Best-effort: where the item once went, never where it is. */
     pointer: z.string().optional(),
+    /** Each thing the delivery made, where it made several and the pointer names what holds them. */
+    pointers: z.array(z.string()).optional(),
     /** A link to the same place, where the destination could offer one. */
     url: z.string().optional(),
     output: outputSchema.optional(),
+    withdrawnAt: z.string().optional().openapi({
+      description:
+        "When a person said this delivery no longer stands. The record stays, and counts for nothing the item's routing decides.",
+    }),
   })
   .openapi("RoutingRecord");
+
+export const presenceSchema = z
+  .discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("present"),
+      /** Of `of`, where the record names several things. */
+      found: z.number().int(),
+      of: z.number().int(),
+    }),
+    z.object({ kind: z.literal("absent") }),
+    z.object({ kind: z.literal("unknown"), detail: z.string().optional() }),
+  ])
+  .openapi("Presence");
 
 export const routingRecordsSchema = z
   .object({ values: z.array(routingRecordSchema) })

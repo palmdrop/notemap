@@ -881,10 +881,18 @@ asked holds the answer for exactly as long as they keep it, which in the shell i
 open composer and no longer. Out of reach is out of reach: a refusal reads as unavailable rather
 than broken, typing still works, and the decision stays a person's to make.
 
-A recorded decision takes the item out of the queue, and **withdrawing one puts it back only if the
-item holds no other**: processed is derived from holding no routing record ([core.md](core.md#the-queue)),
-never stored, so a client that assumed a cancel always returns an item would show work that the pool
-still considers done. The client asks rather than assumes.
+A recorded decision takes the item out of the queue, and **cancelling one puts it back only if the
+item holds no other that stands**: processed is derived from holding no routing record that is not
+withdrawn ([core.md](core.md#the-queue)), never stored, so a client that assumed a cancel always
+returns an item would show work that the pool still considers done. The client asks rather than
+assumes.
+
+**Withdrawing and restoring settle the item from the pool's own copy** (added 2026-10-26). Either
+one moves the item's routing summary, its tags (a trigger tag comes off or goes back on) and when
+it was processed, all at once, so the client reads the item again after the answer and places it
+where it now belongs rather than folding the change in by hand. A summary the client works out
+from records leaves withdrawn ones out, as the pool's does. `presence` is a passthrough, asked
+every time and kept by nothing: its answer is about the destination now.
 
 **A decision is folded into the held item's routing summary as well.** The pool answers the record
 it wrote, so the cached copy is brought up to what a re-read would say at that moment — one more

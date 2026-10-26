@@ -16,7 +16,10 @@ import {
   cancelStatus,
   deliveryStatus,
   errorBody,
+  locateStatus,
   outputStatus,
+  restoreStatus,
+  withdrawStatus,
   routingStatus,
   templateResolveStatus,
   templateRoutingStatus,
@@ -271,5 +274,41 @@ export function cancelDeliveryHandler(pool: Pool) {
     return result.kind === "refused"
       ? json(errorBody(result.refusal), cancelStatus(result.refusal))
       : new Response(null, { status: 204 });
+  };
+}
+
+export function withdrawHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const record = context.req.param("record") ?? "";
+    const result = await pool.routing.withdraw(record as RoutingRecordId);
+
+    return result.kind === "refused"
+      ? json(errorBody(result.refusal), withdrawStatus(result.refusal))
+      : json(result.value, 200);
+  };
+}
+
+export function restoreHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const record = context.req.param("record") ?? "";
+    const result = await pool.routing.restore(record as RoutingRecordId);
+
+    return result.kind === "refused"
+      ? json(errorBody(result.refusal), restoreStatus(result.refusal))
+      : json(result.value, 200);
+  };
+}
+
+export function presenceHandler(pool: Pool) {
+  return async (context: Context): Promise<Response> => {
+    const record = context.req.param("record") ?? "";
+    const result = await pool.routing.locate(
+      record as RoutingRecordId,
+      context.req.raw.signal,
+    );
+
+    return result.kind === "refused"
+      ? json(errorBody(result.refusal), locateStatus(result.refusal))
+      : json(result.value, 200);
   };
 }

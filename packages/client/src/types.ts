@@ -30,6 +30,7 @@ import type {
   ResolvedRoutingTemplate,
   RouteRequest,
   RoutingPreview,
+  Presence,
   RoutingRecord,
   RoutingTemplate,
   RoutingTemplateId,
@@ -357,6 +358,15 @@ export interface RoutingApi {
    * it still holds and the pool answers nothing on a cancel.
    */
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
+  /**
+   * Says a delivery no longer stands. The record stays and stops counting, so
+   * the item may be work again, and a trigger tag that made it comes off.
+   */
+  withdraw(record: RoutingRecord["id"], item: ItemId): Promise<RoutingRecord>;
+  /** Undoes a withdrawal, putting the trigger tag back without firing it. */
+  restore(record: RoutingRecord["id"], item: ItemId): Promise<RoutingRecord>;
+  /** Asks the destination, every time. Not cached: the answer is about now. */
+  presence(record: RoutingRecord["id"]): Promise<Presence>;
   /** As text; the record says what the bytes are, and one carrying none refuses. */
   output(record: RoutingRecord["id"]): Promise<string>;
 }

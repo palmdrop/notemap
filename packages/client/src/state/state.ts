@@ -648,13 +648,14 @@ function applied(
 export function summarise(
   records: readonly RoutingRecord[],
 ): RoutingSummary | undefined {
-  if (records.length === 0) return undefined;
+  const standing = records.filter((record) => record.withdrawnAt === undefined);
+  if (standing.length === 0) return undefined;
 
   return {
-    records: records.length,
-    pending: records.filter((record) => record.state === "pending").length,
-    to: targets([], records.map(wentTo)),
-    templates: applied([], records),
+    records: standing.length,
+    pending: standing.filter((record) => record.state === "pending").length,
+    to: targets([], standing.map(wentTo)),
+    templates: applied([], standing),
   };
 }
 
@@ -727,6 +728,7 @@ export function resorted(state: ClientState, id: ItemId): ClientState {
 const PROCESSING: ReadonlySet<string> = new Set([
   "template-fired",
   "routed",
+  "delivery-restored",
   "archived",
   "revised",
   "purged",
@@ -809,7 +811,11 @@ export function caughtUp(
  * where the answer that made it was folded already, so the item is read again
  * instead.
  */
-const REROUTING: ReadonlySet<string> = new Set(["template-fired", "routed"]);
+const REROUTING: ReadonlySet<string> = new Set([
+  "template-fired",
+  "routed",
+  "delivery-restored",
+]);
 
 /**
  * The kinds that may make an item work again, held or not, and change a held
@@ -819,6 +825,7 @@ const REROUTING: ReadonlySet<string> = new Set(["template-fired", "routed"]);
 const RETURNING: ReadonlySet<string> = new Set([
   "unarchived",
   "delivery-cancelled",
+  "delivery-withdrawn",
   "work-abandoned",
 ]);
 
@@ -909,17 +916,18 @@ export function heard(
 }
 
 /**
- * A withdrawn decision leaves the pool's remaining records, and an item holding
- * none is work again — back at the content time it left with rather than at the
- * newest end, which is core's third kind of queue event.
+ * A cancelled decision leaves the pool's remaining records, and an item holding
+ * none that stands is work again — back at the content time it left with
+ * rather than at the newest end, which is core's third kind of queue event.
  */
-export function withdrawn(
+export function holding(
   state: ClientState,
   id: ItemId,
   records: readonly RoutingRecord[],
 ): ClientState {
-  const held = { ...state, items: withRouting(state, id, summarise(records)) };
-  if (records.length > 0) return held;
+  const summary = summarise(records);
+  const held = { ...state, items: withRouting(state, id, summary) };
+  if (summary !== undefined) return held;
 
   return reconciled(held, id);
 }

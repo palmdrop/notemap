@@ -122,16 +122,17 @@ Depends on phase 1 only for the record shape. Can run beside phase 3.
 
 Depends on phase 1, and on phase 2 for `locate`.
 
-- [ ] `POST /v1/routing/{record}/withdraw` and `/restore`, answering the record. Their refusals go
-      into `errors/refusals.ts`.
-- [ ] `GET /v1/routing/{record}/presence`, answering `present` / `absent` / `unknown` with an
-      optional `{ found, of }`, under the same timeout policy as a preview.
-- [ ] The record schema carries `withdrawnAt`. Regenerate the client types.
-- [ ] The client gets withdraw, restore and presence, and its cache treats a withdrawn record as not
-      routing the item.
-- [ ] http-v1.md and client.md updated.
-- [ ] Verify: typecheck, tests, lint, then `pnpm test:stack`, since this crosses the HTTP surface.
-      Commit.
+- [x] `POST /v1/routing/{record}/withdraw` and `/restore`, answering the record. Their refusals go
+      into `errors/refusals.ts`. _(2026-10-26)_
+- [x] `GET /v1/routing/{record}/presence`, answering `present` / `absent` / `unknown` with an
+      `{ found, of }` on `present`, bounded by the request's own signal as a preview is. _(2026-10-26)_
+- [x] The record schema carries `withdrawnAt`. Regenerate the client types. _(2026-10-26)_
+- [x] The client gets withdraw, restore and presence, and its cache treats a withdrawn record as not
+      routing the item. Withdraw and restore read the item again and place it, since its routing,
+      tags and processed-at move together. _(2026-10-26)_
+- [x] http-v1.md and client.md updated. _(2026-10-26)_
+- [x] Verify: typecheck, tests, lint, then `pnpm test:stack`, since this crosses the HTTP surface.
+      Commit. _(2026-10-26)_
 
 ### Phase 4: the shell
 
