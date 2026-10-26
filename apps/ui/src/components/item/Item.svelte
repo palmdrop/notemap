@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ItemState } from "@notemap/client";
+  import type { ItemState, RoutingRecord } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -48,13 +48,10 @@
   const held = $derived(client.held(id));
   const item = $derived($held);
 
-  // An item that was never routed has no records to read, unless one is
-  // being asked for by name — then the pool is what says it is not there.
+  // Read for an item that reads as never routed too: one whose every record
+  // was withdrawn has no summary, and its records are still its history.
   const records = recordsOf(
-    () =>
-      item !== undefined && (only !== undefined || item.routing !== undefined)
-        ? item.id
-        : undefined,
+    () => item?.id,
     () => pool.yes,
   );
 
@@ -105,6 +102,9 @@
     }));
     return layout.byDay ? byDay(dated) : plain(dated);
   });
+
+  const stateOf = (record: RoutingRecord): string =>
+    record.withdrawnAt === undefined ? record.state : "withdrawn";
 
   /** What the record rows say instead of records, where they have none to say. */
   const aboutRecords = $derived.by(() => {
@@ -160,7 +160,7 @@
             <Stamp at={record.at} dated={!layout.byDay} />
           {/if}
           {#if !layout.slim}
-            <StateWord word={record.state} />
+            <StateWord word={stateOf(record)} />
           {/if}
         </Rail>
         <Body>
@@ -168,10 +168,11 @@
             {record}
             held={item}
             folds={only === undefined}
+            editing={row?.isEditing() === true}
             onundone={() => records.reread()}
           />
           {#if layout.slim}
-            <StateWord word={record.state} />
+            <StateWord word={stateOf(record)} />
           {/if}
         </Body>
       {/if}

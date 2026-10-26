@@ -5,6 +5,7 @@
     saidBy,
     saidOf,
     type Item,
+    type Presence,
     type RoutingRecord,
   } from "@notemap/client";
 
@@ -29,7 +30,14 @@
     readingHeld,
   } from "$lib/described.svelte";
   import { sizeOf } from "$lib/attachments";
-  import { cancelledKey, keyFor, placeIn } from "$lib/routing";
+  import { askingToWithdraw } from "$lib/presence";
+  import {
+    cancelledKey,
+    keyFor,
+    placeIn,
+    restoredKey,
+    withdrawnKey,
+  } from "$lib/routing";
   import {
     BY_HAND,
     NOT_YET_DELIVERED,
@@ -55,6 +63,7 @@
     opened = $bindable(false),
     lead,
     end,
+    editing = false,
     onundone,
   }: {
     record: RoutingRecord;
@@ -79,6 +88,8 @@
     lead?: Snippet;
     /** What the folded line says at its right, in place of what was done. */
     end?: Snippet;
+    /** The item is being edited here, which ends the offer to restore a withdrawal. */
+    editing?: boolean;
     /** A record cancelled here leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -230,6 +241,48 @@
   const cancellable = $derived(!delivered && said === undefined);
 
   /**
+   * What this view did to the record, which the record it was handed may not
+   * say yet: the log holds what it read when it was opened.
+   */
+  let changed = $state<
+    | { readonly id: string; readonly withdrawnAt: string | undefined }
+    | undefined
+  >(undefined);
+  const withdrawnAt = $derived(
+    changed?.id === record.id ? changed.withdrawnAt : record.withdrawnAt,
+  );
+  const withdrawn = $derived(withdrawnAt !== undefined);
+  const withdrawable = $derived(
+    delivered && !byHand && !withdrawn && said === undefined,
+  );
+
+  /** Offered only in the view the withdrawal was made in, and only until an edit begins. */
+  let restorable = $state(false);
+  let confirming = $state(false);
+  let looking = $state(false);
+  let presence = $state<Presence | undefined>(undefined);
+
+  const recordId = $derived(record.id);
+  $effect(() => {
+    void recordId;
+    untrack(() => {
+      restorable = false;
+      confirming = false;
+      presence = undefined;
+    });
+  });
+
+  $effect(() => {
+    if (editing) untrack(() => (restorable = false));
+  });
+
+  const kind = $derived(
+    target.kind === "destination"
+      ? $destinations.find((one) => one.id === target.destination)?.kind
+      : undefined,
+  );
+
+  /**
    * How much the delivery wrote, measured off the copy this read rather than
    * taken from the record, which keeps no size. Only for an output that was
    * really read: words a delivery carried in place of the capture's were never
@@ -259,7 +312,11 @@
   ]);
 
   const footed = $derived(
-    link !== undefined || cancellable || (byHand && said === undefined),
+    link !== undefined ||
+      cancellable ||
+      (byHand && said === undefined) ||
+      (withdrawable && !confirming) ||
+      (withdrawn && restorable),
   );
 
   let failed = $state("");
@@ -280,6 +337,50 @@
       failed = saidBy(error);
     }
   }
+
+  /** Asks the destination first, so the question can say what it found. */
+  async function askToWithdraw() {
+    const asked = record.id;
+    failed = "";
+    presence = undefined;
+    confirming = true;
+    looking = true;
+    try {
+      const found = await client.routing.presence(asked);
+      if (asked === record.id) presence = found;
+    } catch {
+      // Nothing could be said, which the question says by asking plainly.
+    } finally {
+      if (asked === record.id) looking = false;
+    }
+  }
+
+  async function withdraw() {
+    failed = "";
+    try {
+      const answer = await client.routing.withdraw(record.id, record.item);
+      changed = { id: record.id, withdrawnAt: answer.withdrawnAt };
+      confirming = false;
+      restorable = true;
+      notices.mark(withdrawnKey(record.id));
+      onundone?.();
+    } catch (error) {
+      failed = saidBy(error);
+    }
+  }
+
+  async function restore() {
+    failed = "";
+    try {
+      await client.routing.restore(record.id, record.item);
+      changed = { id: record.id, withdrawnAt: undefined };
+      restorable = false;
+      notices.mark(restoredKey(record.id));
+      onundone?.();
+    } catch (error) {
+      failed = saidBy(error);
+    }
+  }
 </script>
 
 {#snippet name(inLine: boolean)}
@@ -288,11 +389,14 @@
       type="button"
       aria-expanded={open}
       onclick={() => (opened = !opened)}
-      class="text-left font-semibold hover:underline {inLine ? 'shrink-0' : ''}"
-      >{destination}</button
+      class="text-left font-semibold hover:underline {inLine
+        ? 'shrink-0'
+        : ''} {withdrawn ? 'line-through' : ''}">{destination}</button
     >
   {:else}
-    <span class="font-semibold">{destination}</span>
+    <span class="font-semibold {withdrawn ? 'line-through' : ''}"
+      >{destination}</span
+    >
   {/if}
 {/snippet}
 
@@ -336,6 +440,8 @@
         >
           {#if end !== undefined}
             {@render end()}
+          {:else if withdrawn}
+            <span>withdrawn</span>
           {:else}
             <span>{did}</span>
           {/if}
@@ -379,6 +485,9 @@
             <span>{did}</span>
             {#if via !== undefined}
               <span>via {via}</span>
+            {/if}
+            {#if withdrawn}
+              <span>withdrawn</span>
             {/if}
           </div>
         </div>
@@ -451,7 +560,30 @@
                 >
               {:else if byHand && said === undefined}
                 <Action onclick={() => void takeBack("undone")}>undo</Action>
+              {:else if withdrawable && !confirming}
+                <Action onclick={() => void askToWithdraw()}>withdraw</Action>
+              {:else if withdrawn && restorable}
+                <Action onclick={() => void restore()}>restore</Action>
               {/if}
+            </div>
+          </div>
+        {/if}
+
+        {#if confirming}
+          <div
+            data-confirm
+            class="flex flex-wrap items-baseline justify-between gap-x-[2ch] gap-y-1 px-3 py-1.5"
+          >
+            {#if looking}
+              <Asking />
+            {:else}
+              <span role="status"
+                >{askingToWithdraw(presence, kind, record.pointer)}</span
+              >
+            {/if}
+            <div class="flex gap-x-5 max-narrow:gap-x-3.5">
+              <Action alarm onclick={() => void withdraw()}>withdraw</Action>
+              <Action onclick={() => (confirming = false)}>keep</Action>
             </div>
           </div>
         {/if}

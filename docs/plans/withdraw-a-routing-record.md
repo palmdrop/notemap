@@ -138,16 +138,20 @@ Depends on phase 1, and on phase 2 for `locate`.
 
 Depends on phase 3.
 
-- [ ] `withdraw` on a delivered record in `record/Record.svelte` and on its line in the log. A
-      manual mark keeps `cancel`.
-- [ ] The confirm step asks for presence and shows the soft wording above, plus a plain
-      "Withdraw?" when presence is absent, unknown, or still loading past a short wait.
-- [ ] After a withdrawal, the same view offers `restore`. Leaving the view or starting an edit
-      drops the offer.
-- [ ] A withdrawn record reads as withdrawn (struck, with its time) in the record view and the log.
-      The row and the queue read as unrouted.
-- [ ] shell.md updated, including the command if one is published.
-- [ ] Component tests beside the components. Verify, commit.
+- [x] `withdraw` on a delivered record in `record/Record.svelte` and on its line in the log. A
+      manual mark keeps `cancel`. _(2026-10-26: in the open block's foot, which is the same
+      component on the item, the record's address and the log)_
+- [x] The confirm step asks for presence and shows the soft wording above, plus a plain
+      "Withdraw?" when presence is unknown, and "is not there any more" when absent. The confirming
+      press can be taken while presence is still being asked. _(2026-10-26)_
+- [x] After a withdrawal, the same view offers `restore`. Leaving the view or starting an edit
+      drops the offer. _(2026-10-26)_
+- [x] A withdrawn record reads as withdrawn (struck, with its time) in the record view and the log.
+      The row and the queue read as unrouted. The item view now reads records for every item, so a
+      wholly withdrawn item still shows its history. _(2026-10-26)_
+- [x] shell.md updated. No command published: withdraw acts on a record, and commands act on
+      items. _(2026-10-26)_
+- [x] Component tests beside the components. Verify, commit. _(2026-10-26)_
 
 ### Phase 5: WebDAV routing onto a folder
 
