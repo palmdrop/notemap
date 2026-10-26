@@ -35,12 +35,12 @@ Decision: [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md).
   sealed it before: another delivered record, an archive, a revision. CONTEXT.md's "every sealed
   item is processed" survives unchanged. What changes is that a delivered record no longer seals
   for as long as it stays withdrawn.
-- **Undo exists in core.** `restore` clears `withdrawnAt` and appends `delivery-restored`. It is
+- **Undo exists in core.** `reinstate` clears `withdrawnAt` and appends `delivery-reinstated`. It is
   refused once the item has been edited since the withdrawal. The shell offers it only right after
   a withdrawal, in the view where it was made, and stops offering it when the person leaves that
   view or starts an edit.
 - **A trigger tag goes with the record.** If the record was fired by its tag, withdrawing removes
-  that tag, so applying it again routes again. Restoring puts it back only if the item does not
+  that tag, so applying it again routes again. Reinstating puts it back only if the item does not
   already hold it, through a new tagging option that adds a tag **without firing** its template.
 - **`locate`, an optional adapter method**, answers `present`, `absent` or `unknown`, plus a count
   where a record names several things. fs and webdav answer for the note a record points at,
@@ -61,7 +61,7 @@ Decision: [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md).
 ### Phase 0: before anything
 
 - [x] Branch `agent/withdraw-a-routing-record` _(2026-10-26)_
-- [x] ADR 66 via `/adr`: a delivered record may be withdrawn and restored. It covers the record
+- [x] ADR 66 via `/adr`: a delivered record may be withdrawn and reinstated. It covers the record
       staying (and why that keeps the append-only rule), unsealing, the trigger tag coming off and
       going back on without firing, and `locate` being advisory and never enforced by core. It
       names ADR 59 as amended and ADR 37 as extended. _(2026-10-26)_
@@ -77,27 +77,27 @@ Depends on phase 0.
 
 - [x] `RoutingRecord` gains `withdrawnAt?`. The sqlite store gets a migration and the mapping.
       The mirror record carries it. _(2026-10-26)_
-- [x] `routing.withdraw(record)` and `routing.restore(record)` on `RoutingApi`, each with
+- [x] `routing.withdraw(record)` and `routing.reinstate(record)` on `RoutingApi`, each with
       its refusal union. Each runs in one transaction, appends its action, recomputes the stored
       `processedAt` and enqueues the item's mirror write. _(2026-10-26)_
 - [x] Withdrawn records are excluded from: processed and the queue's anti-join, `processedAt`, the
       `routed` state filter, the destination filter, destination usage, the item's `routing`
       summary, a template's fired count, `alreadyApplied`, and `sealed()` in `pool/edit.ts`. _(2026-10-26)_
-- [x] Tagging gains a no-fire path, used by `restore` and not exposed over HTTP. Withdraw removes
-      a fired record's trigger tag in the same transaction. Restore re-adds it, unfired, only if it
-      is absent. _(2026-10-26: `returnTriggerTag` beside `releaseTriggerTag`, inside restore's own
+- [x] Tagging gains a no-fire path, used by `reinstate` and not exposed over HTTP. Withdraw removes
+      a fired record's trigger tag in the same transaction. Reinstate re-adds it, unfired, only if it
+      is absent. _(2026-10-26: `returnTriggerTag` beside `releaseTriggerTag`, inside reinstate's own
       transaction, rather than an option on `items.tag`, which opens a transaction of its own)_
 - [x] Rebuild: nothing to build, since rebuild does not exist. mirror.md says the field is carried. _(2026-10-26)_
-- [x] Specs: core.md (routing: withdrawal and restore, what stops counting, sealed, tag), CONTEXT.md
+- [x] Specs: core.md (routing: withdrawal and reinstate, what stops counting, sealed, tag), CONTEXT.md
       (**Withdraw**, plus amendments to **Sealed** and **Processed**), mirror.md. _(2026-10-26)_
 - [x] Tests in `tests/integration/src/withdraw.test.ts`, where every pool test lives: withdraw returns the item to the queue and moves `processedAt` back,
       an edit after withdrawal amends in place, a second delivered record keeps it sealed, each
       refusal fires, a fired record's tag comes off and goes back on without a new reservation,
-      restore leaves an already-present tag alone, and every filter leaves out the withdrawn
+      reinstate leaves an already-present tag alone, and every filter leaves out the withdrawn
       record. _(2026-10-26)_
 - [x] Verify: typecheck, `pnpm -r --no-sort --silent test`, lint. Commit. _(2026-10-26)_
 - [-] `pnpm --filter @notemap/core mutation` _(dropped: core's own tests do not reach the pool's
-      routing, so every mutant in withdraw, restore and sealed reads no-coverage; the integration
+      routing, so every mutant in withdraw, reinstate and sealed reads no-coverage; the integration
       suite is what covers them)_
 
 ### Phase 2: `locate` on the port and the adapters
@@ -122,13 +122,13 @@ Depends on phase 1 only for the record shape. Can run beside phase 3.
 
 Depends on phase 1, and on phase 2 for `locate`.
 
-- [x] `POST /v1/routing/{record}/withdraw` and `/restore`, answering the record. Their refusals go
+- [x] `POST /v1/routing/{record}/withdraw` and `/reinstate`, answering the record. Their refusals go
       into `errors/refusals.ts`. _(2026-10-26)_
 - [x] `GET /v1/routing/{record}/presence`, answering `present` / `absent` / `unknown` with an
       `{ found, of }` on `present`, bounded by the request's own signal as a preview is. _(2026-10-26)_
 - [x] The record schema carries `withdrawnAt`. Regenerate the client types. _(2026-10-26)_
-- [x] The client gets withdraw, restore and presence, and its cache treats a withdrawn record as not
-      routing the item. Withdraw and restore read the item again and place it, since its routing,
+- [x] The client gets withdraw, reinstate and presence, and its cache treats a withdrawn record as not
+      routing the item. Withdraw and reinstate read the item again and place it, since its routing,
       tags and processed-at move together. _(2026-10-26)_
 - [x] http-v1.md and client.md updated. _(2026-10-26)_
 - [x] Verify: typecheck, tests, lint, then `pnpm test:stack`, since this crosses the HTTP surface.
@@ -144,7 +144,7 @@ Depends on phase 3.
 - [x] The confirm step asks for presence and shows the soft wording above, plus a plain
       "Withdraw?" when presence is unknown, and "is not there any more" when absent. The confirming
       press can be taken while presence is still being asked. _(2026-10-26)_
-- [x] After a withdrawal, the same view offers `restore`. Leaving the view or starting an edit
+- [x] After a withdrawal, the same view offers `reinstate`. Leaving the view or starting an edit
       drops the offer. _(2026-10-26)_
 - [x] A withdrawn record reads as withdrawn (struck, with its time) in the record view and the log.
       The row and the queue read as unrouted. The item view now reads records for every item, so a
@@ -170,7 +170,14 @@ Depends on phase 0's reproduction and nothing else. Can go first.
 
 - [x] Remove todo.md line 127. _(2026-10-26)_
 - [x] Shipped entries and status. _(2026-10-26)_
-- [ ] Open the PR.
+- [x] Open the PR. _(2026-10-26: #118)_
+
+### Phase 7: review
+
+- [x] Address [the review](../reviews/withdraw-a-routing-record-2026-10-26.md). _(2026-10-26)_
+- [x] Restore is renamed **reinstate**, _restore_ being a rebuild's word. _(2026-10-26)_
+- [x] The item view leaves out a record read withdrawn, drawing one only while the view it was
+      withdrawn in is open. _(2026-10-26)_
 
 ---
 

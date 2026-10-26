@@ -6,7 +6,8 @@
 
 - 2026-10-26 — **A delivered record can be withdrawn from its block.** It asks the destination
   first and says only whether the thing is still there; a withdrawn record is struck through, and
-  `restore` is offered where the withdrawal was made until an edit begins. Routing a note onto a
+  `reinstate` is offered where the withdrawal was made until an edit begins. The item view leaves
+  out records read withdrawn. Routing a note onto a
   path that is a folder now says so, on both file kinds. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-23 — **A routing record is one line until it is opened.** On the item and in the log,
@@ -1848,19 +1849,24 @@ could not say. A file still there may have been emptied or rewritten since, so t
 says the note is. Beside it, `withdraw` in alarm and `keep`; the confirming `withdraw` may be pressed
 before the answer comes, which holds its line meanwhile.
 
-**A withdrawn record stays, struck through.** The destination's name is drawn `line-through`, the
-head says `withdrawn` beside what was done, the folded line says `withdrawn` where it said what was
-done, and the rail's state word is `withdrawn`. Nothing else about it changes: what was sent is
-still read on opening. The item reads as unrouted everywhere a row is drawn, and is back in the
-queue, editable in place. **The item view reads its records whether or not the item reads as
-routed**, since one whose every record was withdrawn has no summary and still has its history.
+**A withdrawn record is drawn struck through where it is drawn at all.** The destination's name is
+drawn `line-through`, the head says `withdrawn` beside what was done, the folded line says
+`withdrawn` where it said what was done, and the rail's state word is `withdrawn`. Nothing else
+about it changes: what was sent is still read on opening. The item reads as unrouted everywhere a
+row is drawn, and is back in the queue, editable in place.
 
-**`restore` is offered only where the withdrawal was made**, in that block's foot, until the person
-leaves the view or starts an edit of the item. Core allows a restore at any time until the item is
+**The item view leaves out a record read withdrawn.** One withdrawn while the view is open stays,
+struck through, until the person leaves or reloads; read again later it is not drawn, so an item
+whose every record was withdrawn reads its records no more than one never routed. The log and the
+record's own address still draw it, being where the history is looked for.
+
+**`reinstate` is offered only where the withdrawal was made**, in that block's foot, until the person
+leaves the view or starts an edit of the item. Core allows a reinstate at any time until the item is
 edited; the shell offers it as an undo for a press it just made, not as a second decision. A record
-read withdrawn — opened later, or on another device — offers neither `withdraw` nor `restore`.
-A withdrawal or restore made on another device is said in the status line, `routing withdrawn`
-with the trigger tag it took back, or `withdrawal restored`.
+read withdrawn — in the log, at its own address, or withdrawn on another device while the item is
+open — offers neither `withdraw` nor `reinstate`.
+A withdrawal or reinstate made on another device is said in the status line, `routing withdrawn`
+with the trigger tag it took back, or `routing reinstated`.
 
 **Marking processed is routing whose destination is the person**, and reads as one: the head says
 `by hand` and `marked processed`, the note the person wrote is the body, and nothing at all is
