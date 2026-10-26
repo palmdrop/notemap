@@ -365,3 +365,62 @@ describe("withdrawing a record a trigger tag made", () => {
     expect((await pool.templates.get(template.id))?.fired?.records).toBe(0);
   });
 });
+
+describe("asking whether a delivery is still there", () => {
+  it("hands the destination where the record says it went", async () => {
+    const { pool, record, destination } = await routed();
+    destination.answersPresence({ kind: "present", found: 1, of: 1 });
+
+    expect(succeeded(await pool.routing.locate(record.id))).toEqual({
+      kind: "present",
+      found: 1,
+      of: 1,
+    });
+    expect(destination.located).toEqual([
+      {
+        capability: CREATE_NOTE,
+        arguments: { path: "inbox/a-thought.md" },
+        pointer: "inbox/a-thought.md",
+      },
+    ]);
+  });
+
+  it("cannot tell where the kind does not look", async () => {
+    const { pool, record } = await routed();
+
+    expect(succeeded(await pool.routing.locate(record.id))).toEqual({
+      kind: "unknown",
+    });
+  });
+
+  it("cannot tell where the destination could not be reached, and says why", async () => {
+    const { pool, record, destination } = await routed();
+    destination.cannotLocate("ECONNREFUSED");
+
+    expect(succeeded(await pool.routing.locate(record.id))).toEqual({
+      kind: "unknown",
+      detail: "ECONNREFUSED",
+    });
+  });
+
+  it("refuses a mark made by hand, which went nowhere to look", async () => {
+    const { pool } = await pooled();
+    const item = await capture(pool);
+    const record = succeeded(await pool.routing.markProcessed(item));
+
+    expect(await pool.routing.locate(record.id)).toMatchObject({
+      refusal: { kind: "marked-by-hand", record: record.id },
+    });
+  });
+
+  it("refuses a pending delivery, which has not gone anywhere yet", async () => {
+    const { pool, destination } = await pooled();
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+    const item = await capture(pool);
+    const record = succeeded(await pool.routing.route(item, request()));
+
+    expect(await pool.routing.locate(record.id)).toMatchObject({
+      refusal: { kind: "not-delivered", record: record.id },
+    });
+  });
+});

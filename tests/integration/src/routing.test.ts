@@ -79,6 +79,7 @@ async function pooledWith(kind: Partial<Destinations>) {
     naming: () => Promise.reject(new Error("no naming in this test")),
     preview: () => Promise.reject(new Error("no preview in this test")),
     probe: () => Promise.reject(new Error("no probe in this test")),
+    locate: () => Promise.reject(new Error("no locate in this test")),
     ...kind,
   });
   open.push(opened);

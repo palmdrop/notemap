@@ -1,4 +1,5 @@
 export * from "./delivery";
+export * from "./locate";
 export * from "./output";
 export * from "./prepare";
 export * from "./preview";

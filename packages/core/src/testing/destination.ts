@@ -18,6 +18,8 @@ import type {
 } from "#types/domain/ids";
 import type {
   DeliveredOutput,
+  LocateRequest,
+  Presence,
   Delivery,
   DeliveryOutcome,
 } from "#types/domain/routing";
@@ -88,6 +90,12 @@ export type FakeDestinations = Destinations & {
   cannotPreview(detail: string | Error | undefined): void;
   /** Every delivery `preview` was handed, oldest first. */
   readonly previewed: readonly Delivery[];
+  /** What `locate` answers. Undefined is a kind that does not offer it. */
+  answersPresence(next: Presence | undefined): void;
+  /** What `locate` throws with, on `cannotDescribe`'s own terms. */
+  cannotLocate(detail: string | Error | undefined): void;
+  /** Every request `locate` was handed, oldest first. */
+  readonly located: readonly LocateRequest[];
 };
 
 export type FakeDestinationsOptions = {
@@ -184,6 +192,9 @@ export function fakeDestinations(
   let previewAnswer: DeliveredOutput | undefined = options.previewAnswer;
   let cannotShow: string | Error | undefined;
   const previewed: Delivery[] = [];
+  let presence: Presence | undefined;
+  let cannotFind: string | Error | undefined;
+  const located: LocateRequest[] = [];
 
   async function read(
     delivery: Delivery,
@@ -312,6 +323,25 @@ export function fakeDestinations(
     },
     cannotPreview: (detail) => {
       cannotShow = detail;
+    },
+
+    locate: (_destination, request) => {
+      located.push(request);
+      if (cannotFind !== undefined) {
+        return Promise.reject(
+          cannotFind instanceof Error ? cannotFind : new Error(cannotFind),
+        );
+      }
+      return presence === undefined
+        ? Promise.reject(new NotOffered("the fake kind looks for nothing"))
+        : Promise.resolve(presence);
+    },
+    located,
+    answersPresence: (next) => {
+      presence = next;
+    },
+    cannotLocate: (detail) => {
+      cannotFind = detail;
     },
   };
 }

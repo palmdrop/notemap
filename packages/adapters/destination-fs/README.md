@@ -50,6 +50,14 @@ Whether a note has frontmatter is the `frontmatter` setting — `full` or `none`
 each capability takes as an argument of the same name to override for one delivery. A note written
 without it carries no id and no `derived_from`, so nothing traces it back but the routing record.
 
+## Looking for a delivery
+
+`locate` stats what a record's pointer names, inside the root and never past it. A file that is
+there is `present` and one that is not is `absent`, whether the delivery made the file or added
+to it. That is the whole of the answer: a file still there may have been emptied or rewritten
+since, and nothing here reads it to find out. A pointer naming a folder, which is what placing
+assets leaves, is `unknown`, since the folder being there says nothing about what was placed in it.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved and compared against the root's real path,

@@ -240,6 +240,35 @@ export function createWebdavDestination(
           throw new Rejected(refusal(where, looked.status));
       }
     },
+
+    /** On the filesystem kind's terms: the note, never the folder assets were placed in. */
+    locate: async (destination, request, signal) => {
+      if (request.pointer === undefined) return { kind: "unknown" };
+
+      const settings = asWebdavSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      const dav = createDav(await config.credentials(settings.account));
+      const note = contain(settings.root, request.pointer);
+      if (note.kind === "refused") {
+        return { kind: "unknown", detail: note.detail };
+      }
+
+      const looked = await dav.look(note.path.encoded, signal);
+      switch (looked.kind) {
+        case "there":
+          return looked.collection
+            ? { kind: "unknown", detail: `${request.pointer} is a folder` }
+            : { kind: "present", found: 1, of: 1 };
+        case "not-there":
+          return { kind: "absent" };
+        case "refused":
+          return {
+            kind: "unknown",
+            detail: refusal(request.pointer, looked.status),
+          };
+      }
+    },
   };
 }
 

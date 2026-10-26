@@ -63,6 +63,8 @@ import type {
   Delivery,
   DeliveryLanding,
   DeliveryOutcome,
+  LocateRequest,
+  Presence,
   RememberedAnswer,
   RememberedRequest,
   RoutingRecord,
@@ -248,6 +250,12 @@ export interface Destinations {
    * with anything else where it could not be reached.
    */
   probe(destination: Destination, signal?: AbortSignal): Promise<void>;
+  /** Rejects with `NotOffered` where the adapter registered for the kind has none. */
+  locate(
+    destination: Destination,
+    request: LocateRequest,
+    signal?: AbortSignal,
+  ): Promise<Presence>;
 }
 
 export interface DestinationKindAdapter extends DestinationKind {
@@ -293,6 +301,15 @@ export interface DestinationKindAdapter extends DestinationKind {
    * throwing anything else could not be reached. Absent is `not-offered`.
    */
   probe?(destination: Destination, signal?: AbortSignal): Promise<void>;
+  /**
+   * Looks, writing nothing. Throwing is could not be reached; a pointer this
+   * kind cannot judge is `unknown`. Absent is `not-offered`.
+   */
+  locate?(
+    destination: Destination,
+    request: LocateRequest,
+    signal?: AbortSignal,
+  ): Promise<Presence>;
 }
 
 export interface ProviderAdapter {

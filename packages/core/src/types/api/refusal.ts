@@ -286,6 +286,12 @@ export type RestoreRefusal =
       readonly record: RoutingRecordId;
     };
 
+/** Only a record that went somewhere can be looked for. */
+export type LocateRefusal =
+  | { readonly kind: "no-such-record"; readonly record: RoutingRecordId }
+  | { readonly kind: "not-delivered"; readonly record: RoutingRecordId }
+  | { readonly kind: "marked-by-hand"; readonly record: RoutingRecordId };
+
 export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
 
 /** What resolving a template refuses: never a value missing, since it answers as far as it was given. */

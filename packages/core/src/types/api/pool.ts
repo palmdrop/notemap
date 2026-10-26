@@ -66,6 +66,7 @@ import type {
   AttemptableDelivery,
   DeliveryRequest,
   OpenedOutput,
+  Presence,
   PreviewReport,
   RememberedAnswer,
   RememberedRequest,
@@ -95,6 +96,7 @@ import type {
   AssetStoreRefusal,
   CaptureRefusal,
   CancelRefusal,
+  LocateRefusal,
   RestoreRefusal,
   WithdrawRefusal,
   CompletionRefusal,
@@ -372,6 +374,15 @@ export interface RoutingApi {
   withdraw(
     record: RoutingRecordId,
   ): Promise<Result<RoutingRecord, WithdrawRefusal>>;
+  /**
+   * Asks the destination whether what the record points at is still there.
+   * Advisory: nothing in the pool reads the answer, and anything the
+   * destination could not say is `unknown`.
+   */
+  locate(
+    record: RoutingRecordId,
+    signal?: AbortSignal,
+  ): Promise<Result<Presence, LocateRefusal>>;
   /** Puts back the trigger tag, without firing it, where the item no longer holds it. */
   restore(
     record: RoutingRecordId,

@@ -257,6 +257,35 @@ export function createFilesystemDestination(
         throw new Rejected(`${settings.root} cannot be written to`, { cause });
       }
     },
+
+    /**
+     * The file the pointer names, whether the delivery made it or added to it.
+     * A folder is what placing assets points at, and its being there says
+     * nothing about what was placed in it.
+     */
+    locate: async (destination, request) => {
+      if (request.pointer === undefined) return { kind: "unknown" };
+
+      const settings = asFilesystemSettings(destination.settings);
+      if (settings === undefined) throw unreadable(destination);
+
+      const realRoot = await realRootOf(settings.root, paths);
+      const contained = await contain(realRoot, request.pointer);
+      if (contained.kind === "refused") {
+        return { kind: "unknown", detail: contained.detail };
+      }
+
+      try {
+        const found = await stat(contained.path.absolute);
+        return found.isDirectory()
+          ? { kind: "unknown", detail: `${request.pointer} is a folder` }
+          : { kind: "present", found: 1, of: 1 };
+      } catch (cause) {
+        const code = (cause as NodeJS.ErrnoException).code;
+        if (code === "ENOENT" || code === "ENOTDIR") return { kind: "absent" };
+        throw cause;
+      }
+    },
   };
 }
 

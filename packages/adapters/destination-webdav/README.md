@@ -50,6 +50,12 @@ Whether a note carries provenance is the `frontmatter` setting — `full` or `no
 none — which each capability takes as an argument of the same name to override for one delivery,
 exactly as the filesystem kind does.
 
+## Looking for a delivery
+
+`locate` asks `PROPFIND` at `Depth: 0` about what a record's pointer names, on the filesystem
+kind's terms: a note there is `present`, one gone is `absent`, a folder is `unknown`, and nothing is
+read or written. A file still there may have been emptied or rewritten since.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved against it and anything that leaves is refused.

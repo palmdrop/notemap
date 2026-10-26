@@ -436,6 +436,8 @@ test("offers the views in a panel and says which are being read", async () => {
     "template-fired",
     "delivery-failed",
     "delivery-cancelled",
+    "delivery-withdrawn",
+    "delivery-restored",
   ]);
   await screen.findByText("routed");
 

@@ -104,17 +104,19 @@ Depends on phase 0.
 
 Depends on phase 1 only for the record shape. Can run beside phase 3.
 
-- [ ] `locate?(destination, record, signal)` on `DestinationKindAdapter`, and `locate` on
-      `Destinations`, answering `unknown` where a kind has none.
-- [ ] fs: stat the pointer, but never follow it out of the root. webdav: `PROPFIND` depth 0 on the
-      pointer. Both answer `unknown` for a folder pointer (placed assets).
-- [ ] Arena: `DeliveryLanding` and the outcome gain the optional block-id list. The adapter writes
+- [x] `locate?(destination, record, signal)` on `DestinationKindAdapter`, and `locate` on
+      `Destinations`, answering `unknown` where a kind has none. Core reads it as
+      `routing.locate(record)`. _(2026-10-26)_
+- [x] fs: stat the pointer, but never follow it out of the root. webdav: `PROPFIND` depth 0 on the
+      pointer. Both answer `unknown` for a folder pointer (placed assets). _(2026-10-26)_
+- [x] Arena: `DeliveryLanding` and the outcome gain the optional block-id list. The adapter writes
       it for every multi-block delivery and checks each id. A single-block record checks its
-      pointer. An older multi-block record answers `unknown`.
-- [ ] Each adapter's README says what `locate` answers and what it cannot know.
-- [ ] Tests: present, absent and unknown per kind, a partial count on Arena, and a pointer escaping
-      the root answering `unknown` on fs.
-- [ ] Verify: typecheck, tests, lint. Commit.
+      pointer. An older multi-block record answers `unknown`. _(2026-10-26: checks each block's
+      connections for the record's channel, since a block taken out of a channel goes on existing)_
+- [x] Each adapter's README says what `locate` answers and what it cannot know. _(2026-10-26)_
+- [x] Tests: present, absent and unknown per kind, a partial count on Arena, and a pointer escaping
+      the root answering `unknown` on fs. _(2026-10-26)_
+- [x] Verify: typecheck, tests, lint. Commit. _(2026-10-26)_
 
 ### Phase 3: HTTP and the client
 

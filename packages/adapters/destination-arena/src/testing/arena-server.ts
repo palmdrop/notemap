@@ -37,6 +37,10 @@ export type ArenaServer = {
   refusesBlocksAfter(made: number): void;
   /** Whether the bytes at that key arrived chunked rather than under a `Content-Length`. */
   arrivedChunked(key: string): boolean;
+  /** Takes a block out of the channel it was made in. The block goes on existing. */
+  disconnect(block: number): void;
+  /** Deletes a block outright, so asking after it answers `404`. */
+  remove(block: number): void;
   close(): Promise<void>;
 };
 
@@ -78,6 +82,8 @@ export async function startArenaServer(
   const chunked = new Set<string>();
   const answers = new Map<string, { status: number; body: unknown }>();
   let uploadsUrl = "";
+  const disconnected = new Set<number>();
+  const removed = new Set<number>();
 
   const server: Server = createServer((request, response) => {
     const url = new URL(request.url ?? "/", "http://localhost");
@@ -196,6 +202,27 @@ export async function startArenaServer(
       });
     }
 
+    const connections = /^\/v3\/blocks\/(\d+)\/connections$/.exec(path);
+    if (request.method === "GET" && connections !== null) {
+      const id = Number(connections[1]);
+      const block = created[id - 1001];
+      if (block === undefined || removed.has(id)) {
+        return send(response, 404, { error: { message: "not found" } });
+      }
+
+      const handles = disconnected.has(id)
+        ? []
+        : (block["channel_ids"] as string[]);
+      return send(response, 200, {
+        data: handles.map((handle, index) => ({
+          slug: handle,
+          id: 9000 + index,
+          title: handle,
+        })),
+        meta: { has_more_pages: false },
+      });
+    }
+
     send(response, 404, { error: { message: "no such route" } });
   });
 
@@ -220,6 +247,8 @@ export async function startArenaServer(
     answerOnce: (path, status, body) => answers.set(path, { status, body }),
     refusesBlocksAfter: (made) => void (refuseAfter = made),
     arrivedChunked: (key) => chunked.has(key),
+    disconnect: (block) => void disconnected.add(block),
+    remove: (block) => void removed.add(block),
     close: () =>
       new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),

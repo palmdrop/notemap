@@ -84,6 +84,15 @@ delivery never asks for — and every block's URL is in the delivery's **output*
 block still names that block, so a record made before this reads as it did, and the common case
 keeps a link to follow.
 
+## Looking for a delivery
+
+A delivery that made several blocks keeps every block's id beside the channel it names. `locate`
+asks after each block's connections and counts the ones still in the record's channel. A block
+taken out of a channel goes on existing on are.na, so being in the channel is what is counted, not
+being there at all. A deleted block answers `404` and counts as gone. Only the first page of a
+block's connections is read, so a block in more channels than a page holds and not found on it is
+`unknown`, as is a record of several blocks made before their ids were kept.
+
 ## What it will not do
 
 - **It does not promise a retry cannot duplicate.** are.na offers no conditional create and no
