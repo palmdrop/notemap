@@ -2,8 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-21
+**Last updated**: 2026-10-26
 **Shipped**:
+
+- 2026-10-26 — **`POST /v1/routing/{record}/withdraw` and `/restore`, and `GET
+  /v1/routing/{record}/presence`.** A record carries `withdrawnAt` and `pointers`;
+  `WithdrawRefusal`, `RestoreRefusal` and `LocateRefusal` joined the refusal table. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-21 — **`by`, `state`, `destination` and `source` on the feed; `source` on the queue and
   the archive; `processedAt` on every item.** `bad-by`, `bad-state`, `bad-destination`,

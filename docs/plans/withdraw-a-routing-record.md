@@ -1,9 +1,9 @@
 # Withdrawing a routing record
 
 **Date**: 2026-10-26
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/shell.md`, `docs/specs/mirror.md`
-**Closed**: `todo.md` routing record invalidation (line 127) and the WebDAV ETag error (line 125)
+**Closed**: 2026-10-26 — `todo.md`'s routing record invalidation and the WebDAV ETag error
 
 ---
 
@@ -157,16 +157,20 @@ Depends on phase 3.
 
 Depends on phase 0's reproduction and nothing else. Can go first.
 
-- [ ] Detect that the note path is a collection before writing, on every capability that writes a
-      note, and refuse with `rejected`: "`<path>` is a folder".
-- [ ] Check fs for the same case (`EISDIR` on create and on append) and give it the same wording.
-- [ ] Tests: a folder path refused on both kinds, for `create`, `append` and `create-or-append`.
-- [ ] Verify, commit. Tick todo.md line 125.
+- [x] Detect that the note path is a collection, on every capability that writes a note, and
+      refuse with `rejected`: "`<path>` is a folder, not a note". _(2026-10-26: looked for only
+      once a write has failed, rather than before every write. Not reproduced on a real server —
+      none here — but the test server answering a folder's `GET` with a listing and no `ETag`, as
+      rclone does, gives the exact message the todo described.)_
+- [x] Check fs for the same case (`EISDIR` on create and on append) and give it the same wording.
+- [x] Tests: a folder path refused on both kinds, for `create`, `append` and `create-or-append`.
+- [x] Verify, commit. Tick todo.md line 125. _(2026-10-26: removed rather than ticked)_
 
 ### Phase 6: close
 
-- [ ] Remove todo.md line 127.
-- [ ] Shipped entries, status, then open the PR.
+- [x] Remove todo.md line 127. _(2026-10-26)_
+- [x] Shipped entries and status. _(2026-10-26)_
+- [ ] Open the PR.
 
 ---
 

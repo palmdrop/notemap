@@ -1,8 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-23
+**Last updated**: 2026-10-26
 **Shipped**:
+
+- 2026-10-26 — **`routing.withdraw`, `routing.restore` and `routing.presence`.** Withdrawing and
+  restoring settle the item from the pool's copy; summaries the client works out leave withdrawn
+  records out. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-23 — **`hold(ids)` reads into the cache the items a reader names by id.** One request
   for up to a hundred, answering the ids the pool holds none of, so the log can name every subject

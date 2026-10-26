@@ -1,8 +1,13 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-23
+**Last updated**: 2026-10-26
 **Shipped**:
+
+- 2026-10-26 — **A delivered record can be withdrawn from its block.** It asks the destination
+  first and says only whether the thing is still there; a withdrawn record is struck through, and
+  `restore` is offered where the withdrawal was made until an edit begins. Routing a note onto a
+  path that is a folder now says so, on both file kinds. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-23 — **A routing record is one line until it is opened.** On the item and in the log,
   a record reads as its destination, its place and what was done, and opens in place into the

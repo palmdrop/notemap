@@ -122,10 +122,6 @@
 
 - [ ] capture merging: related to batch processing, select multiple capture rows, and/or filter by tags, then process all these at once -> a collective routing record with the body being a merged version of all the items. One frontmatter, one foot of hashtags
 
-- [ ] trying to route a capture to the exact same place as a folder produces a strange webdav ETag error that is not very useful for a user
-
-- [ ] ability to "invalidate" a routing record, for example, if something was routed but I then removed what was routed manually in the destination. Would like this feature, even though notemap cannot always verify that the routing record is "actually" invalid, however, if the destination can check if the file is still there, it can prompt the user with a "the note is still in the destination. Invalidate anyway?".
-
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
   - The hand-picked half shipped 2026-10-14: `conversion` on the markdown kinds, `block`,

@@ -1,8 +1,10 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-21
+**Last updated**: 2026-10-26
 **Shipped**:
+
+- 2026-10-26 — **A mirrored routing record carries `withdrawnAt` and `pointers`.** ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-21 — **Nothing new is mirrored for when an item was processed**: it is derived from
   what a record already carries, which is what a rebuild will recompute it from.

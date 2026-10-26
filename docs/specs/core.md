@@ -1,8 +1,15 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-23
+**Last updated**: 2026-10-26
 **Shipped**:
+
+- 2026-10-26 — **A delivered record may be withdrawn, and restored.** The record stays with
+  `withdrawnAt` and counts for nothing an item's routing decides, so the item is back in the queue
+  and no longer sealed by it; its trigger tag comes off with it and goes back on, unfired, on
+  restore, which is refused once the item has been edited. A destination may be asked whether a
+  delivery is still there (`locate`), which core never requires. A record keeps every pointer a
+  delivery made. ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-23 — **A cancelled delivery's entry names where it was going.** `delivery-cancelled`
   carries the `destination` and `capability`, as `routed` does, since the record goes with it.
