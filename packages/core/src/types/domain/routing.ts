@@ -100,6 +100,7 @@ export type DeliveryOutcome =
   | {
       readonly kind: "delivered";
       readonly pointer?: string;
+      readonly pointers?: readonly string[];
       readonly url?: string;
       readonly output?: DeliveredOutput;
     }
@@ -124,9 +125,28 @@ export type PreviewReport =
   | { readonly kind: "unreachable"; readonly detail: string }
   | { readonly kind: "not-offered" };
 
+/** Where a delivered record says its delivery went, as a destination is asked to look for it. */
+export type LocateRequest = {
+  readonly capability: CapabilityName;
+  readonly arguments: JsonObject;
+  readonly pointer?: string;
+  readonly pointers?: readonly string[];
+};
+
+/**
+ * Whether what a record points at is still there, and never what is in it: a
+ * file still there may have been emptied or rewritten since. `found` of `of`
+ * where a record names several things; one thing is one of one.
+ */
+export type Presence =
+  | { readonly kind: "present"; readonly found: number; readonly of: number }
+  | { readonly kind: "absent" }
+  | { readonly kind: "unknown"; readonly detail?: string };
+
 /** What a delivery that landed adds to the reservation it resolves. */
 export type DeliveryLanding = {
   readonly pointer?: string;
+  readonly pointers?: readonly string[];
   readonly url?: string;
   readonly output?: StoredOutput;
 };
@@ -174,10 +194,17 @@ export type RoutingRecord = {
   /** Absent where the decision was made by hand. */
   readonly applied?: AppliedTemplate;
   readonly pointer?: string;
+  /** Each thing a delivery made, where it made several and the pointer names what holds them. */
+  readonly pointers?: readonly string[];
   /** A link to what the pointer names, where the destination could offer one. */
   readonly url?: string;
   /** What the delivery produced. Only a delivered record ever carries one. */
   readonly output?: StoredOutput;
+  /**
+   * Set where a person said the delivery no longer stands. The record stays,
+   * and stops counting for anything an item's routing decides.
+   */
+  readonly withdrawnAt?: Timestamp;
 };
 
 /**

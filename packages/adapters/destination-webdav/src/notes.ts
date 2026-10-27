@@ -125,12 +125,36 @@ async function create(
   const rendered = renderInto(wiring, delivery, wanted, assets);
   const note = whole(rendered);
 
-  const written = await wiring.dav.create(wanted.encoded, note, signal);
+  let written: Awaited<ReturnType<Dav["create"]>>;
+  try {
+    written = await wiring.dav.create(wanted.encoded, note, signal);
+  } catch (cause) {
+    throw (await folderAt(wiring.dav, wanted, signal)) ?? cause;
+  }
   if (written === "condition-failed") {
-    throw new Refused(`${wanted.relative} is already there`);
+    throw (
+      (await folderAt(wiring.dav, wanted, signal)) ??
+      new Refused(`${wanted.relative} is already there`)
+    );
   }
 
   return { pointer: wanted.relative, written: note, ...said(rendered) };
+}
+
+/**
+ * A folder where the note was meant to be fails differently on every server —
+ * a `405`, a listing with no ETag, a `412` — and each reads as something else.
+ * So it is looked for once a write has already failed, and said plainly.
+ */
+async function folderAt(
+  dav: Dav,
+  note: Contained,
+  signal?: AbortSignal,
+): Promise<Refused | undefined> {
+  const looked = await dav.look(note.encoded, signal).catch(() => undefined);
+  return looked?.kind === "there" && looked.collection
+    ? new Refused(`${note.relative} is a folder, not a note`)
+    : undefined;
 }
 
 /** How many times a note is re-read and written again before contention is somebody else's problem. */
@@ -186,67 +210,71 @@ async function append(
   // re-uploading an hour of audio.
   let assets: ReadonlyMap<string, string> | undefined;
 
-  for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
-    const existing = await wiring.dav.get(note.encoded, signal);
+  try {
+    for (let attempt = 0; attempt < ATTEMPTS; attempt += 1) {
+      const existing = await wiring.dav.get(note.encoded, signal);
 
-    if (assets === undefined) {
-      if (existing === undefined)
-        await makeCollections(wiring.dav, note, signal);
-      assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
-    }
-
-    const rendered = renderInto(wiring, delivery, note, assets);
-
-    if (existing === undefined) {
-      const fresh = wholeUnder(rendered, heading);
-      const created = await wiring.dav.create(note.encoded, fresh, signal);
-      // Somebody made it between the read and the write, so it is an append now.
-      if (created === "written") {
-        return { pointer: note.relative, written: fresh, ...said(rendered) };
+      if (assets === undefined) {
+        if (existing === undefined)
+          await makeCollections(wiring.dav, note, signal);
+        assets = await placeAssets(wiring.dav, note, delivery.assets, signal);
       }
-      continue;
+
+      const rendered = renderInto(wiring, delivery, note, assets);
+
+      if (existing === undefined) {
+        const fresh = wholeUnder(rendered, heading);
+        const created = await wiring.dav.create(note.encoded, fresh, signal);
+        // Somebody made it between the read and the write, so it is an append now.
+        if (created === "written") {
+          return { pointer: note.relative, written: fresh, ...said(rendered) };
+        }
+        continue;
+      }
+
+      if (existing.etag === undefined) {
+        throw new Unreachable(
+          `${note.relative} was served with no ETag, and appending without one loses whichever write lands second`,
+        );
+      }
+      // `If-Match` compares strongly, so a weak validator fails it every time
+      // however quiet the vault is. Left alone it reads as four rounds of losing
+      // a race that never happened, and a proxy compressing responses is the
+      // ordinary way an ETag becomes weak.
+      if (existing.etag.startsWith("W/")) {
+        throw new Unreachable(
+          `${note.relative} was served the weak ETag ${existing.etag}, which no conditional write can match — something in front of the server is rewriting them`,
+        );
+      }
+
+      const { file, inserted } = insertUnder(
+        existing.body,
+        rendered.body,
+        heading,
+      );
+      const written = await wiring.dav.replace(
+        note.encoded,
+        file,
+        existing.etag,
+        signal,
+      );
+      if (written === "written") {
+        return {
+          pointer: note.relative,
+          written: inserted,
+          ...said(rendered),
+        };
+      }
     }
 
-    if (existing.etag === undefined) {
-      throw new Unreachable(
-        `${note.relative} was served with no ETag, and appending without one loses whichever write lands second`,
-      );
-    }
-    // `If-Match` compares strongly, so a weak validator fails it every time
-    // however quiet the vault is. Left alone it reads as four rounds of losing
-    // a race that never happened, and a proxy compressing responses is the
-    // ordinary way an ETag becomes weak.
-    if (existing.etag.startsWith("W/")) {
-      throw new Unreachable(
-        `${note.relative} was served the weak ETag ${existing.etag}, which no conditional write can match — something in front of the server is rewriting them`,
-      );
-    }
-
-    const { file, inserted } = insertUnder(
-      existing.body,
-      rendered.body,
-      heading,
+    // Contention, not a decision: this is retryable and the delivery runner's
+    // business, where `rejected` would throw the routing decision away over it.
+    throw new Unreachable(
+      `${note.relative} was written by somebody else during each of ${ATTEMPTS} attempts`,
     );
-    const written = await wiring.dav.replace(
-      note.encoded,
-      file,
-      existing.etag,
-      signal,
-    );
-    if (written === "written") {
-      return {
-        pointer: note.relative,
-        written: inserted,
-        ...said(rendered),
-      };
-    }
+  } catch (cause) {
+    throw (await folderAt(wiring.dav, note, signal)) ?? cause;
   }
-
-  // Contention, not a decision: this is retryable and the delivery runner's
-  // business, where `rejected` would throw the routing decision away over it.
-  throw new Unreachable(
-    `${note.relative} was written by somebody else during each of ${ATTEMPTS} attempts`,
-  );
 }
 
 function whole(rendered: Note): string {

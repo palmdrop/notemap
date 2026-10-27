@@ -70,7 +70,9 @@
     if (
       kind !== "routed" &&
       kind !== "delivery-failed" &&
-      kind !== "delivery-cancelled"
+      kind !== "delivery-cancelled" &&
+      kind !== "delivery-withdrawn" &&
+      kind !== "delivery-reinstated"
     ) {
       return undefined;
     }
@@ -102,6 +104,8 @@
             },
           }),
       ...(pointer === undefined ? {} : { pointer }),
+      // As the entry left it: the record read on opening says how it stands now.
+      ...(kind === "delivery-withdrawn" ? { withdrawnAt: action.at } : {}),
     };
   });
 

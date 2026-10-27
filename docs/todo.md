@@ -122,10 +122,6 @@
 
 - [ ] capture merging: related to batch processing, select multiple capture rows, and/or filter by tags, then process all these at once -> a collective routing record with the body being a merged version of all the items. One frontmatter, one foot of hashtags
 
-- [ ] trying to route a capture to the exact same place as a folder produces a strange webdav ETag error that is not very useful for a user
-
-- [ ] ability to "invalidate" a routing record, for example, if something was routed but I then removed what was routed manually in the destination. Would like this feature, even though notemap cannot always verify that the routing record is "actually" invalid, however, if the destination can check if the file is still there, it can prompt the user with a "the note is still in the destination. Invalidate anyway?".
-
 - [ ] Conversion - changing or formatting an item on routing, for example, making an item a piece of a TODO list. Called conversion rather than a routing template since 2026-09-05: a **routing template** is now a saved routing decision, and the two were sharing a word.
   - AI conversions, where a local model formats an entry that may or may not be properly formatted
   - The hand-picked half shipped 2026-10-14: `conversion` on the markdown kinds, `block`,
@@ -224,4 +220,8 @@
 - [ ] When purge lands: `GET /v1/items/:id/routing` reads the item and then its records, two reads on two connection states, so an item purged between them answers `200 {"values":[]}` — the claim about an item the existence check is there to avoid. Either one core method answering both, or the route accepting the window deliberately.
 - [ ] Consider redis for jobs in the future. Move the jobs managed out of the store port, let it be its own. Could be a piece of the store db, could be external. (Feel like I reimplement a lot of tried and tested things here.)
   - same for pool/work, all the jobs management. Is there existing tools we could use for this instead?
+- [ ] **_Withdraw_ means two things in the store port.** `tx.withdrawWork` and `WorkWithdrawal` pull a
+  queued job, which is what cancelling a reservation does; `setRoutingRecordWithdrawn` is the
+  **withdraw** CONTEXT.md names. Renaming the job half (`pullWork`, say) would leave one meaning.
+  Raised reviewing [withdraw-a-routing-record](reviews/withdraw-a-routing-record-2026-10-26.md).
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.

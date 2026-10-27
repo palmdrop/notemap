@@ -10,6 +10,9 @@ import {
   ASSET_STORE_STATUS,
   BODY_STATUS,
   CANCEL_STATUS,
+  LOCATE_STATUS,
+  REINSTATE_STATUS,
+  WITHDRAW_STATUS,
   CANDIDATES_REQUEST_STATUS,
   GIVEN_STATUS,
   CAPTURE_STATUS,
@@ -92,6 +95,7 @@ import {
 import {
   markProcessedRequestSchema,
   routeRequestSchema,
+  presenceSchema,
   previewSchema,
   routingRecordSchema,
   routingRecordsSchema,
@@ -1431,6 +1435,73 @@ export const cancelDeliveryRoute = createRoute({
   },
 });
 
+const recordParam = z.object({
+  record: z.string().openapi({ param: { name: "record", in: "path" } }),
+});
+
+export const withdrawDeliveryRoute = createRoute({
+  method: "post",
+  path: "/v1/routing/{record}/withdraw",
+  summary: "Say a delivery no longer stands",
+  description:
+    "Marks a delivered record withdrawn, for a delivery a person removed from the destination. **The record stays**, carrying `withdrawnAt`, and the action log says so; it stops counting for anything the item's routing decides, so the item returns to the queue, reads as unrouted, and is edited in place unless something else seals it. A trigger tag that made the record comes off with it, so applying it again routes again.\n\nNothing is asked of the destination. `GET /v1/routing/{record}/presence` is what asks, and its answer is never required.",
+  request: { params: recordParam },
+  responses: {
+    200: {
+      description: "The record, withdrawn.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
+    },
+    404: errorResponse("No record has that id.", 404, WITHDRAW_STATUS),
+    409: errorResponse(
+      "The record has not delivered or was a mark by hand, both of which are cancelled instead, or it is already withdrawn.",
+      409,
+      WITHDRAW_STATUS,
+    ),
+  },
+});
+
+export const reinstateDeliveryRoute = createRoute({
+  method: "post",
+  path: "/v1/routing/{record}/reinstate",
+  summary: "Put a withdrawn record back",
+  description:
+    "Undoes a withdrawal: the record counts again and the item leaves the queue. A trigger tag that came off with the withdrawal goes back on **without firing** its template, where the item does not already hold it.\n\nRefused once the item has been edited since the withdrawal, since the record would come back naming words the item no longer holds.",
+  request: { params: recordParam },
+  responses: {
+    200: {
+      description: "The record, standing again.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
+    },
+    404: errorResponse("No record has that id.", 404, REINSTATE_STATUS),
+    409: errorResponse(
+      "The record is not withdrawn, or its item was edited since it was.",
+      409,
+      REINSTATE_STATUS,
+    ),
+  },
+});
+
+export const deliveryPresenceRoute = createRoute({
+  method: "get",
+  path: "/v1/routing/{record}/presence",
+  summary: "Ask whether a delivery is still there",
+  description:
+    "Asks the destination whether what a delivered record points at is still there, writing nothing. **Whether, never what**: a file still there may have been emptied or rewritten since, and nothing reads it to find out. `found` of `of` where the record names several things.\n\nAnything the destination cannot say — a kind that does not look, a pointer it cannot judge, a destination out of reach — is `unknown`, with the reason where there is one.",
+  request: { params: recordParam },
+  responses: {
+    200: {
+      description: "Present, absent, or unknown.",
+      content: { [JSON_MEDIA_TYPE]: { schema: presenceSchema } },
+    },
+    404: errorResponse("No record has that id.", 404, LOCATE_STATUS),
+    409: errorResponse(
+      "The record has not delivered, or was a mark by hand, so there is nowhere to look.",
+      409,
+      LOCATE_STATUS,
+    ),
+  },
+});
+
 export const previewRouteRoute = createRoute({
   method: "post",
   path: "/v1/items/{id}/route/preview",
@@ -1870,6 +1941,9 @@ export const ROUTES = [
   routeItemRoute,
   previewRouteRoute,
   cancelDeliveryRoute,
+  withdrawDeliveryRoute,
+  reinstateDeliveryRoute,
+  deliveryPresenceRoute,
   routingOutputRoute,
   actionsRoute,
   assetUploadRoute,

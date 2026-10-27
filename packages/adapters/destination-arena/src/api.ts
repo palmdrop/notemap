@@ -37,6 +37,17 @@ export type ChannelPage = {
   readonly more: boolean;
 };
 
+/** A channel a block is in, by both of the names a delivery may have used for it. */
+export type Connection = {
+  readonly slug: string;
+  readonly id: number;
+};
+
+export type Connections = {
+  readonly channels: readonly Connection[];
+  readonly more: boolean;
+};
+
 export type PresignedFile = {
   readonly uploadUrl: string;
   readonly key: string;
@@ -75,6 +86,15 @@ export type Arena = {
     block: BlockInput,
     signal?: AbortSignal,
   ): Promise<CreatedBlock>;
+  /**
+   * The first page of the channels a block is connected to. `undefined` where
+   * are.na has no such block. A block taken out of a channel goes on existing,
+   * so being in the channel is the question, not being there at all.
+   */
+  connections(
+    block: number,
+    signal?: AbortSignal,
+  ): Promise<Connections | undefined>;
   /** Where the bytes are once uploaded, as the presign flow documents the address. */
   uploadedUrl(key: string): string;
 };
@@ -289,6 +309,28 @@ export function createArena(config: ArenaConfig): Arena {
         throw new Unreachable("are.na answered no block id");
       }
       return { id };
+    },
+
+    connections: async (block, signal) => {
+      const response = await send(
+        "GET",
+        `/v3/blocks/${block}/connections?per=${PER_PAGE}`,
+        { signal, absent: NOT_FOUND },
+      );
+      if (response === undefined) return undefined;
+
+      const body = await json(response);
+      const data = at(body, "data");
+      return {
+        channels: (Array.isArray(data) ? data : []).flatMap((each) => {
+          const slug = at(each, "slug");
+          const id = at(each, "id");
+          return typeof slug === "string" && typeof id === "number"
+            ? [{ slug, id }]
+            : [];
+        }),
+        more: at(at(body, "meta"), "has_more_pages") === true,
+      };
     },
 
     uploadedUrl: (key) => `${uploadsUrl}/${key}`,

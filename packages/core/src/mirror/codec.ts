@@ -273,8 +273,10 @@ function readRouting(value: unknown, at: string): DeliveredRoutingRecord {
     at: stamp(row["at"], `${at}.at`),
     ...present("applied", row, at, readApplied),
     ...present("pointer", row, at, text),
+    ...present("pointers", row, at, (raw, where) => list(raw, where, text)),
     ...present("url", row, at, text),
     ...present("output", row, at, readOutput),
+    ...present("withdrawnAt", row, at, stamp),
   };
 }
 

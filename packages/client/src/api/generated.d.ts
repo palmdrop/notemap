@@ -3815,6 +3815,237 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routing/{record}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Say a delivery no longer stands
+         * @description Marks a delivered record withdrawn, for a delivery a person removed from the destination. **The record stays**, carrying `withdrawnAt`, and the action log says so; it stops counting for anything the item's routing decides, so the item returns to the queue, reads as unrouted, and is edited in place unless something else seals it. A trigger tag that made the record comes off with it, so applying it again routes again.
+         *
+         *     Nothing is asked of the destination. `GET /v1/routing/{record}/presence` is what asks, and its answer is never required.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    record: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The record, withdrawn. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingRecord"];
+                    };
+                };
+                /** @description No record has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-record";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The record has not delivered or was a mark by hand, both of which are cancelled instead, or it is already withdrawn. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "not-delivered" | "marked-by-hand" | "already-withdrawn";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routing/{record}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put a withdrawn record back
+         * @description Undoes a withdrawal: the record counts again and the item leaves the queue. A trigger tag that came off with the withdrawal goes back on **without firing** its template, where the item does not already hold it.
+         *
+         *     Refused once the item has been edited since the withdrawal, since the record would come back naming words the item no longer holds.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    record: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The record, standing again. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RoutingRecord"];
+                    };
+                };
+                /** @description No record has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-record";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The record is not withdrawn, or its item was edited since it was. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "not-withdrawn" | "edited-since-withdrawal" | "superseded";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routing/{record}/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ask whether a delivery is still there
+         * @description Asks the destination whether what a delivered record points at is still there, writing nothing. **Whether, never what**: a file still there may have been emptied or rewritten since, and nothing reads it to find out. `found` of `of` where the record names several things.
+         *
+         *     Anything the destination cannot say — a kind that does not look, a pointer it cannot judge, a destination out of reach — is `unknown`, with the reason where there is one.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    record: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Present, absent, or unknown. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Presence"];
+                    };
+                };
+                /** @description No record has that id. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "no-such-record";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The record has not delivered, or was a mark by hand, so there is nowhere to look. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "not-delivered" | "marked-by-hand";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routing/{record}/output": {
         parameters: {
             query?: never;
@@ -4837,8 +5068,11 @@ export interface components {
             state: "pending" | "delivered";
             at: string;
             pointer?: string;
+            pointers?: string[];
             url?: string;
             output?: components["schemas"]["DeliveryOutput"];
+            /** @description When a person said this delivery no longer stands. The record stays, and counts for nothing the item's routing decides. */
+            withdrawnAt?: string;
         };
         DeliveryOutput: {
             /**
@@ -5193,6 +5427,19 @@ export interface components {
             /** @enum {string} */
             kind: "not-offered";
         };
+        Presence: {
+            /** @enum {string} */
+            kind: "present";
+            found: number;
+            of: number;
+        } | {
+            /** @enum {string} */
+            kind: "absent";
+        } | {
+            /** @enum {string} */
+            kind: "unknown";
+            detail?: string;
+        };
         ActionSlice: {
             values: components["schemas"]["Action"][];
             /**
@@ -5203,7 +5450,7 @@ export interface components {
         };
         Action: {
             /** @enum {string} */
-            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
+            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
             by: {

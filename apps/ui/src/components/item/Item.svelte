@@ -1,5 +1,7 @@
 <script lang="ts">
-  import type { ItemState } from "@notemap/client";
+  import { untrack } from "svelte";
+  import { SvelteSet } from "svelte/reactivity";
+  import type { ItemState, RoutingRecord } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -48,19 +50,37 @@
   const held = $derived(client.held(id));
   const item = $derived($held);
 
+  /**
+   * Records this view has drawn standing. A withdrawn record is drawn only if
+   * it is one of them — withdrawn while the person was here, where reinstating
+   * is still offered — and read again later it is left out.
+   */
+  const standing = new SvelteSet<string>();
+
   // An item that was never routed has no records to read, unless one is
-  // being asked for by name — then the pool is what says it is not there.
+  // being asked for by name — then the pool is what says it is not there —
+  // or one this view drew has been withdrawn since.
   const records = recordsOf(
     () =>
-      item !== undefined && (only !== undefined || item.routing !== undefined)
+      item !== undefined &&
+      (only !== undefined ||
+        item.routing !== undefined ||
+        untrack(() => standing.size > 0))
         ? item.id
         : undefined,
     () => pool.yes,
   );
 
   $effect(() => {
+    for (const record of records.all) {
+      if (record.withdrawnAt === undefined) standing.add(record.id);
+    }
+  });
+
+  $effect(() => {
     const wanted = id;
     read = undefined;
+    untrack(() => standing.clear());
 
     void (async () => {
       const answer = await client.item(wanted);
@@ -92,7 +112,10 @@
 
   const drawn = $derived(
     only === undefined
-      ? records.all
+      ? records.all.filter(
+          (record) =>
+            record.withdrawnAt === undefined || standing.has(record.id),
+        )
       : records.all.filter((record) => record.id === only),
   );
 
@@ -105,6 +128,9 @@
     }));
     return layout.byDay ? byDay(dated) : plain(dated);
   });
+
+  const stateOf = (record: RoutingRecord): string =>
+    record.withdrawnAt === undefined ? record.state : "withdrawn";
 
   /** What the record rows say instead of records, where they have none to say. */
   const aboutRecords = $derived.by(() => {
@@ -160,7 +186,7 @@
             <Stamp at={record.at} dated={!layout.byDay} />
           {/if}
           {#if !layout.slim}
-            <StateWord word={record.state} />
+            <StateWord word={stateOf(record)} />
           {/if}
         </Rail>
         <Body>
@@ -168,10 +194,11 @@
             {record}
             held={item}
             folds={only === undefined}
+            editing={row?.isEditing() === true}
             onundone={() => records.reread()}
           />
           {#if layout.slim}
-            <StateWord word={record.state} />
+            <StateWord word={stateOf(record)} />
           {/if}
         </Body>
       {/if}

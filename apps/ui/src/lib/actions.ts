@@ -129,6 +129,8 @@ const FACTS: Readonly<
     named(detail, naming.template, "template"),
   "delivery-failed": alarmed,
   "delivery-cancelled": tag,
+  "delivery-withdrawn": tag,
+  "delivery-reinstated": tag,
   captured: () => undefined,
   amended: () => undefined,
   revised: () => undefined,

@@ -237,6 +237,31 @@ test("a mark made by hand and taken back is said as undone, not as a routing can
   expect(said?.only).toBeUndefined();
 });
 
+test("a withdrawal made elsewhere says where and what it took back", () => {
+  const said = noticeOf(
+    anAction("delivery-withdrawn", {
+      record: "r1",
+      destination: "vault",
+      tag: "route/research",
+    }),
+    reading,
+  );
+
+  expect(said?.what).toBe("routing withdrawn");
+  expect(said?.why).toBe("route/research taken back");
+  expect(said?.key).toBe("withdrawn:r1");
+});
+
+test("a reinstate says the tag went back", () => {
+  const said = noticeOf(
+    anAction("delivery-reinstated", { record: "r1", tag: "route/research" }),
+    reading,
+  );
+
+  expect(said?.what).toBe("routing reinstated");
+  expect(said?.why).toBe("route/research put back");
+});
+
 test("everything else the log holds stays in the log", () => {
   expect(noticeOf(anAction("captured", {}), reading)).toBeUndefined();
   expect(noticeOf(anAction("tagged", {}), reading)).toBeUndefined();

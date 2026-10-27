@@ -66,6 +66,7 @@ import type {
   AttemptableDelivery,
   DeliveryRequest,
   OpenedOutput,
+  Presence,
   PreviewReport,
   RememberedAnswer,
   RememberedRequest,
@@ -95,6 +96,9 @@ import type {
   AssetStoreRefusal,
   CaptureRefusal,
   CancelRefusal,
+  LocateRefusal,
+  ReinstateRefusal,
+  WithdrawRefusal,
   CompletionRefusal,
   DeliveryRefusal,
   DestinationDeletionRefusal,
@@ -363,6 +367,26 @@ export interface RoutingApi {
   ): Promise<Result<PreviewReport, PreviewRefusal>>;
   /** Returns the item to the queue. */
   cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
+  /**
+   * The record stays and stops counting, so the item returns to the queue and
+   * is no longer sealed by it. A trigger tag it was made by comes off with it.
+   */
+  withdraw(
+    record: RoutingRecordId,
+  ): Promise<Result<RoutingRecord, WithdrawRefusal>>;
+  /**
+   * Asks the destination whether what the record points at is still there.
+   * Advisory: nothing in the pool reads the answer, and anything the
+   * destination could not say is `unknown`.
+   */
+  locate(
+    record: RoutingRecordId,
+    signal?: AbortSignal,
+  ): Promise<Result<Presence, LocateRefusal>>;
+  /** Puts back the trigger tag, without firing it, where the item no longer holds it. */
+  reinstate(
+    record: RoutingRecordId,
+  ): Promise<Result<RoutingRecord, ReinstateRefusal>>;
   markProcessed(
     item: ItemId,
     note?: string,

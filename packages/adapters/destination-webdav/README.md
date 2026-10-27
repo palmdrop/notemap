@@ -50,6 +50,12 @@ Whether a note carries provenance is the `frontmatter` setting — `full` or `no
 none — which each capability takes as an argument of the same name to override for one delivery,
 exactly as the filesystem kind does.
 
+## Looking for a delivery
+
+`locate` asks `PROPFIND` at `Depth: 0` about what a record's pointer names, on the filesystem
+kind's terms: a note there is `present`, one gone is `absent`, a folder is `unknown`, and nothing is
+read or written. A file still there may have been emptied or rewritten since.
+
 ## What it will not do
 
 - **Nothing escapes the root.** A target is resolved against it and anything that leaves is refused.
@@ -97,6 +103,7 @@ The distinction decides whether a delivery is retried, so it is not about severi
 | Something above the target is not there | `unreachable` | The vault is not set up yet |
 | The target escapes the root | `rejected` | No later attempt makes it legal |
 | The note is already there | `rejected` | It will be there next time too |
+| A folder is where the note would go | `rejected` | Looked for once a write has failed, since every server fails it differently — a `405`, a `412`, a listing with no `ETag` |
 | The arguments are not the shape the capability declared | `rejected` | Likewise |
 | A renderer threw | `rejected` | It will throw identically |
 

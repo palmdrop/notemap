@@ -7,7 +7,7 @@ export type RoutingDeps = {
   /** A recorded decision takes the item out of the queue; the pool decided it. */
   readonly processed: (item: ItemId, record: RoutingRecord) => Promise<void>;
   /** The records the item is left holding, which say whether it is work again. */
-  readonly withdrawn: (
+  readonly holding: (
     item: ItemId,
     records: readonly RoutingRecord[],
   ) => Promise<void>;
@@ -17,6 +17,12 @@ export type RoutingDeps = {
    * the records alone do not say.
    */
   readonly reread: (item: ItemId) => Promise<void>;
+  /**
+   * The item as the pool now has it, put back where it belongs. A withdrawal
+   * moves its routing, its tags and when it was processed at once, and the
+   * pool's copy says all three. Never throws: the pool has already decided.
+   */
+  readonly settled: (item: ItemId) => Promise<void>;
 };
 
 /**
@@ -86,9 +92,38 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       );
 
       // The pool deletes the record rather than marking it, and processed is
-      // derived from holding none — so an item routed twice is still not work.
-      await deps.withdrawn(item, await recordsFor(item));
+      // derived from holding none that stands — so an item routed twice is
+      // still not work.
+      await deps.holding(item, await recordsFor(item));
       await deps.reread(item);
+    },
+
+    async withdraw(record, item) {
+      const withdrawn = await answered(
+        api.POST("/v1/routing/{record}/withdraw", {
+          params: { path: { record } },
+        }),
+      );
+      await deps.settled(item);
+      return withdrawn;
+    },
+
+    async reinstate(record, item) {
+      const reinstated = await answered(
+        api.POST("/v1/routing/{record}/reinstate", {
+          params: { path: { record } },
+        }),
+      );
+      await deps.settled(item);
+      return reinstated;
+    },
+
+    presence(record) {
+      return answered(
+        api.GET("/v1/routing/{record}/presence", {
+          params: { path: { record } },
+        }),
+      );
     },
   };
 }

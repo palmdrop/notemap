@@ -656,15 +656,17 @@ test("with a lead, the line stays above the opened block and says what it is giv
   );
 });
 
+/** The log's block for a record called off: a delivered one always offers withdraw. */
 test("draws no foot where there is nothing to press", async () => {
   await named();
 
   const { container } = render(Block, {
     folds: false,
+    said: "called off",
     record: { ...RECORD, target: { ...TARGET, arguments: {} } },
   });
 
-  await screen.findByText(NOTHING_KEPT);
+  await screen.findByText("called off");
   expect(container.querySelector(".max-w-read")?.children).toHaveLength(2);
   expect(screen.queryByRole("link", { name: "item" })).toBeNull();
 });
@@ -706,4 +708,161 @@ test("a press on a link in the lead follows it and leaves the line folded", asyn
   await fireEvent.click(await screen.findByRole("link", { name: "a thought" }));
   expect(opener()).toBeDefined();
   expect(outputAsked()).toHaveLength(0);
+});
+
+/** The pool `answering` is, and the three withdrawing asks of it. */
+function withdrawing(presence: () => Response) {
+  const rest = answering();
+  return (request: Request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/routing/rec/presence":
+        return presence();
+      case "POST /v1/routing/rec/withdraw":
+        return json(200, {
+          ...RECORD,
+          withdrawnAt: "2026-08-20T09:00:00.000Z",
+        });
+      case "POST /v1/routing/rec/reinstate":
+        return json(200, RECORD);
+      case "GET /v1/items/one":
+        return json(200, anItem("one"));
+      default:
+        return rest(request);
+    }
+  };
+}
+
+async function withdrawingFrom(
+  presence: () => Response = () =>
+    json(200, { kind: "present", found: 1, of: 1 }),
+) {
+  pool(withdrawing(presence));
+  await client.destinations.load();
+  await client.templates.load();
+}
+
+test("a delivered record offers withdraw, and asks first, saying the file is still there", async () => {
+  await withdrawingFrom();
+  render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+
+  expect(
+    await screen.findByText(
+      "The file note.md is still there. Withdraw anyway?",
+    ),
+  ).toBeTruthy();
+  expect(asked()).toContain("GET /v1/routing/rec/presence");
+  expect(asked()).not.toContain("POST /v1/routing/rec/withdraw");
+});
+
+test("asks plainly where the destination could not say", async () => {
+  await withdrawingFrom(() => json(200, { kind: "unknown" }));
+  render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+
+  expect(await screen.findByText("Withdraw?")).toBeTruthy();
+});
+
+test("keeping it sends nothing and puts the offer back", async () => {
+  await withdrawingFrom();
+  render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  await fireEvent.click(await screen.findByRole("button", { name: "keep" }));
+
+  expect(await screen.findByRole("button", { name: "withdraw" })).toBeTruthy();
+  expect(asked()).not.toContain("POST /v1/routing/rec/withdraw");
+});
+
+test("withdrawing marks the record, tells the surface, and offers reinstate here", async () => {
+  await withdrawingFrom();
+  const undone = vi.fn();
+  render(Block, { folds: false, record: RECORD, onundone: undone });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  await screen.findByText(/still there/);
+  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  if (confirm === undefined) throw new Error("expected the confirming press");
+  await fireEvent.click(confirm);
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/rec/withdraw");
+  });
+  expect(await screen.findByText("withdrawn")).toBeTruthy();
+  expect(undone).toHaveBeenCalled();
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "reinstate" }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/rec/reinstate");
+  });
+  expect(await screen.findByRole("button", { name: "withdraw" })).toBeTruthy();
+});
+
+test("stops offering reinstate once an edit begins", async () => {
+  await withdrawingFrom();
+  const { rerender } = render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  await screen.findByText(/still there/);
+  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  if (confirm === undefined) throw new Error("expected the confirming press");
+  await fireEvent.click(confirm);
+  await screen.findByRole("button", { name: "reinstate" });
+
+  await rerender({ folds: false, record: RECORD, editing: true });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
+  });
+});
+
+test("follows the record it is handed again once that agrees with what was done here", async () => {
+  await withdrawingFrom();
+  const { rerender } = render(Block, { folds: false, record: RECORD });
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  await screen.findByText(/still there/);
+  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  if (confirm === undefined) throw new Error("expected the confirming press");
+  await fireEvent.click(confirm);
+  await screen.findByRole("button", { name: "reinstate" });
+
+  await rerender({
+    folds: false,
+    record: { ...RECORD, withdrawnAt: "2026-08-20T09:00:00.000Z" },
+  });
+  // Reinstated from another device, and read again here.
+  await rerender({ folds: false, record: RECORD });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("withdrawn")).toBeNull();
+  });
+});
+
+test("a record read withdrawn offers neither withdraw nor reinstate", async () => {
+  await withdrawingFrom();
+  render(Block, {
+    folds: false,
+    record: { ...RECORD, withdrawnAt: "2026-08-20T09:00:00.000Z" },
+  });
+
+  expect(await screen.findByText("withdrawn")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "withdraw" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
 });

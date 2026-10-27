@@ -65,5 +65,14 @@ export function destinationRegistry(
       }
       return adapter.probe(destination, signal);
     },
+    locate: (destination, request, signal) => {
+      const adapter = reach(destination);
+      if (adapter.locate === undefined) {
+        return Promise.reject(
+          new NotOffered(`the ${adapter.name} kind cannot look for a delivery`),
+        );
+      }
+      return adapter.locate(destination, request, signal);
+    },
   };
 }

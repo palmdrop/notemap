@@ -79,6 +79,7 @@ async function pooledWith(kind: Partial<Destinations>) {
     naming: () => Promise.reject(new Error("no naming in this test")),
     preview: () => Promise.reject(new Error("no preview in this test")),
     probe: () => Promise.reject(new Error("no probe in this test")),
+    locate: () => Promise.reject(new Error("no locate in this test")),
     ...kind,
   });
   open.push(opened);
@@ -126,6 +127,25 @@ async function capture(pool: Pool, id = "item-1"): Promise<ItemId> {
 const UNREACHABLE = { kind: "unreachable", detail: "ECONNREFUSED" } as const;
 
 describe("routing to a destination that is up", () => {
+  it("keeps each thing a delivery made, where it made several", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    opened.destination.answers({
+      kind: "delivered",
+      pointer: "a-channel",
+      pointers: ["101", "102"],
+    });
+    const item = await capture(pool);
+
+    const record = succeeded(await pool.routing.route(item, request()));
+
+    expect(record).toMatchObject({
+      pointer: "a-channel",
+      pointers: ["101", "102"],
+    });
+    expect(await pool.routing.recordsFor(item)).toEqual([record]);
+  });
+
   it("answers a delivered record with its pointer, and enqueues no delivery job", async () => {
     const opened = await pooled();
     const { pool } = opened;

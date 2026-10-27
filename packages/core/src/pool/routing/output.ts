@@ -25,6 +25,7 @@ export async function landingFor(
   ports: PoolPorts,
   delivered: {
     readonly pointer?: string;
+    readonly pointers?: readonly string[];
     readonly url?: string;
     readonly output?: DeliveredOutput;
   },
@@ -32,6 +33,9 @@ export async function landingFor(
 ): Promise<Landed> {
   const where = {
     ...(delivered.pointer === undefined ? {} : { pointer: delivered.pointer }),
+    ...(delivered.pointers === undefined
+      ? {}
+      : { pointers: delivered.pointers }),
     ...(delivered.url === undefined ? {} : { url: delivered.url }),
   };
 

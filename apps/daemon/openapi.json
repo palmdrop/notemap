@@ -1367,11 +1367,21 @@
           "pointer": {
             "type": "string"
           },
+          "pointers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "url": {
             "type": "string"
           },
           "output": {
             "$ref": "#/components/schemas/DeliveryOutput"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "description": "When a person said this delivery no longer stands. The record stays, and counts for nothing the item's routing decides."
           }
         },
         "required": [
@@ -2465,6 +2475,63 @@
           }
         ]
       },
+      "Presence": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "present"
+                ]
+              },
+              "found": {
+                "type": "integer"
+              },
+              "of": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "found",
+              "of"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "absent"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "unknown"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        ]
+      },
       "ActionSlice": {
         "type": "object",
         "properties": {
@@ -2505,6 +2572,8 @@
               "routed",
               "delivery-failed",
               "delivery-cancelled",
+              "delivery-withdrawn",
+              "delivery-reinstated",
               "destination-created",
               "destination-renamed",
               "destination-reconfigured",
@@ -7673,6 +7742,281 @@
                           "enum": [
                             "not-pending",
                             "delivery-in-flight"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/{record}/withdraw": {
+      "post": {
+        "summary": "Say a delivery no longer stands",
+        "description": "Marks a delivered record withdrawn, for a delivery a person removed from the destination. **The record stays**, carrying `withdrawnAt`, and the action log says so; it stops counting for anything the item's routing decides, so the item returns to the queue, reads as unrouted, and is edited in place unless something else seals it. A trigger tag that made the record comes off with it, so applying it again routes again.\n\nNothing is asked of the destination. `GET /v1/routing/{record}/presence` is what asks, and its answer is never required.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "record",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record, withdrawn.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-record"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The record has not delivered or was a mark by hand, both of which are cancelled instead, or it is already withdrawn.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "not-delivered",
+                            "marked-by-hand",
+                            "already-withdrawn"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/{record}/reinstate": {
+      "post": {
+        "summary": "Put a withdrawn record back",
+        "description": "Undoes a withdrawal: the record counts again and the item leaves the queue. A trigger tag that came off with the withdrawal goes back on **without firing** its template, where the item does not already hold it.\n\nRefused once the item has been edited since the withdrawal, since the record would come back naming words the item no longer holds.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "record",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The record, standing again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutingRecord"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-record"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The record is not withdrawn, or its item was edited since it was.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "not-withdrawn",
+                            "edited-since-withdrawal",
+                            "superseded"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/{record}/presence": {
+      "get": {
+        "summary": "Ask whether a delivery is still there",
+        "description": "Asks the destination whether what a delivered record points at is still there, writing nothing. **Whether, never what**: a file still there may have been emptied or rewritten since, and nothing reads it to find out. `found` of `of` where the record names several things.\n\nAnything the destination cannot say — a kind that does not look, a pointer it cannot judge, a destination out of reach — is `unknown`, with the reason where there is one.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "record",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Present, absent, or unknown.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Presence"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No record has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "no-such-record"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The record has not delivered, or was a mark by hand, so there is nowhere to look.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "not-delivered",
+                            "marked-by-hand"
                           ]
                         }
                       },

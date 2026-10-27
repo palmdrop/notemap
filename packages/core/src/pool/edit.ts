@@ -69,6 +69,7 @@ async function sealed(tx: PoolTx, item: Item): Promise<boolean> {
   if (item.revisedInto.length > 0) return true;
 
   for (const record of await tx.routingRecords(item.id)) {
+    if (record.withdrawnAt !== undefined) continue;
     if (record.state !== "pending") return true;
     if (!(await tx.deliveryUntried(record.id))) return true;
   }

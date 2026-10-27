@@ -17,6 +17,7 @@ import {
   type ArenaArguments,
 } from "./capabilities";
 import { arenaCandidates, arenaNaming } from "./candidates";
+import { arenaLocate } from "./locate";
 import type { CredentialResolver } from "./credentials";
 import { Refused, TokenRefused, Unreachable } from "./errors";
 import {
@@ -136,7 +137,10 @@ export function createArenaDestination(
         // that made several blocks names the channel and lists them in its
         // output instead.
         ...(one === undefined
-          ? { pointer: wanted.args.channel }
+          ? {
+              pointer: wanted.args.channel,
+              pointers: posted.map((each) => String(each.id)),
+            }
           : { pointer: String(one), url: blockUrl(webUrl, one) }),
         output: outputOf(posted, wanted.carrying, delivery, webUrl, short),
       };
@@ -160,6 +164,7 @@ export function createArenaDestination(
 
     candidates: arenaCandidates(reach),
     naming: arenaNaming(reach),
+    locate: arenaLocate(reach),
 
     /**
      * `GET /v3/me`, and nothing more. The answer does not carry the token's

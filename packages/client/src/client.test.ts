@@ -484,7 +484,7 @@ describe("routing", () => {
     });
   }
 
-  it("makes the item work again when its only decision is withdrawn", async () => {
+  it("makes the item work again when its only decision is cancelled", async () => {
     let records = ["record-1"];
     const { client, transport } = poolHolding(() => records);
 
@@ -512,12 +512,129 @@ describe("routing", () => {
     expect(read(client.queue).items).toEqual([]);
   });
 
-  it("refuses to withdraw one already in flight", async () => {
+  it("refuses to cancel one already in flight", async () => {
     const { client } = clientOver(() => refusal(409, "delivery-in-flight"));
 
     await expect(client.routing.cancel("record-1", "one")).rejects.toThrow(
       "that delivery has already started; it cannot be called back",
     );
+  });
+
+  /** A pool whose copy of `one` says whatever `routing` now holds. */
+  function poolWithdrawing(routing: () => Item["routing"]) {
+    return clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue") {
+        return json(200, { values: [anItem("one")] });
+      }
+      if (route === "GET /v1/items/one") {
+        const now = routing();
+        return json(
+          200,
+          anItem("one", {
+            modifiedAt: "2026-08-18T00:00:00.000Z",
+            ...(now === undefined ? {} : { routing: now }),
+          }),
+        );
+      }
+      if (route === "POST /v1/routing/record-1/withdraw") {
+        return json(200, { ...record("record-1"), withdrawnAt: "later" });
+      }
+      return aRecord("record-1");
+    });
+  }
+
+  const ROUTED: Item["routing"] = {
+    records: 1,
+    pending: 0,
+    to: [{ kind: "user" }],
+    templates: [],
+  };
+
+  it("makes the item work again when its delivery is withdrawn, as the pool reads it", async () => {
+    let routing: Item["routing"] = ROUTED;
+    const { client, transport } = poolWithdrawing(() => routing);
+
+    await client.loadQueue();
+    await client.routing.markProcessed("one");
+    expect(read(client.queue).items).toEqual([]);
+
+    routing = undefined;
+    await expect(
+      client.routing.withdraw("record-1", "one"),
+    ).resolves.toMatchObject({ id: "record-1", withdrawnAt: "later" });
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
+    expect(transport.sent.map(routeOf)).toContain(
+      "POST /v1/routing/record-1/withdraw",
+    );
+  });
+
+  it("answers a withdrawal the pool made although reading the item again failed", async () => {
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "POST /v1/routing/record-1/withdraw") {
+        return json(200, { ...record("record-1"), withdrawnAt: "later" });
+      }
+      return json(503, {});
+    });
+
+    await expect(
+      client.routing.withdraw("record-1", "one"),
+    ).resolves.toMatchObject({ id: "record-1", withdrawnAt: "later" });
+  });
+
+  it("takes the item out of the queue again when the withdrawn record is reinstated", async () => {
+    let routing: Item["routing"] = undefined;
+    const { client } = poolWithdrawing(() => routing);
+    await client.loadQueue();
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
+
+    routing = ROUTED;
+    await client.routing.reinstate("record-1", "one");
+
+    expect(read(client.queue).items).toEqual([]);
+  });
+
+  it("asks the pool whether a delivery is still there, every time", async () => {
+    const { client, transport } = clientOver(() =>
+      json(200, { kind: "present", found: 2, of: 3 }),
+    );
+
+    await expect(client.routing.presence("record-1")).resolves.toEqual({
+      kind: "present",
+      found: 2,
+      of: 3,
+    });
+    await client.routing.presence("record-1");
+    expect(
+      transport.sent.filter(
+        (one) => routeOf(one) === "GET /v1/routing/record-1/presence",
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("does not count a withdrawn record as holding the item", async () => {
+    const { client } = clientOver((request) => {
+      const route = routeOf(request);
+      if (route === "GET /v1/queue")
+        return json(200, { values: [anItem("one")] });
+      if (route === "GET /v1/items/one/routing") {
+        return json(200, {
+          values: [{ ...record("record-2"), withdrawnAt: "earlier" }],
+        });
+      }
+      if (route === "POST /v1/routing/record-1/cancel") {
+        return new Response(null, { status: 204 });
+      }
+      return aRecord("record-1");
+    });
+
+    await client.loadQueue();
+    await client.routing.markProcessed("one");
+    await client.routing.cancel("record-1", "one");
+
+    expect(read(client.queue).items.map((item) => item.id)).toEqual(["one"]);
   });
 
   it("asks for a preview without queuing anything, and answers what it says", async () => {

@@ -3,6 +3,9 @@ import type {
   AssetRefusal,
   AssetStoreRefusal,
   CancelRefusal,
+  LocateRefusal,
+  ReinstateRefusal,
+  WithdrawRefusal,
   CaptureRefusal,
   DeliveryRefusal,
   DestinationDeletionRefusal,
@@ -247,6 +250,27 @@ export const CANCEL_STATUS = {
   "delivery-in-flight": 409,
 } as const satisfies Record<CancelRefusal["kind"], number>;
 
+/** Each `409` names the way through it: a pending record or a mark by hand is cancelled instead. */
+export const WITHDRAW_STATUS = {
+  "no-such-record": 404,
+  "not-delivered": 409,
+  "marked-by-hand": 409,
+  "already-withdrawn": 409,
+} as const satisfies Record<WithdrawRefusal["kind"], number>;
+
+export const REINSTATE_STATUS = {
+  "no-such-record": 404,
+  "not-withdrawn": 409,
+  "edited-since-withdrawal": 409,
+  superseded: 409,
+} as const satisfies Record<ReinstateRefusal["kind"], number>;
+
+export const LOCATE_STATUS = {
+  "no-such-record": 404,
+  "not-delivered": 409,
+  "marked-by-hand": 409,
+} as const satisfies Record<LocateRefusal["kind"], number>;
+
 /**
  * Reading what a delivery produced. All three are `404`, distinguished by code:
  * a record with no output is ordinary rather than a fault, and nothing else in
@@ -384,6 +408,18 @@ export function cancelStatus(refusal: CancelRefusal): number {
   return CANCEL_STATUS[refusal.kind];
 }
 
+export function withdrawStatus(refusal: WithdrawRefusal): number {
+  return WITHDRAW_STATUS[refusal.kind];
+}
+
+export function reinstateStatus(refusal: ReinstateRefusal): number {
+  return REINSTATE_STATUS[refusal.kind];
+}
+
+export function locateStatus(refusal: LocateRefusal): number {
+  return LOCATE_STATUS[refusal.kind];
+}
+
 export function destinationStatus(refusal: DestinationRefusal): number {
   return DESTINATION_STATUS[refusal.kind];
 }
@@ -439,7 +475,10 @@ export function errorBody(
     | DestinationDeletionRefusal
     | DestinationRefusal
     | EditRefusal
+    | LocateRefusal
     | OutputRefusal
+    | ReinstateRefusal
+    | WithdrawRefusal
     | PoolSettingRefusal
     | RetireRefusal
     | RoutingRefusal

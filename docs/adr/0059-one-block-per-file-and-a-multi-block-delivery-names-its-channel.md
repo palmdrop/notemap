@@ -4,7 +4,9 @@
 **Status**: Accepted. Widens the duplication window
 [ADR 41](0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md) describes for the arena kind;
 ADR 41 otherwise stands. Finishes the arena half left open by
-[ADR 57](0057-a-capture-can-be-routed-as-its-attachments-alone.md).
+[ADR 57](0057-a-capture-can-be-routed-as-its-attachments-alone.md). Amended 2026-10-26 by
+[ADR 66](0066-a-delivered-record-may-be-withdrawn.md): a multi-block record also keeps every
+block's id, beside the channel it still names.
 **Deciders**: palmdrop, with Claude
 
 ---

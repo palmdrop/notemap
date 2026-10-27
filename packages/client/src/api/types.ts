@@ -89,6 +89,8 @@ export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingPreview = components["schemas"]["RoutingPreview"];
 export type DeliveryOutput = components["schemas"]["DeliveryOutput"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
+/** Whether what a record points at is still there. Never what is in it. */
+export type Presence = components["schemas"]["Presence"];
 export type RoutingTemplate = components["schemas"]["RoutingTemplate"];
 /** Values for a template's asked arguments, by field. */
 export type SuppliedArguments = components["schemas"]["SuppliedArguments"];

@@ -942,6 +942,13 @@ export const MIGRATIONS: readonly string[] = [
 
   CREATE INDEX items_processed ON items (processed_at, id);
   `,
+  `
+  -- Each thing a delivery made, where it made several, as a JSON array.
+  ALTER TABLE routing_records ADD COLUMN pointers TEXT;
+
+  -- A delivered record a person said no longer stands. It stays, and counts for nothing.
+  ALTER TABLE routing_records ADD COLUMN withdrawn_at INTEGER;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

@@ -519,6 +519,75 @@ test("draws each record folded, reading nothing it sent until it is opened", asy
   expect(container.querySelectorAll("[data-folded]")).toHaveLength(1);
 });
 
+const WITHDRAWN = { withdrawnAt: "2026-08-20T09:00:00.000Z" };
+
+test("leaves out a record read withdrawn", async () => {
+  pool(
+    routed([
+      RECORD,
+      { ...RECORD, id: "rec-2", pointer: "drafts/two.md", ...WITHDRAWN },
+    ]),
+  );
+
+  render(Item, { id: "routed" });
+  await screen.findByText("drafts");
+
+  expect(screen.queryByText("drafts/two.md")).toBeNull();
+  expect(screen.queryByText("withdrawn")).toBeNull();
+});
+
+test("reads nothing for an item whose every record was withdrawn", async () => {
+  pool(holding(saying("left", "back in the queue")));
+
+  render(Item, { id: "left" });
+  await screen.findByText("back in the queue");
+
+  expect(asked()).not.toContain("GET /v1/items/left/routing");
+});
+
+test("keeps drawing a record withdrawn here, with the way to reinstate it, though the item reads unrouted", async () => {
+  let withdrawn = false;
+  pool((request: Request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/items/routed":
+        return json(200, anItem("routed", withdrawn ? {} : ROUTED));
+      case "GET /v1/items/routed/routing":
+        return json(200, {
+          values: [withdrawn ? { ...RECORD, ...WITHDRAWN } : RECORD],
+        });
+      case "GET /v1/routing/rec/presence":
+        return json(200, { kind: "unknown" });
+      case "POST /v1/routing/rec/withdraw":
+        withdrawn = true;
+        return json(200, { ...RECORD, ...WITHDRAWN });
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "routed" });
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "a destination" }),
+  );
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "withdraw" }),
+  );
+  const confirm = (
+    await screen.findAllByRole("button", { name: "withdraw" })
+  ).at(-1);
+  if (confirm === undefined) throw new Error("expected the confirming press");
+  await fireEvent.click(confirm);
+
+  expect(
+    await screen.findByRole("button", { name: "reinstate" }),
+  ).toBeDefined();
+  // The rail's word is the record as read again from the pool.
+  await vi.waitFor(() => {
+    expect(screen.queryByText("delivered")).toBeNull();
+  });
+  expect(screen.getByRole("button", { name: "reinstate" })).toBeDefined();
+});
+
 /** A delivery is the pool's; only what the person did by hand is theirs to undo. */
 test("offers no undo on a record the pool delivered", async () => {
   pool(routed([RECORD]));

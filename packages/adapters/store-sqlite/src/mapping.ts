@@ -332,8 +332,14 @@ export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
           },
         }),
     ...(row.pointer === null ? {} : { pointer: row.pointer }),
+    ...(row.pointers === null
+      ? {}
+      : { pointers: JSON.parse(row.pointers) as string[] }),
     ...(row.url === null ? {} : { url: row.url }),
     ...toOutput(row),
+    ...(row.withdrawn_at === null
+      ? {}
+      : { withdrawnAt: toTimestamp(row.withdrawn_at) }),
   };
 }
 
@@ -391,6 +397,8 @@ export function routingRecordParams(
   string | null,
   string | null,
   number | null,
+  string | null,
+  number | null,
 ] {
   const target = record.target;
   const output = record.output;
@@ -415,6 +423,8 @@ export function routingRecordParams(
     output?.note ?? null,
     record.applied?.template ?? null,
     record.applied === undefined ? null : record.applied.firedByTag ? 1 : 0,
+    record.pointers === undefined ? null : JSON.stringify(record.pointers),
+    record.withdrawnAt === undefined ? null : toMillis(record.withdrawnAt),
   ];
 }
 

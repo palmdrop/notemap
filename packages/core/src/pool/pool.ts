@@ -126,6 +126,9 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       preview: (item, delivery, signal) =>
         routing.preview(config, ports, item, delivery, signal),
       cancelDelivery: (record) => routing.cancelDelivery(ports, record),
+      withdraw: (record) => routing.withdraw(ports, record),
+      locate: (record, signal) => routing.locate(ports, record, signal),
+      reinstate: (record) => routing.reinstate(ports, record),
       markProcessed: (item, note) => routing.markProcessed(ports, item, note),
       recordsFor: (item) => routing.recordsFor(ports, item),
       openOutput: (record, signal) => routing.openOutput(ports, record, signal),

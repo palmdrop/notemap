@@ -143,6 +143,14 @@ const SAID: {
   "not-archived": "that item is not archived",
   "not-retired": "that destination is not retired",
   "not-pending": "that delivery has already been decided",
+  "not-delivered": "that delivery has not landed yet; cancel it instead",
+  "marked-by-hand": "that was marked by hand; cancel it instead",
+  "already-withdrawn": "that delivery is already withdrawn",
+  "not-withdrawn": "that delivery was never withdrawn",
+  "edited-since-withdrawal":
+    "this was edited after the delivery was withdrawn, so it cannot stand for it again",
+  superseded:
+    "the same template has routed this again since, so the withdrawn delivery stays withdrawn",
   "payload-invalid": "nothing to capture",
   "pool-setting-invalid": (facts) =>
     `that setting needs a ${String(facts["expected"])}, not what was sent`,

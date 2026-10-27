@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -405,6 +405,104 @@ describe("a route carrying words of its own", () => {
     expect(shown.kind).toBe("previewed");
     expect(shown.content?.text).toContain("a thought, tidied");
     expect(shown.content?.text).not.toContain("a thought\n");
+  });
+});
+
+describe("withdrawing and reinstating over the wire", () => {
+  async function delivered(): Promise<{
+    host: Vaulted;
+    item: string;
+    record: Record_;
+  }> {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+    if (record.state !== "delivered") throw new Error("expected a delivery");
+    return { host, item, record };
+  }
+
+  it("answers the record withdrawn, and returns the item to the queue", async () => {
+    const { host, item, record } = await delivered();
+
+    const response = await send(host.app, `/v1/routing/${record.id}/withdraw`);
+    expect(response.status).toBe(200);
+    expect(await body(response)).toMatchObject({
+      id: record.id,
+      withdrawnAt: expect.any(String),
+    });
+    expect(await queued(host)).toEqual([item]);
+  });
+
+  it("puts it back on reinstate", async () => {
+    const { host, item, record } = await delivered();
+    await send(host.app, `/v1/routing/${record.id}/withdraw`);
+
+    const response = await send(host.app, `/v1/routing/${record.id}/reinstate`);
+    expect(response.status).toBe(200);
+    expect(await body(response)).not.toHaveProperty("withdrawnAt");
+    expect(await queued(host)).not.toContain(item);
+  });
+
+  it("refuses a pending delivery, which is cancelled instead", async () => {
+    const host = await vaulted("missing");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+
+    const response = await send(host.app, `/v1/routing/${record.id}/withdraw`);
+    expect(response.status).toBe(409);
+    expect(await body(response)).toMatchObject({
+      error: { code: "not-delivered" },
+    });
+  });
+
+  it("refuses to reinstate a record that stands", async () => {
+    const { host, record } = await delivered();
+
+    const response = await send(host.app, `/v1/routing/${record.id}/reinstate`);
+    expect(response.status).toBe(409);
+    expect(await body(response)).toMatchObject({
+      error: { code: "not-withdrawn" },
+    });
+  });
+
+  it("is 404 for an id no record has", async () => {
+    const host = await vaulted("ready");
+
+    const response = await send(host.app, "/v1/routing/nobody/withdraw");
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("GET /v1/routing/{record}/presence", () => {
+  it("finds the note the delivery made, and then finds it gone", async () => {
+    const host = await vaulted("ready");
+    const item = await only(host);
+    const record = (await body(await route(host, item))) as Record_;
+
+    const there = await host.app.request(`/v1/routing/${record.id}/presence`);
+    expect(there.status).toBe(200);
+    expect(await body(there)).toEqual({ kind: "present", found: 1, of: 1 });
+
+    await rm(join(host.vaultRoot, "inbox", "a-thought.md"));
+
+    const gone = await host.app.request(`/v1/routing/${record.id}/presence`);
+    expect(await body(gone)).toEqual({ kind: "absent" });
+  });
+
+  it("refuses a mark made by hand, which went nowhere to look", async () => {
+    const host = serving();
+    const item = await only(host);
+    const record = (await body(
+      await send(host.app, `/v1/items/${item}/mark-processed`, {}),
+    )) as Record_;
+
+    const response = await host.app.request(
+      `/v1/routing/${record.id}/presence`,
+    );
+    expect(response.status).toBe(409);
+    expect(await body(response)).toMatchObject({
+      error: { code: "marked-by-hand" },
+    });
   });
 });
 

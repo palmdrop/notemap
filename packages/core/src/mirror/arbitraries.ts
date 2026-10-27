@@ -223,6 +223,7 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
         firedByTag: fc.boolean(),
       }),
       pointer: name(),
+      pointers: fc.array(name(), { minLength: 1 }),
       url: name(),
       output: fc.record(
         {
@@ -231,6 +232,7 @@ export const routingRecord = (): fc.Arbitrary<RoutingRecord> =>
         },
         { requiredKeys: [] },
       ),
+      withdrawnAt: stamp(),
     },
     { requiredKeys: ["id", "item", "target", "state", "at"] },
   );
