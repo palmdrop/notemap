@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
+import Dropping from "$components/dropping/Dropping.svelte";
 import Feed from "$components/feed/Feed.svelte";
 
 import { readDraft, writeDraft } from "$lib/draft";
@@ -150,7 +151,7 @@ async function attach(file = shot()) {
  * A picture goes up with the capture and cannot be taken back once it has, so
  * it is looked at before it is sent rather than recognised afterwards.
  */
-test("draws an attached picture before it is committed, and offers a way to drop it", async () => {
+test("draws an attached picture before it is committed, and offers a way to remove it", async () => {
   stubObjectUrls();
   pool(() => empty.clone());
 
@@ -167,6 +168,73 @@ test("draws an attached picture before it is committed, and offers a way to drop
 
   expect(screen.queryByAltText("shot.png")).toBeNull();
   expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+test("takes a file dropped anywhere on the page, and a picture pasted into its field", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  render(Dropping);
+
+  await fireEvent.drop(document.body, {
+    dataTransfer: { types: ["Files"], files: [shot()] },
+  });
+  await screen.findByAltText("shot.png");
+
+  await fireEvent.paste(screen.getByLabelText("What to capture"), {
+    clipboardData: {
+      types: ["Files"],
+      files: [new File(["more"], "pasted.png", { type: "image/png" })],
+    },
+  });
+  await screen.findByAltText("pasted.png");
+});
+
+test("scrolls a list of attachments to the newest as one arrives", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach();
+  const list = (await screen.findByAltText("shot.png")).closest(
+    ".overflow-y-auto",
+  );
+  if (list === null) throw new Error("no list of pictures");
+  // jsdom lays nothing out, so the list's end is only what it is told.
+  let top = 0;
+  Object.defineProperty(list, "scrollHeight", { get: () => 400 });
+  Object.defineProperty(list, "scrollTop", {
+    get: () => top,
+    set: (to: number) => {
+      top = to;
+    },
+  });
+
+  await attach(new File(["more"], "second.png", { type: "image/png" }));
+
+  await vi.waitFor(() => {
+    expect(top).toBe(400);
+  });
+});
+
+test("brings the box into view once a dropped file has landed in it", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  const { container } = render(Capture);
+  render(Dropping);
+  const box = container.querySelector("form");
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+
+  await fireEvent.drop(document.body, {
+    dataTransfer: { types: ["Files"], files: [shot()] },
+  });
+
+  await vi.waitFor(() => {
+    expect(scrolled.mock.contexts).toContain(box);
+  });
 });
 
 test("draws a file that is not a picture as a line, with no picture's room", async () => {
@@ -204,7 +272,7 @@ test("draws a picture above the field and every other file under it, as a captur
   expect(follows(field, paper)).toBe(true);
 });
 
-test("a dropped picture is not sent with the capture that follows", async () => {
+test("a removed picture is not sent with the capture that follows", async () => {
   stubObjectUrls();
   const sent: Envelope[] = [];
   pool(async (request) => {

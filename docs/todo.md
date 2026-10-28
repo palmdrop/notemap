@@ -33,7 +33,7 @@
   bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
   dropped as the reader scrolls back).
 
-- [ ] drag-and-drop for adding assets
+- [x] drag-and-drop for adding assets ([plan](plans/drag-in-attachments.md))
 
 ## Composer and capture
 

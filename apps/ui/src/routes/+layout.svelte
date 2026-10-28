@@ -4,6 +4,7 @@
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
+  import Dropping from "$components/dropping/Dropping.svelte";
   import SignIn from "$components/session/SignIn.svelte";
   import Bar from "$components/primitives/frame/Bar.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
@@ -86,7 +87,7 @@
     });
   });
 
-  // The one listener in the shell. Every chord is resolved against whatever is
+  // The one key listener in the shell. Every chord is resolved against whatever is
   // on screen, and a command that only goes somewhere is gone to — which is
   // how a key reaches a control the mouse reaches as a link.
   function onkeydown(event: KeyboardEvent): void {
@@ -124,3 +125,4 @@
 </Sheet>
 
 <StatusLine {shut} />
+<Dropping />

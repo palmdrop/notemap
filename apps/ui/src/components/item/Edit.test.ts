@@ -9,6 +9,8 @@ import {
   type MockTransport,
 } from "@notemap/client/testing";
 
+import Capture from "$components/capture/Capture.svelte";
+import Dropping from "$components/dropping/Dropping.svelte";
 import { unsaved } from "$lib/leaving.svelte";
 import { notices } from "$lib/notices.svelte";
 import { client, heldBlobs, pool } from "$testing/pool";
@@ -69,7 +71,7 @@ function edits(transport: MockTransport): Promise<Envelope[]> {
   );
 }
 
-test("draws the picture the item carries, and dropping it saves the item without one", async () => {
+test("draws the picture the item carries, and removing it saves the item without one", async () => {
   const transport = pool(accepting());
   const done = vi.fn();
 
@@ -231,6 +233,32 @@ test("holds a picked file and leaves no bytes behind where the edit is never sav
   ).toEqual([]);
 });
 
+test("a file dropped while the edit is open goes to the edit rather than the box, and is saved with it", async () => {
+  stubObjectUrls();
+  const transport = pool(accepting());
+
+  const box = render(Capture).container;
+  render(Dropping);
+  const edit = render(Edit, { item: anItem("one"), onclose: () => {} });
+
+  await fireEvent.drop(document.body, {
+    dataTransfer: {
+      types: ["Files"],
+      files: [new File(["one"], "dropped.png", { type: "image/png" })],
+    },
+  });
+
+  await within(edit.container).findByAltText("dropped.png");
+  expect(within(box).queryByAltText("dropped.png")).toBeNull();
+
+  await fireEvent.click(
+    within(edit.container).getByRole("button", { name: "save" }),
+  );
+  await vi.waitFor(async () => {
+    expect((await edits(transport))[0]?.payload.assets).toHaveLength(1);
+  });
+});
+
 test("refuses a file larger than the pool takes as it is picked, in the status line", async () => {
   stubObjectUrls();
   pool((request) => {
@@ -295,7 +323,7 @@ test("a save whose attach fails lets go of what it held, and keeps the edit open
   expect(await edits(transport)).toHaveLength(0);
 });
 
-test("a save the pool would now refuse drops the file, says so, and does not save", async () => {
+test("a save the pool would now refuse removes the file, says so, and does not save", async () => {
   stubObjectUrls();
   const transport = pool((request) => {
     const route = routeOf(request);
@@ -332,7 +360,7 @@ test("a save the pool would now refuse drops the file, says so, and does not sav
   expect(await edits(transport)).toHaveLength(0);
 });
 
-test("dropping a picked file revokes the handle its thumbnail was drawn through", async () => {
+test("removing a picked file revokes the handle its thumbnail was drawn through", async () => {
   stubObjectUrls();
   pool(accepting());
 

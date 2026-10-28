@@ -308,3 +308,79 @@ function growingWithin(content: HTMLElement): boolean {
       .some((animation) => animation.id === GROWING)
   );
 }
+
+/** Longer than any entry takes to grow in once it has arrived. */
+const ARRIVING = 1000;
+
+/**
+ * A list held to a height, kept at its end while anything arriving in it
+ * grows in: a file added past what the list shows would otherwise arrive out
+ * of sight, and the end is not where it will be until the arrival has grown.
+ */
+export function showingNewest(node: HTMLElement): () => void {
+  let pinned = false;
+  let release: ReturnType<typeof setTimeout> | undefined;
+
+  function toEnd(): void {
+    if (pinned) node.scrollTop = node.scrollHeight;
+  }
+
+  const resized = new ResizeObserver(toEnd);
+  const changed = new MutationObserver((changes) => {
+    for (const entry of node.children) resized.observe(entry);
+    if (!changes.some((change) => change.addedNodes.length > 0)) return;
+    pinned = true;
+    toEnd();
+    clearTimeout(release);
+    release = setTimeout(() => {
+      pinned = false;
+    }, ARRIVING);
+  });
+
+  for (const entry of node.children) resized.observe(entry);
+  changed.observe(node, { childList: true });
+  return () => {
+    clearTimeout(release);
+    resized.disconnect();
+    changed.disconnect();
+  };
+}
+
+/** How much of a list may lie past an edge before it counts as hidden there: a nudge of the wheel. */
+const HIDDEN = 4;
+
+/**
+ * Marks a list `data-hidden-above` and `data-hidden-below` while some of it
+ * lies scrolled past that edge, for a rule to appear by.
+ */
+export function markingHidden(node: HTMLElement): () => void {
+  function mark(): void {
+    const below = node.scrollHeight - node.clientHeight - node.scrollTop;
+    node.toggleAttribute("data-hidden-above", node.scrollTop > HIDDEN);
+    node.toggleAttribute("data-hidden-below", below > HIDDEN);
+  }
+
+  // Each entry as well as the list: an entry grows in after it arrives, and
+  // the list stops growing with it once it is held to its height.
+  const resized = new ResizeObserver(mark);
+  function observeAll(): void {
+    resized.disconnect();
+    resized.observe(node);
+    for (const entry of node.children) resized.observe(entry);
+  }
+
+  const changed = new MutationObserver(() => {
+    observeAll();
+    mark();
+  });
+  node.addEventListener("scroll", mark, { passive: true });
+  observeAll();
+  changed.observe(node, { childList: true });
+  mark();
+
+  return () => {
+    node.removeEventListener("scroll", mark);
+    resized.disconnect();
+    changed.disconnect();
+  };
+}

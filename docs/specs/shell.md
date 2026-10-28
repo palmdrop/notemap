@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-28
 **Shipped**:
+
+- 2026-10-28 — **Files are dropped or pasted anywhere on the page.** The open edit takes them, and
+  otherwise the capture box; a full-viewport overlay says which while files are held over the page,
+  and a drop with nowhere to go is kept from the browser. A pasted picture attaches unless the
+  clipboard carries text. A dropped folder is read through, hidden files left out, and a drop of
+  more than three files or 25 MB asks first. The `×` that takes an attachment off now *removes* it.
+  ([plan](../plans/drag-in-attachments.md))
 
 - 2026-10-26 — **A delivered record can be withdrawn from its block.** It asks the destination
   first and says only whether the thing is still there; a withdrawn record is struck through, and
@@ -807,12 +814,19 @@ draft per origin — two tabs share it, and the last write wins; it is never sen
 never sees it.
 
 **What is attached is drawn before it is committed**, where a capture is read with it
-([Content](#content)): **every picture above the field**, ruled off from it, as a thumbnail beside
+([Content](#content)): **every picture above the field**, as a thumbnail beside
 its line, and **every other file under the field**, just above the foot whose `attach` brought it —
-each with the line a captured attachment is read as, whole rather than cut, and a `×` that drops
+each with the line a captured attachment is read as, whole rather than cut, and a `×` that removes
 it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
-at to decide whether it goes. `attach` picks one file or several, and pressing it again adds to what
-is there. Each slides in and out, fading, and each part of the box opens with its first file and
+at to decide whether it goes. **Past three pictures, and past five other files, each list
+scrolls** *(2026-10-28)*, showing a sliver of the next so it reads as more, and is scrolled to its
+end as a file arrives, so many files never push the field out of sight and the newest is always
+seen. **A list is ruled off from the field only while files lie scrolled past the edge they
+share** — the pictures' bottom, the other files' top — the rule fading in once a few pixels are
+hidden there and out again when none are *(2026-10-28; the pictures were ruled off from the field
+always until then, and the box drew the two lists differently from an edit)*. `attach` picks one file or several, and pressing it again adds to what
+is there; a file **dropped** anywhere on the queue, or a picture pasted, is added the same way
+([Dropping and pasting](#dropping-and-pasting-files)). Each slides in and out, fading, and each part of the box opens with its first file and
 shuts with its last. *(Until 2026-10-07 every file was listed above the field, which put a file
 on the opposite side of the words from where the capture it made would draw it.)* The bytes go up with the capture and cannot be taken back
 once they have, so the one moment to look at what was picked is before the button, not afterwards
@@ -832,6 +846,60 @@ between them; none ever did, and with any file attachable the split no longer na
 anyone would set policy on ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)).
 Items captured before keep the sources they were stamped with. The shell decides how to draw an
 attachment by its **media type**, never by the payload's ([Content](#content)).
+
+### Dropping and pasting files
+
+*Added 2026-10-28.* **A file dropped anywhere on the page is attached**, and so is a picture
+pasted. What takes it is **the open edit**, on whichever surface draws it, and otherwise **the
+capture box**; one edit is open at a time, and it outranks the box the queue draws beside it. A
+surface with neither — the feed with no edit open, the log, settings — takes nothing, and **still
+keeps the drop from the browser**, which would open the file in place of the app and take with it
+whatever the box holds in memory.
+
+**The whole viewport is the target**, and it says so while a file is held over it: an overlay,
+ruled and inset from the window's edge, reading `attach to the capture`, or `attach to` and the
+capture being edited, named as the leaving dialog names it. It is raised only by a drag that
+carries files — dragged text, a link or anything on the page raises nothing and is left to do what
+it does — and only where something would take them. While what would take them is being sent, the
+overlay says so instead (`the capture is being sent`, or the edit `is being saved`) and a drop
+attaches nothing. A drag that starts on the page — one of its own thumbnails — is not a file
+arriving, though a browser marks a dragged picture as carrying files. **A link dragged out of
+another tab is not taken**: it arrives as an address rather than bytes, and the page may not fetch
+them; a picture dragged out of one is taken only where the browser hands its bytes over as a file.
+The overlay goes when the drag leaves the page, or once it has gone quiet for a second, since a
+drag over the page is heard several times a second and a leave can be lost with the element it
+was leaving. **While a dialog is open nothing arrives** — the leaving dialog, or the one asking
+about files below — and no overlay is raised, as no key reaches past one either.
+
+**A paste attaches only what the clipboard holds as files, and only where it holds no plain text.**
+A copy out of a word processor or a spreadsheet carries a picture of the text beside the text, and
+is pasted as the text. **A paste goes to the field it lands in**: in the box's field it attaches to
+the box, in an edit's to the edit, and with the caret in no field to what a drop would go to. A
+paste into any other field that takes text — a tag chooser, a destination form — is that field's.
+
+**A dropped folder is read through**, its own folders with it, and each file in it becomes an
+attachment of its own, named by its filename alone — two files of one name from two folders arrive
+as two attachments of one name. What is **hidden** inside a folder (a name starting `.`) is left
+out, a hidden folder counting once; a hidden file or folder dropped by name is taken. While the
+walk runs the overlay says `reading` and the folder's name. **A walk stops at 500 files** and
+attaches nothing, saying so on the status line, so a folder dropped by accident is never read,
+nor even listed, whole. A file that cannot be read is named on the status line, and nothing of
+that drop is attached.
+
+**What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
+more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
+much in all and to what, the first five by name and size, how many more, and how many hidden
+ones were left out. The count, the size and each name are bold, and nothing else is, so `and 12
+more` never reads as a file; a capture being edited is named in quotes, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
+`cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
+drop made while a folder is being read waits its turn. Where what would take the
+files closed while they were asked about, nothing is attached and the status line says so. Where
+nothing is asked, the hidden files a folder left out are said on the status line.
+
+What arrives goes the way `attach` goes: each file the pool would refuse is refused by name in the
+same place, and the rest slide in where `attach` would have put them. **The box is brought into
+view** once it has grown, since a drop can come from far down the queue; an edit's row already is
+([The row](#the-row)).
 
 ### The row
 
@@ -910,21 +978,24 @@ or reloading is the browser's own question, the only one a page may ask then. **
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
 item carries is drawn on the side of the words the row being edited drew it — every picture above
 them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
-beside it. Opening an edit therefore moves no file across the words, though each picture shrinks
+beside it, each list scrolling past three pictures or five files and ruled off from the words while files
+lie past their shared edge, as the box's are — where the files have the short rule, it spans the
+row instead. Opening an edit therefore moves no file across the words, though each picture shrinks
 to the box's size and gains its line, and a third picture and after, a line under the words when
-read, joins the thumbnails above them. **A file attached or dropped brings the row back into
+read, joins the thumbnails above them. **A file attached or removed brings the row back into
 view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving
 above the words or a line under them can carry the row past either edge of the screen. `attach` in
-the foot adds files after them, and **a file
+the foot adds files after them, as does a file dropped anywhere on the page or a picture pasted
+([Dropping and pasting](#dropping-and-pasting-files)), and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
 and is not taken. **What is picked is held and attached as the edit is saved** *(2026-10-10)*, the
 way the capture box attaches at its button and for the reason given there — and where the box has
-one way of never being sent, an edit has a drop, a revert, a discard and a close. So the `×` on a
+one way of never being sent, an edit has a remove, a revert, a discard and a close. So the `×` on a
 picked file takes the file and nothing else, and a picked picture is drawn through the browser's
 own handle on it rather than through the client. `save` attaches what is picked and sends the edit
 naming what the edit then holds, in that order and every slot numbered afresh, uploading any fresh
 file on the way, and stamps it `web`. **A save that could not be made leaves the edit open**,
-holding the words, and says why on the status line: a file the pool would now refuse is dropped
+holding the words, and says why on the status line: a file the pool would now refuse is removed
 and named, bytes that could not be held are let go of again, and an operation that could not be
 recorded takes its bytes with it. A save asked for from the leaving dialog and not made leaves that
 question unanswered: the edit stays where it is, and nothing goes on towards wherever the person

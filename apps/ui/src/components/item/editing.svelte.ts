@@ -115,7 +115,7 @@ export class Editing {
     this.attachments = [...this.attachments, ...taken.map(pickedFile)];
   }
 
-  drop(held: Held): void {
+  remove(held: Held): void {
     this.attachments = this.attachments.filter((each) => !same(each, held));
   }
 
@@ -190,7 +190,7 @@ export class Editing {
   }
 
   /**
-   * What the pool would now refuse, dropped and said: a file picked while the
+   * What the pool would now refuse, removed and said: a file picked while the
    * limit was unknown, or before a refused capture taught the client what it
    * is, is refused here rather than at the pool.
    */

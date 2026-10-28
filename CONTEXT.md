@@ -182,7 +182,9 @@ capture's is, so an asset has an identity before the pool holds its bytes. Pool 
 the item references that count it, so an asset an item still references cannot be released.
 **To attach** is the act of naming one on a capture, and a capture that carries one has an
 attachment — the word is the gesture and what came of it, never the asset itself, which is what the
-Avoid list is about.
+Avoid list is about. **To remove** is its opposite: taking an attachment off a capture, or off what
+is held for one, before it is sent. **To drop** a file is to drag it onto the page, which attaches
+it; the word is never used for taking one off.
 _Avoid_: attachment *for the asset*, media file
 
 **Picture**:

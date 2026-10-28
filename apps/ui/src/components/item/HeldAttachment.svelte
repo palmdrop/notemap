@@ -5,7 +5,7 @@
 
   /**
    * One file where it is being put in — the capture box, or an edit — with
-   * the `×` that drops it. A picture is drawn small beside its line, since it
+   * the `×` that removes it. A picture is drawn small beside its line, since it
    * is looked at to decide whether it goes. It carries the space under it, so
    * the space goes with it as it slides rather than jumping once it has gone.
    */
@@ -14,13 +14,13 @@
     url,
     bytes,
     picture = false,
-    ondrop,
+    onremove,
   }: {
     name: string;
     url: string | undefined;
     bytes?: number;
     picture?: boolean;
-    ondrop: () => void;
+    onremove: () => void;
   } = $props();
 </script>
 
@@ -39,7 +39,7 @@
   </span>
   <button
     type="button"
-    onclick={ondrop}
+    onclick={onremove}
     aria-label={`remove ${name}`}
     class="shrink-0 hover:underline"
   >
