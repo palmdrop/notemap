@@ -106,7 +106,10 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     await writes.get(id)?.catch(() => undefined);
   }
 
-  /** Left the outbox by another process's hand: nothing here to release. */
+  /**
+   * Out of the outbox with nothing here to release: another process landed it,
+   * or the store never held it.
+   */
   function forget(id: OperationId): void {
     undos.delete(id);
     restored.delete(id);
@@ -214,7 +217,16 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       state: "pending",
     };
     undos.set(entry.id, applied.undo);
-    await record(entry);
+    try {
+      await record(entry);
+    } catch (error) {
+      // Opposed during the write, it was settled by what opposed it.
+      if (undos.has(entry.id)) {
+        deps.state.update(applied.undo);
+        forget(entry.id);
+      }
+      throw error;
+    }
   }
 
   async function send(entry: PendingOperation): Promise<void> {

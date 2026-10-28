@@ -1,7 +1,7 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-28
 **Shipped**:
 
 - 2026-10-26 — **`routing.withdraw`, `routing.reinstate` and `routing.presence`.** Withdrawing and
@@ -978,6 +978,13 @@ would fail the lease, which reads as *another process holds this* and drops from
 this process has. So the entry is held before it is written, and a drain that has taken it up
 waits for the write to land before it asks the store for the lease; a drop waits the same way, so
 a cancelled operation's late write cannot bring it back.
+
+**An operation the store could not hold was never made** (2026-10-28). Where the write of a fresh
+entry fails, its effect on the cache is reversed, it leaves the outbox, and the mutation throws, so
+the caller still holds what it was making and decides what to do with it — a capture's draft is
+kept, and the bytes it attached are the caller's to let go of. Nothing is sent: a drain that took
+it up during the write finds no lease to take and drops it. One an opposing enqueue cancelled during
+the write is not reversed a second time; the opposing one has already settled the cache.
 
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
