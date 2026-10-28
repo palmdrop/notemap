@@ -153,8 +153,8 @@ export class Editing {
     this.busy = true;
     try {
       const id = this.item.id;
-      const waiting = this.waiting;
-      const given = this.given;
+      const waiting = $state.snapshot(this.waiting);
+      const given = $state.snapshot(this.given);
 
       // Read before anything is attached: an edit that says nothing new sends
       // its waiting tags and names no asset, so there is nothing to hold.

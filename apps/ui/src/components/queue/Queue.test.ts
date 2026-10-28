@@ -1555,6 +1555,54 @@ test("a trigger tag taken while a row is edited waits, and goes after the save",
   );
 });
 
+test("a waiting trigger tag goes after the save with what its template asked", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/templates") {
+      return json(200, {
+        values: [
+          {
+            id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a90",
+            name: "todo",
+            destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+            capability: "append",
+            arguments: { path: "todo.md" },
+            asked: { heading: { label: "list" } },
+            folder: "create",
+            triggerTag: "route/todo",
+            fired: { records: 0 },
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [] });
+    }
+    return amending(request);
+  });
+  await client.templates.load();
+
+  render(Queue);
+  await screen.findByText("one");
+
+  const field = await editing("as I meant it");
+  await tagWith("route/todo");
+  const line = await screen.findByRole("combobox", { name: "list" });
+  await fireEvent.input(line, { target: { value: "Next" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+  await tick();
+  expect(waitingTag()).not.toBeNull();
+
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(await sent()).toContainEqual({
+    tag: "route/todo",
+    arguments: { heading: "Next" },
+  });
+});
+
 test("an edit let go takes a waiting trigger tag with it, and not an ordinary one", async () => {
   pool(queued("one"));
 
@@ -1871,5 +1919,52 @@ test("a trigger tag on a row asks what its template asks, and sends it with the 
   expect(await sent()).toContainEqual({
     tag: "route/todo",
     arguments: { heading: "Next" },
+  });
+});
+
+test("a trigger tag whose last asked field is left to its default sends what was given", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/templates") {
+      return json(200, {
+        values: [
+          {
+            id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a90",
+            name: "todo",
+            destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+            capability: "append",
+            arguments: { heading: "Inbox" },
+            asked: { path: { label: "note" }, heading: { label: "list" } },
+            folder: "create",
+            triggerTag: "route/todo",
+            fired: { records: 0 },
+          },
+        ],
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [] });
+    }
+    return queued("one")(request);
+  });
+  await client.templates.load();
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.keyDown(window, { key: "j" });
+  await tagWith("route/todo");
+
+  const note = await screen.findByRole("combobox", { name: "note" });
+  await fireEvent.input(note, { target: { value: "todo.md" } });
+  await fireEvent.keyDown(note, { key: "Enter" });
+  const list = await screen.findByRole("combobox", { name: "list" });
+  await fireEvent.keyDown(list, { key: "Enter" });
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+  expect(await sent()).toContainEqual({
+    tag: "route/todo",
+    arguments: { path: "todo.md" },
   });
 });

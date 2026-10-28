@@ -184,7 +184,9 @@
 
       const sent = [...tags];
       const values = Object.fromEntries(
-        Object.entries(given).filter(([tag]) => sent.includes(tag)),
+        Object.entries($state.snapshot(given)).filter(([tag]) =>
+          sent.includes(tag),
+        ),
       );
       const item = await client.capture({
         channel: WEB,
