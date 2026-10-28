@@ -167,6 +167,35 @@ describe("the filesystem store", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  describe("an operation it could not write", () => {
+    it("is not held when its lease could not be let go", async () => {
+      const store = reopen();
+      await plant("outbox/a.lease/stuck", "");
+
+      await expect(store.writeOperation(anOperation("a"))).rejects.toThrow();
+      expect(await store.readOutbox()).toEqual([]);
+    });
+
+    it("leaves the one it would have replaced as it was", async () => {
+      const store = reopen();
+      await store.writeOperation(anOperation("a"));
+      await plant("outbox/a.lease/stuck", "");
+
+      await expect(
+        store.writeOperation({ ...anOperation("a"), state: "refused" }),
+      ).rejects.toThrow();
+      expect(await store.readOutbox()).toEqual([anOperation("a")]);
+    });
+
+    it("leaves no temporary file behind", async () => {
+      const store = reopen();
+      await plant("outbox/a.json/stuck", "");
+
+      await expect(store.writeOperation(anOperation("a"))).rejects.toThrow();
+      expect(await readdir(join(directory, "outbox"))).toEqual(["a.json"]);
+    });
+  });
+
   it("reports an operation it cannot parse, sets it aside, and keeps the rest", async () => {
     const store = reopen();
     await store.writeOperation(anOperation("a"));

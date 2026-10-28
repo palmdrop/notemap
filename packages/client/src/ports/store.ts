@@ -23,6 +23,7 @@ export type HeldAsset = {
  */
 export interface ClientStore {
   readOutbox(): Promise<readonly PendingOperation[]>;
+  /** Lands whole or not at all: one that rejects leaves what was held as it was. */
   writeOperation(operation: PendingOperation): Promise<void>;
   removeOperation(id: OperationId): Promise<void>;
   /**
