@@ -191,6 +191,25 @@ test("takes a file dropped anywhere on the page, and a picture pasted into its f
   await screen.findByAltText("pasted.png");
 });
 
+test("scrolls a list of attachments to the newest as one arrives", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  await attach();
+  const list = (await screen.findByAltText("shot.png")).closest(
+    ".overflow-y-auto",
+  );
+  const scrolled = vi.mocked(Element.prototype.scrollTo);
+  scrolled.mockClear();
+
+  await attach(new File(["more"], "second.png", { type: "image/png" }));
+
+  await vi.waitFor(() => {
+    expect(scrolled.mock.contexts).toContain(list);
+  });
+});
+
 test("brings the box into view once a dropped file has landed in it", async () => {
   stubObjectUrls();
   pool(() => empty.clone());

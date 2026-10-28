@@ -10,12 +10,15 @@
     files,
     hidden,
     to,
+    quoted = false,
     onanswer,
   }: {
     files: readonly File[];
     hidden: number;
     /** What they would be attached to, as the overlay named it. */
     to: string;
+    /** A capture named by its words rather than as the capture. */
+    quoted?: boolean;
     onanswer: (attach: boolean) => void;
   } = $props();
 
@@ -24,8 +27,8 @@
   const id = $props.id();
   const bytes = $derived(files.reduce((sum, file) => sum + file.size, 0));
   const more = $derived(files.length - NAMED);
-  const said = $derived(
-    `attach ${files.length === 1 ? "1 file" : `${String(files.length)} files`}, ${sizeOf(bytes)}, to ${to}`,
+  const count = $derived(
+    files.length === 1 ? "1 file" : `${String(files.length)} files`,
   );
 
   function modal(dialog: HTMLDialogElement): () => void {
@@ -60,18 +63,21 @@
 >
   <div class="px-3 py-2.5">
     <p id="{id}-what" class="wrap-anywhere">
-      {said}
+      attach <strong class="font-semibold">{count}</strong>,
+      <strong class="font-semibold">{sizeOf(bytes)}</strong>, to {quoted
+        ? `“${to}”`
+        : to}
     </p>
     <ul class="mt-2">
       {#each files.slice(0, NAMED) as file, at (at)}
         <li class="flex justify-between gap-x-4">
-          <span class="min-w-0 truncate">{file.name}</span>
+          <span class="min-w-0 truncate font-semibold">{file.name}</span>
           <span class="shrink-0">{sizeOf(file.size)}</span>
         </li>
       {/each}
     </ul>
     {#if more > 0}
-      <p>and {more} more</p>
+      <p class="mt-1.5">and {more} more</p>
     {/if}
     {#if hidden > 0}
       <p class="mt-2">

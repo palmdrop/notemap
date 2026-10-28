@@ -268,7 +268,15 @@ test("asks before attaching more than a few files, naming the first of them", as
   expect(dialog.textContent).toContain(
     "attach 7 files, 7 bytes, to the capture",
   );
-  expect(within(dialog).getByText("4.md")).toBeDefined();
+  // What the files are is bold, and what is said of them is not.
+  expect(within(dialog).getByText("7 files").tagName).toBe("STRONG");
+  expect(within(dialog).getByText("7 bytes").tagName).toBe("STRONG");
+  expect(
+    within(dialog).getByText("4.md").classList.contains("font-semibold"),
+  ).toBe(true);
+  expect(
+    within(dialog).getByText("and 2 more").classList.contains("font-semibold"),
+  ).toBe(false);
   expect(within(dialog).queryByText("5.md")).toBeNull();
   expect(dialog.textContent).toContain("and 2 more");
   expect(take).not.toHaveBeenCalled();
@@ -340,6 +348,16 @@ test("a drop made while a folder is being read waits its turn", async () => {
     expect(take).toHaveBeenCalledTimes(2);
   });
   expect(take.mock.calls).toEqual([[[inside]], [[shot]]]);
+});
+
+test("quotes the capture being edited where it asks", async () => {
+  receiving({ name: "09:12: some words", edit: true });
+  render(Dropping);
+
+  await drop(document.body, many(4));
+
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog.textContent).toContain("to “09:12: some words”");
 });
 
 test("says so where what would take them closed while they were asked about", async () => {

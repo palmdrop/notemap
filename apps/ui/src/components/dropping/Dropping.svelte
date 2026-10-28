@@ -43,6 +43,7 @@
         readonly files: readonly File[];
         readonly hidden: number;
         readonly to: string;
+        readonly quoted: boolean;
         readonly answer: (attach: boolean) => void;
       }
     | undefined
@@ -95,7 +96,13 @@
 
     if (asksFirst(files)) {
       const attach = await new Promise<boolean>((answer) => {
-        asking = { files, hidden, to: taker.name, answer };
+        asking = {
+          files,
+          hidden,
+          to: taker.name,
+          quoted: taker.edit,
+          answer,
+        };
       });
       asking = undefined;
       if (!attach) return;
@@ -256,6 +263,7 @@
     files={asking.files}
     hidden={asking.hidden}
     to={asking.to}
+    quoted={asking.quoted}
     onanswer={asking.answer}
   />
 {/if}

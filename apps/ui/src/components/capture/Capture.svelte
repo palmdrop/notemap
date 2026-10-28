@@ -21,7 +21,7 @@
   } from "$lib/draft";
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
-  import { bringIntoView, settled, slide } from "$lib/motion";
+  import { bringIntoView, settled, showingNewest, slide } from "$lib/motion";
   import { sorted } from "$lib/picking";
   import { receives } from "$lib/receiving.svelte";
   import { NOTHING_TO_CAPTURE } from "$lib/said";
@@ -250,8 +250,9 @@
 >
   {#if pictures.length > 0}
     <div
-      class="flex flex-col border-b border-ink px-3 pt-2.5 pb-0.5"
+      class="flex max-h-76 flex-col overflow-y-auto border-b border-ink px-3 pt-2.5 pb-0.5"
       transition:slide={{ fade: true }}
+      {@attach showingNewest}
     >
       {#each pictures as file (file)}
         <HeldAttachment
@@ -282,7 +283,11 @@
   ></textarea>
 
   {#if files.length > 0}
-    <div class="flex flex-col px-3 pb-0.5" transition:slide={{ fade: true }}>
+    <div
+      class="flex max-h-44 flex-col overflow-y-auto px-3 pb-0.5"
+      transition:slide={{ fade: true }}
+      {@attach showingNewest}
+    >
       {#each files as file (file)}
         <HeldAttachment
           name={file.name}

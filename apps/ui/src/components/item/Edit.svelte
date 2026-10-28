@@ -6,7 +6,7 @@
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
-  import { slide } from "$lib/motion";
+  import { showingNewest, slide } from "$lib/motion";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
   import { receives } from "$lib/receiving.svelte";
 
@@ -105,7 +105,11 @@
 <!-- The capture's own place, edited where it is read: the foot that saves it
      is the row's, drawn by `EditFoot` in place of the actions. -->
 {#if pictures.length > 0}
-  <div class="flex flex-col" transition:slide={{ fade: true }}>
+  <div
+    class="flex max-h-76 flex-col overflow-y-auto"
+    transition:slide={{ fade: true }}
+    {@attach showingNewest}
+  >
     {#each pictures as held (keyOf(held))}
       <HeldAttachment
         name={held.name}
@@ -137,14 +141,16 @@
 {#if files.length > 0}
   <div class="mt-2 flex flex-col" transition:slide={{ fade: true }}>
     <div class="mb-1 w-12 border-t border-ink"></div>
-    {#each files as held (keyOf(held))}
-      <HeldAttachment
-        name={held.name}
-        url={urlOf(held)}
-        bytes={held.bytes}
-        onremove={() => editing.remove(held)}
-      />
-    {/each}
+    <div class="flex max-h-44 flex-col overflow-y-auto" {@attach showingNewest}>
+      {#each files as held (keyOf(held))}
+        <HeldAttachment
+          name={held.name}
+          url={urlOf(held)}
+          bytes={held.bytes}
+          onremove={() => editing.remove(held)}
+        />
+      {/each}
+    </div>
   </div>
 {/if}
 

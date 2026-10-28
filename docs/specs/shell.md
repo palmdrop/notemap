@@ -818,7 +818,10 @@ never sees it.
 its line, and **every other file under the field**, just above the foot whose `attach` brought it —
 each with the line a captured attachment is read as, whole rather than cut, and a `×` that removes
 it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
-at to decide whether it goes. `attach` picks one file or several, and pressing it again adds to what
+at to decide whether it goes. **Past three pictures, and past five other files, each list
+scrolls** *(2026-10-28)*, showing a sliver of the next so it reads as more, and is scrolled to its
+end as a file arrives, so many files never push the field out of sight and the newest is always
+seen. `attach` picks one file or several, and pressing it again adds to what
 is there; a file **dropped** anywhere on the queue, or a picture pasted, is added the same way
 ([Dropping and pasting](#dropping-and-pasting-files)). Each slides in and out, fading, and each part of the box opens with its first file and
 shuts with its last. *(Until 2026-10-07 every file was listed above the field, which put a file
@@ -883,7 +886,8 @@ that drop is attached.
 **What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
 more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
 much in all and to what, the first five by name and size, how many more, and how many hidden
-ones were left out, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
+ones were left out. The count, the size and each name are bold, and nothing else is, so `and 12
+more` never reads as a file; a capture being edited is named in quotes, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
 `cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
 drop made while a folder is being read waits its turn. Where what would take the
 files closed while they were asked about, nothing is attached and the status line says so. Where
@@ -971,7 +975,7 @@ or reloading is the browser's own question, the only one a page may ask then. **
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
 item carries is drawn on the side of the words the row being edited drew it — every picture above
 them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
-beside it. Opening an edit therefore moves no file across the words, though each picture shrinks
+beside it, each list scrolling past three pictures or five files as the box's do. Opening an edit therefore moves no file across the words, though each picture shrinks
 to the box's size and gains its line, and a third picture and after, a line under the words when
 read, joins the thumbnails above them. **A file attached or removed brings the row back into
 view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving

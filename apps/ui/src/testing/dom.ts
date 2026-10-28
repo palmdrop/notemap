@@ -20,6 +20,7 @@ vi.mock("$lib/client", () => import("$testing/pool"));
 function stubScrolling(): void {
   window.scrollTo = vi.fn();
   Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.scrollTo = vi.fn();
   Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
 }
 

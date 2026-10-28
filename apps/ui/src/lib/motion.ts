@@ -308,3 +308,20 @@ function growingWithin(content: HTMLElement): boolean {
       .some((animation) => animation.id === GROWING)
   );
 }
+
+/**
+ * A list held to a height, scrolled to its end as anything arrives in it: a
+ * file added past what the list shows would otherwise arrive out of sight.
+ */
+export function showingNewest(node: HTMLElement): () => void {
+  const watching = new MutationObserver((changes) => {
+    if (!changes.some((change) => change.addedNodes.length > 0)) return;
+    node.scrollTo({
+      top: node.scrollHeight,
+      behavior: duration("short") === 0 ? "instant" : "smooth",
+    });
+  });
+
+  watching.observe(node, { childList: true });
+  return () => watching.disconnect();
+}
