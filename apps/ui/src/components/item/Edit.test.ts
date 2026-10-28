@@ -69,7 +69,7 @@ function edits(transport: MockTransport): Promise<Envelope[]> {
   );
 }
 
-test("draws the picture the item carries, and dropping it saves the item without one", async () => {
+test("draws the picture the item carries, and removing it saves the item without one", async () => {
   const transport = pool(accepting());
   const done = vi.fn();
 
@@ -295,7 +295,7 @@ test("a save whose attach fails lets go of what it held, and keeps the edit open
   expect(await edits(transport)).toHaveLength(0);
 });
 
-test("a save the pool would now refuse drops the file, says so, and does not save", async () => {
+test("a save the pool would now refuse removes the file, says so, and does not save", async () => {
   stubObjectUrls();
   const transport = pool((request) => {
     const route = routeOf(request);
@@ -332,7 +332,7 @@ test("a save the pool would now refuse drops the file, says so, and does not sav
   expect(await edits(transport)).toHaveLength(0);
 });
 
-test("dropping a picked file revokes the handle its thumbnail was drawn through", async () => {
+test("removing a picked file revokes the handle its thumbnail was drawn through", async () => {
   stubObjectUrls();
   pool(accepting());
 

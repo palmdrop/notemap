@@ -87,7 +87,7 @@
     chosen.filter((file) => !isImage({ mime: file.type })),
   );
 
-  // One URL per file for as long as the file is held, so adding or dropping
+  // One URL per file for as long as the file is held, so adding or removing
   // one leaves every other thumbnail where it is.
   $effect(() => {
     const held = chosen;
@@ -156,7 +156,7 @@
     chosen = [...chosen, ...taken];
   }
 
-  function drop(file: File) {
+  function remove(file: File) {
     chosen = chosen.filter((one) => one !== file);
   }
 
@@ -234,7 +234,7 @@
           url={previews.get(file)}
           bytes={file.size}
           picture
-          ondrop={() => drop(file)}
+          onremove={() => remove(file)}
         />
       {/each}
     </div>
@@ -263,7 +263,7 @@
           name={file.name}
           url={previews.get(file)}
           bytes={file.size}
-          ondrop={() => drop(file)}
+          onremove={() => remove(file)}
         />
       {/each}
     </div>

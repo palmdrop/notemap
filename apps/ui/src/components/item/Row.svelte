@@ -124,7 +124,7 @@
     if (row !== undefined) bringIntoView(row, { headFirst: true });
   }
 
-  // A file attached or dropped grows or shrinks the row where it stands, which
+  // A file attached or removed grows or shrinks the row where it stands, which
   // can carry the row past either edge of the screen.
   let attached: number | undefined;
   $effect(() => {

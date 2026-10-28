@@ -809,7 +809,7 @@ never sees it.
 **What is attached is drawn before it is committed**, where a capture is read with it
 ([Content](#content)): **every picture above the field**, ruled off from it, as a thumbnail beside
 its line, and **every other file under the field**, just above the foot whose `attach` brought it —
-each with the line a captured attachment is read as, whole rather than cut, and a `×` that drops
+each with the line a captured attachment is read as, whole rather than cut, and a `×` that removes
 it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
 at to decide whether it goes. `attach` picks one file or several, and pressing it again adds to what
 is there. Each slides in and out, fading, and each part of the box opens with its first file and
@@ -912,19 +912,19 @@ item carries is drawn on the side of the words the row being edited drew it — 
 them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
 beside it. Opening an edit therefore moves no file across the words, though each picture shrinks
 to the box's size and gains its line, and a third picture and after, a line under the words when
-read, joins the thumbnails above them. **A file attached or dropped brings the row back into
+read, joins the thumbnails above them. **A file attached or removed brings the row back into
 view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving
 above the words or a line under them can carry the row past either edge of the screen. `attach` in
 the foot adds files after them, and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
 and is not taken. **What is picked is held and attached as the edit is saved** *(2026-10-10)*, the
 way the capture box attaches at its button and for the reason given there — and where the box has
-one way of never being sent, an edit has a drop, a revert, a discard and a close. So the `×` on a
+one way of never being sent, an edit has a remove, a revert, a discard and a close. So the `×` on a
 picked file takes the file and nothing else, and a picked picture is drawn through the browser's
 own handle on it rather than through the client. `save` attaches what is picked and sends the edit
 naming what the edit then holds, in that order and every slot numbered afresh, uploading any fresh
 file on the way, and stamps it `web`. **A save that could not be made leaves the edit open**,
-holding the words, and says why on the status line: a file the pool would now refuse is dropped
+holding the words, and says why on the status line: a file the pool would now refuse is removed
 and named, bytes that could not be held are let go of again, and an operation that could not be
 recorded takes its bytes with it. A save asked for from the leaving dialog and not made leaves that
 question unanswered: the edit stays where it is, and nothing goes on towards wherever the person

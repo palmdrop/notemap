@@ -150,7 +150,7 @@ async function attach(file = shot()) {
  * A picture goes up with the capture and cannot be taken back once it has, so
  * it is looked at before it is sent rather than recognised afterwards.
  */
-test("draws an attached picture before it is committed, and offers a way to drop it", async () => {
+test("draws an attached picture before it is committed, and offers a way to remove it", async () => {
   stubObjectUrls();
   pool(() => empty.clone());
 
@@ -204,7 +204,7 @@ test("draws a picture above the field and every other file under it, as a captur
   expect(follows(field, paper)).toBe(true);
 });
 
-test("a dropped picture is not sent with the capture that follows", async () => {
+test("a removed picture is not sent with the capture that follows", async () => {
   stubObjectUrls();
   const sent: Envelope[] = [];
   pool(async (request) => {

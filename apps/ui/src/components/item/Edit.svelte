@@ -22,7 +22,7 @@
   /**
    * The bytes of a picked file as the browser can draw them, the client holding
    * none of them until the edit is saved. One URL per file for as long as the
-   * file is held, so adding or dropping one leaves every other thumbnail where
+   * file is held, so adding or removing one leaves every other thumbnail where
    * it is.
    */
   const previews = new SvelteMap<File, string>();
@@ -101,7 +101,7 @@
         url={urlOf(held)}
         bytes={held.bytes}
         picture
-        ondrop={() => editing.drop(held)}
+        onremove={() => editing.remove(held)}
       />
     {/each}
   </div>
@@ -131,7 +131,7 @@
         name={held.name}
         url={urlOf(held)}
         bytes={held.bytes}
-        ondrop={() => editing.drop(held)}
+        onremove={() => editing.remove(held)}
       />
     {/each}
   </div>
