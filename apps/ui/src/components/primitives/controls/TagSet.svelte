@@ -301,7 +301,10 @@
     }
     const tag = stepping.tag;
     close();
-    onadd(tag, Object.keys(values).length === 0 ? undefined : values);
+    onadd(
+      tag,
+      Object.keys(values).length === 0 ? undefined : $state.snapshot(values),
+    );
   }
 
   /**

@@ -207,6 +207,128 @@ describe("an operation a drain reaches before the store has it", () => {
   });
 });
 
+/** A store that refuses the first operation it is given, once the test says so. */
+function unableToWrite(base: ClientStore) {
+  let refuse: (() => void) | undefined;
+  let first = true;
+
+  const store: ClientStore = {
+    ...base,
+    writeOperation(entry) {
+      if (!first) return base.writeOperation(entry);
+      first = false;
+      return new Promise<void>((_, reject) => {
+        refuse = () => reject(new Error("the disk is full"));
+      });
+    },
+  };
+
+  return {
+    store,
+    refuse: async () => {
+      await until(() => refuse !== undefined);
+      refuse?.();
+    },
+  };
+}
+
+const CAPTURE: Operation = { kind: "capture", envelope: ENVELOPE };
+
+describe("an operation the store could not hold", () => {
+  it("is refused to its caller and leaves the state as it was", async () => {
+    const { store, refuse } = unableToWrite(createMemoryStore());
+    const { outbox, state, sent } = engineOver([anItem("one")], store);
+    const before = state.get();
+
+    const enqueued = outbox.enqueue(CAPTURE);
+    await refuse();
+
+    await expect(enqueued).rejects.toThrow("the disk is full");
+    expect(state.get()).toEqual(before);
+    expect(state.get().items.has("two")).toBe(false);
+    expect(state.get().outbox).toEqual([]);
+
+    await outbox.drain();
+    expect(sent).toEqual([]);
+  });
+
+  it("is not sent by a drain that reached it during the write", async () => {
+    const { store, refuse } = unableToWrite(createMemoryStore());
+    const { outbox, state, sent } = engineOver([anItem("one")], store);
+    const before = state.get();
+
+    const enqueued = outbox.enqueue(CAPTURE);
+    const draining = outbox.drain();
+    await refuse();
+
+    await expect(enqueued).rejects.toThrow("the disk is full");
+    await draining;
+
+    expect(sent).toEqual([]);
+    expect(state.get()).toEqual(before);
+  });
+
+  it("is not undone twice when an opposing one cancelled it during the write", async () => {
+    const { store, refuse } = unableToWrite(createMemoryStore());
+    const { outbox, state } = engineOver([anItem("one")], store);
+
+    clock.set("2026-08-17T12:00:01.000Z");
+    const archiving = outbox.enqueue(ARCHIVE);
+    await outbox.enqueue({ kind: "tag", item: "one", tag: "later" });
+    clock.set("2026-08-17T12:00:02.000Z");
+    const unarchiving = outbox.enqueue(UNARCHIVE);
+    await refuse();
+
+    await expect(archiving).rejects.toThrow("the disk is full");
+    await unarchiving;
+
+    const one = state.get().items.get("one");
+    expect(one?.archived).toBeUndefined();
+    expect(one?.tags?.map((tag) => tag.name)).toContain("later");
+    expect(state.get().queue.ids).toEqual(["one"]);
+    expect(state.get().outbox.map((held) => held.operation.kind)).toEqual([
+      "tag",
+    ]);
+  });
+});
+
+describe("an operation as it was handed over", () => {
+  it("is held as a copy the caller can no longer change", async () => {
+    const { outbox, state } = engineOver([anItem("one")]);
+    const supplied = { heading: "Next" };
+
+    await outbox.enqueue({
+      kind: "tag",
+      item: "one",
+      tag: "route/todo",
+      arguments: supplied,
+    });
+    supplied.heading = "Later";
+
+    expect(state.get().outbox[0]?.operation).toMatchObject({
+      arguments: { heading: "Next" },
+    });
+  });
+
+  it("is refused before anything is applied where it cannot be copied", async () => {
+    const store = createMemoryStore();
+    const { outbox, state } = engineOver([anItem("one")], store);
+    const before = state.get();
+
+    await expect(
+      outbox.enqueue({
+        kind: "tag",
+        item: "one",
+        tag: "route/todo",
+        arguments: new Proxy({ heading: "Next" }, {}),
+      }),
+    ).rejects.toThrow();
+
+    expect(state.get()).toBe(before);
+    expect(await store.readOutbox()).toEqual([]);
+  });
+});
+
 describe("an operation already handed over", () => {
   it("does not cancel with a later one, even before it is recorded as sending", async () => {
     const { outbox, state, sent } = engineOver([anItem("one")]);

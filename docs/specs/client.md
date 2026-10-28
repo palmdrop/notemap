@@ -1,8 +1,14 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-28
 **Shipped**:
+
+- 2026-10-28 — **An operation the store could not hold was never made.** A failed write of a fresh
+  entry reverses its effect on the cache, takes it out of the outbox and throws to the caller. An
+  enqueue holds its own copy of the operation, and refuses one it cannot copy before applying it.
+  A store's failed `writeOperation` holds nothing it did not hold before, the directory store's
+  included.
 
 - 2026-10-26 — **`routing.withdraw`, `routing.reinstate` and `routing.presence`.** Withdrawing and
   reinstating settle the item from the pool's copy; summaries the client works out leave withdrawn
@@ -979,6 +985,20 @@ this process has. So the entry is held before it is written, and a drain that ha
 waits for the write to land before it asks the store for the lease; a drop waits the same way, so
 a cancelled operation's late write cannot bring it back.
 
+**An operation is the outbox's own copy from the moment it is enqueued** (2026-10-28). It is
+copied before anything is applied, so a caller that changes what it handed over changes nothing
+queued. What cannot be copied, such as a shell's reactive proxy, is refused at the enqueue with the
+cache untouched, rather than left to whichever store fails to hold it. A directory store would
+have written a proxy out as JSON without complaint.
+
+**An operation the store could not hold was never made** (2026-10-28). Where the write of a fresh
+entry fails, its effect on the cache is reversed, it leaves the outbox, and the mutation throws, so
+the caller still holds what it was making and decides what to do with it — a capture's draft is
+kept, and the bytes it attached are the caller's to let go of. Nothing is sent: a drain that took
+it up during the write finds no lease to take and drops it. One an opposing enqueue cancelled during
+the write is not reversed a second time; the opposing one has already settled the cache. This rests
+on the store's half: a `writeOperation` that rejects leaves what was held as it was.
+
 **A store that cannot be read leaves a cold client, not a dead one, and says so.** Each collection
 is read on its own, so a cache that fails does not also cost the outbox — the one thing whose loss
 costs a person work. What could not be read comes up empty and is **reported** rather than
@@ -1219,7 +1239,10 @@ cache and the pool identity is one file, written to a unique temporary name and 
 old one, so a reader sees the previous list or the next and never half of either. **The outbox is
 one file per operation**, named for its id — written by rename, removed by unlink, read by listing
 the directory — which is what lets two processes enqueue into one directory without either losing
-a write. A lease is an empty file made beside the operation, exclusively, so two askers get one
+a write. A write lets the operation's lease go before the rename rather than after, so the rename
+is the one step that changes the operation: a write that fails leaves it as it was, and a
+`sending` one whose lease went with it is taken up again once that lapses. The temporary file a failed write leaves is
+removed. A lease is an empty file made beside the operation, exclusively, so two askers get one
 answer between them; one a process died holding before it wrote `sending` through is told from one
 made a moment ago only by age, and is taken over once a lease length has passed. A blob is its bytes beside a record of the filename and the media type, written bytes
 first so the record is what says a blob is there; `blobUrl` answers a `file://` URL, which nothing

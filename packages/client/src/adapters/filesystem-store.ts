@@ -83,8 +83,13 @@ export function createFilesystemStore(
   async function replace(path: string, contents: string | Uint8Array) {
     await mkdir(dirname(path), { recursive: true });
     const temporary = `${path}.${randomUUID()}.tmp`;
-    await writeFile(temporary, contents);
-    await rename(temporary, path);
+    try {
+      await writeFile(temporary, contents);
+      await rename(temporary, path);
+    } catch (error) {
+      await rm(temporary, { force: true }).catch(() => undefined);
+      throw error;
+    }
   }
 
   async function parsed<T>(
@@ -179,10 +184,13 @@ export function createFilesystemStore(
     },
 
     async writeOperation(operation) {
-      await replace(operationPath(operation.id), JSON.stringify(operation));
+      // The lease goes first so the rename is the last step and the only one
+      // that changes the operation. Should it fail, the file still says
+      // `sending`, and is taken up again once that lapses.
       if (operation.state !== "sending") {
         await rm(leasePath(operation.id), { force: true });
       }
+      await replace(operationPath(operation.id), JSON.stringify(operation));
     },
 
     async removeOperation(id) {
