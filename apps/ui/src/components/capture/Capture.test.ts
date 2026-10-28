@@ -200,13 +200,21 @@ test("scrolls a list of attachments to the newest as one arrives", async () => {
   const list = (await screen.findByAltText("shot.png")).closest(
     ".overflow-y-auto",
   );
-  const scrolled = vi.mocked(Element.prototype.scrollTo);
-  scrolled.mockClear();
+  if (list === null) throw new Error("no list of pictures");
+  // jsdom lays nothing out, so the list's end is only what it is told.
+  let top = 0;
+  Object.defineProperty(list, "scrollHeight", { get: () => 400 });
+  Object.defineProperty(list, "scrollTop", {
+    get: () => top,
+    set: (to: number) => {
+      top = to;
+    },
+  });
 
   await attach(new File(["more"], "second.png", { type: "image/png" }));
 
   await vi.waitFor(() => {
-    expect(scrolled.mock.contexts).toContain(list);
+    expect(top).toBe(400);
   });
 });
 

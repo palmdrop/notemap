@@ -309,24 +309,41 @@ function growingWithin(content: HTMLElement): boolean {
   );
 }
 
+/** Longer than any entry takes to grow in once it has arrived. */
+const ARRIVING = 1000;
+
 /**
- * A list held to a height, scrolled to its end as anything arrives in it: a
- * file added past what the list shows would otherwise arrive out of sight.
- * Scrolled once the arrival has grown in, since its end is not there before.
+ * A list held to a height, kept at its end while anything arriving in it
+ * grows in: a file added past what the list shows would otherwise arrive out
+ * of sight, and the end is not where it will be until the arrival has grown.
  */
 export function showingNewest(node: HTMLElement): () => void {
-  const watching = new MutationObserver((changes) => {
+  let pinned = false;
+  let release: ReturnType<typeof setTimeout> | undefined;
+
+  function toEnd(): void {
+    if (pinned) node.scrollTop = node.scrollHeight;
+  }
+
+  const resized = new ResizeObserver(toEnd);
+  const changed = new MutationObserver((changes) => {
+    for (const entry of node.children) resized.observe(entry);
     if (!changes.some((change) => change.addedNodes.length > 0)) return;
-    void settled(node).then(() => {
-      node.scrollTo({
-        top: node.scrollHeight,
-        behavior: duration("short") === 0 ? "instant" : "smooth",
-      });
-    });
+    pinned = true;
+    toEnd();
+    clearTimeout(release);
+    release = setTimeout(() => {
+      pinned = false;
+    }, ARRIVING);
   });
 
-  watching.observe(node, { childList: true });
-  return () => watching.disconnect();
+  for (const entry of node.children) resized.observe(entry);
+  changed.observe(node, { childList: true });
+  return () => {
+    clearTimeout(release);
+    resized.disconnect();
+    changed.disconnect();
+  };
 }
 
 /** How much of a list may lie past an edge before it counts as hidden there: a nudge of the wheel. */
