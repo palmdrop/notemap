@@ -8,6 +8,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { slide } from "$lib/motion";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
+  import { receives } from "$lib/receiving.svelte";
 
   import HeldAttachment from "./HeldAttachment.svelte";
   import { isPicked, type Editing, type Held } from "./editing.svelte";
@@ -80,6 +81,16 @@
   };
 
   onMount(() => opened(self));
+
+  onMount(() =>
+    receives({
+      name: self.about,
+      edit: true,
+      busy: () => editing.busy,
+      owns: (target) => target === field,
+      take: (files) => editing.pick(files),
+    }),
+  );
 
   /** Opened as a modal the moment it is drawn, with `save` taking the focus. */
   function modal(dialog: HTMLDialogElement): () => void {

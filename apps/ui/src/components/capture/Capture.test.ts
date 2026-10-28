@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
+import Dropping from "$components/dropping/Dropping.svelte";
 import Feed from "$components/feed/Feed.svelte";
 
 import { readDraft, writeDraft } from "$lib/draft";
@@ -167,6 +168,27 @@ test("draws an attached picture before it is committed, and offers a way to remo
 
   expect(screen.queryByAltText("shot.png")).toBeNull();
   expect(screen.queryByText("shot.png")).toBeNull();
+});
+
+test("takes a file dropped anywhere on the page, and a picture pasted into its field", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  render(Capture);
+  render(Dropping);
+
+  await fireEvent.drop(document.body, {
+    dataTransfer: { types: ["Files"], files: [shot()] },
+  });
+  await screen.findByAltText("shot.png");
+
+  await fireEvent.paste(screen.getByLabelText("What to capture"), {
+    clipboardData: {
+      types: ["Files"],
+      files: [new File(["more"], "pasted.png", { type: "image/png" })],
+    },
+  });
+  await screen.findByAltText("pasted.png");
 });
 
 test("draws a file that is not a picture as a line, with no picture's room", async () => {

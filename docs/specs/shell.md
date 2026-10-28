@@ -812,7 +812,8 @@ its line, and **every other file under the field**, just above the foot whose `a
 each with the line a captured attachment is read as, whole rather than cut, and a `×` that removes
 it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
 at to decide whether it goes. `attach` picks one file or several, and pressing it again adds to what
-is there. Each slides in and out, fading, and each part of the box opens with its first file and
+is there; a file **dropped** anywhere on the queue, or a picture pasted, is added the same way
+([Dropping and pasting](#dropping-and-pasting-files)). Each slides in and out, fading, and each part of the box opens with its first file and
 shuts with its last. *(Until 2026-10-07 every file was listed above the field, which put a file
 on the opposite side of the words from where the capture it made would draw it.)* The bytes go up with the capture and cannot be taken back
 once they have, so the one moment to look at what was picked is before the button, not afterwards
@@ -832,6 +833,34 @@ between them; none ever did, and with any file attachable the split no longer na
 anyone would set policy on ([ADR 38](../adr/0038-text-and-image-collapse-into-one-payload-type.md)).
 Items captured before keep the sources they were stamped with. The shell decides how to draw an
 attachment by its **media type**, never by the payload's ([Content](#content)).
+
+### Dropping and pasting files
+
+*Added 2026-10-28.* **A file dropped anywhere on the page is attached**, and so is a picture
+pasted. What takes it is **the open edit**, on whichever surface draws it, and otherwise **the
+capture box**; one edit is open at a time, and it outranks the box the queue draws beside it. A
+surface with neither — the feed with no edit open, the log, settings — takes nothing, and **still
+keeps the drop from the browser**, which would open the file in place of the app and take with it
+whatever the box holds in memory.
+
+**The whole viewport is the target**, and it says so while a file is held over it: an overlay,
+ruled and inset from the window's edge, reading `attach to the capture`, or `attach to` and the
+capture being edited, named as the leaving dialog names it. It is raised only by a drag that
+carries files — dragged text, a link or anything on the page raises nothing and is left to do what
+it does — and only where something would take them. While what would take them is being sent, the
+overlay says so instead (`the capture is being sent`, or the edit `is being saved`) and a drop
+attaches nothing. **A link or a picture dragged out of another tab is not taken**: it arrives as an
+address rather than bytes, and the page may not fetch them.
+
+**A paste attaches only what the clipboard holds as files, and only where it holds no plain text.**
+A copy out of a word processor or a spreadsheet carries a picture of the text beside the text, and
+is pasted as the text. It attaches when the caret is in the field of what takes it, or in no field
+at all; a paste into any other field — a tag chooser, a destination form — is that field's.
+
+What arrives goes the way `attach` goes: each file the pool would refuse is refused by name in the
+same place, and the rest slide in where `attach` would have put them. **The box is brought into
+view** once it has grown, since a drop can come from far down the queue; an edit's row already is
+([The row](#the-row)).
 
 ### The row
 
@@ -915,7 +944,8 @@ to the box's size and gains its line, and a third picture and after, a line unde
 read, joins the thumbnails above them. **A file attached or removed brings the row back into
 view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving
 above the words or a line under them can carry the row past either edge of the screen. `attach` in
-the foot adds files after them, and **a file
+the foot adds files after them, as does a file dropped anywhere on the page or a picture pasted
+([Dropping and pasting](#dropping-and-pasting-files)), and **a file
 larger than the pool takes is refused as it is picked**, in the status line and the pool's words,
 and is not taken. **What is picked is held and attached as the edit is saved** *(2026-10-10)*, the
 way the capture box attaches at its button and for the reason given there — and where the box has
