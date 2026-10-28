@@ -191,6 +191,25 @@ test("takes a file dropped anywhere on the page, and a picture pasted into its f
   await screen.findByAltText("pasted.png");
 });
 
+test("brings the box into view once a dropped file has landed in it", async () => {
+  stubObjectUrls();
+  pool(() => empty.clone());
+
+  const { container } = render(Capture);
+  render(Dropping);
+  const box = container.querySelector("form");
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+
+  await fireEvent.drop(document.body, {
+    dataTransfer: { types: ["Files"], files: [shot()] },
+  });
+
+  await vi.waitFor(() => {
+    expect(scrolled.mock.contexts).toContain(box);
+  });
+});
+
 test("draws a file that is not a picture as a line, with no picture's room", async () => {
   stubObjectUrls();
   pool(() => empty.clone());

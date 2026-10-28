@@ -856,28 +856,36 @@ capture being edited, named as the leaving dialog names it. It is raised only by
 carries files — dragged text, a link or anything on the page raises nothing and is left to do what
 it does — and only where something would take them. While what would take them is being sent, the
 overlay says so instead (`the capture is being sent`, or the edit `is being saved`) and a drop
-attaches nothing. **A link or a picture dragged out of another tab is not taken**: it arrives as an
-address rather than bytes, and the page may not fetch them.
+attaches nothing. A drag that starts on the page — one of its own thumbnails — is not a file
+arriving, though a browser marks a dragged picture as carrying files. **A link dragged out of
+another tab is not taken**: it arrives as an address rather than bytes, and the page may not fetch
+them; a picture dragged out of one is taken only where the browser hands its bytes over as a file.
+The overlay goes when the drag leaves the page, or once it has gone quiet for a second, since a
+drag over the page is heard several times a second and a leave can be lost with the element it
+was leaving. **While a dialog is open nothing arrives** — the leaving dialog, or the one asking
+about files below — and no overlay is raised, as no key reaches past one either.
 
 **A paste attaches only what the clipboard holds as files, and only where it holds no plain text.**
 A copy out of a word processor or a spreadsheet carries a picture of the text beside the text, and
-is pasted as the text. It attaches when the caret is in the field of what takes it, or in no field
-at all; a paste into any other field — a tag chooser, a destination form — is that field's.
+is pasted as the text. **A paste goes to the field it lands in**: in the box's field it attaches to
+the box, in an edit's to the edit, and with the caret in no field to what a drop would go to. A
+paste into any other field that takes text — a tag chooser, a destination form — is that field's.
 
 **A dropped folder is read through**, its own folders with it, and each file in it becomes an
 attachment of its own, named by its filename alone — two files of one name from two folders arrive
 as two attachments of one name. What is **hidden** inside a folder (a name starting `.`) is left
 out, a hidden folder counting once; a hidden file or folder dropped by name is taken. While the
 walk runs the overlay says `reading` and the folder's name. **A walk stops at 500 files** and
-attaches nothing, saying so on the status line, so a folder dropped by accident is never read
-whole.
+attaches nothing, saying so on the status line, so a folder dropped by accident is never read,
+nor even listed, whole. A file that cannot be read is named on the status line, and nothing of
+that drop is attached.
 
 **What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
 more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
 much in all and to what, the first five by name and size, how many more, and how many hidden
 ones were left out, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
 `cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
-drop made while another is being read or asked about waits its turn. Where what would take the
+drop made while a folder is being read waits its turn. Where what would take the
 files closed while they were asked about, nothing is attached and the status line says so. Where
 nothing is asked, the hidden files a folder left out are said on the status line.
 

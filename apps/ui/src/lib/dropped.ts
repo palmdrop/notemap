@@ -1,3 +1,4 @@
+import { writing } from "./command/keys";
 import type { Entry } from "./walking";
 
 /** Whether a drag carries files, rather than text, a link or something on the page. */
@@ -17,10 +18,24 @@ export function pastedFiles(
   return [...data.files];
 }
 
+/** Inputs that take no text, so a paste there means nothing of its own. */
+const UNWRITTEN = new Set([
+  "button",
+  "checkbox",
+  "color",
+  "file",
+  "radio",
+  "range",
+  "reset",
+  "submit",
+]);
+
 /** Whether the focus is somewhere a paste means something of its own. */
 export function isField(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || target.matches("input, textarea, select");
+  return (
+    writing(target) &&
+    !(target instanceof HTMLInputElement && UNWRITTEN.has(target.type))
+  );
 }
 
 /**

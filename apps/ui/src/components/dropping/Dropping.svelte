@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
+
   import { saidBy } from "@notemap/client";
 
   import {
@@ -11,7 +13,12 @@
   } from "$lib/dropped";
   import { fade } from "$lib/motion";
   import { notices } from "$lib/notices.svelte";
-  import { isReceiving, receiver, type Receiver } from "$lib/receiving.svelte";
+  import {
+    isReceiving,
+    owner,
+    receiver,
+    type Receiver,
+  } from "$lib/receiving.svelte";
   import { CEILING, walk, type Entry } from "$lib/walking";
 
   import Asking from "./Asking.svelte";
@@ -25,7 +32,9 @@
 
   /** Every element a drag has entered and not yet left; the window fires one pair per element crossed. */
   let entered = $state(0);
-  const to = $derived(entered > 0 ? receiver() : undefined);
+  /** A dialog was open as the drag went over. */
+  let shut = $state(false);
+  const to = $derived(entered > 0 && !shut ? receiver() : undefined);
 
   /** The folder being read through, said while it is. */
   let reading = $state<string | undefined>(undefined);
@@ -39,7 +48,7 @@
     | undefined
   >(undefined);
 
-  /** One arrival at a time: a drop made while another is read or asked about waits its turn. */
+  /** One arrival at a time: a drop made while a folder is being read waits its turn. */
   let turn = Promise.resolve();
 
   function arrive(taker: Receiver, dropped: readonly (Entry | File)[]): void {
@@ -56,10 +65,13 @@
     dropped: readonly (Entry | File)[],
   ): Promise<void> {
     const folders = foldersOf(dropped);
+    const [first] = folders.length > 0 ? folders : dropped;
     const what =
-      folders.length === 1
-        ? (folders[0]?.name ?? "")
-        : `${String(folders.length)} folders`;
+      folders.length > 1
+        ? `${String(folders.length)} folders`
+        : folders.length === 1 || dropped.length === 1
+          ? (first?.name ?? "")
+          : "what was dropped";
 
     if (folders.length > 0) reading = what;
     let walked;
@@ -75,7 +87,7 @@
     const { files, hidden, over } = walked;
     if (over) {
       notices.raise({
-        what: `${folders.length > 0 ? what : "what was dropped"}: more than ${String(CEILING)} files, nothing attached`,
+        what: `${what}: more than ${String(CEILING)} files, nothing attached`,
         alarm: true,
       });
       return;
@@ -113,43 +125,95 @@
       : `${String(hidden)} hidden files and folders`;
   }
 
+  /**
+   * A drag that started on the page: a browser marks a dragged picture as
+   * carrying files, and the shell's own thumbnails are pictures.
+   */
+  let fromHere = false;
+
   function carried(event: DragEvent): boolean {
-    return carriesFiles([...(event.dataTransfer?.types ?? [])]);
+    return !fromHere && carriesFiles([...(event.dataTransfer?.types ?? [])]);
+  }
+
+  /** While a dialog is open nothing arrives, as no key reaches past one. */
+  function barred(): boolean {
+    return document.querySelector("dialog[open]") !== null;
+  }
+
+  /**
+   * A drag over the page is told so several times a second. Gone quiet, it
+   * has left, though the leave was lost with an element removed under it.
+   */
+  const QUIET = 1000;
+  let quiet: ReturnType<typeof setTimeout> | undefined;
+
+  function heard(): void {
+    clearTimeout(quiet);
+    quiet = setTimeout(() => {
+      entered = 0;
+    }, QUIET);
+  }
+
+  function done(): void {
+    clearTimeout(quiet);
+    entered = 0;
+  }
+
+  onDestroy(() => {
+    clearTimeout(quiet);
+  });
+
+  function ondragstart(): void {
+    fromHere = true;
+  }
+
+  // A pointer moving means no drag is under way, which covers a drag whose
+  // end was lost with the element it started from.
+  function ondragend(): void {
+    fromHere = false;
   }
 
   function ondragenter(event: DragEvent): void {
-    if (carried(event)) entered += 1;
+    if (!carried(event)) return;
+    entered += 1;
+    shut = barred();
+    heard();
   }
 
   function ondragleave(event: DragEvent): void {
-    if (carried(event)) entered = Math.max(0, entered - 1);
+    if (!carried(event)) return;
+    entered = Math.max(0, entered - 1);
+    if (entered === 0) done();
   }
 
   function ondragover(event: DragEvent): void {
     if (!carried(event)) return;
     event.preventDefault();
+    shut = barred();
+    heard();
     const taker = receiver();
     if (event.dataTransfer !== null) {
       event.dataTransfer.dropEffect =
-        taker === undefined || taker.busy() ? "none" : "copy";
+        shut || taker === undefined || taker.busy() ? "none" : "copy";
     }
   }
 
   function ondrop(event: DragEvent): void {
     if (event.dataTransfer === null || !carried(event)) return;
     event.preventDefault();
-    entered = 0;
+    done();
 
     const taker = receiver();
-    if (taker === undefined || taker.busy()) return;
+    if (barred() || taker === undefined || taker.busy()) return;
     const dropped = droppedOf(event.dataTransfer);
     if (dropped.length > 0) arrive(taker, dropped);
   }
 
   function onpaste(event: ClipboardEvent): void {
-    const taker = receiver();
+    if (barred()) return;
+    const taker =
+      owner(event.target) ?? (isField(event.target) ? undefined : receiver());
     if (taker === undefined || taker.busy()) return;
-    if (isField(event.target) && !taker.owns(event.target)) return;
 
     const files = pastedFiles(event.clipboardData);
     if (files.length === 0) return;
@@ -158,7 +222,16 @@
   }
 </script>
 
-<svelte:window {ondragenter} {ondragleave} {ondragover} {ondrop} {onpaste} />
+<svelte:window
+  {ondragstart}
+  {ondragend}
+  onpointermove={ondragend}
+  {ondragenter}
+  {ondragleave}
+  {ondragover}
+  {ondrop}
+  {onpaste}
+/>
 
 {#if to !== undefined || reading !== undefined}
   <div

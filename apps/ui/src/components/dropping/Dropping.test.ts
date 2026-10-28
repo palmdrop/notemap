@@ -41,6 +41,12 @@ function dragged(types: string[], files: File[] = []) {
   return { dataTransfer: { types, files, dropEffect: "none" } };
 }
 
+async function dragOver(): Promise<DragEvent> {
+  const event = createEvent.dragOver(document.body, dragged(["Files"]));
+  await fireEvent(document.body, event);
+  return event as DragEvent;
+}
+
 async function drop(on: Element, files: File[]): Promise<Event> {
   const event = createEvent.drop(on, dragged(["Files"], files));
   await fireEvent(on, event);
@@ -120,7 +126,7 @@ test("keeps a drop with nowhere to go from the browser, and draws nothing", asyn
   expect(event.defaultPrevented).toBe(true);
 });
 
-test("takes nothing while what receives is being sent, and says so", async () => {
+test("takes nothing while what receives is being sent, the overlay having said so", async () => {
   const take = receiving({ busy: () => true });
   render(Dropping);
 
@@ -128,9 +134,57 @@ test("takes nothing while what receives is being sent, and says so", async () =>
   expect(screen.getByRole("status").textContent).toContain(
     "the capture is being sent",
   );
+  expect((await dragOver()).dataTransfer?.dropEffect).toBe("none");
 
+  const before = notices.latest;
   await drop(document.body, [shot]);
+  await new Promise((settled) => setTimeout(settled, 0));
   expect(take).not.toHaveBeenCalled();
+  expect(notices.latest).toBe(before);
+});
+
+test("offers a copy where something takes the files, and nothing where nothing does", async () => {
+  render(Dropping);
+  expect((await dragOver()).dataTransfer?.dropEffect).toBe("none");
+
+  receiving();
+  expect((await dragOver()).dataTransfer?.dropEffect).toBe("copy");
+});
+
+test("lets the overlay go once the drag has gone quiet, its leave lost", async () => {
+  vi.useFakeTimers();
+  try {
+    receiving();
+    render(Dropping);
+
+    await fireEvent.dragEnter(document.body, dragged(["Files"]));
+    await vi.advanceTimersByTimeAsync(900);
+    await dragOver();
+    await vi.advanceTimersByTimeAsync(900);
+    expect(screen.queryByRole("status")).not.toBeNull();
+
+    await vi.advanceTimersByTimeAsync(200);
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("raises nothing for a drag that started on the page, until the pointer moves again", async () => {
+  receiving();
+  render(Dropping);
+
+  await fireEvent.dragStart(document.body);
+  await fireEvent.dragEnter(document.body, dragged(["Files"]));
+  expect(screen.queryByRole("status")).toBeNull();
+  await fireEvent.dragEnd(document.body);
+
+  await fireEvent.dragStart(document.body);
+  await fireEvent.pointerMove(document.body);
+  await fireEvent.dragEnter(document.body, dragged(["Files"]));
+  expect(screen.queryByRole("status")).not.toBeNull();
 });
 
 test("attaches a pasted image from no field, or from the receiver's own", async () => {
@@ -149,6 +203,22 @@ test("attaches a pasted image from no field, or from the receiver's own", async 
   await vi.waitFor(() => {
     expect(take).toHaveBeenCalledTimes(2);
   });
+
+  field.remove();
+});
+
+test("gives a paste to the field it lands in, though an edit outranks its owner", async () => {
+  const field = document.createElement("textarea");
+  document.body.append(field);
+  const box = receiving({ owns: (target) => target === field });
+  const edit = receiving({ name: "09:12: some words", edit: true });
+  render(Dropping);
+
+  await paste(field, ["Files"], [shot]);
+  await vi.waitFor(() => {
+    expect(box).toHaveBeenCalledWith([shot]);
+  });
+  expect(edit).not.toHaveBeenCalled();
 
   field.remove();
 });
@@ -228,20 +298,48 @@ test("asks before attaching one file that is large, and attaches nothing on canc
   expect(take).not.toHaveBeenCalled();
 });
 
-test("a drop made while another is asked about waits its turn", async () => {
+test("nothing arrives while a dialog is open, and nothing says it would", async () => {
   const take = receiving();
   render(Dropping);
 
   await drop(document.body, many(4));
-  await drop(document.body, [shot]);
-
   const dialog = await screen.findByRole("dialog");
-  expect(take).not.toHaveBeenCalled();
+
+  await fireEvent.dragEnter(document.body, dragged(["Files"]));
+  expect(screen.queryByRole("status")).toBeNull();
+  const over = await dragOver();
+  expect(over.dataTransfer?.dropEffect).toBe("none");
+
+  const late = await drop(document.body, [shot]);
+  expect(late.defaultPrevented).toBe(true);
+  await paste(document.body, ["Files"], [shot]);
 
   await fireEvent.click(within(dialog).getByRole("button", { name: "cancel" }));
   await vi.waitFor(() => {
-    expect(take).toHaveBeenCalledWith([shot]);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
+  await new Promise((settled) => setTimeout(settled, 0));
+  expect(take).not.toHaveBeenCalled();
+});
+
+test("a drop made while a folder is being read waits its turn", async () => {
+  const take = receiving();
+  render(Dropping);
+
+  let open = () => {};
+  const opened = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  const inside = new File(["a"], "a.md");
+  await dropItems([folder("notes", [inside], opened)]);
+  await drop(document.body, [shot]);
+  expect(take).not.toHaveBeenCalled();
+
+  open();
+  await vi.waitFor(() => {
+    expect(take).toHaveBeenCalledTimes(2);
+  });
+  expect(take.mock.calls).toEqual([[[inside]], [[shot]]]);
 });
 
 test("says so where what would take them closed while they were asked about", async () => {
@@ -340,4 +438,24 @@ test("refuses a folder holding more than the walk reads, attaching nothing", asy
   });
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(take).not.toHaveBeenCalled();
+});
+
+test("names the file it could not read, where no folder was dropped", async () => {
+  receiving();
+  render(Dropping);
+
+  const locked = {
+    name: "locked.md",
+    isDirectory: false,
+    file: (_ok: unknown, fail: (error: unknown) => void) => {
+      fail(new Error("NotReadableError"));
+    },
+  };
+  await dropItems([
+    { kind: "file", webkitGetAsEntry: () => locked, getAsFile: () => null },
+  ]);
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toBe("locked.md: could not be read");
+  });
 });

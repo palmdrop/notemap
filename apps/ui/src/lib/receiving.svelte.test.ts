@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { receiver, receives, type Receiver } from "./receiving.svelte";
+import { owner, receiver, receives, type Receiver } from "./receiving.svelte";
 
 function named(name: string, edit: boolean): Receiver {
   return {
@@ -28,6 +28,28 @@ test("an edit outranks the box, whichever was drawn first", () => {
 
   stops[1]?.();
   expect(receiver()).toBeUndefined();
+});
+
+test("an edit outranks a box drawn after it", () => {
+  const edit = named("an edit", true);
+  const box = named("the capture", false);
+  const stops = [receives(box), receives(edit)];
+
+  expect(receiver()).toBe(edit);
+  for (const stop of stops) stop();
+});
+
+test("a paste goes to whatever owns the field it lands in", () => {
+  const field = document.createElement("textarea");
+  const box = {
+    ...named("the capture", false),
+    owns: (target: EventTarget | null) => target === field,
+  };
+  const stops = [receives(box), receives(named("an edit", true))];
+
+  expect(owner(field)).toBe(box);
+  expect(owner(document.body)).toBeUndefined();
+  for (const stop of stops) stop();
 });
 
 test("the latest of two boxes receives, as one page gives way to the next", () => {

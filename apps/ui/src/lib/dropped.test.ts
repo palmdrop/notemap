@@ -52,7 +52,10 @@ describe("isField", () => {
     expect(isField(document.createElement("select"))).toBe(true);
   });
 
-  it("is not the page, a button or nothing", () => {
+  it("is not the page, a button, an input that takes no text, or nothing", () => {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    expect(isField(box)).toBe(false);
     expect(isField(document.body)).toBe(false);
     expect(isField(document.createElement("button"))).toBe(false);
     expect(isField(null)).toBe(false);

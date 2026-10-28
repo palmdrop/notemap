@@ -50,12 +50,14 @@ export async function walk(
       return true;
     }
 
-    for (const inside of await listed(entry as FolderEntry)) {
-      if (inside.name.startsWith(".")) {
-        hidden += 1;
-        continue;
+    for await (const batch of listed(entry as FolderEntry)) {
+      for (const inside of batch) {
+        if (inside.name.startsWith(".")) {
+          hidden += 1;
+          continue;
+        }
+        if (!(await visit(inside))) return false;
       }
-      if (!(await visit(inside))) return false;
     }
     return true;
   }
@@ -77,15 +79,17 @@ function fileOf(entry: FileEntry): Promise<File> {
   });
 }
 
-/** A reader answers a batch at a time, and an empty batch is the end. */
-async function listed(folder: FolderEntry): Promise<Entry[]> {
+/**
+ * A reader answers a batch at a time, and an empty batch is the end. Walked
+ * as each arrives, so a walk that reaches the ceiling stops listing too.
+ */
+async function* listed(folder: FolderEntry): AsyncGenerator<Entry[]> {
   const reader = folder.createReader();
-  const all: Entry[] = [];
   for (;;) {
     const batch = await new Promise<Entry[]>((ok, fail) => {
       reader.readEntries(ok, fail);
     });
-    if (batch.length === 0) return all;
-    all.push(...batch);
+    if (batch.length === 0) return;
+    yield batch;
   }
 }

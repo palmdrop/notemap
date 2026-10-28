@@ -33,3 +33,8 @@ export function receiver(): Receiver | undefined {
 export function isReceiving(one: Receiver): boolean {
   return receivers.includes(one);
 }
+
+/** What owns the field a paste landed in, which the paste is aimed at whatever else is open. */
+export function owner(target: EventTarget | null): Receiver | undefined {
+  return receivers.findLast((one) => one.owns(target));
+}

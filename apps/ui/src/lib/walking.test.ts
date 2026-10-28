@@ -95,6 +95,31 @@ describe("walk", () => {
     expect((await walk([many], 5)).over).toBe(false);
   });
 
+  it("stops listing a folder once the ceiling is reached", async () => {
+    let batches = 0;
+    const inside = Array.from({ length: 10 }, (_, at) =>
+      file(`${String(at)}.md`),
+    );
+    const listed = {
+      name: "big",
+      isDirectory: true,
+      createReader: () => {
+        let at = 0;
+        return {
+          readEntries: (ok: (entries: Entry[]) => void) => {
+            batches += 1;
+            const batch = inside.slice(at, at + 2);
+            at += batch.length;
+            ok(batch);
+          },
+        };
+      },
+    } as Entry;
+
+    expect((await walk([listed], 3)).over).toBe(true);
+    expect(batches).toBe(2);
+  });
+
   it("fails where a file cannot be read", async () => {
     const unreadable = {
       name: "locked",
