@@ -389,6 +389,45 @@ describe("settled", () => {
 });
 
 describe("markingHidden", () => {
+  test("marks again as an entry grows in, which the list itself never hears of", async () => {
+    const watched: Element[] = [];
+    let resize = () => {};
+    const real = window.ResizeObserver;
+    window.ResizeObserver = class {
+      constructor(heard: () => void) {
+        resize = heard;
+      }
+      observe(node: Element): void {
+        watched.push(node);
+      }
+      unobserve(): void {}
+      disconnect(): void {
+        watched.length = 0;
+      }
+    } as unknown as typeof ResizeObserver;
+
+    try {
+      const list = document.createElement("div");
+      let height = 100;
+      Object.defineProperty(list, "scrollTop", { get: () => 0 });
+      Object.defineProperty(list, "clientHeight", { get: () => 100 });
+      Object.defineProperty(list, "scrollHeight", { get: () => height });
+      const stop = markingHidden(list);
+
+      const entry = document.createElement("div");
+      list.append(entry);
+      await new Promise((settled) => setTimeout(settled, 0));
+      expect(watched).toContain(entry);
+
+      height = 300;
+      resize();
+      expect(list.hasAttribute("data-hidden-below")).toBe(true);
+      stop();
+    } finally {
+      window.ResizeObserver = real;
+    }
+  });
+
   test("marks the edges a list lies hidden past, beyond a nudge of the wheel", () => {
     const list = document.createElement("div");
     // jsdom lays nothing out, so a list measures only what it is told.

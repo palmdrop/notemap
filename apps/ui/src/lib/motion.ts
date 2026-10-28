@@ -312,13 +312,16 @@ function growingWithin(content: HTMLElement): boolean {
 /**
  * A list held to a height, scrolled to its end as anything arrives in it: a
  * file added past what the list shows would otherwise arrive out of sight.
+ * Scrolled once the arrival has grown in, since its end is not there before.
  */
 export function showingNewest(node: HTMLElement): () => void {
   const watching = new MutationObserver((changes) => {
     if (!changes.some((change) => change.addedNodes.length > 0)) return;
-    node.scrollTo({
-      top: node.scrollHeight,
-      behavior: duration("short") === 0 ? "instant" : "smooth",
+    void settled(node).then(() => {
+      node.scrollTo({
+        top: node.scrollHeight,
+        behavior: duration("short") === 0 ? "instant" : "smooth",
+      });
     });
   });
 
@@ -340,10 +343,21 @@ export function markingHidden(node: HTMLElement): () => void {
     node.toggleAttribute("data-hidden-below", below > HIDDEN);
   }
 
+  // Each entry as well as the list: an entry grows in after it arrives, and
+  // the list stops growing with it once it is held to its height.
   const resized = new ResizeObserver(mark);
-  const changed = new MutationObserver(mark);
+  function observeAll(): void {
+    resized.disconnect();
+    resized.observe(node);
+    for (const entry of node.children) resized.observe(entry);
+  }
+
+  const changed = new MutationObserver(() => {
+    observeAll();
+    mark();
+  });
   node.addEventListener("scroll", mark, { passive: true });
-  resized.observe(node);
+  observeAll();
   changed.observe(node, { childList: true });
   mark();
 
