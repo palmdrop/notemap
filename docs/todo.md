@@ -195,6 +195,10 @@
 ## Inboxes
 - [ ] raycast extension: add command for viewing queue/feed and editing (BUT NOT PROCESSING?)
 
+- [ ] raycast: scratchpad feature in the raycast notemap - saving as draft, being able to open one or 
+  multiple drafts, etc. I often work on a capture, pasting and copying etc, until done, then I send. 
+  This could also be solved by giving raycast the ability to edit existing captures.
+
 - [ ] shortcut for taking selected text + URL in browser and sending it to notemap. Might require a proper notemap browser extension, or a smart keybind using raycast or the are.na extension
 
 - [ ] browser extension: create notemap browser extension 
