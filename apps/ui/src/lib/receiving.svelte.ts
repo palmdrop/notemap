@@ -28,3 +28,8 @@ export function receives(receiver: Receiver): () => void {
 export function receiver(): Receiver | undefined {
   return receivers.findLast((one) => one.edit) ?? receivers.at(-1);
 }
+
+/** Whether it still takes files, for an answer that arrives after it may have gone. */
+export function isReceiving(one: Receiver): boolean {
+  return receivers.includes(one);
+}

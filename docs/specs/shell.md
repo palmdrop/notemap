@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-28
 **Shipped**:
+
+- 2026-10-28 — **Files are dropped or pasted anywhere on the page.** The open edit takes them, and
+  otherwise the capture box; a full-viewport overlay says which while files are held over the page,
+  and a drop with nowhere to go is kept from the browser. A pasted picture attaches unless the
+  clipboard carries text. A dropped folder is read through, hidden files left out, and a drop of
+  more than three files or 25 MB asks first. The `×` that takes an attachment off now *removes* it.
+  ([plan](../plans/drag-in-attachments.md))
 
 - 2026-10-26 — **A delivered record can be withdrawn from its block.** It asks the destination
   first and says only whether the thing is still there; a withdrawn record is struck through, and
@@ -856,6 +863,23 @@ address rather than bytes, and the page may not fetch them.
 A copy out of a word processor or a spreadsheet carries a picture of the text beside the text, and
 is pasted as the text. It attaches when the caret is in the field of what takes it, or in no field
 at all; a paste into any other field — a tag chooser, a destination form — is that field's.
+
+**A dropped folder is read through**, its own folders with it, and each file in it becomes an
+attachment of its own, named by its filename alone — two files of one name from two folders arrive
+as two attachments of one name. What is **hidden** inside a folder (a name starting `.`) is left
+out, a hidden folder counting once; a hidden file or folder dropped by name is taken. While the
+walk runs the overlay says `reading` and the folder's name. **A walk stops at 500 files** and
+attaches nothing, saying so on the status line, so a folder dropped by accident is never read
+whole.
+
+**What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
+more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
+much in all and to what, the first five by name and size, how many more, and how many hidden
+ones were left out, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
+`cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
+drop made while another is being read or asked about waits its turn. Where what would take the
+files closed while they were asked about, nothing is attached and the status line says so. Where
+nothing is asked, the hidden files a folder left out are said on the status line.
 
 What arrives goes the way `attach` goes: each file the pool would refuse is refused by name in the
 same place, and the rest slide in where `attach` would have put them. **The box is brought into

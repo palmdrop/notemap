@@ -1,8 +1,9 @@
 # Drop and paste attachments
 
 **Date**: 2026-10-28
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/shell.md`, `CONTEXT.md`
+**Closed**:
 
 ---
 
@@ -56,69 +57,69 @@ attachment off with `×` is called **remove** throughout.
 
 ### Phase 0
 
-- [ ] Create branch `agent/drag-in-attachments`
+- [x] Create branch `agent/drag-in-attachments` _(2026-10-28)_
 
 ### Phase 1 — rename drop to remove
 
 Depends on nothing.
 
-- [ ] `CONTEXT.md`: under **Asset**, *to remove* is the opposite of *to attach*, and *drop* is
-  bringing a file in by dragging.
-- [ ] `shell.md`: wherever *drop* means taking an attachment off a capture or edit in the current
-  text, write *remove* instead. Leave dated entries as written.
-- [ ] Code: `Editing.drop` → `remove`, `HeldAttachment`'s `ondrop` → `onremove`, the `×`'s
+- [x] `CONTEXT.md`: under **Asset**, *to remove* is the opposite of *to attach*, and *drop* is
+  bringing a file in by dragging. _(2026-10-28)_
+- [x] `shell.md`: wherever *drop* means taking an attachment off a capture or edit in the current
+  text, write *remove* instead. Leave dated entries as written. _(2026-10-28)_
+- [x] Code: `Editing.drop` → `remove`, `HeldAttachment`'s `ondrop` → `onremove`, the `×`'s
   accessible name, `Capture.svelte`'s local `drop`, and the tests that name them. Check each
-  of the roughly 60 `drop` words in `apps/ui/src` by hand. Most are not this meaning.
-- [ ] Verify: typecheck, lint, `pnpm -r --no-sort --silent test`.
-- [ ] Commit `refactor(ui): remove, not drop, takes an attachment off`
+  of the roughly 60 `drop` words in `apps/ui/src` by hand. Most are not this meaning. _(2026-10-28)_
+- [x] Verify: typecheck, lint, `pnpm -r --no-sort --silent test`. _(2026-10-28)_
+- [x] Commit `refactor(ui): remove, not drop, takes an attachment off` _(2026-10-28)_
 
 ### Phase 2 — drop and paste files
 
 Depends on phase 1, for the word.
 
-- [ ] `shell.md`: a section on dropping and pasting, covering the receiver, the overlay, swallowed
+- [x] `shell.md`: a section on dropping and pasting, covering the receiver, the overlay, swallowed
   drops, the paste rule and the box coming into view. Cross-reference it from the capture box and
-  edit sections.
-- [ ] `$lib` receiver registry. The capture box registers while mounted, and an `Editing` registers
+  edit sections. _(2026-10-28)_
+- [x] `$lib` receiver registry. The capture box registers while mounted, and an `Editing` registers
   while open and outranks the box. It exposes the current receiver's name for the overlay and a
-  way to hand it files.
-- [ ] Window listeners in the root layout: `dragenter`, `dragover`, `dragleave`, `drop` and
-  `paste`.
-- [ ] Full-viewport overlay component, with the slide/fade motion the shell already uses.
-- [ ] The capture box takes files through the same path as `pick`, then brings itself into view.
-  An edit takes them through `Editing.pick`.
-- [ ] Tests:
+  way to hand it files. _(2026-10-28)_
+- [x] Window listeners in the root layout: `dragenter`, `dragover`, `dragleave`, `drop` and
+  `paste`. _(2026-10-28)_
+- [x] Full-viewport overlay component, with the slide/fade motion the shell already uses. _(2026-10-28)_
+- [x] The capture box takes files through the same path as `pick`, then brings itself into view.
+  An edit takes them through `Editing.pick`. _(2026-10-28)_
+- [x] Tests:
   - which receiver wins
   - a drag without `Files` raises nothing
   - a drop on a surface with no receiver is swallowed
   - paste with and without `text/plain`
   - paste in an unrelated field is ignored
-  - files dropped on the box and on an edit are held
+  - files dropped on the box and on an edit are held _(2026-10-28)_
 - [ ] Verify: typecheck, lint, tests. Then try it by hand on staging (`agent stage`) in Firefox and
-  a Chromium.
-- [ ] Commit `feat(ui): drop or paste files onto the page to attach them`
+  a Chromium. Automated checks green; by hand is left to staging.
+- [x] Commit `feat(ui): drop or paste files onto the page to attach them` _(2026-10-28)_
 
 ### Phase 3 — folders and confirmation
 
 Depends on phase 2.
 
-- [ ] `shell.md`: folders, hidden files skipped, the confirmation thresholds, the 500-file stop,
-  and the overlay saying `reading <folder>…` while a walk runs.
-- [ ] `$lib` walker. It turns the entries of a drop into files, recursing into folders and skipping
+- [x] `shell.md`: folders, hidden files skipped, the confirmation thresholds, the 500-file stop,
+  and the overlay saying `reading <folder>…` while a walk runs. _(2026-10-28)_
+- [x] `$lib` walker. It turns the entries of a drop into files, recursing into folders and skipping
   hidden ones. It counts what it skipped and stops at the ceiling. Entries are taken synchronously
-  inside the `drop` handler, and the walk runs after it.
-- [ ] Pure rule deciding whether a set of files attaches at once or asks first.
-- [ ] Confirmation dialog: count, total size, first names, `+N more`, skipped hidden files, and
-  `attach` / `cancel`.
-- [ ] A drop that arrives while a walk or a confirmation is pending waits its turn.
-- [ ] Tests:
+  inside the `drop` handler, and the walk runs after it. _(2026-10-28)_
+- [x] Pure rule deciding whether a set of files attaches at once or asks first. _(2026-10-28)_
+- [x] Confirmation dialog: count, total size, first names, `+N more`, skipped hidden files, and
+  `attach` / `cancel`. _(2026-10-28)_
+- [x] A drop that arrives while a walk or a confirmation is pending waits its turn. _(2026-10-28)_
+- [x] Tests:
   - the walker against fake entries: nesting, readers returning in batches, hidden files, the
     ceiling
   - the threshold rule at its edges
-  - the dialog attaches or attaches nothing
+  - the dialog attaches or attaches nothing _(2026-10-28)_
 - [ ] Verify: typecheck, lint, tests, then by hand on staging with a nested folder and with a large
-  one.
-- [ ] Commit `feat(ui): a dropped folder attaches what it holds, and a large drop asks first`
+  one. Automated checks green; by hand is left to staging.
+- [x] Commit `feat(ui): a dropped folder attaches what it holds, and a large drop asks first` _(2026-10-28)_
 
 ---
 
