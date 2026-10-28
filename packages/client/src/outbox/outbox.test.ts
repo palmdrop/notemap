@@ -292,6 +292,43 @@ describe("an operation the store could not hold", () => {
   });
 });
 
+describe("an operation as it was handed over", () => {
+  it("is held as a copy the caller can no longer change", async () => {
+    const { outbox, state } = engineOver([anItem("one")]);
+    const supplied = { heading: "Next" };
+
+    await outbox.enqueue({
+      kind: "tag",
+      item: "one",
+      tag: "route/todo",
+      arguments: supplied,
+    });
+    supplied.heading = "Later";
+
+    expect(state.get().outbox[0]?.operation).toMatchObject({
+      arguments: { heading: "Next" },
+    });
+  });
+
+  it("is refused before anything is applied where it cannot be copied", async () => {
+    const store = createMemoryStore();
+    const { outbox, state } = engineOver([anItem("one")], store);
+    const before = state.get();
+
+    await expect(
+      outbox.enqueue({
+        kind: "tag",
+        item: "one",
+        tag: "route/todo",
+        arguments: new Proxy({ heading: "Next" }, {}),
+      }),
+    ).rejects.toThrow();
+
+    expect(state.get()).toBe(before);
+    expect(await store.readOutbox()).toEqual([]);
+  });
+});
+
 describe("an operation already handed over", () => {
   it("does not cancel with a later one, even before it is recorded as sending", async () => {
     const { outbox, state, sent } = engineOver([anItem("one")]);

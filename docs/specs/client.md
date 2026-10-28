@@ -5,8 +5,9 @@
 **Shipped**:
 
 - 2026-10-28 — **An operation the store could not hold was never made.** A failed write of a fresh
-  entry reverses its effect on the cache, takes it out of the outbox and throws to the caller. A
-  store's failed `writeOperation` holds nothing it did not hold before, the directory store's
+  entry reverses its effect on the cache, takes it out of the outbox and throws to the caller. An
+  enqueue holds its own copy of the operation, and refuses one it cannot copy before applying it.
+  A store's failed `writeOperation` holds nothing it did not hold before, the directory store's
   included.
 
 - 2026-10-26 — **`routing.withdraw`, `routing.reinstate` and `routing.presence`.** Withdrawing and
@@ -983,6 +984,12 @@ would fail the lease, which reads as *another process holds this* and drops from
 this process has. So the entry is held before it is written, and a drain that has taken it up
 waits for the write to land before it asks the store for the lease; a drop waits the same way, so
 a cancelled operation's late write cannot bring it back.
+
+**An operation is the outbox's own copy from the moment it is enqueued** (2026-10-28). It is
+copied before anything is applied, so a caller that changes what it handed over changes nothing
+queued. What cannot be copied, such as a shell's reactive proxy, is refused at the enqueue with the
+cache untouched, rather than left to whichever store fails to hold it. A directory store would
+have written a proxy out as JSON without complaint.
 
 **An operation the store could not hold was never made** (2026-10-28). Where the write of a fresh
 entry fails, its effect on the cache is reversed, it leaves the outbox, and the mutation throws, so

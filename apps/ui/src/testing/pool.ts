@@ -37,11 +37,6 @@ function recording(store: ClientStore): {
     held,
     store: {
       ...store,
-      // The browser's store clones what it is given and throws on what it
-      // cannot, a `$state` proxy among them.
-      async writeOperation(operation) {
-        await store.writeOperation(structuredClone(operation));
-      },
       async writeBlob(asset, blob) {
         await store.writeBlob(asset, blob);
         held.add(asset);
