@@ -6,7 +6,7 @@
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
-  import { showingNewest, slide } from "$lib/motion";
+  import { markingHidden, showingNewest, slide } from "$lib/motion";
   import { answer, opened, question, type Open } from "$lib/leaving.svelte";
   import { receives } from "$lib/receiving.svelte";
 
@@ -105,10 +105,12 @@
 <!-- The capture's own place, edited where it is read: the foot that saves it
      is the row's, drawn by `EditFoot` in place of the actions. -->
 {#if pictures.length > 0}
+  <!-- Ruled off from the words only while pictures lie past the edge they share. -->
   <div
-    class="flex max-h-76 flex-col overflow-y-auto"
+    class="flex max-h-76 flex-col overflow-y-auto border-b border-transparent transition-[border-color] duration-(--duration-short) ease-fade data-hidden-below:border-ink"
     transition:slide={{ fade: true }}
     {@attach showingNewest}
+    {@attach markingHidden}
   >
     {#each pictures as held (keyOf(held))}
       <HeldAttachment
@@ -139,9 +141,16 @@
 
 <!-- Under the words behind the short rule, where the row being edited draws them. -->
 {#if files.length > 0}
-  <div class="mt-2 flex flex-col" transition:slide={{ fade: true }}>
-    <div class="mb-1 w-12 border-t border-ink"></div>
-    <div class="flex max-h-44 flex-col overflow-y-auto" {@attach showingNewest}>
+  <div class="group mt-2 flex flex-col" transition:slide={{ fade: true }}>
+    <!-- The short rule spans the row while files lie past it. -->
+    <div
+      class="mb-1 w-12 border-t border-ink transition-[width] duration-(--duration-short) ease-fade group-has-data-hidden-above:w-full"
+    ></div>
+    <div
+      class="flex max-h-44 flex-col overflow-y-auto"
+      {@attach showingNewest}
+      {@attach markingHidden}
+    >
       {#each files as held (keyOf(held))}
         <HeldAttachment
           name={held.name}

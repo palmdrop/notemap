@@ -21,7 +21,13 @@
   } from "$lib/draft";
   import { sayItFired } from "$lib/firing";
   import { commits } from "$lib/command/keys";
-  import { bringIntoView, settled, showingNewest, slide } from "$lib/motion";
+  import {
+    bringIntoView,
+    markingHidden,
+    settled,
+    showingNewest,
+    slide,
+  } from "$lib/motion";
   import { sorted } from "$lib/picking";
   import { receives } from "$lib/receiving.svelte";
   import { NOTHING_TO_CAPTURE } from "$lib/said";
@@ -250,9 +256,10 @@
 >
   {#if pictures.length > 0}
     <div
-      class="flex max-h-76 flex-col overflow-y-auto border-b border-ink px-3 pt-2.5 pb-0.5"
+      class="flex max-h-76 flex-col overflow-y-auto border-b border-transparent px-3 pt-2.5 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-below:border-ink"
       transition:slide={{ fade: true }}
       {@attach showingNewest}
+      {@attach markingHidden}
     >
       {#each pictures as file (file)}
         <HeldAttachment
@@ -283,10 +290,12 @@
   ></textarea>
 
   {#if files.length > 0}
+    <!-- Ruled off from the field only while files lie past the edge they share. -->
     <div
-      class="flex max-h-44 flex-col overflow-y-auto px-3 pb-0.5"
+      class="flex max-h-44 flex-col overflow-y-auto border-t border-transparent px-3 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-above:border-ink"
       transition:slide={{ fade: true }}
       {@attach showingNewest}
+      {@attach markingHidden}
     >
       {#each files as file (file)}
         <HeldAttachment

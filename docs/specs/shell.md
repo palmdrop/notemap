@@ -814,14 +814,17 @@ draft per origin — two tabs share it, and the last write wins; it is never sen
 never sees it.
 
 **What is attached is drawn before it is committed**, where a capture is read with it
-([Content](#content)): **every picture above the field**, ruled off from it, as a thumbnail beside
+([Content](#content)): **every picture above the field**, as a thumbnail beside
 its line, and **every other file under the field**, just above the foot whose `attach` brought it —
 each with the line a captured attachment is read as, whole rather than cut, and a `×` that removes
 it. Every picture is a thumbnail here, not only the first two a capture draws, since it is looked
 at to decide whether it goes. **Past three pictures, and past five other files, each list
 scrolls** *(2026-10-28)*, showing a sliver of the next so it reads as more, and is scrolled to its
 end as a file arrives, so many files never push the field out of sight and the newest is always
-seen. `attach` picks one file or several, and pressing it again adds to what
+seen. **A list is ruled off from the field only while files lie scrolled past the edge they
+share** — the pictures' bottom, the other files' top — the rule fading in once a few pixels are
+hidden there and out again when none are *(2026-10-28; the pictures were ruled off from the field
+always until then, and the box drew the two lists differently from an edit)*. `attach` picks one file or several, and pressing it again adds to what
 is there; a file **dropped** anywhere on the queue, or a picture pasted, is added the same way
 ([Dropping and pasting](#dropping-and-pasting-files)). Each slides in and out, fading, and each part of the box opens with its first file and
 shuts with its last. *(Until 2026-10-07 every file was listed above the field, which put a file
@@ -975,7 +978,9 @@ or reloading is the browser's own question, the only one a page may ask then. **
 editable there too** *(added 2026-09-18; any number and any kind since 2026-10-07)*: each one the
 item carries is drawn on the side of the words the row being edited drew it — every picture above
 them, as a thumbnail, and every other file under them behind the short rule — with the box's `×`
-beside it, each list scrolling past three pictures or five files as the box's do. Opening an edit therefore moves no file across the words, though each picture shrinks
+beside it, each list scrolling past three pictures or five files and ruled off from the words while files
+lie past their shared edge, as the box's are — where the files have the short rule, it spans the
+row instead. Opening an edit therefore moves no file across the words, though each picture shrinks
 to the box's size and gains its line, and a third picture and after, a line under the words when
 read, joins the thumbnails above them. **A file attached or removed brings the row back into
 view** once it has grown or shrunk into its new height *(2026-10-08)*, since a picture arriving

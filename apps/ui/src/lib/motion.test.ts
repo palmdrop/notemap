@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   bezier,
+  markingHidden,
   drawOut,
   duration,
   fade,
@@ -384,5 +385,41 @@ describe("settled", () => {
     finish();
     await waiting;
     expect(done).toBe(true);
+  });
+});
+
+describe("markingHidden", () => {
+  test("marks the edges a list lies hidden past, beyond a nudge of the wheel", () => {
+    const list = document.createElement("div");
+    // jsdom lays nothing out, so a list measures only what it is told.
+    let top = 0;
+    let height = 100;
+    Object.defineProperty(list, "scrollTop", { get: () => top });
+    Object.defineProperty(list, "clientHeight", { get: () => 100 });
+    Object.defineProperty(list, "scrollHeight", { get: () => height });
+    const stop = markingHidden(list);
+    const marks = () => [
+      list.hasAttribute("data-hidden-above"),
+      list.hasAttribute("data-hidden-below"),
+    ];
+
+    expect(marks()).toEqual([false, false]);
+
+    height = 300;
+    list.dispatchEvent(new Event("scroll"));
+    expect(marks()).toEqual([false, true]);
+
+    top = 2;
+    list.dispatchEvent(new Event("scroll"));
+    expect(marks()).toEqual([false, true]);
+
+    top = 100;
+    list.dispatchEvent(new Event("scroll"));
+    expect(marks()).toEqual([true, true]);
+
+    top = 198;
+    list.dispatchEvent(new Event("scroll"));
+    expect(marks()).toEqual([true, false]);
+    stop();
   });
 });

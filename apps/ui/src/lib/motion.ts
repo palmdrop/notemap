@@ -325,3 +325,31 @@ export function showingNewest(node: HTMLElement): () => void {
   watching.observe(node, { childList: true });
   return () => watching.disconnect();
 }
+
+/** How much of a list may lie past an edge before it counts as hidden there: a nudge of the wheel. */
+const HIDDEN = 4;
+
+/**
+ * Marks a list `data-hidden-above` and `data-hidden-below` while some of it
+ * lies scrolled past that edge, for a rule to appear by.
+ */
+export function markingHidden(node: HTMLElement): () => void {
+  function mark(): void {
+    const below = node.scrollHeight - node.clientHeight - node.scrollTop;
+    node.toggleAttribute("data-hidden-above", node.scrollTop > HIDDEN);
+    node.toggleAttribute("data-hidden-below", below > HIDDEN);
+  }
+
+  const resized = new ResizeObserver(mark);
+  const changed = new MutationObserver(mark);
+  node.addEventListener("scroll", mark, { passive: true });
+  resized.observe(node);
+  changed.observe(node, { childList: true });
+  mark();
+
+  return () => {
+    node.removeEventListener("scroll", mark);
+    resized.disconnect();
+    changed.disconnect();
+  };
+}
