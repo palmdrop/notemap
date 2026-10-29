@@ -361,7 +361,7 @@
       return;
     }
 
-    if (event.key === "Escape" && value !== "") {
+    if (event.key === "Escape" && !event.isComposing && value !== "") {
       event.preventDefault();
       onchange(steppedBack(value));
       return;

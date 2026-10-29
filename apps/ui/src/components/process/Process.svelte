@@ -168,6 +168,8 @@
    * `carried()`'s answer rather than this.
    */
   let words = $state<string | undefined>(undefined);
+  /** What the last route carried: kept for the next, they are nothing new to lose. */
+  let wordsSent = $state<string | undefined>(undefined);
   let editing = $state(false);
   let typing = $state<HTMLTextAreaElement | undefined>(undefined);
 
@@ -875,6 +877,7 @@
       // The surface stays, cleared: an item may go to more than one place,
       // and `next →` is what moves on.
       release();
+      wordsSent = words;
       records.reread();
     } catch (error) {
       said = saidBy(error);
@@ -933,13 +936,14 @@
   }
 
   /**
-   * Whether something has been chosen or written since the surface opened. The
-   * item's tags are not part of it: a tag is applied to the pool when taken.
+   * Whether something has been chosen or written since the surface opened or
+   * last routed. The item's tags are not part of it: a tag is applied to the
+   * pool when taken.
    */
   const entered = $derived(
     chosen !== undefined ||
       applied !== undefined ||
-      (words !== undefined && words !== captured),
+      (words !== undefined && words !== captured && words !== wordsSent),
   );
   let confirming = $state(false);
 
