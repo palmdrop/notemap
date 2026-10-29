@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-28
+**Last updated**: 2026-10-29
 **Shipped**:
+
+- 2026-10-29 — **`esc` steps back in the place line, and leaving the composer with something
+  entered asks first.** In the place line `esc` takes off the half-typed name, or the last folder
+  taken where there is none, and on an empty line is the field's own. Leaving the composer by `esc`
+  asks before going once a destination or template was chosen or the words were rewritten, and is
+  immediate otherwise. ([plan](../plans/escape-steps-back-in-the-composer.md))
 
 - 2026-10-28 — **Files are dropped or pasted anywhere on the page.** The open edit takes them, and
   otherwise the capture box; a full-viewport overlay says which while files are held over the page,
@@ -1397,7 +1403,15 @@ and a processed item comes back held on the queue until the selection leaves it
 **The keyboard on the surface**: `e` edit, `esc` back, `⌘/ctrl+⏎` route, `[` and `]` previous and
 next. Only `⌘/ctrl+⏎` fires while a field has the caret, the decision being finished there and
 reaching for the mouse to send it being the gesture this surface exists to spare. `esc` in a field
-leaves the field, and the next one leaves the surface.
+leaves the field, and the next one leaves the surface. **The place line is the exception** *(added
+2026-10-29)*: `esc` there steps back one segment — the half-typed name if there is one, the last
+folder taken otherwise, so `seeded/new` becomes `seeded/` and then empty — and only on an empty line
+is it the field's own, as it is while a composition is under way. **Leaving the surface asks first
+where something was entered** since it opened or last routed: a destination or template chosen, or
+the words rewritten, and with them any argument, since a destination chosen is already a decision
+begun. It asks *go back to the queue?*: `leave`, in the alarm, goes and drops what was entered;
+`stay`, `esc` or a press outside returns with everything as it was. Nothing entered leaves at once.
+Tags are not part of it, being applied to the pool when taken.
 
 **The surface opens with the pool out of reach.** A surface that refused to would be a queue that
 cannot be drained offline, and discarding is precisely the gesture that survived, replaying from
@@ -2012,11 +2026,12 @@ and there is nothing behind the shape to leave.
 wherever the focus is, so its `esc` stays its own.
 
 **Whatever has the press keeps it.** No chord fires while a field has the caret unless its command
-says otherwise, and `esc` in a field leaves the field rather than reaching anything — which is what
-makes the queue's keyboard reachable at all, the capture box taking the caret on arrival, so `esc`
-is the way from writing to working. The same rule covers a control reached by tab: a field that
-kept the press, or a button the browser is about to click, has answered for the press, and a
-command taking it too would act twice on one of them.
+says otherwise, and `esc` in a field leaves the field rather than reaching anything (the place line
+steps back a segment first, [the place is one line you type](#the-place-is-one-line-you-type)) —
+which is what makes the queue's keyboard reachable at all, the capture box taking the caret on
+arrival, so `esc` is the way from writing to working. The same rule covers a control reached by tab:
+a field that kept the press, or a button the browser is about to click, has answered for the press,
+and a command taking it too would act twice on one of them.
 
 **What a command could not do is said in the status line**, never under the row. A deed a key took may
 have no row on screen to draw a failure beneath — which is already why discarding and marking
