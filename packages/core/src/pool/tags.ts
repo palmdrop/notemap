@@ -60,11 +60,23 @@ export async function tag(
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
 
-  const first = await tagOnce(config, ports, id, tag, by, options, false);
-  if (first !== "decided-gone") return first;
-  return tagOnce(config, ports, id, tag, by, options, true);
+  // Once, with the firing skipped where the decision stands; again with it
+  // worked out if that decision was withdrawn before the transaction looked.
+  for (let firingRequired = false; ; firingRequired = true) {
+    const result = await tagOnce(
+      config,
+      ports,
+      id,
+      tag,
+      by,
+      options,
+      firingRequired,
+    );
+    if (result !== undefined) return result;
+  }
 }
 
+/** `undefined` when the decision that let the firing be skipped is gone. */
 async function tagOnce(
   config: PoolConfig,
   ports: PoolPorts,
@@ -73,7 +85,7 @@ async function tagOnce(
   by: Agent,
   options: Tagging,
   firingRequired: boolean,
-): Promise<TagResult | "decided-gone"> {
+): Promise<TagResult | undefined> {
   const trigger = await triggerFor(
     config,
     ports,
@@ -108,7 +120,7 @@ async function tagOnce(
     // The decision was withdrawn after the firing was skipped, so a tag written
     // now would be applied with no record behind it. Nothing is written yet.
     if (trigger !== undefined && trigger.firing === undefined && !decided) {
-      return "decided-gone";
+      return undefined;
     }
 
     const at = ports.clock.now();
