@@ -6,9 +6,9 @@
 
 - 2026-10-29 — **`under` files where it was typed, and `↑↓` start where the line is.** Leaving or
   committing a browsed field settles the head of one title to it only where the field may hold
-  nothing but what the destination has; a heading typed half-way is a heading of its own. A value
-  typed in another case settles to the listed one. The first `↑↓` on the place line lands in the
-  level the caret is in rather than at the top of the tree.
+  nothing but what the destination has; a heading typed half-way is a heading of its own. The first
+  `↑↓` on the place line lands in the level the caret is in, or on the folder just taken where that
+  level holds nothing, rather than at the top of the tree.
   ([plan](../plans/under-files-where-typed.md))
 
 - 2026-10-29 — **`esc` steps back in the place line, and leaving the composer with something
@@ -1437,8 +1437,9 @@ is nothing to complete** *(added 2026-09-04)*, rather than handing focus to what
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
-press landing on the first or last row of the level the caret is in *(amended 2026-10-29; it
-landed at the top of the whole tree, above the folder just taken)* — while `⏎`
+press landing on the first or last row of the level the caret is in, or on the deepest folder the
+line runs through where that level drew nothing *(amended 2026-10-29; it landed at the top of the
+whole tree, above the folder just taken)* — while `⏎`
 takes the row walked to and, left alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never
 routes from the line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a
 file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press
@@ -1587,12 +1588,12 @@ place it changes. Before this it was the head alone, everywhere.
 **`⇥` completes from the head matches alone.** A name that holds the line in its middle has a head
 the person never typed, so it cannot continue what they wrote; several head matches complete as
 far as they agree, and a lone match of either kind completes outright. Committing a line resolves
-the whole of a title, and a value typed in another case to the one listed, since a destination
-matches the value as written. **The head of a title resolves only on a field marked
+the whole of a title. **The head of a title resolves only on a field marked
 `x-notemap-offered-only`** *(amended 2026-10-29; it resolved everywhere, so `Note` in `under` filed
 under `## Notes` when a new heading was meant)*: there the head of one that no other begins with
-is the one meant, and anywhere else a line no title matches is a value of its own. Never a title
-that merely holds the line, since what was typed may be a slug for a channel the page did not list.
+is the one meant, and anywhere else a line that is not the whole of a title is a value of its own.
+Never a title that merely holds the line, since what was typed may be a slug for a channel the page
+did not list.
 
 Matching is over **both the label and the value**, and `⇥` completes to the **value**.
 The two need not be the same string — an are.na channel is browsed by its title and filed under

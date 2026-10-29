@@ -182,19 +182,11 @@ describe("what a typed line means", () => {
     expect(resolved(headings, "Ne")).toBeUndefined();
   });
 
-  /** A delivery files under the heading as written, so `next` would make a second one. */
-  it("settles a value typed in another case to the one listed", () => {
+  /** The delivery finds a heading without case, so the field keeps what was typed. */
+  it("leaves a value typed in another case as typed", () => {
     const headings = [channel("## Next", "Next")];
 
-    expect(resolved(headings, "next")).toBe("Next");
-    expect(resolved(headings, " Next ")).toBe("Next");
-    expect(resolved(headings, "Next")).toBeUndefined();
-  });
-
-  it("settles no case where two listed values differ only by it", () => {
-    const headings = [channel("## Next", "Next"), channel("## NEXT", "NEXT")];
-
-    expect(resolved(headings, "next", "value", true)).toBeUndefined();
+    expect(resolved(headings, "next")).toBeUndefined();
   });
 
   /** A slug for a channel the page did not list can fall inside a title it did. */

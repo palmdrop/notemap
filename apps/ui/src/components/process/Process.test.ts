@@ -2054,7 +2054,7 @@ test("resolves enough of a title that only one channel still matches", async () 
   });
 });
 
-/** A heading half-typed into `under` is one the delivery writes, not the one it prefixes. */
+/** Unmarked, a field may hold what nothing lists, so the head of a title is a value of its own. */
 test("routes the head of a title as typed where the field may hold something new", async () => {
   const transport = servingBrowsable(() => answered(CHANNELS));
   draw();

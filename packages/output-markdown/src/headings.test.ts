@@ -64,6 +64,12 @@ describe("the headings a note offers", () => {
     ).toEqual([{ label: "## Notes", value: "Notes" }]);
   });
 
+  it("lists headings that differ only by case once, as the first spells it", () => {
+    expect(
+      headingCandidates("## Next\n\none\n\n## NEXT\n\ntwo\n").entries,
+    ).toEqual([{ label: "## Next", value: "Next" }]);
+  });
+
   it("offers only what the splice will find", () => {
     const note = "# Monday\n\n## Read: *Borges*\n\n## Later\n";
     for (const entry of headingCandidates(note).entries) {

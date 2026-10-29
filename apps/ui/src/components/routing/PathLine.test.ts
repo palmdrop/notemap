@@ -373,6 +373,29 @@ test("the first arrow lands inside the folder the line names", async () => {
   expect(line.value()).toBe("projects/notemap/notes/");
 });
 
+test("the first up arrow lands on the last row inside the folder the line names", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowUp" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/readme.md");
+});
+
+/** The `+` rows are drawn but not walked, so the walk lands on a folder that is there. */
+test("the first arrow lands on the deepest folder that is there where the rest is still to be made", async () => {
+  servingTree();
+  const line = draw("projects/notemap/new/", SAID);
+
+  await screen.findByText("+ new/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/");
+});
+
 test("the first arrow lands on what the typed segment matches", async () => {
   servingTree();
   const line = draw("projects/no");

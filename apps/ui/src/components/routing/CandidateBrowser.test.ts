@@ -95,14 +95,6 @@ test("settles a half-typed heading as typed", async () => {
   ).toBe("Ne");
 });
 
-test("settles a heading typed in another case to the one in the note", async () => {
-  serving([{ label: "## Next", value: "Next" }]);
-
-  expect(
-    await settledFrom("next", { given: { path: "case.md" } }, "## Next"),
-  ).toBe("Next");
-});
-
 test("settles the head of one title to its value where only what is there may be held", async () => {
   serving([
     { label: "Field Recordings", value: "field-recordings" },

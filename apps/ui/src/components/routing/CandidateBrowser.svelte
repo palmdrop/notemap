@@ -74,7 +74,7 @@
     naming?: boolean;
     /**
      * May hold only what the destination already has, so a line that is the
-     * head of one title alone settles to it. Elsewhere it is taken as written.
+     * head of one title alone settles to it, as a whole title does anywhere.
      */
     offeredOnly?: boolean;
     /**

@@ -34,7 +34,9 @@ export function insertUnder(
     heading === undefined
       ? undefined
       : tree.children.findIndex(
-          (node) => isHeading(node) && headingText(existing, node) === heading,
+          (node) =>
+            isHeading(node) &&
+            headingKey(headingText(existing, node)) === headingKey(heading),
         );
   if (heading !== undefined && at === -1) {
     return {
@@ -161,6 +163,14 @@ export function headingText(source: string, heading: Heading): string {
       .replace(/\s+#*\s*$/, "")
       .trim()
   );
+}
+
+/**
+ * What two headings are compared by. Without case: `next` typed for a note's
+ * `## Next` writing a second heading beside it is never what was meant.
+ */
+export function headingKey(text: string): string {
+  return text.toLowerCase();
 }
 
 function head(heading: string): string {

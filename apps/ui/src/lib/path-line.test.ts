@@ -323,9 +323,32 @@ describe("the hierarchy as it is drawn", () => {
       expect(landing("", false)).toBe("reading");
     });
 
-    test("at the ends of the tree where the caret's level drew nothing", () => {
-      expect(landing("projects/zz", true)).toBe("journal");
-      expect(landing("projects/zz", false)).toBe("reading");
+    test("on the folder the line runs through where the typed segment matches nothing", () => {
+      expect(landing("projects/zz", true)).toBe("projects");
+      expect(landing("projects/zz", false)).toBe("projects");
+    });
+
+    test("on the folder just taken where it holds nothing", () => {
+      const empty: Level[] = [
+        ...levels.slice(0, 2),
+        { scope: "projects/kontradiktion", entries: [] },
+      ];
+      const path = parsePath("projects/kontradiktion/");
+      const rows = reachable(rowsOf(empty, path));
+
+      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe(
+        "kontradiktion",
+      );
+    });
+
+    /** The `+` rows are not takeable, so the deepest folder that is there is. */
+    test("on the deepest folder that is there where the rest is still to be made", () => {
+      const path = parsePath("projects/new/deeper/");
+      const rows = reachable(
+        rowsOf(levels.slice(0, 2), path, pending(path, ["new", "deeper"])),
+      );
+
+      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe("projects");
     });
 
     test("nowhere past the ends where nothing is drawn at all", () => {

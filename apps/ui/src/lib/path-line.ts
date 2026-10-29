@@ -245,7 +245,8 @@ export function reachable(rows: readonly Row[]): readonly Row[] {
  * Where the first `↑↓` lands among the reachable rows: the first or last of the
  * level the caret is in, since a folder just taken is where the next pick is
  * looked for. The whole tree stays walkable from there. A level with nothing
- * drawn starts at the ends of the tree instead.
+ * drawn — an empty folder, one still to be made, a segment nothing matches —
+ * lands on the deepest folder the line runs through.
  */
 export function walkStart(
   rows: readonly Row[],
@@ -254,8 +255,13 @@ export function walkStart(
 ): number {
   const depth = filtered(path);
   const first = rows.findIndex((row) => row.depth === depth);
-  if (first === -1) return down ? 0 : Math.max(rows.length - 1, 0);
-  return down ? first : rows.findLastIndex((row) => row.depth === depth);
+  if (first !== -1) {
+    return down ? first : rows.findLastIndex((row) => row.depth === depth);
+  }
+
+  const through = rows.findLastIndex((row) => row.onPath);
+  if (through !== -1) return through;
+  return down ? 0 : Math.max(rows.length - 1, 0);
 }
 
 /**

@@ -1,8 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-29
 **Shipped**:
+
+- 2026-10-29 — **A heading is found without case.** The markdown kinds file `next` under a note's
+  `## Next` rather than writing a second heading beside it, and list headings that differ only by
+  case once, as the first spells it. ([plan](../plans/under-files-where-typed.md))
 
 - 2026-10-26 — **A delivered record may be withdrawn, and reinstated.** The record stays with
   `withdrawnAt` and counts for nothing an item's routing decides, so the item is back in the queue
