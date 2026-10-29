@@ -4,6 +4,10 @@
 **Last updated**: 2026-10-29
 **Shipped**:
 
+- 2026-10-29 — **A trigger tag on an item its template already filed is never refused for an
+  asked argument.** The tag classifies and fires nothing, so what a firing would need is not
+  asked of it. ([plan](../plans/trigger-tag-after-a-template-route.md))
+
 - 2026-10-29 — **A heading is found without case.** The markdown kinds file `next` under a note's
   `## Next` rather than writing a second heading beside it, and list headings that differ only by
   case once, as the first spells it. ([plan](../plans/under-files-where-typed.md))
@@ -733,7 +737,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **The same rule keeps a second firing off an item**: a tag arriving where that template already
   has a record on the item lands as ordinary classification and fires nothing. A person may have
   taken the template in the composer and tagged the item afterwards, which says why it went there
-  and is not a second decision.
+  and is not a second decision. Since nothing fires, **nothing the firing would need is checked**:
+  a template that asks for an argument is not refused for lacking one on a tag that only
+  classifies. The check that decides is the one inside the transaction, so a record withdrawn in
+  between sends the tag round again as one that fires, and it is never written without either.
 - **A source-supplied tag fires too.** Attribution could tell a person's tag from a source's, and
   deliberately is not used: a capture arriving from an inbox already tagged `route/research` and
   filing itself is the point rather than an accident of it. What it costs is that a system outside

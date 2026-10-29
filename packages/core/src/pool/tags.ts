@@ -60,8 +60,29 @@ export async function tag(
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
 
-  const trigger = await triggerFor(config, ports, id, tag, options);
-  if (trigger?.firing.kind === "refused") {
+  const first = await tagOnce(config, ports, id, tag, by, options, false);
+  if (first !== "decided-gone") return first;
+  return tagOnce(config, ports, id, tag, by, options, true);
+}
+
+async function tagOnce(
+  config: PoolConfig,
+  ports: PoolPorts,
+  id: ItemId,
+  tag: TagName,
+  by: Agent,
+  options: Tagging,
+  firingRequired: boolean,
+): Promise<TagResult | "decided-gone"> {
+  const trigger = await triggerFor(
+    config,
+    ports,
+    id,
+    tag,
+    options,
+    firingRequired,
+  );
+  if (trigger?.firing?.kind === "refused") {
     return refused({
       kind: "trigger-refused",
       tag,
@@ -77,17 +98,24 @@ export async function tag(
     // The first attribution stands, and nothing changed to log or to mirror.
     if (item.tags.some((held) => held.name === tag)) return ok(item);
 
-    const at = ports.clock.now();
-    const tagged = await tx.addTag(id, { name: tag, by, addedAt: at });
-
     // A decision this template already made stands, so the tag is classification
     // and nothing more: it was spent on the copy that is already there, and
     // firing again would file a second one.
+    const decided =
+      trigger !== undefined &&
+      (await alreadyApplied(tx, id, trigger.template.id)) !== undefined;
+
+    // The decision was withdrawn after the firing was skipped, so a tag written
+    // now would be applied with no record behind it. Nothing is written yet.
+    if (trigger !== undefined && trigger.firing === undefined && !decided) {
+      return "decided-gone";
+    }
+
+    const at = ports.clock.now();
+    const tagged = await tx.addTag(id, { name: tag, by, addedAt: at });
+
     let answer = tagged;
-    if (
-      trigger?.firing.kind === "fires" &&
-      (await alreadyApplied(tx, id, trigger.template.id)) === undefined
-    ) {
+    if (trigger?.firing?.kind === "fires" && !decided) {
       await fire(
         config,
         ports,
@@ -185,6 +213,10 @@ async function filed(
  * outside the reserved namespace can claim a template, so an ordinary tag costs
  * no read at all.
  *
+ * Without a `firing` the template had already decided this item when it was
+ * read; the transaction confirms that, and `tag` goes round again with the
+ * firing worked out if the decision has been withdrawn since.
+ *
  * The item is read twice — here and again inside the transaction — and only the
  * second reading decides. This one is for the expansion, which needs the
  * capture; a tag that arrives in between is absorbed there, and the reservation
@@ -196,7 +228,8 @@ async function triggerFor(
   id: ItemId,
   tag: TagName,
   options: Tagging,
-): Promise<{ template: RoutingTemplate; firing: Firing } | undefined> {
+  firingRequired: boolean,
+): Promise<{ template: RoutingTemplate; firing?: Firing } | undefined> {
   if (!tag.startsWith(TRIGGER_TAG_NAMESPACE)) return undefined;
 
   const template = await ports.store.routingTemplateByTriggerTag(tag);
@@ -205,6 +238,16 @@ async function triggerFor(
   const item = await ports.store.item(id);
   if (item === undefined) return undefined;
   if (item.tags.some((held) => held.name === tag)) return undefined;
+
+  // Asked arguments are needed only to fire. Where the template has already
+  // decided this item nothing fires, so the tag must not be refused for them.
+  // The check is repeated inside the transaction, which is what decides.
+  if (
+    !firingRequired &&
+    (await alreadyApplied(ports.store, id, template.id)) !== undefined
+  ) {
+    return { template };
+  }
 
   return {
     template,

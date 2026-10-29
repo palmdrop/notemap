@@ -1387,6 +1387,36 @@ describe("a template that asks for an argument", () => {
     expect(await queued(pool)).toEqual([item.id]);
   });
 
+  it("tags as classification, with no value, an item the template already filed", async () => {
+    const { pool, item, template } = await asking();
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([record]);
+  });
+
+  it("refuses the same tag once the record is withdrawn, as any tag that would fire", async () => {
+    const { pool, item, template } = await asking();
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+    succeeded(await pool.routing.withdraw(record.id));
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-missing: heading" },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+  });
+
   it("reads a blank default as none, and refuses a tag given nothing", async () => {
     const { pool, item } = await asking({
       arguments: { path: "todo.md", heading: " " },

@@ -2,8 +2,12 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-29
 **Shipped**:
+
+- 2026-10-29 — **`POST /v1/items/{id}/tag` no longer answers `422 trigger-refused` for a missing
+  asked argument where the template has already filed the item.** The tag is classification there.
+  ([plan](../plans/trigger-tag-after-a-template-route.md))
 
 - 2026-10-26 — **`POST /v1/routing/{record}/withdraw` and `/reinstate`, and `GET
   /v1/routing/{record}/presence`.** A record carries `withdrawnAt` and `pointers`;
@@ -1030,7 +1034,9 @@ Both answer `200 OK` with the `Item` as it now stands.
   `arguments` beside the tag: `{ "tag": "route/todo", "arguments": { "heading": "Next" } }`. The
   tag itself is unchanged. Without them the template's defaults apply, and an asked field with
   neither is `422 trigger-refused` whose `detail` names it, as is a value for a field the template
-  fixes. They are ignored where the tag fires nothing, absorbed or ordinary.
+  fixes. They are ignored where the tag fires nothing, absorbed or ordinary — and so nothing is
+  refused for a missing one where the template has already filed the item: that tag classifies
+  ([core.md](core.md#classification)).
 - **`/untag` raises none of that, and one thing tagging cannot.** Removing a tag fires nothing and
   unroutes nothing, so `trigger-refused` is absent from its refusals rather than listed and
   unreachable. But a **trigger tag that filed this item is refused while what it filed still
