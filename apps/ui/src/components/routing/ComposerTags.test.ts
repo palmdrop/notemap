@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
-import { asked, client, pool } from "$testing/pool";
+import { asked, client, pool, sent } from "$testing/pool";
 import ComposerTags from "./ComposerTags.svelte";
 
 const RESEARCH = {
@@ -40,16 +40,11 @@ async function serving(
 
 function draw(
   names: readonly string[] = [],
-  onfired?: () => void,
+  ontemplate: (template: unknown) => void = () => {},
   templates: readonly string[] = [],
 ) {
   render(ComposerTags, {
-    props: {
-      item: "one",
-      names,
-      templates,
-      ...(onfired === undefined ? {} : { onfired }),
-    },
+    props: { item: "one", names, templates, ontemplate },
   });
 }
 
@@ -109,44 +104,59 @@ test("takes a tag the pool has never seen", async () => {
   });
 });
 
-/**
- * A trigger tag files the item the moment it is taken, so whoever is holding a
- * half-made decision beside this row is told before they can press it into a
- * second copy.
- */
-test("says a trigger tag taken here filed the item", async () => {
-  await serving(["route/research"], [RESEARCH]);
-  const fired = vi.fn();
-  draw([], fired);
+/** Routing by a tag beside the decision being made is a second way to make it. */
+test("offers no trigger tag, in use or only declared", async () => {
+  const LATER = { ...RESEARCH, id: "later", triggerTag: "route/later" };
+  await serving(["route/research", "reading"], [RESEARCH, LATER]);
+  draw();
 
   await opened();
-  await fireEvent.mouseDown(
-    screen.getByRole("option", { name: /route\/research/ }),
+  expect(screen.getByRole("option", { name: "reading" })).toBeDefined();
+  expect(screen.queryByRole("option", { name: /route\/research/ })).toBeNull();
+  expect(screen.queryByRole("option", { name: /route\/later/ })).toBeNull();
+});
+
+test("offers a tag under route/ that no template declares, which is ordinary", async () => {
+  await serving(["route/nowhere"], [RESEARCH]);
+  draw();
+
+  await opened();
+  expect(screen.getByRole("option", { name: "route/nowhere" })).toBeDefined();
+});
+
+test("takes the template of a trigger tag typed in, and tags nothing", async () => {
+  await serving([], [RESEARCH]);
+  const taken = vi.fn();
+  draw([], taken);
+
+  const line = await opened();
+  await fireEvent.input(line, { target: { value: "route/research" } });
+  expect(
+    screen.getByRole("option", { name: /^\+ route\/research\s*→ research$/ }),
+  ).toBeDefined();
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  expect(taken).toHaveBeenCalledWith(
+    expect.objectContaining({ id: RESEARCH.id }),
   );
 
-  expect(fired).toHaveBeenCalled();
+  // An ordinary tag after it, so a trigger tag sent first would be seen too.
+  const again =
+    screen.queryByRole("combobox", { name: "Add a tag" }) ?? (await opened());
+  await fireEvent.input(again, { target: { value: "reading" } });
+  await fireEvent.keyDown(again, { key: "Enter" });
+  await vi.waitFor(async () => {
+    expect(JSON.stringify(await sent())).toContain("reading");
+  });
+  expect(JSON.stringify(await sent())).not.toContain("route/research");
 });
 
 /** A trigger tag whose template's record still stands cannot be taken off here. */
 test("draws a trigger tag whose template still stands as inert", async () => {
   await serving(["route/research"], [RESEARCH]);
-  draw(["route/research"], undefined, [RESEARCH.id]);
+  draw(["route/research"], () => {}, [RESEARCH.id]);
 
   const tag = screen.getByText("research");
   expect(tag.tagName).toBe("SPAN");
   expect(screen.queryByRole("button", { name: /route\/research/ })).toBeNull();
-});
-
-test("says nothing of an ordinary tag, which files nothing", async () => {
-  await serving(["reading"], [RESEARCH]);
-  const fired = vi.fn();
-  draw([], fired);
-
-  await opened();
-  await fireEvent.mouseDown(screen.getByRole("option", { name: "reading" }));
-
-  await vi.waitFor(() => {
-    expect(asked()).toContain("POST /v1/items/one/tag");
-  });
-  expect(fired).not.toHaveBeenCalled();
 });

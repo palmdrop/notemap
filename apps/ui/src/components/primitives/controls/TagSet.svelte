@@ -578,8 +578,7 @@
       >
         {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
           {@const on = at === index}
-          {@const fired =
-            row.fresh || step !== undefined ? undefined : fires?.(row.label)}
+          {@const fired = step !== undefined ? undefined : fires?.(row.label)}
           {#if row.apart}
             <div
               aria-hidden="true"
@@ -599,8 +598,8 @@
               + {row.label}
             {:else}
               <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-              >{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
-            {/if}
+              >
+            {/if}{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
           </Walked>
         {/each}
       </div>

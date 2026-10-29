@@ -477,6 +477,39 @@ describe("a trigger tag applying its template", () => {
     return { ...opened, template, item, result };
   }
 
+  it("files nothing twice where the template files the item between the read and the write", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const template = succeeded(
+      await pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await pool.capture(envelope()));
+    opened.racingTransaction(async () => {
+      succeeded(await pool.templates.route(item.id, template.id));
+    });
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
+  it("fires where the tag it already carried comes off between the read and the write", async () => {
+    const opened = await pooled();
+    const { pool } = opened;
+    const item = captured(await pool.capture(envelope()));
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    opened.racingTransaction(async () => {
+      succeeded(await pool.items.untag(item.id, RESEARCH, PERSON));
+    });
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([RESEARCH]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
   it("reserves, and hands the destination nothing at all", async () => {
     const { pool, destination, item, template } = await tagged();
 
@@ -1387,6 +1420,93 @@ describe("a template that asks for an argument", () => {
     expect(await queued(pool)).toEqual([item.id]);
   });
 
+  it("tags as classification, with no value, an item the template already filed", async () => {
+    const { pool, item, template } = await asking();
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([record]);
+  });
+
+  it("refuses the same tag once the record is withdrawn, as any tag that would fire", async () => {
+    const { pool, item, template } = await asking();
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+    succeeded(await pool.routing.withdraw(record.id));
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-missing: heading" },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+  });
+
+  it("refuses the tag where the record is withdrawn between the read and the write", async () => {
+    const opened = await asking();
+    const { pool, item, template } = opened;
+    const record = succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+    opened.racingTransaction(async () => {
+      succeeded(await pool.routing.withdraw(record.id));
+    });
+
+    expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
+      kind: "refused",
+      refusal: { detail: "argument-missing: heading" },
+    });
+    expect(await tagsOn(pool, item.id)).toEqual([]);
+  });
+
+  it("absorbs a tag the item already carries, asking nothing, where nothing was filed", async () => {
+    const opened = await pooled(HEADING_SCHEMA);
+    const { pool } = opened;
+    const item = captured(await pool.capture(envelope()));
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+    succeeded(
+      await pool.templates.create(
+        draft({
+          triggerTag: TODO,
+          arguments: { path: "todo.md" },
+          asked: { heading: { label: "list" } },
+        }),
+      ),
+    );
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+  });
+
+  it("classifies, rather than refusing, where the template files the item between the read and the write", async () => {
+    const opened = await asking();
+    const { pool, item, template } = opened;
+    opened.racingTransaction(async () => {
+      succeeded(
+        await pool.templates.route(item.id, template.id, {
+          arguments: { heading: "Next" },
+        }),
+      );
+    });
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
   it("reads a blank default as none, and refuses a tag given nothing", async () => {
     const { pool, item } = await asking({
       arguments: { path: "todo.md", heading: " " },
@@ -1422,6 +1542,24 @@ describe("a template that asks for an argument", () => {
       kind: "refused",
       refusal: { detail: "argument-not-asked: path" },
     });
+  });
+
+  it("ignores a value for a field the template fixes where the template already filed the item", async () => {
+    const { pool, item, template } = await asking();
+    succeeded(
+      await pool.templates.route(item.id, template.id, {
+        arguments: { heading: "Next" },
+      }),
+    );
+
+    succeeded(
+      await pool.items.tag(item.id, TODO, PERSON, {
+        arguments: { path: "elsewhere.md" },
+      }),
+    );
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
   });
 
   it("validates the value against the capability, as a hand-made route is", async () => {

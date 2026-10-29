@@ -105,6 +105,11 @@ It is half of what is wanted. The composer part of it is in this decision anyway
   the template, and an interactive tag can now need a second step before it lands.
 - **Bad**: an item already filed by `route/todo` cannot be filed again under another heading by the
   tag, which is absorbed. A second heading goes through the process surface.
+- **Amended 2026-10-29**: a trigger tag on an item its template already filed is not refused for
+  an asked argument it lacks, or for anything else a firing would need. Nothing fires there, so
+  nothing is needed; the check is made again inside the transaction, and a record withdrawn in
+  between sends the tag round as one that fires.
+  Without this, the composer's own follow-up tag after a route was refused.
 - **Neutral**: a supplied value is taken literally, so `{{` can reach a record through an asked
   field but not through a template. Nothing writes `{{` into a heading on purpose.
 

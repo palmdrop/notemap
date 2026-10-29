@@ -824,24 +824,25 @@ test("changing the destination after a lined template gives the line back", asyn
 });
 
 /**
- * The tag files it, so the decision this surface was for is made: staying is
- * offering to route an item that is already on its way somewhere.
+ * Routing by a tag beside the decision would make it twice, so a trigger tag
+ * typed here takes its template into the decision instead, and nothing goes
+ * until that is committed.
  */
-test("advances on a trigger tag taken in its own row", async () => {
+test("takes the template of a trigger tag typed in its own row, and routes nothing", async () => {
   servingTemplates();
 
   draw();
-  await choose(/Vault/);
-  await described();
+  await screen.findByText("tags");
 
-  await addingTag();
-  await fireEvent.mouseDown(
-    await screen.findByRole("option", { name: /route\/research/ }),
-  );
+  const line = await addingTag();
+  await fireEvent.input(line, { target: { value: "route/research" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
 
-  await vi.waitFor(() => {
-    expect(left()).toBe("/");
-  });
+  await screen.findByRole("button", { name: "edit place" });
+  expect(screen.getByText("research/2026-09-04")).toBeDefined();
+  expect(asked()).not.toContain("POST /v1/items/one/tag");
+  expect(asked()).not.toContain("POST /v1/items/one/route");
+  expect(left()).toBeUndefined();
 });
 
 /**
@@ -3177,12 +3178,8 @@ test("esc leaving the tag field leaves the surface where it was", async () => {
   expect(asked()).not.toContain("POST /v1/items/one/tag");
 });
 
-/**
- * What is *in use* is what the pool has seen on an item, so a template set up
- * this morning could only be fired by typing its tag exactly right — which is
- * the one time nobody knows it.
- */
-test("offers a trigger tag that has never filed anything yet", async () => {
+/** `where` offers the templates; a trigger tag here would be a second way to take one. */
+test("offers no trigger tag that has never filed anything yet", async () => {
   pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
@@ -3210,15 +3207,11 @@ test("offers a trigger tag that has never filed anything yet", async () => {
   await screen.findByRole("combobox", { name: "place" });
 
   await addingTag();
-  await screen.findByRole("option", { name: /route\/research.*research/ });
+  await screen.findByRole("option", { name: "seedling" });
+  expect(screen.queryByRole("option", { name: /route\/research/ })).toBeNull();
 });
 
-/**
- * Tagging is no longer free of consequence, so the chooser says which of them
- * sends the item. The mark names the template rather than only saying there is
- * one: `route/` is a namespace, and a namespace is not a decision.
- */
-test("marks a trigger tag in the chooser with the template it applies", async () => {
+test("offers no trigger tag the pool has seen in use", async () => {
   pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
@@ -3249,9 +3242,8 @@ test("marks a trigger tag in the chooser with the template it applies", async ()
   await screen.findByRole("combobox", { name: "place" });
 
   await addingTag();
-  await screen.findByRole("option", { name: /route\/research.*research/ });
-  // An ordinary tag is left as it was: only a tag with an effect is marked.
-  expect(screen.getByRole("option", { name: "seedling" })).toBeTruthy();
+  await screen.findByRole("option", { name: "seedling" });
+  expect(screen.queryByRole("option", { name: /route\/research/ })).toBeNull();
 });
 
 /**
@@ -4476,17 +4468,16 @@ test("a template that asks draws the field open, gives it the caret, and commits
   });
 });
 
-test("a trigger tag whose template asks takes the template here rather than filing", async () => {
+test("a trigger tag typed in whose template asks takes the template, asking here", async () => {
   servingTemplates([ASKING]);
 
   draw();
   await choose(/Vault/);
   await described();
 
-  await addingTag();
-  await fireEvent.mouseDown(
-    await screen.findByRole("option", { name: /route\/research/ }),
-  );
+  const line = await addingTag();
+  await fireEvent.input(line, { target: { value: "route/research" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
 
   expect(await screen.findByLabelText("filename")).toBeDefined();
   expect(left()).toBeUndefined();

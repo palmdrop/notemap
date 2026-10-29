@@ -1299,8 +1299,7 @@
         item={item.id}
         names={tags}
         templates={summary?.templates ?? []}
-        onfired={() => void advance()}
-        onasks={(template) => void take(template)}
+        ontemplate={(template) => void take(template)}
       />
     </Section>
 
