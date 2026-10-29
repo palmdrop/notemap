@@ -123,13 +123,13 @@ export function commonPrefix(values: readonly string[]): string {
  * value, and the two need not be the same string.
  *
  * The whole of a title always resolves, and so does a value typed in another
- * case, since a destination matches the value as written. On an `offeredOnly` field, so does the
- * head of one that no other title begins with — what `⇥` does, and safe
- * **here** for the reason it is not safe on a keystroke: this runs when the
- * line is done being typed, so there is no half-written word left to take out
- * of somebody's mouth. Anywhere else a line nothing is titled is a value of its
- * own — a heading the delivery writes — and a head would swap it for one
- * already there. A title that merely holds the line in its middle never
+ * case, since a destination matches the value as written. On an `offeredOnly`
+ * field, so does the head of one that no other title begins with — what `⇥`
+ * does, and safe **here** for the reason it is not safe on a keystroke: this
+ * runs when the line is done being typed, so there is no half-written word
+ * left to take out of somebody's mouth. Anywhere else a line nothing is titled
+ * is a value of its own — a heading the delivery writes — and a head would
+ * swap it for one already there. A title that merely holds the line in its middle never
  * resolves: that line may be a slug for a channel the page did not list.
  *
  * Anything unresolved is left exactly as written: an answer is one page of what

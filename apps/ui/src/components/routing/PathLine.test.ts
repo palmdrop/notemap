@@ -348,7 +348,7 @@ test("escape on an empty line is left to the field, which leaves it", async () =
  * Down the tree as it is drawn, not one level of it: the pointer takes any row,
  * so the arrows reach any row, or they are two different trees.
  */
-test("moves down the drawn tree with the arrows and takes with enter", async () => {
+test("moves on past the folder's level to the rest of the drawn tree", async () => {
   servingTree();
   const line = draw("projects/notemap/");
 
