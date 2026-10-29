@@ -2894,6 +2894,117 @@ test("esc returns to the queue with the item selected, once the caret is out of 
   expect(document.activeElement).not.toBe(directory);
 
   await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.click(await screen.findByRole("button", { name: "discard" }));
+  expect(left()).toBe("/?selected=one");
+});
+
+test("esc leaves at once, asking nothing, where nothing was entered", async () => {
+  serving([aDestination()]);
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(left()).toBe("/?selected=one");
+});
+
+test("esc asks before leaving once a destination was chosen, and discarding leaves", async () => {
+  serving([aDestination()]);
+  draw();
+  await choose(/Vault/);
+  await described();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  expect(screen.getByRole("dialog")).toBeDefined();
+  expect(left()).toBeUndefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  expect(left()).toBe("/?selected=one");
+});
+
+test("cancelling the question, with a second esc, returns to the composer intact", async () => {
+  serving([aDestination()]);
+  draw();
+  await choose(/Vault/);
+  const directory = await described();
+  await fireEvent.input(directory, { target: { value: "notes" } });
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent(screen.getByRole("dialog"), new Event("cancel"));
+
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(left()).toBeUndefined();
+  expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
+    "notes",
+  );
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.click(screen.getByRole("button", { name: "keep going" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(left()).toBeUndefined();
+});
+
+test("esc asks before leaving once the words were rewritten, and not for words left as they were", async () => {
+  serving([aDestination()], { kind: "described", capabilities: [APPEND] });
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const words = await screen.findByLabelText("words");
+  await fireEvent.keyDown(words, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(left()).toBe("/?selected=one");
+});
+
+test("a rewrite of the words is a change", async () => {
+  serving([aDestination()], { kind: "described", capabilities: [APPEND] });
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+
+  await fireEvent.keyDown(window, { key: "e" });
+  const words = await screen.findByLabelText("words");
+  await fireEvent.input(words, { target: { value: "something else" } });
+  await fireEvent.keyDown(words, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  expect(screen.getByRole("dialog")).toBeDefined();
+  expect(left()).toBeUndefined();
+});
+
+test("esc in the place line steps back a segment and does not leave", async () => {
+  servingLinedPreview([]);
+  drawAbout({ text: "a thought" });
+  await choose(/Vault/);
+
+  const line = await screen.findByRole("combobox", { name: "place" });
+  await fireEvent.input(line, { target: { value: "research/new" } });
+  await fireEvent.keyDown(line, { key: "Escape" });
+
+  expect((line as HTMLInputElement).value).toBe("research/");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(left()).toBeUndefined();
+});
+
+test("a tag added in the composer is not a draft", async () => {
+  serving([aDestination()]);
+  draw();
+  await screen.findByRole("button", { name: /Vault/ });
+  const line = await addingTag();
+  await fireEvent.input(line, { target: { value: "research" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  expect(screen.queryByRole("dialog")).toBeNull();
   expect(left()).toBe("/?selected=one");
 });
 

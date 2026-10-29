@@ -32,6 +32,7 @@
     reachable,
     rowsOf,
     scopesAlong,
+    steppedBack,
     textOf,
     withTyping,
     type Level,
@@ -357,6 +358,12 @@
       const picked = choices[at];
       if (moved && picked !== undefined) taken(picked);
       else complete();
+      return;
+    }
+
+    if (event.key === "Escape" && value !== "") {
+      event.preventDefault();
+      onchange(steppedBack(value));
       return;
     }
 

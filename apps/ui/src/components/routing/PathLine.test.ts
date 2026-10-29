@@ -311,6 +311,39 @@ test("leaves an ordinary backspace to the input", async () => {
   expect(line.value()).toBe("projects/note");
 });
 
+test("escape clears the half-typed name and keeps the folders taken", async () => {
+  servingTree();
+  const line = draw("projects/note");
+
+  await screen.findByText("notemap/");
+  await fireEvent.keyDown(line.line(), { key: "Escape" });
+
+  expect(line.value()).toBe("projects/");
+});
+
+test("escape drops the last folder taken where nothing is being typed", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "Escape" });
+  expect(line.value()).toBe("projects/");
+
+  await fireEvent.keyDown(line.line(), { key: "Escape" });
+  expect(line.value()).toBe("");
+});
+
+test("escape on an empty line is left to the field, which leaves it", async () => {
+  servingTree();
+  const line = draw("");
+
+  await settled();
+  const unanswered = await fireEvent.keyDown(line.line(), { key: "Escape" });
+
+  expect(unanswered).toBe(true);
+  expect(line.value()).toBe("");
+});
+
 /**
  * Down the tree as it is drawn, not one level of it: the pointer takes any row,
  * so the arrows reach any row, or they are two different trees.

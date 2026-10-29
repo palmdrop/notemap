@@ -282,6 +282,15 @@ export function popped(value: string): string {
   return head === "" ? "" : `${head}/`;
 }
 
+/**
+ * What `esc` leaves: the half-typed name if there is one, and otherwise the
+ * last folder taken.
+ */
+export function steppedBack(value: string): string {
+  const path = parsePath(value);
+  return path.typing === "" ? popped(value) : withTyping(path, "");
+}
+
 /** Replacing what is being typed, keeping everything settled before it. */
 export function withTyping(path: TypedPath, typing: string): string {
   const head = path.complete.join("/");

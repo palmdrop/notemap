@@ -15,6 +15,7 @@ import {
   pathOf,
   pending,
   popped,
+  steppedBack,
   reachable,
   rowsOf,
   scopesAlong,
@@ -159,6 +160,22 @@ describe("popping a segment", () => {
 
   test("leaves an empty line alone", () => {
     expect(popped("")).toBe("");
+  });
+});
+
+describe("stepping back", () => {
+  test("clears a half-typed name and keeps the folders taken", () => {
+    expect(steppedBack("seeded/new")).toBe("seeded/");
+    expect(steppedBack("proj")).toBe("");
+  });
+
+  test("drops the last folder taken once nothing is being typed", () => {
+    expect(steppedBack("projects/notemap/")).toBe("projects/");
+    expect(steppedBack("projects/")).toBe("");
+  });
+
+  test("leaves an empty line alone", () => {
+    expect(steppedBack("")).toBe("");
   });
 });
 

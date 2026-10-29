@@ -70,6 +70,7 @@
   import { rise } from "$lib/motion";
 
   import Band from "./Band.svelte";
+  import Discarding from "./Discarding.svelte";
   import Entry from "./Entry.svelte";
   import Preview from "./Preview.svelte";
   import Section from "./Section.svelte";
@@ -931,9 +932,25 @@
     await goto(next === undefined ? resolve("/") : processHref(next.id));
   }
 
+  /**
+   * Whether something has been chosen or written since the surface opened. The
+   * item's tags are not part of it: a tag is applied to the pool when taken.
+   */
+  const entered = $derived(
+    chosen !== undefined ||
+      applied !== undefined ||
+      (words !== undefined && words !== captured),
+  );
+  let confirming = $state(false);
+
   /** Back to the queue with this item still selected. */
   function back(): void {
     void goto(`${resolve("/")}?selected=${encodeURIComponent(item.id)}`);
+  }
+
+  function leave(): void {
+    if (entered) confirming = true;
+    else back();
   }
 
   function walk(to: Item | undefined): void {
@@ -961,7 +978,7 @@
       refusal: assetsOnly ? "only the attachments go" : undefined,
       run: edit,
     },
-    { id: "back", label: "back", run: () => (editing ? done() : back()) },
+    { id: "back", label: "back", run: () => (editing ? done() : leave()) },
     {
       id: "previous",
       label: "previous item",
@@ -976,6 +993,15 @@
     },
   ]);
 </script>
+
+{#if confirming}
+  <Discarding
+    onanswer={(leaving) => {
+      confirming = false;
+      if (leaving) back();
+    }}
+  />
+{/if}
 
 {#snippet control(field: (typeof fields)[number])}
   {@const title = field.title ?? field.name}
