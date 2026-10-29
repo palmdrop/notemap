@@ -329,6 +329,25 @@ describe("the hierarchy as it is drawn", () => {
       expect(landing("projects/zz", false)).toBe("reading");
     });
 
+    test("past a folder the line runs through, whichever end of its level it sits at", () => {
+      const reading: Level[] = [levels[0]!, { scope: "reading", entries: [] }];
+      const last = parsePath("reading/zz");
+      const fromLast = reachable(rowsOf(reading, last));
+      expect(fromLast[walkStart(fromLast, last, false)]?.entry.label).toBe(
+        "projects",
+      );
+
+      const empty: Level[] = [
+        ...levels.slice(0, 2),
+        { scope: "projects/kontradiktion", entries: [] },
+      ];
+      const first = parsePath("projects/kontradiktion/zz");
+      const fromFirst = reachable(rowsOf(empty, first));
+      expect(fromFirst[walkStart(fromFirst, first, true)]?.entry.label).toBe(
+        "notemap",
+      );
+    });
+
     test("on the folder just taken where it holds nothing", () => {
       const empty: Level[] = [
         ...levels.slice(0, 2),

@@ -247,8 +247,8 @@ export function reachable(rows: readonly Row[]): readonly Row[] {
  * looked for. The whole tree stays walkable from there. A level with nothing
  * drawn — an empty folder, one still to be made, a segment nothing matches —
  * hands the start to the nearest level above that drew something, and an empty
- * folder just taken to itself. Never to another folder the line runs through:
- * taking it would drop what was typed past it.
+ * folder just taken to itself. Never to a folder the line runs through: taking
+ * it would drop what was typed past it.
  */
 export function walkStart(
   rows: readonly Row[],
@@ -264,10 +264,12 @@ export function walkStart(
     if (taken !== -1 && !inside) return taken;
   }
 
+  const landable = (row: Row, depth: number) =>
+    row.depth === depth && !row.onPath;
   for (let depth = caret; depth >= 0; depth -= 1) {
-    const first = rows.findIndex((row) => row.depth === depth);
+    const first = rows.findIndex((row) => landable(row, depth));
     if (first === -1) continue;
-    return down ? first : rows.findLastIndex((row) => row.depth === depth);
+    return down ? first : rows.findLastIndex((row) => landable(row, depth));
   }
   return 0;
 }

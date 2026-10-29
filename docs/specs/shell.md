@@ -1438,13 +1438,13 @@ line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
 press landing on the first or last row of the level the caret is in; where that level drew
-nothing, on the empty folder just taken, or else in the nearest level above that drew something —
-never on another folder the line runs through, which taking would drop what was typed past it
-*(amended 2026-10-29; it landed at the top of the whole tree, above the folder just taken)* — while `⏎`
-takes the row walked to and, left alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never
-routes from the line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a
-file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press
-to it. **The line is the value**: there is no second input beside it holding the same string, which
+nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
+never on a folder the line runs through, which taking would drop what was typed past it, while a
+sibling of one is a change of folder the walk shows plainly *(amended 2026-10-29; it landed at the
+top of the whole tree, above the folder just taken)* — while `⏎` takes the row walked to and, left
+alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never routes from the line** *(amended
+2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a file named `proj` at the root)*:
+`⌘/ctrl+⏎` is the surface's route, and the line leaves that press to it. **The line is the value**: there is no second input beside it holding the same string, which
 is what the browser-and-input pair did and neither half could see the other. **The tree takes the
 room it needs** *(amended 2026-10-16; it kept a floor of several rows, so a shallow tree left a gap
 above everything under it)*. **Going to a folder nobody has answered for yet drops what the tree

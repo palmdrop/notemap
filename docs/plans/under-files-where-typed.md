@@ -45,13 +45,16 @@ a heading that is not there, so `Note` beside `## Notes` is a new heading, and w
    lands on the empty folder just taken, or else in the nearest level above that drew something.
    Never on another folder the line runs through: taking a row replaces the line, so that would
    drop what was typed past it (found on staging, where `seeded/new/` then `↓⏎` gave `seeded/`).
-5. **While a walk is under way, only the row walked to is bold.** The trail and the walked row
-   were drawn alike, so on staging nobody could tell which row `⏎` would take.
+   The level above skips those folders and lands on a sibling, which the walk shows as the
+   change of folder it is (found in review: `projects/zz` landed on `projects/` where it sat
+   first or last among the roots).
 4. **A truncated answer still resolves the head of a title.** Raised in review: on a truncated
    are.na page, a slug typed for an unlisted channel can resolve to a listed one it prefixes.
    Gating on `truncated` was weighed and refused: an account with more than one page of channels
    answers truncated every time, so it would switch the resolution off for exactly the accounts
    that need it.
+5. **While a walk is under way, only the row walked to is bold.** The trail and the walked row
+   were drawn alike, so on staging nobody could tell which row `⏎` would take.
 
 ---
 
