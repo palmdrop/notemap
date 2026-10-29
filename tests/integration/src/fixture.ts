@@ -162,6 +162,11 @@ export type Harness = {
    * is where a reclaim racing a write lands. Absent stops it.
    */
   readonly racing: (afterPut?: () => Promise<void>) => void;
+  /**
+   * Runs once, before the next transaction opens: where a write lands that races
+   * what was read outside it.
+   */
+  readonly racingTransaction: (racer: () => Promise<void>) => void;
   /** Closes this pool and opens another over the same files, as a restart does. */
   readonly reopen: () => Promise<Harness>;
   /** Writes a destination row, which is what a routing record refers to. */
@@ -218,12 +223,22 @@ function over(
   const ids = countingIds();
 
   // Lease ids are the store's to mint, so it gets its own sequence.
-  const store = createSqlitePoolStore({
+  const sqlite = createSqlitePoolStore({
     file,
     clock,
     ids: countingIds("lease"),
     synchronous: "off",
   });
+  let beforeTransaction: (() => Promise<void>) | undefined;
+  const store: typeof sqlite = {
+    ...sqlite,
+    transaction: async (work) => {
+      const racer = beforeTransaction;
+      beforeTransaction = undefined;
+      await racer?.();
+      return sqlite.transaction(work);
+    },
+  };
 
   const blobs = counting(createFilesystemBlobStore({ root: assetRoot }));
 
@@ -265,6 +280,9 @@ function over(
     assetRoot,
     blobOpens: blobs.opens,
     racing: blobs.racing,
+    racingTransaction: (racer) => {
+      beforeTransaction = racer;
+    },
     reopen: async () => {
       await pool.close();
       handedOver = true;

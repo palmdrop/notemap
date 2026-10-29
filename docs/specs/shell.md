@@ -1358,14 +1358,15 @@ and only correcting what it fixed makes the decision the person's own. The place
 asked fields out.
 
 **The surface's own tags section offers no trigger tag** *(amended 2026-10-29; it used to file the
-item when one was taken, and, when its template asked for something, to take the template in
-`place` instead)*. A trigger tag is a way to route, and this surface already has one beside it:
-`where` offers the templates. The section's offer leaves out every tag a template declares, whether
-or not anything has carried it, and a trigger tag typed in **takes its template** in `where`, as
-choosing it there would: nothing is tagged and nothing routes until the decision is committed. A tag under `route/` that
-no template declares is ordinary and offered. A trigger tag the item carries is drawn as it is
-everywhere, inert while its record stands. The row's chooser and the capture box offer trigger
-tags still.
+item when one was taken, and, when its template asked for something, to take the template in `place`
+instead)*. A trigger tag is a way to route, and this surface already has one beside it: `where`
+offers the templates. The section's offer leaves out every tag a template declares, whether or not
+anything has carried it, and a trigger tag typed in **takes its template** in `where`, as choosing
+it there would: nothing is tagged and nothing routes until the decision is committed. A tag under
+`route/` that no template declares is ordinary and offered. Which tags a template declares is read
+from the templates the shell holds, so one made elsewhere and not yet loaded is taken as ordinary
+and fires. A trigger tag the item carries is drawn as it is everywhere, inert while its record
+stands. The row's chooser and the capture box offer trigger tags still.
 
 **`preview` is asked for as soon as the destination and its required arguments are settled**, and
 again whenever they or the words change, once the typing has settled. It is a ruled block holding
@@ -2201,7 +2202,7 @@ chooser completes from the tags **in use**, which is what the pool has seen on a
 template set up this morning has never been applied, so its tag would be missing from the one list
 that exists to save somebody typing it, on exactly the day nobody has typed it yet. So the tags a
 template declares are offered beside those in use, marked as what they are. *Amended 2026-10-29*:
-not in the composer's chooser, which offers none.
+not in the composer's chooser, which offers none, though one typed in there is marked all the same.
 
 **The mark is what the pool says, and it goes when the pool says so.** It is read from the templates
 the client holds, so a chooser opened offline marks what it last knew — and a trigger tag declared

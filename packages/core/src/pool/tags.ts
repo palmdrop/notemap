@@ -60,23 +60,31 @@ export async function tag(
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
 
-  // Once, with the firing skipped where the decision stands; again with it
-  // worked out if that decision was withdrawn before the transaction looked.
-  for (let firingRequired = false; ; firingRequired = true) {
-    const result = await tagOnce(
-      config,
-      ports,
-      id,
-      tag,
-      by,
-      options,
-      firingRequired,
-    );
-    if (result !== undefined) return result;
-  }
+  return (
+    (await tagOnce(config, ports, id, tag, by, options, false)) ??
+    (await tagOnce(config, ports, id, tag, by, options, true))
+  );
 }
 
-/** `undefined` when the decision that let the firing be skipped is gone. */
+/** `undefined` when what let the firing be skipped is gone, which a firing worked out never is. */
+async function tagOnce(
+  config: PoolConfig,
+  ports: PoolPorts,
+  id: ItemId,
+  tag: TagName,
+  by: Agent,
+  options: Tagging,
+  firingRequired: true,
+): Promise<TagResult>;
+async function tagOnce(
+  config: PoolConfig,
+  ports: PoolPorts,
+  id: ItemId,
+  tag: TagName,
+  by: Agent,
+  options: Tagging,
+  firingRequired: boolean,
+): Promise<TagResult | undefined>;
 async function tagOnce(
   config: PoolConfig,
   ports: PoolPorts,
@@ -117,8 +125,9 @@ async function tagOnce(
       trigger !== undefined &&
       (await alreadyApplied(tx, id, trigger.template.id)) !== undefined;
 
-    // The decision was withdrawn after the firing was skipped, so a tag written
-    // now would be applied with no record behind it. Nothing is written yet.
+    // The firing was skipped on a reading that no longer holds: the record was
+    // withdrawn, or the tag came off. Written now, the tag would file nothing,
+    // so nothing is written and the tag goes round again with the firing.
     if (trigger !== undefined && trigger.firing === undefined && !decided) {
       return undefined;
     }
@@ -225,9 +234,8 @@ async function filed(
  * outside the reserved namespace can claim a template, so an ordinary tag costs
  * no read at all.
  *
- * Without a `firing` the template had already decided this item when it was
- * read; the transaction confirms that, and `tag` goes round again with the
- * firing worked out if the decision has been withdrawn since.
+ * Without a `firing`, the item carried the tag or the template had decided it
+ * when it was read, and nothing the firing would need is checked.
  *
  * The item is read twice — here and again inside the transaction — and only the
  * second reading decides. This one is for the expansion, which needs the
@@ -249,14 +257,10 @@ async function triggerFor(
 
   const item = await ports.store.item(id);
   if (item === undefined) return undefined;
-  if (item.tags.some((held) => held.name === tag)) return undefined;
-
-  // Asked arguments are needed only to fire. Where the template has already
-  // decided this item nothing fires, so the tag must not be refused for them.
-  // The check is repeated inside the transaction, which is what decides.
   if (
     !firingRequired &&
-    (await alreadyApplied(ports.store, id, template.id)) !== undefined
+    (item.tags.some((held) => held.name === tag) ||
+      (await alreadyApplied(ports.store, id, template.id)) !== undefined)
   ) {
     return { template };
   }

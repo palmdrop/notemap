@@ -40,16 +40,11 @@ async function serving(
 
 function draw(
   names: readonly string[] = [],
-  ontemplate?: (template: unknown) => void,
+  ontemplate: (template: unknown) => void = () => {},
   templates: readonly string[] = [],
 ) {
   render(ComposerTags, {
-    props: {
-      item: "one",
-      names,
-      templates,
-      ...(ontemplate === undefined ? {} : { ontemplate }),
-    },
+    props: { item: "one", names, templates, ontemplate },
   });
 }
 
@@ -136,6 +131,9 @@ test("takes the template of a trigger tag typed in, and tags nothing", async () 
 
   const line = await opened();
   await fireEvent.input(line, { target: { value: "route/research" } });
+  expect(
+    screen.getByRole("option", { name: /^\+ route\/research\s*→ research$/ }),
+  ).toBeDefined();
   await fireEvent.keyDown(line, { key: "Enter" });
 
   expect(taken).toHaveBeenCalledWith(
@@ -156,7 +154,7 @@ test("takes the template of a trigger tag typed in, and tags nothing", async () 
 /** A trigger tag whose template's record still stands cannot be taken off here. */
 test("draws a trigger tag whose template still stands as inert", async () => {
   await serving(["route/research"], [RESEARCH]);
-  draw(["route/research"], undefined, [RESEARCH.id]);
+  draw(["route/research"], () => {}, [RESEARCH.id]);
 
   const tag = screen.getByText("research");
   expect(tag.tagName).toBe("SPAN");

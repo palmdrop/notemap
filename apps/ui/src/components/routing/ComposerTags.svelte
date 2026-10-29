@@ -6,8 +6,8 @@
   import { triggeredBy } from "$lib/templates";
 
   /**
-   * The same classification the row makes, offered where routing is decided.
-   * It goes through the outbox on its own and **drains independently of the
+   * The classification the row makes, offered where routing is decided, less
+   * the trigger tags: routing is decided here already. It goes through the outbox on its own and **drains independently of the
    * route**: a route that then fails leaves the tags applied, which is the
    * honest outcome — the person classified the item, and that was true.
    */
@@ -27,7 +27,7 @@
      * beside the decision being made: its template is taken into that decision
      * instead, and nothing goes until it is committed.
      */
-    ontemplate?: (template: RoutingTemplate) => void;
+    ontemplate: (template: RoutingTemplate) => void;
   } = $props();
 
   const inUse = client.tags.inUse;
@@ -50,7 +50,7 @@
 
   function add(name: string): void {
     const template = triggeredBy(name);
-    if (template !== undefined) ontemplate?.(template);
+    if (template !== undefined) ontemplate(template);
     else void client.tag(item, name);
   }
 </script>
