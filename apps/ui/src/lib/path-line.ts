@@ -246,22 +246,30 @@ export function reachable(rows: readonly Row[]): readonly Row[] {
  * level the caret is in, since a folder just taken is where the next pick is
  * looked for. The whole tree stays walkable from there. A level with nothing
  * drawn — an empty folder, one still to be made, a segment nothing matches —
- * lands on the deepest folder the line runs through.
+ * hands the start to the nearest level above that drew something, and an empty
+ * folder just taken to itself. Never to another folder the line runs through:
+ * taking it would drop what was typed past it.
  */
 export function walkStart(
   rows: readonly Row[],
   path: TypedPath,
   down: boolean,
 ): number {
-  const depth = filtered(path);
-  const first = rows.findIndex((row) => row.depth === depth);
-  if (first !== -1) {
-    return down ? first : rows.findLastIndex((row) => row.depth === depth);
+  const caret = filtered(path);
+  if (path.typing === "" && caret > 0) {
+    const taken = rows.findIndex(
+      (row) => row.depth === caret - 1 && row.onPath,
+    );
+    const inside = rows.some((row) => row.depth === caret);
+    if (taken !== -1 && !inside) return taken;
   }
 
-  const through = rows.findLastIndex((row) => row.onPath);
-  if (through !== -1) return through;
-  return down ? 0 : Math.max(rows.length - 1, 0);
+  for (let depth = caret; depth >= 0; depth -= 1) {
+    const first = rows.findIndex((row) => row.depth === depth);
+    if (first === -1) continue;
+    return down ? first : rows.findLastIndex((row) => row.depth === depth);
+  }
+  return 0;
 }
 
 /**

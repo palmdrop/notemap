@@ -323,9 +323,10 @@ describe("the hierarchy as it is drawn", () => {
       expect(landing("", false)).toBe("reading");
     });
 
-    test("on the folder the line runs through where the typed segment matches nothing", () => {
-      expect(landing("projects/zz", true)).toBe("projects");
-      expect(landing("projects/zz", false)).toBe("projects");
+    /** Taking `projects/` would drop the `zz` typed past it. */
+    test("in the level above where the typed segment matches nothing", () => {
+      expect(landing("projects/zz", true)).toBe("journal");
+      expect(landing("projects/zz", false)).toBe("reading");
     });
 
     test("on the folder just taken where it holds nothing", () => {
@@ -341,14 +342,17 @@ describe("the hierarchy as it is drawn", () => {
       );
     });
 
-    /** The `+` rows are not takeable, so the deepest folder that is there is. */
-    test("on the deepest folder that is there where the rest is still to be made", () => {
+    /** Beside where the folders will be made, and never on `projects/`, which would drop them. */
+    test("inside the deepest folder that is there where the rest is still to be made", () => {
       const path = parsePath("projects/new/deeper/");
       const rows = reachable(
         rowsOf(levels.slice(0, 2), path, pending(path, ["new", "deeper"])),
       );
 
-      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe("projects");
+      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe(
+        "kontradiktion",
+      );
+      expect(rows[walkStart(rows, path, false)]?.entry.label).toBe("notemap");
     });
 
     test("nowhere past the ends where nothing is drawn at all", () => {

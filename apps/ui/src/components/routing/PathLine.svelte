@@ -452,10 +452,13 @@
         {/if}
         {#each drawn as row (`${row.depth}:${row.made === true ? "+" : ""}${row.entry.label}`)}
           {@const picked = moved && here[at] === row}
+          <!-- Walking, the trail gives up its weight, or the row walked to is
+               one bold row among several. -->
           <Walked
             id={picked ? `${id}-place-${at}` : undefined}
             on={picked}
-            along={row.onPath || row.made === true || row.held === true}
+            along={!moved &&
+              (row.onPath || row.made === true || row.held === true)}
             held={row.made === true || row.held === true}
             disabled={row.made === true}
             indent={row.depth}

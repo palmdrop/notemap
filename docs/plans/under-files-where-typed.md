@@ -41,9 +41,12 @@ a heading that is not there, so `Note` beside `## Notes` is a new heading, and w
    trigger tag, which never passes through the shell, still wrote the duplicate. The listing
    collapses headings that differ only by case, since the splice takes the first.
 3. **The first `↓` lands on the first row of the caret's level, the first `↑` on its last.** That
-   is the folder just taken, or what the typed segment narrowed to. A level with nothing drawn (an
-   empty folder, one still to be made, a segment nothing matches) lands on the deepest folder the
-   line runs through.
+   is the folder just taken, or what the typed segment narrowed to. A level with nothing drawn
+   lands on the empty folder just taken, or else in the nearest level above that drew something.
+   Never on another folder the line runs through: taking a row replaces the line, so that would
+   drop what was typed past it (found on staging, where `seeded/new/` then `↓⏎` gave `seeded/`).
+5. **While a walk is under way, only the row walked to is bold.** The trail and the walked row
+   were drawn alike, so on staging nobody could tell which row `⏎` would take.
 4. **A truncated answer still resolves the head of a title.** Raised in review: on a truncated
    are.na page, a slug typed for an unlisted channel can resolve to a listed one it prefixes.
    Gating on `truncated` was weighed and refused: an account with more than one page of channels
@@ -60,6 +63,7 @@ a heading that is not there, so `Note` beside `## Notes` is a new heading, and w
 - [x] `CandidateBrowser` takes `offeredOnly`; the composer and the template form pass the field's
       _(2026-10-29)_
 - [x] `walkStart` in `path-line.ts`, used by `PathLine` for the first `↑↓` _(2026-10-29)_
+- [x] The trail gives up its weight while a walk is under way _(2026-10-29)_
 - [x] Tests: `candidate-list`, `CandidateBrowser` settling, `path-line`, `PathLine` arrows,
       `sections`, `headings` _(2026-10-29)_
 - [x] `shell.md`: amend the committed-line rule and the `↑↓` rule, add the Shipped entry

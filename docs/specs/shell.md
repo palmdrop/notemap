@@ -7,8 +7,8 @@
 - 2026-10-29 — **`under` files where it was typed, and `↑↓` start where the line is.** Leaving or
   committing a browsed field settles the head of one title to it only where the field may hold
   nothing but what the destination has; a heading typed half-way is a heading of its own. The first
-  `↑↓` on the place line lands in the level the caret is in, or on the folder just taken where that
-  level holds nothing, rather than at the top of the tree.
+  `↑↓` on the place line lands in the level the caret is in rather than at the top of the tree, and
+  while it walks, the row walked to is the only bold one.
   ([plan](../plans/under-files-where-typed.md))
 
 - 2026-10-29 — **`esc` steps back in the place line, and leaving the composer with something
@@ -1437,9 +1437,10 @@ is nothing to complete** *(added 2026-09-04)*, rather than handing focus to what
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
-press landing on the first or last row of the level the caret is in, or on the deepest folder the
-line runs through where that level drew nothing *(amended 2026-10-29; it landed at the top of the
-whole tree, above the folder just taken)* — while `⏎`
+press landing on the first or last row of the level the caret is in; where that level drew
+nothing, on the empty folder just taken, or else in the nearest level above that drew something —
+never on another folder the line runs through, which taking would drop what was typed past it
+*(amended 2026-10-29; it landed at the top of the whole tree, above the folder just taken)* — while `⏎`
 takes the row walked to and, left alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never
 routes from the line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a
 file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press
@@ -1454,9 +1455,10 @@ asked)*. A folder answered for before is drawn from what it said then.
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
 every step. **The trail the line names is bold all the way down** *(amended 2026-09-15)* — every
-segment the typed path took, and the note or the folder still to be made at the end of it — apart
-from the row a keyboard walk has landed on, which is bold for a different reason and carries
-`aria-selected` besides. **Taking one is going to it**, not adding its name to what is typed: an
+segment the typed path took, and the note or the folder still to be made at the end of it — **until
+a keyboard walk starts**, when the row walked to is the only bold row and carries `aria-selected`
+besides *(amended 2026-10-29; the two were drawn alike, so a walk that landed on the trail could
+not be told from one that had not moved)*. **Taking one is going to it**, not adding its name to what is typed: an
 entry carries its own path from the root, so a folder two levels up drills the line down to exactly
 that folder and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
 the caret is in is narrowed** by what is being typed — not the deepest that happened to answer,

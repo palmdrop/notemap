@@ -150,6 +150,22 @@ test("draws the trail the line names in bold, down to the note", async () => {
   expect(journal.className).not.toContain("font-semibold");
 });
 
+test("walking, draws only the row walked to in bold", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  const notes = await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+
+  const bold = screen
+    .getAllByRole("option")
+    .filter((row) => row.className.includes("font-semibold"))
+    .map((row) => row.textContent?.trim());
+  expect(bold).toEqual(["readme.md"]);
+  expect(notes.className).not.toContain("font-semibold");
+});
+
 /**
  * The tree shows every level at once, so pointing at one is going there — not
  * adding its name to the end of what is typed, which made folders nobody meant.
@@ -384,8 +400,8 @@ test("the first up arrow lands on the last row inside the folder the line names"
   expect(line.value()).toBe("projects/notemap/readme.md");
 });
 
-/** The `+` rows are drawn but not walked, so the walk lands on a folder that is there. */
-test("the first arrow lands on the deepest folder that is there where the rest is still to be made", async () => {
+/** The `+` rows are drawn but not walked, so the walk starts beside them. */
+test("the first arrow lands inside the deepest folder that is there where the rest is still to be made", async () => {
   servingTree();
   const line = draw("projects/notemap/new/", SAID);
 
@@ -393,7 +409,7 @@ test("the first arrow lands on the deepest folder that is there where the rest i
   await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
-  expect(line.value()).toBe("projects/notemap/");
+  expect(line.value()).toBe("projects/notemap/notes/");
 });
 
 test("the first arrow lands on what the typed segment matches", async () => {
