@@ -740,7 +740,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   a template that asks for an argument is not refused for lacking one on a tag that only
   classifies. The check that decides is the one inside the transaction, so a record withdrawn in
   between, or the tag taken off, sends the tag round again as one that fires: it is never written
-  without a standing record or a firing.
+  without a standing record or a firing. A refusal is decided there too, so a tag the item came to
+  carry, or a decision made, while the firing was being worked out is absorbed or classifies rather
+  than refused.
 - **A source-supplied tag fires too.** Attribution could tell a person's tag from a source's, and
   deliberately is not used: a capture arriving from an inbox already tagged `route/research` and
   filing itself is the point rather than an accident of it. What it costs is that a system outside

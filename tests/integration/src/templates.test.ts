@@ -1469,6 +1469,44 @@ describe("a template that asks for an argument", () => {
     expect(await tagsOn(pool, item.id)).toEqual([]);
   });
 
+  it("absorbs a tag the item already carries, asking nothing, where nothing was filed", async () => {
+    const opened = await pooled(HEADING_SCHEMA);
+    const { pool } = opened;
+    const item = captured(await pool.capture(envelope()));
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+    succeeded(
+      await pool.templates.create(
+        draft({
+          triggerTag: TODO,
+          arguments: { path: "todo.md" },
+          asked: { heading: { label: "list" } },
+        }),
+      ),
+    );
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toEqual([]);
+  });
+
+  it("classifies, rather than refusing, where the template files the item between the read and the write", async () => {
+    const opened = await asking();
+    const { pool, item, template } = opened;
+    opened.racingTransaction(async () => {
+      succeeded(
+        await pool.templates.route(item.id, template.id, {
+          arguments: { heading: "Next" },
+        }),
+      );
+    });
+
+    succeeded(await pool.items.tag(item.id, TODO, PERSON));
+
+    expect(await tagsOn(pool, item.id)).toEqual([TODO]);
+    expect(await pool.routing.recordsFor(item.id)).toHaveLength(1);
+  });
+
   it("reads a blank default as none, and refuses a tag given nothing", async () => {
     const { pool, item } = await asking({
       arguments: { path: "todo.md", heading: " " },

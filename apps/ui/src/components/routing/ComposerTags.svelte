@@ -7,9 +7,10 @@
 
   /**
    * The classification the row makes, offered where routing is decided, less
-   * the trigger tags: routing is decided here already. It goes through the outbox on its own and **drains independently of the
-   * route**: a route that then fails leaves the tags applied, which is the
-   * honest outcome — the person classified the item, and that was true.
+   * the trigger tags: routing is decided here already. It goes through the
+   * outbox on its own and **drains independently of the route**: a route that
+   * then fails leaves the tags applied, which is the honest outcome — the
+   * person classified the item, and that was true.
    */
   let {
     item,

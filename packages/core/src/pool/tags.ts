@@ -102,15 +102,6 @@ async function tagOnce(
     options,
     firingRequired,
   );
-  if (trigger?.firing?.kind === "refused") {
-    return refused({
-      kind: "trigger-refused",
-      tag,
-      template: trigger.template.id,
-      detail: trigger.firing.detail,
-    });
-  }
-
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
@@ -130,6 +121,17 @@ async function tagOnce(
     // so nothing is written and the tag goes round again with the firing.
     if (trigger !== undefined && trigger.firing === undefined && !decided) {
       return undefined;
+    }
+
+    // Refused only on this reading: a tag absorbed or spent since the firing
+    // was worked out has nothing left to refuse.
+    if (trigger?.firing?.kind === "refused" && !decided) {
+      return refused({
+        kind: "trigger-refused",
+        tag,
+        template: trigger.template.id,
+        detail: trigger.firing.detail,
+      });
     }
 
     const at = ports.clock.now();
