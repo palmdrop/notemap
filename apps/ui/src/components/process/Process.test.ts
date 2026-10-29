@@ -90,6 +90,22 @@ const CREATE_ASKABLE = {
   },
 };
 
+/** A field that may name only what the destination has, as an are.na channel is. */
+const CREATE_OFFERED_ONLY = {
+  ...CREATE_ASKABLE,
+  argumentsSchema: {
+    ...CREATE_ASKABLE.argumentsSchema,
+    properties: {
+      ...CREATE_ASKABLE.argumentsSchema.properties,
+      directory: {
+        type: "string",
+        "x-notemap-candidates": true,
+        "x-notemap-offered-only": true,
+      },
+    },
+  },
+};
+
 const CREATE_ASKABLE_PATH = {
   name: "create",
   accepts: ["text"],
@@ -2019,7 +2035,10 @@ test("resolves a title typed to the value it stands for, on commit", async () =>
  * committing without pressing `⇥` did not.
  */
 test("resolves enough of a title that only one channel still matches", async () => {
-  const transport = servingBrowsable(() => answered(CHANNELS));
+  const transport = servingBrowsable(
+    () => answered(CHANNELS),
+    CREATE_OFFERED_ONLY,
+  );
   draw();
   await choose(/Vault/);
   const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
@@ -2032,6 +2051,22 @@ test("resolves enough of a title that only one channel still matches", async () 
     expect((await routed(transport)).arguments).toEqual({
       directory: "field-recordings",
     });
+  });
+});
+
+/** A heading half-typed into `under` is one the delivery writes, not the one it prefixes. */
+test("routes the head of a title as typed where the field may hold something new", async () => {
+  const transport = servingBrowsable(() => answered(CHANNELS));
+  draw();
+  await choose(/Vault/);
+  const field = (await screen.findByLabelText("directory")) as HTMLInputElement;
+  await screen.findByText("Reading");
+
+  await fireEvent.input(field, { target: { value: "Field" } });
+  await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
+
+  await vi.waitFor(async () => {
+    expect((await routed(transport)).arguments).toEqual({ directory: "Field" });
   });
 });
 

@@ -47,7 +47,8 @@
 
 - [ ] a proper file-picker library would be ideal, or a more traditional file picker/navigation flow at least, while still allowing text-first input
 
-- [ ] Composer findings left out of [path-picking-and-enter](plans/path-picking-and-enter.md):
+- [x] Composer findings left out of [path-picking-and-enter](plans/path-picking-and-enter.md)
+  ([plan](plans/under-files-where-typed.md)):
   - a half-typed heading in `under` (`Ne`) is taken as the heading it prefixes (`## Next`), and
     nothing says so before the route
   - `↑↓` after taking a folder starts at the top of the whole tree, not inside the folder just taken

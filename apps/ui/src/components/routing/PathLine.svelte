@@ -34,6 +34,7 @@
     scopesAlong,
     steppedBack,
     textOf,
+    walkStart,
     withTyping,
     type Level,
     type Refusal,
@@ -333,12 +334,9 @@
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (choices.length === 0) return;
-      const step = event.key === "ArrowDown" ? 1 : choices.length - 1;
-      at = moved
-        ? (at + step) % choices.length
-        : event.key === "ArrowDown"
-          ? 0
-          : choices.length - 1;
+      const down = event.key === "ArrowDown";
+      const step = down ? 1 : choices.length - 1;
+      at = moved ? (at + step) % choices.length : walkStart(here, path, down);
       moved = true;
       return;
     }

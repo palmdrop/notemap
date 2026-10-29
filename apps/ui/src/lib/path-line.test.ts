@@ -20,6 +20,7 @@ import {
   rowsOf,
   scopesAlong,
   textOf,
+  walkStart,
   withTyping,
   type Level,
 } from "./path-line";
@@ -296,6 +297,40 @@ describe("the hierarchy as it is drawn", () => {
 
   test("draws nothing at all where the root itself answered nothing", () => {
     expect(rowsOf([{ scope: "" }], parsePath(""))).toEqual([]);
+  });
+
+  describe("where the first arrow lands", () => {
+    const landing = (value: string, down: boolean) => {
+      const path = parsePath(value);
+      const rows = reachable(rowsOf(levels, path));
+      return rows[walkStart(rows, path, down)]?.entry.label;
+    };
+
+    test("down, on the first entry of the folder the line names", () => {
+      expect(landing("projects/notemap/", true)).toBe("notes");
+    });
+
+    test("up, on the last entry of that folder rather than the tree's last row", () => {
+      expect(landing("projects/notemap/", false)).toBe("readme.md");
+    });
+
+    test("among what the typed segment narrowed the level to", () => {
+      expect(landing("projects/k", true)).toBe("kontradiktion");
+    });
+
+    test("at the ends of the tree where the line names nothing yet", () => {
+      expect(landing("", true)).toBe("journal");
+      expect(landing("", false)).toBe("reading");
+    });
+
+    test("at the ends of the tree where the caret's level drew nothing", () => {
+      expect(landing("projects/zz", true)).toBe("journal");
+      expect(landing("projects/zz", false)).toBe("reading");
+    });
+
+    test("nowhere past the ends where nothing is drawn at all", () => {
+      expect(walkStart([], parsePath(""), false)).toBe(0);
+    });
   });
 });
 

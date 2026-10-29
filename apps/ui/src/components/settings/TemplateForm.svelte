@@ -425,6 +425,7 @@
             value={typed[field.name] ?? ""}
             durable
             naming={field.offeredOnly}
+            offeredOnly={field.offeredOnly}
             given={givenFor(field, typed)}
             claims={false}
             onchange={(value) => (typed[field.name] = value)}

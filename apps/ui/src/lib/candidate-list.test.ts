@@ -163,13 +163,38 @@ describe("what a typed line means", () => {
    * Enough of a title that only one answer still matches, which is what `⇥`
    * takes. Safe here and not on a keystroke: the line is done being typed.
    */
-  it("resolves enough of a title that only one still matches", () => {
-    expect(resolved(CHANNELS, "Field")).toBe("field-recordings");
-    expect(resolved(CHANNELS, "reading-not")).toBe("reading-notes");
+  it("resolves enough of a title that only one still matches, on a field offering only what is there", () => {
+    expect(resolved(CHANNELS, "Field", "value", true)).toBe("field-recordings");
+    expect(resolved(CHANNELS, "reading-not", "value", true)).toBe(
+      "reading-notes",
+    );
   });
 
   it("leaves a prefix that several still match alone", () => {
-    expect(resolved(CHANNELS, "Read")).toBeUndefined();
+    expect(resolved(CHANNELS, "Read", "value", true)).toBeUndefined();
+  });
+
+  /** `Note` is a heading of its own, and the delivery writes it where it is missing. */
+  it("leaves the head of a title alone on a field that may hold something new", () => {
+    const headings = [channel("## Notes", "Notes"), channel("## Next", "Next")];
+
+    expect(resolved(headings, "Note")).toBeUndefined();
+    expect(resolved(headings, "Ne")).toBeUndefined();
+  });
+
+  /** A delivery files under the heading as written, so `next` would make a second one. */
+  it("settles a value typed in another case to the one listed", () => {
+    const headings = [channel("## Next", "Next")];
+
+    expect(resolved(headings, "next")).toBe("Next");
+    expect(resolved(headings, " Next ")).toBe("Next");
+    expect(resolved(headings, "Next")).toBeUndefined();
+  });
+
+  it("settles no case where two listed values differ only by it", () => {
+    const headings = [channel("## Next", "Next"), channel("## NEXT", "NEXT")];
+
+    expect(resolved(headings, "next", "value", true)).toBeUndefined();
   });
 
   /** A slug for a channel the page did not list can fall inside a title it did. */

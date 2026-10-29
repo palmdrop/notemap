@@ -122,12 +122,15 @@ export function commonPrefix(values: readonly string[]): string {
  * person reads a list of titles and types one; the field is sent with the
  * value, and the two need not be the same string.
  *
- * Two ways in, and both are unambiguous: the whole of a title, or the head of
- * one that no other title begins with. The second is what `⇥` does, and it is
- * safe **here** for the reason it is not safe on a keystroke — this runs when
- * the line is done being typed, so there is no half-written word left to take
- * out of somebody's mouth. A title that merely holds the line in its middle
- * never resolves: that line may be a slug for a channel the page did not list.
+ * The whole of a title always resolves, and so does a value typed in another
+ * case, since a destination matches the value as written. On an `offeredOnly` field, so does the
+ * head of one that no other title begins with — what `⇥` does, and safe
+ * **here** for the reason it is not safe on a keystroke: this runs when the
+ * line is done being typed, so there is no half-written word left to take out
+ * of somebody's mouth. Anywhere else a line nothing is titled is a value of its
+ * own — a heading the delivery writes — and a head would swap it for one
+ * already there. A title that merely holds the line in its middle never
+ * resolves: that line may be a slug for a channel the page did not list.
  *
  * Anything unresolved is left exactly as written: an answer is one page of what
  * a destination holds, and a group channel or a numeric ID is not in it.
@@ -136,20 +139,26 @@ export function resolved(
   entries: readonly CandidateEntry[],
   typing: string,
   form: Form = "value",
+  offeredOnly = false,
 ): string | undefined {
   const wanted = typing.trim().toLowerCase();
   if (wanted === "") return undefined;
 
-  // Already the form this surface wants: nothing to resolve, whatever else
-  // names the same entry.
-  if (entries.some((entry) => takenAs(entry, form).toLowerCase() === wanted)) {
-    return undefined;
-  }
-
-  const named = entries.filter(
-    (entry) => entry.label.trim().toLowerCase() === wanted,
+  // Already the form this surface wants, bar its case: nothing else to
+  // resolve, whatever else names the same entry.
+  const held = entries.filter(
+    (entry) => takenAs(entry, form).toLowerCase() === wanted,
   );
-  const only = named.length === 1 ? named[0] : soleMatch(entries, typing);
+  const named =
+    held.length > 0
+      ? held
+      : entries.filter((entry) => entry.label.trim().toLowerCase() === wanted);
+  const only =
+    named.length === 1
+      ? named[0]
+      : offeredOnly && held.length === 0
+        ? soleMatch(entries, typing)
+        : undefined;
   if (only === undefined) return undefined;
 
   const taken = takenAs(only, form);

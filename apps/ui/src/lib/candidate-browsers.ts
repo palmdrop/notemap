@@ -26,6 +26,8 @@ export type BrowserProps = {
    * nothing to ask about yet.
    */
   given?: Readonly<Record<string, string>> | undefined;
+  /** May hold only what the destination already has, so the head of a title settles to it. */
+  offeredOnly?: boolean;
   onchange: (value: string) => void;
   /** Backspacing out of an empty control, where its keys reach that far. */
   onrelease?: () => void;
