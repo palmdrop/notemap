@@ -17,6 +17,18 @@ describe("inserting under a heading", () => {
     expect(filed("  \n\n", "a thought")).toBe("a thought\n");
   });
 
+  it("finds the heading whatever case it was typed in", () => {
+    expect(filed("## Next\n\n- a\n", "- b", "next")).toBe(
+      "## Next\n\n- a\n- b\n",
+    );
+  });
+
+  it("files under the first of two headings that differ only by case", () => {
+    expect(filed("## Next\n\none\n\n## NEXT\n\ntwo\n", "three", "NEXT")).toBe(
+      "## Next\n\none\n\nthree\n\n## NEXT\n\ntwo\n",
+    );
+  });
+
   it("writes the heading where the note does not have it", () => {
     expect(filed("# Monday\n", "a thought", "Captured")).toBe(
       "# Monday\n\n## Captured\n\na thought\n",

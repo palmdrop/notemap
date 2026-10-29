@@ -46,6 +46,7 @@
     value,
     durable = false,
     naming = false,
+    offeredOnly = false,
     given,
     onchange,
     onrelease,
@@ -71,6 +72,11 @@
      * did not choose and cannot read.
      */
     naming?: boolean;
+    /**
+     * May hold only what the destination already has, so a line that is the
+     * head of one title alone settles to it, as a whole title does anywhere.
+     */
+    offeredOnly?: boolean;
     /**
      * What the field's answer depends on — a note's headings depend on which
      * note. Nothing is asked while one of them is still empty, and the line is
@@ -507,7 +513,7 @@
       // already stands for would re-point the field on a blur nobody typed in.
       if (naming) return;
 
-      const meant = resolved(entries, text, keeps);
+      const meant = resolved(entries, text, keeps, offeredOnly);
       if (meant !== undefined) onchange(meant);
       return;
     }
@@ -518,7 +524,7 @@
     // typed for a channel outside the page into the form that survives a
     // rename, and it happens through the effect above rather than here.
     const written = line;
-    took(resolved(entries, written, keeps) ?? written);
+    took(resolved(entries, written, keeps, offeredOnly) ?? written);
   }
 
   /**

@@ -150,6 +150,22 @@ test("draws the trail the line names in bold, down to the note", async () => {
   expect(journal.className).not.toContain("font-semibold");
 });
 
+test("walking, draws only the row walked to in bold", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  const notes = await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+
+  const bold = screen
+    .getAllByRole("option")
+    .filter((row) => row.className.includes("font-semibold"))
+    .map((row) => row.textContent?.trim());
+  expect(bold).toEqual(["readme.md"]);
+  expect(notes.className).not.toContain("font-semibold");
+});
+
 /**
  * The tree shows every level at once, so pointing at one is going there — not
  * adding its name to the end of what is typed, which made folders nobody meant.
@@ -348,21 +364,21 @@ test("escape on an empty line is left to the field, which leaves it", async () =
  * Down the tree as it is drawn, not one level of it: the pointer takes any row,
  * so the arrows reach any row, or they are two different trees.
  */
-test("moves down the drawn tree with the arrows and takes with enter", async () => {
+test("moves on past the folder's level to the rest of the drawn tree", async () => {
   servingTree();
   const line = draw("projects/notemap/");
 
   await screen.findByText("notes/");
-  for (let press = 0; press < 5; press += 1) {
+  for (let press = 0; press < 3; press += 1) {
     await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
   }
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
-  expect(line.value()).toBe("projects/notemap/notes/");
+  expect(line.value()).toBe("journal/");
 });
 
-/** The first press lands on the first row rather than skipping it. */
-test("the first arrow reaches the first row of the tree", async () => {
+/** A folder just taken is where the next pick is looked for. */
+test("the first arrow lands inside the folder the line names", async () => {
   servingTree();
   const line = draw("projects/notemap/");
 
@@ -370,7 +386,41 @@ test("the first arrow reaches the first row of the tree", async () => {
   await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
   await fireEvent.keyDown(line.line(), { key: "Enter" });
 
-  expect(line.value()).toBe("journal/");
+  expect(line.value()).toBe("projects/notemap/notes/");
+});
+
+test("the first up arrow lands on the last row inside the folder the line names", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+
+  await screen.findByText("notes/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowUp" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/readme.md");
+});
+
+/** The `+` rows are drawn but not walked, so the walk starts beside them. */
+test("the first arrow lands inside the deepest folder that is there where the rest is still to be made", async () => {
+  servingTree();
+  const line = draw("projects/notemap/new/", SAID);
+
+  await screen.findByText("+ new/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/notes/");
+});
+
+test("the first arrow lands on what the typed segment matches", async () => {
+  servingTree();
+  const line = draw("projects/no");
+
+  await screen.findByText("notemap/");
+  await fireEvent.keyDown(line.line(), { key: "ArrowDown" });
+  await fireEvent.keyDown(line.line(), { key: "Enter" });
+
+  expect(line.value()).toBe("projects/notemap/");
 });
 
 /** Which is the whole point of reaching them: a folder two levels up is takeable. */

@@ -242,6 +242,39 @@ export function reachable(rows: readonly Row[]): readonly Row[] {
 }
 
 /**
+ * Where the first `↑↓` lands among the reachable rows: the first or last of the
+ * level the caret is in, since a folder just taken is where the next pick is
+ * looked for. The whole tree stays walkable from there. A level with nothing
+ * drawn — an empty folder, one still to be made, a segment nothing matches —
+ * hands the start to the nearest level above that drew something, and an empty
+ * folder just taken to itself. Never to a folder the line runs through: taking
+ * it would drop what was typed past it.
+ */
+export function walkStart(
+  rows: readonly Row[],
+  path: TypedPath,
+  down: boolean,
+): number {
+  const caret = filtered(path);
+  if (path.typing === "" && caret > 0) {
+    const taken = rows.findIndex(
+      (row) => row.depth === caret - 1 && row.onPath,
+    );
+    const inside = rows.some((row) => row.depth === caret);
+    if (taken !== -1 && !inside) return taken;
+  }
+
+  const landable = (row: Row, depth: number) =>
+    row.depth === depth && !row.onPath;
+  for (let depth = caret; depth >= 0; depth -= 1) {
+    const first = rows.findIndex((row) => landable(row, depth));
+    if (first === -1) continue;
+    return down ? first : rows.findLastIndex((row) => landable(row, depth));
+  }
+  return 0;
+}
+
+/**
  * What `⇥` puts in place of what is being typed. One match completes to the
  * whole name; several complete only as far as they agree, which is the shell
  * behaviour this borrows and is why a common prefix is worth extending to at

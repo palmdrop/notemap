@@ -4,6 +4,13 @@
 **Last updated**: 2026-10-29
 **Shipped**:
 
+- 2026-10-29 — **`under` files where it was typed, and `↑↓` start where the line is.** Leaving or
+  committing a browsed field settles the head of one title to it only where the field may hold
+  nothing but what the destination has; a heading typed half-way is a heading of its own. The first
+  `↑↓` on the place line lands in the level the caret is in rather than at the top of the tree, and
+  while it walks, the row walked to is the only bold one.
+  ([plan](../plans/under-files-where-typed.md))
+
 - 2026-10-29 — **`esc` steps back in the place line, and leaving the composer with something
   entered asks first.** In the place line `esc` takes off the half-typed name, or the last folder
   taken where there is none, and on an empty line is the field's own. Leaving the composer by `esc`
@@ -1429,11 +1436,15 @@ completes the segment under the caret as far as the matches agree — and **does
 is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
-everything the tree drew — every row the pointer could take, in the order it is drawn — while `⏎`
-takes the row walked to and, left alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never
-routes from the line** *(amended 2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a
-file named `proj` at the root)*: `⌘/ctrl+⏎` is the surface's route, and the line leaves that press
-to it. **The line is the value**: there is no second input beside it holding the same string, which
+everything the tree drew — every row the pointer could take, in the order it is drawn, the first
+press landing on the first or last row of the level the caret is in; where that level drew
+nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
+never on a folder the line runs through, which taking would drop what was typed past it, while a
+sibling of one is a change of folder the walk shows plainly *(amended 2026-10-29; it landed at the
+top of the whole tree, above the folder just taken)* — while `⏎` takes the row walked to and, left
+alone, completes the way `⇥` does; `⇧⏎` is `⏎`. **`⏎` never routes from the line** *(amended
+2026-10-16; left alone it routed, so a reflex `⏎` on `proj` made a file named `proj` at the root)*:
+`⌘/ctrl+⏎` is the surface's route, and the line leaves that press to it. **The line is the value**: there is no second input beside it holding the same string, which
 is what the browser-and-input pair did and neither half could see the other. **The tree takes the
 room it needs** *(amended 2026-10-16; it kept a floor of several rows, so a shallow tree left a gap
 above everything under it)*. **Going to a folder nobody has answered for yet drops what the tree
@@ -1444,9 +1455,10 @@ asked)*. A folder answered for before is drawn from what it said then.
 **The hierarchy is shown, not walked**: the levels along the typed path are drawn beneath the line,
 each with its siblings, indented — so the context around a choice is there rather than replaced at
 every step. **The trail the line names is bold all the way down** *(amended 2026-09-15)* — every
-segment the typed path took, and the note or the folder still to be made at the end of it — apart
-from the row a keyboard walk has landed on, which is bold for a different reason and carries
-`aria-selected` besides. **Taking one is going to it**, not adding its name to what is typed: an
+segment the typed path took, and the note or the folder still to be made at the end of it — **until
+a keyboard walk starts**, when the row walked to is the only bold row and carries `aria-selected`
+besides *(amended 2026-10-29; the two were drawn alike, so a walk that landed on the trail could
+not be told from one that had not moved)*. **Taking one is going to it**, not adding its name to what is typed: an
 entry carries its own path from the root, so a folder two levels up drills the line down to exactly
 that folder and a note sets the line to the note. Anything else makes folders nobody meant. **Only the level
 the caret is in is narrowed** by what is being typed — not the deepest that happened to answer,
@@ -1578,8 +1590,12 @@ place it changes. Before this it was the head alone, everywhere.
 **`⇥` completes from the head matches alone.** A name that holds the line in its middle has a head
 the person never typed, so it cannot continue what they wrote; several head matches complete as
 far as they agree, and a lone match of either kind completes outright. Committing a line resolves
-it the same way: the whole of a title, or the head of one that no other begins with — never a title
-that merely holds the line, since what was typed may be a slug for a channel the page did not list.
+the whole of a title. **The head of a title resolves only on a field marked
+`x-notemap-offered-only`** *(amended 2026-10-29; it resolved everywhere, so `Note` in `under` filed
+under `## Notes` when a new heading was meant)*: there the head of one that no other begins with
+is the one meant, and anywhere else a line that is not the whole of a title is a value of its own.
+Never a title that merely holds the line, since what was typed may be a slug for a channel the page
+did not list.
 
 Matching is over **both the label and the value**, and `⇥` completes to the **value**.
 The two need not be the same string — an are.na channel is browsed by its title and filed under

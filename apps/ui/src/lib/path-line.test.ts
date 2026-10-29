@@ -20,6 +20,7 @@ import {
   rowsOf,
   scopesAlong,
   textOf,
+  walkStart,
   withTyping,
   type Level,
 } from "./path-line";
@@ -296,6 +297,86 @@ describe("the hierarchy as it is drawn", () => {
 
   test("draws nothing at all where the root itself answered nothing", () => {
     expect(rowsOf([{ scope: "" }], parsePath(""))).toEqual([]);
+  });
+
+  describe("where the first arrow lands", () => {
+    const landing = (value: string, down: boolean) => {
+      const path = parsePath(value);
+      const rows = reachable(rowsOf(levels, path));
+      return rows[walkStart(rows, path, down)]?.entry.label;
+    };
+
+    test("down, on the first entry of the folder the line names", () => {
+      expect(landing("projects/notemap/", true)).toBe("notes");
+    });
+
+    test("up, on the last entry of that folder rather than the tree's last row", () => {
+      expect(landing("projects/notemap/", false)).toBe("readme.md");
+    });
+
+    test("among what the typed segment narrowed the level to", () => {
+      expect(landing("projects/k", true)).toBe("kontradiktion");
+    });
+
+    test("at the ends of the tree where the line names nothing yet", () => {
+      expect(landing("", true)).toBe("journal");
+      expect(landing("", false)).toBe("reading");
+    });
+
+    /** Taking `projects/` would drop the `zz` typed past it. */
+    test("in the level above where the typed segment matches nothing", () => {
+      expect(landing("projects/zz", true)).toBe("journal");
+      expect(landing("projects/zz", false)).toBe("reading");
+    });
+
+    test("past a folder the line runs through, whichever end of its level it sits at", () => {
+      const reading: Level[] = [levels[0]!, { scope: "reading", entries: [] }];
+      const last = parsePath("reading/zz");
+      const fromLast = reachable(rowsOf(reading, last));
+      expect(fromLast[walkStart(fromLast, last, false)]?.entry.label).toBe(
+        "projects",
+      );
+
+      const empty: Level[] = [
+        ...levels.slice(0, 2),
+        { scope: "projects/kontradiktion", entries: [] },
+      ];
+      const first = parsePath("projects/kontradiktion/zz");
+      const fromFirst = reachable(rowsOf(empty, first));
+      expect(fromFirst[walkStart(fromFirst, first, true)]?.entry.label).toBe(
+        "notemap",
+      );
+    });
+
+    test("on the folder just taken where it holds nothing", () => {
+      const empty: Level[] = [
+        ...levels.slice(0, 2),
+        { scope: "projects/kontradiktion", entries: [] },
+      ];
+      const path = parsePath("projects/kontradiktion/");
+      const rows = reachable(rowsOf(empty, path));
+
+      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe(
+        "kontradiktion",
+      );
+    });
+
+    /** Beside where the folders will be made, and never on `projects/`, which would drop them. */
+    test("inside the deepest folder that is there where the rest is still to be made", () => {
+      const path = parsePath("projects/new/deeper/");
+      const rows = reachable(
+        rowsOf(levels.slice(0, 2), path, pending(path, ["new", "deeper"])),
+      );
+
+      expect(rows[walkStart(rows, path, true)]?.entry.label).toBe(
+        "kontradiktion",
+      );
+      expect(rows[walkStart(rows, path, false)]?.entry.label).toBe("notemap");
+    });
+
+    test("nowhere past the ends where nothing is drawn at all", () => {
+      expect(walkStart([], parsePath(""), false)).toBe(0);
+    });
   });
 });
 

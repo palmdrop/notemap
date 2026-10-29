@@ -5,7 +5,7 @@ import type {
   CandidatesRequest,
 } from "@notemap/core";
 
-import { headingText, isHeading } from "./sections";
+import { headingKey, headingText, isHeading } from "./sections";
 
 export const HEADING = "heading";
 
@@ -27,7 +27,7 @@ export function headingsNote(request: CandidatesRequest): string | undefined {
 /**
  * Every heading the splice could file under, in the order it would find them,
  * and each once: the splice takes the first match, so a second entry with the
- * same words would offer a choice that does not exist. The value is exactly
+ * same words, in any case, would offer a choice that does not exist. The value is exactly
  * the text the splice matches on; the label keeps the `#`s, which is how a
  * person tells a section from a subsection in their own note.
  */
@@ -38,9 +38,9 @@ export function headingCandidates(note: string): CandidatesAnswer {
   for (const node of fromMarkdown(note).children) {
     if (!isHeading(node)) continue;
     const text = headingText(note, node);
-    if (text === "" || seen.has(text)) continue;
+    if (text === "" || seen.has(headingKey(text))) continue;
 
-    seen.add(text);
+    seen.add(headingKey(text));
     entries.push({ label: `${"#".repeat(node.depth)} ${text}`, value: text });
   }
 

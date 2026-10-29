@@ -1019,6 +1019,7 @@
       value={args[field.name] ?? ""}
       said={field.name === LINE_FIELD ? spoken : undefined}
       given={givenFor(field, args)}
+      offeredOnly={field.offeredOnly}
       onchange={(value) => (args = { ...args, [field.name]: value })}
       onrelease={release}
     />
