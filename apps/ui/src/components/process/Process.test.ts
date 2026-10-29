@@ -2894,7 +2894,7 @@ test("esc returns to the queue with the item selected, once the caret is out of 
   expect(document.activeElement).not.toBe(directory);
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await fireEvent.click(await screen.findByRole("button", { name: "discard" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "leave" }));
   expect(left()).toBe("/?selected=one");
 });
 
@@ -2909,7 +2909,7 @@ test("esc leaves at once, asking nothing, where nothing was entered", async () =
   expect(left()).toBe("/?selected=one");
 });
 
-test("esc asks before leaving once a destination was chosen, and discarding leaves", async () => {
+test("esc asks before leaving once a destination was chosen, and leave leaves", async () => {
   serving([aDestination()]);
   draw();
   await choose(/Vault/);
@@ -2920,7 +2920,7 @@ test("esc asks before leaving once a destination was chosen, and discarding leav
   expect(screen.getByRole("dialog")).toBeDefined();
   expect(left()).toBeUndefined();
 
-  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  await fireEvent.click(screen.getByRole("button", { name: "leave" }));
   expect(left()).toBe("/?selected=one");
 });
 
@@ -2942,7 +2942,7 @@ test("cancelling the question, with a second esc, returns to the composer intact
   );
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await fireEvent.click(screen.getByRole("button", { name: "keep going" }));
+  await fireEvent.click(screen.getByRole("button", { name: "stay" }));
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(left()).toBeUndefined();
 });

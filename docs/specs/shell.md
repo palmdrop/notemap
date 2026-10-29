@@ -7,7 +7,7 @@
 - 2026-10-29 — **`esc` steps back in the place line, and leaving the composer with something
   entered asks first.** In the place line `esc` takes off the half-typed name, or the last folder
   taken where there is none, and on an empty line is the field's own. Leaving the composer by `esc`
-  asks to discard once a destination or template was chosen or the words were rewritten, and is
+  asks before going once a destination or template was chosen or the words were rewritten, and is
   immediate otherwise. ([plan](../plans/escape-steps-back-in-the-composer.md))
 
 - 2026-10-28 — **Files are dropped or pasted anywhere on the page.** The open edit takes them, and
@@ -1408,8 +1408,9 @@ leaves the field, and the next one leaves the surface. **The place line is the e
 last folder taken otherwise, so `seeded/new` becomes `seeded/` and then empty — and only on an empty
 line is it the field's own. **Leaving the surface asks first where something was entered**: a
 destination or template chosen, or the words rewritten, and with them any argument, since a
-destination chosen is already a decision begun. `discard` leaves and drops it; `keep going`, `esc`
-or a press outside returns with everything as it was. Nothing entered leaves at once. Tags are not
+destination chosen is already a decision begun. It asks *go back to the queue?*: `leave`, in the
+alarm, goes and drops what was entered; `stay`, `esc` or a press outside returns with everything as
+it was. Nothing entered leaves at once. Tags are not
 part of it, being applied to the pool when taken.
 
 **The surface opens with the pool out of reach.** A surface that refused to would be a queue that
