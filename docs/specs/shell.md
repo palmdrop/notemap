@@ -6,8 +6,9 @@
 
 - 2026-10-29 — **The composer's tag row offers no trigger tag.** Routing by a tag from beside the
   place being chosen read as a second way to decide the same thing, and templates are offered there
-  already. A trigger tag the item carries is still drawn, and cannot be taken off while its record
-  stands. ([plan](../plans/trigger-tag-after-a-template-route.md))
+  already. One typed in takes its template into the decision instead, and nothing is tagged or
+  routed until that is committed. A trigger tag the item carries is still drawn, and cannot be taken
+  off while its record stands. ([plan](../plans/trigger-tag-after-a-template-route.md))
 
 - 2026-10-29 — **`under` files where it was typed, and `↑↓` start where the line is.** Leaving or
   committing a browsed field settles the head of one title to it only where the field may hold
@@ -1360,7 +1361,8 @@ asked fields out.
 item when one was taken, and, when its template asked for something, to take the template in
 `place` instead)*. A trigger tag is a way to route, and this surface already has one beside it:
 `where` offers the templates. The section's offer leaves out every tag a template declares, whether
-or not anything has carried it, and a trigger tag typed in is not taken. A tag under `route/` that
+or not anything has carried it, and a trigger tag typed in **takes its template** in `where`, as
+choosing it there would: nothing is tagged and nothing routes until the decision is committed. A tag under `route/` that
 no template declares is ordinary and offered. A trigger tag the item carries is drawn as it is
 everywhere, inert while its record stands. The row's chooser and the capture box offer trigger
 tags still.

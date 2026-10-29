@@ -10,7 +10,8 @@
 ## Goal
 
 Routing from the composer under a template that asks for an argument no longer ends in a refused
-tag, and the composer's tag chooser offers no trigger tag to add.
+tag, and the composer's tag chooser offers no trigger tag to add. A trigger tag typed into it takes
+its template into the decision rather than routing.
 
 ---
 
@@ -21,7 +22,8 @@ tag, and the composer's tag chooser offers no trigger tag to add.
 - [x] Core and integration tests _(2026-10-29)_
 - [x] Amend core.md, http-v1.md, ADR 63 _(2026-10-29)_
 - [x] Commit core change _(2026-10-29)_
-- [x] UI: ComposerTags offers no trigger tag; drop the `onasks` path _(2026-10-29)_
+- [x] UI: ComposerTags offers no trigger tag; one typed in takes its template in `where`
+      (`ontemplate`), replacing `onasks` and `onfired` _(2026-10-29)_
 - [x] UI tests, shell.md _(2026-10-29)_
 - [x] Commit UI change _(2026-10-29)_
 

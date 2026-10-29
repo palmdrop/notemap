@@ -3,8 +3,7 @@
 
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { client } from "$lib/client";
-  import { sayItFired } from "$lib/firing";
-  import { offerable, triggeredBy } from "$lib/templates";
+  import { triggeredBy } from "$lib/templates";
 
   /**
    * The same classification the row makes, offered where routing is decided.
@@ -16,8 +15,7 @@
     item,
     names,
     templates = [],
-    onfired,
-    onasks,
+    ontemplate,
   }: {
     item: string;
     /** What the item carries, read live: a tag taken here is drawn taken at once. */
@@ -25,27 +23,19 @@
     /** The templates whose records stand, from the item's routing summary. */
     templates?: readonly string[];
     /**
-     * A trigger tag was applied here, which files the item. Said as soon as the
-     * tag is taken rather than when the pool answers: whoever is holding a
-     * half-made decision beside this has to be told the item is spoken for
-     * before they can press it into a second copy.
+     * A trigger tag was typed in. It is not applied here, where it would route
+     * beside the decision being made: its template is taken into that decision
+     * instead, and nothing goes until it is committed.
      */
-    onfired?: () => void;
-    /**
-     * A trigger tag whose template asks for something was taken. It is not
-     * applied here: the template is taken where the decision is made, which
-     * already has a place to ask in.
-     */
-    onasks?: (template: RoutingTemplate) => void;
+    ontemplate?: (template: RoutingTemplate) => void;
   } = $props();
 
   const inUse = client.tags.inUse;
   const declared = client.templates.all;
   const offered = $derived(
-    offerable(
-      $inUse.map((use) => use.name),
-      $declared,
-    ),
+    $inUse
+      .map((use) => use.name)
+      .filter((name) => !$declared.some((one) => one.triggerTag === name)),
   );
 
   function fires(name: string): string | undefined {
@@ -60,22 +50,8 @@
 
   function add(name: string): void {
     const template = triggeredBy(name);
-    if (
-      template !== undefined &&
-      onasks !== undefined &&
-      Object.keys(template.asked ?? {}).length > 0
-    ) {
-      onasks(template);
-      return;
-    }
-    void tagged(name);
-    if (fires(name) !== undefined) onfired?.();
-  }
-
-  /** A trigger tag files the item, so what it did is said as soon as it is known. */
-  async function tagged(name: string): Promise<void> {
-    await client.tag(item, name);
-    await sayItFired(item, name);
+    if (template !== undefined) ontemplate?.(template);
+    else void client.tag(item, name);
   }
 </script>
 
