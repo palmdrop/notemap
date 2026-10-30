@@ -150,25 +150,25 @@ has shots at both widths in `shots/current/`. The control map has no control mar
 
 Depends on phase 1 being checked by the driver.
 
-- [ ] Read `audit.html` and take its recommendations. Where the Builder disagrees, it builds
+- [x] Read `audit.html` and take its recommendations. Where the Builder disagrees, it builds
       the recommendation and adds the alternative, noting why
-- [ ] One static HTML file per route at 390 in `<artifact>/mockups/`, using
+- [x] One static HTML file per route at 390 in `<artifact>/mockups/`, using
       `docs/design/redrawn/tokens.css` (copied in), in the plain-CSS manner of `docs/design/redrawn/`.
       Realistic content from the stage's seed, not lorem ipsum
-- [ ] 1440 mockups only for routes whose flow changes on the desktop as well. Say which routes
+- [x] 1440 mockups only for routes whose flow changes on the desktop as well. Say which routes
       and why
-- [ ] One clickable prototype, `<artifact>/prototype/`, covering capture → route by template →
+- [x] One clickable prototype, `<artifact>/prototype/`, covering capture → route by template →
       done, and capture → route by hand → done. Touch swipes and buttons both work, and it is
       usable on a real phone in its browser. Plain HTML, CSS and a little JS; no framework, no
       network
-- [ ] Shots of every mockup into `<artifact>/shots/proposed/`, starting from `oneshot show
+- [x] Shots of every mockup into `<artifact>/shots/proposed/`, starting from `oneshot show
       notemap-shoot-drafts`
-- [ ] `<artifact>/proposal.html`: per route, current shot beside proposed shot, then what changed
+- [x] `<artifact>/proposal.html`: per route, current shot beside proposed shot, then what changed
       and which audit finding it answers. A gestures table (web / app / both). Proposed renames,
       if any, in their own section. Then **the split**: for each change, whether it is a
       candidate for the web shell now, app only, or either, with the reason
-- [ ] `index.html` links audit, proposal and prototype
-- [ ] Commit the plan's checkboxes
+- [x] `index.html` links audit, proposal and prototype
+- [x] Commit the plan's checkboxes _(2026-10-30)_
 
 **Verify**: every route in the audit has a proposed shot. The prototype completes both flows by
 swipe and by button in Chromium's mobile emulation at 390. Every gesture is marked.
@@ -177,12 +177,12 @@ swipe and by button in Chromium's mobile emulation at 390. Every gesture is mark
 
 Depends on phase 2.
 
-- [ ] Driver opens the artifact and the prototype at 390 and 1440 and checks both flows. It
+- [x] Driver opens the artifact and the prototype at 390 and 1440 and checks both flows. It
       checks the proposal against the audit and the ground rules, and sends defects back to the
       Builder
-- [ ] Driver reports to the developer: the artifact URL, the three or four decisions that matter
+- [x] Driver reports to the developer: the artifact URL, the three or four decisions that matter
       most, where the Auditor and the Builder disagreed, and the driver's own disagreements
-- [ ] Commit the plan's checkboxes
+- [x] Commit the plan's checkboxes _(2026-10-30)_
 
 **Verify**: the developer has the URL and the report.
 
