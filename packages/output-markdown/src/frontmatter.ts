@@ -27,7 +27,6 @@ const KEYS = {
 
 /** The one thing a file at a destination cannot recover for itself. */
 const PROVENANCE = {
-  attribution: "wasAttributedTo",
   origin: "derived_from",
 } as const;
 
@@ -47,7 +46,6 @@ export function fixedFrontmatter(
     [KEYS.source, delivery.source],
     [KEYS.payload, delivery.payload.type],
     [KEYS.createdAt, delivery.createdAt],
-    [PROVENANCE.attribution, delivery.source],
     [PROVENANCE.origin, `urn:commons:item:${delivery.item}`],
   ]);
 

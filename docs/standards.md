@@ -94,6 +94,13 @@ don't require model changes.
   - `wasRevisionOf` — a revision → the capture it supersedes. Edits are **appends, not
     mutations**: a new item carrying the original `created` plus an `updated` timestamp,
     linked back to its predecessor ([exploration/vision/pool-and-routing.md](exploration/vision/pool-and-routing.md#edits-are-revisions-not-mutations)).
+
+  *Amended 2026-10-30*: these names are the relations as concepts, and the pool and the envelope
+  use them. A key written to a file — a routed note, a mirror rendering — is snake_case:
+  `derived_from`, `revision_of`, and `generated_by` once a file carries it. A revision's two
+  timestamps are written `captured_at` and `updated_at`. Attribution has no file key: nothing
+  that leaves the pool yet has an agent other than its source, which `capture_source` already
+  names, and the change that routes one picks its key — likely Dublin Core `creator`, below.
 - **Routed-artifact provenance vocabulary** — where an item that leaves notemap carries its
   provenance, it carries it in these words:
   [Dublin Core](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/) terms

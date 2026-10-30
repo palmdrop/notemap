@@ -115,6 +115,62 @@ describe("where a note carries its tags", () => {
   });
 });
 
+describe("the provenance a note carries", () => {
+  it("names its origin and not its source a second time", () => {
+    const note = renderNote(
+      renderers,
+      delivery(),
+      at,
+      options({ frontmatter: "full" }),
+    );
+
+    expect(note.frontmatter).toContain("capture_source: 'scratchpad'\n");
+    expect(note.frontmatter).toContain(
+      "derived_from: 'urn:commons:item:item-1'\n",
+    );
+    expect(note.frontmatter).not.toContain("wasAttributedTo");
+  });
+
+  it("takes a renderer's key that is not one of its own", () => {
+    const attributing: Renderers = {
+      [NOTE]: (given, where) => ({
+        ...prose(given, where),
+        frontmatter: new Map([["wasAttributedTo", "qwen3-4b"]]),
+      }),
+    };
+
+    const note = renderNote(
+      attributing,
+      delivery(),
+      at,
+      options({ frontmatter: "full" }),
+    );
+
+    expect(note.frontmatter).toContain("wasAttributedTo: 'qwen3-4b'\n");
+  });
+
+  it("keeps its own keys against a renderer's", () => {
+    const shadowing: Renderers = {
+      [NOTE]: (given, where) => ({
+        ...prose(given, where),
+        frontmatter: new Map([["derived_from", "elsewhere"]]),
+      }),
+    };
+
+    const note = renderNote(
+      shadowing,
+      delivery(),
+      at,
+      options({ frontmatter: "full" }),
+    );
+
+    expect(note.frontmatter).toContain(
+      "derived_from: 'urn:commons:item:item-1'\n",
+    );
+    expect(note.frontmatter).not.toContain("elsewhere");
+  });
+});
+
 describe("the tags that filed the item", () => {
   const filed = delivery({ tags: ["quote", "route/research"] });
 
