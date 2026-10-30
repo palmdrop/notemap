@@ -178,6 +178,8 @@ const SAID: {
   "unknown-asset": "the upload is gone; pick the file again",
   "unknown-destination": "that destination is not here",
   "unknown-template": "that template is not here",
+  "template-untriggered":
+    "that template has no trigger tag, so it cannot be applied to many at once",
   "trigger-tag-invalid": "a trigger tag needs something in it",
   "trigger-tag-unreserved":
     'a tag that files an item has to start with "route/", so nobody types one by accident',

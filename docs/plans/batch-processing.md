@@ -1,7 +1,7 @@
 # Batch processing
 
 **Date**: 2026-10-30
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 
 ---
@@ -107,34 +107,34 @@ own.
 
 ### Phase 1 — the log records a batch
 
-- [ ] Branch `agent/batch-processing`
-- [ ] ADR: a batch id the client creates, kept on the action log, which core records and never
+- [x] Branch `agent/batch-processing`
+- [x] ADR: a batch id the client creates, kept on the action log, which core records and never
       interprets.
-- [ ] core.md § the action log: the optional `batch` field, and which entries carry it.
-- [ ] `batch` on `Action`. `tag` and `archive` take it and pass it on. The store keeps it as a
+- [x] core.md § the action log: the optional `batch` field, and which entries carry it.
+- [x] `batch` on `Action`. `tag` and `archive` take it and pass it on. The store keeps it as a
       column. The log route answers it.
-- [ ] Tests in core: each of `tagged`, `template-fired` and `archived` carries the batch id it was
+- [x] Tests in core: each of `tagged`, `template-fired` and `archived` carries the batch id it was
       given, and carries none when given none.
-- [ ] Verify: tests, typecheck and lint pass.
-- [ ] Commit
+- [x] Verify: tests, typecheck and lint pass.
+- [x] Commit
 
 ### Phase 2 — the daemon answers a batch
 
 Depends on phase 1.
 
-- [ ] http-v1.md: the bulk endpoint and the bulk cancel. The batch id goes in the request.
+- [x] http-v1.md: the bulk endpoint and the bulk cancel. The batch id goes in the request.
   - The bulk endpoint takes item ids plus either a template or archive.
   - It answers per item: a reservation's record id, archived, skipped, or a refusal with its reason.
   - Regenerate `openapi` and `packages/client/src/api/generated.d.ts`.
-- [ ] Routes in `apps/daemon/src/routes/`, beside `tags.ts`, `archive.ts` and `routing.ts`, with
+- [x] Routes in `apps/daemon/src/routes/`, beside `tags.ts`, `archive.ts` and `routing.ts`, with
       schemas. Each one loops over core's per-item operations.
-- [ ] Tests in the daemon routes:
+- [x] Tests in the daemon routes:
   - a mixed batch where some items land and some are refused;
   - an item the template already filed comes back skipped;
   - a bulk cancel gives every trigger tag back.
-- [ ] Verify: `pnpm -r --no-sort --silent test`, typecheck and lint pass; `pnpm test:stack`
+- [x] Verify: `pnpm -r --no-sort --silent test`, typecheck and lint pass; `pnpm test:stack`
       passes, since this changes the HTTP surface.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 3 — the client holds a batch
 
