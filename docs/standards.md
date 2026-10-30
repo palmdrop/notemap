@@ -86,7 +86,7 @@ don't require model changes.
   detects drift. Sharing is a reference count at both layers. Reference across systems with the
   `urn:commons:item:<uuid>` URI namespace ([RFC 8141](https://datatracker.ietf.org/doc/html/rfc8141)).
   A web resource = URL + capture time ([Memento](https://datatracker.ietf.org/doc/html/rfc7089)).
-- **Provenance:** the three [W3C PROV](https://www.w3.org/TR/prov-o/) relations, as
+- **Provenance:** the four [W3C PROV](https://www.w3.org/TR/prov-o/) relations, as
   frontmatter keys (not full RDF), spelt snake_case where written (*amended 2026-10-30*, below):
   - `wasDerivedFrom` — processed artifact → original capture
   - `wasGeneratedBy` — enrichment output → the activity/model that produced it
