@@ -243,6 +243,22 @@ describe("the rendering", () => {
     expect(block).not.toContain("not-the-item-id");
   });
 
+  it("takes a renderer's key that is not one of its own", async () => {
+    const { root: where, writer } = mirror({
+      [TEXT]: () => ({
+        body: "",
+        frontmatter: new Map([["wasAttributedTo", "qwen3-4b"]]),
+      }),
+    });
+
+    await writer.write(record());
+    const block = frontmatterOf(
+      await readFile(pathsFor(where, record()).rendering, "utf8"),
+    );
+
+    expect(block).toContain("wasAttributedTo: 'qwen3-4b'");
+  });
+
   it("survives a value that would otherwise break the block", async () => {
     const { root: where, writer } = mirror();
 

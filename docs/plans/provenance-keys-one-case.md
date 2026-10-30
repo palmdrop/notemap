@@ -44,7 +44,8 @@ file.
   `wasRevisionOf` → `revision_of`, `wasGeneratedBy` → `generated_by` once a file carries it, and
   attribution gets no file key until an agent other than the source exists. Lines 94–96 say a
   revision carries `created` and `updated`; the files write `captured_at` and `updated_at`, so the
-  amendment names those. Check that line 162 still reads true at pool level.
+  amendment names those. Check that line 162 still reads true at pool level. *Corrected in review*: ADR
+  21 gives a revision its own capture time, so the amendment marks lines 94–96 superseded instead.
 - [x] `packages/output-markdown/src/frontmatter.ts`: drop `attribution` from `PROVENANCE`, along
   with its entry in `fixedFrontmatter`. `FIXED_KEYS` follows.
 - [x] Tests, in `output-markdown/src/note.test.ts`: a routed note's frontmatter has no
@@ -77,6 +78,7 @@ until the daemon is rebuilt.
 ### Phase 3: Close out
 
 - [x] Remove the todo.md item "The provenance keys a routed note carries are named two ways".
+  It was never committed, so removing it was discarding the working-tree edit.
 - [x] `pnpm test:stack`: routed output is the HTTP-visible surface the full-stack suite reads.
 - [x] Spec `Shipped:` entries, plan status.
 - [x] `git commit`: `docs: provenance keys in one case`.

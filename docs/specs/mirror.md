@@ -177,8 +177,8 @@ restore that item. It carries
 - the item — its id, source and source item id, capture time, content time, revision link,
   the head it `continues` and the **source's word** where it keeps one (added 2026-10-20,
   [ADR 64](../adr/0064-a-re-read-answers-to-the-source-word-and-a-divergence-continues.md)),
-  archive state, and its tags with their attribution. Neither of the two is in the frontmatter of
-  the rendering, whose keys are an interop contract, so the `.json` alone carries them;
+  archive state, and its tags with their attribution. Neither of the two is in the rendering's
+  frontmatter, so the `.json` alone carries them;
 - the payload — type, content, metadata, and its asset references;
 - the assets those references reach, each with its id, filename, media type, size and blob
   hash, so a rebuild restores the same asset identities and a human can find the bytes. Not a

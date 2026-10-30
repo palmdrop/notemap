@@ -87,25 +87,28 @@ don't require model changes.
   `urn:commons:item:<uuid>` URI namespace ([RFC 8141](https://datatracker.ietf.org/doc/html/rfc8141)).
   A web resource = URL + capture time ([Memento](https://datatracker.ietf.org/doc/html/rfc7089)).
 - **Provenance:** the three [W3C PROV](https://www.w3.org/TR/prov-o/) relations, as
-  frontmatter keys (not full RDF):
+  frontmatter keys (not full RDF), spelt snake_case where written (*amended 2026-10-30*, below):
   - `wasDerivedFrom` — processed artifact → original capture
   - `wasGeneratedBy` — enrichment output → the activity/model that produced it
   - `wasAttributedTo` — the agent: a human decision vs. `whisperx-medium` vs. `qwen3-4b`
   - `wasRevisionOf` — a revision → the capture it supersedes. Edits are **appends, not
     mutations**: a new item carrying the original `created` plus an `updated` timestamp,
     linked back to its predecessor ([exploration/vision/pool-and-routing.md](exploration/vision/pool-and-routing.md#edits-are-revisions-not-mutations)).
+    *Superseded 2026-08-24* ([ADR 21](adr/0021-an-item-is-editable-until-it-is-processed.md)):
+    a revision is a capture, with its own capture time rather than its original's.
 
-  *Amended 2026-10-30*: these names are the relations as concepts, and the pool and the envelope
-  use them. A key written to a file — a routed note, a mirror rendering — is snake_case:
-  `derived_from`, `revision_of`, and `generated_by` once a file carries it. A revision's two
-  timestamps are written `captured_at` and `updated_at`. Attribution has no file key: nothing
-  that leaves the pool yet has an agent other than its source, which `capture_source` already
-  names, and the change that routes one picks its key — likely Dublin Core `creator`, below.
+  *Amended 2026-10-30*: PROV's camelCase names say what each relation is; they are not keys.
+  Frontmatter — above a routed note or a mirror rendering — and the metadata on a board's block
+  spell them snake_case: `derived_from`, `revision_of`, and `generated_by` once one carries it.
+  Attribution has no key there: nothing these carry yet has an agent other than its source, which
+  `capture_source` already names, and the change that writes one picks its key — likely Dublin
+  Core `creator`, below.
 - **Routed-artifact provenance vocabulary** — where an item that leaves notemap carries its
   provenance, it carries it in these words:
   [Dublin Core](https://www.dublincore.org/specifications/dublin-core/dcmi-terms/) terms
-  (`title`, `creator`, `date`, `source`) plus `source_id`, `captured_at`, `capture_source`,
-  `derived_from`. One vocabulary wherever it lands — YAML frontmatter above a note, key-value
+  (`title`, `creator`, `date`, `source`) plus `id`, `source_id`, `payload_type`, `captured_at`,
+  `updated_at`, `capture_source`, `derived_from` (`id`, `payload_type` and `updated_at` added
+  2026-10-30: routed notes already wrote them). One vocabulary wherever it lands — YAML frontmatter above a note, key-value
   metadata on a board's block — so an item routed to two places says where it came from one way.
   That is what lets an item that has *left* the hub be traced back, re-enriched, or re-routed.
 
@@ -166,7 +169,7 @@ delivery must target — and core refuses anything undeclared rather than approx
   format is an **OpenAI-compatible `/audio/transcriptions` endpoint**, with a generic webhook
   adapter as the escape hatch. Transcription and *correction* are separate capabilities — most
   providers offer only the first. Each provider carries a trust level (local-only by default)
-  and is named on the item via `wasAttributedTo`.
+  and is the **agent** of what it produces — PROV's `wasAttributedTo`.
   See [exploration/vision/audio-intake.md](exploration/vision/audio-intake.md#transcription-is-a-provider-not-a-component).
 - **Enrichment infra** (not a wire standard, recorded for completeness):
   [sqlite-vec](https://github.com/asg017/sqlite-vec) embedding index with a multilingual

@@ -124,11 +124,18 @@ describe("the provenance a note carries", () => {
       options({ frontmatter: "full" }),
     );
 
-    expect(note.frontmatter).toContain("capture_source: 'scratchpad'\n");
-    expect(note.frontmatter).toContain(
-      "derived_from: 'urn:commons:item:item-1'\n",
+    expect(note.frontmatter).toBe(
+      [
+        "---",
+        "id: 'item-1'",
+        "capture_source: 'scratchpad'",
+        "payload_type: 'note'",
+        "captured_at: '2026-09-10T09:00:00.000Z'",
+        "derived_from: 'urn:commons:item:item-1'",
+        "---",
+        "",
+      ].join("\n"),
     );
-    expect(note.frontmatter).not.toContain("wasAttributedTo");
   });
 
   it("takes a renderer's key that is not one of its own", () => {
