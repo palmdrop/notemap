@@ -32,7 +32,7 @@ function each(
   const trigger = state.templates.find(
     (template) => template.id === action.template,
   )?.triggerTag;
-  if (trigger === undefined || trigger === null) {
+  if (trigger === undefined) {
     return (current) => unchanged(current);
   }
   return (current, item) => tagged(current, { item, tag: trigger }, at);

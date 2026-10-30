@@ -309,16 +309,11 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     const next = previous.then(work);
 
     for (const target of targets) chains.set(target, next);
-    void next.then(
-      () => release(targets, next),
-      () => release(targets, next),
-    );
-  }
-
-  function release(targets: readonly string[], done: Promise<void>): void {
-    for (const target of targets) {
-      if (chains.get(target) === done) chains.delete(target);
-    }
+    void next.then(() => {
+      for (const target of targets) {
+        if (chains.get(target) === next) chains.delete(target);
+      }
+    });
   }
 
   /**
