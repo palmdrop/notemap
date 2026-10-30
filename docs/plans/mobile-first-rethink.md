@@ -123,25 +123,25 @@ page, and the artifact URL serves (empty is fine).
 
 Depends on phase 0.
 
-- [ ] Enumerate routes from `apps/ui/src/routes/`, not from a list handed over, and the states
+- [x] Enumerate routes from `apps/ui/src/routes/`, not from a list handed over, and the states
       within each: the queue's quick tier on a row, the process surface and its bands, the item
       page, a record, the log and its views, settings and each section, the phone menu, sign-in,
       the status line, empty and offline states, the tag and template choosers
-- [ ] Screenshot every route and state at 1440 and 390 against the stage, signed in. Start from
+- [x] Screenshot every route and state at 1440 and 390 against the stage, signed in. Start from
       `oneshot show notemap-shoot-app`, and adapt a copy to sign in and to reach the states
       it skips. Shots go to `<artifact>/shots/current/`
-- [ ] Walk the three core tasks at 390 and count steps, taps, and what must be remembered or read:
+- [x] Walk the three core tasks at 390 and count steps, taps, and what must be remembered or read:
       capture a note, route it by template, route it by hand to a destination and place
-- [ ] Write `<artifact>/audit.html`. Per route: shots side by side, then findings. Each finding is
+- [x] Write `<artifact>/audit.html`. Per route: shots side by side, then findings. Each finding is
       a problem in observable terms (what the reader has to read, remember, reach, or scroll
       past), then 2–3 options with trade-offs, then a recommendation. Cross-cutting findings
       (navigation model, where actions live, naming, ADR 46) get their own section. Close with
       a table that maps each control today to where each recommendation puts it
-- [ ] `<artifact>/index.html` links the audit, with a one-paragraph summary at the top
-- [ ] Driver: check the audit against the ground rules (every route present, every gesture
+- [x] `<artifact>/index.html` links the audit, with a one-paragraph summary at the top
+- [x] Driver: check the audit against the ground rules (every route present, every gesture
       marked, no feature lost, no repo edits outside the plan), and send it back to the Auditor
       with the gaps if any
-- [ ] Commit the plan's checkboxes
+- [x] Commit the plan's checkboxes _(2026-10-30)_
 
 **Verify**: `git status` shows only this plan changed. Every directory under `apps/ui/src/routes/`
 has shots at both widths in `shots/current/`. The control map has no control marked unplaced.
