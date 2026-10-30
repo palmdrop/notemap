@@ -1,9 +1,10 @@
 # Spec: The mirror on disk
 
 **Status**: Draft
-**Last updated**: 2026-10-26
+**Last updated**: 2026-10-30
 **Shipped**:
 
+- 2026-10-30 — **A rendering's frontmatter is snake_case throughout.** `wasRevisionOf` is `revision_of`, and `wasAttributedTo`, which repeated `capture_source`, is gone. ([plan](../plans/provenance-keys-one-case.md))
 - 2026-10-26 — **A mirrored routing record carries `withdrawnAt` and `pointers`.** ([plan](../plans/withdraw-a-routing-record.md), [ADR 66](../adr/0066-a-delivered-record-may-be-withdrawn.md))
 
 - 2026-10-21 — **Nothing new is mirrored for when an item was processed**: it is derived from

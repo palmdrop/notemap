@@ -1,9 +1,9 @@
 # Provenance keys in one case
 
 **Date**: 2026-10-30
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/mirror.md`
-**Closed**:
+**Closed**: 2026-10-30
 
 ---
 
@@ -76,10 +76,10 @@ until the daemon is rebuilt.
 
 ### Phase 3: Close out
 
-- [ ] Remove the todo.md item "The provenance keys a routed note carries are named two ways".
-- [ ] `pnpm test:stack`: routed output is the HTTP-visible surface the full-stack suite reads.
-- [ ] Spec `Shipped:` entries, plan status.
-- [ ] `git commit`: `docs: provenance keys in one case`.
+- [x] Remove the todo.md item "The provenance keys a routed note carries are named two ways".
+- [x] `pnpm test:stack`: routed output is the HTTP-visible surface the full-stack suite reads.
+- [x] Spec `Shipped:` entries, plan status.
+- [x] `git commit`: `docs: provenance keys in one case`.
 
 ---
 
