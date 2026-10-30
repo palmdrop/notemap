@@ -1,5 +1,6 @@
 import type {
   Action,
+  BatchId,
   CapabilityName,
   Duration,
   JsonSchema,
@@ -1684,5 +1685,51 @@ describe("a template that asks for an argument", () => {
       kind: "arguments-invalid",
       issues: [{ path: "/position", keyword: "asked" }],
     });
+  });
+});
+
+describe("a batch the log keeps", () => {
+  const BATCH = "batch-1" as BatchId;
+
+  it("carries the batch on the tag and on the firing it made", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(
+      await pool.items.tag(item.id, RESEARCH, PERSON, { batch: BATCH }),
+    );
+
+    const written = (await logFor(pool, item.id)).filter(
+      (one) => one.kind === "tagged" || one.kind === "template-fired",
+    );
+    expect(written.map((one) => [one.kind, one.batch]).sort()).toEqual([
+      ["tagged", BATCH],
+      ["template-fired", BATCH],
+    ]);
+  });
+
+  it("carries the batch on an archive", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.items.archive(item.id, undefined, BATCH));
+
+    expect(
+      (await logFor(pool, item.id)).find((one) => one.kind === "archived"),
+    ).toMatchObject({ batch: BATCH });
+  });
+
+  it("carries no batch where none was given", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+    succeeded(await pool.items.archive(item.id));
+
+    for (const one of await logFor(pool, item.id)) {
+      expect(one).not.toHaveProperty("batch");
+    }
   });
 });

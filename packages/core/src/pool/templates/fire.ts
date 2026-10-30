@@ -4,6 +4,7 @@ import { requestFor, withSupplied } from "./apply";
 import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type {
+  BatchId,
   ItemId,
   JobId,
   RoutingRecordId,
@@ -91,6 +92,7 @@ export async function fire(
   record: RoutingRecord,
   tag: TagName,
   template: RoutingTemplate,
+  batch?: BatchId,
 ): Promise<void> {
   const until = later(record.at, config.triggerWindow);
 
@@ -110,6 +112,7 @@ export async function fire(
   await recordAction(ports, tx, {
     kind: "template-fired",
     subject: record.item,
+    ...(batch === undefined ? {} : { batch }),
     // The person tagged; notemap only carried out what the tag says.
     by: { kind: "person" },
     at: record.at,

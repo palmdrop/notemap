@@ -5453,6 +5453,8 @@ export interface components {
             kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
+            /** @description The batch the action was part of, as the client that made the batch named it. */
+            batch?: string;
             by: {
                 /** @enum {string} */
                 kind: "notemap";

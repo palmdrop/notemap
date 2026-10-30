@@ -539,8 +539,8 @@ export function createSqlitePoolStore(
   );
   const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
-    INSERT INTO actions (id, kind, subject, by_kind, by_ref, at, detail)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO actions (id, kind, subject, batch, by_kind, by_ref, at, detail)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const lastModifiedAt = write.query<PoolMetaRow, [string]>(
     `SELECT key, value FROM pool_meta WHERE key = ?`,
@@ -1043,7 +1043,7 @@ export function createSqlitePoolStore(
 
           return source
             .query<ActionRow, Bindable[]>(
-              `SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions
+              `SELECT id, kind, subject, batch, by_kind, by_ref, at, detail FROM actions
                ${where} ORDER BY at ${way.sql}, id ${way.sql} LIMIT ?`,
             )
             .all(...params);
@@ -1354,6 +1354,7 @@ export function createSqlitePoolStore(
           action.id,
           action.kind,
           action.subject ?? null,
+          action.batch ?? null,
           ...agentColumns(action.by),
           toMillis(action.at),
           JSON.stringify(action.detail),

@@ -2599,6 +2599,10 @@
           "subject": {
             "type": "string"
           },
+          "batch": {
+            "type": "string",
+            "description": "The batch the action was part of, as the client that made the batch named it."
+          },
           "by": {
             "anyOf": [
               {
