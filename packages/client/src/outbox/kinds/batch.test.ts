@@ -25,6 +25,13 @@ const TEMPLATE: RoutingTemplate = {
   fired: { records: 0 },
 };
 
+const OTHER: RoutingTemplate = {
+  ...TEMPLATE,
+  id: "other",
+  name: "Reading",
+  triggerTag: "route/reading",
+};
+
 const QUEUED: readonly Item[] = [anItem("one"), anItem("two"), anItem("three")];
 
 type Sent = { batch: string; items: string[]; action: { kind: string } };
@@ -40,7 +47,9 @@ function pool(
   return async (request) => {
     const route = routeOf(request);
     if (route === "GET /v1/queue") return json(200, { values: QUEUED });
-    if (route === "GET /v1/templates") return json(200, { values: [TEMPLATE] });
+    if (route === "GET /v1/templates") {
+      return json(200, { values: [OTHER, TEMPLATE] });
+    }
     if (route === "POST /v1/batches") {
       const body = (await request.json()) as Sent;
       sent.push(body);
@@ -158,6 +167,27 @@ describe("a batch", () => {
 
     expect(sent.map((each) => each.batch)).toEqual([id]);
     expect(read(client.outbox)).toEqual([]);
+  });
+
+  it("draws the reason an archive was given until the pool answers", async () => {
+    const { client, transport } = await clientOver(pool(archivedNow));
+    transport.unreachable(true);
+
+    await client.batch(["one"], { kind: "archive", reason: "noise" });
+
+    expect(read(client.held("one"))?.archived).toMatchObject({
+      reason: "noise",
+    });
+  });
+
+  it("draws nothing for a template this client does not hold", async () => {
+    const { client, transport } = await clientOver(pool(archivedNow));
+    await client.templates.load();
+    transport.unreachable(true);
+
+    await client.batch(["one"], { kind: "template", template: "elsewhere" });
+
+    expect(read(client.queue).items[0]?.tags).toEqual([]);
   });
 
   it("draws the template's trigger tag on each item until the pool answers", async () => {
