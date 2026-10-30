@@ -4,7 +4,7 @@ import { cached, reconciled } from "#state/state";
 import { replacing, type Handler } from "../handler";
 
 export const unarchive: Handler<"unarchive"> = {
-  target: (operation) => operation.item,
+  targets: (operation) => [operation.item],
   opposedBy: "archive",
 
   apply(state, operation): Applied {

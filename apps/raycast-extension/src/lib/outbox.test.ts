@@ -20,6 +20,13 @@ const captured = (text: string, assets = 0) =>
 
 const tagged: Operation = { kind: "tag", item: "item-1", tag: "reading" };
 
+const batched: Operation = {
+  kind: "batch",
+  batch: "batch-1",
+  items: ["item-1", "item-2"],
+  action: { kind: "archive" },
+};
+
 describe("the drain command's subtitle", () => {
   it("says how many are waiting", () => {
     expect(waitingSaid(3)).toBe("3 waiting to send");
@@ -38,9 +45,17 @@ describe("what an operation says it does", () => {
   it("is a capture where it is one", () => {
     expect(done(captured("words"))).toBe("Capture");
   });
+
+  it("says a batch is about many", () => {
+    expect(done(batched)).toBe("Archive many");
+  });
 });
 
 describe("the note an operation is about", () => {
+  it("is how many notes a batch names", () => {
+    expect(about(batched, () => "held")).toBe("2 notes");
+  });
+
   it("is a capture's own words", () => {
     expect(about(captured("its own words"), () => "held")).toBe(
       "its own words",

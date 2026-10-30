@@ -39,6 +39,10 @@ export function done(operation: Operation): string {
       return `Accept ${operation.suggestion}`;
     case "reject-suggestion":
       return `Reject ${operation.suggestion}`;
+    case "batch":
+      return operation.action.kind === "archive"
+        ? "Archive many"
+        : "Apply a template to many";
   }
 }
 
@@ -50,6 +54,10 @@ export function about(
   operation: Operation,
   held: (item: ItemId) => string | undefined,
 ): string | undefined {
+  if (operation.kind === "batch") {
+    const count = operation.items.length;
+    return count === 1 ? "1 note" : `${String(count)} notes`;
+  }
   if (operation.kind !== "capture" && operation.kind !== "edit") {
     return held(operation.item);
   }

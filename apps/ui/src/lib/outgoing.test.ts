@@ -36,3 +36,14 @@ test("a tag names the tag", () => {
     item: "one",
   });
 });
+
+test("a batch says how many notes, and names no one item", () => {
+  expect(
+    outgoing({
+      kind: "batch",
+      batch: "batch-1",
+      items: ["one", "two"],
+      action: { kind: "archive" },
+    }),
+  ).toEqual({ what: "discard", subject: "2 notes" });
+});

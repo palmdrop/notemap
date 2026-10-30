@@ -11,7 +11,7 @@ import {
   type OperationId,
   type PendingOperation,
 } from "./operations";
-import { applyOperation, opposes, targetOf } from "./registry";
+import { applyOperation, opposes, targetsOf } from "./registry";
 
 export type Outbox = {
   enqueue(operation: Operation): Promise<void>;
@@ -281,7 +281,9 @@ export function createOutbox(deps: OutboxDeps): Outbox {
       if (restored.has(entry.id)) {
         // A failed re-read leaves the cache as it stands, which is what an
         // unreachable pool leaves anyway; the refusal is still reported.
-        await deps.reread(targetOf(entry.operation)).catch(() => undefined);
+        for (const target of targetsOf(entry.operation)) {
+          await deps.reread(target).catch(() => undefined);
+        }
       } else {
         const undo = undos.get(entry.id);
         if (undo !== undefined) deps.state.update(undo);
@@ -296,15 +298,27 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }
   }
 
-  /** Operations against one item drain in order, so a tag never overtakes its capture. */
-  function chain(target: string, work: () => Promise<void>): void {
-    const previous = chains.get(target) ?? Promise.resolve();
-    const next = previous.then(work, work);
+  /**
+   * Operations against one item drain in order, so a tag never overtakes its
+   * capture. One about several items waits for every one of them.
+   */
+  function chain(targets: readonly string[], work: () => Promise<void>): void {
+    const previous = Promise.allSettled(
+      targets.map((target) => chains.get(target) ?? Promise.resolve()),
+    );
+    const next = previous.then(work);
 
-    chains.set(target, next);
-    void next.then(() => {
-      if (chains.get(target) === next) chains.delete(target);
-    });
+    for (const target of targets) chains.set(target, next);
+    void next.then(
+      () => release(targets, next),
+      () => release(targets, next),
+    );
+  }
+
+  function release(targets: readonly string[], done: Promise<void>): void {
+    for (const target of targets) {
+      if (chains.get(target) === done) chains.delete(target);
+    }
   }
 
   /**
@@ -335,7 +349,7 @@ export function createOutbox(deps: OutboxDeps): Outbox {
 
         attempted.add(entry.id);
         handedOver.add(entry.id);
-        chain(targetOf(entry.operation), async () => {
+        chain(targetsOf(entry.operation), async () => {
           try {
             await send(entry);
           } finally {

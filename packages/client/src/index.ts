@@ -23,6 +23,7 @@ export {
 } from "./state/state";
 export type { Filter, FilterNamed, FilterState } from "./state/state";
 export type { Surface } from "./state/state";
+export type { Batch } from "./state/batches";
 
 export type {
   Operation,

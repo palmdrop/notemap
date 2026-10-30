@@ -167,7 +167,7 @@
             why={held.state === "unreachable"
               ? "pending while the pool is out of reach"
               : "pending"}
-            href={itemHref(said.item)}
+            href={said.item === undefined ? undefined : itemHref(said.item)}
           />
         {/each}
       </ol>

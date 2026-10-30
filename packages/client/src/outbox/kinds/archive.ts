@@ -11,6 +11,7 @@ import {
   type ClientState,
 } from "#state/state";
 import { replacing, type Handler } from "../handler";
+import type { Operation } from "../operations";
 
 function replaced(
   ids: readonly ItemId[],
@@ -23,66 +24,69 @@ function replaced(
   return [...ids.slice(0, where), id, ...ids.slice(where)];
 }
 
+export function archiving(
+  state: ClientState,
+  operation: Extract<Operation, { kind: "archive" }>,
+  at: string,
+): Applied {
+  const previous = state.items.get(operation.item);
+  if (previous === undefined) return unchanged(state);
+
+  const { reason } = operation;
+  const archived: Item = {
+    ...processedLater(previous, at),
+    archived: { archivedAt: at, ...(reason === undefined ? {} : { reason }) },
+  };
+
+  // The index, not the rank: the pool breaks ties on a key of its own, so
+  // re-ranking a rolled-back item would shuffle it past its neighbours.
+  const was = state.queue.ids.indexOf(operation.item);
+  const filtered = state.filtered.queue;
+  const wasFiltered = filtered?.ids.indexOf(operation.item) ?? -1;
+
+  const restored = (current: ClientState): ClientState => {
+    const held = current.filtered.queue;
+    const back = {
+      ...current,
+      items: cached(current, [previous]),
+      queue: withIds(
+        current.queue,
+        replaced(current.queue.ids, operation.item, was),
+      ),
+    };
+    if (held === undefined || !sameFilter(held.filter, filtered?.filter)) {
+      return resorted(back, operation.item);
+    }
+    return resorted(
+      {
+        ...back,
+        filtered: {
+          ...back.filtered,
+          queue: withIds(held, replaced(held.ids, operation.item, wasFiltered)),
+        },
+      },
+      operation.item,
+    );
+  };
+
+  return {
+    state: resorted(
+      leaving(
+        { ...state, items: cached(state, [archived]) },
+        operation.item,
+        "queue",
+      ),
+      operation.item,
+    ),
+    undo: restored,
+  };
+}
+
 export const archive: Handler<"archive"> = {
-  target: (operation) => operation.item,
+  targets: (operation) => [operation.item],
   opposedBy: "unarchive",
 
-  apply(state, operation, at): Applied {
-    const previous = state.items.get(operation.item);
-    if (previous === undefined) return unchanged(state);
-
-    const { reason } = operation;
-    const archived: Item = {
-      ...processedLater(previous, at),
-      archived: { archivedAt: at, ...(reason === undefined ? {} : { reason }) },
-    };
-
-    // The index, not the rank: the pool breaks ties on a key of its own, so
-    // re-ranking a rolled-back item would shuffle it past its neighbours.
-    const was = state.queue.ids.indexOf(operation.item);
-    const filtered = state.filtered.queue;
-    const wasFiltered = filtered?.ids.indexOf(operation.item) ?? -1;
-
-    const restored = (current: ClientState): ClientState => {
-      const held = current.filtered.queue;
-      const back = {
-        ...current,
-        items: cached(current, [previous]),
-        queue: withIds(
-          current.queue,
-          replaced(current.queue.ids, operation.item, was),
-        ),
-      };
-      if (held === undefined || !sameFilter(held.filter, filtered?.filter)) {
-        return resorted(back, operation.item);
-      }
-      return resorted(
-        {
-          ...back,
-          filtered: {
-            ...back.filtered,
-            queue: withIds(
-              held,
-              replaced(held.ids, operation.item, wasFiltered),
-            ),
-          },
-        },
-        operation.item,
-      );
-    };
-
-    return {
-      state: resorted(
-        leaving(
-          { ...state, items: cached(state, [archived]) },
-          operation.item,
-          "queue",
-        ),
-        operation.item,
-      ),
-      undo: restored,
-    };
-  },
+  apply: archiving,
 
   async send({ api }, operation) {
     return replacing(

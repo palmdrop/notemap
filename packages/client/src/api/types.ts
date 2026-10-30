@@ -104,6 +104,11 @@ export type UpdateRoutingTemplateRequest =
   components["schemas"]["UpdateRoutingTemplateRequest"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
+/** A template to apply to every item in a batch, or an archive. */
+export type BatchAction = components["schemas"]["BatchRequest"]["action"];
+/** How one item in a batch came out. */
+export type BatchOutcome = components["schemas"]["BatchOutcome"];
+export type CancelManyAnswer = components["schemas"]["CancelManyAnswer"];
 export type SourceUse = components["schemas"]["SourceUse"];
 
 /** What notemap has taken on the machine the pool is on. */

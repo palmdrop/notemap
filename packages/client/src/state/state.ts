@@ -15,6 +15,7 @@ import type {
   Tag,
   TagUse,
 } from "#api/types";
+import type { Batch } from "./batches";
 import type { PendingOperation } from "#outbox/operations";
 import type { Key, Order, ReadFailure } from "../types";
 
@@ -102,6 +103,8 @@ export type ClientState = {
    * not answered yet.
    */
   readonly held: ReadonlyMap<AssetId, HeldBlob>;
+  /** By id, the batches this client made since it started. Never stored. */
+  readonly batches: ReadonlyMap<string, Batch>;
   readonly pool?: PoolIdentity;
 };
 
@@ -226,6 +229,7 @@ export function emptyState(): ClientState {
     templates: [],
     tags: [],
     held: new Map(),
+    batches: new Map(),
   };
 }
 
@@ -285,6 +289,7 @@ export function forgotten(state: ClientState): ClientState {
     destinations: [],
     templates: [],
     tags: [],
+    batches: new Map(),
   };
 }
 
