@@ -31,6 +31,7 @@
     item,
     selected,
     marked = false,
+    cursor = false,
     offline,
     surface,
     filter = [],
@@ -45,8 +46,13 @@
   }: {
     item: Item;
     selected: boolean;
-    /** Marked for a batch, which is not the same as selected: many rows may be. */
+    /**
+     * Marked for a batch: drawn as the selected row's box, with nothing in its
+     * foot, since what a batch is given is the head's to offer.
+     */
     marked?: boolean;
+    /** Where the keys are while rows are being marked: the stamp is underlined. */
+    cursor?: boolean;
     offline: boolean;
     /** On the item's own surface, its records are drawn beneath the row rather than said in it. */
     surface: "queue" | "feed" | "item";
@@ -68,6 +74,7 @@
     onprocess?: () => void;
   } = $props();
 
+  const boxed = $derived(selected || marked);
   const byDay = $derived(layout !== "rail");
   const slim = $derived(layout === "slim");
   const routed = $derived(surface !== "item");
@@ -198,18 +205,19 @@
   <div
     bind:this={row}
     data-row={item.id}
+    data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
     data-headed={headed ? "" : undefined}
     class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed
       ? 'scroll-mt-day-head'
       : ''}"
   >
-    <Rail {selected} onpick={pick} onreach={reach}>
+    <Rail selected={boxed} onpick={pick} onreach={reach}>
       <Stamp
         at={item.createdAt}
         dated={!byDay}
         opened={selected}
-        {marked}
+        {cursor}
         onopen={onselect === undefined
           ? undefined
           : (event) => pick?.(pickedBy(event))}
@@ -220,7 +228,7 @@
       {/if}
     </Rail>
 
-    <Body {selected} onpick={pick} onreach={reach}>
+    <Body selected={boxed} onpick={pick} onreach={reach}>
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}
@@ -236,7 +244,7 @@
     <!-- The box's foot, spanning both columns and closing the rail's rule. Every
          row reserves this height, selected or not, so selecting a row shifts
          nothing above or below it; unselected, the rail's rule runs through it. -->
-    {#if selected}
+    {#if boxed}
       <div
         data-foot
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
@@ -244,7 +252,7 @@
       >
         {#if editing !== undefined}
           <EditFoot {editing} />
-        {:else}
+        {:else if selected}
           <Actions {commands} />
         {/if}
       </div>

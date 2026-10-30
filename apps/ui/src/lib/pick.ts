@@ -17,8 +17,6 @@ function inside(event: MouseEvent): boolean {
 export function pickable(onpick: (how: Picked) => void) {
   return (event: MouseEvent) => {
     if (inside(event) || event.detail > 1) return;
-    // A range picked with shift held is not a range of text.
-    if (event.shiftKey) window.getSelection()?.removeAllRanges();
     onpick(pickedBy(event));
   };
 }
@@ -66,3 +64,18 @@ export function spendPress(): void {
   window.addEventListener("mouseup", released, { capture: true, once: true });
   window.addEventListener("mousedown", forget, { capture: true, once: true });
 }
+
+/**
+ * A press with shift held picks a range of rows, not of text, the stamp's
+ * button included. The browser extends the text selection on the press,
+ * before the click, so it is stopped there rather than cleared after.
+ */
+export function unselecting(event: MouseEvent): void {
+  if (!event.shiftKey) return;
+  // A field's own shift-press extends what is selected in it, which is its own.
+  const from = event.target;
+  if (from instanceof Element && from.closest(FIELDS) !== null) return;
+  event.preventDefault();
+}
+
+const FIELDS = "input, textarea, select, [contenteditable]";

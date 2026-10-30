@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
 
   import type { Picked } from "$lib/marking.svelte";
-  import { doubled, pickable } from "$lib/pick";
+  import { doubled, pickable, unselecting } from "$lib/pick";
 
   let {
     selected = false,
@@ -30,6 +30,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
+  onmousedown={onpick === undefined ? undefined : unselecting}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-rail
   data-selected={selected ? "" : undefined}

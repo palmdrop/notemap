@@ -1,10 +1,11 @@
 import type { BatchAction, Item } from "@notemap/client";
 
+import { saidFor } from "./asked";
 import { asking, counted } from "./batching";
 import { client } from "./client";
 import type { Marking } from "./marking.svelte";
 import { notices } from "./notices.svelte";
-import { heldName } from "./templates";
+import { triggeredBy } from "./templates";
 
 type Asked = {
   readonly action: BatchAction;
@@ -14,28 +15,56 @@ type Asked = {
 };
 
 /**
- * The batch a surface's marked rows are given: asked about first, then sent
- * as one operation, after which nothing is marked.
+ * What a surface's marked rows are given. What processes them — a discard, a
+ * tag that applies a template — is asked about first; the rest is sent at
+ * once, being undone the same way it was done.
  */
 export function batched(marking: Marking, rows: () => readonly Item[]) {
   // Raw, because what it holds is handed to the outbox, which copies it, and a
   // proxy cannot be copied.
   let asked = $state.raw<Asked | undefined>(undefined);
 
+  async function send(
+    items: readonly string[],
+    action: BatchAction,
+  ): Promise<void> {
+    try {
+      await client.batch(items, action);
+    } catch {
+      notices.raise({ what: "could not keep the batch", alarm: true });
+    }
+  }
+
   return {
     get asked(): Asked | undefined {
       return asked;
     },
 
-    ask(action: BatchAction): void {
+    do(action: BatchAction): void {
       const marked = rows().filter((row) => marking.has(row.id));
       if (marked.length === 0) return;
-      const name =
-        action.kind === "template" ? heldName(action.template) : undefined;
+      const items = marked.map((row) => row.id);
+
+      const template =
+        action.kind === "tag" ? triggeredBy(action.tag) : undefined;
+      if (action.kind !== "archive" && template === undefined) {
+        void send(items, action);
+        return;
+      }
+
+      const where =
+        action.kind === "tag"
+          ? saidFor(action.tag, action.arguments)
+          : undefined;
       asked = {
         action,
-        items: marked.map((row) => row.id),
-        ...asking(counted(marked, action), action, name),
+        items,
+        ...asking(
+          counted(marked, action, template?.id),
+          action,
+          template?.name,
+          where,
+        ),
       };
     },
 
@@ -45,11 +74,7 @@ export function batched(marking: Marking, rows: () => readonly Item[]) {
       if (!go || sending === undefined) return;
 
       marking.clear();
-      try {
-        await client.batch(sending.items, sending.action);
-      } catch {
-        notices.raise({ what: "could not keep the batch", alarm: true });
-      }
+      await send(sending.items, sending.action);
     },
   };
 }

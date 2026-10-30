@@ -50,6 +50,7 @@ export function archive(
 export function unarchive(
   ports: PoolPorts,
   id: ItemId,
+  batch?: BatchId,
 ): Promise<ArchiveResult> {
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
@@ -65,6 +66,7 @@ export function unarchive(
     await recordAction(ports, tx, {
       kind: "unarchived",
       subject: id,
+      ...(batch === undefined ? {} : { batch }),
       by: { kind: "person" },
       at,
       detail: {},

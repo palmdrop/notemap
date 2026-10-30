@@ -14,18 +14,16 @@ export function pickedBy(event: MouseEvent | KeyboardEvent): Picked {
 
 /**
  * The rows a surface has marked for a batch. Marking is a mode: entered by a
- * pick with `mod` or `shift` held, or by `space`, and kept until it is
- * cleared, so a plain pick while it is on marks rather than starting over.
+ * pick with `mod` or `shift` held, or by `space`, and on for as long as
+ * anything is marked, so a plain pick while it is on marks rather than
+ * starting over.
  */
 export class Marking {
   readonly #marked = new SvelteSet<string>();
   /** Where a range starts: the row last marked or unmarked by itself. */
   #anchor = $state<string | undefined>(undefined);
-  /** Kept with nothing marked, so unmarking the last row does not leave the mode. */
-  #on = $state(false);
-
   get on(): boolean {
-    return this.#on;
+    return this.#marked.size > 0;
   }
 
   get count(): number {
@@ -42,14 +40,12 @@ export class Marking {
   }
 
   toggle(id: string): void {
-    this.#on = true;
     if (this.#marked.has(id)) this.#marked.delete(id);
     else this.#marked.add(id);
     this.#anchor = id;
   }
 
   mark(id: string): void {
-    this.#on = true;
     this.#marked.add(id);
     this.#anchor ??= id;
   }
@@ -59,7 +55,6 @@ export class Marking {
     const one = rows.indexOf(from);
     const other = rows.indexOf(to);
     if (other === -1) return;
-    this.#on = true;
     const start = one === -1 ? other : Math.min(one, other);
     const end = one === -1 ? other : Math.max(one, other);
     for (const id of rows.slice(start, end + 1)) this.#marked.add(id);
@@ -77,7 +72,6 @@ export class Marking {
   }
 
   clear(): void {
-    this.#on = false;
     this.#marked.clear();
     this.#anchor = undefined;
   }

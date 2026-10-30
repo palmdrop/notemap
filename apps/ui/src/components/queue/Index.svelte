@@ -11,7 +11,7 @@
   import { byDay as headed, plain } from "$lib/days";
   import { lineOf } from "$lib/excerpt";
   import { pickedBy, type Picked } from "$lib/marking.svelte";
-  import { doubled, pickable } from "$lib/pick";
+  import { doubled, pickable, unselecting } from "$lib/pick";
   import { bringIntoView, following, slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
@@ -34,6 +34,7 @@
     slim = false,
     open,
     marked,
+    cursor,
     onselect,
     onprocess,
   }: {
@@ -52,6 +53,8 @@
     open: Snippet<[Item, boolean]>;
     /** Whether a line is marked for a batch. */
     marked?: (id: string) => boolean;
+    /** The line the keys are on while lines are being marked. */
+    cursor?: string;
     onselect: (id: string, how: Picked) => void;
     onprocess: (id: string) => void;
   } = $props();
@@ -138,6 +141,7 @@
   <div
     class="col-span-full grid grid-cols-subgrid"
     onclick={pickable((how) => onselect(line.item.id, how))}
+    onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
     <span
@@ -149,6 +153,7 @@
         dated={!byDay}
         onopen={(event) => onselect(line.item.id, pickedBy(event))}
         marked={marked?.(line.item.id) ?? false}
+        cursor={cursor === line.item.id}
         inline
       />
     </span>

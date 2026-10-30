@@ -326,8 +326,6 @@ export const ITEMS_READ_STATUS = {
 /** What a batch is refused for whole, before any item in it is reached. */
 export const BATCH_STATUS = {
   "limit-too-large": 422,
-  "unknown-template": 404,
-  "template-untriggered": 422,
 } as const;
 
 /**

@@ -1445,9 +1445,9 @@ export const cancelDeliveryRoute = createRoute({
 export const batchRoute = createRoute({
   method: "post",
   path: "/v1/batches",
-  summary: "Apply a template to many items, or archive them",
+  summary: "Tag, untag, archive or unarchive many items",
   description:
-    "Applies one routing template to every item named, by tagging each with the template's trigger tag, or archives every item named. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nAn item answers `reserved` with the record the template's trigger tag holds on it, `archived`, `skipped` where nothing changed — the template had already filed it, or it was already archived — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
+    "Does one thing to every item named: adds a tag, takes one off, archives or unarchives. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nA trigger tag applies its template to each item, with the same asked values for all, and an item answers `reserved` with the record the tag holds on it. Otherwise an item answers what was done to it, `skipped` where nothing changed — it was already as asked, or the template had already filed it — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
   request: {
     body: {
       required: true,
@@ -1464,13 +1464,8 @@ export const batchRoute = createRoute({
       400,
       BODY_STATUS,
     ),
-    404: errorResponse("No template has that id.", 404, BATCH_STATUS),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
-    422: errorResponse(
-      "The template has no trigger tag, or the batch names too many items.",
-      422,
-      BATCH_STATUS,
-    ),
+    422: errorResponse("The batch names too many items.", 422, BATCH_STATUS),
   },
 });
 

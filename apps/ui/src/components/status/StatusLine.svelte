@@ -27,7 +27,7 @@
   import { discardedKey, keyFor } from "$lib/routing";
   import { whereOf } from "$lib/asked";
   import { tallying } from "$lib/tallies";
-  import { heldName } from "$lib/templates";
+  import { heldName, triggeredBy } from "$lib/templates";
 
   import Counts from "./Counts.svelte";
   import FiringSegment from "./Firing.svelte";
@@ -133,8 +133,8 @@
       for (const batch of batches.values()) {
         if (batch.outcomes === undefined || tallying.knows(batch.id)) continue;
         const name =
-          batch.action.kind === "template"
-            ? heldName(batch.action.template)
+          batch.action.kind === "tag"
+            ? triggeredBy(batch.action.tag)?.name
             : undefined;
         const said = tallying.answered(batch, name);
         if (said !== undefined) notices.raise(said);
