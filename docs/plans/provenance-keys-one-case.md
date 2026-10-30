@@ -63,12 +63,12 @@ file.
 
 Depends on phase 1 for the standards wording it follows.
 
-- [ ] `packages/adapters/mirror-fs/src/frontmatter.ts`: drop `wasAttributedTo` from `FIXED_KEYS`
+- [x] `packages/adapters/mirror-fs/src/frontmatter.ts`: drop `wasAttributedTo` from `FIXED_KEYS`
   and `fixedFrontmatter`, and rename `wasRevisionOf` → `revision_of`. Rewrite the `KEYS` comment so
   it stops calling the keys an interop contract.
-- [ ] `mirror-fs/src/writer.test.ts:197,202`: update the expectations.
-- [ ] mirror.md: wherever it names the rendering's keys, make it match.
-- [ ] `git commit`: `feat(mirror-fs): mirror frontmatter is snake_case throughout`.
+- [x] `mirror-fs/src/writer.test.ts:197,202`: update the expectations.
+- [x] mirror.md: wherever it names the rendering's keys, make it match.
+- [x] `git commit`: `feat(mirror-fs): mirror frontmatter is snake_case throughout`.
 
 **Verify**: typecheck, tests, lint; `git grep -n "wasAttributedTo\|wasRevisionOf" -- packages apps`
 is empty. `git grep`, not `grep -r`: the gitignored `apps/daemon/dist/main.js` holds the old keys

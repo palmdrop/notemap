@@ -194,12 +194,11 @@ describe("the rendering", () => {
         "source_id: 'src-1'",
         "payload_type: 'text'",
         "captured_at: '2026-08-11T14:23:05.000Z'",
-        "wasAttributedTo: 'scratchpad'",
         "updated_at: '2026-08-11T15:00:00.000Z'",
         "tags:",
         "  - 'kind/quote'",
         "  - 'project/fiction-a'",
-        "wasRevisionOf: 'item-0'",
+        "revision_of: 'item-0'",
         "",
       ].join("\n"),
     );

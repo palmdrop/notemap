@@ -8,10 +8,6 @@ export type FrontmatterValue = string | number | boolean | readonly string[];
  * Where each of an item's fields goes in the frontmatter, or `null` where it
  * deliberately goes nowhere. Keyed by `ItemRecord`, so a field added to the
  * domain fails to compile until someone decides which of the two it is.
- *
- * The names are an interop contract — other tools read these files — so they
- * are stable across a rename on the domain side, and several are the PROV terms
- * rather than notemap's own.
  */
 const KEYS = {
   id: "id",
@@ -23,16 +19,15 @@ const KEYS = {
   contentUpdatedAt: "updated_at",
   archived: "archived_at",
   tags: "tags",
-  revisionOf: "wasRevisionOf",
+  revisionOf: "revision_of",
   continues: null,
   sourceWord: null,
 } as const satisfies Record<keyof ItemRecord, string | null>;
 
 /** A renderer may add its own keys, but never shadow one of these. */
-export const FIXED_KEYS: readonly string[] = [
-  ...Object.values(KEYS).filter((key) => key !== null),
-  "wasAttributedTo",
-];
+export const FIXED_KEYS: readonly string[] = Object.values(KEYS).filter(
+  (key) => key !== null,
+);
 
 export function fixedFrontmatter(
   record: ItemMirrorRecord,
@@ -44,7 +39,6 @@ export function fixedFrontmatter(
     [KEYS.sourceItemId, item.sourceItemId],
     [KEYS.payload, item.payload.type],
     [KEYS.createdAt, item.createdAt],
-    ["wasAttributedTo", item.source],
   ]);
 
   // Carried rather than dropped: `captured_at` is UTC, so without this a reader
