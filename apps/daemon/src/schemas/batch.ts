@@ -40,7 +40,7 @@ export const batchRequestSchema = z
   .openapi("BatchRequest");
 
 const error = z.looseObject({ code: z.string() }).openapi({
-  description: "The refusal the item met, as its own route would answer it.",
+  description: "The refusal, as the single route would have answered it.",
 });
 
 export const batchOutcomeSchema = z

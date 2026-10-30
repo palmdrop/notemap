@@ -6,7 +6,7 @@ import { arrived, forget } from "#state/state";
 import { replacing, type Handler } from "../handler";
 
 export const capture: Handler<"capture"> = {
-  target: (operation) => operation.envelope.id,
+  targets: (operation) => [operation.envelope.id],
 
   apply(state, operation): Applied {
     const item = optimisticItem(operation.envelope);

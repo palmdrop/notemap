@@ -31,8 +31,8 @@ export function replacing(item: Item): Settlement {
  * are optional rather than throwing stubs.
  */
 export type Handler<K extends OperationKind> = {
-  /** Which item it is about, and therefore what it drains in order with. */
-  readonly target: (operation: Of<K>) => ItemId;
+  /** Which items it is about, and therefore what it drains in order with. */
+  readonly targets: (operation: Of<K>) => readonly ItemId[];
   /** The kind that undoes this one, resolved last-write-wins by operation-time. */
   readonly opposedBy?: OperationKind;
   /**

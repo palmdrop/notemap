@@ -596,6 +596,7 @@ export function createClient(config: ClientConfig): Client {
       state.changes,
       (current) => waiting(current.outbox).length,
     ),
+    batches: derived(state.changes, (current) => current.batches),
 
     loadFeed: (order, by) =>
       after(() => loadMore(state, api, "feed", order, by)),
@@ -681,6 +682,12 @@ export function createClient(config: ClientConfig): Client {
         ...(supplied === undefined ? {} : { arguments: supplied }),
       }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
+
+    async batch(items, action) {
+      const batch = uuidv7();
+      await mutate({ kind: "batch", batch, items: [...items], action });
+      return batch;
+    },
 
     edit: (item, payload, source, tags = [], supplied = {}) =>
       mutate({

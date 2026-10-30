@@ -1,5 +1,5 @@
 import type { Item, ItemId } from "#api/types";
-import { targetOf } from "#outbox/registry";
+import { targetsOf } from "#outbox/registry";
 import { unprocessed, type ClientState } from "./state";
 
 export const HISTORY = 500;
@@ -19,7 +19,7 @@ export function retained(state: ClientState): ClientState {
     ...state.queue.ids,
     ...(state.filtered.feed?.ids ?? []),
     ...(state.filtered.queue?.ids ?? []),
-    ...state.outbox.map((held) => targetOf(held.operation)),
+    ...state.outbox.flatMap((held) => targetsOf(held.operation)),
   ]);
 
   const history = [...state.items.values()].filter(

@@ -4,6 +4,7 @@ import type { Applied } from "#state/applied";
 import type { ClientState } from "#state/state";
 import type { Handler, Landed, Sending } from "./handler";
 import { archive } from "./kinds/archive";
+import { batch } from "./kinds/batch";
 import { capture } from "./kinds/capture";
 import { acceptSuggestion, rejectSuggestion } from "./kinds/deferred";
 import { edit } from "./kinds/edit";
@@ -23,6 +24,7 @@ const HANDLERS: { readonly [K in OperationKind]: Handler<K> } = {
   edit,
   tag,
   untag,
+  batch,
   "accept-suggestion": acceptSuggestion,
   "reject-suggestion": rejectSuggestion,
 };
@@ -32,8 +34,16 @@ function handlerFor(operation: Operation): Handler<OperationKind> {
   return HANDLERS[operation.kind] as Handler<OperationKind>;
 }
 
-export function targetOf(operation: Operation): ItemId {
-  return handlerFor(operation).target(operation);
+export function targetsOf(operation: Operation): readonly ItemId[] {
+  return handlerFor(operation).targets(operation);
+}
+
+function sameTargets(one: Operation, other: Operation): boolean {
+  const theirs = targetsOf(other);
+  const ours = targetsOf(one);
+  return (
+    ours.length === theirs.length && ours.every((id) => theirs.includes(id))
+  );
 }
 
 /**
@@ -43,7 +53,7 @@ export function targetOf(operation: Operation): ItemId {
 export function opposes(one: Operation, other: Operation): boolean {
   const handler = handlerFor(one);
   if (handler.opposedBy !== other.kind) return false;
-  if (targetOf(one) !== targetOf(other)) return false;
+  if (!sameTargets(one, other)) return false;
 
   return handler.conflicts?.(one, other) ?? true;
 }

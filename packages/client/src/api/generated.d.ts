@@ -5645,7 +5645,7 @@ export interface components {
                 record: string;
                 /** @enum {string} */
                 outcome: "refused";
-                /** @description The refusal the item met, as its own route would answer it. */
+                /** @description The refusal, as the single route would have answered it. */
                 error: {
                     code: string;
                 } & {
@@ -5682,7 +5682,7 @@ export interface components {
             id: string;
             /** @enum {string} */
             outcome: "refused";
-            /** @description The refusal the item met, as its own route would answer it. */
+            /** @description The refusal, as the single route would have answered it. */
             error: {
                 code: string;
             } & {

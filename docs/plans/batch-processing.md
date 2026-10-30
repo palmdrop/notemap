@@ -140,24 +140,24 @@ Depends on phase 1.
 
 Depends on phase 2.
 
-- [ ] client.md:
+- [x] client.md:
   - the batch operation;
   - how the outbox holds it;
   - how a partly refused batch reaches the caller;
   - the batch cancel;
   - the aggregate result taken from the log watch.
-- [ ] Outbox kind `batch` in `packages/client/src/outbox/kinds/`, beside `tags.ts` and
+- [x] Outbox kind `batch` in `packages/client/src/outbox/kinds/`, beside `tags.ts` and
       `archive.ts`. Register it, and make it update the surfaces optimistically the way a single
       tag and archive do (`packages/client/src/client.ts:667`, `:676`).
-- [ ] `batch()`, the batch cancel and the batch's result on the client's public surface.
-- [ ] Tests:
+- [x] `batch()`, the batch cancel and the batch's result on the client's public surface.
+- [x] Tests:
   - queued offline, then drained;
   - partly refused;
   - cancelled before and after it drains;
   - the result settles only once every item has;
   - retention keeps every item the batch names (`packages/client/src/state/retention.ts:17`).
-- [ ] Verify: tests, typecheck and lint pass.
-- [ ] Commit
+- [x] Verify: tests, typecheck and lint pass.
+- [x] Commit
 
 ### Phase 4 — marking rows
 

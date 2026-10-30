@@ -60,27 +60,31 @@ function send(
   ).then(replacing);
 }
 
+export function tagged(
+  state: ClientState,
+  operation: { readonly item: string; readonly tag: string },
+  at: string,
+): Applied {
+  return reclassified(state, operation.item, (held) =>
+    held.some((each) => each.name === operation.tag)
+      ? held
+      : [...held, { name: operation.tag, by: { kind: "person" }, addedAt: at }],
+  );
+}
+
 export const tag: Handler<"tag"> = {
-  target: (operation) => operation.item,
+  targets: (operation) => [operation.item],
   opposedBy: "untag",
   conflicts: sameTag,
 
-  apply: (state, operation, at) =>
-    reclassified(state, operation.item, (held) =>
-      held.some((each) => each.name === operation.tag)
-        ? held
-        : [
-            ...held,
-            { name: operation.tag, by: { kind: "person" }, addedAt: at },
-          ],
-    ),
+  apply: tagged,
 
   send: ({ api }, operation) =>
     send(api, "tag", operation.item, operation.tag, operation.arguments),
 };
 
 export const untag: Handler<"untag"> = {
-  target: (operation) => operation.item,
+  targets: (operation) => [operation.item],
   opposedBy: "tag",
   conflicts: sameTag,
 

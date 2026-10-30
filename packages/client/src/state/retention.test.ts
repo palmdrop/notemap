@@ -91,4 +91,35 @@ describe("retention", () => {
     expect(kept.has("drawn")).toBe(true);
     expect(kept.size).toBe(HISTORY + 1);
   });
+
+  it("spares every item a batch still to be sent names", () => {
+    const empty = emptyState();
+    const old = [...Array(HISTORY + 2).keys()].map((at) =>
+      history(`old-${String(at)}`, anHourIn((at % 23) + 1)),
+    );
+    const named = [
+      history("first", anHourIn(0)),
+      history("second", anHourIn(0)),
+    ];
+    const batch: PendingOperation = {
+      id: "operation",
+      operation: {
+        kind: "batch",
+        batch: "batch-1",
+        items: ["first", "second"],
+        action: { kind: "archive" },
+      },
+      at: anHourIn(0),
+      state: "pending",
+    };
+    const state = {
+      ...empty,
+      items: cached(empty, [...old, ...named]),
+      outbox: [batch],
+    };
+
+    const kept = retained(state).items;
+
+    expect(kept.has("first") && kept.has("second")).toBe(true);
+  });
 });

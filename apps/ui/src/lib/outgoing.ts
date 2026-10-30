@@ -6,7 +6,8 @@ import { excerptOf } from "./excerpt";
 export type Outgoing = {
   readonly what: string;
   readonly subject?: string;
-  readonly item: string;
+  /** Absent where the work is about many items. */
+  readonly item?: string;
 };
 
 function textOf(content: unknown): string | undefined {
@@ -39,5 +40,10 @@ export function outgoing(operation: Operation): Outgoing {
     case "accept-suggestion":
     case "reject-suggestion":
       return { what: "suggestion", item: operation.item };
+    case "batch":
+      return {
+        what: operation.action.kind === "archive" ? "discard" : "route",
+        subject: `${String(operation.items.length)} notes`,
+      };
   }
 }

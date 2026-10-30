@@ -1,4 +1,5 @@
 import type {
+  BatchAction,
   CaptureEnvelope,
   EditEnvelope,
   ItemId,
@@ -38,6 +39,13 @@ export type Operation =
       readonly arguments?: SuppliedArguments;
     }
   | { readonly kind: "untag"; readonly item: ItemId; readonly tag: string }
+  | {
+      readonly kind: "batch";
+      /** Minted once with the operation, so a resend is the same batch. */
+      readonly batch: string;
+      readonly items: readonly ItemId[];
+      readonly action: BatchAction;
+    }
   | {
       readonly kind: "accept-suggestion";
       readonly item: ItemId;

@@ -98,6 +98,26 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
       await deps.reread(item);
     },
 
+    async cancelMany(records) {
+      const answer = await answered(
+        api.POST("/v1/routing/cancel", {
+          body: { records: records.map((each) => each.record) },
+        }),
+      );
+
+      const cancelled = new Set(
+        answer.values
+          .filter((each) => each.outcome === "cancelled")
+          .map((each) => each.record),
+      );
+      for (const { record, item } of records) {
+        if (!cancelled.has(record)) continue;
+        await deps.holding(item, await recordsFor(item));
+        await deps.reread(item);
+      }
+      return answer;
+    },
+
     async withdraw(record, item) {
       const withdrawn = await answered(
         api.POST("/v1/routing/{record}/withdraw", {
