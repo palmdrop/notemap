@@ -75,6 +75,13 @@
   an inbox deciding where its own captures go is the point. What it costs is that a system outside
   notemap can cause a delivery. If that ever bites, the answer is a per-template restriction rather
   than a different design — noted here so it is reached for rather than reinvented.
+- [ ] Whether a trigger tag should stay on the item once it has fired. Today it stays, and a
+  trigger tag on an item its template already filed classifies and fires nothing, so routing one
+  item through the same template twice means going through the composer. A tag that came off
+  once it fired could be applied again; the cost is losing the tag that says why the item went
+  where it went, and the rule that it cannot come off while what it filed stands. Raised planning
+  [batch-processing](plans/batch-processing.md), where a feed batch skips items its template
+  already filed.
 - [ ] Whether the trigger window wants to be per template rather than per host. It is one number in
   `config.toml` today, which is right while every template files to the same laptop; a template
   whose destination is a mounted vault and one whose destination is a sleeping server want
@@ -82,6 +89,11 @@
   somebody has lived with one number and found it wrong in both directions.
 
 ## Seeing what happened — log, routing records, revisions
+
+- [ ] Group a batch's entries in the log. Every entry a batch writes carries its batch id from the
+  first batch on ([batch-processing](plans/batch-processing.md)), but the log and the status line
+  still draw them one by one. Open: whether a batch is drawn collapsed into one line that opens to
+  its entries, and whether the log route can be read by batch.
 
 - [ ] **Decide whether the shell rewrites a processed note.** A row offers `edit` only while its
   item is unprocessed, in the queue and the feed alike, so the shell never sets out to make a
@@ -110,10 +122,6 @@
   ([plan](plans/client-store-on-a-filesystem.md)); it affects the web shell the same way. Worth
   checking what deep imports cost before assuming they are the answer — the observable seam is one
   file, and whether the client needs rxjs at all is the bigger question underneath.
-
-## Configuration
-
-- [ ] Destination configuration is way too clunky, not sensible to configure in BOTH config.toml and in the UI.
 
 ## Classification
 
