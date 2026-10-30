@@ -2062,3 +2062,61 @@ test("backing out of the question sends nothing and keeps the rows marked", asyn
   expect(asked()).not.toContain("POST /v1/batches");
   expect(within(head()).getByText("1 note marked")).toBeDefined();
 });
+
+test("unmarking the last row leaves the mode", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("one"));
+
+  expect(within(head()).queryByText(/marked/)).toBeNull();
+});
+
+test("marked rows are boxed, and nothing one row is given is offered", async () => {
+  pool(queued("one", "two", "three"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"));
+  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+
+  expect(document.querySelectorAll("[data-rail][data-selected]")).toHaveLength(
+    2,
+  );
+  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  await fireEvent.keyDown(window, { key: "p" });
+  expect(went.to).toEqual([]);
+});
+
+test("a tag added in the head goes on every marked row at once, unasked", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+
+  await fireEvent.click(
+    within(head()).getByRole("button", {
+      name: "Add a tag to every marked note",
+    }),
+  );
+  const line = within(head()).getByRole("combobox");
+  await fireEvent.input(line, { target: { value: "reading" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/batches");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      items: ["one", "two"],
+      action: { kind: "tag", tag: "reading" },
+    }),
+  );
+});

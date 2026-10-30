@@ -1,13 +1,13 @@
 import type { Context } from "hono";
 
 import type {
+  ArchiveRefusal,
   BatchId,
   Item,
   ItemId,
   Pool,
   RoutingRecordId,
   RoutingTemplate,
-  RoutingTemplateId,
   TagName,
 } from "@notemap/core";
 
@@ -18,6 +18,8 @@ import type { ErrorBody } from "../types";
 import { readBody } from "../utils/body";
 import { json, refuse } from "../utils/responses";
 
+type Changed = "tagged" | "untagged" | "archived" | "unarchived" | "skipped";
+
 type Outcome =
   | {
       readonly id: ItemId;
@@ -25,11 +27,7 @@ type Outcome =
       readonly record: RoutingRecordId;
       readonly item: Item;
     }
-  | {
-      readonly id: ItemId;
-      readonly outcome: "archived" | "skipped";
-      readonly item: Item;
-    }
+  | { readonly id: ItemId; readonly outcome: Changed; readonly item: Item }
   | {
       readonly id: ItemId;
       readonly outcome: "refused";
@@ -38,10 +36,15 @@ type Outcome =
 
 const PERSON = { kind: "person" } as const;
 
+function refusedWith(id: ItemId, refusal: Parameters<typeof errorBody>[0]) {
+  return { id, outcome: "refused", error: errorBody(refusal).error } as const;
+}
+
 /**
- * Each item is tagged or archived on its own, in the order given, and lands or
- * is refused on its own. A batch that stops halfway has done half, and sending
- * it again does the rest: what already landed answers as it stands.
+ * Each item is tagged, untagged, archived or unarchived on its own, in the
+ * order given, and lands or is refused on its own. A batch that stops halfway
+ * has done half, and sending it again does the rest: what already landed
+ * answers as it stands.
  */
 export function batchHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
@@ -59,31 +62,25 @@ export function batchHandler(pool: Pool) {
       });
     }
 
+    // A tag that applies a template answers the reservation it holds, which is
+    // what calling the batch off cancels.
+    const template =
+      action.kind === "tag"
+        ? (await pool.templates.list()).find(
+            (one) => one.triggerTag === action.tag.trim(),
+          )
+        : undefined;
+
     const values: Outcome[] = [];
-    if (action.kind === "archive") {
-      for (const id of items) {
-        values.push(await archived(pool, id, batch, action.reason));
-      }
-      return json({ batch, values }, 200);
-    }
-
-    const template = await pool.templates.get(
-      action.template as RoutingTemplateId,
-    );
-    if (template === undefined) {
-      return refuse({ kind: "unknown-template", template: action.template });
-    }
-    const tag = template.triggerTag;
-    if (tag === undefined) {
-      return refuse({
-        kind: "template-untriggered",
-        template: action.template,
-      });
-    }
-
     for (const id of items) {
       values.push(
-        await applied(pool, id, batch, template, tag, action.arguments),
+        action.kind === "tag"
+          ? await tagged(pool, id, batch, action, template)
+          : action.kind === "untag"
+            ? await untagged(pool, id, batch, action.tag as TagName)
+            : action.kind === "archive"
+              ? await archived(pool, id, batch, action.reason)
+              : await unarchived(pool, id, batch),
       );
     }
 
@@ -91,20 +88,28 @@ export function batchHandler(pool: Pool) {
   };
 }
 
-async function applied(
+const carries = (item: Item | undefined, tag: string) =>
+  item?.tags.some((held) => held.name === tag.trim()) ?? false;
+
+async function tagged(
   pool: Pool,
   id: ItemId,
   batch: BatchId,
-  template: RoutingTemplate,
-  tag: TagName,
-  supplied: Readonly<Record<string, string>> | undefined,
+  action: {
+    readonly tag: string;
+    readonly arguments?: Readonly<Record<string, string>> | undefined;
+  },
+  template: RoutingTemplate | undefined,
 ): Promise<Outcome> {
-  const result = await pool.items.tag(id, tag, PERSON, {
+  const carried = carries(await pool.items.get(id), action.tag);
+  const result = await pool.items.tag(id, action.tag as TagName, PERSON, {
     batch,
-    ...(supplied === undefined ? {} : { arguments: supplied }),
+    ...(action.arguments === undefined ? {} : { arguments: action.arguments }),
   });
-  if (result.kind === "refused") {
-    return { id, outcome: "refused", error: errorBody(result.refusal).error };
+  if (result.kind === "refused") return refusedWith(id, result.refusal);
+
+  if (template === undefined) {
+    return { id, outcome: carried ? "skipped" : "tagged", item: result.value };
   }
 
   const reservation = (await pool.routing.recordsFor(id)).find(
@@ -113,7 +118,6 @@ async function applied(
       record.applied?.template === template.id &&
       record.applied.firedByTag,
   );
-
   return reservation === undefined
     ? { id, outcome: "skipped", item: result.value }
     : {
@@ -122,6 +126,18 @@ async function applied(
         record: reservation.id,
         item: result.value,
       };
+}
+
+async function untagged(
+  pool: Pool,
+  id: ItemId,
+  batch: BatchId,
+  tag: TagName,
+): Promise<Outcome> {
+  const carried = carries(await pool.items.get(id), tag);
+  const result = await pool.items.untag(id, tag, PERSON, batch);
+  if (result.kind === "refused") return refusedWith(id, result.refusal);
+  return { id, outcome: carried ? "untagged" : "skipped", item: result.value };
 }
 
 async function archived(
@@ -134,13 +150,33 @@ async function archived(
   if (result.kind === "ok") {
     return { id, outcome: "archived", item: result.value };
   }
+  return settledAlready(pool, id, result.refusal, "already-archived");
+}
 
-  // Already archived is what a resent batch finds, and nothing about it changed.
-  if (result.refusal.kind === "already-archived") {
+async function unarchived(
+  pool: Pool,
+  id: ItemId,
+  batch: BatchId,
+): Promise<Outcome> {
+  const result = await pool.items.unarchive(id, batch);
+  if (result.kind === "ok") {
+    return { id, outcome: "unarchived", item: result.value };
+  }
+  return settledAlready(pool, id, result.refusal, "not-archived");
+}
+
+/** Already as asked is what a resent batch finds, and nothing about it changed. */
+async function settledAlready(
+  pool: Pool,
+  id: ItemId,
+  refusal: ArchiveRefusal,
+  already: ArchiveRefusal["kind"],
+): Promise<Outcome> {
+  if (refusal.kind === already) {
     const item = await pool.items.get(id);
     if (item !== undefined) return { id, outcome: "skipped", item };
   }
-  return { id, outcome: "refused", error: errorBody(result.refusal).error };
+  return refusedWith(id, refusal);
 }
 
 export function cancelManyHandler(pool: Pool) {

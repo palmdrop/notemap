@@ -3919,10 +3919,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Apply a template to many items, or archive them
-         * @description Applies one routing template to every item named, by tagging each with the template's trigger tag, or archives every item named. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.
+         * Tag, untag, archive or unarchive many items
+         * @description Does one thing to every item named: adds a tag, takes one off, archives or unarchives. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.
          *
-         *     An item answers `reserved` with the record the template's trigger tag holds on it, `archived`, `skipped` where nothing changed — the template had already filed it, or it was already archived — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.
+         *     A trigger tag applies its template to each item, with the same asked values for all, and an item answers `reserved` with the record the tag holds on it. Otherwise an item answers what was done to it, `skipped` where nothing changed — it was already as asked, or the template had already filed it — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.
          *
          *     Every log entry the batch writes carries its id.
          */
@@ -3965,23 +3965,6 @@ export interface paths {
                         };
                     };
                 };
-                /** @description No template has that id. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            /** @description The refusal's kind, with its facts beside it. */
-                            error: {
-                                /** @enum {string} */
-                                code: "unknown-template";
-                            } & {
-                                [key: string]: unknown;
-                            };
-                        };
-                    };
-                };
                 /** @description The body was not JSON. */
                 415: {
                     headers: {
@@ -3999,7 +3982,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description The template has no trigger tag, or the batch names too many items. */
+                /** @description The batch names too many items. */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -4009,7 +3992,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "template-untriggered";
+                                code: "limit-too-large";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5671,11 +5654,14 @@ export interface components {
         } | {
             id: string;
             /** @enum {string} */
-            outcome: "archived";
+            outcome: "tagged" | "untagged" | "archived" | "unarchived";
             item: components["schemas"]["Item"];
         } | {
             id: string;
-            /** @enum {string} */
+            /**
+             * @description Nothing changed: the item was already as asked, or the template had already filed it.
+             * @enum {string}
+             */
             outcome: "skipped";
             item: components["schemas"]["Item"];
         } | {
@@ -5694,17 +5680,25 @@ export interface components {
             batch: string;
             /** @description At most 500, and an id named twice is acted on once. */
             items: string[];
-            action: components["schemas"]["BatchTemplateAction"] | components["schemas"]["BatchArchiveAction"];
+            action: components["schemas"]["BatchTagAction"] | components["schemas"]["BatchUntagAction"] | components["schemas"]["BatchArchiveAction"] | components["schemas"]["BatchUnarchiveAction"];
         };
-        /** @description Applies the template to each item by tagging it with the template's trigger tag. */
-        BatchTemplateAction: {
+        /** @description Adds the tag to each item. A trigger tag applies its template to each. */
+        BatchTagAction: {
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            kind: "template";
-            template: string;
-            arguments?: components["schemas"]["SuppliedArguments"];
+            kind: "tag";
+            tag: string;
+            arguments?: components["schemas"]["SuppliedArguments"] & unknown;
+        };
+        BatchUntagAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "untag";
+            tag: string;
         };
         BatchArchiveAction: {
             /**
@@ -5713,6 +5707,13 @@ export interface components {
              */
             kind: "archive";
             reason?: string;
+        };
+        BatchUnarchiveAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "unarchive";
         };
         Presence: {
             /** @enum {string} */

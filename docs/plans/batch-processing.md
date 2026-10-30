@@ -200,6 +200,35 @@ Depends on phases 3 and 4.
 - [ ] Stage the branch and try it by hand.
 - [x] Commit
 
+### Phase 6 — tags for the whole batch, and one box style
+
+Settled 2026-10-30, reviewing the first pass:
+
+- **The mode ends when nothing is marked**, as well as on `esc` and `clear`.
+- **A marked row is drawn as the selected row's box.** In the mode there is no single selection
+  and no row foot. `process`, `edit`, `copy`, `open` and `manual` cannot be reached. The keyboard
+  cursor is the row whose stamp is underlined.
+- **A batch is tags, not templates.** Actions are `tag`, `untag`, `archive` and `unarchive`. A
+  template is applied by its trigger tag, which asks its questions once and gives every item the
+  same values.
+- **The head keeps the batch's actions.**
+  - The tag field shows every tag any marked item carries, with a count where not all of them do.
+  - Adding a tag adds it to every marked item that lacks it, and removing one takes it off every
+    item that has it.
+  - `discard` is offered only where something marked is not discarded, and `undiscard` only where
+    something marked is.
+- **Only what processes items is confirmed**: a trigger tag, a discard. An ordinary tag, untag or
+  undiscard is applied at once.
+
+- [x] Core: `untag` and `unarchive` take the batch id too. ADR 67 and core.md name all four.
+- [x] Daemon: action kinds `tag`, `untag`, `archive`, `unarchive`, with outcomes `reserved`,
+      `tagged`, `untagged`, `archived`, `unarchived`, `skipped`, `refused`. http-v1.md.
+- [x] Client: the four kinds, drawn as each item's own operation would be. client.md.
+- [x] Shell: the mode ends when nothing is marked; marked rows boxed; the cursor; the tag field,
+      `discard` and `undiscard` in the head; confirmation only for what processes. shell.md.
+- [x] Tests at each layer; typecheck, lint, tests, `pnpm test:stack`.
+- [x] Commit
+
 ---
 
 ## Testing

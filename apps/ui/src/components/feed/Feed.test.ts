@@ -776,3 +776,31 @@ test("a discard of marked rows says how many are already processed before it is 
   expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
   expect(within(dialog).getByText("1 already processed")).toBeDefined();
 });
+
+test("undiscard is offered only where something marked is discarded, and discard only where something is not", async () => {
+  pool(
+    held(
+      anItem("kept"),
+      anItem("gone", { archived: { archivedAt: "2026-08-17T10:00:00.000Z" } }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("kept");
+  const stamp = (said: string) =>
+    within(
+      screen.getByText(said).closest("[data-row]") as HTMLElement,
+    ).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ });
+  const head = () => document.querySelector("[data-head]") as HTMLElement;
+  const offers = (name: string) =>
+    within(head()).queryByRole("button", { name }) !== null;
+
+  await fireEvent.click(stamp("gone"), { metaKey: true });
+  expect([offers("discard"), offers("undiscard")]).toEqual([false, true]);
+
+  await fireEvent.click(stamp("kept"), { metaKey: true });
+  expect([offers("discard"), offers("undiscard")]).toEqual([true, true]);
+
+  await fireEvent.click(stamp("gone"), { metaKey: true });
+  expect([offers("discard"), offers("undiscard")]).toEqual([true, false]);
+});

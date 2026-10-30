@@ -783,7 +783,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   });
   render(StatusLine);
 
-  await client.batch(["one", "two"], { kind: "template", template: "t1" });
+  await client.batch(["one", "two"], { kind: "tag", tag: "route/research" });
   await client.drain();
 
   const cancel = await screen.findByRole("button", {
@@ -822,7 +822,7 @@ test("a batch that ends is said once, not once per item", async () => {
   render(StatusLine);
   await vi.advanceTimersByTimeAsync(100);
 
-  await client.batch(["one", "two"], { kind: "template", template: "t1" });
+  await client.batch(["one", "two"], { kind: "tag", tag: "route/research" });
   await client.drain();
   await vi.advanceTimersByTimeAsync(0);
 

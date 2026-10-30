@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../../adapters/memory-store";
 import { createClient } from "../../client";
-import type { BatchOutcome, Item, RoutingTemplate } from "#api/types";
+import type { BatchOutcome, Item } from "#api/types";
 import { read } from "#testing/observing";
 import { anItem, asked, routeOf } from "#testing/pool";
 import { json, mockTransport, refusal, type Handler } from "#testing/transport";
@@ -13,24 +13,6 @@ const built: Client[] = [];
 afterEach(() => {
   for (const client of built.splice(0)) client.close();
 });
-
-const TEMPLATE: RoutingTemplate = {
-  id: "template",
-  name: "Research links",
-  destination: "vault",
-  capability: "create-or-append",
-  arguments: { path: "research.md" },
-  folder: "create",
-  triggerTag: "route/research",
-  fired: { records: 0 },
-};
-
-const OTHER: RoutingTemplate = {
-  ...TEMPLATE,
-  id: "other",
-  name: "Reading",
-  triggerTag: "route/reading",
-};
 
 const QUEUED: readonly Item[] = [anItem("one"), anItem("two"), anItem("three")];
 
@@ -47,9 +29,6 @@ function pool(
   return async (request) => {
     const route = routeOf(request);
     if (route === "GET /v1/queue") return json(200, { values: QUEUED });
-    if (route === "GET /v1/templates") {
-      return json(200, { values: [OTHER, TEMPLATE] });
-    }
     if (route === "POST /v1/batches") {
       const body = (await request.json()) as Sent;
       sent.push(body);
@@ -138,14 +117,11 @@ describe("a batch", () => {
   it("puts back every item where the pool refused the batch whole", async () => {
     const { client } = await clientOver((request) =>
       routeOf(request) === "POST /v1/batches"
-        ? refusal(404, "unknown-template", { template: "gone" })
+        ? refusal(422, "limit-too-large", { limit: 501, max: 500 })
         : pool(archivedNow)(request),
     );
 
-    const id = await client.batch(["one", "two"], {
-      kind: "template",
-      template: "gone",
-    });
+    const id = await client.batch(["one", "two"], { kind: "archive" });
     await client.drain();
 
     expect(queued(client)).toEqual(["one", "two", "three"]);
@@ -180,29 +156,48 @@ describe("a batch", () => {
     });
   });
 
-  it("draws nothing for a template this client does not hold", async () => {
+  it("draws a tag on each item until the pool answers", async () => {
     const { client, transport } = await clientOver(pool(archivedNow));
-    await client.templates.load();
     transport.unreachable(true);
 
-    await client.batch(["one"], { kind: "template", template: "elsewhere" });
+    await client.batch(["one", "two"], { kind: "tag", tag: "reading" });
+
+    for (const item of read(client.queue).items.slice(0, 2)) {
+      expect(item.tags.map((tag) => tag.name)).toEqual(["reading"]);
+    }
+  });
+
+  it("draws a tag taken off each item until the pool answers", async () => {
+    const tagged = anItem("one", {
+      tags: [
+        {
+          name: "reading",
+          by: { kind: "person" },
+          addedAt: "2026-08-17T10:00:00.000Z",
+        },
+      ],
+    });
+    const { client, transport } = await clientOver((request) =>
+      routeOf(request) === "GET /v1/queue"
+        ? json(200, { values: [tagged] })
+        : json(200, { values: [] }),
+    );
+    transport.unreachable(true);
+
+    await client.batch(["one"], { kind: "untag", tag: "reading" });
 
     expect(read(client.queue).items[0]?.tags).toEqual([]);
   });
 
-  it("draws the template's trigger tag on each item until the pool answers", async () => {
+  it("draws an unarchive until the pool answers", async () => {
     const { client, transport } = await clientOver(pool(archivedNow));
-    await client.templates.load();
+    await client.batch(["one"], { kind: "archive" });
+    await client.drain();
     transport.unreachable(true);
 
-    await client.batch(["one", "two"], {
-      kind: "template",
-      template: TEMPLATE.id,
-    });
+    await client.batch(["one"], { kind: "unarchive" });
 
-    for (const item of read(client.queue).items.slice(0, 2)) {
-      expect(item.tags.map((tag) => tag.name)).toEqual(["route/research"]);
-    }
+    expect(read(client.held("one"))?.archived).toBeUndefined();
   });
 });
 

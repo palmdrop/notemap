@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 
-import { doubled, pickable, spendPress } from "./pick";
+import { doubled, pickable, spendPress, unselecting } from "./pick";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -95,4 +95,21 @@ test("swallows the click a spent press ends in, and no later one", async () => {
   expect(heard).toHaveBeenCalledTimes(2);
 
   document.body.removeEventListener("click", heard);
+});
+
+test("a press with shift held selects no text, except in a field", () => {
+  const press = (target: HTMLElement) => {
+    const event = new MouseEvent("mousedown", {
+      shiftKey: true,
+      cancelable: true,
+      bubbles: true,
+    });
+    target.addEventListener("mousedown", unselecting, { once: true });
+    target.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+
+  expect(press(document.createElement("div"))).toBe(true);
+  expect(press(document.createElement("button"))).toBe(true);
+  expect(press(document.createElement("input"))).toBe(false);
 });

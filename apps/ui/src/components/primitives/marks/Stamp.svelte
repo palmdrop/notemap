@@ -9,6 +9,7 @@
     dated = true,
     onopen,
     marked = false,
+    cursor = false,
   }: {
     at: string;
     opened?: boolean;
@@ -16,8 +17,10 @@
     /** Absent under a heading that already says the day: the time alone is drawn. */
     dated?: boolean;
     onopen?: (event: MouseEvent) => void;
-    /** Marked for a batch: drawn inverted, the shell's other way of saying primary. */
+    /** Marked for a batch, on an index line: drawn inverted, having no box to be drawn in. */
     marked?: boolean;
+    /** Where the keys are while rows are being marked. */
+    cursor?: boolean;
   } = $props();
 </script>
 
@@ -57,6 +60,14 @@
 {/snippet}
 
 {#snippet drawn()}
+  {#if cursor}
+    <span data-cursor class="underline">{@render marking()}</span>
+  {:else}
+    {@render marking()}
+  {/if}
+{/snippet}
+
+{#snippet marking()}
   {#if marked}
     <span
       data-marked

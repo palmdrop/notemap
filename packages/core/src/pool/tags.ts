@@ -7,7 +7,7 @@ import type { Tagging } from "#types/api/pool";
 import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type { TagRefusal } from "#types/api/refusal";
 import type { Agent } from "#types/domain/agent";
-import type { ItemId, TagName } from "#types/domain/ids";
+import type { BatchId, ItemId, TagName } from "#types/domain/ids";
 import type { Item, Tag } from "#types/domain/item";
 import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
 import type { RoutingTemplate } from "#types/domain/template";
@@ -178,6 +178,7 @@ export async function untag(
   id: ItemId,
   name: TagName,
   by: Agent,
+  batch?: BatchId,
 ): Promise<TagResult> {
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
@@ -198,6 +199,7 @@ export async function untag(
     await recordAction(ports, tx, {
       kind: "untagged",
       subject: id,
+      ...(batch === undefined ? {} : { batch }),
       by,
       at,
       detail: { tag },

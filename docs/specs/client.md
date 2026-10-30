@@ -4,8 +4,9 @@
 **Last updated**: 2026-10-30
 **Shipped**:
 
-- 2026-10-30 — **A batch is one outbox operation about many items.** `batch()` and `batches`, and
-  `routing.cancelMany`. An operation drains after everything queued for any item it names.
+- 2026-10-30 — **A batch is one outbox operation about many items**: a tag, an untag, an archive
+  or an unarchive. `batch()` and `batches`, and `routing.cancelMany`. An operation drains after
+  everything queued for any item it names.
   ([plan](../plans/batch-processing.md))
 
 - 2026-10-28 — **An operation the store could not hold was never made.** A failed write of a fresh
@@ -756,7 +757,7 @@ than throwing when someone reaches it.
 - `edit` — a change to an item's content ([editing](#editing-and-the-hand-over-seal));
 - `tag` / `untag` — classification;
 - `archive` / `unarchive` — queue state;
-- `batch` — one template applied to many items, or many archived, as one request;
+- `batch` — one tag, untag, archive or unarchive for many items, as one request;
 - `accept-suggestion` / `reject-suggestion` — a decision on a suggestion.
 
 **A batch is one operation about many items** (added 2026-10-30,
@@ -766,13 +767,12 @@ carries the same id, so the log groups what every attempt wrote.
 
 - It drains after everything already queued for any of its items, and everything queued for them
   afterwards waits for it. An operation about one item is the case where that list has one entry.
-- It is drawn as each item's own operation would be: an archive takes every row off the queue,
-  and a template draws its trigger tag on every item. A template the client does not hold draws
-  nothing until the pool answers.
+- It is drawn as each item's own operation would be: an archive takes every row off the queue, an
+  unarchive puts them back, and a tag is drawn on, or taken off, every item.
 - **The pool answers each item on its own, and the client takes each answer.** Every guess is
   taken back and every item the pool returned is put in its place, so an item the pool refused is
   left as it was, and the operation has still landed. Only a batch refused whole, such as one
-  naming a template the pool does not have, is a refused operation.
+  naming more items than the pool takes, is a refused operation.
 - `batches` holds every batch made since the client started, by id, with what the pool answered
   for each item once it has. Nothing stores it: a batch is a gesture, and what each item came to
   after that is the item's and the log's to say.

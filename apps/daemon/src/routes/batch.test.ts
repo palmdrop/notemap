@@ -19,7 +19,7 @@ const body = (response: Response) => response.json() as Promise<never>;
 
 type Outcome = {
   id: string;
-  outcome: "reserved" | "archived" | "skipped" | "refused";
+  outcome: string;
   record?: string;
   error?: { code: string };
 };
@@ -46,7 +46,8 @@ async function template(
   return ((await body(made)) as { id: string }).id;
 }
 
-const applying = (template: string) => ({ kind: "template", template });
+const RESEARCH = "route/research";
+const TAGGING = { kind: "tag", tag: RESEARCH };
 
 async function batch(
   host: Daemon,
@@ -66,10 +67,10 @@ async function batch(
 describe("a batch applying a template", () => {
   it("reserves each item and answers the record it holds", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first, second] = await captureMany(host.app, 2);
 
-    const answer = await batch(host, [first!, second!], applying(id));
+    const answer = await batch(host, [first!, second!], TAGGING);
 
     expect(answer.batch).toBe("batch-1");
     expect(answer.values.map((one) => [one.id, one.outcome])).toEqual([
@@ -81,10 +82,10 @@ describe("a batch applying a template", () => {
 
   it("answers each item on its own, landing some and refusing others", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first] = await captureMany(host.app, 1);
 
-    const answer = await batch(host, [first!, "nobody"], applying(id));
+    const answer = await batch(host, [first!, "nobody"], TAGGING);
 
     expect(answer.values).toMatchObject([
       { id: first, outcome: "reserved" },
@@ -98,28 +99,28 @@ describe("a batch applying a template", () => {
     const [first] = await captureMany(host.app, 1);
     await send(host.app, `/v1/items/${first}/route`, { template: id });
 
-    const answer = await batch(host, [first!], applying(id));
+    const answer = await batch(host, [first!], TAGGING);
 
     expect(answer.values).toMatchObject([{ id: first, outcome: "skipped" }]);
   });
 
   it("answers the same reservation when the batch is sent again", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first] = await captureMany(host.app, 1);
-    const [once] = (await batch(host, [first!], applying(id))).values;
+    const [once] = (await batch(host, [first!], TAGGING)).values;
 
-    const [again] = (await batch(host, [first!], applying(id))).values;
+    const [again] = (await batch(host, [first!], TAGGING)).values;
 
     expect(again).toMatchObject({ outcome: "reserved", record: once!.record });
   });
 
   it("writes the batch id on every entry it logs", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first] = await captureMany(host.app, 1);
 
-    await batch(host, [first!], applying(id), "batch-7");
+    await batch(host, [first!], TAGGING, "batch-7");
 
     const log = (await body(
       await host.app.request(
@@ -131,45 +132,12 @@ describe("a batch applying a template", () => {
 
   it("acts once on an item named twice", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first] = await captureMany(host.app, 1);
 
-    const answer = await batch(host, [first!, first!], applying(id));
+    const answer = await batch(host, [first!, first!], TAGGING);
 
     expect(answer.values).toHaveLength(1);
-  });
-
-  it("refuses a template no item could be tagged into", async () => {
-    const host = serving();
-    const id = await template(host, null);
-    const [first] = await captureMany(host.app, 1);
-
-    const response = await send(host.app, "/v1/batches", {
-      batch: "batch-1",
-      items: [first],
-      action: applying(id),
-    });
-
-    expect(response.status).toBe(422);
-    expect(await body(response)).toMatchObject({
-      error: { code: "template-untriggered", template: id },
-    });
-  });
-
-  it("refuses a template that is not there", async () => {
-    const host = serving();
-    const [first] = await captureMany(host.app, 1);
-
-    const response = await send(host.app, "/v1/batches", {
-      batch: "batch-1",
-      items: [first],
-      action: applying("nobody"),
-    });
-
-    expect(response.status).toBe(404);
-    expect(await body(response)).toMatchObject({
-      error: { code: "unknown-template" },
-    });
   });
 
   it("refuses a batch over the limit before touching anything", async () => {
@@ -186,6 +154,58 @@ describe("a batch applying a template", () => {
     expect(await body(response)).toMatchObject({
       error: { code: "limit-too-large", max: MAX_BATCH },
     });
+  });
+});
+
+describe("a batch tagging", () => {
+  it("tags each item, and skips one that already carries the tag", async () => {
+    const host = serving();
+    const [first, second] = await captureMany(host.app, 2);
+    await send(host.app, `/v1/items/${first}/tag`, { tag: "reading" });
+
+    const answer = await batch(host, [first!, second!], {
+      kind: "tag",
+      tag: "reading",
+    });
+
+    expect(answer.values.map((one) => [one.id, one.outcome])).toEqual([
+      [first, "skipped"],
+      [second, "tagged"],
+    ]);
+  });
+
+  it("takes a tag off each item that carries it", async () => {
+    const host = serving();
+    const [first, second] = await captureMany(host.app, 2);
+    await send(host.app, `/v1/items/${first}/tag`, { tag: "reading" });
+
+    const answer = await batch(host, [first!, second!], {
+      kind: "untag",
+      tag: "reading",
+    });
+
+    expect(answer.values.map((one) => [one.id, one.outcome])).toEqual([
+      [first, "untagged"],
+      [second, "skipped"],
+    ]);
+  });
+
+  it("refuses taking off a trigger tag whose filing still stands", async () => {
+    const host = serving();
+    await template(host);
+    const [first] = await captureMany(host.app, 1);
+    await batch(host, [first!], TAGGING);
+
+    const answer = await batch(
+      host,
+      [first!],
+      { kind: "untag", tag: RESEARCH },
+      "batch-2",
+    );
+
+    expect(answer.values).toMatchObject([
+      { outcome: "refused", error: { code: "trigger-tag-held" } },
+    ]);
   });
 });
 
@@ -209,6 +229,19 @@ describe("a batch archiving", () => {
     ]);
   });
 
+  it("unarchives, and skips an item that was not archived", async () => {
+    const host = serving();
+    const [first, second] = await captureMany(host.app, 2);
+    await send(host.app, `/v1/items/${first}/archive`);
+
+    const answer = await batch(host, [first!, second!], { kind: "unarchive" });
+
+    expect(answer.values.map((one) => [one.id, one.outcome])).toEqual([
+      [first, "unarchived"],
+      [second, "skipped"],
+    ]);
+  });
+
   it("skips an item already archived rather than refusing it", async () => {
     const host = serving();
     const [first] = await captureMany(host.app, 1);
@@ -223,9 +256,9 @@ describe("a batch archiving", () => {
 describe("cancelling many deliveries", () => {
   it("cancels each record and gives every trigger tag back", async () => {
     const host = serving();
-    const id = await template(host);
+    await template(host);
     const [first, second] = await captureMany(host.app, 2);
-    const records = (await batch(host, [first!, second!], applying(id))).values
+    const records = (await batch(host, [first!, second!], TAGGING)).values
       .map((one) => one.record)
       .filter((record) => record !== undefined);
 

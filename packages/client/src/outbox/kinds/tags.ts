@@ -72,6 +72,15 @@ export function tagged(
   );
 }
 
+export function untagging(
+  state: ClientState,
+  operation: { readonly item: string; readonly tag: string },
+): Applied {
+  return reclassified(state, operation.item, (held) =>
+    held.filter((each) => each.name !== operation.tag),
+  );
+}
+
 export const tag: Handler<"tag"> = {
   targets: (operation) => [operation.item],
   opposedBy: "untag",
@@ -88,10 +97,7 @@ export const untag: Handler<"untag"> = {
   opposedBy: "tag",
   conflicts: sameTag,
 
-  apply: (state, operation) =>
-    reclassified(state, operation.item, (held) =>
-      held.filter((each) => each.name !== operation.tag),
-    ),
+  apply: untagging,
 
   send: ({ api }, operation) =>
     send(api, "untag", operation.item, operation.tag),

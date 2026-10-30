@@ -25,7 +25,7 @@ test("a batch that reserved is said when its last reservation ends", () => {
   tallying.answered(
     {
       id: "batch",
-      action: { kind: "template", template: "research" },
+      action: { kind: "tag", tag: "route/research" },
       items: ["a", "b"],
       outcomes: [reserved("a", "r1"), reserved("b", "r2")],
     },

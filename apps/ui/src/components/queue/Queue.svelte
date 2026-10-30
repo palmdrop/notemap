@@ -59,11 +59,6 @@
   /** The rows marked for a batch, which any number may be. */
   const marking = new Marking();
   const batch = batched(marking, () => rows);
-  const templates = client.templates.all;
-  /** Only a template a tag applies can be applied to many at once. */
-  const triggered = $derived(
-    $templates.filter((one) => one.triggerTag !== undefined),
-  );
 
   /** The capture box is selected rather than a row: it is the head of the queue. */
   let atCapture = $state(false);
@@ -319,7 +314,9 @@
       ondown: () => leave(() => void walk(1)),
       onup: () => leave(() => void walk(-1)),
       onselect: () => {
-        if (current !== undefined) {
+        if (marking.on) {
+          if (current !== undefined) marking.toggle(current.id);
+        } else if (current !== undefined) {
           if (drawn[current.id]?.isEditing() !== true) process(current);
         } else if (atCapture) capture?.take();
         else void walk(1);
@@ -332,7 +329,8 @@
       marking,
       onextend: (step) => leave(() => void extend(step)),
     }),
-    ...reached(),
+    // Nothing one row is given is offered while many are marked.
+    ...(marking.on ? [] : reached()),
     ...(atCapture
       ? [
           { id: "tag", label: "tag", run: () => capture?.tag() },
@@ -365,9 +363,8 @@
 <Head>
   {#if marking.on}
     <Marked
-      count={marking.count}
-      templates={triggered}
-      onbatch={(action) => batch.ask(action)}
+      marked={rows.filter((row) => marking.has(row.id))}
+      onbatch={(action) => batch.do(action)}
       onall={() => {
         const ids = rows.map((row) => row.id);
         const last = ids.at(-1);
@@ -422,15 +419,16 @@
     item={row}
     surface="queue"
     filter={$queue.filter.tags}
-    selected={selected === row.id}
+    selected={!marking.on && selected === row.id}
     marked={marking.has(row.id)}
+    cursor={marking.on && selected === row.id}
     offline={!pool.yes}
-    commands={selected === row.id ? commands : []}
+    commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
     layout={layout.drawn}
     {opens}
     onselect={(how) => select(row.id, how)}
-    onprocess={() => process(row)}
+    onprocess={marking.on ? undefined : () => process(row)}
   />
 {/snippet}
 
@@ -452,14 +450,15 @@
     byDay={layout.byDay}
     leads={refused === undefined}
     items={rows}
-    {selected}
+    selected={marking.on ? undefined : selected}
+    cursor={marking.on ? selected : undefined}
     slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
     onselect={select}
     onprocess={(id) => {
       const item = rows.find((row) => row.id === id);
-      if (item !== undefined) process(item);
+      if (item !== undefined && !marking.on) process(item);
     }}
   />
 

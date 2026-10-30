@@ -2614,7 +2614,10 @@
               "outcome": {
                 "type": "string",
                 "enum": [
-                  "archived"
+                  "tagged",
+                  "untagged",
+                  "archived",
+                  "unarchived"
                 ]
               },
               "item": {
@@ -2637,7 +2640,8 @@
                 "type": "string",
                 "enum": [
                   "skipped"
-                ]
+                ],
+                "description": "Nothing changed: the item was already as asked, or the template had already filed it."
               },
               "item": {
                 "$ref": "#/components/schemas/Item"
@@ -2703,17 +2707,25 @@
           "action": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/BatchTemplateAction"
+                "$ref": "#/components/schemas/BatchTagAction"
+              },
+              {
+                "$ref": "#/components/schemas/BatchUntagAction"
               },
               {
                 "$ref": "#/components/schemas/BatchArchiveAction"
+              },
+              {
+                "$ref": "#/components/schemas/BatchUnarchiveAction"
               }
             ],
             "discriminator": {
               "propertyName": "kind",
               "mapping": {
-                "template": "#/components/schemas/BatchTemplateAction",
-                "archive": "#/components/schemas/BatchArchiveAction"
+                "tag": "#/components/schemas/BatchTagAction",
+                "untag": "#/components/schemas/BatchUntagAction",
+                "archive": "#/components/schemas/BatchArchiveAction",
+                "unarchive": "#/components/schemas/BatchUnarchiveAction"
               }
             }
           }
@@ -2725,29 +2737,54 @@
         ],
         "additionalProperties": false
       },
-      "BatchTemplateAction": {
+      "BatchTagAction": {
         "type": "object",
         "properties": {
           "kind": {
             "type": "string",
             "enum": [
-              "template"
+              "tag"
             ]
           },
-          "template": {
-            "type": "string",
-            "minLength": 1
+          "tag": {
+            "type": "string"
           },
           "arguments": {
-            "$ref": "#/components/schemas/SuppliedArguments"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SuppliedArguments"
+              },
+              {
+                "description": "Values for the asked arguments of the template the tag applies, the same for every item. Ignored where it applies none."
+              }
+            ]
           }
         },
         "required": [
           "kind",
-          "template"
+          "tag"
         ],
         "additionalProperties": false,
-        "description": "Applies the template to each item by tagging it with the template's trigger tag."
+        "description": "Adds the tag to each item. A trigger tag applies its template to each."
+      },
+      "BatchUntagAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "untag"
+            ]
+          },
+          "tag": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "tag"
+        ],
+        "additionalProperties": false
       },
       "BatchArchiveAction": {
         "type": "object",
@@ -2761,6 +2798,21 @@
           "reason": {
             "type": "string",
             "minLength": 1
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      "BatchUnarchiveAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "unarchive"
+            ]
           }
         },
         "required": [
@@ -8183,8 +8235,8 @@
     },
     "/v1/batches": {
       "post": {
-        "summary": "Apply a template to many items, or archive them",
-        "description": "Applies one routing template to every item named, by tagging each with the template's trigger tag, or archives every item named. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nAn item answers `reserved` with the record the template's trigger tag holds on it, `archived`, `skipped` where nothing changed — the template had already filed it, or it was already archived — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
+        "summary": "Tag, untag, archive or unarchive many items",
+        "description": "Does one thing to every item named: adds a tag, takes one off, archives or unarchives. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nA trigger tag applies its template to each item, with the same asked values for all, and an item answers `reserved` with the record the tag holds on it. Otherwise an item answers what was done to it, `skipped` where nothing changed — it was already as asked, or the template had already filed it — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
         "requestBody": {
           "required": true,
           "content": {
@@ -8238,37 +8290,6 @@
               }
             }
           },
-          "404": {
-            "description": "No template has that id.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string",
-                          "enum": [
-                            "unknown-template"
-                          ]
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ],
-                      "additionalProperties": {},
-                      "description": "The refusal's kind, with its facts beside it."
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
           "415": {
             "description": "The body was not JSON.",
             "content": {
@@ -8301,7 +8322,7 @@
             }
           },
           "422": {
-            "description": "The template has no trigger tag, or the batch names too many items.",
+            "description": "The batch names too many items.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8313,8 +8334,7 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "limit-too-large",
-                            "template-untriggered"
+                            "limit-too-large"
                           ]
                         }
                       },

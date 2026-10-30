@@ -4,7 +4,7 @@ import { anItem } from "@notemap/client/testing";
 
 import { asking, counted, resultOf } from "./batching";
 
-const TEMPLATE = { kind: "template", template: "research" } as const;
+const TEMPLATE = { kind: "tag", tag: "route/research" } as const;
 const ARCHIVE = { kind: "archive" } as const;
 
 const filedBy = (id: string, template: string) =>
@@ -24,7 +24,11 @@ test("counts what a template already filed as skipped, and what else was process
     filedBy("elsewhere", "reading"),
   ];
 
-  expect(counted(items, TEMPLATE)).toEqual({ total: 3, skipped: 1, again: 1 });
+  expect(counted(items, TEMPLATE, "research")).toEqual({
+    total: 3,
+    skipped: 1,
+    again: 1,
+  });
 });
 
 test("counts what is already archived as skipped by a discard", () => {
@@ -84,4 +88,29 @@ test("says a discard that all landed without the accent", () => {
       [],
     ),
   ).toEqual({ what: "1 note discarded", why: "1 discarded" });
+});
+
+test("names where a template's values put the notes", () => {
+  expect(
+    asking({ total: 2, skipped: 0, again: 0 }, TEMPLATE, "Todo", "heading Next")
+      .question,
+  ).toBe("route 2 notes with Todo, heading Next?");
+});
+
+test("says an ordinary tag by the tag, counting what already carried it", () => {
+  expect(
+    resultOf(
+      { kind: "tag", tag: "reading" },
+      undefined,
+      [
+        { id: "a", outcome: "tagged", item: anItem("a") },
+        { id: "b", outcome: "skipped", item: anItem("b") },
+      ],
+      [],
+    ),
+  ).toEqual({
+    what: "2 notes tagged",
+    subject: "reading",
+    why: "1 tagged, 1 already tagged",
+  });
 });

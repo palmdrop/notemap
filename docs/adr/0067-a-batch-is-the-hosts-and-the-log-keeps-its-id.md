@@ -8,11 +8,10 @@
 
 ## Context and problem statement
 
-A person can mark several rows and either apply one routing template to all of them or archive them
-all, in one gesture. That gesture is a single request, and each item in it may land or be refused
-on its own. Today the log reads such a batch as N unrelated entries. That is acceptable for now, but
-a log that can group a batch's entries later can only group the ones that were recorded with an id
-of their own.
+A person can mark several rows and tag, untag, archive or unarchive them all, in one gesture. That
+gesture is a single request, and each item in it may land or be refused on its own. Today the log
+reads such a batch as N unrelated entries. That is acceptable for now, but a log that can group a
+batch's entries later can only group the ones that were recorded with an id of their own.
 
 Where does a batch live, and what does the pool keep of it?
 
@@ -43,14 +42,14 @@ Where does a batch live, and what does the pool keep of it?
 
 Chosen: **Option 2**.
 
-- **The daemon runs the batch.** It calls core's per-item `tag` or `archive` once per item, in the
-  order given, and answers each item separately.
+- **The daemon runs the batch.** It calls core's per-item `tag`, `untag`, `archive` or `unarchive`
+  once per item, in the order given, and answers each item separately.
 - **The client creates the batch id**, the way an uploader creates an asset id
   ([ADR 22](0022-the-uploader-mints-the-asset-id.md)), so a replay from the outbox carries the
   same one.
-- **Core records it, nothing more.** `tag` and `archive` take an optional batch id, and every
-  action-log entry they write carries it as `batch`. Core never makes a batch, never checks that
-  one exists, and never reads one back.
+- **Core records it, nothing more.** `tag`, `untag`, `archive` and `unarchive` take an optional
+  batch id, and every action-log entry they write carries it as `batch`. Core never makes a batch,
+  never checks that one exists, and never reads one back.
 - **Cancelling a batch is cancelling each of its records**, by the cancel that already exists.
 
 ### Consequences
@@ -60,7 +59,7 @@ Chosen: **Option 2**.
   batch unchanged, because a batch is nothing but those calls.
 - **Bad** — a batch is not atomic. A pool that stops halfway leaves half the items done. Each of
   those halves is a state an item can already be in, so nothing new is broken, and resending the
-  batch completes it, since a repeated tag or archive is absorbed or refused.
+  batch completes it, since a repeated one is absorbed or refused.
 - **Neutral** — the id is unchecked. Two clients that chose the same id would group as one batch.
   The id is long and random, as an asset id is.
 

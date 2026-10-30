@@ -58,14 +58,14 @@ test("a range in the mode runs from the row last toggled", () => {
   ]);
 });
 
-test("unmarking the last row keeps the mode, and clearing leaves it", () => {
+test("unmarking the last row leaves the mode, as clearing does", () => {
   const marking = new Marking();
   marking.toggle("one");
   marking.toggle("one");
 
-  expect(marking.on).toBe(true);
-  expect(marking.count).toBe(0);
+  expect(marking.on).toBe(false);
 
+  marking.toggle("two");
   marking.clear();
   expect(marking.on).toBe(false);
 });

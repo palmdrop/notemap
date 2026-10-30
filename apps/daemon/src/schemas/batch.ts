@@ -5,16 +5,23 @@ import { MAX_BATCH } from "../constants";
 import { itemSchema } from "./item";
 import { suppliedArgumentsSchema } from "./routing";
 
-const templateAction = z
+const tagAction = z
   .strictObject({
-    kind: z.literal("template"),
-    template: z.string().min(1),
-    arguments: suppliedArgumentsSchema.optional(),
+    kind: z.literal("tag"),
+    tag: z.string(),
+    arguments: suppliedArgumentsSchema.optional().openapi({
+      description:
+        "Values for the asked arguments of the template the tag applies, the same for every item. Ignored where it applies none.",
+    }),
   })
-  .openapi("BatchTemplateAction", {
+  .openapi("BatchTagAction", {
     description:
-      "Applies the template to each item by tagging it with the template's trigger tag.",
+      "Adds the tag to each item. A trigger tag applies its template to each.",
   });
+
+const untagAction = z
+  .strictObject({ kind: z.literal("untag"), tag: z.string() })
+  .openapi("BatchUntagAction");
 
 const archiveAction = z
   .strictObject({
@@ -22,6 +29,10 @@ const archiveAction = z
     reason: z.string().min(1).optional(),
   })
   .openapi("BatchArchiveAction");
+
+const unarchiveAction = z
+  .strictObject({ kind: z.literal("unarchive") })
+  .openapi("BatchUnarchiveAction");
 
 export const batchRequestSchema = z
   .strictObject({
@@ -35,7 +46,12 @@ export const batchRequestSchema = z
       .openapi({
         description: `At most ${MAX_BATCH}, and an id named twice is acted on once.`,
       }),
-    action: z.discriminatedUnion("kind", [templateAction, archiveAction]),
+    action: z.discriminatedUnion("kind", [
+      tagAction,
+      untagAction,
+      archiveAction,
+      unarchiveAction,
+    ]),
   })
   .openapi("BatchRequest");
 
@@ -56,12 +72,15 @@ export const batchOutcomeSchema = z
     }),
     z.object({
       id: z.string(),
-      outcome: z.literal("archived"),
+      outcome: z.enum(["tagged", "untagged", "archived", "unarchived"]),
       item: itemSchema,
     }),
     z.object({
       id: z.string(),
-      outcome: z.literal("skipped"),
+      outcome: z.literal("skipped").openapi({
+        description:
+          "Nothing changed: the item was already as asked, or the template had already filed it.",
+      }),
       item: itemSchema,
     }),
     z.object({

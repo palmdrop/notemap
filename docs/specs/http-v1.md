@@ -5,8 +5,8 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 **Last updated**: 2026-10-30
 **Shipped**:
 
-- 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** One template applied to many
-  items, or many archived, in one request answered item by item. Many reservations called off in
+- 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** A tag added or taken off, or
+  an archive or unarchive, for many items in one request answered item by item. Many reservations called off in
   one request. An action-log entry carries `batch` where a batch wrote it.
   ([plan](../plans/batch-processing.md))
 
@@ -1820,27 +1820,33 @@ have refused it with. More than 500 is `422 limit-too-large`.
 
 ### A batch of items
 
-`POST /v1/batches` applies one routing template to many items, or archives them all. Added
-2026-10-30 ([ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)).
+`POST /v1/batches` does one thing to many items: adds a tag, takes one off, archives or unarchives.
+Added 2026-10-30 ([ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)).
 
 ```json
 {
   "batch": "0198f0c2-...",
   "items": ["0198f0c2-...", "0198f0c3-..."],
-  "action": { "kind": "template", "template": "0198ef01-...", "arguments": { "heading": "Next" } }
+  "action": { "kind": "tag", "tag": "route/todo", "arguments": { "heading": "Next" } }
 }
 ```
 
-`action` is `{ "kind": "template", "template", "arguments"? }` or
-`{ "kind": "archive", "reason"? }`.
+`action` is one of:
 
-- **The daemon runs the batch, not the pool.** It tags or archives each item on its own, in the
-  order given, through the same operation `POST /v1/items/{id}/tag` and `/archive` use. Each item
-  lands or is refused on its own, and the batch is never refused for what one item met.
-- **A template is applied by its trigger tag.** A template that has none is `422
-  template-untriggered`, and one that does not exist is `404 unknown-template`. Both are refused
-  before any item is reached. `arguments` are the template's asked arguments, the same for every
-  item.
+- `{ "kind": "tag", "tag", "arguments"? }`
+- `{ "kind": "untag", "tag" }`
+- `{ "kind": "archive", "reason"? }`
+- `{ "kind": "unarchive" }`
+
+**The daemon runs the batch, not the pool.**
+
+- It does the action to each item on its own, in the order given, through the same operation the
+  single route uses. Each item lands or is refused on its own, and the batch is never refused for
+  what one item met.
+- **A trigger tag applies its template to each item.** `arguments` are the template's asked
+  arguments, the same for every item, so a batch can file every item into one note or under one
+  heading. An argument that cannot be shared, such as a filename a `create` must not reuse, is
+  refused by the destination for every item after the first.
 - **`batch` is the client's id for the batch.** Every entry the batch writes to the log carries it
   ([the action log](#the-action-log)). The pool does not check it, and a resend carries the same
   one.
@@ -1859,16 +1865,17 @@ It answers `200`:
 }
 ```
 
-- **`reserved`** carries the record that the template's trigger tag holds pending on the item. That
-  record is what cancelling the batch calls off. A template that filed the item through its tag a
-  moment ago, from this batch or another, answers the same reservation.
-- **`archived`** is an item the batch archived.
-- **`skipped`** is an item nothing changed for: the template had already filed it, or it was
-  already archived. The tag still classifies, as it does on the single route.
-- **`refused`** carries the error the single route would have answered, `no-such-item` included.
+- **`reserved`** carries the record that a trigger tag holds pending on the item. That record is
+  what cancelling the batch calls off. A tag that filed the item a moment ago, from this batch or
+  another, answers the same reservation.
+- **`tagged`, `untagged`, `archived` and `unarchived`** say what the batch did to the item.
+- **`skipped`** is an item nothing changed for: it already was as asked, or a trigger tag's template
+  had already filed it. In the second case the tag still classifies, as it does on the single route.
+- **`refused`** carries the error the single route would have answered, `no-such-item` and
+  `trigger-tag-held` included.
 - Every outcome except `refused` carries the item as it now stands.
-- **Sending a batch again is safe.** What landed answers as it stands: a reservation still pending
-  answers `reserved`, and anything else answers `skipped`. What did not land is attempted again.
+- **Sending a batch again is safe.** What landed answers as it stands, and what did not land is
+  attempted again.
 
 ### An item's routing records
 

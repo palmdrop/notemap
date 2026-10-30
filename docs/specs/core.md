@@ -1833,10 +1833,10 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   worth more than one that is uniform, and with no authentication an anonymous person is the whole
   of what a host could supply anyway.
 - **An entry may name the batch it was part of** (added 2026-10-30). `tag` and `archive` take an
-  optional batch id, and every entry they write carries it as `batch`: `tagged`, `template-fired`
-  and `archived`. Whoever made the batch made the id. Core does not check that the batch exists,
-  and never reads the id back. A batch is the host's: it calls `tag` or `archive` once per item,
-  and each call lands or is refused on its own
+  optional batch id, as do `untag` and `unarchive`. Every entry they write carries it as `batch`:
+  `tagged`, `template-fired`, `untagged`, `archived` and `unarchived`. Whoever made the batch made
+  the id. Core does not check that the batch exists, and never reads the id back. A batch is the
+  host's: it calls one of the four once per item, and each call lands or is refused on its own
   ([ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)).
 - **A delivery's entries are subject to the item**, not to the routing record the job names. Core
   resolves the one to the other, so reading an item's log still finds every attempt to deliver it.

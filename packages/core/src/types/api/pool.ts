@@ -140,13 +140,18 @@ export interface ItemsApi {
     by: Agent,
     options?: Tagging,
   ): Promise<Result<Item, TagRefusal>>;
-  untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
+  untag(
+    id: ItemId,
+    tag: TagName,
+    by: Agent,
+    batch?: BatchId,
+  ): Promise<Result<Item, TagRefusal>>;
   archive(
     id: ItemId,
     reason?: string,
     batch?: BatchId,
   ): Promise<Result<Item, ArchiveRefusal>>;
-  unarchive(id: ItemId): Promise<Result<Item, ArchiveRefusal>>;
+  unarchive(id: ItemId, batch?: BatchId): Promise<Result<Item, ArchiveRefusal>>;
   purge(id: ItemId): Promise<Result<readonly Tombstone[], PurgeRefusal>>;
 }
 

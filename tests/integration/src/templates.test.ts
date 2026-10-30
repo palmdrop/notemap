@@ -1720,6 +1720,22 @@ describe("a batch the log keeps", () => {
     ).toMatchObject({ batch: BATCH });
   });
 
+  it("carries the batch on an untag and an unarchive", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+    const READING = "reading" as TagName;
+    succeeded(await pool.items.tag(item.id, READING, PERSON));
+    succeeded(await pool.items.archive(item.id));
+
+    succeeded(await pool.items.untag(item.id, READING, PERSON, BATCH));
+    succeeded(await pool.items.unarchive(item.id, BATCH));
+
+    const written = (await logFor(pool, item.id)).filter(
+      (one) => one.kind === "untagged" || one.kind === "unarchived",
+    );
+    expect(written.map((one) => one.batch)).toEqual([BATCH, BATCH]);
+  });
+
   it("carries no batch where none was given", async () => {
     const { pool } = await pooled();
     succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
