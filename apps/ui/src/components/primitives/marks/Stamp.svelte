@@ -8,13 +8,16 @@
     inline = false,
     dated = true,
     onopen,
+    marked = false,
   }: {
     at: string;
     opened?: boolean;
     inline?: boolean;
     /** Absent under a heading that already says the day: the time alone is drawn. */
     dated?: boolean;
-    onopen?: () => void;
+    onopen?: (event: MouseEvent) => void;
+    /** Marked for a batch: drawn inverted, the shell's other way of saying primary. */
+    marked?: boolean;
   } = $props();
 </script>
 
@@ -53,8 +56,20 @@
   {/if}
 {/snippet}
 
+{#snippet drawn()}
+  {#if marked}
+    <span
+      data-marked
+      class="-mx-[0.5ch] inline-block bg-ink px-[0.5ch] text-ground"
+      >{@render written()}<span class="sr-only">, marked</span></span
+    >
+  {:else}
+    {@render written()}
+  {/if}
+{/snippet}
+
 {#if onopen === undefined}
-  {@render written()}
+  {@render drawn()}
 {:else}
   <button
     type="button"
@@ -62,6 +77,6 @@
     aria-expanded={opened === true}
     class="block text-left hover:underline"
   >
-    {@render written()}
+    {@render drawn()}
   </button>
 {/if}

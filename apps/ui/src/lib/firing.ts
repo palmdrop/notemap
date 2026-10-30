@@ -7,6 +7,7 @@ import { client } from "./client";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
 import { cancelledKey, keyFor } from "./routing";
+import { tallying } from "./tallies";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
@@ -31,6 +32,33 @@ export function cancelRouting(
         href: itemHref(item),
         key: cancelledKey(record),
       });
+    })
+    .catch(() => {
+      notices.raise({ what: "could not cancel", alarm: true });
+    });
+}
+
+/**
+ * Calling off every route a batch has in flight, in one request. Each record
+ * the pool cancelled closes; one it could not, already landing, stays open
+ * and ends as it ends.
+ */
+export function cancelBatch(batch: string): void {
+  const flying = firings.open.filter((firing) => firing.batch === batch);
+  if (flying.length === 0) return;
+
+  void client.routing
+    .cancelMany(
+      flying.map((firing) => ({ record: firing.record, item: firing.item })),
+    )
+    .then((answer) => {
+      for (const one of answer.values) {
+        if (one.outcome !== "cancelled") continue;
+        firings.closed(one.record);
+        notices.settled(keyFor(one.record));
+        const said = tallying.ended(one.record, "cancelled");
+        if (said !== undefined) notices.raise(said);
+      }
     })
     .catch(() => {
       notices.raise({ what: "could not cancel", alarm: true });

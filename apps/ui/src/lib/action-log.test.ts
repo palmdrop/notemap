@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 
 import type { Action } from "@notemap/client";
 
-import { arrivalOf, firingOf, noticeOf } from "./action-log";
+import { arrivalOf, endingOf, firingOf, noticeOf } from "./action-log";
 
 const reading = {
   nameOf: (id: string) => (id === "vault" ? "Vault" : "a destination"),
@@ -497,4 +497,38 @@ test("a capture whose copy did not come is still said, without its words", () =>
     href: "/items/unknown",
     only: "arrived",
   });
+});
+
+test("a firing carries the batch that fired it", () => {
+  const opened = firingOf(
+    { ...anAction("template-fired", fired), batch: "b1" },
+    { about: (item) => `/items/${item}` },
+  );
+
+  expect(opened).toMatchObject({ opened: { record: "r1", batch: "b1" } });
+});
+
+test("an entry ends a record the way a batch counts it", () => {
+  expect(endingOf(anAction("routed", fired))).toEqual({
+    record: "r1",
+    ending: "routed",
+  });
+  expect(endingOf(anAction("delivery-cancelled", fired))).toEqual({
+    record: "r1",
+    ending: "cancelled",
+  });
+  expect(endingOf(anAction("work-abandoned", fired))).toEqual({
+    record: "r1",
+    ending: "failed",
+  });
+  // Retried is not over, though it is still the record's.
+  expect(
+    endingOf(
+      anAction("delivery-failed", {
+        ...fired,
+        failure: { code: "unreachable" },
+      }),
+    ),
+  ).toEqual({ record: "r1" });
+  expect(endingOf(anAction("template-fired", fired))).toBeUndefined();
 });

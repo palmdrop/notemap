@@ -24,12 +24,16 @@
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
-  import { listCommands } from "$lib/command/list";
+  import { listCommands, markCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
   import { byDay, dayAtFor, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
+  import { Marking, PLAINLY, picked, type Picked } from "$lib/marking.svelte";
+  import { batched } from "$lib/batched.svelte";
+  import Confirming from "$components/batch/Confirming.svelte";
+  import Marked from "$components/batch/Marked.svelte";
   import { anchored } from "$lib/anchored.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
@@ -50,6 +54,15 @@
 
   /** One row is selected at a time, as on the queue: it is the same row. */
   let selected = $state<string | undefined>(undefined);
+
+  /** The rows marked for a batch, which any number may be. */
+  const marking = new Marking();
+  const batch = batched(marking, () => rows);
+  const templates = client.templates.all;
+  /** Only a template a tag applies can be applied to many at once. */
+  const triggered = $derived(
+    $templates.filter((one) => one.triggerTag !== undefined),
+  );
   /** Going back and forward moves through the views a filter was taken from. */
   let view = $derived<View>(viewFor(SURFACE, page.url));
 
@@ -94,9 +107,16 @@
     })();
   });
 
-  function select(id: string) {
+  function select(id: string, how: Picked = PLAINLY) {
     leave(() => {
-      selected = selected === id ? undefined : id;
+      const marked = picked(
+        marking,
+        rows.map((row) => row.id),
+        id,
+        how,
+        selected,
+      );
+      selected = marked ?? (selected === id ? undefined : id);
     });
   }
 
@@ -193,6 +213,19 @@
     void tick().then(() => reveal(row.id));
   }
 
+  /** Marks the selected row and the one a step along, so a held `shift` walks a range. */
+  async function extend(step: 1 | -1) {
+    if (selected !== undefined) marking.mark(selected);
+    await walk(step);
+    if (selected !== undefined) marking.mark(selected);
+  }
+
+  // A marked row a filter takes off the feed is no longer one a batch could reach.
+  $effect(() => {
+    const drawn = rows.map((row) => row.id);
+    untrack(() => marking.keepOnly(drawn));
+  });
+
   function process(item: Item) {
     void goto(processHref(item.id));
   }
@@ -234,7 +267,16 @@
         if (current === undefined) void walk(1);
         else if (drawn[current.id]?.isEditing() !== true) process(current);
       },
-      ondeselect: () => leave(() => (selected = undefined)),
+      ondeselect: () =>
+        leave(() => {
+          if (marking.on) marking.clear();
+          else selected = undefined;
+        }),
+    }),
+    ...markCommands({
+      selected: current?.id,
+      marking,
+      onextend: (step) => leave(() => void extend(step)),
     }),
     ...reached(),
     { id: "filter", label: "filter", run: () => void filterPanel?.show() },
@@ -247,16 +289,41 @@
 </script>
 
 <Head>
-  <ViewChooser {view} onchoose={read} />
-  <FilterPanel
-    bind:this={filterPanel}
-    surface={SURFACE}
-    filter={reading.filter}
-    ontoggle={reading.toggle}
-    onclear={reading.clear}
-  />
-  <Order />
+  {#if marking.on}
+    <Marked
+      count={marking.count}
+      templates={triggered}
+      onbatch={(action) => batch.ask(action)}
+      onall={() => {
+        const ids = rows.map((row) => row.id);
+        const last = ids.at(-1);
+        if (last !== undefined) marking.range(ids, last, ids[0]);
+      }}
+      onclear={() => marking.clear()}
+    />
+  {:else}
+    <ViewChooser {view} onchoose={read} />
+    <FilterPanel
+      bind:this={filterPanel}
+      surface={SURFACE}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
+    />
+    <Order />
+  {/if}
 </Head>
+
+{#if batch.asked !== undefined}
+  {@const asked = batch.asked}
+  <Confirming
+    question={asked.question}
+    notes={asked.notes}
+    verb={asked.action.kind === "archive" ? "discard" : "route"}
+    alarm={asked.action.kind === "archive"}
+    onanswer={(go) => void batch.answer(go)}
+  />
+{/if}
 
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
   <Day
@@ -282,12 +349,13 @@
     surface="feed"
     filter={$feed.filter.tags}
     selected={selected === item.id}
+    marked={marking.has(item.id)}
     offline={!pool.yes}
     commands={selected === item.id ? commands : []}
     pending={undrained.has(item.id)}
     layout={layout.drawn}
     {opens}
-    onselect={() => select(item.id)}
+    onselect={(how) => select(item.id, how)}
     onprocess={() => void goto(processHref(item.id))}
   />
 {/snippet}
@@ -312,6 +380,7 @@
     {selected}
     slim={layout.slim}
     open={opened}
+    marked={(id) => marking.has(id)}
     onselect={select}
     onprocess={(id) => void goto(processHref(id))}
   />

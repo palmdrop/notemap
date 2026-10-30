@@ -4,6 +4,10 @@
 **Last updated**: 2026-10-30
 **Shipped**:
 
+- 2026-10-30 — **A batch is one outbox operation about many items.** `batch()` and `batches`, and
+  `routing.cancelMany`. An operation drains after everything queued for any item it names.
+  ([plan](../plans/batch-processing.md))
+
 - 2026-10-28 — **An operation the store could not hold was never made.** A failed write of a fresh
   entry reverses its effect on the cache, takes it out of the outbox and throws to the caller. An
   enqueue holds its own copy of the operation, and refuses one it cannot copy before applying it.

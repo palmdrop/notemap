@@ -26,6 +26,12 @@ const BINDINGS: Record<string, string> = {
   select: "enter",
   deselect: "escape",
 
+  // Marking rows for a batch, beside the register's own keyboard: the row
+  // walked onto with shift held is marked as well as selected.
+  mark: " ",
+  "mark-down": "J",
+  "mark-up": "K",
+
   // The queue's and the feed's own: the tags they are read through, and
   // which of the two views they are read in.
   filter: "f",

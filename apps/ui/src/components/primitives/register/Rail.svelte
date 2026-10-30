@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import type { Picked } from "$lib/marking.svelte";
   import { doubled, pickable } from "$lib/pick";
 
   let {
@@ -12,7 +13,7 @@
   }: {
     /** Draws the head and the left edge of the box a selected row is. */
     selected?: boolean;
-    onpick?: () => void;
+    onpick?: (how: Picked) => void;
     /** Somewhere to go rather than something to do. */
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */

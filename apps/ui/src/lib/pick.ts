@@ -1,3 +1,5 @@
+import { pickedBy, type Picked } from "./marking.svelte";
+
 const CONTROLS =
   "a, button, input, textarea, select, label, [role='button'], [role='option']";
 
@@ -12,10 +14,12 @@ function inside(event: MouseEvent): boolean {
  * on its way to the item's own surface. A click carries how many of them it is,
  * and only the first is one.
  */
-export function pickable(onpick: () => void) {
+export function pickable(onpick: (how: Picked) => void) {
   return (event: MouseEvent) => {
     if (inside(event) || event.detail > 1) return;
-    onpick();
+    // A range picked with shift held is not a range of text.
+    if (event.shiftKey) window.getSelection()?.removeAllRanges();
+    onpick(pickedBy(event));
   };
 }
 

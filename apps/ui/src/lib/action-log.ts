@@ -1,5 +1,6 @@
 import type { Action, ActionsSince } from "@notemap/client";
 
+import type { Ending } from "./batching";
 import type { Firing } from "./firings.svelte";
 import type { Raised } from "./notices.svelte";
 import { cancelledKey, keyFor, reinstatedKey, withdrawnKey } from "./routing";
@@ -102,6 +103,28 @@ function runOf(record: string | undefined): { only?: string } {
 }
 
 /**
+ * The record an entry is about, and how it ended where it ended one: what a
+ * batch counts instead of saying each of its items.
+ */
+export function endingOf(
+  action: Action,
+): { readonly record: string; readonly ending?: Ending } | undefined {
+  const detail = action.detail as Record<string, unknown>;
+  const record = stringAt(detail, "record");
+  if (record === undefined) return undefined;
+  if (!ENDS.has(action.kind) || retried(action.kind, detail)) {
+    return SAID.has(action.kind) ? { record } : undefined;
+  }
+  const ending: Ending =
+    action.kind === "routed"
+      ? "routed"
+      : action.kind === "delivery-cancelled"
+        ? "cancelled"
+        : "failed";
+  return { record, ending };
+}
+
+/**
  * What an entry in the log does to the routes a trigger tag has in flight: a
  * `template-fired` opens one, and an entry that ends it closes it.
  */
@@ -147,6 +170,7 @@ export function firingOf(
       ...(where === undefined ? {} : { where }),
       href: said.about(action.subject),
       ...(until === undefined ? {} : { until: Date.parse(until) }),
+      ...(action.batch === undefined ? {} : { batch: action.batch }),
     },
   };
 }

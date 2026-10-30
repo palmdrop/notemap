@@ -1968,3 +1968,97 @@ test("a trigger tag whose last asked field is left to its default sends what was
     arguments: { path: "todo.md" },
   });
 });
+
+/** A row's own stamp, found by the words it holds. */
+function stampOf(said: string) {
+  const row = screen.getByText(said).closest("[data-row]") as HTMLElement;
+  return within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ });
+}
+
+const head = () => document.querySelector("[data-head]") as HTMLElement;
+
+test("a click with mod held marks rows, and esc lets go of them all", async () => {
+  pool(queued("one", "two", "three"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("three"), { metaKey: true });
+
+  expect(within(head()).getByText("2 notes marked")).toBeDefined();
+  expect(document.querySelectorAll("[data-marked]")).toHaveLength(2);
+
+  // In the mode a plain click marks too, rather than starting over.
+  await fireEvent.click(stampOf("two"));
+  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(document.querySelectorAll("[data-marked]")).toHaveLength(0);
+});
+
+test("space marks the selected row, and J marks on down the list", async () => {
+  pool(queued("one", "two", "three"));
+
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "j" });
+  await fireEvent.keyDown(window, { key: " " });
+  expect(within(head()).getByText("1 note marked")).toBeDefined();
+
+  await fireEvent.keyDown(window, { key: "J" });
+  await vi.waitFor(() => {
+    expect(within(head()).getByText("2 notes marked")).toBeDefined();
+  });
+});
+
+test("a discard of the marked rows is asked first, then sent as one batch", async () => {
+  pool(queued("one", "two", "three"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+
+  await fireEvent.click(
+    within(head()).getByRole("button", { name: "discard" }),
+  );
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
+  expect(asked()).not.toContain("POST /v1/batches");
+
+  await fireEvent.click(
+    within(dialog).getByRole("button", { name: "discard" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/batches");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      items: ["one", "two"],
+      action: { kind: "archive" },
+    }),
+  );
+  expect(within(head()).queryByText(/marked/)).toBeNull();
+});
+
+test("backing out of the question sends nothing and keeps the rows marked", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  await fireEvent.click(
+    within(head()).getByRole("button", { name: "discard" }),
+  );
+  await fireEvent.click(
+    within(screen.getByRole("dialog")).getByRole("button", { name: "back" }),
+  );
+
+  expect(asked()).not.toContain("POST /v1/batches");
+  expect(within(head()).getByText("1 note marked")).toBeDefined();
+});

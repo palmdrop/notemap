@@ -4,6 +4,10 @@
 **Last updated**: 2026-10-30
 **Shipped**:
 
+- 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag` and `archive`
+  take an optional batch id, recorded on every entry they write and never read back.
+  ([plan](../plans/batch-processing.md))
+
 - 2026-10-29 — **A trigger tag on an item its template already filed is never refused for what a
   firing would need**, an asked argument among it. The tag classifies and fires nothing. ([plan](../plans/trigger-tag-after-a-template-route.md))
 

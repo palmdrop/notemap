@@ -12,6 +12,8 @@ export type Firing = {
   readonly until?: number;
   /** Where the whole of it can be read. */
   readonly href?: string;
+  /** The batch it was fired by, called off with the rest of it. */
+  readonly batch?: string;
 };
 
 /** Enough closed records to stop a late opening, and no memory of the session. */

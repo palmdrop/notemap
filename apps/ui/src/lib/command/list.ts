@@ -22,3 +22,33 @@ export function listCommands(at: ListSurroundings): readonly Command[] {
     { id: "deselect", label: "deselect", run: at.ondeselect },
   ];
 }
+
+/**
+ * Marking rows for a batch, published beside the four: `space` marks or
+ * unmarks the selected row, and a held `shift` walks a range. Leaving the mode
+ * is `deselect`'s, which clears what is marked before it lets go of a row.
+ */
+export function markCommands(at: {
+  readonly selected: string | undefined;
+  readonly marking: { toggle(id: string): void };
+  readonly onextend: (step: 1 | -1) => void;
+}): readonly Command[] {
+  const selected = at.selected;
+  return [
+    ...(selected === undefined
+      ? []
+      : [
+          {
+            id: "mark",
+            label: "mark",
+            run: () => at.marking.toggle(selected),
+          },
+        ]),
+    { id: "mark-down", label: "mark the next row", run: () => at.onextend(1) },
+    {
+      id: "mark-up",
+      label: "mark the previous row",
+      run: () => at.onextend(-1),
+    },
+  ];
+}

@@ -5,6 +5,11 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 **Last updated**: 2026-10-30
 **Shipped**:
 
+- 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** One template applied to many
+  items, or many archived, in one request answered item by item. Many reservations called off in
+  one request. An action-log entry carries `batch` where a batch wrote it.
+  ([plan](../plans/batch-processing.md))
+
 - 2026-10-29 — **`POST /v1/items/{id}/tag` no longer answers `422 trigger-refused` where the
   template has already filed the item**, for a missing argument or anything else a firing would
   need. The tag is classification there.

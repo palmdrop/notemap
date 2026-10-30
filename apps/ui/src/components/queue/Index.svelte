@@ -10,6 +10,7 @@
   import { client } from "$lib/client";
   import { byDay as headed, plain } from "$lib/days";
   import { lineOf } from "$lib/excerpt";
+  import { pickedBy, type Picked } from "$lib/marking.svelte";
   import { doubled, pickable } from "$lib/pick";
   import { bringIntoView, following, slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
@@ -32,6 +33,7 @@
     motion,
     slim = false,
     open,
+    marked,
     onselect,
     onprocess,
   }: {
@@ -48,7 +50,9 @@
     slim?: boolean;
     /** The selected item as a whole row. */
     open: Snippet<[Item, boolean]>;
-    onselect: (id: string) => void;
+    /** Whether a line is marked for a batch. */
+    marked?: (id: string) => boolean;
+    onselect: (id: string, how: Picked) => void;
     onprocess: (id: string) => void;
   } = $props();
 
@@ -133,7 +137,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="col-span-full grid grid-cols-subgrid"
-    onclick={pickable(() => onselect(line.item.id))}
+    onclick={pickable((how) => onselect(line.item.id, how))}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
     <span
@@ -143,7 +147,8 @@
       <Stamp
         at={line.item.createdAt}
         dated={!byDay}
-        onopen={() => onselect(line.item.id)}
+        onopen={(event) => onselect(line.item.id, pickedBy(event))}
+        marked={marked?.(line.item.id) ?? false}
         inline
       />
     </span>
