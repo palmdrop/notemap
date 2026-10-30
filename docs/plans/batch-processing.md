@@ -163,40 +163,42 @@ Depends on phase 2.
 
 Depends on nothing; can run beside phases 1–3.
 
-- [ ] shell.md: the selection mode, its keys and its `clear`.
-- [ ] A selection state shared by the queue and the feed, beside the single `selected` each holds
+- [x] shell.md: the selection mode, its keys and its `clear`.
+- [x] A selection state shared by the queue and the feed, beside the single `selected` each holds
       today (`apps/ui/src/components/queue/Queue.svelte:53`,
       `apps/ui/src/components/feed/Feed.svelte:52`), drawn on the register's rows.
-- [ ] Commands and bindings in `apps/ui/src/lib/command/` for toggle, range and clear. Check
+- [x] Commands and bindings in `apps/ui/src/lib/command/` for toggle, range and clear. Check
       `space` against `keys.ts:52`, which answers `space` for a control reached by tab.
-- [ ] Tests:
+- [x] Tests:
   - entering and leaving the mode;
   - toggling;
   - a range, by click and by key;
   - a plain click outside the mode still selects one row.
-- [ ] Verify: UI tests, typecheck and lint pass; stage the branch with
-      `agent stage agent/batch-processing` and try it by hand.
-- [ ] Commit
+- [x] Verify: UI tests, typecheck and lint pass.
+- [ ] Stage the branch with `agent stage agent/batch-processing` and try it by hand.
+- [x] Commit
 
 ### Phase 5 — the batch action, confirm, cancel and result
 
 Depends on phases 3 and 4.
 
-- [ ] shell.md: the batch action (a template, or archive), the confirm step's wording, the single
+- [x] shell.md: the batch action (a template, or archive), the confirm step's wording, the single
       cancel, and the aggregate result in the status line.
-- [ ] The batch action, offered on the marked rows in the queue and the feed.
-- [ ] The confirm step: the count, what will happen, skipped, and already processed elsewhere.
-- [ ] One cancel for the batch in the status line, beside the per-item firings
+- [x] The batch action, offered on the marked rows in the queue and the feed.
+- [x] The confirm step: the count, what will happen, skipped, and already processed elsewhere.
+- [x] One cancel for the batch in the status line, beside the per-item firings
       (`apps/ui/src/components/status/Firing.svelte`, `apps/ui/src/lib/firings.svelte.ts`).
-- [ ] The aggregate result, with the failed and refused items readable from it.
-- [ ] Tests:
+- [x] The aggregate result, counted: filed, failed, cancelled, already filed, refused.
+- [ ] Which items failed or were refused, readable from the result. Today it counts them and
+      names none.
+- [x] Tests:
   - confirm, then commit;
   - confirm, then back out;
   - cancel the batch;
   - a partly refused batch reads as one result.
-- [ ] Verify: tests, typecheck and lint pass; `pnpm test:stack` passes; stage the branch and try it
-      by hand.
-- [ ] Commit
+- [x] Verify: tests, typecheck and lint pass; `pnpm test:stack` passes.
+- [ ] Stage the branch and try it by hand.
+- [x] Commit
 
 ---
 

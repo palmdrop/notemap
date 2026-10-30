@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
@@ -736,4 +742,37 @@ test("read by when rows were processed, a row marked processed waits where it st
 
   await fireEvent.keyDown(window, { key: "Escape" });
   await vi.waitFor(() => expect(order()).toEqual(["two", "three", "one"]));
+});
+
+test("a discard of marked rows says how many are already processed before it is sent", async () => {
+  pool(
+    held(
+      anItem("fresh"),
+      anItem("filed", {
+        routing: {
+          records: 1,
+          pending: 0,
+          to: [{ kind: "destination", destination: "vault" }],
+          templates: [],
+        },
+      }),
+    ),
+  );
+
+  render(Feed);
+  await screen.findByText("fresh");
+  for (const said of ["fresh", "filed"]) {
+    const row = screen.getByText(said).closest("[data-row]") as HTMLElement;
+    await fireEvent.click(
+      within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ }),
+      { metaKey: true },
+    );
+  }
+
+  const head = document.querySelector("[data-head]") as HTMLElement;
+  await fireEvent.click(within(head).getByRole("button", { name: "discard" }));
+
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
+  expect(within(dialog).getByText("1 already processed")).toBeDefined();
 });

@@ -8,6 +8,7 @@ import { published } from "$lib/command/stack.svelte";
 import { firings } from "$lib/firings.svelte";
 import { clearDraft, heldFiles, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
+import { tallying } from "$lib/tallies";
 import StatusLine from "./StatusLine.svelte";
 
 /** The one element saying this, whatever spans it is drawn in. */
@@ -37,6 +38,7 @@ function firstValueOf<T>(source: {
 afterEach(() => {
   notices.clear();
   firings.clear();
+  tallying.clear();
   vi.useRealTimers();
 });
 
@@ -753,6 +755,96 @@ test("more than one firing is counted, and each is cancelled in the panel", asyn
   expect(
     within(flying).getAllByRole("button", { name: "cancel" }),
   ).toHaveLength(2);
+});
+
+test("a batch's routes are said as one, and called off with one cancel", async () => {
+  const bodies: unknown[] = [];
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "POST /v1/batches") {
+      return json(200, {
+        batch: "b1",
+        values: [
+          { id: "one", outcome: "reserved", record: "r1", item: anItem("one") },
+          { id: "two", outcome: "reserved", record: "r2", item: anItem("two") },
+        ],
+      });
+    }
+    if (route === "POST /v1/routing/cancel") {
+      bodies.push(await request.json());
+      return json(200, {
+        values: [
+          { record: "r1", outcome: "cancelled" },
+          { record: "r2", outcome: "cancelled" },
+        ],
+      });
+    }
+    return quiet();
+  });
+  render(StatusLine);
+
+  await client.batch(["one", "two"], { kind: "template", template: "t1" });
+  await client.drain();
+
+  const cancel = await screen.findByRole("button", {
+    name: /^cancel routing 2 notes/,
+  });
+  await fireEvent.click(cancel);
+
+  await vi.waitFor(() => {
+    expect(firings.open).toHaveLength(0);
+  });
+  expect(bodies).toEqual([{ records: ["r1", "r2"] }]);
+  expect(notices.latest).toMatchObject({
+    what: "2 notes routed",
+    why: "2 cancelled",
+  });
+});
+
+test("a batch that ends is said once, not once per item", async () => {
+  vi.useFakeTimers();
+  let logged = [anAction("1", "captured", {})];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions"))
+      return json(200, { values: logged });
+    if (route === "POST /v1/batches") {
+      return json(200, {
+        batch: "b1",
+        values: [
+          { id: "one", outcome: "reserved", record: "r1", item: anItem("one") },
+          { id: "two", outcome: "refused", error: { code: "no-such-item" } },
+        ],
+      });
+    }
+    return quiet();
+  });
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  await client.batch(["one", "two"], { kind: "template", template: "t1" });
+  await client.drain();
+  await vi.advanceTimersByTimeAsync(0);
+
+  logged = [
+    anAction("2", "routed", {
+      record: "r1",
+      template: "t1",
+      firedByTag: true,
+      destination: "vault",
+    }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+
+  await vi.waitFor(() => {
+    expect(notices.latest).toMatchObject({
+      what: "2 notes routed",
+      why: "1 filed, 1 refused",
+      alarm: true,
+    });
+  });
+  expect(notices.history.some((one) => one.what === "routed")).toBe(false);
 });
 
 test("signed out, it says only the work this device holds and whether the pool answers", async () => {

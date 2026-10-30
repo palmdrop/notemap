@@ -18,6 +18,7 @@
   import type { Layout } from "$lib/rows.svelte";
   import { became, editable } from "$lib/lineage";
   import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
+  import { pickedBy, type Picked } from "$lib/marking.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -29,6 +30,7 @@
   let {
     item,
     selected,
+    marked = false,
     offline,
     surface,
     filter = [],
@@ -43,6 +45,8 @@
   }: {
     item: Item;
     selected: boolean;
+    /** Marked for a batch, which is not the same as selected: many rows may be. */
+    marked?: boolean;
     offline: boolean;
     /** On the item's own surface, its records are drawn beneath the row rather than said in it. */
     surface: "queue" | "feed" | "item";
@@ -60,7 +64,7 @@
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
     /** Absent where the row is the whole surface, and there is nothing to select it from. */
-    onselect?: () => void;
+    onselect?: (how: Picked) => void;
     onprocess?: () => void;
   } = $props();
 
@@ -205,7 +209,10 @@
         at={item.createdAt}
         dated={!byDay}
         opened={selected}
-        onopen={onselect === undefined ? undefined : () => pick?.()}
+        {marked}
+        onopen={onselect === undefined
+          ? undefined
+          : (event) => pick?.(pickedBy(event))}
       />
 
       {#if !slim}

@@ -1,8 +1,12 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-29
+**Last updated**: 2026-10-30
 **Shipped**:
+
+- 2026-10-30 — **Rows can be marked for a batch on the queue and the feed**, and given a template
+  or a discard after a confirm step. The status line counts a batch down as one line with one
+  cancel, and says what came of it in one notice. ([plan](../plans/batch-processing.md))
 
 - 2026-10-29 — **The composer's tag row offers no trigger tag.** Routing by a tag from beside the
   place being chosen read as a second way to decide the same thing, and templates are offered there
@@ -2087,6 +2091,57 @@ neither.
 **An item may still be processed more than once.** An item both carried onward by hand and then
 discarded is two visits — which is what it is, two decisions. The pool refuses neither
 ([http-v1.md](http-v1.md#marking-an-item-processed)).
+
+### Marking rows for a batch
+
+*Added 2026-10-30* ([plan](../plans/batch-processing.md)). The queue and the feed can give many
+rows one decision at once: a template that a trigger tag applies, or `discard`.
+
+**Marking is a mode, and it stays on until it is left.**
+
+- A click with `mod` held marks a row, or unmarks it.
+- A click with `shift` held marks every row from the selected one to the row clicked.
+- `space` marks or unmarks the selected row. `J` and `K` walk the list as `j` and `k` do, and
+  mark both the row they leave and the row they reach.
+- Entering the mode with a row already selected marks that row as well. The person was already
+  pointing at it.
+- While the mode is on, a plain click marks or unmarks a row without letting go of the others. It
+  still moves the selection, so the keys follow the hand.
+- The mode stays on with nothing marked. `esc` leaves it before it lets go of the selected row,
+  and so does `clear` in the list's head.
+- `⌘space` is not bound: macOS keeps it for itself.
+
+**A marked row's stamp is inverted**: ink ground, white figures. That is the shell's other way of
+saying *primary*. Many rows can be marked, and only one can be selected, so a marked row never
+borrows the selected row's box.
+
+**While the mode is on, the list's head holds the batch** in place of the view, the filter and the
+order: how many are marked, `route`, `discard`, `all`, `clear`.
+
+- `route` offers the templates that have a trigger tag, the only kind a batch can apply. It is not
+  drawn where there are none.
+- `all` marks every row the surface holds. That is what it has read, not what the pool holds.
+- A row that leaves the surface, because a filter took it off or the queue let it go, is unmarked.
+
+**Every batch is asked before it is sent**, in a dialog whose focus starts on `back`:
+`route 4 notes with Research links?`, `discard 2 notes?`. Under the question it says what will not
+go as asked, counted from the rows this shell holds:
+
+- how many the template already filed, or that are already discarded, which are left as they are;
+- how many are already processed, which a template files again.
+
+The feed is where the second happens. `back` sends nothing and keeps the marks. Sending leaves the
+mode.
+
+**A batch is one operation**, so it waits in the outbox like any other while the pool is out of
+reach ([client.md](client.md#the-outbox)). A discard takes the rows off the queue at once. A
+template draws its trigger tag on them until the pool answers.
+
+**The status line says a batch once.** Its reservations count down as one line, `routing 4 notes
+with Research links`, with one `cancel` that calls them all off in one request. The panel still
+lists each item, with its own cancel. Once every item has settled, one notice says what came of it:
+`4 notes routed, Research links`, with `3 filed, 1 refused`. The notice is in the accent where
+anything failed or was refused. Nothing is said item by item.
 
 ### Tagging
 
