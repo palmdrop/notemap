@@ -146,6 +146,7 @@ async function tagOnce(
         trigger.firing.record,
         tag,
         trigger.template,
+        options.batch,
       );
       // Read again, so the answer carries the reservation `addTag` came back without.
       answer = (await tx.item(id)) ?? tagged;
@@ -155,6 +156,7 @@ async function tagOnce(
     await recordAction(ports, tx, {
       kind: "tagged",
       subject: id,
+      ...(options.batch === undefined ? {} : { batch: options.batch }),
       by,
       at,
       detail: { tag },

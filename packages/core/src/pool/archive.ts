@@ -3,7 +3,7 @@ import { enqueueMirrorWrite } from "./mirror";
 import { ok, refused } from "#utils/result";
 import type { PoolPorts } from "#types/api/ports";
 import type { ArchiveRefusal } from "#types/api/refusal";
-import type { ItemId } from "#types/domain/ids";
+import type { BatchId, ItemId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { Result } from "#types/result";
 
@@ -13,6 +13,7 @@ export function archive(
   ports: PoolPorts,
   id: ItemId,
   reason?: string,
+  batch?: BatchId,
 ): Promise<ArchiveResult> {
   return ports.store.transaction(async (tx) => {
     const item = await tx.item(id);
@@ -35,6 +36,7 @@ export function archive(
     await recordAction(ports, tx, {
       kind: "archived",
       subject: id,
+      ...(batch === undefined ? {} : { batch }),
       // Nothing but a person archives, so there is no attribution to take.
       by: { kind: "person" },
       at,

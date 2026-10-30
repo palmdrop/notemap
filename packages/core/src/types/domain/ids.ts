@@ -19,6 +19,8 @@ export type PoolSettingName = Branded<string, "PoolSettingName">;
 export type JobId = Branded<string, "JobId">;
 export type LeaseId = Branded<string, "LeaseId">;
 export type ActionId = Branded<string, "ActionId">;
+/** Minted by whoever makes the batch, never by the pool. */
+export type BatchId = Branded<string, "BatchId">;
 export type SyncCursor = Branded<string, "SyncCursor">;
 
 export type PoolIdentity = Branded<string, "PoolIdentity">;

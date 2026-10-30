@@ -2030,6 +2030,8 @@ sandbox already covers.
   nobody's behalf.
 - `detail` is open JSON whose shape follows the kind. It carries facts and never a sentence, the
   same as an error body.
+- `batch`, where present, is the id of the [batch](#a-batch-of-items) the entry was written by,
+  as the client that made the batch named it. Nothing reads by it yet.
 - `next` is a ready-to-fetch relative URL on the same terms as the feed's, carrying the order, the
   limit, the filter where there is one, and the next position. It is absent on the last page.
 

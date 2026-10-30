@@ -173,6 +173,7 @@ export type ActionRow = AgentColumns & {
   readonly id: string;
   readonly kind: string;
   readonly subject: string | null;
+  readonly batch: string | null;
   readonly at: number;
   readonly detail: string;
 };
@@ -278,7 +279,16 @@ export const TABLE_COLUMNS = {
     "pointers",
     "withdrawn_at",
   ],
-  actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
+  actions: [
+    "id",
+    "kind",
+    "subject",
+    "by_kind",
+    "by_ref",
+    "at",
+    "detail",
+    "batch",
+  ],
   pool_meta: ["key", "value"],
   pool_identity: ["singleton", "identity"],
   pool_settings: ["name", "value", "changed_at"],

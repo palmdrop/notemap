@@ -49,7 +49,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       tag: (id, name, by, options) =>
         tags.tag(config, ports, id, name, by, options),
       untag: (id, name, by) => tags.untag(ports, id, name, by),
-      archive: (id, reason) => archive.archive(ports, id, reason),
+      archive: (id, reason, batch) => archive.archive(ports, id, reason, batch),
       unarchive: (id) => archive.unarchive(ports, id),
       purge: notImplemented("items.purge"),
     },

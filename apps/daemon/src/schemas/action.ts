@@ -18,6 +18,10 @@ export const actionSchema = z
     kind: z.enum(ACTION_KINDS),
     id: z.string(),
     subject: z.string().optional(),
+    batch: z.string().optional().openapi({
+      description:
+        "The batch the action was part of, as the client that made the batch named it.",
+    }),
     by: agent,
     at: z.string().openapi({
       description:

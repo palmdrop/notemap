@@ -43,6 +43,7 @@ import type { Artifact, EnrichmentStatus } from "../domain/enrichment";
 import type {
   ArtifactId,
   AssetId,
+  BatchId,
   DestinationId,
   RoutingTemplateId,
   Duration,
@@ -140,7 +141,11 @@ export interface ItemsApi {
     options?: Tagging,
   ): Promise<Result<Item, TagRefusal>>;
   untag(id: ItemId, tag: TagName, by: Agent): Promise<Result<Item, TagRefusal>>;
-  archive(id: ItemId, reason?: string): Promise<Result<Item, ArchiveRefusal>>;
+  archive(
+    id: ItemId,
+    reason?: string,
+    batch?: BatchId,
+  ): Promise<Result<Item, ArchiveRefusal>>;
   unarchive(id: ItemId): Promise<Result<Item, ArchiveRefusal>>;
   purge(id: ItemId): Promise<Result<readonly Tombstone[], PurgeRefusal>>;
 }
@@ -328,6 +333,7 @@ export type Tagging = {
   readonly signal?: AbortSignal;
   /** Values for the asked arguments of the template the tag fires. */
   readonly arguments?: SuppliedArguments;
+  readonly batch?: BatchId;
 };
 
 export interface PoolSettingsApi {

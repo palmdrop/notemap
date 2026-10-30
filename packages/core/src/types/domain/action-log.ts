@@ -1,6 +1,6 @@
 import type { JsonObject } from "../json";
 import type { Agent } from "./agent";
-import type { ActionId, ItemId, Timestamp } from "./ids";
+import type { ActionId, BatchId, ItemId, Timestamp } from "./ids";
 
 export const ACTION_KINDS = [
   "captured",
@@ -46,6 +46,8 @@ export type Action = {
   readonly kind: ActionKind;
   /** Absent for work that is not about an item — a destination names itself in `detail`. */
   readonly subject?: ItemId;
+  /** The batch the action was part of. Recorded, never checked or read back by core. */
+  readonly batch?: BatchId;
   readonly by: Agent;
   readonly at: Timestamp;
   readonly detail: JsonObject;
