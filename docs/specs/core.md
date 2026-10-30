@@ -1,9 +1,10 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-29
+**Last updated**: 2026-10-30
 **Shipped**:
 
+- 2026-10-30 — **Routed frontmatter is snake_case throughout and no longer writes `wasAttributedTo`**, which repeated `capture_source`. ([plan](../plans/provenance-keys-one-case.md))
 - 2026-10-29 — **A trigger tag on an item its template already filed is never refused for what a
   firing would need**, an asked argument among it. The tag classifies and fires nothing. ([plan](../plans/trigger-tag-after-a-template-route.md))
 

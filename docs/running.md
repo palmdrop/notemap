@@ -347,7 +347,6 @@ id: '01a04298-6a88-70e5-b49a-c08be16017cd'
 capture_source: 'web'
 payload_type: 'note'
 captured_at: '2026-08-27T10:00:00.000Z'
-wasAttributedTo: 'web'
 derived_from: 'urn:commons:item:01a04298-6a88-70e5-b49a-c08be16017cd'
 tags:
   - 'kind/note'

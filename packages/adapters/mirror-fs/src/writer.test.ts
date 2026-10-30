@@ -194,12 +194,11 @@ describe("the rendering", () => {
         "source_id: 'src-1'",
         "payload_type: 'text'",
         "captured_at: '2026-08-11T14:23:05.000Z'",
-        "wasAttributedTo: 'scratchpad'",
         "updated_at: '2026-08-11T15:00:00.000Z'",
         "tags:",
         "  - 'kind/quote'",
         "  - 'project/fiction-a'",
-        "wasRevisionOf: 'item-0'",
+        "revision_of: 'item-0'",
         "",
       ].join("\n"),
     );
@@ -242,6 +241,22 @@ describe("the rendering", () => {
     expect(block).toContain("id: 'item-1'");
     expect(block).toContain("title: 'mine'");
     expect(block).not.toContain("not-the-item-id");
+  });
+
+  it("takes a renderer's key that is not one of its own", async () => {
+    const { root: where, writer } = mirror({
+      [TEXT]: () => ({
+        body: "",
+        frontmatter: new Map([["wasAttributedTo", "qwen3-4b"]]),
+      }),
+    });
+
+    await writer.write(record());
+    const block = frontmatterOf(
+      await readFile(pathsFor(where, record()).rendering, "utf8"),
+    );
+
+    expect(block).toContain("wasAttributedTo: 'qwen3-4b'");
   });
 
   it("survives a value that would otherwise break the block", async () => {

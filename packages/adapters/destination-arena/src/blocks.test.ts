@@ -150,9 +150,10 @@ describe("a capture carrying several assets", () => {
 describe("what the block remembers about where it came from", () => {
   /** The words a note's frontmatter uses, so one item says it one way wherever it lands. */
   it("carries the item, the source and the capture time", () => {
-    expect(provenanceOf(delivery())).toMatchObject({
+    expect(provenanceOf(delivery())).toEqual({
       id: "item-1",
       capture_source: "scratchpad",
+      payload_type: NOTE,
       captured_at: "2026-09-08T14:23:05.000Z",
       derived_from: "urn:commons:item:item-1",
     });
