@@ -16,6 +16,7 @@ import {
   type UploadLimits,
 } from "./routes/assets";
 import { archiveHandler, unarchiveHandler } from "./routes/archive";
+import { batchHandler, cancelManyHandler } from "./routes/batch";
 import { captureHandler } from "./routes/captures";
 import { editHandler } from "./routes/edit";
 import {
@@ -29,6 +30,8 @@ import {
   assetRoute,
   assetUploadRoute,
   cancelDeliveryRoute,
+  cancelManyRoute,
+  batchRoute,
   deliveryPresenceRoute,
   reinstateDeliveryRoute,
   withdrawDeliveryRoute,
@@ -310,7 +313,9 @@ export function createApp(pool: Pool, options: AppOptions): Hono<AppEnv> {
   );
   app.post(honoPath(routeItemRoute.path), routeHandler(pool));
   app.post(honoPath(previewRouteRoute.path), previewHandler(pool));
+  app.post(honoPath(cancelManyRoute.path), cancelManyHandler(pool));
   app.post(honoPath(cancelDeliveryRoute.path), cancelDeliveryHandler(pool));
+  app.post(honoPath(batchRoute.path), batchHandler(pool));
   app.post(honoPath(withdrawDeliveryRoute.path), withdrawHandler(pool));
   app.post(honoPath(reinstateDeliveryRoute.path), reinstateHandler(pool));
   app.get(honoPath(deliveryPresenceRoute.path), presenceHandler(pool));

@@ -18,6 +18,7 @@ export const READ_ORDERS: readonly ReadOrder[] = [
 export const DEFAULT_LIMIT = 50;
 export const MAX_LIMIT = 500;
 export const MAX_ITEMS_READ = 100;
+export const MAX_BATCH = 500;
 
 export const DEFAULT_RETRY = {
   maxAttempts: 5,

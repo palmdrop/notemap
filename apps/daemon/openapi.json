@@ -2475,6 +2475,299 @@
           }
         ]
       },
+      "CancelManyAnswer": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "record": {
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "cancelled"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "record",
+                    "outcome"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "record": {
+                      "type": "string"
+                    },
+                    "outcome": {
+                      "type": "string",
+                      "enum": [
+                        "refused"
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal the item met, as its own route would answer it."
+                    }
+                  },
+                  "required": [
+                    "record",
+                    "outcome",
+                    "error"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "CancelManyRequest": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "description": "At most 500."
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "additionalProperties": false
+      },
+      "BatchAnswer": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchOutcome"
+            }
+          }
+        },
+        "required": [
+          "batch",
+          "values"
+        ]
+      },
+      "BatchOutcome": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "reserved"
+                ]
+              },
+              "record": {
+                "type": "string",
+                "description": "The reservation the template's trigger tag holds on the item, which cancelling calls off."
+              },
+              "item": {
+                "$ref": "#/components/schemas/Item"
+              }
+            },
+            "required": [
+              "id",
+              "outcome",
+              "record",
+              "item"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "archived"
+                ]
+              },
+              "item": {
+                "$ref": "#/components/schemas/Item"
+              }
+            },
+            "required": [
+              "id",
+              "outcome",
+              "item"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "skipped"
+                ]
+              },
+              "item": {
+                "$ref": "#/components/schemas/Item"
+              }
+            },
+            "required": [
+              "id",
+              "outcome",
+              "item"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "refused"
+                ]
+              },
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": {},
+                "description": "The refusal the item met, as its own route would answer it."
+              }
+            },
+            "required": [
+              "id",
+              "outcome",
+              "error"
+            ]
+          }
+        ]
+      },
+      "BatchRequest": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The batch's id, made by the client. Every log entry the batch writes carries it, and a resend carries the same one."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1,
+            "description": "At most 500, and an id named twice is acted on once."
+          },
+          "action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BatchTemplateAction"
+              },
+              {
+                "$ref": "#/components/schemas/BatchArchiveAction"
+              }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "template": "#/components/schemas/BatchTemplateAction",
+                "archive": "#/components/schemas/BatchArchiveAction"
+              }
+            }
+          }
+        },
+        "required": [
+          "batch",
+          "items",
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "BatchTemplateAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "template"
+            ]
+          },
+          "template": {
+            "type": "string",
+            "minLength": 1
+          },
+          "arguments": {
+            "$ref": "#/components/schemas/SuppliedArguments"
+          }
+        },
+        "required": [
+          "kind",
+          "template"
+        ],
+        "additionalProperties": false,
+        "description": "Applies the template to each item by tagging it with the template's trigger tag."
+      },
+      "BatchArchiveAction": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "archive"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
       "Presence": {
         "oneOf": [
           {
@@ -7746,6 +8039,282 @@
                           "enum": [
                             "not-pending",
                             "delivery-in-flight"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/routing/cancel": {
+      "post": {
+        "summary": "Cancel many pending deliveries",
+        "description": "Cancels each record named, on the terms a single cancel has, and answers each on its own.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelManyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Each record, cancelled or refused.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelManyAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The batch names too many records.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "limit-too-large"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/batches": {
+      "post": {
+        "summary": "Apply a template to many items, or archive them",
+        "description": "Applies one routing template to every item named, by tagging each with the template's trigger tag, or archives every item named. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nAn item answers `reserved` with the record the template's trigger tag holds on it, `archived`, `skipped` where nothing changed — the template had already filed it, or it was already archived — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Each item, as the batch left it.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body could not be read as this request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "malformed-json",
+                            "malformed-envelope"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No template has that id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unknown-template"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body was not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "unsupported-media-type"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The template has no trigger tag, or the batch names too many items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "limit-too-large",
+                            "template-untriggered"
                           ]
                         }
                       },

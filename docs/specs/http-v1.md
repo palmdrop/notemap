@@ -2,7 +2,7 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-29
+**Last updated**: 2026-10-30
 **Shipped**:
 
 - 2026-10-29 — **`POST /v1/items/{id}/tag` no longer answers `422 trigger-refused` where the
@@ -1806,6 +1806,64 @@ committed. It takes exactly the body `/route` takes.
   halfway through, and its outcome is not the canceller's to decide. Trying again after the lease
   expires succeeds.
 - An id no record has is `404 no-such-record`.
+
+`POST /v1/routing/cancel` cancels many records at once, on exactly the terms above, and is how a
+batch is called off. The body names them: `{ "records": ["…", "…"] }`, at most 500. It answers
+`200` with each record on its own, `{ "record", "outcome": "cancelled" }` or
+`{ "record", "outcome": "refused", "error": { "code", … } }` carrying what the single cancel would
+have refused it with. More than 500 is `422 limit-too-large`.
+
+### A batch of items
+
+`POST /v1/batches` applies one routing template to many items, or archives them all. Added
+2026-10-30 ([ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)).
+
+```json
+{
+  "batch": "0198f0c2-...",
+  "items": ["0198f0c2-...", "0198f0c3-..."],
+  "action": { "kind": "template", "template": "0198ef01-...", "arguments": { "heading": "Next" } }
+}
+```
+
+`action` is `{ "kind": "template", "template", "arguments"? }` or
+`{ "kind": "archive", "reason"? }`.
+
+- **The daemon runs the batch, not the pool.** It tags or archives each item on its own, in the
+  order given, through the same operation `POST /v1/items/{id}/tag` and `/archive` use. Each item
+  lands or is refused on its own, and the batch is never refused for what one item met.
+- **A template is applied by its trigger tag.** A template that has none is `422
+  template-untriggered`, and one that does not exist is `404 unknown-template`. Both are refused
+  before any item is reached. `arguments` are the template's asked arguments, the same for every
+  item.
+- **`batch` is the client's id for the batch.** Every entry the batch writes to the log carries it
+  ([the action log](#the-action-log)). The pool does not check it, and a resend carries the same
+  one.
+- `items` holds at most 500 ids. More than that is `422 limit-too-large`. An id named twice is acted
+  on once.
+
+It answers `200`:
+
+```json
+{
+  "batch": "0198f0c2-...",
+  "values": [
+    { "id": "0198f0c2-...", "outcome": "reserved", "record": "0198f0c4-...", "item": { } },
+    { "id": "0198f0c3-...", "outcome": "refused", "error": { "code": "trigger-refused" } }
+  ]
+}
+```
+
+- **`reserved`** carries the record that the template's trigger tag holds pending on the item. That
+  record is what cancelling the batch calls off. A template that filed the item through its tag a
+  moment ago, from this batch or another, answers the same reservation.
+- **`archived`** is an item the batch archived.
+- **`skipped`** is an item nothing changed for: the template had already filed it, or it was
+  already archived. The tag still classifies, as it does on the single route.
+- **`refused`** carries the error the single route would have answered, `no-such-item` included.
+- Every outcome except `refused` carries the item as it now stands.
+- **Sending a batch again is safe.** What landed answers as it stands: a reservation still pending
+  answers `reserved`, and anything else answers `skipped`. What did not land is attempted again.
 
 ### An item's routing records
 

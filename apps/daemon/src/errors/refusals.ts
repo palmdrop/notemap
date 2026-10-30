@@ -323,6 +323,13 @@ export const ITEMS_READ_STATUS = {
   "limit-too-large": 422,
 } as const;
 
+/** What a batch is refused for whole, before any item in it is reached. */
+export const BATCH_STATUS = {
+  "limit-too-large": 422,
+  "unknown-template": 404,
+  "template-untriggered": 422,
+} as const;
+
 /**
  * The routes' own check on `GET /v1/destinations/{id}/candidates` and on
  * `/named`, on the same terms `capability-undeclared` is refused when routing
@@ -366,6 +373,7 @@ const DAEMON_STATUS = {
   ...UPLOAD_STATUS,
   ...SUBJECT_STATUS,
   ...ITEMS_READ_STATUS,
+  ...BATCH_STATUS,
   ...CANDIDATES_REQUEST_STATUS,
   ...GIVEN_STATUS,
   ...ADDRESS_STATUS,
