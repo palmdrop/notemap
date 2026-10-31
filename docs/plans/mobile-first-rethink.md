@@ -186,6 +186,12 @@ Depends on phase 2.
 
 **Verify**: the developer has the URL and the report.
 
+- [ ] Round 2, from the developer's review (2026-10-31): icons, a wider palette and a type scale
+      in place of ADR 46's one face, one size, one red. A lighter navigation than the bottom bar
+      (a floating capture, or queue / capture / settings alone). The item screen's templates and
+      tags redrawn. Conventional, expected controls. The core flow first. Three to five variants
+      of the queue. Into `<artifact>/v2/`, round 1 left in place for comparison
+
 **Checkpoint.** Stop here and wait. The developer reviews the proposed mobile look and confirms
 it or asks for changes. Changes go back to the Builder (or the Auditor, if the critique is wrong)
 and phase 3 repeats. Silence is not sign-off, and neither is a question about the report.
