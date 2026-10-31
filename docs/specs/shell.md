@@ -5,7 +5,8 @@
 **Shipped**:
 
 - 2026-10-30 — **Rows can be marked for a batch on the queue and the feed**, and tagged, untagged,
-  discarded or undiscarded at once; a trigger tag or a discard is confirmed first. The status line
+  discarded or undiscarded at once. A tag changed on a marked row changes every marked row, and a
+  trigger tag or a discard is confirmed first. The status line
   counts a batch down as one line with one cancel, and says what came of it in one notice. ([plan](../plans/batch-processing.md))
 
 - 2026-10-29 — **The composer's tag row offers no trigger tag.** Routing by a tag from beside the
@@ -2101,10 +2102,10 @@ is, by its trigger tag.
 **Marking is a mode, on for as long as anything is marked.**
 
 - A click with `mod` held marks a row, or unmarks it.
-- A click with `shift` held marks every row from the selected one to the row clicked, and selects
-  no text on the way.
-- `space` marks or unmarks the row the keys are on. `J` and `K` walk the list as `j` and `k` do,
-  and mark both the row they leave and the row they reach.
+- A click with `shift` held marks every row from the selected one, or from the cursor, to the row
+  clicked, and selects no text on the way.
+- `space` marks or unmarks the cursor's row. `J` and `K` walk the list as `j` and `k` do, and mark
+  both the row they leave and the row they reach.
 - Entering the mode with a row already selected marks that row as well. The person was already
   pointing at it.
 - While the mode is on, a plain click, or `⏎`, marks or unmarks a row without letting go of the
@@ -2112,21 +2113,26 @@ is, by its trigger tag.
 - The mode ends when the last row is unmarked, on `esc`, and on `clear` in the list's head.
 - `⌘space` is not bound: macOS keeps it for itself.
 
-**A marked row is drawn as the selected row's box, with nothing in its foot.** In the mode no row
-is selected on its own, so what one row is given — `process`, `edit`, `copy`, `open`, `manual` —
-is neither drawn nor reached by a key, and a double click opens nothing. The row the keys are on
-has its stamp underlined. On the index, which has no box to draw, a marked line's stamp is
-inverted.
+**In the mode there is no selected row, only a cursor.** `j`, `k` and the arrows move it, and it
+is not part of the batch unless it is marked itself. What one row is given — `process`, `edit`,
+`copy`, `open`, `manual`, the box and its foot — is neither drawn nor reached by a key, and a
+double click opens nothing. When the mode ends, the cursor's row is the selected row.
+
+**The gutter says what is marked.** Left of a marked row, or of a marked line on the index, is a
+solid bar. Left of the cursor's row is an outlined one, and on a marked cursor row the solid bar is
+outlined.
+
+**A marked row's tags are every marked row's.** A tag added on one goes on every marked row that
+lacks it. One taken off comes off every marked row that has it, and leaves the rest as they are. A
+trigger tag asks what its template asks, once, and every row gets the same values. That is how a
+batch is filed into one note, or under one heading. A marked row offers its `+` where the pointer
+is over it, or where it is the cursor's, and `t` opens it there. While the mode is on, an unmarked
+row's tags are drawn but are not controls.
 
 **While the mode is on, the list's head holds the batch**, in place of the view, the filter and the
 order:
 
 - how many are marked;
-- **the tags**: every tag any marked row carries, counted where not all of them do (`reading
-  2/4`). One added goes on every marked row that lacks it, and one taken off comes off every
-  marked row that has it. A trigger tag asks what its template asks, once, and every row gets the
-  same values. That is how a batch is filed into one note, or under one heading. A trigger tag
-  that filed every row carrying it is drawn inert, as on a row;
 - `discard`, where something marked is not discarded, and `undiscard`, where something is;
 - `all`, which marks every row the surface holds. That is what it has read, not what the pool
   holds;

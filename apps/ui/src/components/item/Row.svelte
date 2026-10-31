@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Item } from "@notemap/client";
+  import type { BatchAction, Item } from "@notemap/client";
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
@@ -32,6 +32,8 @@
     selected,
     marked = false,
     cursor = false,
+    marking = false,
+    onbatch,
     offline,
     surface,
     filter = [],
@@ -46,13 +48,14 @@
   }: {
     item: Item;
     selected: boolean;
-    /**
-     * Marked for a batch: drawn as the selected row's box, with nothing in its
-     * foot, since what a batch is given is the head's to offer.
-     */
+    /** Marked for a batch: its tags are every marked row's. */
     marked?: boolean;
-    /** Where the keys are while rows are being marked: the stamp is underlined. */
+    /** Where the keys are while rows are being marked. */
     cursor?: boolean;
+    /** The surface is marking rows, and a row left out of it has its tags fixed. */
+    marking?: boolean;
+    /** What a marked row's tags are changed through. */
+    onbatch?: (action: BatchAction) => void;
     offline: boolean;
     /** On the item's own surface, its records are drawn beneath the row rather than said in it. */
     surface: "queue" | "feed" | "item";
@@ -74,7 +77,6 @@
     onprocess?: () => void;
   } = $props();
 
-  const boxed = $derived(selected || marked);
   const byDay = $derived(layout !== "rail");
   const slim = $derived(layout === "slim");
   const routed = $derived(surface !== "item");
@@ -83,6 +85,9 @@
   let editing = $state<Editing | undefined>(undefined);
   let row = $state<HTMLElement | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
+
+  /** The pointer is over the row, where a marked row offers its `+`. */
+  let pointed = $state(false);
 
   // Only ever for the one row that is selected, and only where the item's
   // summary says there is something to read: a request per triage at the most.
@@ -176,7 +181,9 @@
       {item}
       {filter}
       {editing}
-      addable={selected}
+      addable={selected || (marked && (cursor || pointed))}
+      fixed={marking && !marked}
+      onbatch={marked ? onbatch : undefined}
       stacked={!slim}
     />
   </div>
@@ -202,22 +209,26 @@
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach following}
 >
+  <!-- Where the pointer is only decides whether a marked row offers its `+`. -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={row}
     data-row={item.id}
     data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
     data-headed={headed ? "" : undefined}
+    onpointerenter={() => (pointed = true)}
+    onpointerleave={() => (pointed = false)}
     class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed
       ? 'scroll-mt-day-head'
       : ''}"
   >
-    <Rail selected={boxed} onpick={pick} onreach={reach}>
+    <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
       <Stamp
         at={item.createdAt}
         dated={!byDay}
         opened={selected}
-        {cursor}
+        {marked}
         onopen={onselect === undefined
           ? undefined
           : (event) => pick?.(pickedBy(event))}
@@ -228,7 +239,7 @@
       {/if}
     </Rail>
 
-    <Body selected={boxed} onpick={pick} onreach={reach}>
+    <Body {selected} onpick={pick} onreach={reach}>
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}
@@ -244,7 +255,7 @@
     <!-- The box's foot, spanning both columns and closing the rail's rule. Every
          row reserves this height, selected or not, so selecting a row shifts
          nothing above or below it; unselected, the rail's rule runs through it. -->
-    {#if boxed}
+    {#if selected}
       <div
         data-foot
         class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
@@ -252,7 +263,7 @@
       >
         {#if editing !== undefined}
           <EditFoot {editing} />
-        {:else if selected}
+        {:else}
           <Actions {commands} />
         {/if}
       </div>

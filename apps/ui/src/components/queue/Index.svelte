@@ -3,6 +3,7 @@
 
   import type { Item } from "@notemap/client";
 
+  import Gutter from "$components/primitives/marks/Gutter.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -139,11 +140,17 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="col-span-full grid grid-cols-subgrid"
+    class="relative col-span-full grid grid-cols-subgrid"
     onclick={pickable((how) => onselect(line.item.id, how))}
     onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
+    <span class="absolute inset-y-0 -left-3 max-narrow:-left-2">
+      <Gutter
+        marked={marked?.(line.item.id) ?? false}
+        cursor={cursor === line.item.id}
+      />
+    </span>
     <span
       bind:this={stamps[line.item.id]}
       class="scroll-mt-day-head whitespace-nowrap"
@@ -153,7 +160,6 @@
         dated={!byDay}
         onopen={(event) => onselect(line.item.id, pickedBy(event))}
         marked={marked?.(line.item.id) ?? false}
-        cursor={cursor === line.item.id}
         inline
       />
     </span>

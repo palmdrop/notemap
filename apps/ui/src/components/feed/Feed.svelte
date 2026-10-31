@@ -274,6 +274,9 @@
       selected: current?.id,
       marking,
       onextend: (step) => leave(() => void extend(step)),
+      ontag: () => {
+        if (current !== undefined) drawn[current.id]?.tag();
+      },
     }),
     // Nothing one row is given is offered while many are marked.
     ...(marking.on ? [] : reached()),
@@ -348,6 +351,8 @@
     selected={!marking.on && selected === item.id}
     marked={marking.has(item.id)}
     cursor={marking.on && selected === item.id}
+    marking={marking.on}
+    onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
     commands={!marking.on && selected === item.id ? commands : []}
     pending={undrained.has(item.id)}

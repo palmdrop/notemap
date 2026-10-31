@@ -29,6 +29,7 @@
     offered = [],
     fires,
     held,
+    fixed = false,
     waiting,
     marked,
     ask,
@@ -53,6 +54,8 @@
      * off is cancelling the routing rather than pressing the tag.
      */
     held?: (name: string) => boolean;
+    /** Every carried tag drawn as a word rather than a control: none can be taken off here. */
+    fixed?: boolean;
     /** A tag this answers true for is not on the item yet, and is drawn grey until it is. */
     waiting?: (name: string) => boolean;
     /** A carried tag this answers true for is underlined: the surface is filtered by it. */
@@ -409,7 +412,8 @@
      offer below keeps the whole name, being what is typed against. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
-  {@const inert = held?.(name) === true}
+  {@const filed = held?.(name) === true}
+  {@const inert = fixed || filed}
   {@const filtered = marked?.(name) === true}
   {@const pending = waiting?.(name) === true}
   {@const where = besides?.(name)}
@@ -420,7 +424,9 @@
   >
     {#if inert}
       <span
-        title="filed the item — cancel the routing to take it off"
+        title={filed
+          ? "filed the item — cancel the routing to take it off"
+          : undefined}
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}

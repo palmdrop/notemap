@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Item } from "@notemap/client";
+  import type { BatchAction, Item } from "@notemap/client";
 
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import { askingFor, saidFor, type Supplied } from "$lib/asked";
@@ -17,6 +17,8 @@
     addable = false,
     stacked = true,
     editing,
+    fixed = false,
+    onbatch,
   }: {
     item: Item;
     filter?: readonly string[];
@@ -25,6 +27,10 @@
     stacked?: boolean;
     /** Open where the capture is being edited, which holds a trigger tag until the save. */
     editing?: Editing;
+    /** Shown but not changed: a row left out of the batch being marked. */
+    fixed?: boolean;
+    /** A row marked for a batch: what is added or taken off here is for every marked row. */
+    onbatch?: (action: BatchAction) => void;
   } = $props();
 
   let set = $state<TagSet | undefined>(undefined);
@@ -51,7 +57,13 @@
 
   /** A trigger tag files the item, so one taken mid-edit files what the save says. */
   function take(name: string, supplied?: Supplied): void {
-    if (editing !== undefined && name.startsWith(TRIGGER_NAMESPACE)) {
+    if (onbatch !== undefined) {
+      onbatch({
+        kind: "tag",
+        tag: name,
+        ...(supplied === undefined ? {} : { arguments: { ...supplied } }),
+      });
+    } else if (editing !== undefined && name.startsWith(TRIGGER_NAMESPACE)) {
       editing.wait(name, supplied);
     } else {
       void tagged(item.id, name, supplied);
@@ -59,7 +71,8 @@
   }
 
   function drop(name: string): void {
-    if (waiting.includes(name)) editing?.unwait(name);
+    if (onbatch !== undefined) onbatch({ kind: "untag", tag: name });
+    else if (waiting.includes(name)) editing?.unwait(name);
     else void client.untag(item.id, name);
   }
 </script>
@@ -74,6 +87,8 @@
     {names}
     {offered}
     {addable}
+    {fixed}
+    label={onbatch === undefined ? undefined : "Add a tag to every marked note"}
     marked={(name) => filter.includes(name)}
     fires={(name) => triggeredBy(name)?.name}
     held={(name) => {

@@ -593,6 +593,22 @@ a keydown, and a button reads to draw what a key would do. The other direction â
 way round.
 _Avoid_: keybinding, shortcut, hotkey
 
+**Selected row**:
+The one row on a list that a person is on, given what one row is given â€” `process`, `edit`, the
+row's foot. There is none while rows are **marked**.
+_Avoid_: active row, focused row, current item
+
+**Marked**:
+Of a row: picked for a batch, one of any number. What is done to a marked row's tags is done to
+every marked row, and the head's `discard` and `undiscard` act on all of them. Marking is a mode,
+on for as long as anything is marked.
+_Avoid_: selected, checked, picked
+
+**Cursor**:
+The row the keys are on while rows are **marked**. It moves, marks and unmarks, and is not itself
+part of the batch unless marked. When the mode ends it becomes the **selected row**.
+_Avoid_: selection, focus, active row
+
 **Hydration**:
 Reading a client's own store back into memory when it starts, before anything is allowed to touch
 what was read. Pending operations are not re-applied: what they changed was written to the store

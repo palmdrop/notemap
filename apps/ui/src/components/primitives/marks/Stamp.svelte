@@ -9,7 +9,6 @@
     dated = true,
     onopen,
     marked = false,
-    cursor = false,
   }: {
     at: string;
     opened?: boolean;
@@ -17,10 +16,8 @@
     /** Absent under a heading that already says the day: the time alone is drawn. */
     dated?: boolean;
     onopen?: (event: MouseEvent) => void;
-    /** Marked for a batch, on an index line: drawn inverted, having no box to be drawn in. */
+    /** Marked for a batch: the gutter shows it, and the stamp says it. */
     marked?: boolean;
-    /** Where the keys are while rows are being marked. */
-    cursor?: boolean;
   } = $props();
 </script>
 
@@ -60,23 +57,7 @@
 {/snippet}
 
 {#snippet drawn()}
-  {#if cursor}
-    <span data-cursor class="underline">{@render marking()}</span>
-  {:else}
-    {@render marking()}
-  {/if}
-{/snippet}
-
-{#snippet marking()}
-  {#if marked}
-    <span
-      data-marked
-      class="-mx-[0.5ch] inline-block bg-ink px-[0.5ch] text-ground"
-      >{@render written()}<span class="sr-only">, marked</span></span
-    >
-  {:else}
-    {@render written()}
-  {/if}
+  {@render written()}{#if marked}<span class="sr-only">, marked</span>{/if}
 {/snippet}
 
 {#if onopen === undefined}

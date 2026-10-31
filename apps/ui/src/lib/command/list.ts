@@ -30,11 +30,16 @@ export function listCommands(at: ListSurroundings): readonly Command[] {
  */
 export function markCommands(at: {
   readonly selected: string | undefined;
-  readonly marking: { toggle(id: string): void };
+  readonly marking: { has(id: string): boolean; toggle(id: string): void };
   readonly onextend: (step: 1 | -1) => void;
+  /** Opens the tags of the row the keys are on, offered while it is marked. */
+  readonly ontag: () => void;
 }): readonly Command[] {
   const selected = at.selected;
   return [
+    ...(selected !== undefined && at.marking.has(selected)
+      ? [{ id: "tag", label: "tag every marked row", run: at.ontag }]
+      : []),
     ...(selected === undefined
       ? []
       : [
