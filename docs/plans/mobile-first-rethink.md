@@ -197,8 +197,9 @@ Depends on phase 2.
       queue variants. The primary is ink, kept as the `--primary` role so it can be changed in
       one place. Row swipes stay as an idea: discard and manual, or straight into routing.
       Search, save as a template and the file-name rule are planned first, in
-      `features-from-the-mobile-rethink` (worktree `~/repos/notemap-features`). What undo means
-      once a delivery has landed is under discussion
+      `features-from-the-mobile-rethink` (worktree `~/repos/notemap-features`). Undo is offered only while a
+      delivery is pending. A delivered record is withdrawn, as its own action. Decisions that deliver
+      get a 3–5 s window, and a pending delivery can be cancelled from the queue; both are planned there
 - [ ] Round 3: from the developer's Figma sketch of the queue (the feel, icons, corners,
       shadows, type). Waits for the sketch
 
