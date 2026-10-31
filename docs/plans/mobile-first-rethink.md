@@ -193,6 +193,15 @@ Depends on phase 2.
       of the queue. Into `<artifact>/v2/`, round 1 left in place for comparison. Reviewed by the driver and given one more pass:
       an ink or blue primary, explicit one-tap routing, the daemon's file names, on its way in the queue
 
+- [x] Developer's review of round 2 _(2026-10-31)_: the main variant is the base, not the
+      queue variants. The primary is ink, kept as the `--primary` role so it can be changed in
+      one place. Row swipes stay as an idea: discard and manual, or straight into routing.
+      Search, save as a template and the file-name rule are planned first, in
+      `features-from-the-mobile-rethink` (worktree `~/repos/notemap-features`). What undo means
+      once a delivery has landed is under discussion
+- [ ] Round 3: from the developer's Figma sketch of the queue (the feel, icons, corners,
+      shadows, type). Waits for the sketch
+
 **Checkpoint.** Stop here and wait. The developer reviews the proposed mobile look and confirms
 it or asks for changes. Changes go back to the Builder (or the Auditor, if the critique is wrong)
 and phase 3 repeats. Silence is not sign-off, and neither is a question about the report.
