@@ -186,11 +186,12 @@ Depends on phase 2.
 
 **Verify**: the developer has the URL and the report.
 
-- [ ] Round 2, from the developer's review (2026-10-31): icons, a wider palette and a type scale
+- [x] Round 2, from the developer's review (2026-10-31): icons, a wider palette and a type scale
       in place of ADR 46's one face, one size, one red. A lighter navigation than the bottom bar
       (a floating capture, or queue / capture / settings alone). The item screen's templates and
       tags redrawn. Conventional, expected controls. The core flow first. Three to five variants
-      of the queue. Into `<artifact>/v2/`, round 1 left in place for comparison
+      of the queue. Into `<artifact>/v2/`, round 1 left in place for comparison. Reviewed by the driver and given one more pass:
+      an ink or blue primary, explicit one-tap routing, the daemon's file names, on its way in the queue
 
 **Checkpoint.** Stop here and wait. The developer reviews the proposed mobile look and confirms
 it or asks for changes. Changes go back to the Builder (or the Auditor, if the critique is wrong)
