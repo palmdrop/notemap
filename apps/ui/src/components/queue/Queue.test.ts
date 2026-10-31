@@ -2074,7 +2074,7 @@ test("unmarking the last row leaves the mode", async () => {
   expect(within(head()).queryByText(/marked/)).toBeNull();
 });
 
-test("marked rows are boxed, and nothing one row is given is offered", async () => {
+test("marked rows carry the gutter's bar, and no row is boxed or offered what one row is given", async () => {
   pool(queued("one", "two", "three"));
 
   render(Queue);
@@ -2084,15 +2084,31 @@ test("marked rows are boxed, and nothing one row is given is offered", async () 
 
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
+  expect(document.querySelectorAll("[data-gutter='marked']")).toHaveLength(2);
+  expect(document.querySelectorAll("[data-gutter][data-cursor]")).toHaveLength(
+    1,
+  );
   expect(document.querySelectorAll("[data-rail][data-selected]")).toHaveLength(
-    2,
+    0,
   );
   expect(screen.queryByRole("button", { name: "process" })).toBeNull();
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual([]);
 });
 
-test("a tag added in the head goes on every marked row at once, unasked", async () => {
+test("the cursor keeps its outline on a row it unmarks", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+  await fireEvent.click(stampOf("two"));
+
+  expect(document.querySelector("[data-gutter='cursor']")).not.toBeNull();
+});
+
+test("a tag added on a marked row goes on every marked row at once, unasked", async () => {
   pool(queued("one", "two"));
 
   render(Queue);
@@ -2100,12 +2116,10 @@ test("a tag added in the head goes on every marked row at once, unasked", async 
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
-  await fireEvent.click(
-    within(head()).getByRole("button", {
-      name: "Add a tag to every marked note",
-    }),
-  );
-  const line = within(head()).getByRole("combobox");
+  await fireEvent.keyDown(window, { key: "t" });
+  const line = screen.getByRole("combobox", {
+    name: "Add a tag to every marked note",
+  });
   await fireEvent.input(line, { target: { value: "reading" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
@@ -2119,4 +2133,47 @@ test("a tag added in the head goes on every marked row at once, unasked", async 
       action: { kind: "tag", tag: "reading" },
     }),
   );
+});
+
+test("a tag taken off a marked row comes off every marked row", async () => {
+  const reading = [
+    { name: "reading", by: { kind: "person" }, addedAt: on(12, 8) },
+  ];
+  pool(
+    holding(anItem("one", { tags: reading }), anItem("two", { tags: reading })),
+  );
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+
+  await fireEvent.click(screen.getAllByRole("button", { name: "reading" })[0]!);
+  await fireEvent.click(screen.getByRole("button", { name: "remove reading" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/batches");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      items: ["one", "two"],
+      action: { kind: "untag", tag: "reading" },
+    }),
+  );
+});
+
+test("an unmarked row's tags are not controls while rows are marked", async () => {
+  const reading = [
+    { name: "reading", by: { kind: "person" }, addedAt: on(12, 8) },
+  ];
+  pool(holding(anItem("one"), anItem("two", { tags: reading })));
+
+  render(Queue);
+  await screen.findByText("one");
+  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+  expect(screen.getByText("reading")).toBeDefined();
 });

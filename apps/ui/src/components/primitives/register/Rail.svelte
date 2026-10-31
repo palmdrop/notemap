@@ -1,11 +1,14 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import Gutter from "$components/primitives/marks/Gutter.svelte";
   import type { Picked } from "$lib/marking.svelte";
   import { doubled, pickable, unselecting } from "$lib/pick";
 
   let {
     selected = false,
+    marked = false,
+    cursor = false,
     onpick,
     onreach,
     gap = false,
@@ -13,6 +16,10 @@
   }: {
     /** Draws the head and the left edge of the box a selected row is. */
     selected?: boolean;
+    /** Marked for a batch, with the gutter's bar. */
+    marked?: boolean;
+    /** Where the keys are while rows are being marked. */
+    cursor?: boolean;
     onpick?: (how: Picked) => void;
     /** Somewhere to go rather than something to do. */
     onreach?: () => void;
@@ -34,10 +41,11 @@
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-rail
   data-selected={selected ? "" : undefined}
-  class="col-start-1 -ml-3 min-w-0 border-t border-l border-ink rule-right pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
+  class="relative col-start-1 -ml-3 min-w-0 border-t border-l border-ink rule-right pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-ml-2 max-narrow:pr-2.5 max-narrow:pl-2
     {onpick === undefined ? '' : 'cursor-pointer'}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? '' : 'border-t-transparent border-l-transparent'}"
 >
+  <Gutter {marked} {cursor} />
   {@render children?.()}
 </div>

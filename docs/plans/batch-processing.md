@@ -229,6 +229,25 @@ Settled 2026-10-30, reviewing the first pass:
 - [x] Tests at each layer; typecheck, lint, tests, `pnpm test:stack`.
 - [x] Commit
 
+### Phase 7 — tags on the rows, a gutter, and a cursor rather than a selection
+
+Settled 2026-10-31, after phase 6 was tried. The box on a marked row, with its empty foot, read as
+the single selection, and a tag field in the head was a step away from the rows it changed.
+
+- **A marked row's tags change every marked row.** Adding a tag on one adds it to every marked row,
+  and removing one removes it from every marked row that has it. An unmarked row's tags are fixed
+  while marking.
+- **A gutter bar marks a row**: solid for marked, an outline for the cursor. There is no box in the
+  mode.
+- **The cursor is not a selection.** The keys move it. It is not in the batch unless marked, and
+  becomes the selected row when the mode ends.
+- **The head holds the count, `discard`, `undiscard`, `all` and `clear`.** No tag field.
+
+- [x] Shell: tags mirrored from marked rows, fixed on the others; `t` on a marked cursor row; the
+      gutter; no box or stamp marks in the mode; the head without tags. shell.md, CONTEXT.md.
+- [x] Tests; typecheck, lint, tests.
+- [x] Commit
+
 ---
 
 ## Testing
