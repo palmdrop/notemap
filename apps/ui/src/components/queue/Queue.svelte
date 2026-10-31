@@ -460,6 +460,7 @@
     slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
+    marking={marking.on}
     onselect={select}
     onprocess={(id) => {
       const item = rows.find((row) => row.id === id);

@@ -229,6 +229,7 @@
         dated={!byDay}
         opened={selected}
         {marked}
+        {marking}
         onopen={onselect === undefined
           ? undefined
           : (event) => pick?.(pickedBy(event))}

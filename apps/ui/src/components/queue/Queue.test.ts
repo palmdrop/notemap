@@ -2096,6 +2096,18 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   expect(went.to).toEqual([]);
 });
 
+test("while marking, a marked stamp is bold and every other is not", async () => {
+  pool(queued("one", "two"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  expect(stampOf("one").querySelector(".font-semibold")).not.toBeNull();
+  expect(stampOf("two").querySelector(".font-semibold")).toBeNull();
+  expect(stampOf("two").querySelector(".font-normal")).not.toBeNull();
+});
+
 test("the cursor keeps its outline on a row it unmarks", async () => {
   pool(queued("one", "two"));
 
@@ -2137,7 +2149,7 @@ test("a tag added on a marked row goes on every marked row at once, unasked", as
 
 test("a tag taken off a marked row comes off every marked row", async () => {
   const reading = [
-    { name: "reading", by: { kind: "person" }, addedAt: on(12, 8) },
+    { name: "reading", by: { kind: "person" as const }, addedAt: on(12, 8) },
   ];
   pool(
     holding(anItem("one", { tags: reading }), anItem("two", { tags: reading })),
@@ -2164,7 +2176,7 @@ test("a tag taken off a marked row comes off every marked row", async () => {
 
 test("an unmarked row's tags are not controls while rows are marked", async () => {
   const reading = [
-    { name: "reading", by: { kind: "person" }, addedAt: on(12, 8) },
+    { name: "reading", by: { kind: "person" as const }, addedAt: on(12, 8) },
   ];
   pool(holding(anItem("one"), anItem("two", { tags: reading })));
 

@@ -2120,7 +2120,8 @@ double click opens nothing. When the mode ends, the cursor's row is the selected
 
 **The gutter says what is marked.** Left of a marked row, or of a marked line on the index, is a
 solid bar. Left of the cursor's row is an outlined one, and on a marked cursor row the solid bar is
-outlined.
+outlined. A marked row's stamp is bold, and every other row's is not, even where the day's heading
+makes every time bold out of the mode.
 
 **A marked row's tags are every marked row's.** A tag added on one goes on every marked row that
 lacks it. One taken off comes off every marked row that has it, and leaves the rest as they are. A
