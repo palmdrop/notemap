@@ -2158,9 +2158,10 @@ be.
 
 **The status line says a batch once.** Its reservations count down as one line, `routing 4 notes
 with Todo`, with one `cancel` that calls them all off in one request. The panel still lists each
-item, with its own cancel. Once every item has settled, one notice says what came of it: `4 notes
-routed, Todo`, with `3 filed, 1 refused`, or `3 notes tagged, reading`. The notice is in the accent
-where anything failed or was refused. Nothing is said item by item.
+item, with its own cancel. Once every item has settled, one notice counts the notes it changed,
+and under that what came of the rest: `3 notes routed, Todo` with `1 refused`, or `1 note
+untagged, abc` with `2 not tagged`. The notice is in the accent where anything failed or was
+refused. Nothing is said item by item.
 
 ### Tagging
 

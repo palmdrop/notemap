@@ -796,7 +796,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   });
   expect(bodies).toEqual([{ records: ["r1", "r2"] }]);
   expect(notices.latest).toMatchObject({
-    what: "2 notes routed",
+    what: "0 notes routed",
     why: "2 cancelled",
   });
 });
@@ -839,8 +839,8 @@ test("a batch that ends is said once, not once per item", async () => {
 
   await vi.waitFor(() => {
     expect(notices.latest).toMatchObject({
-      what: "2 notes routed",
-      why: "1 filed, 1 refused",
+      what: "1 note routed",
+      why: "1 refused",
       alarm: true,
     });
   });

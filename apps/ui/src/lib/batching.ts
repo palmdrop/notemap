@@ -81,40 +81,32 @@ export function asking(
 /** How each record a batch reserved ended, as the log said. */
 export type Ending = "routed" | "failed" | "cancelled";
 
-/** The words a batch is said in: what was done, and what the outcomes count as. */
+/** The words a batch is said in: what was done, and what an item it left as it was is. */
 function wordsFor(
   action: BatchAction,
   routing: boolean,
 ): {
   readonly done: string;
-  readonly changed: string;
   readonly already: string;
 } {
   switch (action.kind) {
     case "tag":
       return routing
-        ? { done: "routed", changed: "filed", already: "already filed" }
-        : { done: "tagged", changed: "tagged", already: "already tagged" };
+        ? { done: "routed", already: "already filed" }
+        : { done: "tagged", already: "already tagged" };
     case "untag":
-      return { done: "untagged", changed: "untagged", already: "not tagged" };
+      return { done: "untagged", already: "not tagged" };
     case "archive":
-      return {
-        done: "discarded",
-        changed: "discarded",
-        already: "already discarded",
-      };
+      return { done: "discarded", already: "already discarded" };
     case "unarchive":
-      return {
-        done: "undiscarded",
-        changed: "undiscarded",
-        already: "not discarded",
-      };
+      return { done: "undiscarded", already: "not discarded" };
   }
 }
 
 /**
- * A batch's one notice, once every item in it has settled: what came of it,
- * counted, and in the accent where anything went wrong. `template` is the name
+ * A batch's one notice, once every item in it has settled: how many it
+ * changed, then what came of the rest, counted, and in the accent where
+ * anything went wrong. `template` is the name
  * of the one a tag applied, where it applied one.
  */
 export function resultOf(
@@ -137,7 +129,6 @@ export function resultOf(
     : outcomes.length - refused - count("skipped");
 
   const counts: readonly [number, string][] = [
-    [changed, words.changed],
     [failed, "failed"],
     [endings.filter((one) => one === "cancelled").length, "cancelled"],
     [count("skipped"), words.already],
@@ -155,7 +146,7 @@ export function resultOf(
       : undefined;
 
   return {
-    what: `${notes(outcomes.length)} ${words.done}`,
+    what: `${notes(changed)} ${words.done}`,
     ...(subject === undefined ? {} : { subject }),
     ...(why === "" ? {} : { why }),
     ...(failed + refused > 0 ? { alarm: true } : {}),
