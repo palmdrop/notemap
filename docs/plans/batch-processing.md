@@ -238,7 +238,7 @@ the single selection, and a tag field in the head was a step away from the rows 
   and removing one removes it from every marked row that has it. An unmarked row's tags are fixed
   while marking.
 - **A gutter bar marks a row**: solid for marked, an outline for the cursor. There is no box in the
-  mode.
+  mode. A marked row's stamp is bold and every other is normal weight while the mode is on.
 - **The cursor is not a selection.** The keys move it. It is not in the batch unless marked, and
   becomes the selected row when the mode ends.
 - **The head holds the count, `discard`, `undiscard`, `all` and `clear`.** No tag field.

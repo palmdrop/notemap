@@ -35,6 +35,7 @@
     slim = false,
     open,
     marked,
+    marking = false,
     cursor,
     onselect,
     onprocess,
@@ -54,6 +55,8 @@
     open: Snippet<[Item, boolean]>;
     /** Whether a line is marked for a batch. */
     marked?: (id: string) => boolean;
+    /** Lines are being marked. */
+    marking?: boolean;
     /** The line the keys are on while lines are being marked. */
     cursor?: string;
     onselect: (id: string, how: Picked) => void;
@@ -160,6 +163,7 @@
         dated={!byDay}
         onopen={(event) => onselect(line.item.id, pickedBy(event))}
         marked={marked?.(line.item.id) ?? false}
+        {marking}
         inline
       />
     </span>

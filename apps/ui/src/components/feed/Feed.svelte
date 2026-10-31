@@ -385,6 +385,7 @@
     slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
+    marking={marking.on}
     onselect={select}
     onprocess={(id) => {
       if (!marking.on) void goto(processHref(id));
