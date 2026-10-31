@@ -72,9 +72,9 @@ test("says a batch once, counting each way its items ended", () => {
   );
 
   expect(raised).toEqual({
-    what: "4 notes routed",
+    what: "1 note routed",
     subject: "Research links",
-    why: "1 filed, 1 failed, 1 already filed, 1 refused",
+    why: "1 failed, 1 already filed, 1 refused",
     alarm: true,
   });
 });
@@ -87,7 +87,7 @@ test("says a discard that all landed without the accent", () => {
       [{ id: "a", outcome: "archived", item: anItem("a") }],
       [],
     ),
-  ).toEqual({ what: "1 note discarded", why: "1 discarded" });
+  ).toEqual({ what: "1 note discarded" });
 });
 
 test("names where a template's values put the notes", () => {
@@ -109,8 +109,23 @@ test("says an ordinary tag by the tag, counting what already carried it", () => 
       [],
     ),
   ).toEqual({
-    what: "2 notes tagged",
+    what: "1 note tagged",
     subject: "reading",
-    why: "1 tagged, 1 already tagged",
+    why: "1 already tagged",
   });
+});
+
+test("counts an untag by the rows that carried the tag", () => {
+  expect(
+    resultOf(
+      { kind: "untag", tag: "abc" },
+      undefined,
+      [
+        { id: "a", outcome: "untagged", item: anItem("a") },
+        { id: "b", outcome: "skipped", item: anItem("b") },
+        { id: "c", outcome: "skipped", item: anItem("c") },
+      ],
+      [],
+    ),
+  ).toEqual({ what: "1 note untagged", subject: "abc", why: "2 not tagged" });
 });

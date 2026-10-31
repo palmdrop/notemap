@@ -36,8 +36,8 @@ test("a batch that reserved is said when its last reservation ends", () => {
   expect(tallying.ended("r1", "routed")).toBeUndefined();
   expect(tallying.ended("r1", "routed")).toBeUndefined();
   expect(tallying.ended("r2", "cancelled")).toMatchObject({
-    what: "2 notes routed",
-    why: "1 filed, 1 cancelled",
+    what: "1 note routed",
+    why: "1 cancelled",
   });
 });
 
