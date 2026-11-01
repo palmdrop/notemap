@@ -4,6 +4,11 @@
 **Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **The feed, the queue and the archive can be read through words.** Every term must
+  appear in an item's text or attachments' names, in any case and with or without accents, in any
+  script. The store keeps each item's words folded beside it.
+  ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 69](../adr/0069-a-filter-may-name-words.md))
 - 2026-11-01 — **Every decision that makes a delivery waits the undo window.** `route` reserves and
   enqueues the delivery due a configured window later, and attempts nothing inline; the record it
   answers carries `until`, and the decision's `routed` entry says the same. A refusal arrives when
@@ -943,6 +948,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   item carries is an empty read rather than a refusal, a filter being a question and not a claim
   that the tag exists. The key and the position are the surface's own, so a filtered read pages
   on the same terms and a position continues from where it names whatever the filter.
+- **The filter also takes words** (added 2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md)), on the feed, the queue and the
+  archive. An item's words are every string its payload's content holds and its attachments'
+  filenames; they and the filter's are folded alike — lower-cased, accents dropped, whitespace made
+  one space — and the filter's split into terms, every one of which must appear somewhere in the
+  item's, inside a word too. Blank words are no filter, and over 200 characters is refused as
+  `words-too-long`. Nothing is ranked: the key and the position are the surface's own. The store
+  holds each item's folded words beside it, written with the item, and answers the condition
+  behind its port; the fold is one function, `@notemap/text`'s, which the client applies over its
+  cache by the same rule.
 - **The feed's filter also takes states, destinations and sources** (added 2026-10-20). A state is
   `unprocessed`, `routed` (holding a routing record, pending included and withdrawn not), `archived` or `revised`
   (something was revised from it), on the same clauses that make an item processed. A destination
@@ -2261,6 +2275,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Read through a filter of two tags, the feed, the queue and the archive each answer only the items
   carrying both, paged from a position in either order; a tag nothing carries answers an empty
   page, and a tag that trims to nothing is refused as `tag-invalid`.
+- Read through words, the feed, the queue and the archive each answer only the items whose text or
+  attachment names hold every term, without regard to case or accents, in any script; an item
+  amended answers to its new words and not its old; words over 200 characters are refused as
+  `words-too-long`.
 - Read through `routed` and `archived` and a tag, the feed answers the items carrying the tag that
   are routed, archived or both; through a destination, only items holding a record naming it,
   pending included; through a source, only items captured through it.

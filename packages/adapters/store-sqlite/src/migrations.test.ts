@@ -829,3 +829,49 @@ describe("holding when each item was processed", () => {
     expect(await processed("revised")).toBe("2026-08-03T09:08:00.000Z");
   });
 });
+
+/** The version before an item held its words folded for a search. */
+const BEFORE_WORDS = MIGRATIONS.length - 1;
+
+describe("an item's words, folded for a search", () => {
+  it("are filled in for every item already there, attachments' names and all", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "notemap-migration-"));
+    directories.push(directory);
+    const file = join(directory, "pool.db");
+
+    const raw = unsynced(file);
+    for (const migration of MIGRATIONS.slice(0, BEFORE_WORDS)) {
+      raw.exec(migration);
+    }
+    raw.exec(`PRAGMA user_version = ${BEFORE_WORDS}`);
+    raw
+      .prepare(
+        `INSERT INTO items (id, source_id, source_item_id, payload_type,
+           payload_content, payload_metadata, created_at, modified_at)
+         VALUES ('one', 'web', 'one', 'note', ?, '{}', 1, 1)`,
+      )
+      .run(JSON.stringify({ text: "A Café\nby the  water", tags: ["Øland"] }));
+    raw
+      .prepare(
+        `INSERT INTO assets (id, filename, mime, blob, bytes, stored_at)
+         VALUES ('a1', 'Hallway.PNG', 'image/png', 'b', 1, 1)`,
+      )
+      .run();
+    raw
+      .prepare(
+        `INSERT INTO item_assets (item_id, slot, asset_id) VALUES ('one', 'p', 'a1')`,
+      )
+      .run();
+    raw.close();
+
+    migrated(file);
+
+    const read = unsynced(file);
+    const row = read.prepare(`SELECT words FROM items WHERE id = 'one'`).get();
+    read.close();
+    const words = (row as { words: string }).words;
+    for (const term of ["a cafe by the water", "øland", "hallway.png"]) {
+      expect(words).toContain(term);
+    }
+  });
+});

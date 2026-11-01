@@ -4334,6 +4334,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+              "example": "bike rack"
+            },
+            "required": false,
+            "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+            "name": "words",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "array",
               "items": {
                 "type": "string"
@@ -4428,6 +4439,7 @@
                             "bad-order",
                             "bad-position",
                             "tag-invalid",
+                            "words-too-long",
                             "bad-source",
                             "bad-by",
                             "bad-state",
@@ -4510,6 +4522,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+              "example": "bike rack"
+            },
+            "required": false,
+            "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+            "name": "words",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "array",
               "items": {
                 "type": "string"
@@ -4556,6 +4579,7 @@
                             "bad-order",
                             "bad-position",
                             "tag-invalid",
+                            "words-too-long",
                             "bad-source",
                             "unsupported-parameter"
                           ]
@@ -4636,6 +4660,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+              "example": "bike rack"
+            },
+            "required": false,
+            "description": "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+            "name": "words",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "array",
               "items": {
                 "type": "string"
@@ -4682,6 +4717,7 @@
                             "bad-order",
                             "bad-position",
                             "tag-invalid",
+                            "words-too-long",
                             "bad-source",
                             "unsupported-parameter"
                           ]

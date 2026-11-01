@@ -5,6 +5,10 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 **Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **`words` filters `/v1/feed`, `/v1/queue` and `/v1/archived`**, and `next` carries
+  it. Over 200 characters is `422 words-too-long`.
+  ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 69](../adr/0069-a-filter-may-name-words.md))
 - 2026-11-01 — **`POST /v1/items/{id}/route` attempts nothing and answers a pending record with
   `until`.** The delivery waits the undo window, `routing.undoWindow` in the config, so `cancel`
   inside it calls the decision off before the destination hears of it. `422 rejected-by-destination`
@@ -744,6 +748,12 @@ carries no record times, so a decision taken back is not something it could reco
   trimmed as tagging trims and the same tag named twice is one; a `tag` that trims to nothing is
   `422 tag-invalid` carrying what was sent, the refusal tagging already answers for the same name.
   A tag no item carries is an empty page rather than a refusal, a filter being a question.
+- **`words` is a filter** *(added 2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))*, on the feed, the queue and the archive:
+  `words=bike%20rack` reads only the items whose words hold both `bike` and `rack`, in any case,
+  with or without accents, inside a word too ([core.md](core.md#the-queue)). One parameter, split
+  on whitespace into terms; no phrases and no operators. Blank is no filter, and over 200
+  characters is `422 words-too-long` carrying the `limit`. `next` carries the words as the pool
+  folded them, which read the same again.
 - **`by` names the key** *(added 2026-10-21, [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))*: `capture`, the default, or
   `processed`, which reads the feed by `processedAt`. It is a parameter of its own rather than a third
   `order`, because which instant and which end are separate questions, and `order` means the same
@@ -2248,6 +2258,7 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `missing-filename` | — | daemon |
 | `422` | `bad-digest` | `digest` | daemon |
 | `422` | `digest-mismatch` | `expected`, `actual` | daemon |
+| `422` | `words-too-long` | `limit` | core (a filter's words) |
 | `422` | `tag-invalid` | `tag` | core (tagging, and a `tag` filter) |
 | `422` | `trigger-refused` | `tag`, `template`, `detail` | core (tagging an item) |
 | `422` | `trigger-tag-invalid` | `tag` | core |

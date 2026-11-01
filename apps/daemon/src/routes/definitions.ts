@@ -27,6 +27,7 @@ import {
   KIND_FILTER_STATUS,
   PARAMETER_STATUS,
   TAG_FILTER_STATUS,
+  WORDS_FILTER_STATUS,
   SOURCE_FILTER_STATUS,
   FEED_FILTER_STATUS,
   UNSUPPORTED_PARAMETER_STATUS,
@@ -171,6 +172,18 @@ const tagFilterQuery = z.object({
     }),
 });
 
+const wordsFilterQuery = z.object({
+  words: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "words", in: "query" },
+      description:
+        "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+      example: "bike rack",
+    }),
+});
+
 const sourceFilterQuery = z.object({
   source: z
     .array(z.string())
@@ -215,6 +228,7 @@ const feedFilterQuery = z.object({
 
 const feedQuery = pageQuery
   .extend(tagFilterQuery.shape)
+  .extend(wordsFilterQuery.shape)
   .extend(sourceFilterQuery.shape)
   .extend(feedFilterQuery.shape);
 
@@ -228,6 +242,7 @@ const itemViewQuery = pageQuery.extend({
       example: "oldest-first",
     }),
   ...tagFilterQuery.shape,
+  ...wordsFilterQuery.shape,
   ...sourceFilterQuery.shape,
 });
 
@@ -471,6 +486,7 @@ export const feedRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      WORDS_FILTER_STATUS,
       SOURCE_FILTER_STATUS,
       FEED_FILTER_STATUS,
     ),
@@ -494,6 +510,7 @@ export const queueRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      WORDS_FILTER_STATUS,
       SOURCE_FILTER_STATUS,
       UNSUPPORTED_PARAMETER_STATUS,
     ),
@@ -517,6 +534,7 @@ export const archivedRoute = createRoute({
       422,
       PARAMETER_STATUS,
       TAG_FILTER_STATUS,
+      WORDS_FILTER_STATUS,
       SOURCE_FILTER_STATUS,
       UNSUPPORTED_PARAMETER_STATUS,
     ),

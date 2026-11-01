@@ -158,6 +158,7 @@ const SAID: {
   "session-required":
     "only someone signed in may manage access tokens and accounts",
   "tag-invalid": "a tag needs something in it",
+  "words-too-long": "that is longer than a search can be",
   "unknown-account-kind": "this daemon has no kind of account by that name",
   "source-item-changed":
     "something else in the pool was captured under that id, saying something different",

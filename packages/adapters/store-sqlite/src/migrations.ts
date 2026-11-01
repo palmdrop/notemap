@@ -7,6 +7,22 @@
  * and those sort half a second apart in the wrong order as text, which would
  * break feed order. Sub-millisecond precision does not survive the round trip.
  */
+/**
+ * Every string the payload's content holds and the filenames of its
+ * attachments, folded by `notemap_fold`, which the store registers on the
+ * connection before migrating. Order does not matter: a term never spans a
+ * line break.
+ */
+export const WORDS = `notemap_fold(
+    COALESCE((SELECT group_concat(said.value, char(10))
+              FROM json_tree(items.payload_content) AS said
+              WHERE said.type = 'text'), '')
+    || char(10) ||
+    COALESCE((SELECT group_concat(asset.filename, char(10))
+              FROM item_assets AS ref JOIN assets AS asset ON asset.id = ref.asset_id
+              WHERE ref.item_id = items.id), '')
+  )`;
+
 export const MIGRATIONS: readonly string[] = [
   `
   CREATE TABLE items (
@@ -955,6 +971,12 @@ export const MIGRATIONS: readonly string[] = [
   `
   -- The batch whose tag fired a record, which that batch sent again reads back.
   ALTER TABLE routing_records ADD COLUMN batch TEXT;
+  `,
+  `
+  -- An item's words as a search compares them: derived, so never mirrored.
+  ALTER TABLE items ADD COLUMN words TEXT NOT NULL DEFAULT '';
+
+  UPDATE items SET words = ${WORDS};
   `,
 ];
 

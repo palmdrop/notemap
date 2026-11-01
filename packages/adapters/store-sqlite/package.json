@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@notemap/core": "workspace:*",
-    "@notemap/sqlite": "workspace:*"
+    "@notemap/sqlite": "workspace:*",
+    "@notemap/text": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",

@@ -65,6 +65,12 @@ export type TagFilterRefusal = {
   readonly tag: string;
 };
 
+/** Words past what a search can sensibly be, which is a paste rather than a question. */
+export type WordsFilterRefusal = {
+  readonly kind: "words-too-long";
+  readonly limit: number;
+};
+
 export type TagRefusal =
   | SubjectRefusal
   | { readonly kind: "tag-invalid"; readonly tag: string }

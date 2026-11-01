@@ -346,19 +346,20 @@ Depends on S1–S4. No code.
 
 Depends on phase 5.
 
-- [ ] The shared fold and match, in `@notemap/text`: NFC, case fold, marks stripped, whitespace collapsed; terms split
+- [x] The shared fold and match, in `@notemap/text`: NFC, case fold, marks stripped, whitespace collapsed; terms split
       on whitespace; every term a substring. Tests with every script phase 1 tests.
-- [ ] Core: `SurfaceFilter` gains branded `words`, made only by a tidy function (as `tagFilter`):
+- [x] Core: `SurfaceFilter` gains branded `words`, made only by a tidy function (as `tagFilter`):
       trimmed, folded, blank dropped, a length bound refused.
-- [ ] store-sqlite: a migration adds the folded column (or a side table), written on capture, on
+- [x] store-sqlite: a migration adds the folded column (or a side table), written on capture, on
       amendment and on a revision. Backfilled. Read as one `instr` clause per term, alongside the
       existing filter clauses. Not mirrored; it is derived.
-- [ ] HTTP: `words` on `/v1/feed`, `/v1/queue`, `/v1/archived`. `next` carries it. Refusals in
+- [x] HTTP: `words` on `/v1/feed`, `/v1/queue`, `/v1/archived`. `next` carries it. Refusals in
       `errors/refusals.ts`. OpenAPI and client types.
-- [ ] Measure: seed 20 000 items, time a filtered page. Over 50 ms, add FTS5 `trigram` over the
-      column and show the same rows come back.
-- [ ] Specs: core.md (the queue: the filter takes words), http-v1.md (the three routes).
-- [ ] Integration tests: each script, a term in an attachment name, words with tags and states,
+- [x] Measure: seed 20 000 items, time a filtered page. Over 50 ms, add FTS5 `trigram` over the
+      column and show the same rows come back. *Measured 2026-11-01: 6 ms at worst for a term no
+      item holds, a full scan; no index added.*
+- [x] Specs: core.md (the queue: the filter takes words), http-v1.md (the three routes).
+- [x] Integration tests: each script, a term in an attachment name, words with tags and states,
       paging under words, an amendment re-matched. Verify, `pnpm test:stack`, commit.
 
 ### Phase 7: search, the client and the shell

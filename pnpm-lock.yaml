@@ -575,6 +575,9 @@ importers:
       '@notemap/sqlite':
         specifier: workspace:*
         version: link:../../plumbing/sqlite
+      '@notemap/text':
+        specifier: workspace:*
+        version: link:../../plumbing/text
     devDependencies:
       '@types/node':
         specifier: ^26.6.4
@@ -613,6 +616,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@notemap/text':
+        specifier: workspace:*
+        version: link:../plumbing/text
       dequal:
         specifier: ^2.0.3
         version: 2.0.3

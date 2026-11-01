@@ -65,8 +65,10 @@ For the pool's index:
 Chosen: **folded substring**, **in the pool and over the cache by one rule**, **a folded column**.
 
 **What matches.** The item's words are every string its payload content holds, in order, and the
-filenames of its attachments. Its words and the filter's are folded alike: decomposed, nonspacing
-marks dropped, recomposed, lower-cased, runs of whitespace made one space. The filter's folded
+filenames of its attachments. Its words and the filter's are folded alike: lower-cased, decomposed,
+accents dropped, recomposed, runs of whitespace made one space. An accent is a combining diacritical
+mark, as Latin, Greek and Cyrillic write one — not every nonspacing mark: a kana's voicing mark or
+an Indic vowel sign makes a different syllable, and dropping it would make `で` find `て`. The filter's folded
 words split on whitespace into terms, and an item matches where every term is a substring of its
 folded words. `weep` finds *sweeper*, `cafe` finds *Café*, and `東京` finds a capture written
 without spaces. No phrases, no operators, no ranking: the surface keeps its own order and position
@@ -90,8 +92,8 @@ presents `archive` as discard.
   tokenised.
 - **Bad** — a term matches inside words: `art` finds *start*. Accepted as the price of a rule a
   person can predict and a client can repeat.
-- **Bad** — dropping nonspacing marks folds together some words a reader of that script would keep
-  apart. Both sides fold alike, so it only ever finds more.
+- **Bad** — dropping accents folds together some words a reader would keep apart (`résumé` and
+  `resume`). Both sides fold alike, so it only ever finds more.
 - **Bad** — an `instr` scan reads every row the other clauses leave, and a rare term reads the
   whole table to fill a page.
 - **Neutral** — a migration adds and backfills the column.

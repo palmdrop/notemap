@@ -2,6 +2,7 @@ import {
   FEED_KEYS,
   ITEM_STATES,
   tagFilter,
+  wordsFilter,
   type DestinationId,
   type FeedFilter,
   type FeedKey,
@@ -110,10 +111,15 @@ const aState = (value: string): DaemonRefusal | undefined =>
     ? undefined
     : { kind: "bad-state", value, allowed: ITEM_STATES };
 
-/** Every `tag` the query repeats, all of which an item must carry, and any one `source`. */
+/**
+ * Every `tag` the query repeats, all of which an item must carry; the `words`,
+ * every term of which its own words must hold; and any one `source`.
+ */
 function surfaceFilter(url: URL): SurfaceFilterQuery {
   const tags = tagFilter(url.searchParams.getAll("tag"));
   if (tags.kind === "refused") return { ok: false, refusal: tags.refusal };
+  const words = wordsFilter(url.searchParams.get("words") ?? "");
+  if (words.kind === "refused") return { ok: false, refusal: words.refusal };
   const sources = repeated<SourceId>(url, "source", notEmpty("bad-source"));
   if (!sources.ok) return sources;
 
@@ -121,6 +127,7 @@ function surfaceFilter(url: URL): SurfaceFilterQuery {
     ok: true,
     filter: {
       ...(tags.value.length === 0 ? {} : { tags: tags.value }),
+      ...(words.value.length === 0 ? {} : { words: words.value }),
       ...(sources.values.length === 0 ? {} : { sources: sources.values }),
     },
   };
@@ -171,6 +178,8 @@ export function filterParameters(
   const feed: FeedFilter = filter;
   return {
     tag: feed.tags ?? [],
+    // The folded terms, which fold to themselves when they are read again.
+    words: feed.words === undefined ? [] : [feed.words.join(" ")],
     state: feed.states ?? [],
     destination: feed.destinations ?? [],
     source: feed.sources ?? [],
