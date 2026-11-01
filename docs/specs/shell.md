@@ -1504,7 +1504,9 @@ the name the adapter would give a second note there — and commits nothing, so 
 and is routed as any line is. What is stored is then `create-or-append` under a name that was free
 when it was drawn, so a note made under that name before the delivery is added to. A blank leaf is
 not a gap: the name the note would get is shown before committing, derived by the same code the
-adapter will run.
+adapter will run. A derived name is never appended to *(amended 2026-11-01,
+[ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))*: where it
+is taken, the row reads `+` under the free name the adapter will give it.
 
 **Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
 under it)*, above what the destination merely offers, under their own label, with **how often each

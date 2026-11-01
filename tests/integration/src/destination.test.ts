@@ -155,7 +155,7 @@ describe("a capture leaving for a folder on disk", () => {
       [
         join(root, "inbox", "a-thought.md"),
         join(root, "inbox", placed),
-        join(root, "inbox", "what it looked like.md"),
+        join(root, "inbox", "what-it-looked-like.md"),
       ].sort(),
     );
 
@@ -169,12 +169,12 @@ describe("a capture leaving for a folder on disk", () => {
       "PNG-BYTES",
     );
     expect(
-      await readFile(join(root, "inbox", "what it looked like.md"), "utf8"),
+      await readFile(join(root, "inbox", "what-it-looked-like.md"), "utf8"),
     ).toContain(`![${placed}](${placed})`);
 
     // The pointer names the file that is actually there.
     expect(first.pointer).toBe("inbox/a-thought.md");
-    expect(second.pointer).toBe("inbox/what it looked like.md");
+    expect(second.pointer).toBe("inbox/what-it-looked-like.md");
 
     // Pool, mirror and vault agree about what happened.
     const records = await opened.pool.routing.recordsFor(thought);

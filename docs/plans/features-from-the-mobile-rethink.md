@@ -1,7 +1,7 @@
 # Features from the mobile rethink
 
 **Date**: 2026-10-31
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
 **Closed**:
 
@@ -215,33 +215,33 @@ kinds or one item, and words there is a later change. Unfurls are the daemon's a
 
 ### Phase 0: before anything
 
-- [ ] Work on `agent/features-from-the-mobile-rethink` (exists, from `main`).
+- [x] Work on `agent/features-from-the-mobile-rethink` (exists, from `main`).
 - [x] Answers to the open decisions recorded above, each struck to the chosen option.
 
 ### Phase 1: derived note names
 
 Depends on N1, N2. Nothing else.
 
-- [ ] ADR via `core:adr`: what a derived note name is, slug against title, the 40 cut, every script
+- [x] ADR via `core:adr`: what a derived note name is, slug against title, the 40 cut, every script
       kept, and a taken derived name taking its free sibling rather than appending. Amends ADR 31.
-- [ ] `@notemap/text` at `packages/plumbing/text`: NFC, grapheme-safe cut, word boundary by
+- [x] `@notemap/text` at `packages/plumbing/text`: NFC, grapheme-safe cut, word boundary by
       `Intl.Segmenter`. Dependency-free, tests beside it. Phase 6 adds the fold to it.
-- [ ] `filename.ts` takes the rule (N1 A) through `@notemap/text`. `oneSegment` gains the mark,
+- [x] `filename.ts` takes the rule (N1 A) through `@notemap/text`. `oneSegment` gains the mark,
       grapheme and NFC fixes (N2).
-- [ ] Both adapters: a folder-only `create-or-append` whose derived name is taken walks
+- [x] Both adapters: a folder-only `create-or-append` whose derived name is taken walks
       `stem-1`, `stem-2`, … to the first free name, stopping at a note holding exactly what this
       delivery would write as a new note. A typed leaf still appends. Adapter tests: taken derived name, retry after an
       unconfirmed write, typed name appends.
-- [ ] The composer's forecast: a folder-only place whose derived name is taken forecasts `create`
+- [x] The composer's forecast: a folder-only place whose derived name is taken forecasts `create`
       under the free sibling, not `append`. shell.md's forecast lines to match.
-- [ ] `filename.test.ts` beside it. There is none today; the derivation is tested only through the
+- [x] `filename.test.ts` beside it. There is none today; the derivation is tested only through the
       adapters. Cases: both mockup examples, `# heading`, a URL-only line, Devanagari, NFD
       `café`, CJK with no spaces, an astral letter at the cut, a first word past the budget, an
       empty capture (item id), a rewrite's first line.
-- [ ] Adapter and integration tests that assert a derived name: update the expected names
+- [x] Adapter and integration tests that assert a derived name: update the expected names
       (`destination-fs`, `destination-webdav`, `tests/integration`, `tests/full-stack`,
       `apps/ui/src/lib/forecast.test.ts`).
-- [ ] Docs: `packages/output-markdown/README.md`, `packages/adapters/destination-fs/README.md`
+- [x] Docs: `packages/output-markdown/README.md`, `packages/adapters/destination-fs/README.md`
       ("weak, and knowingly"), and core.md's 2026-08-13 open question, noted as narrowed. Nothing
       ADR 31 gets its amendment note. core.md's routing section, if it says what a taken derived
       name does.

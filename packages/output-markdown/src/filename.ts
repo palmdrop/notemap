@@ -1,8 +1,7 @@
 import type { Delivery } from "@notemap/core";
+import { clipAtWord, type Budget } from "@notemap/text";
 
-import { oneSegment } from "./names";
-
-const MAX_STEM = 60;
+const STEM: Budget = { characters: 40, bytes: 160 };
 
 /** What to call a note nobody named. Weak, knowingly: **the domain has no title**. */
 export function deriveFilename(delivery: Delivery): string {
@@ -16,10 +15,26 @@ export function deriveFilename(delivery: Delivery): string {
  * depend on core to say what it will call a file.
  */
 export function filenameFrom(content: unknown, fallback: string): string {
-  const line = firstLine(content);
-  const stem = oneSegment(line.slice(0, MAX_STEM), fallback);
+  const stem = trimmed(clipAtWord(slug(firstLine(content)), STEM));
+  return `${stem === "" ? fallback : stem}.md`;
+}
 
-  return `${stem}.md`;
+/**
+ * Lower-cased, every run of anything but letters, marks and digits made one
+ * `-`. An apostrophe is dropped rather than made a dash: `lena's` is one word.
+ */
+function slug(line: string): string {
+  return trimmed(
+    line
+      .toLowerCase()
+      .normalize("NFC")
+      .replace(/\p{Quotation_Mark}/gu, "")
+      .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-"),
+  );
+}
+
+function trimmed(stem: string): string {
+  return stem.replace(/^-+|-+$/g, "");
 }
 
 /** The first line of the longest string in the content, at any depth. */

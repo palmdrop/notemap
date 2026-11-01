@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { assetName, oneSegment } from "./names";
+import { assetName, numbered, oneSegment } from "./names";
 
 describe("one segment", () => {
   it("flattens a name that was never a name", () => {
@@ -43,6 +43,26 @@ describe("one segment", () => {
   it("keeps letters of any script, because a filename is the user's", () => {
     expect(oneSegment("Ölandsbron.md", "fallback")).toBe("Ölandsbron.md");
     expect(oneSegment("メモ.md", "fallback")).toBe("メモ.md");
+    expect(oneSegment("हिन्दी.pdf", "fallback")).toBe("हिन्दी.pdf");
+  });
+
+  it("is one name however a letter was encoded", () => {
+    expect(oneSegment("café.png", "fallback")).toBe("café.png");
+  });
+
+  it("never cuts inside a letter", () => {
+    expect(oneSegment(`a${"𝒳".repeat(130)}`, "fallback")).toBe(
+      `a${"𝒳".repeat(49)}`,
+    );
+  });
+});
+
+describe("a name along from a taken one", () => {
+  it("is the name itself, then numbered before the extension", () => {
+    expect(numbered("notes.md", 0)).toBe("notes.md");
+    expect(numbered("notes.md", 2)).toBe("notes-2.md");
+    expect(numbered("notes", 1)).toBe("notes-1");
+    expect(numbered(".hidden", 1)).toBe(".hidden-1");
   });
 });
 

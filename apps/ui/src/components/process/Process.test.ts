@@ -1491,7 +1491,7 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
   // In the tree, where the note is about to land, and nowhere else.
-  expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
+  expect(await screen.findAllByText(/picker-needs-a-trail\.md/)).toHaveLength(
     1,
   );
   await commit();
@@ -2660,7 +2660,7 @@ test("the preview's head says the full path the typed line names", async () => {
   await fireEvent.input(line, { target: { value: "research/" } });
 
   expect(await screen.findByText(/# a thought/)).toBeDefined();
-  expect(screen.getByText("Vault / research/a thought.md")).toBeDefined();
+  expect(screen.getByText("Vault / research/a-thought.md")).toBeDefined();
 });
 
 /** The two layouts, by width: asserted as the classes that make them. */

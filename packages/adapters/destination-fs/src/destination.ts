@@ -27,6 +27,7 @@ import {
   insertUnder,
   folderPointer,
   markdownOutput,
+  numbered,
   placedOutput,
   placeOf,
   PLACE_ASSETS,
@@ -35,6 +36,7 @@ import {
   hashtagsOf,
   triggerTagsOf,
   type FrontmatterMode,
+  type Note,
   type Renderers,
 } from "@notemap/output-markdown";
 
@@ -481,13 +483,51 @@ function composeCreateOrAppend(
   }
 
   const place = placeOf(args.path);
-  const filename = place.filename ?? deriveFilename(delivery);
+  if (place.filename === undefined) {
+    return createBesideTaken(wiring, delivery, place.directory, args.heading);
+  }
   return append(
     wiring,
     delivery,
-    join(place.directory, filename),
+    join(place.directory, place.filename),
     args.heading,
   );
+}
+
+/**
+ * A name derived from the item is never appended to: two captures that begin
+ * alike would otherwise share a note nobody chose. The first of `name`,
+ * `name-1`, … that is free, or that holds exactly what this delivery writes as
+ * a new note, which is its own last attempt landing after all.
+ */
+async function createBesideTaken(
+  wiring: Wiring,
+  delivery: Delivery,
+  directory: string,
+  heading?: string,
+): Promise<Composition> {
+  const derived = deriveFilename(delivery);
+
+  for (let step = 0; ; step += 1) {
+    const note = await locate(
+      wiring.realRoot,
+      join(directory, numbered(derived, step)),
+    );
+    if ((await found(note.absolute)) === "folder") continue;
+
+    const rendered = render(wiring, delivery, note);
+    const file = fresh(rendered, heading);
+    const existing = await readWithSnapshot(note.absolute);
+    if (existing !== undefined && existing.text !== file) continue;
+
+    return {
+      note,
+      written: file,
+      file,
+      expects: existing?.snapshot ?? "absent",
+      ...said(rendered.dropped),
+    };
+  }
 }
 
 async function create(
@@ -527,10 +567,7 @@ async function append(
 
   const existing = await readWithSnapshot(note.absolute);
   if (existing === undefined) {
-    const file = fileOf(
-      rendered.frontmatter,
-      insertUnder("", rendered.body, heading).file,
-    );
+    const file = fresh(rendered, heading);
     return {
       note,
       written: file,
@@ -550,7 +587,15 @@ async function append(
   };
 }
 
-function render(wiring: Wiring, delivery: Delivery, note: Contained) {
+/** A note as this delivery writes it where there is none. */
+function fresh(rendered: Note, heading?: string): string {
+  return fileOf(
+    rendered.frontmatter,
+    insertUnder("", rendered.body, heading).file,
+  );
+}
+
+function render(wiring: Wiring, delivery: Delivery, note: Contained): Note {
   return renderNote(
     wiring.renderers,
     delivery,

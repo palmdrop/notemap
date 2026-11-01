@@ -2208,6 +2208,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       `research/{{captured_at}}.md` is a filename they chose, expanded per item — but that is an
       answer somebody had to write down. The general case, for a capture nobody has configured a
       template for, is still a title nobody has.
+      *Narrowed 2026-11-01*
+      ([ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)): what
+      the derived name is, for every script, is settled, and a taken one no longer files one capture
+      into another's note. A title is still what nobody has.
 - [ ] 2026-08-13 — Whether a capability may declare itself idempotent, and so opt into retrying a
       delivery whose outcome is unknown. ADR 17 abandons those deliberately, being conservative for
       adapters that can promise nothing. A content-addressed store or an API taking an idempotency

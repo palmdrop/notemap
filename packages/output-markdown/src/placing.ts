@@ -1,6 +1,6 @@
 import type { DeliveredAsset, DeliveredOutput, Delivery } from "@notemap/core";
 
-import { oneSegment } from "./names";
+import { numbered, oneSegment } from "./names";
 
 /** What a name in the folder holds, as much as the walk has to know. */
 export type Occupant =
@@ -125,14 +125,6 @@ export function placedOutput(
 /** The folder as a pointer names it, which at the root is nothing. */
 export function folderPointer(directory: string): string | undefined {
   return directory === "" ? undefined : `${directory}/`;
-}
-
-function numbered(name: string, step: number): string {
-  if (step === 0) return name;
-  const dot = name.lastIndexOf(".");
-  return dot > 0
-    ? `${name.slice(0, dot)}-${step}${name.slice(dot)}`
-    : `${name}-${step}`;
 }
 
 function folded(name: string): string {

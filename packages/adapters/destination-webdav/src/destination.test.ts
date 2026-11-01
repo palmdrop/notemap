@@ -219,7 +219,7 @@ describe("creating a note", () => {
       }),
     );
 
-    expect(outcome).toMatchObject({ pointer: "A thought.md" });
+    expect(outcome).toMatchObject({ pointer: "a-thought.md" });
   });
 
   it("refuses a name that is taken rather than writing over it", async () => {
@@ -554,7 +554,57 @@ describe("creating or appending, decided here", () => {
       }),
     );
 
-    expect(outcome).toMatchObject({ pointer: "drafts/A thought.md" });
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought.md" });
+  });
+
+  it("never appends to a derived name that is taken", async () => {
+    const server = await vault();
+    server.put("V/drafts/a-thought.md", "theirs\n");
+    server.put("V/drafts/a-thought-1.md", "also theirs\n");
+
+    const outcome = await send(server, { path: "drafts/" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-2.md" });
+    expect(server.files()["V/drafts/a-thought.md"]).toBe("theirs\n");
+    expect(server.files()["V/drafts/a-thought-2.md"]).toContain("a thought");
+  });
+
+  /** An attempt whose write landed but whose answer was lost is retried. */
+  it("lands on its own note where an earlier attempt wrote it", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await send(server, { path: "drafts/" });
+    const first = server.files()["V/drafts/a-thought.md"];
+    const again = await send(server, { path: "drafts/" });
+
+    expect(again).toMatchObject({ pointer: "drafts/a-thought.md" });
+    expect(Object.keys(server.files())).toEqual(["V/drafts/a-thought.md"]);
+    expect(server.files()["V/drafts/a-thought.md"]).toBe(first);
+  });
+
+  it("moves on where the derived name is taken between the read and the write", async () => {
+    const server = await vault();
+    server.makeCollection("V/drafts");
+    server.interceptOnce("PUT", () => {
+      server.put("V/drafts/a-thought.md", "theirs\n");
+    });
+
+    const outcome = await send(server, { path: "drafts/" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+    expect(server.files()["V/drafts/a-thought.md"]).toBe("theirs\n");
+  });
+
+  it("still appends to a name that was typed", async () => {
+    const server = await vault();
+    server.put("V/drafts/a-thought.md", "theirs\n");
+
+    const outcome = await send(server, { path: "drafts/a-thought.md" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought.md" });
+    expect(Object.keys(server.files())).toEqual(["V/drafts/a-thought.md"]);
+    expect(server.files()["V/drafts/a-thought.md"]).toContain("theirs");
   });
 
   /** Without the slash there is nothing to tell a new collection from an extensionless note. */

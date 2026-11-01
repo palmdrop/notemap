@@ -5,4 +5,5 @@
  * the forecast and the delivery from drifting into two answers.
  */
 export { filenameFrom } from "./filename";
+export { numbered } from "./names";
 export { placeOf, type Place } from "./place";

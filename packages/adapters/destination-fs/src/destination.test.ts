@@ -389,7 +389,7 @@ describe("creating a file", () => {
     );
 
     expect(outcome).toMatchObject({
-      pointer: "inbox/Read- Borges - Ficciones.md",
+      pointer: "inbox/read-borges-ficciones.md",
     });
   });
 
@@ -878,8 +878,73 @@ describe("creating or appending, decided here", () => {
     );
 
     expect(outcome).toMatchObject({
-      pointer: "drafts/Read- Borges - Ficciones.md",
+      pointer: "drafts/read-borges-ficciones.md",
     });
+  });
+
+  it("never appends to a derived name that is taken", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await mkdir(join(path, "drafts"));
+    await writeFile(join(path, "drafts", "a-thought.md"), "theirs\n");
+    await writeFile(join(path, "drafts", "a-thought-1.md"), "also theirs\n");
+
+    const outcome = await destination.deliver(asked({ path: "drafts/" }));
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-2.md" });
+    expect(await readFile(join(path, "drafts", "a-thought.md"), "utf8")).toBe(
+      "theirs\n",
+    );
+    expect(await readFile(join(path, "drafts", "a-thought-2.md"), "utf8")).toBe(
+      "a thought\n",
+    );
+  });
+
+  it("passes over a folder holding the derived name", async () => {
+    const { destination, path } = await vault({ text: renderText });
+    await mkdir(join(path, "drafts", "a-thought.md"), { recursive: true });
+
+    const outcome = await destination.deliver(asked({ path: "drafts/" }));
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+  });
+
+  /** An attempt whose write landed but whose answer was lost is retried. */
+  it("lands on its own note where an earlier attempt wrote it", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    await destination.deliver(asked({ path: "drafts/" }));
+    const again = await destination.deliver(asked({ path: "drafts/" }));
+
+    expect(again).toMatchObject({ pointer: "drafts/a-thought.md" });
+    expect(await filesUnder(path)).toEqual(["drafts/a-thought.md"]);
+    expect(await readFile(join(path, "drafts", "a-thought.md"), "utf8")).toBe(
+      "a thought\n",
+    );
+  });
+
+  it("still appends to a name that was typed", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await mkdir(join(path, "drafts"));
+    await writeFile(join(path, "drafts", "a-thought.md"), "theirs\n");
+
+    const outcome = await destination.deliver(
+      asked({ path: "drafts/a-thought.md" }),
+    );
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought.md" });
+    expect(await filesUnder(path)).toEqual(["drafts/a-thought.md"]);
+  });
+
+  it("previews a new note where the derived name is taken", async () => {
+    const { path, destination } = await vault({ text: renderText });
+    await mkdir(join(path, "drafts"));
+    await writeFile(join(path, "drafts", "a-thought.md"), "theirs\n");
+
+    const previewed = await textOf(
+      await destination.preview(asked({ path: "drafts/" })),
+    );
+
+    expect(previewed.text).toBe("a thought\n");
   });
 
   /** Without the slash there is nothing to tell a new folder from an extensionless note. */

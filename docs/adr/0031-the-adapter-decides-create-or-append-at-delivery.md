@@ -85,6 +85,11 @@ routing straight away was the cost that outweighed the guarantee. A note made un
 the draw and the delivery is now added to rather than refused. `create` remains for a template or a
 request that asks for it.
 
+*Amended 2026-11-01 ([ADR 67](0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)):*
+a path ending in `/` no longer appends to a note under the derived name. Where that name is taken,
+the note goes under the first free `name-1`, `name-2`, …. A name the person typed is decided here as
+before.
+
 `append-to-file` earns its place on a narrower ground, and it is worth being exact about which,
 because the obvious one is not true: **it does not require the note to already be there.** Both
 kinds write one that is not, deliberately — the motivating case is a daily note whose sections

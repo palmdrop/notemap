@@ -11,12 +11,14 @@ import {
   conversionOf,
   frontmatterModeOf,
   insertUnder,
+  numbered,
   placeOf,
   renderNote,
   hashtagsOf,
   triggerTagsOf,
   type FrontmatterMode,
   type Note,
+  type Place,
   type Renderers,
 } from "@notemap/output-markdown";
 
@@ -85,11 +87,18 @@ export function createOrAppendToNote(
   signal?: AbortSignal,
 ): Promise<Landed> {
   const wanted = createOrAppendTarget(delivery);
-  return append(wiring, delivery, wanted.target, wanted.heading, signal);
+  return wanted.filename === undefined
+    ? createBesideTaken(wiring, delivery, wanted, signal)
+    : append(
+        wiring,
+        delivery,
+        under(wanted.directory, wanted.filename),
+        wanted.heading,
+        signal,
+      );
 }
 
-function createOrAppendTarget(delivery: Delivery): {
-  target: string;
+function createOrAppendTarget(delivery: Delivery): Place & {
   heading?: string;
 } {
   const args = asCreateOrAppendFileArguments(delivery.arguments);
@@ -97,12 +106,54 @@ function createOrAppendTarget(delivery: Delivery): {
     throw new Refused("that is not a create-or-append argument set");
   }
 
-  const place = placeOf(args.path);
-  const filename = place.filename ?? deriveFilename(delivery);
   return {
-    target: under(place.directory, filename),
+    ...placeOf(args.path),
     ...(args.heading === undefined ? {} : { heading: args.heading }),
   };
+}
+
+/**
+ * A name derived from the item is never appended to: two captures that begin
+ * alike would otherwise share a note nobody chose. The first of `name`,
+ * `name-1`, … that is free, or that holds exactly what this delivery writes as
+ * a new note, which is its own last attempt landing after all.
+ */
+async function createBesideTaken(
+  wiring: Wiring,
+  delivery: Delivery,
+  wanted: { directory: string; heading?: string },
+  signal?: AbortSignal,
+): Promise<Landed> {
+  const derived = deriveFilename(delivery);
+
+  for (let step = 0; ; step += 1) {
+    const note = locate(
+      wiring.root,
+      under(wanted.directory, numbered(derived, step)),
+    );
+    const existing = await wiring.dav.get(note.encoded, signal);
+
+    if (existing === undefined) {
+      const landed = await createAt(
+        wiring,
+        delivery,
+        note,
+        (rendered) => wholeUnder(rendered, wanted.heading),
+        signal,
+      );
+      if (landed !== "taken") return landed;
+      continue;
+    }
+
+    const rendered = render(wiring, delivery, note);
+    if (existing.body === wholeUnder(rendered, wanted.heading)) {
+      return {
+        pointer: note.relative,
+        written: existing.body,
+        ...said(rendered),
+      };
+    }
+  }
 }
 
 /** An empty directory names the root itself, and joining it blindly would make an absolute path, which containment refuses outright. */
@@ -117,13 +168,30 @@ async function create(
   signal?: AbortSignal,
 ): Promise<Landed> {
   const wanted = locate(wiring.root, target);
+  const landed = await createAt(wiring, delivery, wanted, whole, signal);
+  if (landed === "taken") {
+    throw (
+      (await folderAt(wiring.dav, wanted, signal)) ??
+      new Refused(`${wanted.relative} is already there`)
+    );
+  }
+  return landed;
+}
 
+/** Written only where nothing is: a name somebody else holds is `taken`, and nothing is written there. */
+async function createAt(
+  wiring: Wiring,
+  delivery: Delivery,
+  wanted: Contained,
+  file: (rendered: Note) => string,
+  signal?: AbortSignal,
+): Promise<Landed | "taken"> {
   await requireFolder(wiring, delivery, wanted, signal);
   await makeCollections(wiring.dav, wanted, signal);
 
   const assets = await placeAssets(wiring.dav, wanted, delivery.assets, signal);
   const rendered = renderInto(wiring, delivery, wanted, assets);
-  const note = whole(rendered);
+  const note = file(rendered);
 
   let written: Awaited<ReturnType<Dav["create"]>>;
   try {
@@ -131,12 +199,7 @@ async function create(
   } catch (cause) {
     throw (await folderAt(wiring.dav, wanted, signal)) ?? cause;
   }
-  if (written === "condition-failed") {
-    throw (
-      (await folderAt(wiring.dav, wanted, signal)) ??
-      new Refused(`${wanted.relative} is already there`)
-    );
-  }
+  if (written === "condition-failed") return "taken";
 
   return { pointer: wanted.relative, written: note, ...said(rendered) };
 }
@@ -308,20 +371,49 @@ export async function previewNote(
     return { text: whole(rendered), ...said(rendered) };
   }
 
-  const wanted =
-    delivery.capability === APPEND
-      ? appendTarget(delivery)
-      : createOrAppendTarget(delivery);
+  if (delivery.capability === APPEND) {
+    const wanted = appendTarget(delivery);
+    return previewAppend(
+      wiring,
+      delivery,
+      wanted.target,
+      wanted.heading,
+      signal,
+    );
+  }
 
-  const note = locate(wiring.root, wanted.target);
+  const place = createOrAppendTarget(delivery);
+  if (place.filename !== undefined) {
+    const target = under(place.directory, place.filename);
+    return previewAppend(wiring, delivery, target, place.heading, signal);
+  }
+
+  // Whichever name the walk settles on, a derived one is always a new note,
+  // rendered against the same folder.
+  const note = locate(
+    wiring.root,
+    under(place.directory, deriveFilename(delivery)),
+  );
+  const rendered = render(wiring, delivery, note);
+  return { text: wholeUnder(rendered, place.heading), ...said(rendered) };
+}
+
+async function previewAppend(
+  wiring: Wiring,
+  delivery: Delivery,
+  target: string,
+  heading?: string,
+  signal?: AbortSignal,
+): Promise<Previewed> {
+  const note = locate(wiring.root, target);
   const rendered = render(wiring, delivery, note);
   const existing = await wiring.dav.get(note.encoded, signal);
 
   return {
     text:
       existing === undefined
-        ? wholeUnder(rendered, wanted.heading)
-        : insertUnder(existing.body, rendered.body, wanted.heading).inserted,
+        ? wholeUnder(rendered, heading)
+        : insertUnder(existing.body, rendered.body, heading).inserted,
     ...said(rendered),
   };
 }

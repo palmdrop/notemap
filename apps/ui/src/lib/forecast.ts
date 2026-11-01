@@ -1,4 +1,8 @@
-import { filenameFrom, placeOf } from "@notemap/output-markdown/naming";
+import {
+  filenameFrom,
+  numbered,
+  placeOf,
+} from "@notemap/output-markdown/naming";
 
 import { isFolder, type Level } from "./path-line";
 
@@ -63,17 +67,29 @@ export function forecastOf(
   const holding = making.length > 0 ? undefined : levels[segments.length];
   if (making.length === 0 && holding?.entries === undefined) return undefined;
 
-  const taken = (holding?.entries ?? []).filter((entry) => !isFolder(entry));
-  const there = taken.some((entry) => entry.label === leaf);
+  const taken = new Set(
+    (holding?.entries ?? [])
+      .filter((entry) => !isFolder(entry))
+      .map((entry) => entry.label),
+  );
+  const there = taken.has(leaf);
+
+  // A derived name is never appended to: the adapter walks to the free one.
+  if (place.filename === undefined) {
+    return {
+      word: "create",
+      leaf: there ? freeName(leaf, taken) : leaf,
+      derived: true,
+      making,
+    };
+  }
 
   return {
     word: there ? "append" : "create",
     leaf,
-    derived: place.filename === undefined,
+    derived: false,
     making,
-    ...(there
-      ? { beside: freeName(leaf, new Set(taken.map((each) => each.label))) }
-      : {}),
+    ...(there ? { beside: freeName(leaf, taken) } : {}),
   };
 }
 
@@ -82,17 +98,10 @@ export function leafOf(value: string, said: Said): string {
   return placeOf(value).filename ?? filenameFrom(said.content, said.item);
 }
 
-/**
- * `decisions.md` taken gives `decisions-1.md`. Suffixed before the extension so
- * the note stays a note, and counted up past every name that is also there.
- */
+/** `decisions.md` taken gives `decisions-1.md`, counted up past every name that is also there. */
 function freeName(leaf: string, taken: ReadonlySet<string>): string {
-  const at = leaf.lastIndexOf(".");
-  const stem = at <= 0 ? leaf : leaf.slice(0, at);
-  const extension = at <= 0 ? "" : leaf.slice(at);
-
-  for (let next = 1; ; next += 1) {
-    const name = `${stem}-${next}${extension}`;
+  for (let step = 1; ; step += 1) {
+    const name = numbered(leaf, step);
     if (!taken.has(name)) return name;
   }
 }

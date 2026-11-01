@@ -7,16 +7,20 @@ places a capture's assets in a folder with no note at all.
 ## The capabilities
 
 `create-or-append` takes one `path` and decides at delivery: a note that is there is appended to,
-and one that is not is created.
+and one that is not is created. A path ending in `/` names a folder, and the note's name is derived.
+A derived name is never appended to: where it is taken, the note goes under the first free
+`name-1`, `name-2`, …, passing over a folder of that name. A note holding exactly what this delivery
+would write as a new note is its own earlier attempt, and is landed on without writing again.
 
 `create` targets `{ directory, filename? }`.
 
 `directory` is required and may be empty, which names the root itself. `filename` is optional
 because a person filing one item often wants to name the note and a person clearing a queue does
 not — so the adapter derives one when it is absent. The derivation is **weak, and knowingly**: the
-domain has no title, so it is the first line of the longest string the payload carries, sanitised
-and truncated, and the item id when there is no prose at all. That is serviceable for text and ugly
-for everything else.
+domain has no title, so it is the first line of the longest string the payload carries, as a
+lower-case slug cut at a word within 40 characters, and the item id when there is no prose at all.
+That is serviceable for text and ugly for everything else. Under `create` a taken derived name is
+refused.
 
 A filename that is given is used as written, resolved under `directory`. Nothing is appended to it:
 a name with no extension gets no `.md`, because guessing at somebody's file naming is the kind of

@@ -1,7 +1,10 @@
-/** Anything a filename may not hold, on the union of the filesystems that matter. */
-const UNSAFE = /[^\p{L}\p{N} ._-]/gu;
+import { clip, type Budget } from "@notemap/text";
 
-const MAX_SEGMENT = 120;
+/** Anything a filename may not hold, on the union of the filesystems that matter. */
+const UNSAFE = /[^\p{L}\p{M}\p{N} ._-]/gu;
+
+/** Room under the 255 bytes most filesystems allow for the digest and the `-1` that may follow. */
+const SEGMENT: Budget = { characters: 120, bytes: 200 };
 
 /**
  * One path segment, from a name that was never promised to be one — an uploaded
@@ -9,16 +12,27 @@ const MAX_SEGMENT = 120;
  * survive: transliterating would be notemap deciding somebody's language is wrong.
  */
 export function oneSegment(name: string, fallback: string): string {
-  const flattened = name
-    .split(/[/\\]/)
-    .join(" ")
-    .replace(UNSAFE, "-")
-    .slice(0, MAX_SEGMENT);
+  const flattened = clip(
+    name.normalize("NFC").split(/[/\\]/).join(" ").replace(UNSAFE, "-"),
+    SEGMENT,
+  );
 
   // A dash goes with them: every leading character this replaced is one, so a
   // note starting `# heading` would otherwise be filed under `- heading`.
   const trimmed = flattened.replace(/^[-.\s]+/, "").replace(/[-.\s]+$/, "");
   return trimmed === "" ? fallback : trimmed;
+}
+
+/**
+ * The name `step` places along from `name` when it is taken: `notes.md`, then
+ * `notes-1.md`, `notes-2.md`. Suffixed before the extension so a note stays a note.
+ */
+export function numbered(name: string, step: number): string {
+  if (step === 0) return name;
+  const dot = name.lastIndexOf(".");
+  return dot > 0
+    ? `${name.slice(0, dot)}-${step}${name.slice(dot)}`
+    : `${name}-${step}`;
 }
 
 /** How much of a blob's digest is enough to tell two uploads apart in one folder. */

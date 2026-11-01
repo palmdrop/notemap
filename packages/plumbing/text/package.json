@@ -1,0 +1,18 @@
+{
+  "name": "@notemap/text",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "mutation": "stryker run"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "vitest": "^4.1.10"
+  }
+}
