@@ -253,23 +253,23 @@ Depends on N1, N2. Nothing else.
 Depends on T1–T3. Independent of phase 1: the leaf check (T2) calls `filenameFrom`, whichever rule
 it holds. If phase 3 lands first, (b)'s offer goes on the landing notice, not the route's.
 
-- [ ] `$lib/template-draft.ts`: a record (and its item) to a `RoutingTemplateDraft`. Destination,
+- [x] `$lib/template-draft.ts`: a record (and its item) to a `RoutingTemplateDraft`. Destination,
       capability, arguments including `folder`, `conversion`, `heading` and settings overrides;
       the leaf dropped per T2; no name, no trigger tag, nothing asked; whether a rewrite was left
       behind. `undefined` for a record it does not offer on. Tests beside it. This is the part the
       redesign carries over.
-- [ ] `TemplateForm` takes a starting draft distinct from `editing`. Saving creates; the caret is
+- [x] `TemplateForm` takes a starting draft distinct from `editing`. Saving creates; the caret is
       in the name, as it is now. A rewrite left behind is said in one line under the place.
-- [ ] Settings › Templates reads `item` and `record` from the address, reads the item's records,
+- [x] Settings › Templates reads `item` and `record` from the address, reads the item's records,
       and opens the form prefilled at the top. A record it cannot find is said plainly, and the
       section draws as usual.
-- [ ] `save as template` in the open record block's foot (`record/Block.svelte`), on the T3 terms.
-- [ ] The route's notice offers `save as template` where nothing else is offered.
-- [ ] shell.md: the block's foot, the notice's offer, the Templates section opened from a record.
+- [x] `save as template` in the open record block's foot (`record/Block.svelte`), on the T3 terms.
+- [x] The route's notice offers `save as template` where nothing else is offered.
+- [x] shell.md: the block's foot, the notice's offer, the Templates section opened from a record.
       No change to core, http-v1, client or CONTEXT.
-- [ ] Component tests: offered and not offered (template-made, manual, withdrawn, destination
+- [x] Component tests: offered and not offered (template-made, manual, withdrawn, destination
       gone), the prefill, a rewrite said, a derived leaf dropped and a typed one kept.
-- [ ] Verify, commit.
+- [x] Verify, commit.
 
 ### Phase 3: the undo window, in the pool
 

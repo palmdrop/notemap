@@ -687,6 +687,7 @@ test("puts a template's trigger tag on the item it routed", async () => {
     expect(sentTo(transport).map(routeOf)).toContain("POST /v1/items/one/tag");
   });
   expect(await sent()).toContainEqual({ tag: RESEARCH.triggerTag });
+  expect(notices.shown.at(-1)?.offer).toBeUndefined();
 });
 
 /** Corrected, the decision is the person's own, and their tags are their own too. */
@@ -2226,6 +2227,27 @@ const aTarget = {
   capability: "append",
   arguments: {},
 };
+
+test("offers to save a decision made by hand as a template", async () => {
+  routing({
+    id: "r",
+    item: "one",
+    at: "2026-09-03T10:00:00.000Z",
+    state: "delivered",
+    pointer: "notes/inbox/picker.md",
+    target: aTarget,
+  });
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+
+  await stayed();
+  const offer = notices.shown.at(-1)?.offer;
+  expect(offer?.label).toBe("save as template");
+  offer?.take();
+  expect(went.to.at(-1)).toBe("/settings/templates?item=one&record=r");
+});
 
 /** The record goes up; what is said about it belongs to the surface below. */
 test("says in the corner where it went, and stays for a second place", async () => {

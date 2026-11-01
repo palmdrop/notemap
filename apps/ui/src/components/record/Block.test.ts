@@ -866,3 +866,30 @@ test("a record read withdrawn offers neither withdraw nor reinstate", async () =
   expect(screen.queryByRole("button", { name: "withdraw" })).toBeNull();
   expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
 });
+
+test("a decision made by hand offers to be saved as a template, at its own address", async () => {
+  await named();
+
+  render(Block, { folds: false, record: RECORD });
+
+  const offer = await screen.findByRole("link", { name: "save as template" });
+  expect(offer.getAttribute("href")).toBe(
+    "/settings/templates?item=one&record=rec",
+  );
+});
+
+test("offers no template where there is nothing to save one from", async () => {
+  await named();
+
+  for (const record of [
+    KEPT,
+    { ...RECORD, target: { kind: "user" as const } },
+    { ...RECORD, withdrawnAt: "2026-08-20T09:00:00.000Z" },
+    { ...RECORD, target: { ...TARGET, destination: "gone" } },
+  ]) {
+    const { unmount } = render(Block, { folds: false, record });
+    await screen.findAllByText(/created|marked processed/);
+    expect(screen.queryByRole("link", { name: "save as template" })).toBeNull();
+    unmount();
+  }
+});

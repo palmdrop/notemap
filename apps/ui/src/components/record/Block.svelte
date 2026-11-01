@@ -13,6 +13,7 @@
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Action from "$components/primitives/controls/Action.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import { templateFromHref } from "$components/settings/href";
   import { argumentsOf } from "$lib/arguments";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
@@ -31,6 +32,7 @@
   } from "$lib/described.svelte";
   import { sizeOf } from "$lib/attachments";
   import { askingToWithdraw } from "$lib/presence";
+  import { templatable } from "$lib/template-draft";
   import {
     cancelledKey,
     keyFor,
@@ -322,8 +324,13 @@
     ...(wrote === undefined ? [] : [{ name: "size", said: sizeOf(wrote) }]),
   ]);
 
+  const savable = $derived(
+    said === undefined && templatable(record, $destinations) && !withdrawn,
+  );
+
   const footed = $derived(
-    link !== undefined ||
+    savable ||
+      link !== undefined ||
       cancellable ||
       (byHand && said === undefined) ||
       (withdrawable && !confirming) ||
@@ -563,6 +570,12 @@
               {#if link !== undefined}
                 <a href={link} rel="noreferrer" class="hover:underline"
                   >open ↗</a
+                >
+              {/if}
+              {#if savable}
+                <a
+                  href={templateFromHref(record.item, record.id)}
+                  class="hover:underline">save as template</a
                 >
               {/if}
               {#if cancellable}

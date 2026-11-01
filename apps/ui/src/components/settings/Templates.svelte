@@ -1,5 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { replaceState } from "$app/navigation";
+  import { page } from "$app/state";
 
   import {
     saidBy,
@@ -15,6 +17,7 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { slide } from "$lib/motion";
+  import { draftOf, type RoutingTemplateDraft } from "$lib/template-draft";
 
   const templates = client.templates.all;
   const destinations = client.destinations.all;
@@ -25,6 +28,54 @@
   let editing = $state<string | undefined>(undefined);
   let doomed = $state<RoutingTemplate | undefined>(undefined);
   let said = $state("");
+
+  /** A routing record this was opened from, to be saved as a template. */
+  const from = $derived({
+    item: page.url.searchParams.get("item"),
+    record: page.url.searchParams.get("record"),
+  });
+  let starting = $state<RoutingTemplateDraft | undefined>(undefined);
+  let unfound = $state(false);
+
+  // Read once the pool answers: the records are the pool's, and the draft says
+  // nothing until the destinations it names are held.
+  $effect(() => {
+    const { item, record } = from;
+    if (item === null || record === null || !pool.yes) return;
+    let live = true;
+
+    void (async () => {
+      try {
+        const [read, records] = await Promise.all([
+          client.item(item),
+          client.routing.recordsFor(item),
+          client.destinations.load(),
+        ]);
+        if (!live) return;
+        const found = records.find((one) => one.id === record);
+        starting =
+          found === undefined || read.item === undefined
+            ? undefined
+            : draftOf(found, read.item, client.destinations.held);
+        unfound = starting === undefined;
+      } catch (error) {
+        if (live) said = saidBy(error);
+      }
+    })();
+
+    return () => {
+      live = false;
+    };
+  });
+
+  /** Saved or let go, the address stops saying what to start from. */
+  function started(): void {
+    starting = undefined;
+    const url = new URL(page.url);
+    url.searchParams.delete("item");
+    url.searchParams.delete("record");
+    replaceState(url, {});
+  }
 
   /** Per template rather than for the list: the question is I/O that may hang. */
   let reports = $state<Record<string, RoutingTemplateReport>>({});
@@ -102,6 +153,23 @@
 
   {#if said !== ""}
     <p role="status" class="mt-4 text-alarm">{said}</p>
+  {/if}
+
+  {#if unfound}
+    <p role="status" class="mt-4">
+      That routing record cannot be saved as a template.
+    </p>
+  {/if}
+
+  {#if starting !== undefined}
+    <Unfolding>
+      <TemplateForm
+        destinations={$destinations}
+        {starting}
+        disabled={!pool.yes}
+        done={started}
+      />
+    </Unfolding>
   {/if}
 
   {#each $templates as one (one.id)}

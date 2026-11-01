@@ -1,8 +1,15 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
+
+- 2026-11-01 — **A decision made by hand can be saved as a template**, from the routing record's
+  block or from the route's notice. The form opens prefilled from the record; a note name derived
+  from the item is left off, so the template names each item's own note. A routed note named after
+  its capture is a short slug, and a taken one is never appended to: the composer draws it as a new
+  note beside the one that is there.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
 
 - 2026-10-30 — **Rows can be marked for a batch on the queue and the feed**, and tagged, untagged,
   discarded or undiscarded at once. A tag changed on a marked row changes every marked row, and a
@@ -1948,7 +1955,11 @@ that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
 so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-**The foot holds the presses.** `open ↗` follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
+**The foot holds the presses.** `open ↗` follows the record's URL where it carries one.
+**`save as template`** *(2026-11-01, [features from the mobile
+rethink](../plans/features-from-the-mobile-rethink.md))* sits beside it on a record made by hand to a
+destination the shell still holds, and not withdrawn. It opens Templates with the form prefilled
+from the record (below). On the right, `cancel`, in alarm, on a pending
 record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
 a decision made by hand, which is the same call; both say so in the status line and the surface reads
 its records again. A foot with nothing in it is not drawn. *Retired 2026-10-22*: `item` in the
@@ -2412,7 +2423,9 @@ flight, how much is left, and whether the pool answers.
 panel and is what the panel hangs from — a button that came and went with what had been said would
 be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
 accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
-cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`). **The line is
+cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on a route made by
+hand in the composer, `save as template` *(2026-11-01)*, which opens Templates on that record).
+**The line is
 short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
 `routing failed: taken.md is already there` — and never the code, the place, or the capture, which
 are the panel's, and the log's beyond it. Below `narrow`, `notices` is its mark alone. A notice rises into the line as it arrives: the line is read at
@@ -2840,6 +2853,17 @@ field)*, `used` naming the count and when it last fired. The place leaves those 
 line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again` and `edit`, with `delete` at the right.
+
+**A template may be saved from a routing record** *(2026-11-01, [features from the mobile
+rethink](../plans/features-from-the-mobile-rethink.md))*. `/settings/templates?item=<id>&record=<id>`
+reads the item and its records and opens the form at the top of the section, holding the record's
+destination, capability and arguments, and its folder mode as `if missing`. Nothing is asked and no
+trigger tag is set; the caret is in the name, and saving creates. A note's name that is the one the
+item was given, or a free one beside it, is left off, so the place names a folder and each item gets
+its own note; a name somebody typed stays. A record that went with words of its own says under the
+fields that the rewrite stays with its item, since a template files each item's own words. A record
+that cannot be found, or is not one to save, is said in one line, and the section draws as usual.
+Saved or cancelled, the address lets go of the record.
 
 **A template may ask for a field each time it is applied** *(2026-10-19,
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. In the form,

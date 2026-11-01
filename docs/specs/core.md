@@ -1,9 +1,13 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **A note named after its capture is a short slug, and a taken one is never appended
+  to.** Every script keeps its letters and marks; under `create-or-append` onto a folder, the note
+  goes beside a taken name instead of into it. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))
 - 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag`, `untag`,
   `archive` and `unarchive` take an optional batch id, recorded on every entry they write. A
   reservation a batch's tag fired keeps the id too, which is the one place core reads it back.

@@ -37,6 +37,7 @@
   import { folderIn, withFolder } from "$lib/output";
   import { browserFor } from "$lib/candidate-browsers";
   import { carriesAssets } from "$lib/capability";
+  import { templateFromHref } from "$components/settings/href";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
@@ -54,6 +55,7 @@
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
+  import { templatable } from "$lib/template-draft";
   import { placeNamed, readingOf, saidOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
@@ -867,12 +869,21 @@
     try {
       const record = await client.routing.route(item.id, requestFor());
       classify(record);
+      const notice = saidOf(record, nameOf, {
+        about: aboutItem(item),
+        href: itemHref(item.id),
+        ...(reading === undefined ? {} : { reading }),
+      });
       notices.raise(
-        saidOf(record, nameOf, {
-          about: aboutItem(item),
-          href: itemHref(item.id),
-          ...(reading === undefined ? {} : { reading }),
-        }),
+        templatable(record, $destinations)
+          ? {
+              ...notice,
+              offer: {
+                label: "save as template",
+                take: () => void goto(templateFromHref(item.id, record.id)),
+              },
+            }
+          : notice,
       );
       // The surface stays, cleared: an item may go to more than one place,
       // and `next →` is what moves on.
