@@ -588,6 +588,9 @@ importers:
 
   packages/client:
     dependencies:
+      '@notemap/text':
+        specifier: workspace:*
+        version: link:../plumbing/text
       openapi-fetch:
         specifier: ^0.17.0
         version: 0.17.0

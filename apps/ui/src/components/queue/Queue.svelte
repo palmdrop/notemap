@@ -17,6 +17,7 @@
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
+  import Search from "$components/tags/Search.svelte";
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
@@ -83,6 +84,7 @@
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
   let filterPanel = $state<FilterPanel | undefined>(undefined);
+  let search = $state<Search | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -342,6 +344,7 @@
         ]
       : []),
     { id: "filter", label: "filter", run: () => void filterPanel?.show() },
+    { id: "search", label: "search", run: () => search?.focus() },
     {
       id: "view",
       label: "view",
@@ -384,6 +387,11 @@
       filter={reading.filter}
       ontoggle={reading.toggle}
       onclear={reading.clear}
+    />
+    <Search
+      bind:this={search}
+      words={reading.words}
+      onsearch={reading.search}
     />
     <Order />
   {/if}

@@ -7,7 +7,11 @@ import { filterOf, type Filter, type Order } from "@notemap/client";
 import { PARAM as ORDER, withOrder } from "./order";
 import { withView, type View } from "./view";
 
-export type FilterKind = keyof Filter;
+/** The kinds the panel chooses among. The words are typed, on a line of their own. */
+export type FilterKind = Exclude<keyof Filter, "words">;
+
+/** The words, as they were typed: the filter folds them, and the line shows them as written. */
+export const WORDS = "words";
 
 /** Each kind's parameter, in the order the address names them. */
 export const PARAMS: Readonly<Record<FilterKind, string>> = {
@@ -20,16 +24,33 @@ export const PARAMS: Readonly<Record<FilterKind, string>> = {
 const KINDS = Object.keys(PARAMS) as FilterKind[];
 
 export function filterFor(url: URL): Filter {
-  return filterOf(
-    Object.fromEntries(
+  return filterOf({
+    ...Object.fromEntries(
       KINDS.map((kind) => [kind, url.searchParams.getAll(PARAMS[kind])]),
     ),
-  );
+    words: [wordsIn(url)],
+  });
 }
 
-/** The same URL read through this filter, each kind in the order it was added. */
+export function wordsIn(url: URL): string {
+  return url.searchParams.get(WORDS) ?? "";
+}
+
+/** The same URL read through these words, or through none where they are blank. */
+export function withWords(url: URL, words: string): URL {
+  const next = new URL(url);
+  if (words.trim() === "") next.searchParams.delete(WORDS);
+  else next.searchParams.set(WORDS, words);
+  return next;
+}
+
+/**
+ * The same URL read through this filter, each kind in the order it was added.
+ * The words stay as they were typed, unless the filter names none.
+ */
 export function withFilter(url: URL, filter: Filter): URL {
   const next = new URL(url);
+  if (filter.words.length === 0) next.searchParams.delete(WORDS);
   for (const kind of KINDS) {
     next.searchParams.delete(PARAMS[kind]);
     for (const value of filter[kind])
@@ -78,8 +99,8 @@ export const GOING = { noScroll: true, keepFocus: true } as const;
 
 /** Where a filtered reading keeps its scroll, apart from the whole surface's. */
 export function placeKey(surface: string, filter: Filter): string {
-  const named = KINDS.filter((kind) => filter[kind].length > 0).map(
-    (kind) => `${kind}=${filter[kind].join("\u0000")}`,
-  );
+  const named = [...KINDS, "words" as const]
+    .filter((kind) => filter[kind].length > 0)
+    .map((kind) => `${kind}=${filter[kind].join("\u0000")}`);
   return named.length === 0 ? surface : `${surface}?${named.join("\u0001")}`;
 }

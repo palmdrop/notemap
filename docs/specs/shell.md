@@ -4,6 +4,9 @@
 **Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **The queue and the feed can be searched.** A line in the list head, `/` from either
+  surface, on the address as `words=`; every term must be in an item's words or its attachments'
+  names, in any case and with or without accents. ([plan](../plans/features-from-the-mobile-rethink.md))
 - 2026-11-01 — **A route made by hand is in flight until it lands.** It waits a short window
   before anything is attempted, counting down on the status line with `undo`, then `cancel` while
   the delivery is still pending; the process surface offers the same beside where the item has gone,
@@ -1234,6 +1237,16 @@ address last said.
 - **Rows drawn from the cache while a new filter's first page is read are offered no `load
   more`**: whether there is more is what that page answers, and a `load more` that goes as soon as
   it lands is a flash of a claim nobody can act on.
+
+**Search is a line of its own in the list head** *(2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))*, beside `filter ▾` on the
+queue and the feed: a filter by words, which the shell says as search. Each term must be in an
+item's words or its attachments' names, in any case and with or without accents, inside a word too;
+the list keeps its own order. `/` puts the caret in it from either surface. It is on the address as
+`words=`, as typed, read again a moment after the last key rather than at every letter; the first
+change of a run of typing pushes an entry and the rest replace it, so back takes the words off as
+it takes a tag. Never remembered, as no filter is, and not counted in `filter N ▾`: the line says
+itself. `clear filters` takes the words off with the rest. An emptied list says
+`Nothing matches “bike rack”.`, and beside other filters names the words first.
 
 - **Nothing under the list head says what it is filtered by.** The control's count says a filter
   is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken

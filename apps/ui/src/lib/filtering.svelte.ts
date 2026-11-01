@@ -12,6 +12,8 @@ import {
   GOING,
   placeKey,
   toggled,
+  withWords,
+  wordsIn,
   type FilterKind,
 } from "$lib/filter";
 import { leave } from "$lib/leaving.svelte";
@@ -25,7 +27,14 @@ export type Filtering = {
   readonly place: string;
   /** Reads the surface through the filter its address names, for its first drawing. */
   arrive(): Promise<void>;
+  /** The words on the address, as they were typed. */
+  readonly words: string;
   toggle(kind: FilterKind, value: string): void;
+  /**
+   * Read through these words. The first change of a run of typing pushes an
+   * entry, so going back takes the words off; the rest replace it.
+   */
+  search(words: string, push: boolean): void;
   clear(): void;
 };
 
@@ -94,6 +103,10 @@ export function filtering(
       return place;
     },
 
+    get words() {
+      return wordsIn(page.url);
+    },
+
     async arrive() {
       await client.enter(
         surface,
@@ -106,6 +119,11 @@ export function filtering(
 
     toggle(kind, value) {
       go(toggled(filter, kind, value));
+    },
+
+    search(words, push) {
+      const to = withWords(page.url, words);
+      void goto(to, push ? GOING : { ...GOING, replaceState: true });
     },
 
     clear() {

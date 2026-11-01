@@ -366,15 +366,15 @@ Depends on phase 5.
 
 Depends on phase 6.
 
-- [ ] Client: the filter tidies `words` as the pool does. The one rule keeping a page includes the
+- [x] Client: the filter tidies `words` as the pool does. The one rule keeping a page includes the
       shared match, so a cache-drawn surface and an arrival agree with the pool. client.md.
-- [ ] Shell: a line in the list head of the queue and the feed, beside `order` and `filter ▾`,
+- [x] Shell: a line in the list head of the queue and the feed, beside `order` and `filter ▾`,
       published as a command with a binding (`/` is free), on the address as `words=`. While
       typing it replaces the address; once settled it pushes one entry, so back takes the words off
       as it takes a tag. Never remembered. An emptied list says `Nothing matches “bike rack”.` with
       `clear filters`. Not counted in `filter N ▾`. This line is what the redesign's search field
       becomes.
-- [ ] shell.md: "Tags, and a filter" gains the words line. Component and command tests. Verify,
+- [x] shell.md: "Tags, and a filter" gains the words line. Component and command tests. Verify,
       commit.
 
 ### Phase 8: close

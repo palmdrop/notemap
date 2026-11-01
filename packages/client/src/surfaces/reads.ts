@@ -34,12 +34,13 @@ function positionIn(next: string): string | undefined {
 
 function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
   const after = page.after;
-  const { tags, states, destinations, sources } = page.filter ?? WHOLE;
+  const { tags, words, states, destinations, sources } = page.filter ?? WHOLE;
   const query = {
     order: page.order,
     limit: String(PAGE),
     ...(after === undefined ? {} : { after }),
     ...(tags.length === 0 ? {} : { tag: [...tags] }),
+    ...(words.length === 0 ? {} : { words: words.join(" ") }),
     ...(sources.length === 0 ? {} : { source: [...sources] }),
   };
 

@@ -4,6 +4,9 @@
 **Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
+  and rule the pool answers with. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 69](../adr/0069-a-filter-may-name-words.md))
 - 2026-11-01 — **A route resolves to a pending record and `until`.** The pool holds every decision
   that makes a delivery for a short window before it is attempted; the landing arrives from the log.
   ([plan](../plans/features-from-the-mobile-rethink.md))
@@ -588,13 +591,18 @@ has walked, so a filtered reading made from them would be silently short of what
   tag named twice is one, so what the pool is asked and what the page is kept by are the same set.
   States, destinations and sources are tidied the same way, without the trim, an id being matched
   exactly *(2026-10-20)*. States and destinations are the feed's, and a filter naming one is never
-  asked of the queue; a source is asked of either *(2026-10-21)*.
+  asked of the queue; a source is asked of either *(2026-10-21)*. **Words are folded into terms**
+  *(2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))* by `@notemap/text`, the function the pool folds with, and asked of either
+  surface as one `words` parameter.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
   anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
   by, judged against the copy the client holds. It also meets one of each kind of the rest the
   filter names *(2026-10-20)*: a state, read from its archive state, its routing summary
   and `revisedInto` as the queue's own condition is; a destination, read from the ids its routing
-  summary's `to` names; a source, read from its own. Every change that could move an item between
+  summary's `to` names; a source, read from its own. And its words hold every term the filter names
+  *(2026-11-01)*: the strings of its payload's content and the filenames of the assets the pool
+  answered it with, folded and matched by the same function the pool's store uses, so a page drawn
+  from the cache and one the pool answers keep the same items. Every change that could move an item between
   pages asks it: an arrival, a settlement, a decision, an archive and its undo, and a tag or an
   untag. So taking a filter's tag off a row takes the row off the filtered page and leaves it on the
   whole one, and tagging an item the client holds into a filter places it on the filtered page where

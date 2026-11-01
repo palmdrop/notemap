@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { filterOf, WHOLE } from "@notemap/client";
 
-import { filtered, filterFor, placeKey, toggled, withFilter } from "./filter";
+import {
+  filtered,
+  filterFor,
+  placeKey,
+  toggled,
+  withFilter,
+  withWords,
+  wordsIn,
+} from "./filter";
 
 const at = (query: string) => new URL(`http://shell/feed${query}`);
 const tags = (...names: string[]) => filterOf({ tags: names });
@@ -22,10 +30,28 @@ describe("a filter on the address", () => {
       ),
     ).toEqual({
       tags: [],
+      words: [],
       states: ["routed", "archived"],
       destinations: ["v"],
       sources: ["m"],
     });
+  });
+
+  it("reads the words folded, and keeps them as typed", () => {
+    const url = at("?words=Caf%C3%A9%20%20Rack&tag=a");
+    expect(filterFor(url).words).toEqual(["cafe", "rack"]);
+    expect(wordsIn(url)).toBe("Café  Rack");
+  });
+
+  it("writes the words as typed, and takes them off where they are blank", () => {
+    expect(wordsIn(withWords(at("?tag=a"), "Bike rack"))).toBe("Bike rack");
+    expect(withWords(at("?tag=a&words=bike"), "  ").search).toBe("?tag=a");
+  });
+
+  it("leaves the words alone when the panel changes, and takes them off when the filter is cleared", () => {
+    const url = at("?words=Caf%C3%A9&tag=a");
+    expect(wordsIn(withFilter(url, filterFor(url)))).toBe("Café");
+    expect(wordsIn(withFilter(url, WHOLE))).toBe("");
   });
 
   it("is whole where nothing is named", () => {
