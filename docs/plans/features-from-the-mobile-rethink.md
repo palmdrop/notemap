@@ -379,7 +379,7 @@ Depends on phase 6.
 
 ### Phase 8: close
 
-- [ ] `todo.md`: tick "fuzzy search…" with what shipped and what did not (fuzzy, the log). Leave
+- [x] `todo.md`: tick "fuzzy search…" with what shipped and what did not (fuzzy, the log). Leave
       "searchable files/folders in webdav/fs destinations" alone, since it is a different
       question.
 - [ ] Shipped entries in every spec listed, status, open the PR.
