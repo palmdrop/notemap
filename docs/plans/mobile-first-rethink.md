@@ -213,8 +213,6 @@ Depends on phase 2.
         status colours (delivered, pending, destructive) on either.
       - Nothing in the navigation assumes the feed is a list
 
-**Checkpoint.** Stop here and wait.
-
 **Checkpoint.** Stop here and wait. The developer reviews the proposed mobile look and confirms
 it or asks for changes. Changes go back to the Builder (or the Auditor, if the critique is wrong)
 and phase 3 repeats. Silence is not sign-off, and neither is a question about the report.
