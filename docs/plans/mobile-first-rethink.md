@@ -201,7 +201,19 @@ Depends on phase 2.
       delivery is pending. A delivered record is withdrawn, as its own action. Decisions that deliver
       get a 3–5 s window, and a pending delivery can be cancelled from the queue; both are planned there
 - [ ] Round 3: from the developer's Figma sketch of the queue (the feel, icons, corners,
-      shadows, type). Waits for the sketch
+      shadows, type). Waits for the sketch. It must leave room for two later layouts of the
+      register (ADR 52's word), which are not drawn now:
+      a **calendar**, each day marked by colour and a count of its captures; and a **timeline**, a
+      compressed canvas of the feed, each item a bar on a dated axis, scrolled up and down, with
+      arrows to the destinations it went to. So:
+      - A layout is chosen on the surface, like rail and by day, and not by a sideways swipe on
+        the list, which is already spent on discard and manual. If the timeline is to be reached
+        by swiping sideways, the row swipes move elsewhere; the two cannot share a surface.
+      - The tokens keep a scale for counts and an identity per destination, without spending the
+        status colours (delivered, pending, destructive) on either.
+      - Nothing in the navigation assumes the feed is a list
+
+**Checkpoint.** Stop here and wait.
 
 **Checkpoint.** Stop here and wait. The developer reviews the proposed mobile look and confirms
 it or asks for changes. Changes go back to the Builder (or the Auditor, if the critique is wrong)
