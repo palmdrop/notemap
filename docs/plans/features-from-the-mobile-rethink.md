@@ -1,9 +1,9 @@
 # Features from the mobile rethink
 
 **Date**: 2026-10-31
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-11-01
 
 ---
 
@@ -245,7 +245,7 @@ Depends on N1, N2. Nothing else.
       ("weak, and knowingly"), and core.md's 2026-08-13 open question, noted as narrowed. Nothing
       ADR 31 gets its amendment note. core.md's routing section, if it says what a taken derived
       name does.
-- [ ] Verify: typecheck, `pnpm -r --no-sort --silent test`, lint. Stage the branch and route a
+- [x] Verify: typecheck, `pnpm -r --no-sort --silent test`, lint. Stage the branch and route a
       capture to a folder on the filesystem kind and on WebDAV. Commit.
 
 ### Phase 2: save as a template
@@ -382,7 +382,7 @@ Depends on phase 6.
 - [x] `todo.md`: tick "fuzzy search…" with what shipped and what did not (fuzzy, the log). Leave
       "searchable files/folders in webdav/fs destinations" alone, since it is a different
       question.
-- [ ] Shipped entries in every spec listed, status, open the PR.
+- [x] Shipped entries in every spec listed, status, open the PR.
 
 ---
 
