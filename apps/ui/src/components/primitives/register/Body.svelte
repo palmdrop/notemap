@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { doubled, pickable } from "$lib/pick";
+  import type { Picked } from "$lib/marking.svelte";
+  import { doubled, pickable, unselecting } from "$lib/pick";
 
   let {
     selected = false,
@@ -12,7 +13,7 @@
   }: {
     /** Draws the head and the right edge of the box a selected row is. */
     selected?: boolean;
-    onpick?: () => void;
+    onpick?: (how: Picked) => void;
     /** Somewhere to go rather than something to do. */
     onreach?: () => void;
     /** More than half a day passed before this row: the index's gap, opened here. */
@@ -26,6 +27,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onclick={onpick === undefined ? undefined : pickable(onpick)}
+  onmousedown={onpick === undefined ? undefined : unselecting}
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-body
   data-selected={selected ? "" : undefined}

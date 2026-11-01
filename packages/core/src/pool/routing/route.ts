@@ -5,6 +5,7 @@ import type { PoolConfig } from "#types/api/config";
 import type { PoolPorts, PoolTx } from "#types/api/ports";
 import type { CancelRefusal, DeliveryRefusal } from "#types/api/refusal";
 import type { FailureDetail } from "#types/domain/enrichment";
+import type { Item } from "#types/domain/item";
 import type {
   ItemId,
   JobId,
@@ -265,7 +266,7 @@ async function reserve(
 export function cancelDelivery(
   ports: PoolPorts,
   id: RoutingRecordId,
-): Promise<Result<void, CancelRefusal>> {
+): Promise<Result<Item, CancelRefusal>> {
   return ports.store.transaction(async (tx) => {
     const record = await tx.routingRecord(id);
     if (record === undefined) {
@@ -298,7 +299,11 @@ export function cancelDelivery(
       );
     }
 
-    return ok<void, CancelRefusal>(undefined);
+    const item = await tx.item(record.item);
+    if (item === undefined) {
+      return refused({ kind: "no-such-record", record: id });
+    }
+    return ok(item);
   });
 }
 

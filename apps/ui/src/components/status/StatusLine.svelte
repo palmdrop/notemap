@@ -8,12 +8,12 @@
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
   import { SHOWN_AFTER } from "$components/primitives/marks/Asking.svelte";
-  import { arrivalOf, firingOf, noticeOf } from "$lib/action-log";
+  import { arrivalOf, endingOf, firingOf, noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { cancelRouting, recheckFirings } from "$lib/firing";
+  import { cancelBatch, cancelRouting, recheckFirings } from "$lib/firing";
   import { firings, type Firing } from "$lib/firings.svelte";
   import { notices } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
@@ -26,7 +26,8 @@
   import { reachable } from "$lib/reachable.svelte";
   import { discardedKey, keyFor } from "$lib/routing";
   import { whereOf } from "$lib/asked";
-  import { heldName } from "$lib/templates";
+  import { tallying } from "$lib/tallies";
+  import { heldName, triggeredBy } from "$lib/templates";
 
   import Counts from "./Counts.svelte";
   import FiringSegment from "./Firing.svelte";
@@ -124,6 +125,37 @@
     cancelRouting(firing.record, firing.item, firing.name);
   }
 
+  // A batch made here is counted from the pool's answer, and what it reserved
+  // is in flight from that moment rather than from the log's next read.
+  $effect(() => {
+    if (shut) return;
+    const held = client.batches.subscribe((batches) => {
+      for (const batch of batches.values()) {
+        if (batch.outcomes === undefined) tallying.sent(batch.id);
+        if (batch.outcomes === undefined || tallying.knows(batch.id)) continue;
+        const name =
+          batch.action.kind === "tag"
+            ? triggeredBy(batch.action.tag)?.name
+            : undefined;
+        const said = tallying.answered(batch, name);
+        if (said !== undefined) notices.raise(said);
+        for (const outcome of batch.outcomes) {
+          if (outcome.outcome !== "reserved") continue;
+          // Ended before the answer came: the log already closed it.
+          if (tallying.over(outcome.record)) continue;
+          firings.opened({
+            record: outcome.record,
+            item: outcome.id,
+            name: name ?? "a template",
+            href: itemHref(outcome.id),
+            batch: batch.id,
+          });
+        }
+      }
+    });
+    return () => held.unsubscribe();
+  });
+
   // Signed out there is no panel to open.
   publish(() =>
     shut
@@ -200,14 +232,24 @@
   function follow(action: Action): void {
     settle(action);
 
+    const ended = endingOf(action);
+    if (ended?.ending !== undefined) {
+      const said = tallying.ended(ended.record, ended.ending);
+      if (said !== undefined) notices.raise(said);
+    }
+
     const firing = firingOf(action, {
       templateOf: heldName,
       whereOf,
       about: itemHref,
     });
     if (firing === undefined) return;
-    if ("opened" in firing) firings.opened(firing.opened);
-    else firings.closed(firing.closed);
+    if ("opened" in firing) {
+      if (firing.opened.batch !== undefined) {
+        tallying.fired(firing.opened.record, firing.opened.batch);
+      }
+      firings.opened(firing.opened);
+    } else firings.closed(firing.closed);
   }
 
   /**
@@ -247,6 +289,10 @@
   async function hear(actions: readonly Action[]) {
     for (const action of actions) {
       follow(action);
+
+      // A batch says what came of its items once, when the last has settled.
+      const record = endingOf(action)?.record;
+      if (record !== undefined && tallying.counts(record)) continue;
 
       const raised = noticeOf(action, {
         nameOf,
@@ -329,6 +375,7 @@
         now={firings.now}
         expanded={open}
         oncancel={cancel}
+        oncancelbatch={cancelBatch}
         ontoggle={toggle}
       />
     {/if}

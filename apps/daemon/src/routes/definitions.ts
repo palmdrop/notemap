@@ -5,6 +5,7 @@ import { JSON_MEDIA_TYPE, MAX_ITEMS_READ, MAX_LIMIT } from "../constants";
 import {
   ACCOUNT_STATUS,
   ARCHIVE_STATUS,
+  BATCH_STATUS,
   AUTH_STATUS,
   ASSET_STATUS,
   ASSET_STORE_STATUS,
@@ -108,6 +109,12 @@ import { unfurlQuery, unfurlSchema } from "../schemas/unfurl";
 import { countsSchema } from "../schemas/counts";
 import { sourcesInUseSchema } from "../schemas/sources";
 import { tagRequestSchema, tagsInUseSchema } from "../schemas/tags";
+import {
+  batchAnswerSchema,
+  batchRequestSchema,
+  cancelManyAnswerSchema,
+  cancelManyRequestSchema,
+} from "../schemas/batch";
 import type { StatusMap } from "../errors/refusals";
 
 function errorResponse(
@@ -1435,6 +1442,60 @@ export const cancelDeliveryRoute = createRoute({
   },
 });
 
+export const batchRoute = createRoute({
+  method: "post",
+  path: "/v1/batches",
+  summary: "Tag, untag, archive or unarchive many items",
+  description:
+    "Does one thing to every item named: adds a tag, takes one off, archives or unarchives. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.\n\nA trigger tag applies its template to each item, with the same asked values for all, and an item answers `reserved` with the record the tag holds on it. Otherwise an item answers what was done to it, `skipped` where nothing changed — it was already as asked, or the template had already filed it — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.\n\nEvery log entry the batch writes carries its id.",
+  request: {
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: batchRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Each item, as the batch left it.",
+      content: { [JSON_MEDIA_TYPE]: { schema: batchAnswerSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The batch names too many items.", 422, BATCH_STATUS),
+  },
+});
+
+export const cancelManyRoute = createRoute({
+  method: "post",
+  path: "/v1/routing/cancel",
+  summary: "Cancel many pending deliveries",
+  description:
+    "Cancels each record named, on the terms a single cancel has, and answers each on its own.",
+  request: {
+    body: {
+      required: true,
+      content: { [JSON_MEDIA_TYPE]: { schema: cancelManyRequestSchema } },
+    },
+  },
+  responses: {
+    200: {
+      description: "Each record, cancelled or refused.",
+      content: { [JSON_MEDIA_TYPE]: { schema: cancelManyAnswerSchema } },
+    },
+    400: errorResponse(
+      "The body could not be read as this request.",
+      400,
+      BODY_STATUS,
+    ),
+    415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
+    422: errorResponse("The batch names too many records.", 422, BATCH_STATUS),
+  },
+});
+
 const recordParam = z.object({
   record: z.string().openapi({ param: { name: "record", in: "path" } }),
 });
@@ -1941,6 +2002,8 @@ export const ROUTES = [
   routeItemRoute,
   previewRouteRoute,
   cancelDeliveryRoute,
+  cancelManyRoute,
+  batchRoute,
   withdrawDeliveryRoute,
   reinstateDeliveryRoute,
   deliveryPresenceRoute,

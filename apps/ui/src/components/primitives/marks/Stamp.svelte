@@ -8,19 +8,32 @@
     inline = false,
     dated = true,
     onopen,
+    marked = false,
+    marking = false,
   }: {
     at: string;
     opened?: boolean;
     inline?: boolean;
     /** Absent under a heading that already says the day: the time alone is drawn. */
     dated?: boolean;
-    onopen?: () => void;
+    onopen?: (event: MouseEvent) => void;
+    /** Marked for a batch: the gutter shows it, and the stamp says it. */
+    marked?: boolean;
+    /** Rows are being marked: a marked stamp is bold and every other one is not. */
+    marking?: boolean;
   } = $props();
+
+  const weight = $derived(
+    marking ? (marked ? "font-semibold" : "font-normal") : undefined,
+  );
 </script>
 
 {#snippet written()}
   {#if dated}
-    <span class="flex tabular-nums {inline ? '' : 'max-narrow:flex-col'}">
+    <span
+      class="flex tabular-nums {inline ? '' : 'max-narrow:flex-col'} {weight ??
+        ''}"
+    >
       <!-- Bold on a selected index line, which must not widen the column: each
          part holds its bold width, and the space between is a normal-weight
          `ch` rather than one that grows with the weight. -->
@@ -46,15 +59,18 @@
     <time
       datetime={at}
       data-word={timeOf(at)}
-      class="steady-weight whitespace-nowrap tabular-nums {inline
-        ? ''
-        : 'font-semibold'}">{timeOf(at)}</time
+      class="steady-weight whitespace-nowrap tabular-nums {weight ??
+        (inline ? '' : 'font-semibold')}">{timeOf(at)}</time
     >
   {/if}
 {/snippet}
 
+{#snippet drawn()}
+  {@render written()}{#if marked}<span class="sr-only">, marked</span>{/if}
+{/snippet}
+
 {#if onopen === undefined}
-  {@render written()}
+  {@render drawn()}
 {:else}
   <button
     type="button"
@@ -62,6 +78,6 @@
     aria-expanded={opened === true}
     class="block text-left hover:underline"
   >
-    {@render written()}
+    {@render drawn()}
   </button>
 {/if}

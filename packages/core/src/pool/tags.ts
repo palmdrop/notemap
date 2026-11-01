@@ -3,18 +3,23 @@ import { enqueueMirrorWrite } from "./mirror";
 import { alreadyApplied, fire, firingFor } from "./templates/fire";
 import { ok, refused } from "#utils/result";
 import type { PoolConfig } from "#types/api/config";
-import type { Tagging } from "#types/api/pool";
+import type { Tagged, Tagging } from "#types/api/pool";
 import type { PoolPorts, PoolReads, PoolTx } from "#types/api/ports";
 import type { TagRefusal } from "#types/api/refusal";
 import type { Agent } from "#types/domain/agent";
-import type { ItemId, TagName } from "#types/domain/ids";
-import type { Item, Tag } from "#types/domain/item";
+import type {
+  BatchId,
+  ItemId,
+  RoutingRecordId,
+  TagName,
+} from "#types/domain/ids";
+import type { Tag } from "#types/domain/item";
 import { TRIGGER_TAG_NAMESPACE } from "#types/domain/template";
 import type { RoutingTemplate } from "#types/domain/template";
 import type { Result } from "#types/result";
 import type { Firing } from "./templates/fire";
 
-type TagResult = Result<Item, TagRefusal>;
+type TagResult = Result<Tagged, TagRefusal>;
 
 /**
  * Trimmed here rather than at a caller, because absorbing a tag the item already
@@ -107,7 +112,9 @@ async function tagOnce(
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
 
     // The first attribution stands, and nothing changed to log or to mirror.
-    if (item.tags.some((held) => held.name === tag)) return ok(item);
+    if (item.tags.some((held) => held.name === tag)) {
+      return ok({ item, changed: false });
+    }
 
     // A decision this template already made stands, so the tag is classification
     // and nothing more: it was spent on the copy that is already there, and
@@ -138,7 +145,9 @@ async function tagOnce(
     const tagged = await tx.addTag(id, { name: tag, by, addedAt: at });
 
     let answer = tagged;
+    let fired: RoutingRecordId | undefined;
     if (trigger?.firing?.kind === "fires" && !decided) {
+      fired = trigger.firing.record.id;
       await fire(
         config,
         ports,
@@ -146,6 +155,7 @@ async function tagOnce(
         trigger.firing.record,
         tag,
         trigger.template,
+        options.batch,
       );
       // Read again, so the answer carries the reservation `addTag` came back without.
       answer = (await tx.item(id)) ?? tagged;
@@ -155,12 +165,17 @@ async function tagOnce(
     await recordAction(ports, tx, {
       kind: "tagged",
       subject: id,
+      ...(options.batch === undefined ? {} : { batch: options.batch }),
       by,
       at,
       detail: { tag },
     });
 
-    return ok(answer);
+    return ok({
+      item: answer,
+      changed: true,
+      ...(fired === undefined ? {} : { fired }),
+    });
   });
 }
 
@@ -176,6 +191,7 @@ export async function untag(
   id: ItemId,
   name: TagName,
   by: Agent,
+  batch?: BatchId,
 ): Promise<TagResult> {
   const tag = normalised(name);
   if (tag === undefined) return refused({ kind: "tag-invalid", tag: name });
@@ -184,7 +200,9 @@ export async function untag(
     const item = await tx.item(id);
     if (item === undefined) return refused({ kind: "no-such-item", item: id });
 
-    if (!item.tags.some((held) => held.name === tag)) return ok(item);
+    if (!item.tags.some((held) => held.name === tag)) {
+      return ok({ item, changed: false });
+    }
 
     const held = await filed(tx, id, tag);
     if (held !== undefined) return refused(held);
@@ -196,12 +214,13 @@ export async function untag(
     await recordAction(ports, tx, {
       kind: "untagged",
       subject: id,
+      ...(batch === undefined ? {} : { batch }),
       by,
       at,
       detail: { tag },
     });
 
-    return ok(untagged);
+    return ok({ item: untagged, changed: true });
   });
 }
 

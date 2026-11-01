@@ -20,7 +20,7 @@ function tagging(
 }
 
 export const edit: Handler<"edit"> = {
-  target: (operation) => operation.item,
+  targets: (operation) => [operation.item],
 
   /** Drawn as an amendment; another client may have routed it since, and the
    * settlement is what reconciles that. */

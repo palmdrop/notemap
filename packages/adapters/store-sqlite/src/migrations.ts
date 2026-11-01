@@ -949,6 +949,13 @@ export const MIGRATIONS: readonly string[] = [
   -- A delivered record a person said no longer stands. It stays, and counts for nothing.
   ALTER TABLE routing_records ADD COLUMN withdrawn_at INTEGER;
   `,
+  `
+  ALTER TABLE actions ADD COLUMN batch TEXT;
+  `,
+  `
+  -- The batch whose tag fired a record, which that batch sent again reads back.
+  ALTER TABLE routing_records ADD COLUMN batch TEXT;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

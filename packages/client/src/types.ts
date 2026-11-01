@@ -7,6 +7,8 @@ import type {
   ActionId,
   ActionKind,
   AssetId,
+  BatchAction,
+  CancelManyAnswer,
   CandidatesRequest,
   Counts,
   CreateDestinationRequest,
@@ -51,6 +53,7 @@ import type { Attachment } from "./capture/attachments";
 import type { Refused } from "./errors";
 
 import type { SessionState } from "./session/session";
+import type { Batch } from "./state/batches";
 import type { Filter, FilterNamed, Surface } from "./state/state";
 
 import type { ActionsSince } from "./actions/watching";
@@ -359,6 +362,13 @@ export interface RoutingApi {
    */
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
   /**
+   * Many at once, as a batch is called off: each record answered on its own,
+   * with the item it gave back, which is what the client then holds.
+   */
+  cancelMany(
+    records: readonly RoutingRecord["id"][],
+  ): Promise<CancelManyAnswer>;
+  /**
    * Says a delivery no longer stands. The record stays and stops counting, so
    * the item may be work again, and a trigger tag that made it comes off.
    */
@@ -435,6 +445,8 @@ export interface Client {
   readonly undrained: Observable<ReadonlySet<ItemId>>;
   /** How many operations are undrained, for the one count in the chrome. */
   readonly waiting: Observable<number>;
+  /** The batches made here, by id, each with what the pool answered once it has. */
+  readonly batches: Observable<ReadonlyMap<string, Batch>>;
 
   /**
    * Reads the next page. Naming an order the surface is not already in turns it
@@ -487,6 +499,12 @@ export interface Client {
   /** `supplied` is for the asked arguments of the template a trigger tag fires. */
   tag(item: ItemId, tag: string, supplied?: SuppliedArguments): Promise<void>;
   untag(item: ItemId, tag: string): Promise<void>;
+  /**
+   * Tags, untags, archives or unarchives every item, as one outbox operation
+   * and one request: at most `MAX_BATCH` items. Answers the batch's id, which every log entry it
+   * writes carries and `batches` holds it under.
+   */
+  batch(items: readonly ItemId[], action: BatchAction): Promise<string>;
 
   /**
    * Changes what an item says. Whether that lands as an amendment or a revision

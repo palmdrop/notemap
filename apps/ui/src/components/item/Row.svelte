@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Item } from "@notemap/client";
+  import type { BatchAction, Item } from "@notemap/client";
 
   import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
@@ -18,6 +18,7 @@
   import type { Layout } from "$lib/rows.svelte";
   import { became, editable } from "$lib/lineage";
   import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
+  import { pickedBy, type Picked } from "$lib/marking.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -29,6 +30,10 @@
   let {
     item,
     selected,
+    marked = false,
+    cursor = false,
+    marking = false,
+    onbatch,
     offline,
     surface,
     filter = [],
@@ -43,6 +48,14 @@
   }: {
     item: Item;
     selected: boolean;
+    /** Marked for a batch: its tags are every marked row's. */
+    marked?: boolean;
+    /** Where the keys are while rows are being marked. */
+    cursor?: boolean;
+    /** The surface is marking rows, and a row left out of it has its tags fixed. */
+    marking?: boolean;
+    /** What a marked row's tags are changed through. */
+    onbatch?: (action: BatchAction) => void;
     offline: boolean;
     /** On the item's own surface, its records are drawn beneath the row rather than said in it. */
     surface: "queue" | "feed" | "item";
@@ -60,7 +73,7 @@
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
     /** Absent where the row is the whole surface, and there is nothing to select it from. */
-    onselect?: () => void;
+    onselect?: (how: Picked) => void;
     onprocess?: () => void;
   } = $props();
 
@@ -72,6 +85,9 @@
   let editing = $state<Editing | undefined>(undefined);
   let row = $state<HTMLElement | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
+
+  /** The pointer is over the row, where a marked row offers its `+`. */
+  let pointed = $state(false);
 
   // Only ever for the one row that is selected, and only where the item's
   // summary says there is something to read: a request per triage at the most.
@@ -165,7 +181,9 @@
       {item}
       {filter}
       {editing}
-      addable={selected}
+      addable={selected || (marked && (cursor || pointed))}
+      fixed={marking && !marked}
+      onbatch={marked ? onbatch : undefined}
       stacked={!slim}
     />
   </div>
@@ -191,21 +209,30 @@
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach following}
 >
+  <!-- Where the pointer is only decides whether a marked row offers its `+`. -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={row}
     data-row={item.id}
+    data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
     data-headed={headed ? "" : undefined}
+    onpointerenter={() => (pointed = true)}
+    onpointerleave={() => (pointed = false)}
     class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed
       ? 'scroll-mt-day-head'
       : ''}"
   >
-    <Rail {selected} onpick={pick} onreach={reach}>
+    <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
       <Stamp
         at={item.createdAt}
         dated={!byDay}
         opened={selected}
-        onopen={onselect === undefined ? undefined : () => pick?.()}
+        {marked}
+        {marking}
+        onopen={onselect === undefined
+          ? undefined
+          : (event) => pick?.(pickedBy(event))}
       />
 
       {#if !slim}

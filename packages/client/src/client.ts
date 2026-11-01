@@ -29,6 +29,7 @@ import { editing, undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
 import { createRouting } from "./routing/routing";
+import { MAX_BATCH } from "./state/batches";
 import { hydrate } from "./state/hydrate";
 import { persist } from "./state/persist";
 import { retained } from "./state/retention";
@@ -596,6 +597,7 @@ export function createClient(config: ClientConfig): Client {
       state.changes,
       (current) => waiting(current.outbox).length,
     ),
+    batches: derived(state.changes, (current) => current.batches),
 
     loadFeed: (order, by) =>
       after(() => loadMore(state, api, "feed", order, by)),
@@ -682,6 +684,20 @@ export function createClient(config: ClientConfig): Client {
       }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
 
+    async batch(items, action) {
+      // Refused here rather than by the pool: queued, a batch over the limit
+      // would be applied, sent, refused whole and taken back.
+      if (new Set(items).size > MAX_BATCH) {
+        throw new Refused(
+          "limit-too-large",
+          `a batch names at most ${String(MAX_BATCH)} notes`,
+        );
+      }
+      const batch = uuidv7();
+      await mutate({ kind: "batch", batch, items: [...items], action });
+      return batch;
+    },
+
     edit: (item, payload, source, tags = [], supplied = {}) =>
       mutate({
         kind: "edit",
@@ -758,6 +774,11 @@ export function createClient(config: ClientConfig): Client {
       settled: (item) =>
         after(async () => {
           await reread(item).catch(() => undefined);
+          counts.stale();
+        }),
+      landed: (items) =>
+        after(() => {
+          state.update((current) => items.reduce(settle, current));
           counts.stale();
         }),
       reread: async (item) => {

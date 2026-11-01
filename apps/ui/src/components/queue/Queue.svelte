@@ -22,12 +22,16 @@
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
-  import { listCommands } from "$lib/command/list";
+  import { listCommands, markCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
   import { byDay, plain, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
+  import { Marking, PLAINLY, picked, type Picked } from "$lib/marking.svelte";
+  import { batched } from "$lib/batched.svelte";
+  import Confirming from "$components/batch/Confirming.svelte";
+  import Marked from "$components/batch/Marked.svelte";
   import { anchored } from "$lib/anchored.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
@@ -51,6 +55,10 @@
 
   /** Processing starts on the row, and one row is selected at a time. */
   let selected = $state<string | undefined>(undefined);
+
+  /** The rows marked for a batch, which any number may be. */
+  const marking = new Marking();
+  const batch = batched(marking, () => rows);
 
   /** The capture box is selected rather than a row: it is the head of the queue. */
   let atCapture = $state(false);
@@ -162,12 +170,33 @@
     })();
   });
 
-  function select(id: string) {
+  function select(id: string, how: Picked = PLAINLY) {
     leave(() => {
-      if (selected === id) deselect();
+      const marked = picked(
+        marking,
+        rows.map((row) => row.id),
+        id,
+        how,
+        selected,
+      );
+      if (marked !== undefined) selected = marked;
+      else if (selected === id) deselect();
       else selected = id;
     });
   }
+
+  /** Marks the selected row and the one a step along, so a held `shift` walks a range. */
+  async function extend(step: 1 | -1) {
+    if (selected !== undefined) marking.mark(selected);
+    await walk(step);
+    if (selected !== undefined) marking.mark(selected);
+  }
+
+  // A marked row that leaves the queue is no longer one a batch could reach.
+  $effect(() => {
+    const drawn = rows.map((row) => row.id);
+    untrack(() => marking.keepOnly(drawn));
+  });
 
   function deselect() {
     selected = undefined;
@@ -285,14 +314,26 @@
       ondown: () => leave(() => void walk(1)),
       onup: () => leave(() => void walk(-1)),
       onselect: () => {
-        if (current !== undefined) {
+        if (marking.on) {
+          if (current !== undefined) marking.toggle(current.id);
+        } else if (current !== undefined) {
           if (drawn[current.id]?.isEditing() !== true) process(current);
         } else if (atCapture) capture?.take();
         else void walk(1);
       },
-      ondeselect: () => leave(deselect),
+      ondeselect: () =>
+        leave(() => (marking.on ? marking.clear() : deselect())),
     }),
-    ...reached(),
+    ...markCommands({
+      selected: current?.id,
+      marking,
+      onextend: (step) => leave(() => void extend(step)),
+      ontag: () => {
+        if (current !== undefined) drawn[current.id]?.tag();
+      },
+    }),
+    // Nothing one row is given is offered while many are marked.
+    ...(marking.on ? [] : reached()),
     ...(atCapture
       ? [
           { id: "tag", label: "tag", run: () => capture?.tag() },
@@ -323,16 +364,41 @@
 />
 
 <Head>
-  <ViewChooser {view} onchoose={read} />
-  <FilterPanel
-    bind:this={filterPanel}
-    surface={SURFACE}
-    filter={reading.filter}
-    ontoggle={reading.toggle}
-    onclear={reading.clear}
-  />
-  <Order />
+  {#if marking.on}
+    <Marked
+      marked={rows.filter((row) => marking.has(row.id))}
+      full={marking.full}
+      onbatch={(action) => batch.do(action)}
+      onall={() => {
+        const ids = rows.map((row) => row.id);
+        const last = ids.at(-1);
+        if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
+      }}
+      onclear={() => marking.clear()}
+    />
+  {:else}
+    <ViewChooser {view} onchoose={read} />
+    <FilterPanel
+      bind:this={filterPanel}
+      surface={SURFACE}
+      filter={reading.filter}
+      ontoggle={reading.toggle}
+      onclear={reading.clear}
+    />
+    <Order />
+  {/if}
 </Head>
+
+{#if batch.asked !== undefined}
+  {@const asked = batch.asked}
+  <Confirming
+    question={asked.question}
+    notes={asked.notes}
+    verb={asked.action.kind === "archive" ? "discard" : "route"}
+    alarm={asked.action.kind === "archive"}
+    onanswer={(go) => void batch.answer(go)}
+  />
+{/if}
 
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
   <Day
@@ -357,14 +423,18 @@
     item={row}
     surface="queue"
     filter={$queue.filter.tags}
-    selected={selected === row.id}
+    selected={!marking.on && selected === row.id}
+    marked={marking.has(row.id)}
+    cursor={marking.on && selected === row.id}
+    marking={marking.on}
+    onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
-    commands={selected === row.id ? commands : []}
+    commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
     layout={layout.drawn}
     {opens}
-    onselect={() => select(row.id)}
-    onprocess={() => process(row)}
+    onselect={(how) => select(row.id, how)}
+    onprocess={marking.on ? undefined : () => process(row)}
   />
 {/snippet}
 
@@ -386,13 +456,16 @@
     byDay={layout.byDay}
     leads={refused === undefined}
     items={rows}
-    {selected}
+    selected={marking.on ? undefined : selected}
+    cursor={marking.on ? selected : undefined}
     slim={layout.slim}
     open={opened}
+    marked={(id) => marking.has(id)}
+    marking={marking.on}
     onselect={select}
     onprocess={(id) => {
       const item = rows.find((row) => row.id === id);
-      if (item !== undefined) process(item);
+      if (item !== undefined && !marking.on) process(item);
     }}
   />
 

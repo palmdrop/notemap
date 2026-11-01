@@ -15,6 +15,7 @@
   import { chordFor } from "$lib/command/bindings";
   import { dispatch } from "$lib/command/dispatch";
   import { firings } from "$lib/firings.svelte";
+  import { tallying } from "$lib/tallies";
   import { published } from "$lib/command/stack.svelte";
   import { leave, unsaved } from "$lib/leaving.svelte";
   import { notices } from "$lib/notices.svelte";
@@ -68,6 +69,7 @@
     untrack(() => {
       notices.clear();
       firings.clear();
+      tallying.clear();
     });
   });
 

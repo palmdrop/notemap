@@ -3815,6 +3815,198 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routing/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel many pending deliveries
+         * @description Cancels each record named, on the terms a single cancel has, and answers each on its own.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CancelManyRequest"];
+                };
+            };
+            responses: {
+                /** @description Each record, cancelled or refused. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CancelManyAnswer"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The batch names too many records. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "limit-too-large";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag, untag, archive or unarchive many items
+         * @description Does one thing to every item named: adds a tag, takes one off, archives or unarchives. Each item lands or is refused on its own, in the order given, and is answered on its own: a batch is never refused for what one of its items met.
+         *
+         *     A trigger tag applies its template to each item, with the same asked values for all, and an item answers `reserved` with the record the tag holds on it. Otherwise an item answers what was done to it, `skipped` where nothing changed — it was already as asked, or the template had already filed it — or `refused` with the error its own route would have answered. Sending the same batch again does what is left and answers the rest as they stand.
+         *
+         *     Every log entry the batch writes carries its id.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BatchRequest"];
+                };
+            };
+            responses: {
+                /** @description Each item, as the batch left it. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BatchAnswer"];
+                    };
+                };
+                /** @description The body could not be read as this request. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "malformed-json" | "malformed-envelope";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The body was not JSON. */
+                415: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "unsupported-media-type";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description The batch names too many items. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "limit-too-large";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/routing/{record}/withdraw": {
         parameters: {
             query?: never;
@@ -5059,10 +5251,11 @@ export interface components {
                 kind: "user";
                 note?: string;
             };
-            /** @description The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand. */
+            /** @description The routing template this decision came from, whether its trigger tag applied it, and the batch whose tag did. Absent for a decision made by hand. */
             applied?: {
                 template: string;
                 firedByTag: boolean;
+                batch?: string;
             };
             /** @enum {string} */
             state: "pending" | "delivered";
@@ -5427,6 +5620,103 @@ export interface components {
             /** @enum {string} */
             kind: "not-offered";
         };
+        CancelManyAnswer: {
+            values: ({
+                record: string;
+                /** @enum {string} */
+                outcome: "cancelled";
+                item: components["schemas"]["Item"] & unknown;
+            } | {
+                record: string;
+                /** @enum {string} */
+                outcome: "refused";
+                /** @description The refusal, as the single route would have answered it. */
+                error: {
+                    code: string;
+                } & {
+                    [key: string]: unknown;
+                };
+            })[];
+        };
+        CancelManyRequest: {
+            /** @description At most 500. */
+            records: string[];
+        };
+        BatchAnswer: {
+            batch: string;
+            values: components["schemas"]["BatchOutcome"][];
+        };
+        BatchOutcome: {
+            id: string;
+            /** @enum {string} */
+            outcome: "reserved";
+            /** @description The reservation this batch's trigger tag made on the item, which cancelling calls off. Sent again, a batch answers the one it made the first time. */
+            record: string;
+            item: components["schemas"]["Item"];
+        } | {
+            id: string;
+            /** @enum {string} */
+            outcome: "tagged" | "untagged" | "archived" | "unarchived";
+            item: components["schemas"]["Item"];
+        } | {
+            id: string;
+            /**
+             * @description Nothing changed: the item was already as asked, or the template had already filed it.
+             * @enum {string}
+             */
+            outcome: "skipped";
+            item: components["schemas"]["Item"];
+        } | {
+            id: string;
+            /** @enum {string} */
+            outcome: "refused";
+            /** @description The refusal, as the single route would have answered it. */
+            error: {
+                code: string;
+            } & {
+                [key: string]: unknown;
+            };
+        };
+        BatchRequest: {
+            /** @description The batch's id, made by the client. Every log entry the batch writes carries it, and a resend carries the same one. */
+            batch: string;
+            /** @description At most 500, and an id named twice is acted on once. */
+            items: string[];
+            action: components["schemas"]["BatchTagAction"] | components["schemas"]["BatchUntagAction"] | components["schemas"]["BatchArchiveAction"] | components["schemas"]["BatchUnarchiveAction"];
+        };
+        /** @description Adds the tag to each item. A trigger tag applies its template to each. */
+        BatchTagAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "tag";
+            tag: string;
+            arguments?: components["schemas"]["SuppliedArguments"] & unknown;
+        };
+        BatchUntagAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "untag";
+            tag: string;
+        };
+        BatchArchiveAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "archive";
+            reason?: string;
+        };
+        BatchUnarchiveAction: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "unarchive";
+        };
         Presence: {
             /** @enum {string} */
             kind: "present";
@@ -5453,6 +5743,8 @@ export interface components {
             kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
+            /** @description The batch the action was part of, as the client that made the batch named it. */
+            batch?: string;
             by: {
                 /** @enum {string} */
                 kind: "notemap";

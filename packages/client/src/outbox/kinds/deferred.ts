@@ -6,7 +6,9 @@ import type { Handler } from "../handler";
  * than guessing a wire, and giving one a route later is a handler rather than a
  * reshape of the engine.
  */
-const onItem = { target: (operation: { item: string }) => operation.item };
+const onItem = {
+  targets: (operation: { item: string }) => [operation.item],
+};
 
 export const acceptSuggestion: Handler<"accept-suggestion"> = onItem;
 export const rejectSuggestion: Handler<"reject-suggestion"> = onItem;

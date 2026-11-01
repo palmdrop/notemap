@@ -1,3 +1,5 @@
+import { pickedBy, type Picked } from "./marking.svelte";
+
 const CONTROLS =
   "a, button, input, textarea, select, label, [role='button'], [role='option']";
 
@@ -12,10 +14,10 @@ function inside(event: MouseEvent): boolean {
  * on its way to the item's own surface. A click carries how many of them it is,
  * and only the first is one.
  */
-export function pickable(onpick: () => void) {
+export function pickable(onpick: (how: Picked) => void) {
   return (event: MouseEvent) => {
     if (inside(event) || event.detail > 1) return;
-    onpick();
+    onpick(pickedBy(event));
   };
 }
 
@@ -62,3 +64,18 @@ export function spendPress(): void {
   window.addEventListener("mouseup", released, { capture: true, once: true });
   window.addEventListener("mousedown", forget, { capture: true, once: true });
 }
+
+/**
+ * A press with shift held picks a range of rows, not of text, the stamp's
+ * button included. The browser extends the text selection on the press,
+ * before the click, so it is stopped there rather than cleared after.
+ */
+export function unselecting(event: MouseEvent): void {
+  if (!event.shiftKey) return;
+  // A field's own shift-press extends what is selected in it, which is its own.
+  const from = event.target;
+  if (from instanceof Element && from.closest(FIELDS) !== null) return;
+  event.preventDefault();
+}
+
+const FIELDS = "input, textarea, select, [contenteditable]";

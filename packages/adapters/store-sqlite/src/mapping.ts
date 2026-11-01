@@ -7,6 +7,7 @@ import type {
   Asset,
   AssetId,
   AssetRef,
+  BatchId,
   BlobHash,
   CapabilityName,
   Destination,
@@ -329,6 +330,7 @@ export function toRoutingRecord(row: RoutingRecordRow): RoutingRecord {
           applied: {
             template: row.template_id as RoutingTemplateId,
             firedByTag: row.fired_by_tag === 1,
+            ...(row.batch === null ? {} : { batch: row.batch as BatchId }),
           },
         }),
     ...(row.pointer === null ? {} : { pointer: row.pointer }),
@@ -399,6 +401,7 @@ export function routingRecordParams(
   number | null,
   string | null,
   number | null,
+  string | null,
 ] {
   const target = record.target;
   const output = record.output;
@@ -425,6 +428,7 @@ export function routingRecordParams(
     record.applied === undefined ? null : record.applied.firedByTag ? 1 : 0,
     record.pointers === undefined ? null : JSON.stringify(record.pointers),
     record.withdrawnAt === undefined ? null : toMillis(record.withdrawnAt),
+    record.applied?.batch ?? null,
   ];
 }
 
@@ -433,6 +437,7 @@ export function toAction(row: ActionRow): Action {
     id: row.id as ActionId,
     kind: row.kind as ActionKind,
     ...(row.subject === null ? {} : { subject: row.subject as ItemId }),
+    ...(row.batch === null ? {} : { batch: row.batch as BatchId }),
     by: toAgent(row),
     at: toTimestamp(row.at),
     detail: parseJson(row.detail),

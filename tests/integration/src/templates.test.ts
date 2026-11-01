@@ -1,5 +1,6 @@
 import type {
   Action,
+  BatchId,
   CapabilityName,
   Duration,
   JsonSchema,
@@ -538,7 +539,7 @@ describe("a trigger tag applying its template", () => {
   it("answers the item holding the reservation, so a client's copy is not unprocessed", async () => {
     const { result, template } = await tagged();
 
-    expect(result.kind === "ok" && result.value.routing).toEqual({
+    expect(result.kind === "ok" && result.value.item.routing).toEqual({
       records: 1,
       pending: 1,
       to: [{ kind: "destination", destination: VAULT }],
@@ -1684,5 +1685,120 @@ describe("a template that asks for an argument", () => {
       kind: "arguments-invalid",
       issues: [{ path: "/position", keyword: "asked" }],
     });
+  });
+});
+
+describe("what a tag says it did", () => {
+  it("says a tag changed the item, and a second one changed nothing", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+    const READING = "reading" as TagName;
+
+    const first = succeeded(await pool.items.tag(item.id, READING, PERSON));
+    const again = succeeded(await pool.items.tag(item.id, READING, PERSON));
+
+    expect([first.changed, again.changed]).toEqual([true, false]);
+    expect(first).not.toHaveProperty("fired");
+  });
+
+  it("names the reservation a trigger tag made, and none once it is carried", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    const first = succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+    const again = succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+
+    expect(first.fired).toEqual(expect.any(String));
+    expect(again).toMatchObject({ changed: false });
+    expect(again).not.toHaveProperty("fired");
+  });
+
+  it("says an untag changed the item only where the tag was there", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+    const READING = "reading" as TagName;
+    succeeded(await pool.items.tag(item.id, READING, PERSON));
+
+    const first = succeeded(await pool.items.untag(item.id, READING, PERSON));
+    const again = succeeded(await pool.items.untag(item.id, READING, PERSON));
+
+    expect([first.changed, again.changed]).toEqual([true, false]);
+  });
+});
+
+describe("a batch the log keeps", () => {
+  const BATCH = "batch-1" as BatchId;
+
+  it("carries the batch on the tag and on the firing it made", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(
+      await pool.items.tag(item.id, RESEARCH, PERSON, { batch: BATCH }),
+    );
+
+    const written = (await logFor(pool, item.id)).filter(
+      (one) => one.kind === "tagged" || one.kind === "template-fired",
+    );
+    expect(written.map((one) => [one.kind, one.batch]).sort()).toEqual([
+      ["tagged", BATCH],
+      ["template-fired", BATCH],
+    ]);
+  });
+
+  it("carries the batch on an archive", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.items.archive(item.id, undefined, BATCH));
+
+    expect(
+      (await logFor(pool, item.id)).find((one) => one.kind === "archived"),
+    ).toMatchObject({ batch: BATCH });
+  });
+
+  it("carries the batch on an untag and an unarchive", async () => {
+    const { pool } = await pooled();
+    const item = captured(await pool.capture(envelope()));
+    const READING = "reading" as TagName;
+    succeeded(await pool.items.tag(item.id, READING, PERSON));
+    succeeded(await pool.items.archive(item.id));
+
+    succeeded(await pool.items.untag(item.id, READING, PERSON, BATCH));
+    succeeded(await pool.items.unarchive(item.id, BATCH));
+
+    const written = (await logFor(pool, item.id)).filter(
+      (one) => one.kind === "untagged" || one.kind === "unarchived",
+    );
+    expect(written.map((one) => one.batch)).toEqual([BATCH, BATCH]);
+  });
+
+  it("keeps the batch on the reservation its tag fired", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    const tagged = succeeded(
+      await pool.items.tag(item.id, RESEARCH, PERSON, { batch: BATCH }),
+    );
+
+    const [record] = await pool.routing.recordsFor(item.id);
+    expect(tagged.fired).toBe(record?.id);
+    expect(record?.applied).toMatchObject({ firedByTag: true, batch: BATCH });
+  });
+
+  it("carries no batch where none was given", async () => {
+    const { pool } = await pooled();
+    succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));
+    const item = captured(await pool.capture(envelope()));
+
+    succeeded(await pool.items.tag(item.id, RESEARCH, PERSON));
+    succeeded(await pool.items.archive(item.id));
+
+    for (const one of await logFor(pool, item.id)) {
+      expect(one).not.toHaveProperty("batch");
+    }
   });
 });

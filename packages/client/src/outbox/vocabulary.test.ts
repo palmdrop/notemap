@@ -5,7 +5,7 @@ import { Unencodable } from "../errors";
 import { emptyState } from "#state/state";
 import { mockTransport } from "#testing/transport";
 import type { Operation } from "./operations";
-import { applyOperation, opposes, sendOperation, targetOf } from "./registry";
+import { applyOperation, opposes, sendOperation, targetsOf } from "./registry";
 
 const AT = "2026-08-17T12:00:00.000Z";
 
@@ -50,7 +50,7 @@ describe("what an operation is about", () => {
       payload: { type: "text", content: {}, metadata: {}, assets: [] },
     };
 
-    expect(targetOf({ kind: "capture", envelope })).toBe("minted");
+    expect(targetsOf({ kind: "capture", envelope })).toEqual(["minted"]);
   });
 });
 

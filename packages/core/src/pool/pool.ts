@@ -48,9 +48,9 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
       edit: (id, envelope, by) => edit(config, ports, id, envelope, by),
       tag: (id, name, by, options) =>
         tags.tag(config, ports, id, name, by, options),
-      untag: (id, name, by) => tags.untag(ports, id, name, by),
-      archive: (id, reason) => archive.archive(ports, id, reason),
-      unarchive: (id) => archive.unarchive(ports, id),
+      untag: (id, name, by, batch) => tags.untag(ports, id, name, by, batch),
+      archive: (id, reason, batch) => archive.archive(ports, id, reason, batch),
+      unarchive: (id, batch) => archive.unarchive(ports, id, batch),
       purge: notImplemented("items.purge"),
     },
 

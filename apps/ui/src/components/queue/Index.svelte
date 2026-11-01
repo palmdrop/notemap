@@ -3,6 +3,7 @@
 
   import type { Item } from "@notemap/client";
 
+  import Gutter from "$components/primitives/marks/Gutter.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
@@ -10,7 +11,8 @@
   import { client } from "$lib/client";
   import { byDay as headed, plain } from "$lib/days";
   import { lineOf } from "$lib/excerpt";
-  import { doubled, pickable } from "$lib/pick";
+  import { pickedBy, type Picked } from "$lib/marking.svelte";
+  import { doubled, pickable, unselecting } from "$lib/pick";
   import { bringIntoView, following, slide } from "$lib/motion";
   import { triggeredBy } from "$lib/templates";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
@@ -32,6 +34,9 @@
     motion,
     slim = false,
     open,
+    marked,
+    marking = false,
+    cursor,
     onselect,
     onprocess,
   }: {
@@ -48,7 +53,13 @@
     slim?: boolean;
     /** The selected item as a whole row. */
     open: Snippet<[Item, boolean]>;
-    onselect: (id: string) => void;
+    /** Whether a line is marked for a batch. */
+    marked?: (id: string) => boolean;
+    /** Lines are being marked. */
+    marking?: boolean;
+    /** The line the keys are on while lines are being marked. */
+    cursor?: string;
+    onselect: (id: string, how: Picked) => void;
     onprocess: (id: string) => void;
   } = $props();
 
@@ -132,10 +143,17 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="col-span-full grid grid-cols-subgrid"
-    onclick={pickable(() => onselect(line.item.id))}
+    class="relative col-span-full grid grid-cols-subgrid"
+    onclick={pickable((how) => onselect(line.item.id, how))}
+    onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
+    <span class="absolute inset-y-0 -left-3 max-narrow:-left-2">
+      <Gutter
+        marked={marked?.(line.item.id) ?? false}
+        cursor={cursor === line.item.id}
+      />
+    </span>
     <span
       bind:this={stamps[line.item.id]}
       class="scroll-mt-day-head whitespace-nowrap"
@@ -143,7 +161,9 @@
       <Stamp
         at={line.item.createdAt}
         dated={!byDay}
-        onopen={() => onselect(line.item.id)}
+        onopen={(event) => onselect(line.item.id, pickedBy(event))}
+        marked={marked?.(line.item.id) ?? false}
+        {marking}
         inline
       />
     </span>

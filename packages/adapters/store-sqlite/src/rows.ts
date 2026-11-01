@@ -152,6 +152,8 @@ export type RoutingRecordRow = {
   /** JSON, where a delivery made several things. */
   readonly pointers: string | null;
   readonly withdrawn_at: number | null;
+  /** The batch whose tag fired the record, where one did. */
+  readonly batch: string | null;
 };
 
 /** What a page needs of an item's routing records, without their targets. */
@@ -173,6 +175,7 @@ export type ActionRow = AgentColumns & {
   readonly id: string;
   readonly kind: string;
   readonly subject: string | null;
+  readonly batch: string | null;
   readonly at: number;
   readonly detail: string;
 };
@@ -277,8 +280,18 @@ export const TABLE_COLUMNS = {
     "fired_by_tag",
     "pointers",
     "withdrawn_at",
+    "batch",
   ],
-  actions: ["id", "kind", "subject", "by_kind", "by_ref", "at", "detail"],
+  actions: [
+    "id",
+    "kind",
+    "subject",
+    "by_kind",
+    "by_ref",
+    "at",
+    "detail",
+    "batch",
+  ],
   pool_meta: ["key", "value"],
   pool_identity: ["singleton", "identity"],
   pool_settings: ["name", "value", "changed_at"],

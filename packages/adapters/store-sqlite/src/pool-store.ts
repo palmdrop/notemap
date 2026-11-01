@@ -146,7 +146,7 @@ const POOL_SETTING_COLUMNS = `name, value, changed_at`;
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, content,
   state, at, pointer, url, output_blob, output_mime, output_note, template_id,
-  fired_by_tag, pointers, withdrawn_at
+  fired_by_tag, pointers, withdrawn_at, batch
 `;
 
 /** A record still standing: one a person withdrew counts for nothing an item's routing decides. */
@@ -498,7 +498,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<
     never,
@@ -539,8 +539,8 @@ export function createSqlitePoolStore(
   );
   const jobs = jobQueue(write, config.ids ?? randomIds);
   const insertAction = write.query(`
-    INSERT INTO actions (id, kind, subject, by_kind, by_ref, at, detail)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO actions (id, kind, subject, batch, by_kind, by_ref, at, detail)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const lastModifiedAt = write.query<PoolMetaRow, [string]>(
     `SELECT key, value FROM pool_meta WHERE key = ?`,
@@ -1043,7 +1043,7 @@ export function createSqlitePoolStore(
 
           return source
             .query<ActionRow, Bindable[]>(
-              `SELECT id, kind, subject, by_kind, by_ref, at, detail FROM actions
+              `SELECT id, kind, subject, batch, by_kind, by_ref, at, detail FROM actions
                ${where} ORDER BY at ${way.sql}, id ${way.sql} LIMIT ?`,
             )
             .all(...params);
@@ -1354,6 +1354,7 @@ export function createSqlitePoolStore(
           action.id,
           action.kind,
           action.subject ?? null,
+          action.batch ?? null,
           ...agentColumns(action.by),
           toMillis(action.at),
           JSON.stringify(action.detail),

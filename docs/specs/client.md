@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-28
+**Last updated**: 2026-10-30
 **Shipped**:
+
+- 2026-10-30 — **A batch is one outbox operation about many items**: a tag, an untag, an archive
+  or an unarchive. `batch()` and `batches`, and `routing.cancelMany`. An operation drains after
+  everything queued for any item it names.
+  ([plan](../plans/batch-processing.md))
 
 - 2026-10-28 — **An operation the store could not hold was never made.** A failed write of a fresh
   entry reverses its effect on the cache, takes it out of the outbox and throws to the caller. An
@@ -737,9 +742,9 @@ so the interface never waits, and drained to the pool — immediately when the p
 reconnect when it is not. The online client is the offline client with a fast drain; there is one
 mutation path, not two.
 
-**The vocabulary is closed, and each operation answers for itself.** There are eight, listed below,
+**The vocabulary is closed, and each operation answers for itself.** There are nine, listed below,
 and the list is this spec's to change — not something that grows as routes are added. Each carries
-what it knows in one place: which item it is about, what opposes it, how it applies to the cache and
+what it knows in one place: which items it is about, what opposes it, how it applies to the cache and
 how it reverses, and how it reaches the wire. An operation the vocabulary names but core does not
 implement simply has no encoder and no apply, and the client refuses it — which is now only the two
 suggestion decisions. The engine holds no
@@ -752,12 +757,36 @@ than throwing when someone reaches it.
 - `edit` — a change to an item's content ([editing](#editing-and-the-hand-over-seal));
 - `tag` / `untag` — classification;
 - `archive` / `unarchive` — queue state;
+- `batch` — one tag, untag, archive or unarchive for many items, as one request;
 - `accept-suggestion` / `reject-suggestion` — a decision on a suggestion.
+
+**A batch is one operation about many items** (added 2026-10-30,
+[ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)). `batch(items, action)`
+creates the batch's id, enqueues one operation and answers the id. A resend from the outbox
+carries the same id, so the log groups what every attempt wrote.
+
+- It drains after everything already queued for any of its items, and everything queued for them
+  afterwards waits for it. An operation about one item is the case where that list has one entry.
+- It is drawn as each item's own operation would be: an archive takes every row off the queue, an
+  unarchive puts them back, and a tag is drawn on, or taken off, every item.
+- **The pool answers each item on its own, and the client takes each answer.** Every guess is
+  taken back and every item the pool returned is put in its place, so an item the pool refused is
+  left as it was, and the operation has still landed. Only a batch refused whole is a refused
+  operation.
+- **A batch names at most `MAX_BATCH` items, 500**, what the pool takes in one request. `batch()`
+  refuses a bigger one with `limit-too-large` before anything is queued.
+- `batches` holds the batches made since the client started, by id, with what the pool answered
+  for each item once it has: every one still waiting, and the latest 50 answered. Nothing stores
+  it: a batch is a gesture, and what each item came to after that is the item's and the log's to
+  say.
+- **Calling one off is `routing.cancelMany`**, one request for all of the batch's reservations,
+  answered per record with the item it gave back, which the client takes as it is. Like `cancel`, it reaches the pool directly and is not queued. A batch still
+  in the outbox has fired nothing, so it has nothing to call off until it drains.
 
 **What is undrained is answered both ways** (2026-08-26). A shell draws two marks from the outbox
 and they answer different questions, so the client answers both: how many operations have not
 drained, for the one count in the chrome, and the set of items those operations are about, for the
-mark on a row. A refused operation is in neither — waiting will not settle it, and it is shown and
+mark on a row. A batch counts once and marks every item it names. A refused operation is in neither — waiting will not settle it, and it is shown and
 dismissed rather than drained. Note that this is wider than the operation state also called
 `pending`: an operation being sent, or left unreachable, is undrained too.
 
