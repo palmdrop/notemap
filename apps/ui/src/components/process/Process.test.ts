@@ -17,6 +17,7 @@ import {
 
 import { keyboard, online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
+import { firings } from "$lib/firings.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED } from "$lib/said";
 import Process from "./Process.svelte";
@@ -46,6 +47,7 @@ vi.mock("$app/state", () => ({
 
 afterEach(() => {
   notices.clear();
+  firings.clear();
   online(true);
   went.to = [];
 });
@@ -1253,6 +1255,13 @@ function routing(
       return json(200, { kind: "described", capabilities: [APPEND] });
     }
     if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: [record] });
+    }
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === `POST /v1/routing/${String(record["id"])}/cancel`) {
+      return new Response(null, { status: 204 });
+    }
     if (route === "POST /v1/items/one/mark-processed") {
       return json(200, {
         id: "rec",
@@ -2228,35 +2237,42 @@ const aTarget = {
   arguments: {},
 };
 
-test("offers to save a decision made by hand as a template", async () => {
+const UNTIL = "2026-09-03T10:00:05.000Z";
+
+/** Taken back from where it was made, while nothing has been attempted. */
+test("offers undo under the head while the route just made is pending", async () => {
   routing({
-    id: "r",
+    id: "u",
     item: "one",
     at: "2026-09-03T10:00:00.000Z",
-    state: "delivered",
-    pointer: "notes/inbox/picker.md",
+    // Still open whenever this runs.
+    until: new Date(Date.now() + 60_000).toISOString(),
+    state: "pending",
     target: aTarget,
   });
+  // The surface draws the client's own copy, which a route then folds into.
+  await client.item("one");
 
   draw();
   await choose(/Vault/);
   await commit();
 
-  await stayed();
-  const offer = notices.shown.at(-1)?.offer;
-  expect(offer?.label).toBe("save as template");
-  offer?.take();
-  expect(went.to.at(-1)).toBe("/settings/templates?item=one&record=r");
+  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/u/cancel");
+  });
+  await vi.waitFor(() => expect(firings.open).toHaveLength(0));
 });
 
-/** The record goes up; what is said about it belongs to the surface below. */
-test("says in the corner where it went, and stays for a second place", async () => {
+/** Where it landed is the log's to say; until then it is a route in flight. */
+test("draws the route in flight with its window, and stays for a second place", async () => {
   routing({
     id: "r",
     item: "one",
     at: "2026-09-03T10:00:00.000Z",
-    state: "delivered",
-    pointer: "notes/inbox/picker.md",
+    until: UNTIL,
+    state: "pending",
     target: aTarget,
   });
 
@@ -2265,12 +2281,14 @@ test("says in the corner where it went, and stays for a second place", async () 
   await commit();
 
   await stayed();
-  const said = notices.shown.at(-1);
-  expect(said?.what).toBe("routed");
-  expect(said?.subject).toBe("Vault");
-  expect(said?.why).toBe("notes/inbox/picker.md");
-  expect(said?.href).toBe("/items/one");
-  expect(said?.key).toBe("record:r");
+  expect(firings.open.at(-1)).toMatchObject({
+    record: "r",
+    item: "one",
+    name: "Vault",
+    until: Date.parse(UNTIL),
+    href: "/items/one",
+  });
+  expect(notices.shown).toHaveLength(0);
 
   await choose(/Vault/);
   await commit();

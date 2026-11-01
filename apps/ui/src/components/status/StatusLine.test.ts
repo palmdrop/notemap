@@ -479,6 +479,55 @@ test("does not repeat a landing this shell has already reported", async () => {
   expect(notices.said("record:r1")).toBe(true);
 });
 
+test("a landing made by hand offers to keep it as a template, and one a template made does not", async () => {
+  vi.useFakeTimers();
+  // The first read is the mark everything after it is counted from.
+  let logged = [anAction("1", "captured", {})];
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged });
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [{ id: "vault", name: "Vault", kind: "filesystem" }],
+      });
+    }
+    if (route === "GET /v1/items/one") return json(200, anItem("one"));
+    return quiet();
+  });
+  await client.destinations.load();
+
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  logged = [
+    anAction("2", "routed", {
+      record: "r1",
+      destination: "vault",
+      pointer: "a.md",
+    }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(notices.latest?.offer?.label).toBe("save as template");
+
+  logged = [
+    anAction("3", "routed", {
+      record: "r2",
+      destination: "vault",
+      pointer: "b.md",
+      template: "t1",
+      firedByTag: false,
+    }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(notices.latest?.why).toBe("b.md");
+  expect(notices.latest?.offer).toBeUndefined();
+});
+
 test("says what was captured elsewhere, naming it once the client holds it", async () => {
   vi.useFakeTimers();
   let logged = [anAction("1", "routed", { record: "r0" })];
@@ -675,6 +724,10 @@ test("a fired template counts down on the line, with its cancel", async () => {
 
   expect(says("routing Research")).toBeDefined();
   expect(screen.getByText("15s")).toBeDefined();
+  // Inside the window the decision is the person's to take back.
+  expect(
+    screen.getByRole("button", { name: "undo routing Research" }),
+  ).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(5_000);
   expect(screen.getByText("10s")).toBeDefined();

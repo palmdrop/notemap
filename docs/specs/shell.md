@@ -4,8 +4,13 @@
 **Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **A route made by hand is in flight until it lands.** It waits a short window
+  before anything is attempted, counting down on the status line with `undo`, then `cancel` while
+  the delivery is still pending; the process surface offers the same beside where the item has gone,
+  and a held row's line for a record not yet delivered ends in `cancel`. The landing is the notice.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
 - 2026-11-01 — **A decision made by hand can be saved as a template**, from the routing record's
-  block or from the route's notice. The form opens prefilled from the record; a note name derived
+  block or from the notice saying it landed. The form opens prefilled from the record; a note name derived
   from the item is left off, so the template names each item's own note. A routed note named after
   its capture is a short slug, and a taken one is never appended to: the composer draws it as a new
   note beside the one that is there.
@@ -1073,7 +1078,9 @@ arrow, the destination and the turning mark could each end up on a line of its o
 and the destination are one unit and the place with the mark after it another, and the line breaks
 between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
 the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
-it. An unrouted row
+it. **A held row's line for a record not yet delivered ends in `cancel`** *(2026-11-01)*, on the
+queue and the feed alike, as a mark by hand's ends in `undo`; a delivered one offers nothing there,
+being withdrawn in its block. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, and `[+]` on a revision *(2026-10-01; the word `revision` before it,
 which read as one more tag)*, with `revision` as its label and hover. A delivery that failed is the log's and the status line's to
@@ -1301,7 +1308,9 @@ composer's `tags` section draws)*; **under them, where the item has gone already
 `→ **Obsidian vault** …/2026-09-13.md, **manual**`, the records as a row's routing line names them, cut
 with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
 than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
-second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure, with the
+second route is made knowing the first. It is read again after every route, and when a record on
+it lands. **The route just made here offers `undo` beside the line** *(2026-11-01)* while its
+window is open, and `cancel` once it has closed, until it lands; then the line reads where it went. Under that, the words, at the prose measure, with the
 capture's attachments above them as [Content](#content) draws them. Under the words, while not editing, a block per link they name *(2026-09-24;
 [Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
 ruled box with the caret in it, `restore` puts them back and a bold `done` closes the
@@ -2423,8 +2432,8 @@ flight, how much is left, and whether the pool answers.
 panel and is what the panel hangs from — a button that came and went with what had been said would
 be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
 accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
-cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on a route made by
-hand in the composer, `save as template` *(2026-11-01)*, which opens Templates on that record).
+cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on the landing of
+a route made by hand, `save as template` *(2026-11-01)*, which opens Templates on that record).
 **The line is
 short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
 `routing failed: taken.md is already there` — and never the code, the place, or the capture, which
@@ -2445,7 +2454,7 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 
 **The right is the counts**, each drawn only while it is true, in a fixed order:
 
-- **A route in flight** — `routing **research** 12s`, with `cancel` (below).
+- **A route in flight** — `routing **research** 12s`, with `undo`, then `cancel` (below).
 - **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
   refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
   **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
@@ -2553,6 +2562,20 @@ store that refused the words, or bytes that could not be read back.
 **`delete`** asks, and then lets it go. **`copy`** takes its words where the browser offers a
 clipboard. It is never resent as it was, since what refused it would refuse it again.
 
+**A route made by hand is in flight too** *(2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
+delivery waits the undo window, so a route from the composer, a template taken there included, is
+drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
+the destination, or for the template where one was taken, and followed by its place. It is drawn
+the moment the route answers, from the record and `until` the answer carries, and the log's
+`routed` entry carrying `until` opens the same one on another device. **Inside the window the offer
+is `undo`; once it has closed and the delivery is still pending, `cancel`** — the same call, said
+as what it is: taking back the decision just made, and calling off a delivery under way. It never
+says `undo` of a record that has landed, which is withdrawn in its block. The route is no longer
+a notice when it is made; the landing is, `routed **Vault** inbox/a-thought.md`, as a fired
+template's is. A destination that refuses it after the window is said as a fired template's
+failure is: `routing failed: …`, in the accent, `back in the queue`, leading to the item. The
+decision typed into the composer is gone by then.
+
 **A route a trigger tag made is in flight, not a notice** *(2026-09-30, amending 2026-09-07)*.
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
@@ -2635,7 +2658,8 @@ happens when nobody is looking at it. The shell **reads the action log on its ow
 ([client.md](client.md#the-action-log)) and says what it finds, so a failure minutes after the
 decision reaches the person who made it without anybody opening `/log`.
 
-**Five kinds are said out loud and no others**: `routed`, `delivery-cancelled`, `delivery-failed`,
+**Five kinds are said out loud and no others** *(a `routed` entry carrying `until` is a decision
+held for its window, not a landing, and opens a route in flight instead; 2026-11-01)*: `routed`, `delivery-cancelled`, `delivery-failed`,
 `work-failed`, `work-abandoned` — the three the log already spends the accent on, the landing, and
 a decision called off, which is said briefly so one taken back on another device is not news
 nobody hears *(the count read four from 2026-09-07, when the cancellation was added, until

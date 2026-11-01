@@ -313,23 +313,23 @@ Depends on W1–W3, W5. Independent of phases 1–2.
 
 Depends on phase 3 and W4, W6.
 
-- [ ] A hand route and a template taken in the composer become a **route in flight** on the
+- [x] A hand route and a template taken in the composer become a **route in flight** on the
       status line, as a firing is: the name, the seconds left, `undo` while the window is open and
       `cancel` once it has closed and the delivery is still pending. `saidOf` stops saying
       `retrying` for a record that has simply not been tried yet.
-- [ ] The process surface: after a route, the head's "where the item has gone already" line draws
+- [x] The process surface: after a route, the head's "where the item has gone already" line draws
       the pending record with `undo`, and then what it landed as.
-- [ ] The queue's held row and the feed row: a routing line for a pending record carries `cancel`.
+- [x] The queue's held row and the feed row: a routing line for a pending record carries `cancel`.
       The record id comes from the route's answer, or from reading the item's routing on the
       press. No wire change.
-- [ ] The item's record row keeps `cancel` (exists). A delivered record offers `withdraw` and never
+- [x] The item's record row keeps `cancel` (exists). A delivered record offers `withdraw` and never
       `undo`.
-- [ ] A refusal after the window is said per W4.
-- [ ] Optional, per W6 (b): the feed filter's new state on the wire, in core and in the client's
+- [x] A refusal after the window is said per W4.
+- [ ] Optional, per W6 (b) — not taken (W6: (a) only): the feed filter's new state on the wire, in core and in the client's
       rule, and a band entry in the filter panel. http-v1.md, core.md, client.md.
-- [ ] shell.md: the status line's route in flight (hand routes too, `undo` against `cancel`), the
+- [x] shell.md: the status line's route in flight (hand routes too, `undo` against `cancel`), the
       process surface after route, the row's routing line, the notice words.
-- [ ] Component tests beside each. Verify, `pnpm test:stack`, commit.
+- [x] Component tests beside each. Verify, `pnpm test:stack`, commit.
 
 ### Phase 5: search, decided and recorded
 

@@ -1,26 +1,32 @@
-import type { RoutingRecord, RoutingTemplate } from "@notemap/client";
+import type {
+  RoutedRecord,
+  RoutingRecord,
+  RoutingTemplate,
+} from "@notemap/client";
 
 import { itemHref } from "$components/item/href";
 
 import { whereOf, type Supplied } from "./asked";
 import { client } from "./client";
+import { nameOf as destinationName } from "./destinations";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
-import { cancelledKey, keyFor } from "./routing";
+import { cancelledKey, keyFor, placeIn, type Reading } from "./routing";
 import { tallying } from "./tallies";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
- * Calling off a route a trigger tag made, inside the window it waits out. The
- * pool takes the tag off with the reservation, so the item comes back to the
- * queue able to be filed by that tag again.
+ * Calling off a route in flight, inside its window or after it while the
+ * delivery is still pending. Where a trigger tag made it, the pool takes the
+ * tag off with the reservation, so the item comes back to the queue able to be
+ * filed by that tag again.
  */
 export function cancelRouting(
   record: string,
   item: string,
   name?: string,
-): void {
-  void client.routing
+): Promise<void> {
+  return client.routing
     .cancel(record, item)
     .then(() => {
       firings.closed(record);
@@ -61,6 +67,28 @@ export function cancelBatch(batch: string): void {
     .catch(() => {
       notices.raise({ what: "could not cancel", alarm: true });
     });
+}
+
+/**
+ * A route this shell just made, drawn in flight at once: the log says the same
+ * a poll later, and the window is shorter than that.
+ */
+export function routedHere(record: RoutedRecord, reading?: Reading): void {
+  const target = record.target;
+  if (target.kind !== "destination") return;
+
+  const place = placeIn(record, undefined, reading);
+  firings.opened({
+    record: record.id,
+    item: record.item,
+    name:
+      record.applied === undefined
+        ? destinationName(target.destination)
+        : nameOf(record.applied.template),
+    ...(place === undefined ? {} : { where: place }),
+    until: Date.parse(record.until),
+    href: itemHref(record.item),
+  });
 }
 
 /** Tags an item, and says what the tag filed where it filed something. */

@@ -20,8 +20,9 @@ const SAID: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Everything that ends a firing: it landed, failed for good, was given up on,
- * or was called off.
+ * Everything that ends a route in flight: it landed, failed for good, was given
+ * up on, or was called off. A `routed` entry carrying `until` is the decision,
+ * not the landing, and ends nothing.
  */
 const ENDS: ReadonlySet<string> = new Set([
   "routed",
@@ -89,6 +90,11 @@ function retried(kind: string, detail: Record<string, unknown>): boolean {
   return kind === "delivery-failed" && failureIn(detail).code === RETRIED;
 }
 
+/** A decision held for its window, rather than a landing. */
+function decided(kind: string, detail: Record<string, unknown>): boolean {
+  return kind === "routed" && stringAt(detail, "until") !== undefined;
+}
+
 /** Whether the tag filed this, rather than a person taking the template themselves. */
 function firedByTag(detail: Record<string, unknown>): boolean {
   return detail["firedByTag"] === true;
@@ -112,7 +118,11 @@ export function endingOf(
   const detail = action.detail as Record<string, unknown>;
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
-  if (!ENDS.has(action.kind) || retried(action.kind, detail)) {
+  if (
+    !ENDS.has(action.kind) ||
+    retried(action.kind, detail) ||
+    decided(action.kind, detail)
+  ) {
     return SAID.has(action.kind) ? { record } : undefined;
   }
   const ending: Ending =
@@ -125,12 +135,15 @@ export function endingOf(
 }
 
 /**
- * What an entry in the log does to the routes a trigger tag has in flight: a
- * `template-fired` opens one, and an entry that ends it closes it.
+ * What an entry in the log does to the routes in flight: a `template-fired`
+ * opens one, and so does a decision made by hand, which is a `routed` entry
+ * carrying `until`. An entry that ends it closes it.
  */
 export function firingOf(
   action: Action,
   said: {
+    /** A destination's name, for a decision made by hand. */
+    nameOf?: (destination: string) => string;
     /** A template's name where it is known, falling back to the one the entry carries. */
     templateOf?: (template: string) => string | undefined;
     /** Where the values a template was given put the item, where it asks for any. */
@@ -145,15 +158,34 @@ export function firingOf(
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
 
-  if (ENDS.has(action.kind) && !retried(action.kind, detail)) {
+  const held = decided(action.kind, detail);
+  if (ENDS.has(action.kind) && !held && !retried(action.kind, detail)) {
     return { closed: record };
   }
-  if (action.kind !== "template-fired" || action.subject === undefined) {
-    return undefined;
-  }
+  if (action.subject === undefined) return undefined;
 
   const template = stringAt(detail, "template");
   const until = stringAt(detail, "until");
+
+  if (held) {
+    const destination = stringAt(detail, "destination");
+    return {
+      opened: {
+        record,
+        item: action.subject,
+        name:
+          (template === undefined ? undefined : said.templateOf?.(template)) ??
+          (destination === undefined
+            ? undefined
+            : said.nameOf?.(destination)) ??
+          "a destination",
+        href: said.about(action.subject),
+        ...(until === undefined ? {} : { until: Date.parse(until) }),
+      },
+    };
+  }
+  if (action.kind !== "template-fired") return undefined;
+
   const values = detail["arguments"];
   const where =
     template === undefined || typeof values !== "object" || values === null
@@ -194,6 +226,8 @@ export function noticeOf(
   if (!SAID.has(action.kind)) return undefined;
 
   const detail = action.detail as Record<string, unknown>;
+  // In flight on the status line's right until it lands, which says it then.
+  if (decided(action.kind, detail)) return undefined;
   const record = stringAt(detail, "record");
   const named = place(detail, said.nameOf);
   const href =

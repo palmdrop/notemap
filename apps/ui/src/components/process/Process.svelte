@@ -13,6 +13,7 @@
     type Item,
     type RememberedPlace,
     type ResolvedRoutingTemplate,
+    type RoutedRecord,
     type RoutingPreview,
     type RoutingRecord,
     type RoutingTemplate,
@@ -32,18 +33,15 @@
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
-  import { itemHref, processHref } from "$components/item/href";
+  import { processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { folderIn, withFolder } from "$lib/output";
   import { browserFor } from "$lib/candidate-browsers";
   import { carriesAssets } from "$lib/capability";
-  import { templateFromHref } from "$components/settings/href";
   import { client } from "$lib/client";
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
-  import { aboutItem } from "$lib/excerpt";
   import { search } from "$lib/matching";
-  import { notices } from "$lib/notices.svelte";
   import { orderFor } from "$lib/order";
   import {
     DISCARD,
@@ -55,8 +53,9 @@
   import { discard, manual } from "$lib/quick";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { templatable } from "$lib/template-draft";
-  import { placeNamed, readingOf, saidOf } from "$lib/routing";
+  import { cancelRouting, routedHere } from "$lib/firing";
+  import { firings } from "$lib/firings.svelte";
+  import { placeNamed, readingOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
     effectiveOf,
@@ -119,12 +118,30 @@
   /** Where the item has gone already, said under its stamp so a second route is made knowing the first. */
   /** Only a change of item or of the records counted asks again, not every change to the held copy. */
   const routed = $derived(
-    summary === undefined ? undefined : `${item.id}:${summary.records}`,
+    summary === undefined
+      ? undefined
+      : `${item.id}:${summary.records}:${summary.pending}`,
   );
   const records = recordsOf(
     () => (routed === undefined ? undefined : item.id),
     () => !offline,
   );
+
+  /** The route made here last, which the head offers to take back while it is still pending. */
+  let made = $state<RoutedRecord | undefined>(undefined);
+  const takeable = $derived(
+    made !== undefined &&
+      records.all.some(
+        (record) => record.id === made?.id && record.state === "pending",
+      )
+      ? made
+      : undefined,
+  );
+
+  async function takeBack(record: RoutedRecord): Promise<void> {
+    await cancelRouting(record.id, record.item);
+    records.reread();
+  }
 
   /** The template a decision started from, which the commit may carry. */
   let applied = $state<RoutingTemplate | undefined>(undefined);
@@ -869,22 +886,8 @@
     try {
       const record = await client.routing.route(item.id, requestFor());
       classify(record);
-      const notice = saidOf(record, nameOf, {
-        about: aboutItem(item),
-        href: itemHref(item.id),
-        ...(reading === undefined ? {} : { reading }),
-      });
-      notices.raise(
-        templatable(record, $destinations)
-          ? {
-              ...notice,
-              offer: {
-                label: "save as template",
-                take: () => void goto(templateFromHref(item.id, record.id)),
-              },
-            }
-          : notice,
-      );
+      made = record;
+      routedHere(record, reading);
       // The surface stays, cleared: an item may go to more than one place,
       // and `next →` is what moves on.
       release();
@@ -1097,7 +1100,22 @@
 
     {#if summary !== undefined}
       <div class="-mt-1 mb-2 min-w-0">
-        <Routing {summary} records={records.all} short />
+        <div class="flex items-baseline gap-x-4">
+          <div class="min-w-0">
+            <Routing {summary} records={records.all} short />
+          </div>
+          {#if takeable !== undefined}
+            {@const record = takeable}
+            <button
+              type="button"
+              class="shrink-0 hover:underline"
+              onclick={() => void takeBack(record)}
+              >{firings.now < Date.parse(record.until)
+                ? "undo"
+                : "cancel"}</button
+            >
+          {/if}
+        </div>
       </div>
     {/if}
 

@@ -1,10 +1,10 @@
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-/** A route a trigger tag made that has not resolved yet. */
+/** A route in flight: one a trigger tag or a person made, that has not resolved yet. */
 export type Firing = {
   readonly record: string;
   readonly item: string;
-  /** The template's name: what the person pressed. */
+  /** What the person pressed: the template's name, or the destination's for a route by hand. */
   readonly name: string;
   /** Where the values given for what it asks put the item, label then value. */
   readonly where?: string;

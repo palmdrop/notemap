@@ -9,6 +9,7 @@
   import Turning from "$components/primitives/marks/Turning.svelte";
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
+  import { cancelRouting } from "$lib/firing";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
@@ -69,6 +70,8 @@
   type Line = Went & {
     readonly href?: string;
     readonly taken?: RoutingRecord;
+    /** A delivery not landed yet, which the person may still call off. */
+    readonly cancels?: RoutingRecord;
   };
 
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
@@ -97,10 +100,13 @@
             reading,
           ),
           href: recordHref(record.item, record.id),
-          // Only a decision the person made by hand is theirs to take back:
-          // a delivery is the pool's, and cancelling one it has carried out
-          // would be undoing something that has already happened elsewhere.
-          ...(target.kind === "user" ? { taken: record } : {}),
+          // A delivery the pool has carried out has happened elsewhere and is
+          // withdrawn, never taken back; one still pending may be called off.
+          ...(target.kind === "user"
+            ? { taken: record }
+            : record.state === "pending"
+              ? { cancels: record }
+              : {}),
         };
       });
     }
@@ -116,6 +122,11 @@
   const waiting = $derived(
     summarized && summary !== undefined ? summary.pending : 0,
   );
+
+  async function cancel(record: RoutingRecord, name: string) {
+    await cancelRouting(record.id, record.item, name);
+    onundone?.();
+  }
 
   async function undo(record: RoutingRecord) {
     said = "";
@@ -222,6 +233,13 @@
             type="button"
             onclick={() => void undo(record)}
             class="shrink-0 hover:underline">undo</button
+          >
+        {:else if line.cancels !== undefined}
+          {@const record = line.cancels}
+          <button
+            type="button"
+            onclick={() => void cancel(record, line.name)}
+            class="shrink-0 hover:underline">cancel</button
           >
         {/if}
       </div>

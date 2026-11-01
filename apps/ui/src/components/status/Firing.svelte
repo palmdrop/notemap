@@ -6,11 +6,12 @@
   import { PANEL } from "./panel";
 
   /**
-   * Routes a trigger tag has in flight. One says its template and how long is
-   * left to call it off, and offers the cancel; once its window has closed the
-   * count gives way to the asking mark, the delivery being attempted. More than
-   * one are counted, and read and cancelled one by one in the panel — unless
-   * one batch fired them all, which is said and cancelled as one.
+   * Routes in flight: a trigger tag's, or a decision made by hand. One says its
+   * name and how long is left to call it off, and offers `undo`; once its window
+   * has closed the count gives way to the asking mark, the delivery being
+   * attempted, and the offer is `cancel`. More than one are counted, and read
+   * and called off one by one in the panel — unless one batch fired them all,
+   * which is said and cancelled as one.
    */
   let {
     open,
@@ -52,6 +53,7 @@
 {#if open.length === 1}
   {@const firing = open[0]!}
   {@const seconds = left(firing, now)}
+  {@const word = seconds === undefined ? "cancel" : "undo"}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
     <span class="max-narrow:hidden"
       >routing <span class="font-semibold">{firing.name}</span
@@ -66,10 +68,10 @@
     <button
       type="button"
       class="underline"
-      aria-label={`cancel routing ${firing.name}`}
+      aria-label={`${word} routing ${firing.name}`}
       onclick={() => oncancel(firing)}
     >
-      cancel
+      {word}
     </button>
   </span>
 {:else if batch !== undefined}

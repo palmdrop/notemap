@@ -1,12 +1,14 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
   import type { Action, ActionsSince, PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Line from "$components/primitives/frame/Line.svelte";
+  import { templateFromHref } from "$components/settings/href";
   import { SHOWN_AFTER } from "$components/primitives/marks/Asking.svelte";
   import { arrivalOf, endingOf, firingOf, noticeOf } from "$lib/action-log";
   import { client } from "$lib/client";
@@ -15,7 +17,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { cancelBatch, cancelRouting, recheckFirings } from "$lib/firing";
   import { firings, type Firing } from "$lib/firings.svelte";
-  import { notices } from "$lib/notices.svelte";
+  import { notices, type Offer } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
   import {
     copyRefused,
@@ -121,8 +123,30 @@
     for (const held of refused) untrack(() => said(held));
   });
 
+  /**
+   * A route made by hand, landed, may be the first of many like it: the notice
+   * saying it landed offers to keep it as a template. Not one a template made,
+   * and not where the destination is no longer held.
+   */
+  function templateOffer(action: Action): Offer | undefined {
+    if (action.kind !== "routed" || action.subject === undefined) return;
+    const detail = action.detail as Record<string, unknown>;
+    const { record, destination, template, until } = detail;
+    if (typeof record !== "string" || typeof destination !== "string") return;
+    if (template !== undefined || until !== undefined) return;
+    if (!client.destinations.held.some((one) => one.id === destination)) {
+      return;
+    }
+
+    const item = action.subject;
+    return {
+      label: "save as template",
+      take: () => void goto(templateFromHref(item, record)),
+    };
+  }
+
   function cancel(firing: Firing): void {
-    cancelRouting(firing.record, firing.item, firing.name);
+    void cancelRouting(firing.record, firing.item, firing.name);
   }
 
   // A batch made here is counted from the pool's answer, and what it reserved
@@ -239,6 +263,7 @@
     }
 
     const firing = firingOf(action, {
+      nameOf,
       templateOf: heldName,
       whereOf,
       about: itemHref,
@@ -302,7 +327,12 @@
       if (raised === undefined) continue;
 
       const about = await whichCapture(action.subject);
-      notices.raise(about === undefined ? raised : { ...raised, about });
+      const offered = templateOffer(action);
+      notices.raise({
+        ...raised,
+        ...(about === undefined ? {} : { about }),
+        ...(offered === undefined ? {} : { offer: offered }),
+      });
     }
   }
 

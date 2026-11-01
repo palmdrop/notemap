@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { expect, test, vi } from "vitest";
 
-import { json, routeOf } from "@notemap/client/testing";
+import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
 import { pool } from "$testing/pool";
 import Routing from "./Routing.svelte";
@@ -100,4 +100,34 @@ test("reads a pending create as a path, and as its folder until it has a filenam
     await screen.findByText("…/a-rather-long-filename-for-the-day.md"),
   ).toBeDefined();
   expect(screen.getByText("…/2026/")).toBeDefined();
+});
+
+/** Not landed, so the person may still call it off; once landed it is withdrawn instead. */
+test("offers cancel on a record not yet delivered, and nothing on one that was", async () => {
+  const transport = pool((request) =>
+    routeOf(request) === "POST /v1/routing/rec/cancel"
+      ? new Response(null, { status: 204 })
+      : json(200, { values: [] }),
+  );
+  let undone = 0;
+
+  const { unmount } = render(Routing, {
+    summary: undefined,
+    records: [{ ...PENDING, state: "delivered" }],
+  });
+  await screen.findByRole("link");
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  unmount();
+
+  render(Routing, {
+    summary: undefined,
+    records: [PENDING],
+    onundone: () => (undone += 1),
+  });
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+
+  await vi.waitFor(() => expect(undone).toBe(1));
+  expect(sentTo(transport).map(routeOf)).toContain(
+    "POST /v1/routing/rec/cancel",
+  );
 });
