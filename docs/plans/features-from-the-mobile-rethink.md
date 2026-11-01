@@ -335,12 +335,12 @@ Depends on phase 3 and W4, W6.
 
 Depends on S1–S4. No code.
 
-- [ ] ADR via `core:adr`: a filter may name words. It covers the folded substring rule, one shared
+- [x] ADR via `core:adr`: a filter may name words. It covers the folded substring rule, one shared
       function, the surface's own order and position (ADR 14 untouched), the store answering
       behind its port (ADR 1's amendment), and the index left as a measured optimisation. It names
       fuzzy and ranked search as rejected for now, with why.
-- [ ] CONTEXT.md: **Filter** gains words. Its *Avoid* line says how the shell presents it (S1).
-- [ ] Commit.
+- [x] CONTEXT.md: **Filter** gains words. Its *Avoid* line says how the shell presents it (S1).
+- [x] Commit.
 
 ### Phase 6: search, the pool and the wire
 

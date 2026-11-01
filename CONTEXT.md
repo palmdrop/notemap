@@ -101,13 +101,14 @@ A condition a reader puts on a surface, which an item or action must meet to be 
 queue and the feed, a set of tags every one of which an item must carry; on the feed also states,
 destinations and sources, an item meeting any one of each kind named (unprocessed, routed, archived
 or revised; routed to one of the destinations; captured through one of the sources), every kind
-named holding at once; on the log, a view of kinds or one item. Answered by the pool, so it reaches
+named holding at once; on the queue and the feed also **words**, every term of which an item's own
+words must hold, without regard to case or accents; on the log, a view of kinds or one item. Answered by the pool, so it reaches
 as far back as the pool does. A question of the moment rather than a preference: it lasts as long as
 the address that names it, and a surface opened afresh is always the whole of it. What makes a
 surface what it is — the queue holding the unprocessed, the archive the archived — is not a filter:
 it is the surface.
-_Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, search, facet,
-query
+_Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, facet, query;
+search, except as the shell's word for a filter by words, as discard is for **archive**
 
 **Revision**:
 An ordinary capture, made by editing a sealed item, carrying its own capture time, source and
