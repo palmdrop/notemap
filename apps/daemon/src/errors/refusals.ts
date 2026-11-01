@@ -148,8 +148,6 @@ export const DELIVERY_STATUS = {
   "arguments-invalid": 422,
   "content-invalid": 422,
   "unknown-payload-type": 422,
-  "rejected-by-destination": 422,
-  "delivery-outcome-unknown": 422,
   unreachable: 422,
   "destination-retired": 409,
   "destination-unusable": 409,

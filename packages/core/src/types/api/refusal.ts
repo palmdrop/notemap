@@ -252,14 +252,11 @@ export type PreparationRefusal =
       readonly detail: string;
     };
 
-/**
- * `delivery-outcome-unknown` is the one a host warns on: the attempt neither
- * answered nor refused, so the material may be at the destination already.
- */
-export type AttemptFailure =
-  | { readonly kind: "unreachable"; readonly detail: string }
-  | { readonly kind: "rejected-by-destination"; readonly detail: string }
-  | { readonly kind: "delivery-outcome-unknown"; readonly detail: string };
+/** Asking the destination to describe itself is the one check that can fail to reach it. */
+export type DescribeFailure = {
+  readonly kind: "unreachable";
+  readonly detail: string;
+};
 
 /** Whoever holds a lease may be halfway through the attempt, and its outcome is not the canceller's to decide. */
 export type CancelRefusal =
@@ -298,7 +295,7 @@ export type LocateRefusal =
   | { readonly kind: "not-delivered"; readonly record: RoutingRecordId }
   | { readonly kind: "marked-by-hand"; readonly record: RoutingRecordId };
 
-export type DeliveryRefusal = PreparationRefusal | AttemptFailure;
+export type DeliveryRefusal = PreparationRefusal | DescribeFailure;
 
 /** What resolving a template refuses: never a value missing, since it answers as far as it was given. */
 export type TemplateResolveRefusal =

@@ -2,7 +2,8 @@
 
 **Date**: 2026-08-13
 **Status**: Accepted — amends the routing section of [core.md](../specs/core.md) and the routing
-clause of [sync.md](../specs/sync.md)
+clause of [sync.md](../specs/sync.md). Its inline first attempt is retired 2026-11-01 by
+[ADR 68](0068-every-decision-that-makes-a-delivery-waits-a-short-window.md)
 
 ---
 

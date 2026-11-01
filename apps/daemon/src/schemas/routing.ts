@@ -85,6 +85,16 @@ export const routingRecordSchema = z
   })
   .openapi("RoutingRecord");
 
+/** A decision just made: pending, and due when its window closes. */
+export const routedRecordSchema = routingRecordSchema
+  .extend({
+    until: z.string().openapi({
+      description:
+        "When the undo window closes and the delivery comes due. Cancelling before then calls it off before anything is attempted.",
+    }),
+  })
+  .openapi("RoutedRecord");
+
 export const presenceSchema = z
   .discriminatedUnion("kind", [
     z.object({

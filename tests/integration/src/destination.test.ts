@@ -22,6 +22,7 @@ import {
   bytes,
   collect,
   deliverWith,
+  routeThrough,
   drainWith,
   envelope,
   filesUnder,
@@ -96,18 +97,22 @@ async function captured(
   return result.value.item.id;
 }
 
+/** Routed, and its first attempt made as the window closes: the record as it then stands. */
 async function route(
   opened: Harness,
   item: ItemId,
   args: Record<string, string>,
 ): Promise<RoutingRecord> {
-  const result = await opened.pool.routing.route(item, {
+  const result = await routeThrough(opened, item, {
     destination: VAULT,
     capability: CREATE,
     arguments: args,
   });
   if (result.kind === "refused") {
     throw new Error(`refused: ${JSON.stringify(result.refusal)}`);
+  }
+  if (result.value === undefined) {
+    throw new Error("the delivery was given up on");
   }
   return result.value;
 }

@@ -145,6 +145,9 @@ export type Presence =
   | { readonly kind: "unknown"; readonly detail?: string };
 
 /** What a delivery that landed adds to the reservation it resolves. */
+/** A decision just made: the record, pending, and when its undo window closes and the delivery comes due. */
+export type RoutedRecord = RoutingRecord & { readonly until: Timestamp };
+
 export type DeliveryLanding = {
   readonly pointer?: string;
   readonly pointers?: readonly string[];

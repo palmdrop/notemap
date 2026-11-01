@@ -23,4 +23,10 @@ export type PoolConfig = {
    * whole of what a cancel has to act in.
    */
   readonly triggerWindow: Duration;
+  /**
+   * How long a decision made by a person waits before its delivery is
+   * claimable: a route by hand, or a template taken from a composer. Short,
+   * because somebody is looking; zero makes it due at once, still as a job.
+   */
+  readonly undoWindow: Duration;
 };

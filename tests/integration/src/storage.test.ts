@@ -122,6 +122,7 @@ describe("what the pool says it takes", () => {
       },
     );
     if (routed.kind === "refused") throw new Error("route refused");
+    await started.deliverDue();
 
     const recorded = await started.pool.storage.recorded();
     const measured = await started.pool.storage.measure();

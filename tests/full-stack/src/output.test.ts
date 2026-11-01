@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { daemons, WEB, vaults } from "./harness/index.ts";
+import { daemons, WEB, until, vaults } from "./harness/index.ts";
 
 const daemon = daemons();
 
@@ -35,8 +35,14 @@ describe("what a delivery produced, and what one would", () => {
     // Asking wrote nothing and decided nothing.
     expect(await client.routing.recordsFor(item.id)).toEqual([]);
 
-    const record = await client.routing.route(item.id, request);
-    expect(record.state).toBe("delivered");
+    const decided = await client.routing.route(item.id, request);
+    expect(decided.state).toBe("pending");
+
+    const record = await until("the delivery to land", async () =>
+      (await client.routing.recordsFor(item.id)).find(
+        (one) => one.id === decided.id && one.state === "delivered",
+      ),
+    );
     expect(record.output?.content?.mediaType).toBe("text/markdown");
 
     const sent = await client.routing.output(record.id);

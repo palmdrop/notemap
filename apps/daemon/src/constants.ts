@@ -81,6 +81,12 @@ export const DEFAULT_DELIVERY = {
 export const DEFAULT_TRIGGER_WINDOW_MS = 15_000;
 
 /**
+ * Longer than a success notice stays in the status line, so `undo` is still
+ * true by the time somebody has read the notice and reached for it.
+ */
+export const DEFAULT_UNDO_WINDOW_MS = 5_000;
+
+/**
  * How much of a lease is kept back for reporting the outcome the attempt
  * produced — which includes **storing the output** it came back with, so this
  * is bounded by whatever a destination decided to hand over rather than by the

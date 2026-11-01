@@ -91,7 +91,8 @@ async function routeTo(
     capability: "create",
     arguments: { channel: "reading" },
   });
-  expect(await routed.json()).toMatchObject({ state: "delivered" });
+  expect(await routed.json()).toMatchObject({ state: "pending" });
+  expect(await host.deliver()).toBe(1);
 }
 
 describe("an are.na account naming its own address", () => {

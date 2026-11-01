@@ -2,8 +2,15 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
+
+- 2026-11-01 — **`POST /v1/items/{id}/route` attempts nothing and answers a pending record with
+  `until`.** The delivery waits the undo window, `routing.undoWindow` in the config, so `cancel`
+  inside it calls the decision off before the destination hears of it. `422 rejected-by-destination`
+  and `422 delivery-outcome-unknown` are no longer answers of the route; a refusal is read from the
+  log. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))
 
 - 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** A tag added or taken off, or
   an archive or unarchive, for many items in one request answered item by item. Many reservations called off in
@@ -1575,7 +1582,7 @@ now.
 }
 ```
 
-`200 OK` with the routing record the decision minted:
+`200 OK` with the routing record the decision minted, and when its delivery comes due:
 
 ```json
 {
@@ -1587,38 +1594,31 @@ now.
     "capability": "create",
     "arguments": { "directory": "inbox", "filename": "a-thought.md" }
   },
-  "state": "delivered",
+  "state": "pending",
   "at": "2026-08-08T09:00:00.123Z",
-  "pointer": "inbox/a-thought.md"
+  "until": "2026-08-08T09:00:05.123Z"
 }
 ```
 
-- **A `200` here may name a delivery that has not happened.** `state` is `pending` when the
-  destination could not be reached: the decision is recorded, the item leaves the queue, and a job
-  carries the delivery out later ([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)).
-  A client that reads a record as arrival is wrong exactly when a destination is down, which is
-  the case it matters in. `pointer` is absent until something has landed.
-- **The call blocks for one delivery attempt**, which is what buys the interactive answer. Core
-  imposes no timeout and neither does the daemon; a client that wants one abandons the request.
-- **A destination that was reached and refused writes nothing** — `422 rejected-by-destination`,
-  carrying the destination's own `detail` verbatim. No record is minted and the item stays in the
-  queue, because a refusal is proof that nothing arrived and will be refused identically next time.
+- **A `200` here names a delivery that has not happened** *(amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md); the call
+  attempted the delivery once, inline, and answered `delivered` where it landed)*. The decision is
+  recorded, the item leaves the queue, and nothing is attempted until `until`, the end of the undo
+  window: `POST /v1/routing/{record}/cancel` before then calls it off before the destination hears
+  of it. Where it landed is the action log's `routed` entry carrying the pointer, read as a fired
+  template's landing is; `pointer` on the record is absent until then.
+- **A destination's refusal arrives after the window**, on the log as `delivery-failed` and
+  `work-abandoned`, with the record removed and the item back in the queue. `422
+  rejected-by-destination` and `422 delivery-outcome-unknown` are no longer answers of this route.
 - **A destination that could not say what it accepts is `422 unreachable`**, carrying the reason.
-  No arguments can be checked against capabilities nobody could read, and nothing is attempted or
-  written, so this refuses rather than reserving — a record minted here would carry arguments
-  nobody validated. This is the one way `unreachable` is raised on this route; a destination that
-  fails during the *attempt* still answers `200` with a pending record.
-- **An attempt that neither answered nor refused is `422 delivery-outcome-unknown`**, carrying the
-  `detail` core has. No record is minted and the item stays in the queue, but unlike a refusal this
-  is not proof that nothing arrived: the material may be at the destination already, and a client
-  routing again should say so to whoever is deciding ([core.md](core.md#routing-and-delivery)).
+  No arguments can be checked against capabilities nobody could read, so this refuses rather than
+  reserving — a record minted here would carry arguments nobody validated. A destination that
+  fails when the job runs leaves the record pending and the job retrying.
 - `200` rather than `201`, on the same terms as marking an item processed: an item's routing
   records are read as one list, so there is no `Location` to name.
 - Routing one item twice appends two records and is not refused. It is a decision, not a replay.
 - An archived item may still be routed: archiving hides, and ends nothing.
-- **A destination that failed during the attempt is a `200` carrying a pending record**, which is
-  the whole point of ADR 17. Only a destination that could not be asked what it accepts refuses,
-  and it refuses before anything is attempted.
+- Only a destination that could not be asked what it accepts refuses; everything that happens at
+  the destination happens after the `200`.
 - A destination the daemon has not wired is `422 unknown-destination`; a capability that
   destination never declared is `422 capability-undeclared`; a payload type it does not accept is
   `422 payload-type-unsupported`, carrying the types it does; arguments that do not satisfy the
@@ -1703,10 +1703,8 @@ composer draws before anything is filled in.
 - A template the pool does not hold is `404 unknown-template` — the template is what this shape of
   the request is *about*. Everything else refuses as the destination shape refuses, because
   applying a template lands in the same path.
-- **This shape keeps the inline attempt**, unlike a template fired by its tag. A person pressed
-  `route` with the item in front of them, and the window a fired template waits out is bought for
-  the gesture that has no review in it
-  ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
+- **This shape waits the undo window too** *(amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md); it kept the inline attempt,
+  unlike a template fired by its tag)*. The trigger window is the fired template's, and longer.
 - `/route/preview` takes both shapes too, on the same terms: previewing a template costs nothing
   extra, and a preview that could not take the body a route takes would be answering a different
   question.
@@ -2272,8 +2270,6 @@ Every error, from core or from the daemon, is one shape:
 | `422` | `payload-type-unsupported` | `type`, `accepts` | core |
 | `422` | `arguments-invalid` | `issues` | core |
 | `422` | `content-invalid` | `issues` | core |
-| `422` | `rejected-by-destination` | `detail` | core |
-| `422` | `delivery-outcome-unknown` | `detail` | core |
 | `422` | `not-a-session` | `presented` | daemon |
 | `422` | `invalid-account` | `issues` | daemon |
 | `422` | `account-secret-missing` | — | daemon |
@@ -2317,13 +2313,10 @@ anything raises it yet: purge is not built. It is `404` on the same terms as `no
 a caller's side the item is not there — and carries the instant it went.
 
 **`unreachable` is raised only before an attempt**: a destination that could not be asked what it
-accepts refuses with it, while one that fails during the delivery answers `200` with a pending
-record rather than a refusal
-([ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md)). It is part of the same
-union as `rejected-by-destination` and `delivery-outcome-unknown`, so a client parsing one parses
-all three, and each is `422` by the rule — the request was understood and something declined it.
-None of them gets a status of its own for being a third party's answer rather than notemap's: they
-are told apart by `code`, and no client can act differently on a status it cannot influence.
+accepts refuses with it, and nothing is ever attempted during the call
+([ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md)). It is `422`
+by the rule — the request was understood and something declined it — and gets no status of its own
+for being a third party's answer rather than notemap's.
 
 The three routing-record refusals follow the rule unchanged. `no-such-record` is `404` for a record
 the pool does not hold. `not-pending` and `delivery-in-flight` are both `409`: the first conflicts
@@ -2544,16 +2537,13 @@ remains the interop surface; `/docs` is a convenience over it.
   outcome.
 - `GET /v1/destinations` answers every wired destination with its capabilities, each carrying the
   payload types it accepts and the JSON Schema of the arguments it needs.
-- `POST /v1/items/{id}/route` to a reachable destination answers `200` with a `delivered` record
-  and a pointer, and removes the item from `GET /v1/queue`.
-- The same call to a destination that cannot be reached answers `200` with a `pending` record and
-  no pointer, and the item is out of the queue although nothing has arrived.
+- `POST /v1/items/{id}/route` answers `200` with a `pending` record, `until` and no pointer, and
+  removes the item from `GET /v1/queue`; once the window closes and the delivery lands,
+  `GET /v1/items/{id}/routing` reads it `delivered` with a pointer.
 - A capability the destination never declared is `422 capability-undeclared` and the destination is
   never called; arguments that do not satisfy its schema are `422 arguments-invalid` with `issues`.
-- A destination that refuses the delivery is `422 rejected-by-destination` carrying its own detail,
-  leaves no routing record, and leaves the item in the queue.
-- An attempt whose outcome nobody can state is `422 delivery-outcome-unknown`, on the same terms
-  except that the material may have arrived.
+- A destination that refuses the delivery leaves no routing record once the job has run, returns
+  the item to the queue, and its detail is on the log's `delivery-failed` entry.
 - `POST /v1/routing/{record}/cancel` on a pending record answers `204`, removes it from
   `GET /v1/items/{id}/routing`, and returns the item to `GET /v1/queue`; on a delivered record it
   is `409 not-pending`, and on an id no record has it is `404 no-such-record`.

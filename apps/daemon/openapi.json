@@ -2319,6 +2319,25 @@
           "arguments"
         ]
       },
+      "RoutedRecord": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RoutingRecord"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "until": {
+                "type": "string",
+                "description": "When the undo window closes and the delivery comes due. Cancelling before then calls it off before anything is attempted."
+              }
+            },
+            "required": [
+              "until"
+            ]
+          }
+        ]
+      },
       "RouteRequest": {
         "anyOf": [
           {
@@ -7632,7 +7651,7 @@
     "/v1/items/{id}/route": {
       "post": {
         "summary": "Route an item to a destination, or from a template",
-        "description": "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
+        "description": "Records the decision and attempts nothing: the record answered is `pending`, and its delivery comes due at `until`, the end of the undo window. Cancelling before then calls it off before anything is attempted. Where it landed, or that the destination refused it, is read from the action log, as a fired template's is.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
         "parameters": [
           {
             "schema": {
@@ -7655,11 +7674,11 @@
         },
         "responses": {
           "200": {
-            "description": "The routing record. Read `state` rather than reading a record as arrival.",
+            "description": "The routing record, pending, and when its delivery comes due.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RoutingRecord"
+                  "$ref": "#/components/schemas/RoutedRecord"
                 }
               }
             }
@@ -7810,8 +7829,6 @@
                             "arguments-invalid",
                             "content-invalid",
                             "unknown-payload-type",
-                            "rejected-by-destination",
-                            "delivery-outcome-unknown",
                             "unreachable",
                             "argument-not-asked",
                             "argument-missing"
@@ -8017,8 +8034,6 @@
                             "arguments-invalid",
                             "content-invalid",
                             "unknown-payload-type",
-                            "rejected-by-destination",
-                            "delivery-outcome-unknown",
                             "unreachable",
                             "argument-not-asked"
                           ]

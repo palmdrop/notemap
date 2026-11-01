@@ -77,11 +77,7 @@ export function routingRecordsHandler(pool: Pool) {
   };
 }
 
-/**
- * A decision, and one delivery attempt inline. The `200` may carry a record
- * that has not landed — a destination that could not be reached leaves it
- * pending — so a client reads `state` rather than reading a record as arrival.
- */
+/** A decision, held for its undo window: the `200` is a pending record and when it comes due. */
 export function routeHandler(pool: Pool) {
   return async (context: Context): Promise<Response> => {
     const body = await readBody(context, routeRequestSchema);

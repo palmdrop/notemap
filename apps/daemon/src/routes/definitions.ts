@@ -98,6 +98,7 @@ import {
   routeRequestSchema,
   presenceSchema,
   previewSchema,
+  routedRecordSchema,
   routingRecordSchema,
   routingRecordsSchema,
 } from "../schemas/routing";
@@ -1386,7 +1387,7 @@ export const routeItemRoute = createRoute({
   path: "/v1/items/{id}/route",
   summary: "Route an item to a destination, or from a template",
   description:
-    "Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
+    "Records the decision and attempts nothing: the record answered is `pending`, and its delivery comes due at `until`, the end of the undo window. Cancelling before then calls it off before anything is attempted. Where it landed, or that the destination refused it, is read from the action log, as a fired template's is.\n\nOne route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.",
   request: {
     params: itemId,
     body: {
@@ -1397,8 +1398,8 @@ export const routeItemRoute = createRoute({
   responses: {
     200: {
       description:
-        "The routing record. Read `state` rather than reading a record as arrival.",
-      content: { [JSON_MEDIA_TYPE]: { schema: routingRecordSchema } },
+        "The routing record, pending, and when its delivery comes due.",
+      content: { [JSON_MEDIA_TYPE]: { schema: routedRecordSchema } },
     },
     400: errorResponse(
       "The body could not be read as this request.",

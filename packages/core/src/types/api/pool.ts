@@ -71,6 +71,7 @@ import type {
   PreviewReport,
   RememberedAnswer,
   RememberedRequest,
+  RoutedRecord,
   RoutingRecord,
 } from "../domain/routing";
 import type { SourceUse } from "../domain/source";
@@ -321,7 +322,7 @@ export interface TemplatesApi {
     item: ItemId,
     id: RoutingTemplateId,
     options?: TemplateRouting,
-  ): Promise<Result<RoutingRecord, TemplateRoutingRefusal>>;
+  ): Promise<Result<RoutedRecord, TemplateRoutingRefusal>>;
 }
 
 /** What a decision from a template carries that the template itself does not. */
@@ -363,13 +364,13 @@ export interface PoolSettingsApi {
 }
 
 export interface RoutingApi {
-  /** The record it answers may be pending: read the state rather than reading a record as arrival. */
+  /** The record it answers is pending: its delivery comes due at `until`, and lands later. */
   route(
     item: ItemId,
     delivery: DeliveryRequest,
-    /** Bounds the one inline attempt. Core imposes no timeout of its own. */
+    /** Bounds asking the destination to describe itself. Core imposes no timeout of its own. */
     signal?: AbortSignal,
-  ): Promise<Result<RoutingRecord, DeliveryRefusal>>;
+  ): Promise<Result<RoutedRecord, DeliveryRefusal>>;
   /**
    * Projected on demand rather than handed over as a snapshot, so what leaves
    * is the item as it now stands and the destination as it now is. Absent where

@@ -27,6 +27,8 @@ export type Told = {
   /** How often the delivery runner looks, where a test needs it slower than a window. */
   readonly deliveryPoll?: number;
   readonly triggerWindow?: number;
+  /** Absent is none: a test reads a delivery once the runner has carried it, and waits on nothing else. */
+  readonly undoWindow?: number;
 };
 
 export type World = {
@@ -130,5 +132,8 @@ interval = 3600000
 pollInterval = ${told.deliveryPoll ?? POLL}
 leaseFor = 300000
 batch = 4
-${told.triggerWindow === undefined ? "" : `\n[routing]\ntriggerWindow = ${told.triggerWindow}\n`}${told.accounts ?? ""}`;
+
+[routing]
+undoWindow = ${told.undoWindow ?? 0}
+${told.triggerWindow === undefined ? "" : `triggerWindow = ${told.triggerWindow}\n`}${told.accounts ?? ""}`;
 }

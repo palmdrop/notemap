@@ -269,7 +269,7 @@ describe("routing an item from a template", () => {
 
     expect(response.status).toBe(200);
     expect(await body(response)).toMatchObject({
-      state: "delivered",
+      state: "pending",
       target: {
         kind: "destination",
         destination,

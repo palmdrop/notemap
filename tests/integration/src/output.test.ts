@@ -15,6 +15,7 @@ import {
   bytes,
   collect,
   deliverWith,
+  routeThrough,
   drainWith,
   envelope,
   filesUnder,
@@ -96,6 +97,13 @@ function routed<T>(
   return result.value;
 }
 
+/** A route carried out as the runner would once its window closes, as the record then stands. */
+async function landed(opened: Harness, item: ItemId, wanted = request()) {
+  const record = routed(await routeThrough(opened, item, wanted));
+  if (record === undefined) throw new Error("the delivery was given up on");
+  return record;
+}
+
 async function read(pool: Pool, record: RoutingRecordId): Promise<string> {
   const opened = await pool.routing.openOutput(record);
   if (opened.kind === "refused") {
@@ -113,7 +121,7 @@ describe("what a delivery says it produced", () => {
     );
     const item = await capture(pool);
 
-    const record = routed(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record).toMatchObject({
       state: "delivered",
@@ -133,11 +141,11 @@ describe("what a delivery says it produced", () => {
     const { pool } = opened;
     opened.destination.answers(delivered("# a thought\n"));
 
-    const first = routed(
-      await pool.routing.route(await capture(pool, "item-1"), request()),
-    );
-    const second = routed(
-      await pool.routing.route(await capture(pool, "item-2"), request("b.md")),
+    const first = await landed(opened, await capture(pool, "item-1"));
+    const second = await landed(
+      opened,
+      await capture(pool, "item-2"),
+      request("b.md"),
     );
 
     expect(second.output?.content?.blob).toBe(first.output?.content?.blob);
@@ -154,7 +162,7 @@ describe("what a delivery says it produced", () => {
     });
     const item = await capture(pool);
 
-    const record = routed(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record.output).toEqual({ note: "the API kept no copy" });
     expect(await filesUnder(opened.assetRoot)).toEqual([]);
@@ -170,7 +178,7 @@ describe("what a delivery says it produced", () => {
     opened.destination.answers({ kind: "delivered", pointer: "vault/a.md" });
     const item = await capture(pool);
 
-    const record = routed(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record.output).toBeUndefined();
     expect(record.url).toBeUndefined();
@@ -194,8 +202,10 @@ describe("a deferred delivery that lands", () => {
     opened.destination.answers({ kind: "unreachable", detail: "asleep" });
     const item = await capture(pool);
     const reservation = routed(await pool.routing.route(item, request()));
+    await opened.deliverDue();
 
     opened.destination.answers(delivered("# later\n", "no pictures"));
+    opened.clock.set("2026-08-06T09:00:01.000Z");
     expect(await deliverWith(opened, opened.destination)()).toBe(1);
 
     const [record] = await pool.routing.recordsFor(item);
@@ -220,7 +230,7 @@ describe("the mirror and the output", () => {
     const item = await capture(pool);
     await drainWith(opened)();
 
-    const record = routed(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
     await drainWith(opened)();
 
     const mirrored = await storedRecord(opened.mirrorRoot);
@@ -237,7 +247,7 @@ describe("the sweep, the reclaim and the output", () => {
     const { pool, clock } = opened;
     opened.destination.answers(delivered("# a thought\n"));
     const item = await capture(pool);
-    routed(await pool.routing.route(item, request()));
+    await landed(opened, item);
 
     clock.set("2026-08-08T09:00:00.000Z");
     expect(await pool.maintenance.sweepUnreferencedAssets()).toEqual([]);
@@ -266,7 +276,7 @@ describe("an output reclaimed before it is recorded", () => {
     const item = await capture(pool);
     reclaimingAsWritten(opened);
 
-    const record = routed(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record.state).toBe("delivered");
     expect(record.output).toEqual({ note: "no pictures" });
@@ -289,8 +299,10 @@ describe("an output reclaimed before it is recorded", () => {
     opened.destination.answers({ kind: "unreachable", detail: "asleep" });
     const item = await capture(pool);
     const reservation = routed(await pool.routing.route(item, request()));
+    await opened.deliverDue();
 
     opened.destination.answers(delivered("# later\n", "no pictures"));
+    opened.clock.set("2026-08-06T09:00:01.000Z");
     reclaimingAsWritten(opened);
     expect(await deliverWith(opened, opened.destination)()).toBe(1);
 

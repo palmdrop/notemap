@@ -424,7 +424,8 @@ _Avoid_: export, publish, send, file
 One attempt to place an item at a destination through one of its capabilities. Everything durable
 about the item is handed to the adapter, which reaches back for nothing. A delivery is **pending**
 until it lands, and then either delivered or abandoned; a person may cancel one that is still
-pending. Reshaping the item into the destination's dialect happens here, inside the delivery, and
+pending. Every decision that makes one waits the **undo window** before its first attempt, and a
+fired template waits the trigger window. Reshaping the item into the destination's dialect happens here, inside the delivery, and
 never to the capture — so one item reaches several destinations in several forms and none of them
 is the item. A delivery may also carry **its own words** in place of the capture's, a **rewrite**,
 which is the person's half of the same arrangement.
@@ -495,9 +496,30 @@ the block removed. The record stays, marked with when, and the log says so; it s
 anything the item's routing decides, so the item reads as unrouted, returns to the queue, and is
 no longer sealed by it. A trigger tag that made it comes off with it. **Reinstating** it puts it back.
 Only a delivered record naming a destination is withdrawn: a reservation and a mark by hand are
-**cancelled**, which removes them, since nothing reached anywhere.
+**cancelled**, which removes them, since nothing reached anywhere. Withdrawing is never called
+**undo**.
 _Avoid_: invalidate, which says the record was wrong, where it was true when it was made; unroute;
 retract; restore for its inverse, which is a rebuild's word
+
+**Cancel**:
+Removing a pending reservation before its delivery lands, which returns the item to the queue; and
+removing a mark by hand, which never reached anywhere. Refused once the delivery has landed: that
+record is **withdrawn**.
+_Avoid_: abort, revoke
+
+**Undo**:
+The shell's word for cancelling the decision just made, offered only while its delivery is pending:
+within the **undo window** and until it lands. The same call as **cancel**. Never offered on a
+delivered record, and never a word for withdrawing. A manual mark's `undo` and a discard's
+`undiscard` take back decisions that make no delivery.
+_Avoid_: revert, rollback
+
+**Undo window**:
+How long a decision that makes a delivery waits before its first attempt — a route made by hand, or
+a template applied from the composer — so that **undo** is true. Short, because a person is looking
+at the screen; the trigger window is longer, because a tag may be drained onto a daemon nobody is
+watching.
+_Avoid_: grace period, delay
 
 **Routing template**:
 A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its

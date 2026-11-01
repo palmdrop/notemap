@@ -108,8 +108,6 @@ const SAID: {
   "capture-id-conflict": "that capture already exists, with different content",
   "delivery-in-flight":
     "that delivery has already started; it cannot be called back",
-  "delivery-outcome-unknown":
-    "the delivery may or may not have happened; check the destination",
   "destination-in-use":
     "something has already been sent there, so it cannot be deleted; retire it instead",
   "destination-retired":
@@ -157,7 +155,6 @@ const SAID: {
   "payload-type-changed": "an edit cannot change what kind of thing this is",
   "payload-type-unsupported":
     "that destination does not accept this kind of item",
-  "rejected-by-destination": "the destination refused it",
   "session-required":
     "only someone signed in may manage access tokens and accounts",
   "tag-invalid": "a tag needs something in it",

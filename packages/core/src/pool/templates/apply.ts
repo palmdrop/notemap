@@ -10,7 +10,7 @@ import type {
 } from "#types/api/refusal";
 import type { ItemId, RoutingTemplateId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
-import type { DeliveryRequest, RoutingRecord } from "#types/domain/routing";
+import type { DeliveryRequest, RoutedRecord } from "#types/domain/routing";
 import type {
   RoutingTemplate,
   SuppliedArguments,
@@ -80,19 +80,19 @@ export async function routeFrom(
   item: ItemId,
   id: RoutingTemplateId,
   options: TemplateRouting = {},
-): Promise<Result<RoutingRecord, TemplateRoutingRefusal>> {
+): Promise<Result<RoutedRecord, TemplateRoutingRefusal>> {
   const [held, template] = await Promise.all([
     ports.store.item(item),
     ports.store.routingTemplate(id),
   ]);
   if (held === undefined) {
-    return refused<RoutingRecord, TemplateRoutingRefusal>({
+    return refused<RoutedRecord, TemplateRoutingRefusal>({
       kind: "no-such-item",
       item,
     });
   }
   if (template === undefined) {
-    return refused<RoutingRecord, TemplateRoutingRefusal>({
+    return refused<RoutedRecord, TemplateRoutingRefusal>({
       kind: "unknown-template",
       template: id,
     });
@@ -104,7 +104,7 @@ export async function routeFrom(
     options.arguments,
   );
   if (request.kind === "refused") {
-    return refused<RoutingRecord, TemplateRoutingRefusal>(request.refusal);
+    return refused<RoutedRecord, TemplateRoutingRefusal>(request.refusal);
   }
   // Not the template's — a template says where an item goes and never what it
   // says — so it rides beside the expansion rather than being part of it.

@@ -3487,7 +3487,7 @@ export interface paths {
         put?: never;
         /**
          * Route an item to a destination, or from a template
-         * @description Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.
+         * @description Records the decision and attempts nothing: the record answered is `pending`, and its delivery comes due at `until`, the end of the undo window. Cancelling before then calls it off before anything is attempted. Where it landed, or that the destination refused it, is read from the action log, as a fired template's is.
          *
          *     One route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.
          */
@@ -3506,13 +3506,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The routing record. Read `state` rather than reading a record as arrival. */
+                /** @description The routing record, pending, and when its delivery comes due. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["RoutingRecord"];
+                        "application/json": components["schemas"]["RoutedRecord"];
                     };
                 };
                 /** @description The body could not be read as this request. */
@@ -3593,7 +3593,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked" | "argument-missing";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "unreachable" | "argument-not-asked" | "argument-missing";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3727,7 +3727,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "unreachable" | "argument-not-asked";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5551,6 +5551,10 @@ export interface components {
             arguments: {
                 [key: string]: unknown;
             };
+        };
+        RoutedRecord: components["schemas"]["RoutingRecord"] & {
+            /** @description When the undo window closes and the delivery comes due. Cancelling before then calls it off before anything is attempted. */
+            until: string;
         };
         RouteRequest: {
             /**

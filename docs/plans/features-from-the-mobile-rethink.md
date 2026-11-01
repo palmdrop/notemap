@@ -275,7 +275,7 @@ it holds. If phase 3 lands first, (b)'s offer goes on the landing notice, not th
 
 Depends on W1–W3, W5. Independent of phases 1–2.
 
-- [ ] ADR via `core:adr`, written with the developer, amending ADR 37 and touching ADR 17: a
+- [x] ADR via `core:adr`, written with the developer, amending ADR 37 and touching ADR 17: a
       decision that makes a delivery waits a short window before its first attempt, whether made by
       hand or by applying a template from the composer. The reasoning: ADR 37 kept hand routes
       inline because the composer *is* the review: "paying for it everywhere would make every
@@ -284,30 +284,30 @@ Depends on W1–W3, W5. Independent of phases 1–2.
       gone. Name the costs: no pointer from the call (the shell draws a pending record first), a
       destination's refusal arrives after the window (W4), and tests can no longer read a delivery
       off the route call.
-- [ ] CONTEXT.md, for the developer to confirm: **undo** is the shell's word for cancelling the
+- [x] CONTEXT.md, for the developer to confirm: **undo** is the shell's word for cancelling the
       decision just made, offered only while its delivery is pending; **cancel** is the same call
       on any pending reservation; **withdraw** is for a delivered record and never undo. Amend
       **Withdraw** and **Delivery** to match. Name the window as the ADR does.
-- [ ] Core: `route` no longer attempts inline for a destination target. It checks what it checks
+- [x] Core: `route` no longer attempts inline for a destination target. It checks what it checks
       today (`prepare`), writes the reservation and enqueues the delivery job with `notBefore` =
       decision time + the window, as `fire` does. A mark by hand is unchanged. `PoolConfig` gains
       the window.
-- [ ] The action log: a decision held in its window writes an entry carrying `until`, as
+- [x] The action log: a decision held in its window writes an entry carrying `until`, as
       `template-fired` does, so a shell counts down to a fact. The kind is new or `routed` is
       split, settled in the ADR. `delivery-failed` attempt numbering starts at the job's first
       attempt.
-- [ ] HTTP: `POST /v1/items/{id}/route` answers `200` with a `pending` record and `until`. It no
+- [x] HTTP: `POST /v1/items/{id}/route` answers `200` with a `pending` record and `until`. It no
       longer answers `422 rejected-by-destination`. Checkable refusals stay. OpenAPI and client
       types regenerated.
-- [ ] Daemon config: the knob, its default, `config.example.toml`, `docs/running.md`.
-- [ ] Specs: core.md (Routing: no inline attempt; the window), http-v1.md (the route section's
+- [x] Daemon config: the knob, its default, `config.example.toml`, `docs/running.md`.
+- [x] Specs: core.md (Routing: no inline attempt; the window), http-v1.md (the route section's
       "blocks for one delivery attempt" and the 422 go; `until`), client.md (a route's record is
       pending, landing is read from the log as for a firing).
-- [ ] Tests: a hand route is pending and lands after the window; cancel inside the window removes
+- [x] Tests: a hand route is pending and lands after the window; cancel inside the window removes
       it and returns the item; cancel after landing is `409 not-pending`; window `0` is due at
       once; a refusal after the window removes the reservation and returns the item. Update every
       test that read a delivery off the route call (see Unknowns).
-- [ ] Verify: typecheck, tests, lint, `pnpm test:stack` (crosses HTTP and config). Commit.
+- [x] Verify: typecheck, tests, lint, `pnpm test:stack` (crosses HTTP and config). Commit.
 
 ### Phase 4: undo and cancel, in the shell
 

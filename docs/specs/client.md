@@ -1,8 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
+
+- 2026-11-01 — **A route resolves to a pending record and `until`.** The pool holds every decision
+  that makes a delivery for a short window before it is attempted; the landing arrives from the log.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
 
 - 2026-10-30 — **A batch is one outbox operation about many items**: a tag, an untag, an archive
   or an unarchive. `batch()` and `batches`, and `routing.cancelMany`. An operation drains after
@@ -807,6 +811,14 @@ the pool can capture, tag, archive and edit — triage — but cannot route or m
 This asymmetry is deliberate and the interface makes it visible: an archive is available offline; a
 route or a marking is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
+
+**A route answers a pending record and when it comes due** *(2026-11-01,
+[ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*.
+`routing.route` resolves to the record and `until`, the end of the undo window, and never to a
+landing: the pool attempts nothing until then. The client learns of the landing, or of the
+destination refusing, from the log, as it does for a fired template, and reads the item again on
+it. Nothing changes in the outbox, since the window opens at the pool when the decision lands
+there.
 
 **A preview and an output are reads that reach the pool, and neither is queued** (added
 2026-09-04). Asking what a destination would write is a question only the pool can answer, and one

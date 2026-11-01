@@ -47,6 +47,7 @@ export const CONFIG: PoolConfig = {
   sweep: { grace: 86_400_000 as Duration },
   zone: "Europe/Stockholm",
   triggerWindow: 15_000 as Duration,
+  undoWindow: 0 as Duration,
 };
 
 /** Uploads bytes the way a client does — under an id it minted — and answers the response. */

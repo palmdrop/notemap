@@ -237,7 +237,8 @@ describe("the folder a template asks for", () => {
   });
 
   it("creates once and requires after, which is what establish means", async () => {
-    const { pool } = await pooled();
+    const opened = await pooled();
+    const { pool } = opened;
     const template = succeeded(
       await pool.templates.create(draft({ folder: "establish" })),
     );
@@ -248,6 +249,7 @@ describe("the folder a template asks for", () => {
       await pool.templates.resolve(first.id, template.id),
     );
     succeeded(await pool.templates.route(first.id, template.id));
+    await opened.deliverDue();
     const after = succeeded(
       await pool.templates.resolve(second.id, template.id),
     );
@@ -292,12 +294,14 @@ describe("the folder a template asks for", () => {
   });
 
   it("keeps it through a rename, which moves nothing", async () => {
-    const { pool } = await pooled();
+    const opened = await pooled();
+    const { pool } = opened;
     const template = succeeded(
       await pool.templates.create(draft({ folder: "establish" })),
     );
     const item = captured(await pool.capture(envelope()));
     succeeded(await pool.templates.route(item.id, template.id));
+    await opened.deliverDue();
 
     const edited = succeeded(
       await pool.templates.edit(template.id, { name: "Research" }),
@@ -307,7 +311,8 @@ describe("the folder a template asks for", () => {
   });
 
   it("hands the item back where the folder it required is gone", async () => {
-    const { pool, destination } = await pooled();
+    const opened = await pooled();
+    const { pool, destination } = opened;
     destination.answers({
       kind: "rejected",
       detail: "research/2026/ is missing",
@@ -317,15 +322,9 @@ describe("the folder a template asks for", () => {
     );
     const item = captured(await pool.capture(envelope()));
 
-    const refusal = await pool.templates.route(item.id, template.id);
+    succeeded(await pool.templates.route(item.id, template.id));
+    await opened.deliverDue();
 
-    expect(refusal).toMatchObject({
-      kind: "refused",
-      refusal: {
-        kind: "rejected-by-destination",
-        detail: "research/2026/ is missing",
-      },
-    });
     // Abandoned on the first attempt: no reservation, and the item is back.
     expect(await pool.routing.recordsFor(item.id)).toEqual([]);
     expect(
@@ -406,6 +405,7 @@ describe("routing from a template", () => {
         content: { text: "a thought, tidied" },
       }),
     );
+    await opened.deliverDue();
 
     expect(record.target).toMatchObject({
       content: { text: "a thought, tidied" },
@@ -782,7 +782,7 @@ describe("an edit reaching a trigger tag's reservation", () => {
   });
 
   it("revises it where a record beside the reservation has already been tried", async () => {
-    const { pool, clock, destination, item } = await tagged();
+    const { pool, clock, deliver, destination, item } = await tagged();
     const other = succeeded(
       await pool.templates.create(
         draft({ name: "Notes", arguments: { path: "notes/{{item}}.md" } }),
@@ -792,6 +792,7 @@ describe("an edit reaching a trigger tag's reservation", () => {
     expect(
       succeeded(await pool.templates.route(item.id, other.id)),
     ).toMatchObject({ state: "pending" });
+    await deliver();
     clock.set(INSIDE);
 
     const outcome = succeeded(
@@ -1432,16 +1433,19 @@ describe("a template that asks for an argument", () => {
     succeeded(await pool.items.tag(item.id, TODO, PERSON));
 
     expect(await tagsOn(pool, item.id)).toEqual([TODO]);
-    expect(await pool.routing.recordsFor(item.id)).toEqual([record]);
+    expect(
+      (await pool.routing.recordsFor(item.id)).map((each) => each.id),
+    ).toEqual([record.id]);
   });
 
   it("refuses the same tag once the record is withdrawn, as any tag that would fire", async () => {
-    const { pool, item, template } = await asking();
+    const { pool, item, template, deliver } = await asking();
     const record = succeeded(
       await pool.templates.route(item.id, template.id, {
         arguments: { heading: "Next" },
       }),
     );
+    await deliver();
     succeeded(await pool.routing.withdraw(record.id));
 
     expect(await pool.items.tag(item.id, TODO, PERSON)).toMatchObject({
@@ -1459,6 +1463,7 @@ describe("a template that asks for an argument", () => {
         arguments: { heading: "Next" },
       }),
     );
+    await opened.deliver();
     opened.racingTransaction(async () => {
       succeeded(await pool.routing.withdraw(record.id));
     });

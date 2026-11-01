@@ -19,6 +19,7 @@ import {
   DEFAULT_SWEEP,
   DEFAULT_SYNCHRONOUS,
   DEFAULT_TRIGGER_WINDOW_MS,
+  DEFAULT_UNDO_WINDOW_MS,
   LOG_LEVEL_VARIABLE,
   defaultZone,
 } from "../constants";
@@ -150,6 +151,7 @@ const fileSchema = z.object({
   routing: z
     .object({
       triggerWindow: z.number().int().nonnegative().optional(),
+      undoWindow: z.number().int().nonnegative().optional(),
     })
     .optional(),
   delivery: z
@@ -495,6 +497,8 @@ export function parseConfig(source: string, from: string): LoadedConfig {
       zone: readZone(file.capture?.zone, from),
       triggerWindow: (file.routing?.triggerWindow ??
         DEFAULT_TRIGGER_WINDOW_MS) as Duration,
+      undoWindow: (file.routing?.undoWindow ??
+        DEFAULT_UNDO_WINDOW_MS) as Duration,
     },
   };
 
