@@ -598,6 +598,12 @@ The one row on a list that a person is on, given what one row is given — `proc
 row's foot. There is none while rows are **marked**.
 _Avoid_: active row, focused row, current item
 
+**Batch**:
+One thing done to many items at once — a tag, an untag, an archive or an unarchive — named by an
+id its maker chose. Each item in it lands or is refused on its own. The log's entries and the
+reservations a batch made carry the id.
+_Avoid_: bulk action, group, selection
+
 **Marked**:
 Of a row: picked for a batch, one of any number. What is done to a marked row's tags is done to
 every marked row, and the head's `discard` and `undiscard` act on all of them. Marking is a mode,

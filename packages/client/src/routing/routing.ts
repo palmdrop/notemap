@@ -1,5 +1,5 @@
 import { acknowledged, answered, type Api } from "#api/http";
-import type { ItemId, RoutingRecord } from "#api/types";
+import type { Item, ItemId, RoutingRecord } from "#api/types";
 import type { RoutingApi } from "../types";
 
 export type RoutingDeps = {
@@ -23,6 +23,8 @@ export type RoutingDeps = {
    * pool's copy says all three. Never throws: the pool has already decided.
    */
   readonly settled: (item: ItemId) => Promise<void>;
+  /** Items the pool answered with, put where each now belongs. */
+  readonly landed: (items: readonly Item[]) => Promise<void>;
 };
 
 /**
@@ -100,21 +102,13 @@ export function createRouting(deps: RoutingDeps): RoutingApi {
 
     async cancelMany(records) {
       const answer = await answered(
-        api.POST("/v1/routing/cancel", {
-          body: { records: records.map((each) => each.record) },
-        }),
+        api.POST("/v1/routing/cancel", { body: { records: [...records] } }),
       );
-
-      const cancelled = new Set(
-        answer.values
-          .filter((each) => each.outcome === "cancelled")
-          .map((each) => each.record),
+      await deps.landed(
+        answer.values.flatMap((each) =>
+          each.outcome === "cancelled" ? [each.item] : [],
+        ),
       );
-      for (const { record, item } of records) {
-        if (!cancelled.has(record)) continue;
-        await deps.holding(item, await recordsFor(item));
-        await deps.reread(item);
-      }
       return answer;
     },
 

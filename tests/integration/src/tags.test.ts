@@ -78,7 +78,7 @@ describe("tagging", () => {
         kind: "provider",
         provider: "tagger" as never,
       }),
-    );
+    ).item;
 
     expect(tagged.tags).toEqual([
       {
@@ -117,7 +117,7 @@ describe("tagging", () => {
         kind: "source",
         source: "watched-folder" as never,
       }),
-    );
+    ).item;
 
     expect(again.tags).toEqual([
       {
@@ -142,10 +142,12 @@ describe("tagging", () => {
 
     const untagged = succeeded(
       await p.items.untag(item.id, KIND_QUOTE, PERSON),
-    );
+    ).item;
     expect(names(untagged)).toEqual([]);
 
-    const again = succeeded(await p.items.untag(item.id, KIND_QUOTE, PERSON));
+    const again = succeeded(
+      await p.items.untag(item.id, KIND_QUOTE, PERSON),
+    ).item;
     expect(names(again)).toEqual([]);
     expect(
       (await p.actions.read({ item: item.id }, ALL)).values.filter(
@@ -191,16 +193,19 @@ describe("tagging", () => {
 
     // Classification is not content, so nothing that seals a capture reaches it.
     expect(
-      names(succeeded(await p.items.tag(item.id, tag("kind/note"), PERSON))),
+      names(
+        succeeded(await p.items.tag(item.id, tag("kind/note"), PERSON)).item,
+      ),
     ).toEqual([tag("kind/note"), KIND_QUOTE]);
     expect(
-      names(succeeded(await p.items.untag(item.id, KIND_QUOTE, PERSON))),
+      names(succeeded(await p.items.untag(item.id, KIND_QUOTE, PERSON)).item),
     ).toEqual([tag("kind/note")]);
 
     // The revision took the tags it was made with, and not the one added since.
     expect(
       names(
-        succeeded(await p.items.untag(outcome.revision.id, KIND_QUOTE, PERSON)),
+        succeeded(await p.items.untag(outcome.revision.id, KIND_QUOTE, PERSON))
+          .item,
       ),
     ).toEqual([]);
   });
@@ -210,12 +215,14 @@ describe("tagging", () => {
     const item = await captured(p);
 
     await p.items.tag(item.id, tag("  kind/quote  "), PERSON);
-    const again = succeeded(await p.items.tag(item.id, KIND_QUOTE, PERSON));
+    const again = succeeded(
+      await p.items.tag(item.id, KIND_QUOTE, PERSON),
+    ).item;
 
     expect(names(again)).toEqual([KIND_QUOTE]);
     // Absorbed, so the untrimmed spelling matched what is stored.
     expect(
-      succeeded(await p.items.untag(item.id, tag(" kind/quote"), PERSON)),
+      succeeded(await p.items.untag(item.id, tag(" kind/quote"), PERSON)).item,
     ).toMatchObject({ tags: [] });
   });
 

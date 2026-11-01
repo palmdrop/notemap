@@ -96,7 +96,11 @@ export async function fire(
 ): Promise<void> {
   const until = later(record.at, config.triggerWindow);
 
-  await tx.insertRoutingRecord(record);
+  await tx.insertRoutingRecord(
+    batch === undefined || record.applied === undefined
+      ? record
+      : { ...record, applied: { ...record.applied, batch } },
+  );
   await tx.enqueue([
     {
       id: ports.ids.next<JobId>(),

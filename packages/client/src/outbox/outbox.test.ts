@@ -496,6 +496,73 @@ describe("draining", () => {
   });
 });
 
+describe("an operation about many items", () => {
+  const BATCH: Operation = {
+    kind: "batch",
+    batch: "b1",
+    items: ["one", "two"],
+    action: { kind: "archive" },
+  };
+
+  it("waits for what is already queued against any one of them", async () => {
+    const { outbox, sent, answer } = engineOver([anItem("one"), anItem("two")]);
+    const before: Operation = { kind: "tag", item: "two", tag: "reading" };
+
+    await outbox.enqueue(before);
+    clock.set("2026-08-17T12:00:02.000Z");
+    await outbox.enqueue(BATCH);
+
+    const draining = outbox.drain();
+    await flush();
+    expect(sent).toEqual([before]);
+
+    answer({ item: anItem("two") });
+    await flush();
+    expect(sent).toEqual([before, BATCH]);
+
+    answer({ item: anItem("one") });
+    await draining;
+  });
+
+  it("is waited for by what is queued after it against any one of them", async () => {
+    const { outbox, sent, answer } = engineOver([anItem("one"), anItem("two")]);
+    const after: Operation = { kind: "tag", item: "one", tag: "reading" };
+
+    await outbox.enqueue(BATCH);
+    clock.set("2026-08-17T12:00:02.000Z");
+    await outbox.enqueue(after);
+
+    const draining = outbox.drain();
+    await flush();
+    expect(sent).toEqual([BATCH]);
+
+    answer({ item: anItem("one") });
+    await flush();
+    expect(sent).toEqual([BATCH, after]);
+
+    answer({ item: anItem("one") });
+    await draining;
+  });
+
+  it("is sent after one queued before it is refused", async () => {
+    const { outbox, sent, answer } = engineOver([anItem("one"), anItem("two")]);
+    const before: Operation = { kind: "tag", item: "two", tag: "reading" };
+
+    await outbox.enqueue(before);
+    clock.set("2026-08-17T12:00:02.000Z");
+    await outbox.enqueue(BATCH);
+
+    const draining = outbox.drain();
+    await flush();
+    answer({ error: new Refused("no-such-item", "that item is not here") });
+    await flush();
+    expect(sent).toEqual([before, BATCH]);
+
+    answer({ item: anItem("one") });
+    await draining;
+  });
+});
+
 describe("an operation leaving the outbox", () => {
   it("is released once the pool has taken it", async () => {
     const { outbox, released, answer } = engineOver([anItem("one")]);

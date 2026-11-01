@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { BatchAction, Item } from "@notemap/client";
+  import { MAX_BATCH, type BatchAction, type Item } from "@notemap/client";
 
   import Action from "$components/primitives/controls/Action.svelte";
   import { notes } from "$lib/batching";
@@ -11,11 +11,14 @@
    */
   let {
     marked,
+    full = false,
     onbatch,
     onall,
     onclear,
   }: {
     marked: readonly Item[];
+    /** As many as one batch takes: nothing more is marked. */
+    full?: boolean;
     onbatch: (action: BatchAction) => void;
     onall: () => void;
     onclear: () => void;
@@ -30,6 +33,11 @@
 </script>
 
 <span class="whitespace-nowrap">{notes(marked.length)} marked</span>
+{#if full}
+  <span role="status" class="whitespace-nowrap text-inert"
+    >the most one batch takes is {String(MAX_BATCH)}</span
+  >
+{/if}
 
 {#if discardable}
   <Action alarm onclick={() => onbatch({ kind: "archive" })}>discard</Action>

@@ -152,6 +152,8 @@ export type RoutingRecordRow = {
   /** JSON, where a delivery made several things. */
   readonly pointers: string | null;
   readonly withdrawn_at: number | null;
+  /** The batch whose tag fired the record, where one did. */
+  readonly batch: string | null;
 };
 
 /** What a page needs of an item's routing records, without their targets. */
@@ -278,6 +280,7 @@ export const TABLE_COLUMNS = {
     "fired_by_tag",
     "pointers",
     "withdrawn_at",
+    "batch",
   ],
   actions: [
     "id",

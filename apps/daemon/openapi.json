@@ -1346,13 +1346,16 @@
               },
               "firedByTag": {
                 "type": "boolean"
+              },
+              "batch": {
+                "type": "string"
               }
             },
             "required": [
               "template",
               "firedByTag"
             ],
-            "description": "The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand."
+            "description": "The routing template this decision came from, whether its trigger tag applied it, and the batch whose tag did. Absent for a decision made by hand."
           },
           "state": {
             "type": "string",
@@ -2493,11 +2496,22 @@
                       "enum": [
                         "cancelled"
                       ]
+                    },
+                    "item": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Item"
+                        },
+                        {
+                          "description": "The item as it now stands, back in the queue, with the trigger tag given back."
+                        }
+                      ]
                     }
                   },
                   "required": [
                     "record",
-                    "outcome"
+                    "outcome",
+                    "item"
                   ]
                 },
                 {
@@ -2592,7 +2606,7 @@
               },
               "record": {
                 "type": "string",
-                "description": "The reservation the template's trigger tag holds on the item, which cancelling calls off."
+                "description": "The reservation this batch's trigger tag made on the item, which cancelling calls off. Sent again, a batch answers the one it made the first time."
               },
               "item": {
                 "$ref": "#/components/schemas/Item"

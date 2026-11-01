@@ -139,13 +139,13 @@ export interface ItemsApi {
     tag: TagName,
     by: Agent,
     options?: Tagging,
-  ): Promise<Result<Item, TagRefusal>>;
+  ): Promise<Result<Tagged, TagRefusal>>;
   untag(
     id: ItemId,
     tag: TagName,
     by: Agent,
     batch?: BatchId,
-  ): Promise<Result<Item, TagRefusal>>;
+  ): Promise<Result<Tagged, TagRefusal>>;
   archive(
     id: ItemId,
     reason?: string,
@@ -334,6 +334,17 @@ export type TemplateRouting = {
   readonly arguments?: SuppliedArguments;
 };
 
+/**
+ * What a tag or an untag did. `changed` is false where it was absorbed: the
+ * item already carried the tag, or did not. `fired` is the reservation a
+ * trigger tag made, where it made one.
+ */
+export type Tagged = {
+  readonly item: Item;
+  readonly changed: boolean;
+  readonly fired?: RoutingRecordId;
+};
+
 export type Tagging = {
   readonly signal?: AbortSignal;
   /** Values for the asked arguments of the template the tag fires. */
@@ -376,8 +387,8 @@ export interface RoutingApi {
     delivery: DeliveryRequest,
     signal?: AbortSignal,
   ): Promise<Result<PreviewReport, PreviewRefusal>>;
-  /** Returns the item to the queue. */
-  cancelDelivery(record: RoutingRecordId): Promise<Result<void, CancelRefusal>>;
+  /** Returns the item to the queue, and answers it as it now stands. */
+  cancelDelivery(record: RoutingRecordId): Promise<Result<Item, CancelRefusal>>;
   /**
    * The record stays and stops counting, so the item returns to the queue and
    * is no longer sealed by it. A trigger tag it was made by comes off with it.

@@ -66,7 +66,7 @@ export const batchOutcomeSchema = z
       outcome: z.literal("reserved"),
       record: z.string().openapi({
         description:
-          "The reservation the template's trigger tag holds on the item, which cancelling calls off.",
+          "The reservation this batch's trigger tag made on the item, which cancelling calls off. Sent again, a batch answers the one it made the first time.",
       }),
       item: itemSchema,
     }),
@@ -111,7 +111,14 @@ export const cancelManyAnswerSchema = z
   .object({
     values: z.array(
       z.discriminatedUnion("outcome", [
-        z.object({ record: z.string(), outcome: z.literal("cancelled") }),
+        z.object({
+          record: z.string(),
+          outcome: z.literal("cancelled"),
+          item: itemSchema.openapi({
+            description:
+              "The item as it now stands, back in the queue, with the trigger tag given back.",
+          }),
+        }),
         z.object({
           record: z.string(),
           outcome: z.literal("refused"),

@@ -1,5 +1,7 @@
 import { SvelteSet } from "svelte/reactivity";
 
+import { MAX_BATCH } from "@notemap/client";
+
 /** How a row was picked: with `mod` held, with `shift` held, or plainly. */
 export type Picked = {
   readonly toggle: boolean;
@@ -13,21 +15,30 @@ export function pickedBy(event: MouseEvent | KeyboardEvent): Picked {
 }
 
 /**
- * The rows a surface has marked for a batch. Marking is a mode: entered by a
- * pick with `mod` or `shift` held, or by `space`, and on for as long as
- * anything is marked, so a plain pick while it is on marks rather than
- * starting over.
+ * The rows a surface has marked for a batch, at most `limit` of them. Marking
+ * is a mode: entered by a pick with `mod` or `shift` held, or by `space`, and
+ * on for as long as anything is marked, so a plain pick while it is on marks
+ * rather than starting over.
  */
 export class Marking {
   readonly #marked = new SvelteSet<string>();
-  /** Where a range starts: the row last marked or unmarked by itself. */
-  #anchor = $state<string | undefined>(undefined);
+  readonly #limit: number;
+
+  constructor(limit = MAX_BATCH) {
+    this.#limit = limit;
+  }
+
   get on(): boolean {
     return this.#marked.size > 0;
   }
 
   get count(): number {
     return this.#marked.size;
+  }
+
+  /** As many as a batch takes: nothing more is marked until one is let go of. */
+  get full(): boolean {
+    return this.#marked.size >= this.#limit;
   }
 
   has(id: string): boolean {
@@ -41,24 +52,21 @@ export class Marking {
 
   toggle(id: string): void {
     if (this.#marked.has(id)) this.#marked.delete(id);
-    else this.#marked.add(id);
-    this.#anchor = id;
+    else this.mark(id);
   }
 
   mark(id: string): void {
-    this.#marked.add(id);
-    this.#anchor ??= id;
+    if (!this.full) this.#marked.add(id);
   }
 
-  /** Every row from the anchor to this one, inclusive, added to what is marked. */
-  range(rows: readonly string[], to: string, from = this.#anchor ?? to): void {
+  /** Every row from one to the other, inclusive, added to what is marked while there is room. */
+  range(rows: readonly string[], to: string, from: string): void {
     const one = rows.indexOf(from);
     const other = rows.indexOf(to);
     if (other === -1) return;
     const start = one === -1 ? other : Math.min(one, other);
     const end = one === -1 ? other : Math.max(one, other);
-    for (const id of rows.slice(start, end + 1)) this.#marked.add(id);
-    this.#anchor ??= from;
+    for (const id of rows.slice(start, end + 1)) this.mark(id);
   }
 
   /** Lets go of rows no longer drawn, so a count never says more than is there. */
@@ -66,14 +74,10 @@ export class Marking {
     for (const id of [...this.#marked]) {
       if (!rows.includes(id)) this.#marked.delete(id);
     }
-    if (this.#anchor !== undefined && !rows.includes(this.#anchor)) {
-      this.#anchor = undefined;
-    }
   }
 
   clear(): void {
     this.#marked.clear();
-    this.#anchor = undefined;
   }
 }
 
@@ -90,7 +94,7 @@ export function picked(
   selected: string | undefined,
 ): string | undefined {
   if (how.range) {
-    marking.range(rows, id, marking.on ? undefined : (selected ?? id));
+    marking.range(rows, id, selected ?? id);
     return id;
   }
   if (how.toggle || marking.on) {

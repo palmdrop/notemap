@@ -131,6 +131,7 @@
     if (shut) return;
     const held = client.batches.subscribe((batches) => {
       for (const batch of batches.values()) {
+        if (batch.outcomes === undefined) tallying.sent(batch.id);
         if (batch.outcomes === undefined || tallying.knows(batch.id)) continue;
         const name =
           batch.action.kind === "tag"
@@ -140,6 +141,8 @@
         if (said !== undefined) notices.raise(said);
         for (const outcome of batch.outcomes) {
           if (outcome.outcome !== "reserved") continue;
+          // Ended before the answer came: the log already closed it.
+          if (tallying.over(outcome.record)) continue;
           firings.opened({
             record: outcome.record,
             item: outcome.id,
@@ -241,8 +244,12 @@
       about: itemHref,
     });
     if (firing === undefined) return;
-    if ("opened" in firing) firings.opened(firing.opened);
-    else firings.closed(firing.closed);
+    if ("opened" in firing) {
+      if (firing.opened.batch !== undefined) {
+        tallying.fired(firing.opened.record, firing.opened.batch);
+      }
+      firings.opened(firing.opened);
+    } else firings.closed(firing.closed);
   }
 
   /**

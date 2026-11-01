@@ -40,10 +40,18 @@ export function outgoing(operation: Operation): Outgoing {
     case "accept-suggestion":
     case "reject-suggestion":
       return { what: "suggestion", item: operation.item };
-    case "batch":
-      return {
-        what: operation.action.kind === "archive" ? "discard" : "route",
-        subject: `${String(operation.items.length)} notes`,
-      };
+    case "batch": {
+      const { action } = operation;
+      const many = `${String(operation.items.length)} notes`;
+      switch (action.kind) {
+        case "tag":
+        case "untag":
+          return { what: action.kind, subject: `${action.tag}, ${many}` };
+        case "archive":
+          return { what: "discard", subject: many };
+        case "unarchive":
+          return { what: "unarchive", subject: many };
+      }
+    }
   }
 }

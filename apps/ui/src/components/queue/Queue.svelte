@@ -367,11 +367,12 @@
   {#if marking.on}
     <Marked
       marked={rows.filter((row) => marking.has(row.id))}
+      full={marking.full}
       onbatch={(action) => batch.do(action)}
       onall={() => {
         const ids = rows.map((row) => row.id);
         const last = ids.at(-1);
-        if (last !== undefined) marking.range(ids, last, ids[0]);
+        if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
       }}
       onclear={() => marking.clear()}
     />

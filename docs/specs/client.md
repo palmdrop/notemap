@@ -771,13 +771,16 @@ carries the same id, so the log groups what every attempt wrote.
   unarchive puts them back, and a tag is drawn on, or taken off, every item.
 - **The pool answers each item on its own, and the client takes each answer.** Every guess is
   taken back and every item the pool returned is put in its place, so an item the pool refused is
-  left as it was, and the operation has still landed. Only a batch refused whole, such as one
-  naming more items than the pool takes, is a refused operation.
-- `batches` holds every batch made since the client started, by id, with what the pool answered
-  for each item once it has. Nothing stores it: a batch is a gesture, and what each item came to
-  after that is the item's and the log's to say.
+  left as it was, and the operation has still landed. Only a batch refused whole is a refused
+  operation.
+- **A batch names at most `MAX_BATCH` items, 500**, what the pool takes in one request. `batch()`
+  refuses a bigger one with `limit-too-large` before anything is queued.
+- `batches` holds the batches made since the client started, by id, with what the pool answered
+  for each item once it has: every one still waiting, and the latest 50 answered. Nothing stores
+  it: a batch is a gesture, and what each item came to after that is the item's and the log's to
+  say.
 - **Calling one off is `routing.cancelMany`**, one request for all of the batch's reservations,
-  answered per record. Like `cancel`, it reaches the pool directly and is not queued. A batch still
+  answered per record with the item it gave back, which the client takes as it is. Like `cancel`, it reaches the pool directly and is not queued. A batch still
   in the outbox has fired nothing, so it has nothing to call off until it drains.
 
 **What is undrained is answered both ways** (2026-08-26). A shell draws two marks from the outbox

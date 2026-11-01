@@ -1,7 +1,7 @@
 # 67. A batch is the host's, and the log keeps its id
 
 **Date**: 2026-10-30
-**Status**: Accepted — extends [ADR 12](0012-core-keeps-an-append-only-action-log.md)
+**Status**: Accepted, amended 2026-11-01 — extends [ADR 12](0012-core-keeps-an-append-only-action-log.md)
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -84,6 +84,24 @@ Chosen: **Option 2**.
 - **Bad** — overturns the primitive-API line, and makes one refused item refuse the whole batch.
 
 ---
+
+## Amendment, 2026-11-01: a reservation keeps its batch
+
+A review found two things the daemon got wrong by inferring a reservation from the pool's state
+after the tag. A delivery that landed before the read was answered `skipped`. And a reservation an
+earlier single tag made was folded into the batch, so the batch's cancel called it off too.
+
+- **Core reads the batch back, from routing records only.** A reservation a batch's tag fired keeps
+  the id on its `applied`. A batch sent again, finding the tag already carried, answers the pending
+  reservation with its own id, and nothing else. Nothing reads the id from the log.
+- **`tag` and `untag` say what they did**: whether anything changed, and the reservation `tag`
+  fired. The daemon no longer reads the item before and after to work it out.
+- **`cancelDelivery` answers the item it gave back**, so cancelling a batch's reservations is one
+  request with nothing read again afterwards.
+
+Core still never makes a batch and never checks that one exists. A batch resent after its
+reservation was delivered answers `skipped`. Telling that case apart would mean reading delivered
+records by batch, which nothing needs yet.
 
 ## More information
 

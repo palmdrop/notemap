@@ -40,9 +40,16 @@ export function done(operation: Operation): string {
     case "reject-suggestion":
       return `Reject ${operation.suggestion}`;
     case "batch":
-      return operation.action.kind === "archive"
-        ? "Archive many"
-        : "Apply a template to many";
+      switch (operation.action.kind) {
+        case "tag":
+          return `Tag #${operation.action.tag} on many`;
+        case "untag":
+          return `Untag #${operation.action.tag} on many`;
+        case "archive":
+          return "Archive many";
+        case "unarchive":
+          return "Unarchive many";
+      }
   }
 }
 

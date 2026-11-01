@@ -146,7 +146,7 @@ const POOL_SETTING_COLUMNS = `name, value, changed_at`;
 const ROUTING_COLUMNS = `
   id, item_id, target_kind, destination, capability, note, arguments, content,
   state, at, pointer, url, output_blob, output_mime, output_note, template_id,
-  fired_by_tag, pointers, withdrawn_at
+  fired_by_tag, pointers, withdrawn_at, batch
 `;
 
 /** A record still standing: one a person withdrew counts for nothing an item's routing decides. */
@@ -498,7 +498,7 @@ export function createSqlitePoolStore(
     ReturnType<typeof routingRecordParams>
   >(`
     INSERT INTO routing_records (${ROUTING_COLUMNS})
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const deliverRouting = write.query<
     never,

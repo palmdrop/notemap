@@ -115,6 +115,17 @@ describe("a batch applying a template", () => {
     expect(again).toMatchObject({ outcome: "reserved", record: once!.record });
   });
 
+  it("leaves out a reservation an earlier tag made, which is not this batch's to call off", async () => {
+    const host = serving();
+    await template(host);
+    const [first] = await captureMany(host.app, 1);
+    await send(host.app, `/v1/items/${first}/tag`, { tag: RESEARCH });
+
+    const answer = await batch(host, [first!], TAGGING);
+
+    expect(answer.values).toMatchObject([{ id: first, outcome: "skipped" }]);
+  });
+
   it("writes the batch id on every entry it logs", async () => {
     const host = serving();
     await template(host);
@@ -265,15 +276,20 @@ describe("cancelling many deliveries", () => {
     const response = await send(host.app, "/v1/routing/cancel", { records });
 
     expect(response.status).toBe(200);
-    expect(await body(response)).toEqual({
-      values: records.map((record) => ({ record, outcome: "cancelled" })),
+    expect(await body(response)).toMatchObject({
+      values: [
+        {
+          record: records[0],
+          outcome: "cancelled",
+          item: { id: first, tags: [] },
+        },
+        {
+          record: records[1],
+          outcome: "cancelled",
+          item: { id: second, tags: [] },
+        },
+      ],
     });
-    for (const item of [first, second]) {
-      const read = (await body(
-        await host.app.request(`/v1/items/${item}`),
-      )) as { tags: unknown[] };
-      expect(read.tags).toEqual([]);
-    }
   });
 
   it("answers a record it could not cancel on its own", async () => {

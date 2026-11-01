@@ -361,9 +361,12 @@ export interface RoutingApi {
    * it still holds and the pool answers nothing on a cancel.
    */
   cancel(record: RoutingRecord["id"], item: ItemId): Promise<void>;
-  /** Many at once, as a batch is called off: each record answered on its own. */
+  /**
+   * Many at once, as a batch is called off: each record answered on its own,
+   * with the item it gave back, which is what the client then holds.
+   */
   cancelMany(
-    records: readonly { readonly record: string; readonly item: ItemId }[],
+    records: readonly RoutingRecord["id"][],
   ): Promise<CancelManyAnswer>;
   /**
    * Says a delivery no longer stands. The record stays and stops counting, so
@@ -497,8 +500,8 @@ export interface Client {
   tag(item: ItemId, tag: string, supplied?: SuppliedArguments): Promise<void>;
   untag(item: ItemId, tag: string): Promise<void>;
   /**
-   * Applies one template to every item, or archives them all, as one outbox
-   * operation and one request. Answers the batch's id, which every log entry it
+   * Tags, untags, archives or unarchives every item, as one outbox operation
+   * and one request: at most `MAX_BATCH` items. Answers the batch's id, which every log entry it
    * writes carries and `batches` holds it under.
    */
   batch(items: readonly ItemId[], action: BatchAction): Promise<string>;

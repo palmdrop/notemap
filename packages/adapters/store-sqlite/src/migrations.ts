@@ -952,6 +952,10 @@ export const MIGRATIONS: readonly string[] = [
   `
   ALTER TABLE actions ADD COLUMN batch TEXT;
   `,
+  `
+  -- The batch whose tag fired a record, which that batch sent again reads back.
+  ALTER TABLE routing_records ADD COLUMN batch TEXT;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

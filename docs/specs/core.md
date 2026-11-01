@@ -4,9 +4,11 @@
 **Last updated**: 2026-10-30
 **Shipped**:
 
-- 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag` and `archive`
-  take an optional batch id, recorded on every entry they write and never read back.
-  ([plan](../plans/batch-processing.md))
+- 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag`, `untag`,
+  `archive` and `unarchive` take an optional batch id, recorded on every entry they write. A
+  reservation a batch's tag fired keeps the id too, which is the one place core reads it back.
+  `tag` and `untag` answer whether they changed anything and the reservation they fired, and
+  `cancelDelivery` answers the item it gave back. ([plan](../plans/batch-processing.md))
 
 - 2026-10-30 — **Routed frontmatter is snake_case throughout and no longer writes `wasAttributedTo`**, which repeated `capture_source`. ([plan](../plans/provenance-keys-one-case.md))
 
@@ -1200,8 +1202,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   is append-only, and a reservation is not in it yet. A record joins the log when its delivery
   lands, so a record that is not pending means bytes reached somewhere. Removing one that never
   delivered erases no fact.
-- A person may **cancel a pending delivery** before it resolves, by the same path. The record is
-  removed, so `delivery-cancelled` carries the `destination` and `capability` it was going to, as
+- A person may **cancel a pending delivery** before it resolves, by the same path, and is answered
+  the item as it now stands *(2026-11-01)*. The record is removed, so `delivery-cancelled` carries the `destination` and `capability` it was going to, as
   `routed` does *(2026-10-23; it carried neither, and a log could only call it `by hand`)*.
 - **A mark made by hand is cancelled by the same path** *(added 2026-09-15)*. `markProcessed`
   writes a record born delivered, and a delivered record is otherwise not cancellable — but
@@ -1837,9 +1839,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **An entry may name the batch it was part of** (added 2026-10-30). `tag` and `archive` take an
   optional batch id, as do `untag` and `unarchive`. Every entry they write carries it as `batch`:
   `tagged`, `template-fired`, `untagged`, `archived` and `unarchived`. Whoever made the batch made
-  the id. Core does not check that the batch exists, and never reads the id back. A batch is the
-  host's: it calls one of the four once per item, and each call lands or is refused on its own
+  the id. Core does not check that the batch exists. A batch is the host's: it calls one of the
+  four once per item, and each call lands or is refused on its own
   ([ADR 67](../adr/0067-a-batch-is-the-hosts-and-the-log-keeps-its-id.md)).
+- **A reservation a batch's tag fired keeps the batch** (added 2026-11-01), on the record's
+  `applied`, beside the template and `firedByTag`. It is what a batch sent again reads to find what
+  it reserved the first time. The log never reads the id back.
+- **`tag` and `untag` say what they did** (added 2026-11-01): the item, whether anything changed,
+  and for `tag` the reservation it fired where it fired one. An absorbed tag or untag answers
+  `changed: false`, so a caller never works it out from a read before and after.
 - **A delivery's entries are subject to the item**, not to the routing record the job names. Core
   resolves the one to the other, so reading an item's log still finds every attempt to deliver it.
 - **The log records arrival.** Capture time comes from the source, so the entry is the only record

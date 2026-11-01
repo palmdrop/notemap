@@ -104,7 +104,7 @@ export type UpdateRoutingTemplateRequest =
   components["schemas"]["UpdateRoutingTemplateRequest"];
 export type RoutingSummary = components["schemas"]["RoutingSummary"];
 export type TagUse = components["schemas"]["TagUse"];
-/** A template to apply to every item in a batch, or an archive. */
+/** What a batch does to every item in it: a tag, an untag, an archive or an unarchive. */
 export type BatchAction = components["schemas"]["BatchRequest"]["action"];
 /** How one item in a batch came out. */
 export type BatchOutcome = components["schemas"]["BatchOutcome"];

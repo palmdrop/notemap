@@ -2189,3 +2189,66 @@ test("an unmarked row's tags are not controls while rows are marked", async () =
   expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
   expect(screen.getByText("reading")).toBeDefined();
 });
+
+test("all marks every row the queue holds", async () => {
+  pool(queued("one", "two", "three"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  await fireEvent.click(within(head()).getByRole("button", { name: "all" }));
+
+  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+});
+
+test("a trigger tag added on a marked row asks first, naming its template", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/templates") {
+      return json(200, {
+        values: [
+          {
+            id: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a90",
+            name: "todo",
+            destination: "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77",
+            capability: "append",
+            arguments: { heading: "Inbox" },
+            folder: "create",
+            triggerTag: "route/todo",
+            fired: { records: 0 },
+          },
+        ],
+      });
+    }
+    return queued("one", "two")(request);
+  });
+  await client.templates.load();
+
+  render(Queue);
+  await screen.findByText("one");
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  await fireEvent.click(stampOf("two"), { metaKey: true });
+
+  await fireEvent.keyDown(window, { key: "t" });
+  const line = screen.getByRole("combobox", {
+    name: "Add a tag to every marked note",
+  });
+  await fireEvent.input(line, { target: { value: "route/todo" } });
+  await fireEvent.keyDown(line, { key: "Enter" });
+
+  const asking = await screen.findByRole("dialog");
+  expect(within(asking).getByText("route 2 notes with todo?")).toBeDefined();
+  expect(asked()).not.toContain("POST /v1/batches");
+
+  await fireEvent.click(within(asking).getByRole("button", { name: "route" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/batches");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      items: ["one", "two"],
+      action: { kind: "tag", tag: "route/todo" },
+    }),
+  );
+});

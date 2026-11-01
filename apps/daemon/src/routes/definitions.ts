@@ -1492,9 +1492,7 @@ export const cancelManyRoute = createRoute({
       BODY_STATUS,
     ),
     415: errorResponse("The body was not JSON.", 415, BODY_STATUS),
-    422: errorResponse("The batch names too many records.", 422, {
-      "limit-too-large": 422,
-    }),
+    422: errorResponse("The batch names too many records.", 422, BATCH_STATUS),
   },
 });
 

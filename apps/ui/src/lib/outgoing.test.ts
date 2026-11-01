@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 
+import type { Operation } from "@notemap/client";
+
 import { outgoing } from "./outgoing";
 
 test("a capture names its own first words", () => {
@@ -46,4 +48,22 @@ test("a batch says how many notes, and names no one item", () => {
       action: { kind: "archive" },
     }),
   ).toEqual({ what: "discard", subject: "2 notes" });
+});
+
+test("a batch says its deed as the same deed on one item would", () => {
+  const batch = (action: Extract<Operation, { kind: "batch" }>["action"]) =>
+    outgoing({ kind: "batch", batch: "b", items: ["one", "two"], action });
+
+  expect(batch({ kind: "tag", tag: "reading" })).toEqual({
+    what: "tag",
+    subject: "reading, 2 notes",
+  });
+  expect(batch({ kind: "untag", tag: "reading" })).toEqual({
+    what: "untag",
+    subject: "reading, 2 notes",
+  });
+  expect(batch({ kind: "unarchive" })).toEqual({
+    what: "unarchive",
+    subject: "2 notes",
+  });
 });

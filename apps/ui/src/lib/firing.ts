@@ -48,9 +48,7 @@ export function cancelBatch(batch: string): void {
   if (flying.length === 0) return;
 
   void client.routing
-    .cancelMany(
-      flying.map((firing) => ({ record: firing.record, item: firing.item })),
-    )
+    .cancelMany(flying.map((firing) => firing.record))
     .then((answer) => {
       for (const one of answer.values) {
         if (one.outcome !== "cancelled") continue;

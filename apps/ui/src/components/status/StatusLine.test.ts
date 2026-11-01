@@ -774,8 +774,8 @@ test("a batch's routes are said as one, and called off with one cancel", async (
       bodies.push(await request.json());
       return json(200, {
         values: [
-          { record: "r1", outcome: "cancelled" },
-          { record: "r2", outcome: "cancelled" },
+          { record: "r1", outcome: "cancelled", item: anItem("one") },
+          { record: "r2", outcome: "cancelled", item: anItem("two") },
         ],
       });
     }

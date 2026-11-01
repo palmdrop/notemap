@@ -19,6 +19,10 @@ Closes `todo.md`'s "batch processing" entry and its "batch processing by tag" su
 
 ## Settled
 
+The first decisions, as they stood when the plan was written. Phases 6, 7 and 8 changed several of
+them: a batch is tags rather than templates, only a discard or a trigger tag is confirmed, `⌘space`
+and `shift`+`↑↓` are not bound, and core reads the batch id back from a reservation.
+
 - **A daemon route, looping over core.** One bulk endpoint in the daemon calls core's existing
   per-item `tag` and `archive` for each item and answers per item. Some may land while others are
   refused. Core's only change is to record a batch id ([below](#the-batch-id)), so core.md's
@@ -95,7 +99,7 @@ own.
   A batch over the pool's whole match is out of scope.
 - **The trigger window across N items.** Each reservation waits out the window from its own
   firing. A single request fires them all within moments of each other, so one countdown should be
-  honest. If it is not, the cancel shows the latest one.
+  honest. If it is not, the cancel shows the soonest one.
 - **Offline confirm counts.** Offline, "already processed" and "skipped" are counted from the
   cache, which can be stale. Fallback: the confirm step marks those counts as the client's view,
   as a cache-drawn surface already is (client.md § surfaces drawn from the cache). The per-item
@@ -246,6 +250,31 @@ the single selection, and a tag field in the head was a step away from the rows 
 - [x] Shell: tags mirrored from marked rows, fixed on the others; `t` on a marked cursor row; the
       gutter; no box or stamp marks in the mode; the head without tags. shell.md, CONTEXT.md.
 - [x] Tests; typecheck, lint, tests.
+- [x] Commit
+
+### Phase 8 — what the review found
+
+Settled 2026-11-01, from a review of the PR.
+
+- **A batch is at most 500 notes.** Marking stops there and the head says so. The client refuses a
+  bigger batch before queueing it.
+- **Core reads the batch back from a reservation.** A routing record a batch's tag fired keeps the
+  batch id. `tag` and `untag` answer whether they changed anything and what they fired, and the
+  daemon stops inferring both. `cancelDelivery` answers the item, so `POST /v1/routing/cancel`
+  answers each item and the client reads nothing again. ADR 67 amended.
+- **A batch's notice is said once**, however many batches came before it, and a reservation that
+  ends before the pool's answer still counts toward its batch.
+- **A shift-click range runs from the cursor**, as shell.md says.
+
+- [x] Core: `Tagged`, `applied.batch`, `cancelDelivery` answers the item. Store column. core.md,
+      ADR 67.
+- [x] Daemon: outcomes from what core answered; a resend finds its own reservation; the cancel
+      answer carries items. http-v1.md, openapi.
+- [x] Client: `MAX_BATCH`; `cancelMany` settles from the answer; answered batches held to 50; the
+      outbox's chaining across several items tested.
+- [x] Shell: the cap; the range from the cursor; tallies that never repeat and keep early endings;
+      the outbox labels for every batch kind; tallies cleared on sign-out. shell.md, CONTEXT.md.
+- [x] Tests; typecheck, lint, tests, `pnpm test:stack`.
 - [x] Commit
 
 ---

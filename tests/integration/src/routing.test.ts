@@ -522,7 +522,7 @@ describe("cancelling a delivery", () => {
 
     expect(await pool.routing.cancelDelivery(record.id)).toEqual({
       kind: "ok",
-      value: undefined,
+      value: expect.objectContaining({ id: item }),
     });
     expect(await pool.routing.recordsFor(item)).toEqual([]);
     expect(ids((await pool.views.queue(ALL)).values)).toEqual([item]);
@@ -586,7 +586,7 @@ describe("cancelling a delivery", () => {
 
     expect(await pool.routing.cancelDelivery(record.id)).toEqual({
       kind: "ok",
-      value: undefined,
+      value: expect.objectContaining({ id: item }),
     });
     expect(await pool.routing.recordsFor(item)).toEqual([]);
     expect(ids((await pool.views.queue(ALL)).values)).toEqual([item]);

@@ -5251,10 +5251,11 @@ export interface components {
                 kind: "user";
                 note?: string;
             };
-            /** @description The routing template this decision came from, and whether its trigger tag applied it. Absent for a decision made by hand. */
+            /** @description The routing template this decision came from, whether its trigger tag applied it, and the batch whose tag did. Absent for a decision made by hand. */
             applied?: {
                 template: string;
                 firedByTag: boolean;
+                batch?: string;
             };
             /** @enum {string} */
             state: "pending" | "delivered";
@@ -5624,6 +5625,7 @@ export interface components {
                 record: string;
                 /** @enum {string} */
                 outcome: "cancelled";
+                item: components["schemas"]["Item"] & unknown;
             } | {
                 record: string;
                 /** @enum {string} */
@@ -5648,7 +5650,7 @@ export interface components {
             id: string;
             /** @enum {string} */
             outcome: "reserved";
-            /** @description The reservation the template's trigger tag holds on the item, which cancelling calls off. */
+            /** @description The reservation this batch's trigger tag made on the item, which cancelling calls off. Sent again, a batch answers the one it made the first time. */
             record: string;
             item: components["schemas"]["Item"];
         } | {

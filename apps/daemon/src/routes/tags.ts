@@ -30,7 +30,7 @@ export function tagHandler(pool: Pool, half: "tag" | "untag") {
 
     return result.kind === "refused"
       ? json(errorBody(result.refusal), tagStatus(result.refusal))
-      : json(result.value, 200);
+      : json(result.value.item, 200);
   };
 }
 

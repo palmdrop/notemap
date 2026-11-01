@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../../adapters/memory-store";
 import { createClient } from "../../client";
+import { Refused } from "../../errors";
+import { MAX_BATCH } from "#state/batches";
 import type { BatchOutcome, Item } from "#api/types";
 import { read } from "#testing/observing";
 import { anItem, asked, routeOf } from "#testing/pool";
@@ -201,14 +203,32 @@ describe("a batch", () => {
   });
 });
 
+describe("a batch over the limit", () => {
+  it("is refused before anything is queued", async () => {
+    const { client, transport } = await clientOver(() =>
+      json(200, { values: [] }),
+    );
+    const items = Array.from(
+      { length: MAX_BATCH + 1 },
+      (_, n) => `i${String(n)}`,
+    );
+
+    await expect(client.batch(items, { kind: "archive" })).rejects.toThrow(
+      Refused,
+    );
+    expect(asked(transport).map(routeOf)).not.toContain("POST /v1/batches");
+    expect(read(client.outbox)).toEqual([]);
+  });
+});
+
 describe("cancelling many", () => {
-  it("is one request, and reads each cancelled item again", async () => {
+  it("is one request, and holds each item the pool gave back", async () => {
     const { client, transport } = await clientOver(async (request) => {
       const route = routeOf(request);
       if (route === "POST /v1/routing/cancel") {
         return json(200, {
           values: [
-            { record: "r1", outcome: "cancelled" },
+            { record: "r1", outcome: "cancelled", item: anItem("one") },
             {
               record: "r2",
               outcome: "refused",
@@ -223,10 +243,7 @@ describe("cancelling many", () => {
       return json(200, { values: [] });
     });
 
-    const answer = await client.routing.cancelMany([
-      { record: "r1", item: "one" },
-      { record: "r2", item: "two" },
-    ]);
+    const answer = await client.routing.cancelMany(["r1", "r2"]);
 
     expect(answer.values.map((each) => each.outcome)).toEqual([
       "cancelled",
@@ -236,7 +253,9 @@ describe("cancelling many", () => {
     expect(
       routes.filter((route) => route === "POST /v1/routing/cancel"),
     ).toHaveLength(1);
-    expect(routes).toContain("GET /v1/items/one");
-    expect(routes).not.toContain("GET /v1/items/two");
+    expect(routes.filter((route) => route.startsWith("GET /v1/items"))).toEqual(
+      [],
+    );
+    expect(read(client.held("one"))?.id).toBe("one");
   });
 });

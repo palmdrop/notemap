@@ -88,9 +88,6 @@ export function batchHandler(pool: Pool) {
   };
 }
 
-const carries = (item: Item | undefined, tag: string) =>
-  item?.tags.some((held) => held.name === tag.trim()) ?? false;
-
 async function tagged(
   pool: Pool,
   id: ItemId,
@@ -101,31 +98,34 @@ async function tagged(
   },
   template: RoutingTemplate | undefined,
 ): Promise<Outcome> {
-  const carried = carries(await pool.items.get(id), action.tag);
   const result = await pool.items.tag(id, action.tag as TagName, PERSON, {
     batch,
     ...(action.arguments === undefined ? {} : { arguments: action.arguments }),
   });
   if (result.kind === "refused") return refusedWith(id, result.refusal);
 
+  const { item, changed, fired } = result.value;
   if (template === undefined) {
-    return { id, outcome: carried ? "skipped" : "tagged", item: result.value };
+    return { id, outcome: changed ? "tagged" : "skipped", item };
   }
 
-  const reservation = (await pool.routing.recordsFor(id)).find(
-    (record) =>
-      record.state === "pending" &&
-      record.applied?.template === template.id &&
-      record.applied.firedByTag,
-  );
-  return reservation === undefined
-    ? { id, outcome: "skipped", item: result.value }
-    : {
-        id,
-        outcome: "reserved",
-        record: reservation.id,
-        item: result.value,
-      };
+  // Sent again, the batch finds the tag already carried and what it reserved
+  // the first time, which is still the batch's to call off.
+  const record =
+    fired ?? (changed ? undefined : await reservedBy(pool, id, batch));
+  return record === undefined
+    ? { id, outcome: "skipped", item }
+    : { id, outcome: "reserved", record, item };
+}
+
+async function reservedBy(
+  pool: Pool,
+  id: ItemId,
+  batch: BatchId,
+): Promise<RoutingRecordId | undefined> {
+  return (await pool.routing.recordsFor(id)).find(
+    (record) => record.state === "pending" && record.applied?.batch === batch,
+  )?.id;
 }
 
 async function untagged(
@@ -134,10 +134,10 @@ async function untagged(
   batch: BatchId,
   tag: TagName,
 ): Promise<Outcome> {
-  const carried = carries(await pool.items.get(id), tag);
   const result = await pool.items.untag(id, tag, PERSON, batch);
   if (result.kind === "refused") return refusedWith(id, result.refusal);
-  return { id, outcome: carried ? "untagged" : "skipped", item: result.value };
+  const { item, changed } = result.value;
+  return { id, outcome: changed ? "untagged" : "skipped", item };
 }
 
 async function archived(
@@ -200,7 +200,7 @@ export function cancelManyHandler(pool: Pool) {
       );
       values.push(
         result.kind === "ok"
-          ? { record, outcome: "cancelled" as const }
+          ? { record, outcome: "cancelled" as const, item: result.value }
           : {
               record,
               outcome: "refused" as const,

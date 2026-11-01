@@ -48,6 +48,12 @@ describe("what an operation says it does", () => {
 
   it("says a batch is about many", () => {
     expect(done(batched)).toBe("Archive many");
+    expect(
+      done({
+        ...batched,
+        action: { kind: "untag", tag: "reading" },
+      } as Operation),
+    ).toBe("Untag #reading on many");
   });
 });
 

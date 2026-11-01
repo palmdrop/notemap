@@ -7,7 +7,8 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 
 - 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** A tag added or taken off, or
   an archive or unarchive, for many items in one request answered item by item. Many reservations called off in
-  one request. An action-log entry carries `batch` where a batch wrote it.
+  one request, each answered with its item. An action-log entry, and a routing record's `applied`,
+  carry `batch` where a batch wrote it.
   ([plan](../plans/batch-processing.md))
 
 - 2026-10-29 — **`POST /v1/items/{id}/tag` no longer answers `422 trigger-refused` where the
@@ -1814,7 +1815,8 @@ committed. It takes exactly the body `/route` takes.
 
 `POST /v1/routing/cancel` cancels many records at once, on exactly the terms above, and is how a
 batch is called off. The body names them: `{ "records": ["…", "…"] }`, at most 500. It answers
-`200` with each record on its own, `{ "record", "outcome": "cancelled" }` or
+`200` with each record on its own, `{ "record", "outcome": "cancelled", "item" }`, the item as it
+now stands with any trigger tag given back, or
 `{ "record", "outcome": "refused", "error": { "code", … } }` carrying what the single cancel would
 have refused it with. More than 500 is `422 limit-too-large`.
 
@@ -1865,9 +1867,10 @@ It answers `200`:
 }
 ```
 
-- **`reserved`** carries the record that a trigger tag holds pending on the item. That record is
-  what cancelling the batch calls off. A tag that filed the item a moment ago, from this batch or
-  another, answers the same reservation.
+- **`reserved`** carries the record this batch's trigger tag holds pending on the item. That record
+  is what cancelling the batch calls off. Sent again while the record is pending, the batch answers
+  the same one, read back by its `batch`. A reservation an earlier tag made, outside this batch, is
+  not the batch's: that item answers `skipped`.
 - **`tagged`, `untagged`, `archived` and `unarchived`** say what the batch did to the item.
 - **`skipped`** is an item nothing changed for: it already was as asked, or a trigger tag's template
   had already filed it. In the second case the tag still classifies, as it does on the single route.
@@ -1875,7 +1878,7 @@ It answers `200`:
   `trigger-tag-held` included.
 - Every outcome except `refused` carries the item as it now stands.
 - **Sending a batch again is safe.** What landed answers as it stands, and what did not land is
-  attempted again.
+  attempted again. A reservation that has already been delivered answers `skipped`.
 
 ### An item's routing records
 
@@ -1913,6 +1916,8 @@ It answers `200`:
 - A record that is pending disappears rather than changing state if its delivery is abandoned or
   cancelled, and the item returns to the queue. So a record this route answers at all either has
   delivered or is still going to be tried.
+- **`applied`** names the template a decision came from and whether its trigger tag made it, and
+  carries `batch` where a batch's tag did ([a batch of items](#a-batch-of-items)).
 
 ### Assets
 

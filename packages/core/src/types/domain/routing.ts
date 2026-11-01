@@ -3,6 +3,7 @@ import type { Asset } from "./asset";
 import type { Destination } from "./destination";
 import type { Artifact } from "./enrichment";
 import type {
+  BatchId,
   BlobHash,
   CapabilityName,
   DestinationId,
@@ -183,6 +184,8 @@ export type RoutingRecordState = "pending" | "delivered";
 export type AppliedTemplate = {
   readonly template: RoutingTemplateId;
   readonly firedByTag: boolean;
+  /** The batch whose tag fired it, so a batch sent again finds what it reserved the first time. */
+  readonly batch?: BatchId;
 };
 
 export type RoutingRecord = {

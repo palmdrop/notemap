@@ -45,17 +45,32 @@ test("a pick with shift held marks every row from the selected one", () => {
   ]);
 });
 
-test("a range in the mode runs from the row last toggled", () => {
+test("a range in the mode runs from the cursor, wherever the keys took it", () => {
   const marking = new Marking();
-  picked(marking, ROWS, "four", TOGGLE, undefined);
+  picked(marking, ROWS, "one", TOGGLE, undefined);
 
-  picked(marking, ROWS, "two", RANGE, "four");
+  picked(marking, ROWS, "four", RANGE, "three");
 
   expect(marking.inOrder(ROWS.map((id) => ({ id })))).toEqual([
-    "two",
+    "one",
     "three",
     "four",
   ]);
+});
+
+test("marks no more than a batch takes", () => {
+  const marking = new Marking(2);
+
+  marking.range(ROWS, "four", "one");
+  marking.toggle("four");
+
+  expect(marking.count).toBe(2);
+  expect(marking.full).toBe(true);
+  expect(marking.has("three")).toBe(false);
+
+  marking.toggle("one");
+  marking.toggle("four");
+  expect(marking.has("four")).toBe(true);
 });
 
 test("unmarking the last row leaves the mode, as clearing does", () => {

@@ -2104,6 +2104,8 @@ is, by its trigger tag.
 - A click with `mod` held marks a row, or unmarks it.
 - A click with `shift` held marks every row from the selected one, or from the cursor, to the row
   clicked, and selects no text on the way.
+- **At most 500 rows are marked**, the most one batch takes. Past that nothing more is marked, and
+  the head says so.
 - `space` marks or unmarks the cursor's row. `J` and `K` walk the list as `j` and `k` do, and mark
   both the row they leave and the row they reach.
 - Entering the mode with a row already selected marks that row as well. The person was already
@@ -2135,8 +2137,8 @@ order:
 
 - how many are marked;
 - `discard`, where something marked is not discarded, and `undiscard`, where something is;
-- `all`, which marks every row the surface holds. That is what it has read, not what the pool
-  holds;
+- `all`, which marks every row the surface holds, up to 500. That is what it has read, not what
+  the pool holds;
 - `clear`.
 
 A row that leaves the surface, because a filter took it off or the queue let it go, is unmarked.
