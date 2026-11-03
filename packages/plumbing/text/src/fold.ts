@@ -30,6 +30,12 @@ export function fold(text: string): string {
     .trim();
 }
 
+/**
+ * The longest `words` a filter takes, in UTF-16 code units of the parameter as
+ * sent. Past it is a paste rather than a question.
+ */
+export const MAX_WORDS = 200;
+
 /** The terms some words come to, each folded: none for words that are only space. */
 export function termsOf(words: string): readonly string[] {
   const folded = fold(words);

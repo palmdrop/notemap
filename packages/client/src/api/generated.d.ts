@@ -939,7 +939,7 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
-                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter. */
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
                     words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
@@ -1014,7 +1014,7 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
-                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter. */
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
                     words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
@@ -1083,7 +1083,7 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
-                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter. */
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
                     words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];

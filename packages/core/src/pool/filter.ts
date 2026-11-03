@@ -1,4 +1,4 @@
-import { termsOf } from "@notemap/text";
+import { MAX_WORDS, termsOf } from "@notemap/text";
 
 import { ok, refused } from "#utils/result";
 import type { TagName } from "#types/domain/ids";
@@ -20,8 +20,7 @@ export function tagFilter(
   return ok(tags as readonly TagName[] as TagFilter);
 }
 
-/** In characters, as typed. */
-export const MAX_WORDS = 200;
+export { MAX_WORDS };
 
 /** Folded and split as an item's own words are, so the store compares like with like. Blank is no terms. */
 export function wordsFilter(

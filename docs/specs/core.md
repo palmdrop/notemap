@@ -952,7 +952,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   archive. An item's words are every string its payload's content holds and its attachments'
   filenames; they and the filter's are folded alike — lower-cased, accents dropped, whitespace made
   one space — and the filter's split into terms, every one of which must appear somewhere in the
-  item's, inside a word too. Blank words are no filter, and over 200 characters is refused as
+  item's, inside a word too. Blank words are no filter, and over 200 UTF-16 code units of them, as sent, is refused as
   `words-too-long`. Nothing is ranked: the key and the position are the surface's own. The store
   holds each item's folded words beside it, written with the item, and answers the condition
   behind its port; the fold is one function, `@notemap/text`'s, which the client applies over its
@@ -2283,7 +2283,7 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   page, and a tag that trims to nothing is refused as `tag-invalid`.
 - Read through words, the feed, the queue and the archive each answer only the items whose text or
   attachment names hold every term, without regard to case or accents, in any script; an item
-  amended answers to its new words and not its old; words over 200 characters are refused as
+  amended answers to its new words and not its old; words over 200 UTF-16 code units are refused as
   `words-too-long`.
 - Read through `routed` and `archived` and a tag, the feed answers the items carrying the tag that
   are routed, archived or both; through a destination, only items holding a record naming it,

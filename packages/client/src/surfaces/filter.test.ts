@@ -260,6 +260,38 @@ describe("a surface read through a filter", () => {
   });
 });
 
+describe("a surface read through words past what a search can be", () => {
+  const PASTE = Array.from({ length: 50 }, (_, at) => `word${String(at)}`).join(
+    " ",
+  );
+
+  it("is refused as the pool refuses it, without asking the pool", async () => {
+    const { client, transport } = clientOver(pool());
+
+    await client.enter("queue", undefined, { words: [PASTE] });
+
+    expect(read(client.queue).failure).toEqual({
+      said: "that is longer than a search can be",
+      refused: true,
+    });
+    expect(
+      transport.sent.filter((request) => routeOf(request) === "GET /v1/queue"),
+    ).toEqual([]);
+  });
+
+  it("is refused the same while the pool is out of reach", async () => {
+    const { client, transport } = clientOver(pool());
+    transport.unreachable(true);
+
+    await client.enter("queue", undefined, { words: [PASTE] });
+
+    expect(read(client.queue).failure).toEqual({
+      said: "that is longer than a search can be",
+      refused: true,
+    });
+  });
+});
+
 describe("a feed read through states, destinations and sources", () => {
   it("asks the pool for each of them, and the queue for its sources alone", async () => {
     const { client, transport } = clientOver(pool());

@@ -6,7 +6,7 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 **Shipped**:
 
 - 2026-11-01 — **`words` filters `/v1/feed`, `/v1/queue` and `/v1/archived`**, and `next` carries
-  it. Over 200 characters is `422 words-too-long`.
+  it. Over 200 UTF-16 code units is `422 words-too-long`.
   ([plan](../plans/features-from-the-mobile-rethink.md),
   [ADR 70](../adr/0070-a-filter-may-name-words.md))
 - 2026-11-01 — **`POST /v1/items/{id}/route` attempts nothing and answers a pending record with
@@ -752,7 +752,7 @@ carries no record times, so a decision taken back is not something it could reco
   `words=bike%20rack` reads only the items whose words hold both `bike` and `rack`, in any case,
   with or without accents, inside a word too ([core.md](core.md#the-queue)). One parameter, split
   on whitespace into terms; no phrases and no operators. Blank is no filter, and over 200
-  characters is `422 words-too-long` carrying the `limit`. `next` carries the words as the pool
+  UTF-16 code units, as sent, is `422 words-too-long` carrying the `limit`. `next` carries the words as the pool
   folded them, which read the same again.
 - **`by` names the key** *(added 2026-10-21, [ADR 65](../adr/0065-the-feed-may-be-read-by-when-each-item-was-processed.md))*: `capture`, the default, or
   `processed`, which reads the feed by `processedAt`. It is a parameter of its own rather than a third

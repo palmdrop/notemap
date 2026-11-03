@@ -593,7 +593,9 @@ has walked, so a filtered reading made from them would be silently short of what
   exactly *(2026-10-20)*. States and destinations are the feed's, and a filter naming one is never
   asked of the queue; a source is asked of either *(2026-10-21)*. **Words are folded into terms**
   *(2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))* by `@notemap/text`, the function the pool folds with, and asked of either
-  surface as one `words` parameter.
+  surface as one `words` parameter. Words that come to more than the pool takes are refused here, as
+  `words-too-long`, before the pool is asked *(2026-11-03)*, so a surface drawn from the cache says
+  the same as one the pool answers.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
   anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
   by, judged against the copy the client holds. It also meets one of each kind of the rest the

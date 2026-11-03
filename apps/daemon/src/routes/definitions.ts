@@ -179,7 +179,7 @@ const wordsFilterQuery = z.object({
     .openapi({
       param: { name: "words", in: "query" },
       description:
-        "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 characters is refused with `422 words-too-long`; blank is no filter.",
+        "What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter.",
       example: "bike rack",
     }),
 });
