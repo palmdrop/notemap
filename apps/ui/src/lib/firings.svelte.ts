@@ -14,6 +14,8 @@ export type Firing = {
   readonly href?: string;
   /** The batch it was fired by, called off with the rest of it. */
   readonly batch?: string;
+  /** The pool could not reach the destination and will try again, so it can be called off between attempts. */
+  readonly retrying?: boolean;
 };
 
 /** Enough closed records to stop a late opening, and no memory of the session. */
@@ -78,6 +80,21 @@ export function left(firing: Firing, at: number): number | undefined {
 }
 
 /**
+ * What a route in flight offers now. Inside its window, `undo`. Once the window
+ * has closed the delivery is being attempted, and a cancel would be refused, so
+ * nothing until the pool says it will try again; then `cancel`. A window the
+ * shell was never told of may still be open, so it is offered `cancel`.
+ */
+export function offerOf(
+  firing: Firing,
+  at: number,
+): "undo" | "cancel" | undefined {
+  if (firing.until === undefined) return "cancel";
+  if (left(firing, at) !== undefined) return "undo";
+  return firing.retrying === true ? "cancel" : undefined;
+}
+
+/**
  * Work in flight rather than something that happened, so it is not a notice:
  * it opens when the tag files the item and closes when the pool says how that
  * ended — landed, failed, given up on, or called off. What it ended as is then
@@ -112,11 +129,19 @@ export const firings = {
             ...(firing.until === undefined && known.until !== undefined
               ? { until: known.until }
               : {}),
+            ...(known.retrying === true ? { retrying: true } : {}),
           };
 
     open = [...open.filter((one) => one.record !== firing.record), merged];
     lookAfter(merged);
     tick();
+  },
+
+  /** The pool will try this one again: a delivery that failed and has not ended. */
+  retrying(record: string): void {
+    open = open.map((one) =>
+      one.record === record ? { ...one, retrying: true } : one,
+    );
   },
 
   closed(record: string): void {

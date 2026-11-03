@@ -54,7 +54,7 @@
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { cancelRouting, routedHere } from "$lib/firing";
-  import { firings } from "$lib/firings.svelte";
+  import { firings, offerOf } from "$lib/firings.svelte";
   import { placeNamed, readingOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
@@ -127,16 +127,20 @@
     () => !offline,
   );
 
-  /** The route made here last, which the head offers to take back while it is still pending. */
+  /** The route made here last, which the head offers to take back while its route is in flight. */
   let made = $state<RoutedRecord | undefined>(undefined);
-  const takeable = $derived(
-    made !== undefined &&
-      records.all.some(
-        (record) => record.id === made?.id && record.state === "pending",
-      )
-      ? made
-      : undefined,
-  );
+  /** As the status line offers it, from the same route in flight: one that has landed is gone from both. */
+  const takeable = $derived.by(() => {
+    if (made === undefined) return undefined;
+    const record = made;
+    const flying = firings.open.find((one) => one.record === record.id);
+    if (flying === undefined) return undefined;
+    const landed = records.all.some(
+      (one) => one.id === record.id && one.state !== "pending",
+    );
+    const offer = offerOf(flying, firings.now);
+    return landed || offer === undefined ? undefined : { record, offer };
+  });
 
   async function takeBack(record: RoutedRecord): Promise<void> {
     await cancelRouting(record.id, record.item);
@@ -1105,14 +1109,11 @@
             <Routing {summary} records={records.all} short />
           </div>
           {#if takeable !== undefined}
-            {@const record = takeable}
+            {@const { record, offer } = takeable}
             <button
               type="button"
               class="shrink-0 hover:underline"
-              onclick={() => void takeBack(record)}
-              >{firings.now < Date.parse(record.until)
-                ? "undo"
-                : "cancel"}</button
+              onclick={() => void takeBack(record)}>{offer}</button
             >
           {/if}
         </div>

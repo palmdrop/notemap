@@ -396,7 +396,7 @@ test("every way a route ends closes its firing", () => {
 });
 
 /** Still pending, so its cancel is still real. */
-test("a delivery the pool will try again leaves its firing open", () => {
+test("a delivery the pool will try again leaves its firing open, and retrying", () => {
   expect(
     firingOf(
       anAction("delivery-failed", {
@@ -405,7 +405,7 @@ test("a delivery the pool will try again leaves its firing open", () => {
       }),
       reading,
     ),
-  ).toBeUndefined();
+  ).toEqual({ retrying: "r1" });
 });
 
 test("an entry about no record touches no firing", () => {

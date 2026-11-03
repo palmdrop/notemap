@@ -504,13 +504,15 @@ retract; restore for its inverse, which is a rebuild's word
 
 **Cancel**:
 Removing a pending reservation before its delivery lands, which returns the item to the queue; and
-removing a mark by hand, which never reached anywhere. Refused once the delivery has landed: that
-record is **withdrawn**.
+removing a mark by hand, which never reached anywhere. Refused while the delivery is being
+attempted, and once it has landed: that record is **withdrawn**. A shell offers it on a
+reservation whose delivery the pool is retrying.
 _Avoid_: abort, revoke
 
 **Undo**:
-The shell's word for cancelling the decision just made, offered only while its delivery is pending:
-within the **undo window** and until it lands. The same call as **cancel**. Never offered on a
+The shell's word for cancelling the decision just made, offered only while its delivery waits out
+its window — the **undo window**, or a fired template's — before anything is attempted. The same
+call as **cancel**. Never offered on a
 delivered record, and never a word for withdrawing. A manual mark's `undo` and a discard's
 `undiscard` take back decisions that make no delivery.
 _Avoid_: revert, rollback

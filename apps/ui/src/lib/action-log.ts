@@ -137,7 +137,8 @@ export function endingOf(
 /**
  * What an entry in the log does to the routes in flight: a `template-fired`
  * opens one, and so does a decision made by hand, which is a `routed` entry
- * carrying `until`. An entry that ends it closes it.
+ * carrying `until`. An entry that ends it closes it, and a failure the pool
+ * will try again marks it retrying.
  */
 export function firingOf(
   action: Action,
@@ -153,13 +154,18 @@ export function firingOf(
     ) => string | undefined;
     about: (item: string) => string;
   },
-): { readonly opened: Firing } | { readonly closed: string } | undefined {
+):
+  | { readonly opened: Firing }
+  | { readonly closed: string }
+  | { readonly retrying: string }
+  | undefined {
   const detail = action.detail as Record<string, unknown>;
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
+  if (retried(action.kind, detail)) return { retrying: record };
 
   const held = decided(action.kind, detail);
-  if (ENDS.has(action.kind) && !held && !retried(action.kind, detail)) {
+  if (ENDS.has(action.kind) && !held) {
     return { closed: record };
   }
   if (action.subject === undefined) return undefined;

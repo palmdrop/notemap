@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { firings, left, LOOKS_AFTER, type Firing } from "./firings.svelte";
+import {
+  firings,
+  left,
+  LOOKS_AFTER,
+  offerOf,
+  type Firing,
+} from "./firings.svelte";
 
 const research: Firing = {
   record: "r1",
@@ -124,4 +130,25 @@ test("looks only ahead for a firing first heard of after its window closed", asy
 
   await vi.advanceTimersByTimeAsync(60_000);
   expect(ask).toHaveBeenCalledTimes(LOOKS_AFTER.length - 2);
+});
+
+test("offers undo in the window, nothing while it is attempted, and cancel once retrying", () => {
+  const until = Date.parse("2026-09-30T10:00:05.000Z");
+  const at = Date.parse("2026-09-30T10:00:00.000Z");
+
+  expect(offerOf({ ...research, until }, at)).toBe("undo");
+  expect(offerOf({ ...research, until }, until)).toBeUndefined();
+  expect(offerOf({ ...research, until, retrying: true }, until)).toBe("cancel");
+  // A window nobody said the end of may still be open.
+  expect(offerOf(research, until)).toBe("cancel");
+});
+
+test("stays retrying however many times it is heard of again", () => {
+  const until = Date.parse("2026-09-30T10:00:05.000Z");
+
+  firings.opened({ ...research, until });
+  firings.retrying("r1");
+  firings.opened({ ...research, until });
+
+  expect(firings.open).toEqual([{ ...research, until, retrying: true }]);
 });

@@ -274,7 +274,8 @@
         tallying.fired(firing.opened.record, firing.opened.batch);
       }
       firings.opened(firing.opened);
-    } else firings.closed(firing.closed);
+    } else if ("retrying" in firing) firings.retrying(firing.retrying);
+    else firings.closed(firing.closed);
   }
 
   /**

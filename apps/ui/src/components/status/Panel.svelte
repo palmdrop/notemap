@@ -4,7 +4,7 @@
   import { itemHref } from "$components/item/href";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { publish } from "$lib/command/stack.svelte";
-  import { left, type Firing } from "$lib/firings.svelte";
+  import { left, offerOf, type Firing } from "$lib/firings.svelte";
   import { slide } from "$lib/motion";
   import type { Said } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
@@ -141,15 +141,15 @@
       <ol aria-label="in flight">
         {#each firings as firing (firing.record)}
           {@const seconds = left(firing, now)}
+          {@const label = offerOf(firing, now)}
           <Entry
             what="routing"
             subject={firing.name}
             {...firing.where === undefined ? {} : { why: firing.where }}
             href={firing.href}
-            offer={{
-              label: seconds === undefined ? "cancel" : "undo",
-              take: () => oncancel(firing),
-            }}
+            {...label === undefined
+              ? {}
+              : { offer: { label, take: () => oncancel(firing) } }}
           >
             {#snippet mark()}
               {#if seconds !== undefined}

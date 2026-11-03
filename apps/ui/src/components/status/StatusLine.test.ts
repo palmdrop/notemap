@@ -734,7 +734,13 @@ test("a fired template counts down on the line, with its cancel", async () => {
 
   await vi.advanceTimersByTimeAsync(10_000);
   expect(screen.queryByText(/^\d+s$/)).toBeNull();
-  // Still in flight, and still able to be called off.
+  // Still in flight, and being attempted: a cancel now would be refused.
+  expect(says("routing Research")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /routing Research/ })).toBeNull();
+
+  // The pool could not reach it and will try again: between attempts it can be called off.
+  firings.retrying("r1");
+  await vi.advanceTimersByTimeAsync(0);
   expect(
     screen.getByRole("button", { name: "cancel routing Research" }),
   ).toBeDefined();

@@ -2265,6 +2265,74 @@ test("offers undo under the head while the route just made is pending", async ()
   await vi.waitFor(() => expect(firings.open).toHaveLength(0));
 });
 
+/** A pending record the shell routed, its window closing `after` milliseconds from now. */
+function routedPending(after: number) {
+  routing({
+    id: "u",
+    item: "one",
+    at: "2026-09-03T10:00:00.000Z",
+    until: new Date(Date.now() + after).toISOString(),
+    state: "pending",
+    target: aTarget,
+  });
+}
+
+test("offers nothing once the window has closed, while the delivery is attempted", async () => {
+  routedPending(1_200);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+
+  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  await vi.waitFor(
+    () => expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+    { timeout: 3_000 },
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(firings.open.map((one) => one.record)).toEqual(["u"]);
+});
+
+test("offers cancel once the pool says it will try the delivery again", async () => {
+  routedPending(-1_000);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() =>
+    expect(firings.open.map((one) => one.record)).toEqual(["u"]),
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+
+  firings.retrying("u");
+
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/u/cancel");
+  });
+  await vi.waitFor(() => expect(firings.open).toHaveLength(0));
+});
+
+test("the offer goes once the route lands", async () => {
+  routedPending(60_000);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+
+  // What the status line does on reading the landing from the log.
+  firings.closed("u");
+
+  await vi.waitFor(() =>
+    expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+});
+
 /** Where it landed is the log's to say; until then it is a route in flight. */
 test("draws the route in flight with its window, and stays for a second place", async () => {
   routing({
