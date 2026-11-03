@@ -108,6 +108,7 @@
   let capabilities = $state<readonly Capability[]>([]);
   let said = $state("");
   let busy = $state(false);
+  const unnamed = $derived(name.trim() === "");
 
   const declared = $derived(
     fieldsOf(
@@ -247,7 +248,7 @@
   }
 
   async function save() {
-    if (busy) return;
+    if (busy || unnamed) return;
     busy = true;
     said = "";
 
@@ -308,8 +309,15 @@
     bind:this={nameField}
     bind:value={name}
     aria-label="name"
+    aria-describedby={unnamed ? `${id}-unnamed` : undefined}
     class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
   />
+  {#if unnamed}
+    <span></span>
+    <p id={`${id}-unnamed`} class="col-start-2 max-narrow:col-start-1">
+      a template needs a name
+    </p>
+  {/if}
 
   <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
   <div class="flex items-baseline border-b border-ink">
@@ -502,7 +510,11 @@
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
-      <Action {disabled} working={busy} onclick={() => void save()}>
+      <Action
+        disabled={disabled || unnamed}
+        working={busy}
+        onclick={() => void save()}
+      >
         save
       </Action>
     </span>

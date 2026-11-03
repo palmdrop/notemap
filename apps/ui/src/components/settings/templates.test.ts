@@ -273,12 +273,67 @@ test("says what the pool refused about a pattern, where it was typed", async () 
 
   render(Templates);
   await open(/add a template/);
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Research" },
+  });
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "research/{{captured}}" },
   });
   await open("save");
 
   expect(await screen.findByText(/there is no "captured"/)).toBeTruthy();
+});
+
+test("a template with no name is not sent, and the field says why", async () => {
+  serving([]);
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "research" },
+  });
+
+  expect(screen.getByText("a template needs a name")).toBeTruthy();
+  const save = screen.getByRole("button", { name: "save" });
+  expect((save as HTMLButtonElement).disabled).toBe(true);
+  await fireEvent.submit(save.closest("form") as HTMLFormElement);
+  expect(asked()).not.toContain("POST /v1/templates");
+
+  await fireEvent.input(screen.getByLabelText("name"), {
+    target: { value: "  " },
+  });
+  expect(screen.getByText("a template needs a name")).toBeTruthy();
+
+  await fireEvent.input(screen.getByLabelText("name"), {
+    target: { value: "Research" },
+  });
+  expect(screen.queryByText("a template needs a name")).toBeNull();
+  expect((save as HTMLButtonElement).disabled).toBe(false);
+});
+
+test("a trigger tag left at its namespace is no tag, and saves without one", async () => {
+  serving([]);
+
+  render(Templates);
+  await open(/add a template/);
+  await fireEvent.input(await screen.findByLabelText("name"), {
+    target: { value: "Research" },
+  });
+  await fireEvent.input(await screen.findByLabelText("directory"), {
+    target: { value: "research" },
+  });
+  await open("save");
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/templates");
+  });
+  expect(await sent()).toContainEqual({
+    name: "Research",
+    destination: VAULT,
+    capability: "create",
+    arguments: { directory: "research" },
+    folder: "create",
+  });
 });
 
 test("the edit form holds under a click on its label", async () => {

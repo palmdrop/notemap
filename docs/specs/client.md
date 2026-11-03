@@ -1073,6 +1073,8 @@ pool's answer:
   takes its place — otherwise the original would keep content it never carried.
 - On a **refusal** ([http-v1.md](http-v1.md#errors)) the client rolls the operation back and
   surfaces the refusal. Core reports facts, not sentences; rendering the message is the client's.
+  A body the daemon could not read, `malformed-envelope`, is said by the first field its `issues`
+  name — `name is empty` — whatever the request was *(2026-11-03; it said every one was a capture)*.
 - Operations against one item drain **in order**, so a `tag` never overtakes the `capture` that
   created its item.
 

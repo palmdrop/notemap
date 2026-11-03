@@ -127,7 +127,7 @@ const SAID: {
   "item-purged": "that item was purged",
   "limit-too-large":
     "the app asked for more at once than this daemon will serve",
-  "malformed-envelope": "the app sent a capture this daemon cannot read",
+  "malformed-envelope": (facts) => unreadable(facts["issues"]),
   "malformed-json": "the app sent something this daemon cannot read",
   "missing-filename": "the file has no name",
   "no-output": "that delivery kept no copy of what it sent",
@@ -206,6 +206,35 @@ const SAID: {
     `this list does not take ${String(facts["parameter"])}`,
   "unsupported-media-type": "this daemon does not accept that kind of request",
 };
+
+/** What the daemon found wrong with a field it could not read, by its schema keyword. */
+const WRONG: Readonly<Record<string, string>> = {
+  required: "is missing",
+  minLength: "is empty",
+  type: "is the wrong kind of value",
+  additionalProperties: "is not something this daemon takes",
+  enum: "is not one of the values this daemon takes",
+  format: "is not written the way this daemon reads it",
+};
+
+/** The first field the daemon names, which on a form is the one to fix: `name is empty`. */
+function unreadable(issues: unknown): string {
+  const first: unknown = Array.isArray(issues) ? issues[0] : undefined;
+  const { path, keyword } =
+    typeof first === "object" && first !== null
+      ? (first as { path?: unknown; keyword?: unknown })
+      : {};
+  const field =
+    typeof path === "string"
+      ? path
+          .split("/")
+          .filter((step) => step !== "")
+          .join(".")
+      : "";
+  if (field === "") return "the app sent something this daemon cannot read";
+
+  return `${field} ${WRONG[String(keyword)] ?? "is not something this daemon can read"}`;
+}
 
 export function readRefusal(body: unknown): Refused {
   const error = (body as Refusal | undefined)?.error;

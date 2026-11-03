@@ -2891,6 +2891,10 @@ line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again` and `edit`, with `delete` at the right.
 
+**The form says what it is missing** *(2026-11-03)*. While the name is blank, `save` is disabled and
+the line under the field says `a template needs a name`. The trigger tag may be left blank, which
+is a template with no tag, applied by hand.
+
 **A template may be saved from a routing record** *(2026-11-01, [features from the mobile
 rethink](../plans/features-from-the-mobile-rethink.md))*. `/settings/templates?item=<id>&record=<id>`
 reads the item and its records and opens the form at the top of the section, holding the record's
