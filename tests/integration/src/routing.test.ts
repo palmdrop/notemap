@@ -27,7 +27,9 @@ import {
   harness,
   itemRecord,
   routeThrough,
+  SCRATCHPAD,
   SECOND,
+  TEXT,
   upload,
   type Harness,
 } from "./fixture";
@@ -208,6 +210,47 @@ describe("routing to a destination that is up", () => {
     opened.clock.set("2026-08-06T09:00:05.000Z");
     expect(await opened.deliverDue()).toBe(1);
     expect(destination.received).toHaveLength(1);
+  });
+
+  /** Nothing has been tried, so the capture is not sealed, and the delivery carries the edit. */
+  it("carries an edit made inside the window to the destination", async () => {
+    const destination = fakeDestinations({ capabilities: CAPABILITIES });
+    const opened = harness(
+      { ...CONFIG, undoWindow: (5 * 1000) as Duration },
+      "stub",
+      destination,
+    );
+    open.push(opened);
+    await opened.putDestination({ id: VAULT });
+    const item = await capture(opened.pool);
+
+    succeeded(await opened.pool.routing.route(item, request()));
+    const edited = succeeded(
+      await opened.pool.items.edit(
+        item,
+        {
+          source: SCRATCHPAD,
+          sourceItemId: "src-1",
+          payload: {
+            type: TEXT,
+            content: { text: "a thought, as I meant it" },
+            metadata: {},
+            assets: [],
+          },
+        },
+        { kind: "person" },
+      ),
+    );
+    expect(edited.kind).toBe("amended");
+
+    opened.clock.set("2026-08-06T09:00:05.000Z");
+    expect(await opened.deliverDue()).toBe(1);
+    expect(destination.received.map((one) => one.delivery.item)).toEqual([
+      item,
+    ]);
+    expect(destination.received[0]?.delivery.payload.content).toEqual({
+      text: "a thought, as I meant it",
+    });
   });
 
   /** What the window is for: against a destination that is up, a cancel inside it is real. */
