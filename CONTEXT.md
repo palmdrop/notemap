@@ -690,8 +690,8 @@ _Avoid_: toast, notification, alert, banner, message
 
 **Status line**:
 The one ruled line a shell keeps at the foot of every surface, and the only place it speaks in its
-own voice: the newest live **notice**, what is in flight — a route a trigger tag made, counting down
-its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
+own voice: the newest live **notice**, what is in flight — a route a trigger tag or a person made,
+counting down its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
 flight. A route in flight is drawn there and is not a notice, nothing having happened yet.
 _Avoid_: status bar, footer, corner, toast area
 

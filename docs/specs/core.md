@@ -1166,10 +1166,12 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   one attempt; a delivery that is carried out later has to be assembled from the record alone, and
   a reservation that could not say what it was pointed at would be a decision nothing could act on.
 - **Core imposes no timeout on describing the destination**, the one check a route makes that may
-  go to it. The caller bounds it with the `AbortSignal`. *Retired 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: the inline
-  attempt this bounded; with it went `delivery-outcome-unknown` as a refusal of the call, and the
-  known limit of a host dying mid-attempt, since the reservation and its job are durable before any
-  attempt begins.
+  go to it. The caller bounds it with the `AbortSignal`. *(Amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md):
+  this bounded the inline attempt too.)*
+- *Retired 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*:
+  `delivery-outcome-unknown` as a refusal of the route call, and the known limit of a host dying
+  mid-attempt, both of which belonged to the inline attempt. The reservation and its job are durable
+  before any attempt begins.
 - **Retry is keyed on evidence, not on failure** (narrowed 2026-09-08,
   [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)). `unreachable` means
   the adapter **could not confirm** that anything was delivered, so the job is retried with backoff.

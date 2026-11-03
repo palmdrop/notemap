@@ -2526,10 +2526,12 @@ that the log — read on its own tempo, and holding the pool's own account of th
 does not report it back minutes later as news.
 
 **A routing says only what the record says.** A decision the pool recorded and delivered names
-where it landed; one it recorded and has not carried out reads as **retrying**, and claims no
-landing. The difference is not a nicety: a pending record is one whose delivery was attempted and
-did not go, and the shell saying `routed` there would be inventing the one fact only the delivery
-can establish. What it landed as is said later, when the pool writes it.
+where it landed; one it recorded and has not carried out is a route in flight, and claims no
+landing. The shell saying `routed` there would be inventing the one fact only the delivery can
+establish. What it landed as is said later, when the pool writes it. *(Amended 2026-11-03: a
+pending record read as `retrying`, when every one had been attempted and not gone; since
+2026-11-01 most are waiting out their window, and `retrying` is said only when the log says the
+pool will try again.)*
 
 **A notice names the capture, not only the place** *(2026-09-03)*: what happened and where, the
 path a copy went to, and the stamp the row was read by with the capture's own first words, a colon
