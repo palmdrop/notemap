@@ -1673,6 +1673,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   nothing. The window is host configuration, beside the retry policy and the sweep's grace. Its
   whole purpose is that a shell can offer a real *cancel* — inline, against a mounted vault, the
   note exists before the notice is on screen.
+  The daemon's default is 10 seconds *(2026-11-03; 15 before, felt as lateness, which ADR 37's
+  revisit note foresaw)*.
 - **A route made by hand keeps the inline attempt.** What is bought here is a window on the gesture
   that has no review in it; paying for it everywhere would slow every reviewed decision to serve a
   mistake that surface does not make. *Superseded 2026-11-01 ([ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: a one-tap template route

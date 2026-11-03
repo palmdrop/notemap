@@ -179,6 +179,28 @@ describe("how often the sweep and the reclaim run", () => {
   });
 });
 
+describe("how long a decision waits before its delivery", () => {
+  it("waits ten seconds for a trigger tag and five for a decision by hand", () => {
+    const { poolConfig } = parse("");
+    expect(poolConfig.triggerWindow).toBe(10_000);
+    expect(poolConfig.undoWindow).toBe(5_000);
+  });
+
+  it("takes each window from the file", () => {
+    const { poolConfig } = parse(
+      "[routing]\ntriggerWindow = 30000\nundoWindow = 0",
+    );
+    expect(poolConfig.triggerWindow).toBe(30_000);
+    expect(poolConfig.undoWindow).toBe(0);
+  });
+
+  it("refuses a window that is not a whole number of milliseconds", () => {
+    expect(() => parse("[routing]\nundoWindow = -1")).toThrow(
+      /routing\.undoWindow/,
+    );
+  });
+});
+
 describe("how the daemon logs", () => {
   it("says what happened, as text, unless told otherwise", () => {
     expect(parse("").log).toEqual({ level: "info", format: "text" });

@@ -78,7 +78,7 @@ export const DEFAULT_DELIVERY = {
  * whole of what the corner's cancel has to act in — comfortably more than the
  * delivery runner's own poll, so the wait is the window rather than the poll.
  */
-export const DEFAULT_TRIGGER_WINDOW_MS = 15_000;
+export const DEFAULT_TRIGGER_WINDOW_MS = 10_000;
 
 /**
  * Longer than a success notice stays in the status line, so `undo` is still

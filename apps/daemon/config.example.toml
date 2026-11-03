@@ -81,7 +81,7 @@ batch = 16          # writes claimed per sweep
 # Both are rows rather than timers: a daemon restarted inside a window loses
 # nothing. 0 makes the delivery due at once and gives `undo` nothing to act in.
 [routing]
-triggerWindow = 15000 # milliseconds
+triggerWindow = 10000 # milliseconds
 undoWindow = 5000 # milliseconds
 
 [retry]
