@@ -1,13 +1,4 @@
 /**
- * Applied in order, tracked by `PRAGMA user_version`. Never edited once it has
- * run anywhere real — a new statement goes in a new migration.
- *
- * Timestamps are epoch milliseconds rather than the RFC 3339 text they are in
- * the domain. Two sources may spell one instant `09:00:00Z` and `09:00:00.000Z`,
- * and those sort half a second apart in the wrong order as text, which would
- * break feed order. Sub-millisecond precision does not survive the round trip.
- */
-/**
  * Every string the payload's content holds and the filenames of its
  * attachments, folded by `notemap_fold`, which the store registers on the
  * connection before migrating. Order does not matter: a term never spans a
@@ -23,6 +14,15 @@ export const WORDS = `notemap_fold(
               WHERE ref.item_id = items.id), '')
   )`;
 
+/**
+ * Applied in order, tracked by `PRAGMA user_version`. Never edited once it has
+ * run anywhere real — a new statement goes in a new migration.
+ *
+ * Timestamps are epoch milliseconds rather than the RFC 3339 text they are in
+ * the domain. Two sources may spell one instant `09:00:00Z` and `09:00:00.000Z`,
+ * and those sort half a second apart in the wrong order as text, which would
+ * break feed order. Sub-millisecond precision does not survive the round trip.
+ */
 export const MIGRATIONS: readonly string[] = [
   `
   CREATE TABLE items (
