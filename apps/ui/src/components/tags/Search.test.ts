@@ -42,3 +42,20 @@ test("follows the address when it moves under the line", async () => {
   await drawn.rerender({ words: "" });
   expect((line as HTMLInputElement).value).toBe("");
 });
+
+test("searches nothing once it is gone, though the typing had not settled", async () => {
+  vi.useFakeTimers();
+  const searched: string[] = [];
+  const drawn = render(Search, {
+    words: "",
+    onsearch: (words: string) => searched.push(words),
+  });
+
+  await fireEvent.input(screen.getByRole("searchbox", { name: "search" }), {
+    target: { value: "bike" },
+  });
+  drawn.unmount();
+  await vi.advanceTimersByTimeAsync(250);
+
+  expect(searched).toEqual([]);
+});

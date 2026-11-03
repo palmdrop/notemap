@@ -33,6 +33,9 @@
     });
   });
 
+  // Gone before the typing settled: the address it would have changed is another surface's now.
+  $effect(() => () => clearTimeout(waiting));
+
   function input(): void {
     clearTimeout(waiting);
     waiting = setTimeout(() => {
