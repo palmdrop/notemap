@@ -1,7 +1,8 @@
-import type {
-  RoutedRecord,
-  RoutingRecord,
-  RoutingTemplate,
+import {
+  saidBy,
+  type RoutedRecord,
+  type RoutingRecord,
+  type RoutingTemplate,
 } from "@notemap/client";
 
 import { itemHref } from "$components/item/href";
@@ -45,8 +46,11 @@ export function cancelRouting(
         key: cancelledKey(record),
       });
     })
-    .catch(() => {
-      notices.raise({ what: "could not cancel", alarm: true });
+    .catch((error: unknown) => {
+      notices.raise({
+        what: `could not cancel: ${saidBy(error)}`,
+        alarm: true,
+      });
     });
 }
 
@@ -70,8 +74,11 @@ export function cancelBatch(batch: string): void {
         if (said !== undefined) notices.raise(said);
       }
     })
-    .catch(() => {
-      notices.raise({ what: "could not cancel", alarm: true });
+    .catch((error: unknown) => {
+      notices.raise({
+        what: `could not cancel: ${saidBy(error)}`,
+        alarm: true,
+      });
     });
 }
 

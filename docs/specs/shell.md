@@ -2623,7 +2623,8 @@ within a second of being attempted. It is never drawn in the accent: nothing has
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
 record is still pending, so the route stays in flight beside the `retrying` notice, and offers
-`cancel` again *(2026-11-03)*, since between attempts the pool can call it off. After a catch-up too long to read out, the routes still in flight are asked about, since how
+`cancel` again *(2026-11-03)*, since between attempts the pool can call it off. A cancel the pool refuses says why, in the accent: `could not cancel: that delivery has already
+started; it cannot be called back` *(2026-11-03)*. After a catch-up too long to read out, the routes still in flight are asked about, since how
 they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed **research**` naming the
 template, a failure naming its reason — and one decision reads as one thing from beginning to end
 rather than a route still on its way beside the news that it failed.

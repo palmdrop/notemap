@@ -757,6 +757,36 @@ test("a fired template counts down on the line, with its cancel", async () => {
   expect(notices.said("cancelled:r1")).toBe(true);
 });
 
+test("a cancel the pool refuses says why", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.parse("2026-09-30T10:00:00.000Z"));
+
+  pool((request) =>
+    routeOf(request) === "POST /v1/routing/r1/cancel"
+      ? json(409, { error: { code: "delivery-in-flight", record: "r1" } })
+      : quiet(),
+  );
+  render(StatusLine);
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Research",
+    until: Date.parse("2026-09-30T10:00:05.000Z"),
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  await fireEvent.click(
+    screen.getByRole("button", { name: "undo routing Research" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toBe(
+      "could not cancel: that delivery has already started; it cannot be called back",
+    );
+  });
+  expect(notices.latest?.alarm).toBe(true);
+});
+
 test("the log opens a firing and closes it with the landing", async () => {
   vi.useFakeTimers();
   let logged = [anAction("1", "captured", {})];
