@@ -135,7 +135,7 @@ describe("a destination that comes back", () => {
     );
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
-      "routed",
+      "delivery-held",
       "delivery-failed",
       "routed",
     ]);

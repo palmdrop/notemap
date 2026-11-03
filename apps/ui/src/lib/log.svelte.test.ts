@@ -263,3 +263,26 @@ test("a reading the person turns to is a turn; the watcher's re-read is not", as
   expect(log.loading).toBe(true);
   expect(log.turning).toBe(false);
 });
+
+/** A hand route is one row: the decision is in flight on the status line, and its landing stays. */
+test("draws no row for a delivery held for its window, read or heard", async () => {
+  const held = (id: string): Row => ({
+    ...anAction(id),
+    kind: "delivery-held",
+    detail: { record: "r1", until: "2026-09-02T11:14:05.000Z" },
+  });
+  const landed = (id: string): Row => ({
+    ...anAction(id),
+    kind: "routed",
+    detail: { record: "r1", pointer: "inbox/a.md" },
+  });
+  answering([landed("two"), held("one")]);
+
+  log.reading("newest-first", undefined);
+  await settled();
+  expect(log.rows.map((row) => row.id)).toEqual(["two"]);
+
+  log.arrived([held("three")] as unknown as Action[]);
+  expect(log.rows.map((row) => row.id)).toEqual(["two"]);
+  expect(log.heard("three")).toBe(false);
+});

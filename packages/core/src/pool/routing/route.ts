@@ -86,7 +86,7 @@ export async function route(
       },
     ]);
     await recordAction(ports, tx, {
-      kind: "routed",
+      kind: "delivery-held",
       subject: item,
       by: { kind: "person" },
       at: record.at,
@@ -95,7 +95,6 @@ export async function route(
         target: record.target.kind,
         ...destinationDetail(record),
         ...templateDetail(record),
-        // A decision rather than a landing: the landing writes its own entry.
         until,
       },
     });

@@ -131,9 +131,9 @@
   function templateOffer(action: Action): Offer | undefined {
     if (action.kind !== "routed" || action.subject === undefined) return;
     const detail = action.detail as Record<string, unknown>;
-    const { record, destination, template, until } = detail;
+    const { record, destination, template } = detail;
     if (typeof record !== "string" || typeof destination !== "string") return;
-    if (template !== undefined || until !== undefined) return;
+    if (template !== undefined) return;
     if (!client.destinations.held.some((one) => one.id === destination)) {
       return;
     }

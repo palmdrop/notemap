@@ -161,6 +161,23 @@ describe("what the pool did while nobody was asking", () => {
     stop();
   });
 
+  it("takes a row off the queue when a person's route is held for its window, on another device", async () => {
+    vi.useFakeTimers();
+    const { client } = clientOver(
+      pool(anAction("a1", "delivery-held", "one"), anAction("a0", "captured")),
+    );
+
+    await client.enter("queue");
+
+    const stop = watch(client);
+    await quiet();
+    await vi.advanceTimersByTimeAsync(10_000);
+    await quiet();
+
+    expect(ids(read(client.queue))).toEqual(["two"]);
+    stop();
+  });
+
   it("reads a routed item again, so the copy it holds stops saying it is work", async () => {
     vi.useFakeTimers();
     const { client, transport } = clientOver(

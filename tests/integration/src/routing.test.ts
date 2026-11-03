@@ -320,7 +320,7 @@ describe("routing to a destination that is up", () => {
         detail: { record: record.id, destination: VAULT },
       },
       {
-        kind: "routed",
+        kind: "delivery-held",
         by: { kind: "person" },
         detail: {
           record: record.id,

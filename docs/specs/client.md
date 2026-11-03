@@ -965,7 +965,8 @@ to re-read it, which is exactly the row a person just acted on.
 **Arrival is observed only while the client is watched** *(amended 2026-09-28)*. A record that
 answered pending and lands later leaves the pool's summary at `pending: 0` and the client's saying
 otherwise, until the item is read again. The client does not poll, but the action log does announce
-it: a watched client reads the item again on `routed` ([the action log](#the-action-log)). An
+it: a watched client reads the item again on `routed`, and on `delivery-held` as on `template-fired`
+([the action log](#the-action-log)). An
 unwatched one does not, so a row can still say a delivery is outstanding after it has arrived, and
 no row ever claims an arrival that did not happen — which is the direction to be wrong in.
 

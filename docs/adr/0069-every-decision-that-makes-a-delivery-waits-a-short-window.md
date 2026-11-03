@@ -59,9 +59,15 @@ time it takes to read one and reach `undo` makes the offer a lie. A window of `0
 at once, still through the job runner, so one path carries every delivery. The trigger window is
 separate and unchanged.
 
-The decision writes a `routed` entry carrying `until`, the moment the window closes, so a shell
-counts down to a fact as it does for `template-fired`. The landing writes the `routed` entry it
-always did, carrying the pointer. A `routed` entry with `until` is a decision, not a landing.
+The decision writes a **`delivery-held`** entry carrying `until`, the moment the window closes, so a
+shell counts down to a fact as it does for `template-fired`. It is to a hand route what
+`template-fired` is to a trigger tag's, and it sits with the `delivery-*` kinds. The landing writes
+the `routed` entry it always did, carrying the pointer, and `routed` never carries `until`.
+
+A `routed` entry carrying `until` was the first shape, and was given up before it merged: every
+reader of `routed` — the status line, the log, a batch's count, the daemon's wake — had to remember
+to check one field, and two of them were found not to. A kind of its own fails where it is not
+handled rather than reading as a landing.
 
 **Undo** is the shell's word for cancelling the decision just made, offered only while its
 delivery is pending. It is the same call as **cancel**, which any pending reservation offers.

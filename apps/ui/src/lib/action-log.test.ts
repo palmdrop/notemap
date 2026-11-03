@@ -531,12 +531,15 @@ test("an entry ends a record the way a batch counts it", () => {
     ),
   ).toEqual({ record: "r1" });
   expect(endingOf(anAction("template-fired", fired))).toBeUndefined();
-  // A decision held for its window is the record's, and ends nothing.
+  // A decision held for its window ends nothing.
   expect(
     endingOf(
-      anAction("routed", { ...fired, until: "2026-09-03T10:00:05.000Z" }),
+      anAction("delivery-held", {
+        ...fired,
+        until: "2026-09-03T10:00:05.000Z",
+      }),
     ),
-  ).toEqual({ record: "r1" });
+  ).toBeUndefined();
 });
 
 const decision = {
@@ -548,11 +551,13 @@ const decision = {
 };
 
 test("a decision held for its window is not a notice: it is in flight", () => {
-  expect(noticeOf(anAction("routed", decision), reading)).toBeUndefined();
+  expect(
+    noticeOf(anAction("delivery-held", decision), reading),
+  ).toBeUndefined();
 });
 
 test("a decision made by hand opens a route in flight, named for its destination", () => {
-  expect(firingOf(anAction("routed", decision), reading)).toEqual({
+  expect(firingOf(anAction("delivery-held", decision), reading)).toEqual({
     opened: {
       record: "r1",
       item: "one",
@@ -565,7 +570,11 @@ test("a decision made by hand opens a route in flight, named for its destination
 
 test("a decision from a template a person took is named for the template", () => {
   const said = firingOf(
-    anAction("routed", { ...decision, template: "t1", firedByTag: false }),
+    anAction("delivery-held", {
+      ...decision,
+      template: "t1",
+      firedByTag: false,
+    }),
     { ...reading, templateOf: () => "Research" },
   );
 

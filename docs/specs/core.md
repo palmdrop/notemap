@@ -11,7 +11,7 @@
   [ADR 70](../adr/0070-a-filter-may-name-words.md))
 - 2026-11-01 — **Every decision that makes a delivery waits the undo window.** `route` reserves and
   enqueues the delivery due a configured window later, and attempts nothing inline; the record it
-  answers carries `until`, and the decision's `routed` entry says the same. A refusal arrives when
+  answers carries `until`, and the decision's `delivery-held` entry says the same. A refusal arrives when
   the job runs. ([plan](../plans/features-from-the-mobile-rethink.md),
   [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))
 - 2026-11-01 — **A note named after its capture is a short slug, and a taken one is never appended
@@ -130,7 +130,7 @@
   answers how long until the earliest unleased job of those kinds that is not yet claimable becomes
   so — a fired template's window, a retry's backoff — measured on the pool's own clock, and nothing
   where none is waiting. The daemon's runner asks after every pass, and the delivery runner also
-  whenever the pool records `template-fired` (and, since 2026-11-01, `routed`); where the answer falls before its next poll, it
+  whenever the pool records `template-fired` (and, since 2026-11-01, `delivery-held`); where the answer falls before its next poll, it
   claims at that moment rather than on the poll after it. A trigger tag's delivery no longer waits
   up to a poll past its window, however the two are configured.
 - 2026-09-30 — **A reservation nothing has tried does not seal a capture.** An edit reaching an
@@ -1683,8 +1683,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   that has no review in it; paying for it everywhere would slow every reviewed decision to serve a
   mistake that surface does not make. *Superseded 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: a one-tap template route
   from the item has no review either, so every decision that makes a delivery waits a window. A
-  decision by hand writes a `routed` entry carrying `until`; the landing writes the `routed` entry it
-  always did, carrying the pointer.
+  decision by hand writes a `delivery-held` entry carrying `until`; the landing writes the `routed`
+  entry it always did, carrying the pointer.
 - **The tag and the reservation commit in one transaction.** There is no I/O to keep out of it,
   because the attempt is a job by construction. So *tagged but not reserved* is a state that cannot
   exist and nothing has to sweep for it — including for a tag that arrived from a client's outbox,

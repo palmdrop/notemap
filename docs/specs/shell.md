@@ -2589,7 +2589,7 @@ delivery waits the undo window, so a route from the composer, a template taken t
 drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
 the destination, or for the template where one was taken, and followed by its place. It is drawn
 the moment the route answers, from the record and `until` the answer carries, and the log's
-`routed` entry carrying `until` opens the same one on another device. **Inside the window the offer
+`delivery-held` entry, carrying `until`, opens the same one on another device. **Inside the window the offer
 is `undo`; once it has closed, nothing, and `cancel` once the pool is retrying the delivery**
 *(amended 2026-11-03: `cancel` was offered as soon as the window closed, while the delivery was
 being attempted and a cancel was refused)* — the same call, said as what it is: taking back the
@@ -2684,8 +2684,8 @@ happens when nobody is looking at it. The shell **reads the action log on its ow
 ([client.md](client.md#the-action-log)) and says what it finds, so a failure minutes after the
 decision reaches the person who made it without anybody opening `/log`.
 
-**Five kinds are said out loud and no others** *(a `routed` entry carrying `until` is a decision
-held for its window, not a landing, and opens a route in flight instead; 2026-11-01)*: `routed`, `delivery-cancelled`, `delivery-failed`,
+**Five kinds are said out loud and no others** *(`delivery-held`, a decision held for its window,
+opens a route in flight instead, as `template-fired` does; 2026-11-01)*: `routed`, `delivery-cancelled`, `delivery-failed`,
 `work-failed`, `work-abandoned` — the three the log already spends the accent on, the landing, and
 a decision called off, which is said briefly so one taken back on another device is not news
 nobody hears *(the count read four from 2026-09-07, when the cancellation was added, until
@@ -3113,7 +3113,9 @@ and a decision made by hand, which sends nothing, is not asked about at all. Whe
 to hold what it sent, its line is held with the asking mark until it lands. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
 `template-fired` draws no block — its fact is the template's name, and the routing it began is a
-row of its own. The block is the item's, drawn once and the same wherever a record is read.
+row of its own. **`delivery-held` draws no row at all** *(2026-11-03)*: a route made by hand is
+one row, its landing or its cancellation, since the decision is in flight on the status line while
+it lasts. No view reads it. The block is the item's, drawn once and the same wherever a record is read.
 
 **Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
 slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.

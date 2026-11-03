@@ -92,6 +92,14 @@ function ahead(
   return [...arriving.filter((action) => !seen.has(action.id)), ...held];
 }
 
+/**
+ * A delivery held for its window is in flight on the status line, and ends as a
+ * landing or a cancellation, which is the row that stays.
+ */
+function drawable(action: Action): boolean {
+  return action.kind !== "delivery-held";
+}
+
 async function walk(from: ActionPosition | undefined): Promise<void> {
   const mine = walking;
   loading = true;
@@ -107,8 +115,9 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     });
     if (mine !== walking) return;
 
-    rows = from === undefined ? page.values : joined(rows, page.values);
-    seek(subjects(page.values));
+    const drawn = page.values.filter(drawable);
+    rows = from === undefined ? drawn : joined(rows, drawn);
+    seek(subjects(drawn));
     after = page.after;
     more = page.after !== undefined;
     answered = true;
@@ -231,6 +240,7 @@ export const log = {
 
     const wanted = actions.filter(
       (action) =>
+        drawable(action) &&
         (item === undefined || action.subject === item) &&
         (kinds === undefined || kinds.includes(action.kind)),
     );

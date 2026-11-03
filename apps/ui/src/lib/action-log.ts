@@ -21,8 +21,7 @@ const SAID: ReadonlySet<string> = new Set([
 
 /**
  * Everything that ends a route in flight: it landed, failed for good, was given
- * up on, or was called off. A `routed` entry carrying `until` is the decision,
- * not the landing, and ends nothing.
+ * up on, or was called off.
  */
 const ENDS: ReadonlySet<string> = new Set([
   "routed",
@@ -90,11 +89,6 @@ function retried(kind: string, detail: Record<string, unknown>): boolean {
   return kind === "delivery-failed" && failureIn(detail).code === RETRIED;
 }
 
-/** A decision held for its window, rather than a landing. */
-function decided(kind: string, detail: Record<string, unknown>): boolean {
-  return kind === "routed" && stringAt(detail, "until") !== undefined;
-}
-
 /** Whether the tag filed this, rather than a person taking the template themselves. */
 function firedByTag(detail: Record<string, unknown>): boolean {
   return detail["firedByTag"] === true;
@@ -118,11 +112,7 @@ export function endingOf(
   const detail = action.detail as Record<string, unknown>;
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
-  if (
-    !ENDS.has(action.kind) ||
-    retried(action.kind, detail) ||
-    decided(action.kind, detail)
-  ) {
+  if (!ENDS.has(action.kind) || retried(action.kind, detail)) {
     return SAID.has(action.kind) ? { record } : undefined;
   }
   const ending: Ending =
@@ -136,9 +126,9 @@ export function endingOf(
 
 /**
  * What an entry in the log does to the routes in flight: a `template-fired`
- * opens one, and so does a decision made by hand, which is a `routed` entry
- * carrying `until`. An entry that ends it closes it, and a failure the pool
- * will try again marks it retrying.
+ * opens one, and so does a `delivery-held`, a decision made by hand. An entry
+ * that ends it closes it, and a failure the pool will try again marks it
+ * retrying.
  */
 export function firingOf(
   action: Action,
@@ -164,16 +154,13 @@ export function firingOf(
   if (record === undefined) return undefined;
   if (retried(action.kind, detail)) return { retrying: record };
 
-  const held = decided(action.kind, detail);
-  if (ENDS.has(action.kind) && !held) {
-    return { closed: record };
-  }
+  if (ENDS.has(action.kind)) return { closed: record };
   if (action.subject === undefined) return undefined;
 
   const template = stringAt(detail, "template");
   const until = stringAt(detail, "until");
 
-  if (held) {
+  if (action.kind === "delivery-held") {
     const destination = stringAt(detail, "destination");
     return {
       opened: {
@@ -232,8 +219,6 @@ export function noticeOf(
   if (!SAID.has(action.kind)) return undefined;
 
   const detail = action.detail as Record<string, unknown>;
-  // In flight on the status line's right until it lands, which says it then.
-  if (decided(action.kind, detail)) return undefined;
   const record = stringAt(detail, "record");
   const named = place(detail, said.nameOf);
   const href =

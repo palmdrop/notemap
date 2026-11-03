@@ -521,7 +521,8 @@ _Avoid_: revert, rollback
 How long a decision that makes a delivery waits before its first attempt — a route made by hand, or
 a template applied from the composer — so that **undo** is true. Short, because a person is looking
 at the screen; the trigger window is longer, because a tag may be drained onto a daemon nobody is
-watching.
+watching. The log says a delivery is held for it with `delivery-held`, as `template-fired` says it
+of a trigger tag's.
 _Avoid_: grace period, delay
 
 **Routing template**:
