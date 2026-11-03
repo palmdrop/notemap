@@ -6,7 +6,7 @@
 
 - 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
   and rule the pool answers with. ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 69](../adr/0069-a-filter-may-name-words.md))
+  [ADR 70](../adr/0070-a-filter-may-name-words.md))
 - 2026-11-01 — **A route resolves to a pending record and `until`.** The pool holds every decision
   that makes a delivery for a short window before it is attempted; the landing arrives from the log.
   ([plan](../plans/features-from-the-mobile-rethink.md))
@@ -592,7 +592,7 @@ has walked, so a filtered reading made from them would be silently short of what
   States, destinations and sources are tidied the same way, without the trim, an id being matched
   exactly *(2026-10-20)*. States and destinations are the feed's, and a filter naming one is never
   asked of the queue; a source is asked of either *(2026-10-21)*. **Words are folded into terms**
-  *(2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))* by `@notemap/text`, the function the pool folds with, and asked of either
+  *(2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))* by `@notemap/text`, the function the pool folds with, and asked of either
   surface as one `words` parameter.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
   anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
@@ -821,7 +821,7 @@ route or a marking is disabled until the pool is reachable, rather than queued i
 outbox cannot keep.
 
 **A route answers a pending record and when it comes due** *(2026-11-01,
-[ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*.
+[ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*.
 `routing.route` resolves to the record and `until`, the end of the undo window, and never to a
 landing: the pool attempts nothing until then. The client learns of the landing, or of the
 destination refusing, from the log, as it does for a fired template, and reads the item again on

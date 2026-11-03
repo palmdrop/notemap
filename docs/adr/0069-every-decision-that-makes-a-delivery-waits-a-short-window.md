@@ -1,4 +1,4 @@
-# 68. Every decision that makes a delivery waits a short window
+# 69. Every decision that makes a delivery waits a short window
 
 **Date**: 2026-11-01
 **Status**: Accepted — amends [ADR 37](0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md),

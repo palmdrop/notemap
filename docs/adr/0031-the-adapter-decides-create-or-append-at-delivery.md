@@ -85,7 +85,7 @@ routing straight away was the cost that outweighed the guarantee. A note made un
 the draw and the delivery is now added to rather than refused. `create` remains for a template or a
 request that asks for it.
 
-*Amended 2026-11-01 ([ADR 67](0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)):*
+*Amended 2026-11-01 ([ADR 68](0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)):*
 a path ending in `/` no longer appends to a note under the derived name. Where that name is taken,
 the note goes under the first free `name-1`, `name-2`, …. A name the person typed is decided here as
 before.

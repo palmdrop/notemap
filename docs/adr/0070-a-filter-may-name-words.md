@@ -1,4 +1,4 @@
-# 69. A filter may name words
+# 70. A filter may name words
 
 **Date**: 2026-11-01
 **Status**: Accepted — extends the **filter** of the queue and the feed
@@ -29,7 +29,7 @@ How does a surface find items by their words, and where is that answered?
   holds here, since the client and the pool must agree on what matches.
 - **Search may not assume storage beside the pool** (ADR 1's amendment). The store answers it
   behind its port, as it answers every other filter.
-- **Every script is somebody's**, as ADR 67 says of names.
+- **Every script is somebody's**, as ADR 68 says of names.
 
 ---
 

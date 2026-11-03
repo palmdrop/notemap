@@ -1239,7 +1239,7 @@ address last said.
   more`**: whether there is more is what that page answers, and a `load more` that goes as soon as
   it lands is a flash of a claim nobody can act on.
 
-**Search is a line of its own in the list head** *(2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))*, beside `filter ▾` on the
+**Search is a line of its own in the list head** *(2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))*, beside `filter ▾` on the
 queue and the feed: a filter by words, which the shell says as search. Each term must be in an
 item's words or its attachments' names, in any case and with or without accents, inside a word too;
 the list keeps its own order. `/` puts the caret in it from either surface. It is on the address as
@@ -1540,7 +1540,7 @@ and is routed as any line is. What is stored is then `create-or-append` under a 
 when it was drawn, so a note made under that name before the delivery is added to. A blank leaf is
 not a gap: the name the note would get is shown before committing, derived by the same code the
 adapter will run. A derived name is never appended to *(amended 2026-11-01,
-[ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))*: where it
+[ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))*: where it
 is taken, the row reads `+` under the free name the adapter will give it.
 
 **Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
@@ -2582,7 +2582,7 @@ store that refused the words, or bytes that could not be read back.
 **`delete`** asks, and then lets it go. **`copy`** takes its words where the browser offers a
 clipboard. It is never resent as it was, since what refused it would refuse it again.
 
-**A route made by hand is in flight too** *(2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
+**A route made by hand is in flight too** *(2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
 delivery waits the undo window, so a route from the composer, a template taken there included, is
 drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
 the destination, or for the template where one was taken, and followed by its place. It is drawn

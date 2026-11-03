@@ -8,16 +8,16 @@
   appear in an item's text or attachments' names, in any case and with or without accents, in any
   script. The store keeps each item's words folded beside it.
   ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 69](../adr/0069-a-filter-may-name-words.md))
+  [ADR 70](../adr/0070-a-filter-may-name-words.md))
 - 2026-11-01 — **Every decision that makes a delivery waits the undo window.** `route` reserves and
   enqueues the delivery due a configured window later, and attempts nothing inline; the record it
   answers carries `until`, and the decision's `routed` entry says the same. A refusal arrives when
   the job runs. ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))
+  [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))
 - 2026-11-01 — **A note named after its capture is a short slug, and a taken one is never appended
   to.** Every script keeps its letters and marks; under `create-or-append` onto a folder, the note
   goes beside a taken name instead of into it. ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))
+  [ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))
 - 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag`, `untag`,
   `archive` and `unarchive` take an optional batch id, recorded on every entry they write. A
   reservation a batch's tag fired keeps the id too, which is the one place core reads it back.
@@ -948,7 +948,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   item carries is an empty read rather than a refusal, a filter being a question and not a claim
   that the tag exists. The key and the position are the surface's own, so a filtered read pages
   on the same terms and a position continues from where it names whatever the filter.
-- **The filter also takes words** (added 2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md)), on the feed, the queue and the
+- **The filter also takes words** (added 2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md)), on the feed, the queue and the
   archive. An item's words are every string its payload's content holds and its attachments'
   filenames; they and the filter's are folded alike — lower-cased, accents dropped, whitespace made
   one space — and the filter's split into terms, every one of which must appear somewhere in the
@@ -1150,7 +1150,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   Most destinations are remote and unreachable for ordinary reasons, and a decision that evaporates
   because a server was restarting is one the person has to remember to make again.
 - A routing record is minted as a **reservation** the moment the decision is made, with a
-  **delivery job** due the **undo window** later *(amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md); core attempted
+  **delivery job** due the **undo window** later *(amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md); core attempted
   delivery once inline, and only a destination genuinely absent became deferred work)*. Nothing is
   attempted inline on any path. The call answers the pending record and `until`, when the window
   closes; delivered resolves the reservation and fills in the pointer, and a destination that
@@ -1166,7 +1166,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   one attempt; a delivery that is carried out later has to be assembled from the record alone, and
   a reservation that could not say what it was pointed at would be a decision nothing could act on.
 - **Core imposes no timeout on describing the destination**, the one check a route makes that may
-  go to it. The caller bounds it with the `AbortSignal`. *Retired 2026-11-01 ([ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: the inline
+  go to it. The caller bounds it with the `AbortSignal`. *Retired 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: the inline
   attempt this bounded; with it went `delivery-outcome-unknown` as a refusal of the call, and the
   known limit of a host dying mid-attempt, since the reservation and its job are durable before any
   attempt begins.
@@ -1198,7 +1198,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A job's first attempt is the first attempt**, numbered from zero, and the bound counts every
   one. What `maxAttempts` limits is the number of times a destination is handed one item's material,
   which for something that cannot be repeated safely is the number worth bounding. So the count a
-  person reads on the abandoned surface is the count that was made. *(Amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md):
+  person reads on the abandoned surface is the count that was made. *(Amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md):
   until then a route made by hand attempted inline, and that attempt was the first; since 2026-09-07
   a fired template's job started from zero.)*
 - **Every failed attempt at a delivery appends the same kind of entry**, numbered in one sequence. A person reading an item's history is reading one run of
@@ -1677,7 +1677,7 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   revisit note foresaw)*.
 - **A route made by hand keeps the inline attempt.** What is bought here is a window on the gesture
   that has no review in it; paying for it everywhere would slow every reviewed decision to serve a
-  mistake that surface does not make. *Superseded 2026-11-01 ([ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: a one-tap template route
+  mistake that surface does not make. *Superseded 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: a one-tap template route
   from the item has no review either, so every decision that makes a delivery waits a window. A
   decision by hand writes a `routed` entry carrying `until`; the landing writes the `routed` entry it
   always did, carrying the pointer.
@@ -2158,7 +2158,7 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   only a destination genuinely not reached becomes a job. Delivery is not idempotent, so an
   automatic retry needs proof that nothing was delivered.
 - **[Every decision that makes a delivery waits a short
-  window](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md)** — with one-tap
+  window](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md)** — with one-tap
   template routes from the item there is no review left to stand in for one, and `undo` is honest
   only while nothing has been written. Amends ADR 17's inline attempt and ADR 37's exception for a
   hand route.
@@ -2228,7 +2228,7 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       answer somebody had to write down. The general case, for a capture nobody has configured a
       template for, is still a title nobody has.
       *Narrowed 2026-11-01*
-      ([ADR 67](../adr/0067-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)): what
+      ([ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)): what
       the derived name is, for every script, is settled, and a taken one no longer files one capture
       into another's note. A title is still what nobody has.
 - [ ] 2026-08-13 — Whether a capability may declare itself idempotent, and so opt into retrying a

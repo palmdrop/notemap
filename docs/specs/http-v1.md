@@ -8,13 +8,13 @@ editing, destinations, routing to one, pool settings, unfurling, storage and hea
 - 2026-11-01 — **`words` filters `/v1/feed`, `/v1/queue` and `/v1/archived`**, and `next` carries
   it. Over 200 characters is `422 words-too-long`.
   ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 69](../adr/0069-a-filter-may-name-words.md))
+  [ADR 70](../adr/0070-a-filter-may-name-words.md))
 - 2026-11-01 — **`POST /v1/items/{id}/route` attempts nothing and answers a pending record with
   `until`.** The delivery waits the undo window, `routing.undoWindow` in the config, so `cancel`
   inside it calls the decision off before the destination hears of it. `422 rejected-by-destination`
   and `422 delivery-outcome-unknown` are no longer answers of the route; a refusal is read from the
   log. ([plan](../plans/features-from-the-mobile-rethink.md),
-  [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md))
+  [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))
 
 - 2026-10-30 — **`POST /v1/batches` and `POST /v1/routing/cancel`.** A tag added or taken off, or
   an archive or unarchive, for many items in one request answered item by item. Many reservations called off in
@@ -748,7 +748,7 @@ carries no record times, so a decision taken back is not something it could reco
   trimmed as tagging trims and the same tag named twice is one; a `tag` that trims to nothing is
   `422 tag-invalid` carrying what was sent, the refusal tagging already answers for the same name.
   A tag no item carries is an empty page rather than a refusal, a filter being a question.
-- **`words` is a filter** *(added 2026-11-01, [ADR 69](../adr/0069-a-filter-may-name-words.md))*, on the feed, the queue and the archive:
+- **`words` is a filter** *(added 2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))*, on the feed, the queue and the archive:
   `words=bike%20rack` reads only the items whose words hold both `bike` and `rack`, in any case,
   with or without accents, inside a word too ([core.md](core.md#the-queue)). One parameter, split
   on whitespace into terms; no phrases and no operators. Blank is no filter, and over 200
@@ -1610,7 +1610,7 @@ now.
 }
 ```
 
-- **A `200` here names a delivery that has not happened** *(amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md); the call
+- **A `200` here names a delivery that has not happened** *(amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md); the call
   attempted the delivery once, inline, and answered `delivered` where it landed)*. The decision is
   recorded, the item leaves the queue, and nothing is attempted until `until`, the end of the undo
   window: `POST /v1/routing/{record}/cancel` before then calls it off before the destination hears
@@ -1713,7 +1713,7 @@ composer draws before anything is filled in.
 - A template the pool does not hold is `404 unknown-template` — the template is what this shape of
   the request is *about*. Everything else refuses as the destination shape refuses, because
   applying a template lands in the same path.
-- **This shape waits the undo window too** *(amended 2026-11-01, [ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md); it kept the inline attempt,
+- **This shape waits the undo window too** *(amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md); it kept the inline attempt,
   unlike a template fired by its tag)*. The trigger window is the fired template's, and longer.
 - `/route/preview` takes both shapes too, on the same terms: previewing a template costs nothing
   extra, and a preview that could not take the body a route takes would be answering a different
@@ -2325,7 +2325,7 @@ a caller's side the item is not there — and carries the instant it went.
 
 **`unreachable` is raised only before an attempt**: a destination that could not be asked what it
 accepts refuses with it, and nothing is ever attempted during the call
-([ADR 68](../adr/0068-every-decision-that-makes-a-delivery-waits-a-short-window.md)). It is `422`
+([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md)). It is `422`
 by the rule — the request was understood and something declined it — and gets no status of its own
 for being a third party's answer rather than notemap's.
 

@@ -6,7 +6,7 @@ inline first attempt for one path, and extends
 [ADR 34](0034-a-routing-template-is-a-saved-decision-and-a-tag-applies-it.md).
 One decision below is superseded 2026-09-09, marked where it stands. The exception for a route made
 by hand is superseded 2026-11-01 by
-[ADR 68](0068-every-decision-that-makes-a-delivery-waits-a-short-window.md)
+[ADR 69](0069-every-decision-that-makes-a-delivery-waits-a-short-window.md)
 **Deciders**: palmdrop, with Claude
 
 ---

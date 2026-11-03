@@ -1,4 +1,4 @@
-# 67. A derived note name is a short slug, and is never appended to
+# 68. A derived note name is a short slug, and is never appended to
 
 **Date**: 2026-11-01
 **Status**: Accepted — amends [ADR 31](0031-the-adapter-decides-create-or-append-at-delivery.md)
