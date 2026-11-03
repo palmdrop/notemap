@@ -51,6 +51,11 @@ export type Delivery = {
   readonly artifacts: readonly Artifact[];
   /** Every asset the payload and the artifacts reference, in slot order. */
   readonly assets: readonly DeliveredAsset[];
+  /**
+   * Which attempt at this delivery this is, from 1. Past the first, what the
+   * destination already holds may be this delivery's own earlier write.
+   */
+  readonly attempt: number;
 };
 
 /**

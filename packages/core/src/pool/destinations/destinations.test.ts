@@ -578,7 +578,7 @@ describe("retiring a destination", () => {
     expect((await retire(wired, vault.id)).kind).toBe("ok");
     expect(wired.held.get(vault.id)?.retiredAt).toBeDefined();
 
-    const attemptable = await deliveryFor(wired, record.id);
+    const attemptable = await deliveryFor(wired, record.id, 1);
     expect(attemptable?.kind).toBe("ready");
   });
 
@@ -662,7 +662,7 @@ describe("resolving what a record still has to carry out", () => {
     const wired = ports({ items: [anItem] });
 
     expect(
-      await deliveryFor(wired, "record-1" as RoutingRecordId),
+      await deliveryFor(wired, "record-1" as RoutingRecordId, 1),
     ).toBeUndefined();
   });
 
@@ -675,14 +675,14 @@ describe("resolving what a record still has to carry out", () => {
       records: [record],
     });
 
-    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+    expect(await deliveryFor(wired, record.id, 1)).toBeUndefined();
   });
 
   it("answers nothing where the record was never meant for a destination", async () => {
     const record = pending({ target: { kind: "user" } });
     const wired = ports({ items: [anItem], records: [record] });
 
-    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+    expect(await deliveryFor(wired, record.id, 1)).toBeUndefined();
   });
 
   it("answers nothing where the item itself has gone", async () => {
@@ -690,14 +690,14 @@ describe("resolving what a record still has to carry out", () => {
     const record = pending();
     const wired = ports({ destinations: [vault], records: [record] });
 
-    expect(await deliveryFor(wired, record.id)).toBeUndefined();
+    expect(await deliveryFor(wired, record.id, 1)).toBeUndefined();
   });
 
   it("answers unusable where the row the record names has gone from the pool", async () => {
     const record = pending();
     const wired = ports({ items: [anItem], records: [record] });
 
-    expect(await deliveryFor(wired, record.id)).toMatchObject({
+    expect(await deliveryFor(wired, record.id, 1)).toMatchObject({
       kind: "unusable",
       detail: "vault is no longer in the pool",
     });
@@ -712,7 +712,7 @@ describe("resolving what a record still has to carry out", () => {
       records: [record],
     });
 
-    expect(await deliveryFor(wired, record.id)).toMatchObject({
+    expect(await deliveryFor(wired, record.id, 1)).toMatchObject({
       kind: "unusable",
       detail: "nothing here speaks the mystery kind",
     });
@@ -735,7 +735,7 @@ describe("resolving what a record still has to carry out", () => {
       records: [record],
     });
 
-    const attemptable = await deliveryFor(wired, record.id);
+    const attemptable = await deliveryFor(wired, record.id, 1);
     expect(attemptable?.kind).toBe("ready");
     if (attemptable?.kind !== "ready") return;
     expect(attemptable.delivery.payload.content).toEqual({
@@ -752,12 +752,26 @@ describe("resolving what a record still has to carry out", () => {
       records: [record],
     });
 
-    const attemptable = await deliveryFor(wired, record.id);
+    const attemptable = await deliveryFor(wired, record.id, 1);
     expect(attemptable?.kind).toBe("ready");
     if (attemptable?.kind !== "ready") return;
     expect(attemptable.delivery.payload.content).toEqual({
       text: "a thought",
     });
+  });
+
+  it("says which attempt it is, so an adapter can tell its own earlier write", async () => {
+    const vault = fakeDestinationRow({ id: "vault", kind: FILESYSTEM });
+    const record = pending();
+    const wired = ports({
+      destinations: [vault],
+      items: [anItem],
+      records: [record],
+    });
+
+    const attemptable = await deliveryFor(wired, record.id, 3);
+    if (attemptable?.kind !== "ready") throw new Error("expected a delivery");
+    expect(attemptable.delivery.attempt).toBe(3);
   });
 });
 

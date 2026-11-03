@@ -50,6 +50,7 @@ function delivery(
     tags: [],
     createdAt: "2026-09-07T09:00:00.000Z" as Timestamp,
     artifacts: [],
+    attempt: 1,
     assets: attached.map((each): DeliveredAsset => ({
       slot: each.slot,
       asset: each.asset,

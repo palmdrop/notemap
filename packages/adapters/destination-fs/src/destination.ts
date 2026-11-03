@@ -497,8 +497,9 @@ function composeCreateOrAppend(
 /**
  * A name derived from the item is never appended to: two captures that begin
  * alike would otherwise share a note nobody chose. The first of `name`,
- * `name-1`, … that is free, or that holds exactly what this delivery writes as
- * a new note, which is its own last attempt landing after all.
+ * `name-1`, … that is free. On a retry, also one holding exactly what this
+ * delivery writes as a new note, which is its own last attempt landing after
+ * all; on a first attempt that is another capture saying the same words.
  */
 async function createBesideTaken(
   wiring: Wiring,
@@ -518,7 +519,12 @@ async function createBesideTaken(
     const rendered = render(wiring, delivery, note);
     const file = fresh(rendered, heading);
     const existing = await readWithSnapshot(note.absolute);
-    if (existing !== undefined && existing.text !== file) continue;
+    if (
+      existing !== undefined &&
+      (delivery.attempt <= 1 || existing.text !== file)
+    ) {
+      continue;
+    }
 
     return {
       note,

@@ -83,6 +83,8 @@ export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {
 export async function deliveryFor(
   ports: PoolPorts,
   id: RoutingRecordId,
+  /** From 1: the job's attempts so far, and this one. */
+  attempt: number,
 ): Promise<AttemptableDelivery | undefined> {
   const record = await ports.store.routingRecord(id);
   if (
@@ -112,14 +114,19 @@ export async function deliveryFor(
     return { kind: "unusable", detail: usable.detail };
   }
 
-  const delivery = await projectDelivery(ports, item, {
-    destination: record.target.destination,
-    capability: record.target.capability,
-    arguments: record.target.arguments,
-    ...(record.target.content === undefined
-      ? {}
-      : { content: record.target.content }),
-  });
+  const delivery = await projectDelivery(
+    ports,
+    item,
+    {
+      destination: record.target.destination,
+      capability: record.target.capability,
+      arguments: record.target.arguments,
+      ...(record.target.content === undefined
+        ? {}
+        : { content: record.target.content }),
+    },
+    attempt,
+  );
 
   return { kind: "ready", destination, delivery };
 }
@@ -129,6 +136,8 @@ export async function projectDelivery(
   ports: PoolPorts,
   item: Item,
   request: DeliveryRequest,
+  /** A preview is never attempted, and reads as a first attempt would. */
+  attempt = 1,
 ): Promise<Delivery> {
   const artifacts = await ports.store.artifacts(item.id);
   const references = [
@@ -171,6 +180,7 @@ export async function projectDelivery(
       : { contentUpdatedAt: item.contentUpdatedAt }),
     artifacts,
     assets,
+    attempt,
   };
 }
 

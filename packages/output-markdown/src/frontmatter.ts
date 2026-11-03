@@ -23,6 +23,7 @@ const KEYS = {
   tags: "tags",
   artifacts: null,
   assets: null,
+  attempt: null,
 } as const satisfies Record<keyof Delivery, string | null>;
 
 /** The one thing a file at a destination cannot recover for itself. */

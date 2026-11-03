@@ -569,6 +569,40 @@ describe("creating or appending, decided here", () => {
     expect(server.files()["V/drafts/a-thought-2.md"]).toContain("a thought");
   });
 
+  it("passes over a folder holding the derived name", async () => {
+    const server = await vault();
+    server.makeCollection("V/drafts/a-thought.md");
+
+    const outcome = await send(server, { path: "drafts/" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+  });
+
+  it("passes over a folder holding the derived name on a server that lists it", async () => {
+    const server = await vault();
+    server.makeCollection("V/drafts/a-thought.md");
+    server.listCollections();
+
+    const outcome = await send(server, { path: "drafts/" });
+
+    expect(outcome).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+  });
+
+  /** With frontmatter off, two captures saying the same words write the same bytes. */
+  it("gives a second capture saying the same words a note of its own", async () => {
+    const server = await vault();
+    server.makeCollection("V");
+
+    await send(server, { path: "drafts/" });
+    const second = await send(server, { path: "drafts/" });
+
+    expect(second).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+    expect(Object.keys(server.files()).sort()).toEqual([
+      "V/drafts/a-thought-1.md",
+      "V/drafts/a-thought.md",
+    ]);
+  });
+
   /** An attempt whose write landed but whose answer was lost is retried. */
   it("lands on its own note where an earlier attempt wrote it", async () => {
     const server = await vault();
@@ -576,7 +610,14 @@ describe("creating or appending, decided here", () => {
 
     await send(server, { path: "drafts/" });
     const first = server.files()["V/drafts/a-thought.md"];
-    const again = await send(server, { path: "drafts/" });
+    const again = await adapter(server).deliver(
+      destinationRow({ root: "V" }),
+      delivery({
+        capability: "create-or-append",
+        arguments: { path: "drafts/" },
+        attempt: 2,
+      }),
+    );
 
     expect(again).toMatchObject({ pointer: "drafts/a-thought.md" });
     expect(Object.keys(server.files())).toEqual(["V/drafts/a-thought.md"]);

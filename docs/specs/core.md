@@ -1256,7 +1256,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   the artifacts, and every asset the payload and artifacts reference, resolved and openable as a
   stream. It carries neither prior routing records — where else an item went is another
   destination's business — nor pending suggestions, which are regenerable and meaningless
-  undecided.
+  undecided. It also carries which attempt it is, from 1 *(2026-11-03)*: past the first, what a
+  destination already holds may be this delivery's own earlier write, and only the adapter can
+  look.
 - **The delivery is not the mirror record**, although the two carry nearly the same material. The
   mirror record's contract is that a pool can be rebuilt from it
   ([ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md)); a change

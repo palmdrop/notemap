@@ -378,6 +378,8 @@ export interface RoutingApi {
    */
   deliveryFor(
     record: RoutingRecordId,
+    /** From 1, which the delivery carries to its adapter. */
+    attempt: number,
   ): Promise<AttemptableDelivery | undefined>;
   /**
    * What this destination would write, committing nothing. Indicative rather

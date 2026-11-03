@@ -913,13 +913,33 @@ describe("creating or appending, decided here", () => {
     const { path, destination } = await vault({ text: renderText });
 
     await destination.deliver(asked({ path: "drafts/" }));
-    const again = await destination.deliver(asked({ path: "drafts/" }));
+    const again = await destination.deliver(
+      delivery({
+        capability: "create-or-append",
+        arguments: { path: "drafts/" },
+        attempt: 2,
+      }),
+    );
 
     expect(again).toMatchObject({ pointer: "drafts/a-thought.md" });
     expect(await filesUnder(path)).toEqual(["drafts/a-thought.md"]);
     expect(await readFile(join(path, "drafts", "a-thought.md"), "utf8")).toBe(
       "a thought\n",
     );
+  });
+
+  /** With frontmatter off, two captures saying the same words write the same bytes. */
+  it("gives a second capture saying the same words a note of its own", async () => {
+    const { path, destination } = await vault({ text: renderText });
+
+    await destination.deliver(asked({ path: "drafts/" }));
+    const second = await destination.deliver(asked({ path: "drafts/" }));
+
+    expect(second).toMatchObject({ pointer: "drafts/a-thought-1.md" });
+    expect(await filesUnder(path)).toEqual([
+      "drafts/a-thought-1.md",
+      "drafts/a-thought.md",
+    ]);
   });
 
   it("still appends to a name that was typed", async () => {

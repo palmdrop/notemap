@@ -38,7 +38,9 @@ password crosses the network in the clear, and then used: the host says it, and 
 same argument shapes, from the same definition. Two kinds doing one thing under different words would make every rule and
 every composer choice kind-specific for no gain. That includes a derived name under
 `create-or-append`, which is never appended to: the first free `name-1`, `name-2`, … is created with
-`If-None-Match: *`, and a name taken between the `GET` and the `PUT` moves the walk on.
+`If-None-Match: *`, passing over a collection of that name, and a name taken between the `GET` and
+the `PUT` moves the walk on. On a retry, a note holding exactly what this delivery would write is
+its own earlier attempt, and is landed on.
 
 The place fields offer **candidates**, one `PROPFIND` at `Depth: 1` per level browsed: collections
 for a folder field, collections and notes for a field naming a note. A heading offers the headings

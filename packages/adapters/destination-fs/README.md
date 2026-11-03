@@ -9,8 +9,9 @@ places a capture's assets in a folder with no note at all.
 `create-or-append` takes one `path` and decides at delivery: a note that is there is appended to,
 and one that is not is created. A path ending in `/` names a folder, and the note's name is derived.
 A derived name is never appended to: where it is taken, the note goes under the first free
-`name-1`, `name-2`, …, passing over a folder of that name. A note holding exactly what this delivery
-would write as a new note is its own earlier attempt, and is landed on without writing again.
+`name-1`, `name-2`, …, passing over a folder of that name. On a retry, a note holding exactly what
+this delivery would write as a new note is its own earlier attempt, and is landed on; on a first
+attempt it is another capture saying the same words, and is passed over.
 
 `create` targets `{ directory, filename? }`.
 

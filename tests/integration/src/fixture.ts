@@ -551,6 +551,7 @@ export function deliverWith(harnessed: Harness, destinations: Destinations) {
 
         const attemptable = await harnessed.pool.routing.deliveryFor(
           subject.record,
+          lease.job.attempt + 1,
         );
         // Nothing left to carry out: the record was cancelled, or its item went.
         // Unusable is proof nothing was delivered, so it carries on the same

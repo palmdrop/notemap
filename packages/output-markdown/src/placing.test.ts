@@ -273,6 +273,7 @@ describe("which assets are the attachments", () => {
       tags: [],
       createdAt: "2026-10-08T09:00:00.000Z" as Timestamp,
       artifacts: [],
+      attempt: 1,
       assets: [attached, transcript],
     };
 

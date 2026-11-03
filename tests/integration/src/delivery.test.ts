@@ -355,7 +355,7 @@ describe("the delivery a resolved record asks for", () => {
   it("is absent once the record has delivered", async () => {
     const opened = await pending();
     expect(
-      await opened.pool.routing.deliveryFor(opened.record.id),
+      await opened.pool.routing.deliveryFor(opened.record.id, 1),
     ).toBeDefined();
 
     opened.destination.answers(DELIVERED);
@@ -363,7 +363,7 @@ describe("the delivery a resolved record asks for", () => {
     await opened.deliver();
 
     expect(
-      await opened.pool.routing.deliveryFor(opened.record.id),
+      await opened.pool.routing.deliveryFor(opened.record.id, 1),
     ).toBeUndefined();
   });
 });

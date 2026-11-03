@@ -68,17 +68,20 @@ Uploaded asset names keep their own rule and gain only the fixes: marks kept, NF
 grapheme within 120 graphemes and 200 bytes.
 
 Under `create-or-append` onto a folder, a derived name is never appended to. The adapter takes the
-first of `name`, `name-1`, `name-2`, … that is free, passing over a folder of that name. It stops
-early at a note holding exactly what this delivery writes as a new note, which can only be its own
-earlier attempt, and lands there without writing again. A name the person typed still appends, as
-ADR 31 says. `create` is unchanged: a taken name is refused.
+first of `name`, `name-1`, `name-2`, … that is free, passing over a folder of that name. On a
+retry, and only then, it stops early at a note holding exactly what this delivery writes as a new
+note, which is its own earlier attempt, and lands there. On a first attempt such a note is another
+capture saying the same words — the same bytes, with frontmatter off — and the walk passes it like
+any other. The delivery carries which attempt it is for this. A name the person typed still
+appends, as ADR 31 says. `create` is unchanged: a taken name is refused.
 
 ### Consequences
 
 - **Good** — every script survives whole, and the same words make the same name however they were
   encoded.
 - **Good** — a capture never lands inside a note it did not choose. Two captures that begin alike
-  make two notes.
+  make two notes, and so do two that say exactly the same thing, or one item routed twice to one
+  folder.
 - **Good** — the composer's forecast says `create` and the free name for a folder-only place,
   which is what will happen.
 - **Bad** — a shorter, lower-cased stem makes two captures more likely to derive the same name.

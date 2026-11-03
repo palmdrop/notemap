@@ -21,6 +21,7 @@ const lease = {
     id: "job-1",
     kind: "delivery",
     subject: { kind: "routing-record", record: RECORD },
+    attempt: 2,
   },
 } as unknown as Lease;
 
@@ -28,7 +29,12 @@ const lease = {
  * Only the parts the runner reaches: it claims one lease, performs it, and
  * completes it. What `complete` was handed is the whole of what a test asserts.
  */
-function pool(deliveryFor: () => Promise<AttemptableDelivery | undefined>): {
+function pool(
+  deliveryFor: (
+    record: RoutingRecordId,
+    attempt: number,
+  ) => Promise<AttemptableDelivery | undefined>,
+): {
   readonly pool: Pool;
   readonly completed: WorkOutcome[];
 } {
@@ -90,6 +96,20 @@ describe("a delivery the runner cannot even prepare", () => {
         detail: { code: "delivery-unprepared", detail: "database is locked" },
       },
     ]);
+  });
+
+  it("asks for the attempt after the ones the job has made", async () => {
+    const asked: [RoutingRecordId, number][] = [];
+    const { pool: stub } = pool((record, attempt) => {
+      asked.push([record, attempt]);
+      return Promise.resolve(undefined);
+    });
+    const runner = startDeliveryRunner(stub, destinations, config, clock);
+
+    await runner.drain();
+    await runner.stop();
+
+    expect(asked).toEqual([[RECORD, 3]]);
   });
 
   it("succeeds without attempting anything when the record has gone", async () => {

@@ -115,8 +115,9 @@ function createOrAppendTarget(delivery: Delivery): Place & {
 /**
  * A name derived from the item is never appended to: two captures that begin
  * alike would otherwise share a note nobody chose. The first of `name`,
- * `name-1`, … that is free, or that holds exactly what this delivery writes as
- * a new note, which is its own last attempt landing after all.
+ * `name-1`, … that is free. On a retry, also one holding exactly what this
+ * delivery writes as a new note, which is its own last attempt landing after
+ * all; on a first attempt that is another capture saying the same words.
  */
 async function createBesideTaken(
   wiring: Wiring,
@@ -140,11 +141,18 @@ async function createBesideTaken(
         note,
         (rendered) => wholeUnder(rendered, wanted.heading),
         signal,
-      );
+      ).catch(async (cause: unknown) => {
+        // A folder of that name answers 404 to `GET` on most servers, and is passed over as a note would be.
+        if ((await folderAt(wiring.dav, note, signal)) !== undefined) {
+          return "taken" as const;
+        }
+        throw cause;
+      });
       if (landed !== "taken") return landed;
       continue;
     }
 
+    if (delivery.attempt <= 1) continue;
     const rendered = render(wiring, delivery, note);
     if (existing.body === wholeUnder(rendered, wanted.heading)) {
       return {
