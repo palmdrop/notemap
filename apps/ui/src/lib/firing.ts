@@ -17,26 +17,28 @@ import { tallying } from "./tallies";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
- * Calling off a route in flight, inside its window or after it while the
- * delivery is still pending. Where a trigger tag made it, the pool takes the
- * tag off with the reservation, so the item comes back to the queue able to be
- * filed by that tag again.
+ * Calls off a pending record and ends its route in flight. Where a trigger tag
+ * made it, the pool takes the tag off with the reservation, so the item comes
+ * back to the queue able to be filed by that tag again. Throws what the pool
+ * refused.
  */
+export async function callOff(record: string, item: string): Promise<void> {
+  // Arriving once the record is gone, the tag would find nothing to absorb it and file the item again.
+  const recalls = firings.open.find((one) => one.record === record)?.recalls;
+  if (recalls !== undefined) await client.recall(item, recalls);
+
+  await client.routing.cancel(record, item);
+  firings.closed(record);
+}
+
+/** Calling off a route in flight, and saying so in the status line. */
 export function cancelRouting(
   record: string,
   item: string,
   name?: string,
-  /** A tag put on the item beside the decision, which must not reach the pool after it is called off. */
-  recalls?: string,
 ): Promise<void> {
-  // Arriving once the record is gone, the tag would find nothing to absorb it and file the item again.
-  const recalled =
-    recalls === undefined ? Promise.resolve() : client.recall(item, recalls);
-
-  return recalled
-    .then(() => client.routing.cancel(record, item))
+  return callOff(record, item)
     .then(() => {
-      firings.closed(record);
       notices.settled(keyFor(record));
       // Said at once, under the name the log's own entry arrives with.
       notices.raise({

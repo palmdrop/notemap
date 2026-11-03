@@ -10,6 +10,7 @@
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
   import { cancelRouting } from "$lib/firing";
+  import { firings } from "$lib/firings.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
@@ -70,8 +71,11 @@
   type Line = Went & {
     readonly href?: string;
     readonly taken?: RoutingRecord;
-    /** A delivery not landed yet, which the person may still call off. */
-    readonly cancels?: RoutingRecord;
+    /** A delivery not landed yet, and what it offers now, as its route in flight does. */
+    readonly offers?: {
+      readonly record: RoutingRecord;
+      readonly label: "undo" | "cancel";
+    };
   };
 
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
@@ -101,12 +105,8 @@
           ),
           href: recordHref(record.item, record.id),
           // A delivery the pool has carried out has happened elsewhere and is
-          // withdrawn, never taken back; one still pending may be called off.
-          ...(target.kind === "user"
-            ? { taken: record }
-            : record.state === "pending"
-              ? { cancels: record }
-              : {}),
+          // withdrawn, never taken back.
+          ...(target.kind === "user" ? { taken: record } : offered(record)),
         };
       });
     }
@@ -115,6 +115,12 @@
       ? []
       : wentWhere(summary, nameOf).map((name) => ({ name }));
   });
+
+  function offered(record: RoutingRecord): Pick<Line, "offers"> {
+    if (record.state !== "pending") return {};
+    const label = firings.offer(record.id);
+    return label === undefined ? {} : { offers: { record, label } };
+  }
 
   const summarized = $derived(records.length === 0 && summary !== undefined);
 
@@ -234,12 +240,12 @@
             onclick={() => void undo(record)}
             class="shrink-0 hover:underline">undo</button
           >
-        {:else if line.cancels !== undefined}
-          {@const record = line.cancels}
+        {:else if line.offers !== undefined}
+          {@const { record, label } = line.offers}
           <button
             type="button"
             onclick={() => void cancel(record, line.name)}
-            class="shrink-0 hover:underline">cancel</button
+            class="shrink-0 hover:underline">{label}</button
           >
         {/if}
       </div>

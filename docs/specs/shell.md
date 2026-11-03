@@ -11,7 +11,8 @@
   before anything is attempted, counting down on the status line with `undo`, then nothing while
   the delivery is attempted, and `cancel` only once the pool is retrying it; the process surface
   offers the same beside where the item has gone,
-  and a held row's line for a record not yet delivered ends in `cancel`. The landing is the notice.
+  and a held row's line for a record not yet delivered ends in what its route in flight offers. The
+  landing is the notice.
   ([plan](../plans/features-from-the-mobile-rethink.md))
 - 2026-11-01 — **A decision made by hand can be saved as a template**, from the routing record's
   block or from the notice saying it landed. The form opens prefilled from the record; a note name derived
@@ -1082,9 +1083,13 @@ arrow, the destination and the turning mark could each end up on a line of its o
 and the destination are one unit and the place with the mark after it another, and the line breaks
 between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
 the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
-it. **A held row's line for a record not yet delivered ends in `cancel`** *(2026-11-01)*, on the
-queue and the feed alike, as a mark by hand's ends in `undo`; a delivered one offers nothing there,
-being withdrawn in its block. An unrouted row
+it. **A held row's line for a record not yet delivered ends in what its route in flight offers**
+*(2026-11-01; amended 2026-11-03, when it always said `cancel`)*, on the queue and the feed alike, as
+a mark by hand's ends in `undo`: `undo` inside the window, nothing while the delivery is attempted,
+and `cancel` once the pool is retrying it — read from the same route in flight the status line
+draws, so the two never disagree and the window's edge goes from `undo` straight to nothing. A
+pending record this shell never saw decided offers `cancel`, being one the pool may be retrying. A
+delivered one offers nothing there, being withdrawn in its block. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, and `[+]` on a revision *(2026-10-01; the word `revision` before it,
 which read as one more tag)*, with `revision` as its label and hover. A delivery that failed is the log's and the status line's to
@@ -1987,9 +1992,10 @@ so what went is still on the page. A pending record's body is one line, `not yet
 **`save as template`** *(2026-11-01, [features from the mobile
 rethink](../plans/features-from-the-mobile-rethink.md))* sits beside it on a record made by hand to a
 destination the shell still holds, and not withdrawn. It opens Templates with the form prefilled
-from the record (below). On the right, `cancel`, in alarm, on a pending
-record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
-a decision made by hand, which is the same call; both say so in the status line and the surface reads
+from the record (below). On the right, on a pending record, what its route in flight offers, as the
+row's line does *(amended 2026-11-03)*: `undo` inside the window, `cancel` in alarm once the pool is
+retrying it, nothing between — a reservation whose delivery has not landed is the person's to take
+back — and `undo` on a decision made by hand, which is the same call; both say so in the status line and the surface reads
 its records again. A foot with nothing in it is not drawn. *Retired 2026-10-22*: `item` in the
 foot, in the log alone — the log's line leads with the capture's words, which are already the way
 to it.

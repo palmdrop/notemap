@@ -152,3 +152,23 @@ test("stays retrying however many times it is heard of again", () => {
 
   expect(firings.open).toEqual([{ ...research, until, retrying: true }]);
 });
+
+test("a pending record offers what its route in flight offers, and nothing once that has ended", () => {
+  const until = Date.parse("2026-09-30T10:00:05.000Z");
+
+  // Never heard of here: a reservation from before, which the pool may be retrying.
+  expect(firings.offer("r1")).toBe("cancel");
+
+  firings.opened({ ...research, until });
+  expect(firings.offer("r1")).toBe("undo");
+
+  vi.setSystemTime(until);
+  vi.advanceTimersByTime(1_000);
+  expect(firings.offer("r1")).toBeUndefined();
+
+  firings.retrying("r1");
+  expect(firings.offer("r1")).toBe("cancel");
+
+  firings.closed("r1");
+  expect(firings.offer("r1")).toBeUndefined();
+});

@@ -17,6 +17,8 @@
   import { argumentsOf } from "$lib/arguments";
   import { didWhat } from "$lib/capability";
   import { client } from "$lib/client";
+  import { callOff } from "$lib/firing";
+  import { firings } from "$lib/firings.svelte";
   import { aboutItem } from "$lib/excerpt";
   import { followable } from "$lib/link";
   import { following } from "$lib/motion";
@@ -240,7 +242,10 @@
       (kept && !blind && unreadable === ""),
   );
   const delivered = $derived(record.state === "delivered");
-  const cancellable = $derived(!delivered && said === undefined);
+  /** A reservation not landed yet offers what its route in flight offers. */
+  const offer = $derived(
+    !delivered && said === undefined ? firings.offer(record.id) : undefined,
+  );
 
   /**
    * What this view did to the record, which the record it was handed may not
@@ -331,7 +336,7 @@
   const footed = $derived(
     savable ||
       link !== undefined ||
-      cancellable ||
+      offer !== undefined ||
       (byHand && said === undefined) ||
       (withdrawable && !confirming) ||
       (withdrawn && reinstatable),
@@ -343,7 +348,7 @@
   async function takeBack(what: string) {
     failed = "";
     try {
-      await client.routing.cancel(record.id, record.item);
+      await callOff(record.id, record.item);
       notices.settled(keyFor(record.id));
       notices.raise({
         what,
@@ -463,9 +468,12 @@
           {:else}
             <span>{did}</span>
           {/if}
-          {#if cancellable}
-            <Action alarm onclick={() => void takeBack("cancelled")}
-              >cancel</Action
+          {#if offer !== undefined}
+            <Action
+              alarm={offer === "cancel"}
+              onclick={() =>
+                void takeBack(offer === "undo" ? "undone" : "cancelled")}
+              >{offer}</Action
             >
           {/if}
         </div>
@@ -578,9 +586,12 @@
                   class="hover:underline">save as template</a
                 >
               {/if}
-              {#if cancellable}
-                <Action alarm onclick={() => void takeBack("cancelled")}
-                  >cancel</Action
+              {#if offer !== undefined}
+                <Action
+                  alarm={offer === "cancel"}
+                  onclick={() =>
+                    void takeBack(offer === "undo" ? "undone" : "cancelled")}
+                  >{offer}</Action
                 >
               {:else if byHand && said === undefined}
                 <Action onclick={() => void takeBack("undone")}>undo</Action>

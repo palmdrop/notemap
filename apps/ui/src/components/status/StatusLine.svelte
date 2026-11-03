@@ -146,7 +146,7 @@
   }
 
   function cancel(firing: Firing): void {
-    void cancelRouting(firing.record, firing.item, firing.name, firing.recalls);
+    void cancelRouting(firing.record, firing.item, firing.name);
   }
 
   // A batch made here is counted from the pool's answer, and what it reserved

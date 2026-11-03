@@ -1,10 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
+import { firings } from "$lib/firings.svelte";
 import { pool } from "$testing/pool";
 import Routing from "./Routing.svelte";
+
+afterEach(() => {
+  firings.clear();
+  vi.useRealTimers();
+});
 
 const PENDING = {
   id: "rec",
@@ -130,4 +136,33 @@ test("offers cancel on a record not yet delivered, and nothing on one that was",
   expect(sentTo(transport).map(routeOf)).toContain(
     "POST /v1/routing/rec/cancel",
   );
+});
+
+/** What the row offers is what the route in flight offers, read from the same firing. */
+test("offers undo in the window, nothing from its edge while it is attempted, and cancel once retrying", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.parse("2026-08-19T22:14:00.000Z"));
+  pool(() => json(200, { values: [] }));
+  const until = Date.parse("2026-08-19T22:14:05.000Z");
+  firings.opened({ record: "rec", item: "held", name: "Vault", until });
+
+  render(Routing, { summary: undefined, records: [PENDING] });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+
+  // The second the window closes: never `cancel` on the way to nothing.
+  await vi.advanceTimersByTimeAsync(4_000);
+  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  await vi.advanceTimersByTimeAsync(1_000);
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+
+  firings.retrying("rec");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
+
+  // Landed, it is read again; until then the row offers nothing.
+  firings.closed("rec");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.queryByRole("button", { name: /undo|cancel/ })).toBeNull();
 });

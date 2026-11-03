@@ -7,10 +7,14 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
+import { firings } from "$lib/firings.svelte";
 import { NOT_YET_DELIVERED, NOTHING_KEPT } from "$lib/said";
 import Block from "./Block.svelte";
 
-afterEach(() => notices.clear());
+afterEach(() => {
+  notices.clear();
+  firings.clear();
+});
 
 const TARGET = {
   kind: "destination" as const,
@@ -608,6 +612,33 @@ test("a folded pending record offers cancel on its line, and says nothing else",
 
   expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
   expect(screen.queryByText(NOT_YET_DELIVERED)).toBeNull();
+});
+
+test("a pending record in its window offers undo, and nothing once the window closes", async () => {
+  await named();
+  firings.opened({
+    record: RECORD.id,
+    item: RECORD.item,
+    name: "Vault",
+    until: Date.now() + 60_000,
+  });
+
+  const { unmount } = render(Block, {
+    record: { ...RECORD, state: "pending" },
+  });
+  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  unmount();
+
+  firings.clear();
+  firings.opened({
+    record: RECORD.id,
+    item: RECORD.item,
+    name: "Vault",
+    until: Date.now() - 1_000,
+  });
+  render(Block, { record: { ...RECORD, state: "pending" } });
+  expect((await screen.findAllByRole("button")).length).toBeGreaterThan(0);
+  expect(screen.queryByRole("button", { name: /undo|cancel/ })).toBeNull();
 });
 
 test("a folded decision made by hand keeps its note and its undo for when it is opened", async () => {

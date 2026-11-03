@@ -139,6 +139,18 @@ export const firings = {
     tick();
   },
 
+  /**
+   * What a pending record offers, on its route in flight's terms. Nothing once
+   * that route has ended, while the record is read again. `cancel` where this
+   * shell never heard of one: a reservation from before it, which the pool may
+   * be retrying.
+   */
+  offer(record: string): "undo" | "cancel" | undefined {
+    if (closed.has(record)) return undefined;
+    const flying = open.find((one) => one.record === record);
+    return flying === undefined ? "cancel" : offerOf(flying, now);
+  },
+
   /** The pool will try this one again: a delivery that failed and has not ended. */
   retrying(record: string): void {
     open = open.map((one) =>
