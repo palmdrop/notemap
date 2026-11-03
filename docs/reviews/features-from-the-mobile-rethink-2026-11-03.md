@@ -366,7 +366,7 @@ The branch was rebased onto `main` after this review. Main had taken ADR 67, so 
    is no tag and saves without one, which is valid, so it gets no message.
 2. **Fixed.** After the window a route in flight offers nothing, and `cancel` only once the log says
    the pool is retrying it (`b8cad645`). The record row and the record block follow the same rule,
-   read from the same route in flight (`892b5590`).
+   read from the same route in flight (`838485ac`).
 3. **Fixed.** `DEFAULT_TRIGGER_WINDOW_MS` and `config.example.toml` are 10 000, with a dated line in
    core.md (`b8096dd7`).
 4. **Fixed.** Rebased onto `main`: the words migration is last, and `endingOf` skips the decision
