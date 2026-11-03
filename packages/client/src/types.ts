@@ -502,6 +502,12 @@ export interface Client {
   tag(item: ItemId, tag: string, supplied?: SuppliedArguments): Promise<void>;
   untag(item: ItemId, tag: string): Promise<void>;
   /**
+   * Takes back a `tag` of this item that has not been sent, as though it was
+   * never made. One already on its way is waited for, so a request made after
+   * this answers reaches the pool behind it.
+   */
+  recall(item: ItemId, tag: string): Promise<void>;
+  /**
    * Tags, untags, archives or unarchives every item, as one outbox operation
    * and one request: at most `MAX_BATCH` items. Answers the batch's id, which every log entry it
    * writes carries and `batches` holds it under.

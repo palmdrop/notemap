@@ -1089,6 +1089,11 @@ triage. The cost is client clock skew, accepted because a pool is one person's, 
 own devices, and the clocks ordinarily agreed. *This pins [sync.md](sync.md)'s open question about
 the last-write-wins clock; the wire that carries the stamp is that spec's to define.*
 
+**A tag may be recalled** *(2026-11-03)*. `recall(item, tag)` takes back a `tag` of that item
+nothing has started sending, reversing what it drew, as an opposing operation would; one already
+on its way is waited for, so whatever the caller sends next reaches the pool behind it. A shell
+calls it before calling off a route it put a trigger tag beside.
+
 ### Editing and the hand-over seal
 
 A capture is the client's own until it reaches the pool, and immutable once it does

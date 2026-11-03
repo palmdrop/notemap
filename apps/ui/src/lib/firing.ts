@@ -25,9 +25,15 @@ export function cancelRouting(
   record: string,
   item: string,
   name?: string,
+  /** A tag put on the item beside the decision, which must not reach the pool after it is called off. */
+  recalls?: string,
 ): Promise<void> {
-  return client.routing
-    .cancel(record, item)
+  // Arriving once the record is gone, the tag would find nothing to absorb it and file the item again.
+  const recalled =
+    recalls === undefined ? Promise.resolve() : client.recall(item, recalls);
+
+  return recalled
+    .then(() => client.routing.cancel(record, item))
     .then(() => {
       firings.closed(record);
       notices.settled(keyFor(record));
@@ -78,6 +84,12 @@ export function routedHere(record: RoutedRecord, reading?: Reading): void {
   if (target.kind !== "destination") return;
 
   const place = placeIn(record, undefined, reading);
+  const applied = record.applied;
+  const tag =
+    applied === undefined || applied.firedByTag
+      ? undefined
+      : client.templates.held.find((one) => one.id === applied.template)
+          ?.triggerTag;
   firings.opened({
     record: record.id,
     item: record.item,
@@ -88,6 +100,7 @@ export function routedHere(record: RoutedRecord, reading?: Reading): void {
     ...(place === undefined ? {} : { where: place }),
     until: Date.parse(record.until),
     href: itemHref(record.item),
+    ...(tag === undefined ? {} : { recalls: tag }),
   });
 }
 

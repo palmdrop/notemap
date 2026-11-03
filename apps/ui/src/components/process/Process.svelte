@@ -139,11 +139,16 @@
       (one) => one.id === record.id && one.state !== "pending",
     );
     const offer = offerOf(flying, firings.now);
-    return landed || offer === undefined ? undefined : { record, offer };
+    return landed || offer === undefined
+      ? undefined
+      : { record, offer, recalls: flying.recalls };
   });
 
-  async function takeBack(record: RoutedRecord): Promise<void> {
-    await cancelRouting(record.id, record.item);
+  async function takeBack(
+    record: RoutedRecord,
+    recalls: string | undefined,
+  ): Promise<void> {
+    await cancelRouting(record.id, record.item, undefined, recalls);
     records.reread();
   }
 
@@ -1109,11 +1114,11 @@
             <Routing {summary} records={records.all} short />
           </div>
           {#if takeable !== undefined}
-            {@const { record, offer } = takeable}
+            {@const { record, offer, recalls } = takeable}
             <button
               type="button"
               class="shrink-0 hover:underline"
-              onclick={() => void takeBack(record)}>{offer}</button
+              onclick={() => void takeBack(record, recalls)}>{offer}</button
             >
           {/if}
         </div>

@@ -366,6 +366,77 @@ describe("an operation already handed over", () => {
   });
 });
 
+describe("recalling an operation", () => {
+  const TAG: Operation = { kind: "tag", item: "one", tag: "route/research" };
+  const tagged = (state: ClientState) =>
+    state.items.get("one")?.tags?.map((held) => held.name) ?? [];
+  const isTag = (operation: Operation) => operation.kind === "tag";
+
+  it("takes back one nothing has sent, undrawn, and sends nothing", async () => {
+    const { outbox, state, sent } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(TAG);
+    expect(tagged(state.get())).toContain("route/research");
+
+    await outbox.recall("one", isTag);
+
+    expect(tagged(state.get())).not.toContain("route/research");
+    expect(state.get().outbox).toEqual([]);
+    await outbox.drain();
+    expect(sent).toEqual([]);
+  });
+
+  it("takes back one a drain is holding behind another, before it is sent", async () => {
+    const { outbox, state, sent, answer } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    clock.set("2026-08-17T12:00:02.000Z");
+    await outbox.enqueue(TAG);
+    const draining = outbox.drain();
+    await flush();
+    expect(sent).toEqual([ARCHIVE]);
+
+    const recalling = outbox.recall("one", isTag);
+    answer({ item: ARCHIVED });
+    await recalling;
+    await draining;
+
+    expect(sent).toEqual([ARCHIVE]);
+    expect(state.get().outbox).toEqual([]);
+  });
+
+  it("waits for one already on its way, so what follows reaches the pool behind it", async () => {
+    const { outbox, sent, answer } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(TAG);
+    const draining = outbox.drain();
+    await flush();
+    expect(sent).toEqual([TAG]);
+
+    let recalled = false;
+    const recalling = outbox.recall("one", isTag).then(() => {
+      recalled = true;
+    });
+    await flush();
+    expect(recalled).toBe(false);
+
+    answer({ item: anItem("one") });
+    await recalling;
+    await draining;
+    expect(sent).toEqual([TAG]);
+  });
+
+  it("leaves alone what does not match, and another item's", async () => {
+    const { outbox, state } = engineOver([anItem("one")]);
+
+    await outbox.enqueue(ARCHIVE);
+    await outbox.recall("one", isTag);
+    await outbox.recall("two", () => true);
+
+    expect(state.get().outbox.map((held) => held.operation)).toEqual([ARCHIVE]);
+  });
+});
+
 describe("draining", () => {
   it("sends operations against one item in order, never overlapping", async () => {
     const { outbox, sent, answer } = engineOver([]);

@@ -16,6 +16,8 @@ export type Firing = {
   readonly batch?: string;
   /** The pool could not reach the destination and will try again, so it can be called off between attempts. */
   readonly retrying?: boolean;
+  /** The trigger tag this shell put on the item beside the decision, taken back with it while unsent. */
+  readonly recalls?: string;
 };
 
 /** Enough closed records to stop a late opening, and no memory of the session. */

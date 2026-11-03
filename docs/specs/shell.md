@@ -1380,7 +1380,10 @@ is the decision it became — the template where nothing was touched, the destin
 where something was. Which of the two went is read off whether anything changed. **A template
 applied here carries its trigger tag onto the item**, after the route, so an item filed by a
 template carries the same classification whichever way the template was reached; a decision the
-person corrected is their own and takes no tag; cancelled, the tag comes back off. **A template
+person corrected is their own and takes no tag; cancelled, the tag comes back off. **An undo takes
+the tag back first** *(2026-11-03)*: one the client has not sent leaves the outbox unsent, and one
+already on its way is let land before the route is called off, since a tag reaching the pool after
+the record is gone would find nothing to absorb it and file the item again. **A template
 that cannot apply is drawn with its reason and not removed** — stranded, its destination disabled
 (`its destination is disabled`), its capability no longer declared. A template is the person's own
 decision, and hiding it because of a setting elsewhere is the worse surprise. Never a pattern: expansion is statically total.

@@ -692,6 +692,83 @@ test("puts a template's trigger tag on the item it routed", async () => {
   expect(notices.shown.at(-1)?.offer).toBeUndefined();
 });
 
+/**
+ * The tag goes after the route, so an undo pressed while it is still on its way
+ * would reach the pool first, and the tag would then find nothing to absorb it
+ * and file the item again.
+ */
+test("undoing a template's route lets its trigger tag land before calling the route off", async () => {
+  let release = () => {};
+  const held = new Promise<void>((done) => {
+    release = done;
+  });
+  const reached: string[] = [];
+  const record = {
+    id: "r",
+    item: "one",
+    at: WHEN,
+    until: new Date(Date.now() + 60_000).toISOString(),
+    state: "pending",
+    target: {
+      kind: "destination",
+      destination: VAULT,
+      capability: "create",
+      arguments: { directory: "research/2026-09-04" },
+    },
+    applied: { template: RESEARCH.id, firedByTag: false },
+  };
+
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE] });
+    }
+    if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: [record] });
+    }
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === "POST /v1/items/one/tag") {
+      await held;
+      reached.push("tag");
+      return json(200, aCapture());
+    }
+    if (route === "POST /v1/routing/r/cancel") {
+      reached.push("cancel");
+      return new Response(null, { status: 204 });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  // The surface draws the client's own copy, which a route then folds into.
+  await client.item("one");
+
+  draw();
+  await choose("research");
+  await screen.findByRole("button", { name: "edit place" });
+  await commit();
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await new Promise((done) => setTimeout(done, 20));
+  expect(reached).toEqual([]);
+
+  release();
+  await vi.waitFor(() => expect(reached).toEqual(["tag", "cancel"]));
+});
+
 /** Corrected, the decision is the person's own, and their tags are their own too. */
 test("leaves a corrected template's tag off the item", async () => {
   const transport = servingTemplates();

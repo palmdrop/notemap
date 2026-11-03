@@ -18,6 +18,15 @@ export type Outbox = {
   /** Answers when the soonest lease it left alone lapses, if it left one. */
   drain(): Promise<string | undefined>;
   dismiss(id: OperationId): Promise<void>;
+  /**
+   * Takes back every operation about this item that `matches` and nothing has
+   * started sending, reversing what it drew. One already on its way is waited
+   * for, so whatever is sent after this answers reaches the pool behind it.
+   */
+  recall(
+    item: ItemId,
+    matches: (operation: Operation) => boolean,
+  ): Promise<void>;
   /** Which of these hydration read back, rather than this session enqueueing. */
   restored(ids: readonly OperationId[]): void;
 };
@@ -65,6 +74,10 @@ export function createOutbox(deps: OutboxDeps): Outbox {
   const chains = new Map<string, Promise<void>>();
   /** Handed over the moment a drain schedules one, so a second drain cannot re-send it. */
   const handedOver = new Set<OperationId>();
+  /** Handed over and then sent: past taking back. */
+  const started = new Set<OperationId>();
+  /** Taken back while handed over, so the drain waiting to send it lets it go. */
+  const recalled = new Set<OperationId>();
   const restored = new Set<OperationId>();
   /** Every id this process has held, so a stale read of the store cannot bring one back. */
   const seen = new Set<OperationId>();
@@ -346,9 +359,13 @@ export function createOutbox(deps: OutboxDeps): Outbox {
         handedOver.add(entry.id);
         chain(targetsOf(entry.operation), async () => {
           try {
+            if (recalled.has(entry.id)) return;
+            started.add(entry.id);
             await send(entry);
           } finally {
             handedOver.delete(entry.id);
+            started.delete(entry.id);
+            recalled.delete(entry.id);
           }
         });
       }
@@ -368,10 +385,37 @@ export function createOutbox(deps: OutboxDeps): Outbox {
     }
   }
 
+  async function recall(
+    item: ItemId,
+    matches: (operation: Operation) => boolean,
+  ): Promise<void> {
+    const unsent = deps.state
+      .get()
+      .outbox.filter(
+        (entry) =>
+          entry.state !== "sending" &&
+          entry.state !== "refused" &&
+          !started.has(entry.id) &&
+          targetsOf(entry.operation).includes(item) &&
+          matches(entry.operation),
+      );
+
+    for (const entry of unsent) {
+      if (handedOver.has(entry.id)) recalled.add(entry.id);
+      const undo = undos.get(entry.id);
+      if (undo !== undefined) deps.state.update(undo);
+      await drop(entry.id);
+      if (undo === undefined) await deps.reread(item).catch(() => undefined);
+    }
+
+    await chains.get(item)?.catch(() => undefined);
+  }
+
   return {
     enqueue,
     drain,
     dismiss: drop,
+    recall,
     restored: (ids) => {
       for (const id of ids) {
         seen.add(id);
