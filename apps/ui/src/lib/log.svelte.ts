@@ -11,6 +11,7 @@ import {
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { client } from "./client";
+import { drawable } from "./kinds";
 
 /**
  * The log's walked page. The client keeps no page for it and writes none of it
@@ -92,14 +93,6 @@ function ahead(
   return [...arriving.filter((action) => !seen.has(action.id)), ...held];
 }
 
-/**
- * A delivery held for its window is in flight on the status line, and ends as a
- * landing or a cancellation, which is the row that stays.
- */
-function drawable(action: Action): boolean {
-  return action.kind !== "delivery-held";
-}
-
 async function walk(from: ActionPosition | undefined): Promise<void> {
   const mine = walking;
   loading = true;
@@ -115,7 +108,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     });
     if (mine !== walking) return;
 
-    const drawn = page.values.filter(drawable);
+    const drawn = page.values.filter((action) => drawable(action.kind));
     rows = from === undefined ? drawn : joined(rows, drawn);
     seek(subjects(drawn));
     after = page.after;
@@ -240,7 +233,7 @@ export const log = {
 
     const wanted = actions.filter(
       (action) =>
-        drawable(action) &&
+        drawable(action.kind) &&
         (item === undefined || action.subject === item) &&
         (kinds === undefined || kinds.includes(action.kind)),
     );

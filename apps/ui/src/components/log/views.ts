@@ -1,5 +1,7 @@
 import type { ActionKind } from "@notemap/client";
 
+import { UNDRAWN } from "$lib/kinds";
+
 export type View = {
   readonly name: string;
   readonly kinds: readonly ActionKind[];
@@ -11,7 +13,10 @@ export type View = {
  * every reading but `everything`.
  */
 type Covering<T extends readonly View[]> =
-  Exclude<ActionKind, "delivery-held"> extends T[number]["kinds"][number]
+  Exclude<
+    ActionKind,
+    (typeof UNDRAWN)[number]
+  > extends T[number]["kinds"][number]
     ? T
     : never;
 
@@ -29,7 +34,6 @@ export const VIEWS: readonly View[] = covering([
     name: "routing",
     kinds: [
       "routed",
-      "template-fired",
       "delivery-failed",
       "delivery-cancelled",
       "delivery-withdrawn",

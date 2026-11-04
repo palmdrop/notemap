@@ -3118,10 +3118,11 @@ before — or read and found to have kept nothing — is drawn at once and asked
 and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known
 to hold what it sent, its line is held with the asking mark until it lands. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
-`template-fired` draws no block — its fact is the template's name, and the routing it began is a
-row of its own. **`delivery-held` draws no row at all** *(2026-11-03)*: a route made by hand is
-one row, its landing or its cancellation, since the decision is in flight on the status line while
-it lasts. No view reads it. The block is the item's, drawn once and the same wherever a record is read.
+**`delivery-held` and `template-fired` draw no row at all** *(2026-11-03; amended 2026-11-04,
+`template-fired` drew a row of its own with no block, the template's name its fact)*: a route is
+one row, its landing or its cancellation, whether a hand or a trigger tag made it, since the
+decision is in flight on the status line while it lasts and the landing names the template. No view
+reads either. The block is the item's, drawn once and the same wherever a record is read.
 
 **Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
 slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
@@ -3146,7 +3147,7 @@ head's rule before it)*: `routing`, `captures`, `classification`, `pool`, taken 
 each taken, the count of them on the control, `everything` at the panel's foot while any is taken,
 and none taken being everything. Several may be taken, and the reading is the union of their
 kinds. A view is a fixed set of the pool's own kinds and the URL carries the kinds rather than the
-name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the same way as one
+name — `?kind=routed,delivery-failed` — so a link somebody writes by hand reads the same way as one
 of these; a view is drawn taken where the kinds hold it whole, and a kind a hand-written link named
 outside every view it holds is let go with the first change. The pool does the narrowing: a page holds what it shows, where
 a shell sifting the page after the read would page over rows it then threw away. What arrives at

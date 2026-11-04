@@ -374,7 +374,8 @@ The branch was rebased onto `main` after this review. Main had taken ADR 67, so 
 5. **Fixed.** The client can recall an unsent tag, and waits for one already being sent. An undo
    recalls the trigger tag before calling the route off (`eaf51133`).
 6. **Fixed.** `/log` draws no row for `delivery-held`, so a hand route is one row (`a2c88c4b`).
-   `template-fired` still draws its own row, as shell.md states.
+   `template-fired` draws none either, so a trigger-tag route is one row too; its landing names the
+   template.
 7. **Fixed.** `Delivery.attempt` counts from 1. Both file kinds land on matching bytes only on a
    retry, and WebDAV now passes over a collection with the derived name (`f43ae7c3`).
 8. **Fixed.** Search clears its timer when it is destroyed (`496ada43`).

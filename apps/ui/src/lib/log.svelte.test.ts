@@ -286,3 +286,31 @@ test("draws no row for a delivery held for its window, read or heard", async () 
   expect(log.rows.map((row) => row.id)).toEqual(["two"]);
   expect(log.heard("three")).toBe(false);
 });
+
+/** A route its trigger tag made is one row too, the same as one made by hand. */
+test("draws no row for a template fired, read or heard", async () => {
+  const fired = (id: string): Row => ({
+    ...anAction(id),
+    kind: "template-fired",
+    detail: {
+      record: "r1",
+      template: "t1",
+      tag: "route/research",
+      until: "2026-09-02T11:14:10.000Z",
+    },
+  });
+  const landed = (id: string): Row => ({
+    ...anAction(id),
+    kind: "routed",
+    detail: { record: "r1", template: "t1", firedByTag: true },
+  });
+  answering([landed("two"), fired("one")]);
+
+  log.reading("newest-first", undefined);
+  await settled();
+  expect(log.rows.map((row) => row.id)).toEqual(["two"]);
+
+  log.arrived([fired("three")] as unknown as Action[]);
+  expect(log.rows.map((row) => row.id)).toEqual(["two"]);
+  expect(log.heard("three")).toBe(false);
+});
