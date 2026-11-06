@@ -20,3 +20,9 @@ export function isSection(said: string): said is Section {
 export function settingsHref(section: Section): string {
   return resolve("/settings/[section]", { section });
 }
+
+/** Templates, with the form open on a routing record's decision. */
+export function templateFromHref(item: string, record: string): string {
+  const query = new URLSearchParams({ item, record });
+  return `${settingsHref("templates")}?${query}`;
+}

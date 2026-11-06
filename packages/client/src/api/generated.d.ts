@@ -939,6 +939,8 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
+                    words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
                     /** @description `capture` (default) or `processed`: the instant the feed is ordered on, its capture time or when it was processed. The position is then that instant. Anything else is refused with `422 bad-by`. */
@@ -973,7 +975,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "bad-by" | "bad-state" | "bad-destination";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "words-too-long" | "bad-source" | "bad-by" | "bad-state" | "bad-destination";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1012,6 +1014,8 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
+                    words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
                 };
@@ -1040,7 +1044,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "unsupported-parameter";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "words-too-long" | "bad-source" | "unsupported-parameter";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -1079,6 +1083,8 @@ export interface paths {
                     after?: string;
                     /** @description Repeated once per tag; an item is read only where it carries every one. Each is trimmed, and one that trims to nothing is refused with `422 tag-invalid`. A tag no item carries answers nothing rather than a refusal. */
                     tag?: string[];
+                    /** @description What an item's own words must hold: its payload's text and its attachments' filenames. Split on whitespace into terms, every one of which must appear somewhere, inside a word too, without regard to case or accents. No phrases and no operators, and the surface keeps its own order. Over 200 UTF-16 code units, as sent, is refused with `422 words-too-long`; blank is no filter. */
+                    words?: string;
                     /** @description Repeated once per source id; an item is read where it was captured through any one of them. An empty one is refused with `422 bad-source`; one nothing came through answers nothing. */
                     source?: string[];
                 };
@@ -1107,7 +1113,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "bad-source" | "unsupported-parameter";
+                                code: "limit-too-large" | "bad-limit" | "bad-order" | "bad-position" | "tag-invalid" | "words-too-long" | "bad-source" | "unsupported-parameter";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3487,7 +3493,7 @@ export interface paths {
         put?: never;
         /**
          * Route an item to a destination, or from a template
-         * @description Records the decision and attempts the delivery once, inline. **The record answered may name a delivery that has not happened**: `state` is `pending` when the destination could not be reached, and a job carries it out later. A destination that was reached and refused writes nothing.
+         * @description Records the decision and attempts nothing: the record answered is `pending`, and its delivery comes due at `until`, the end of the undo window. Cancelling before then calls it off before anything is attempted. Where it landed, or that the destination refused it, is read from the action log, as a fired template's is.
          *
          *     One route, two bodies, because it is one decision either way: a destination with its capability and arguments, or a template that already holds all three. From a template the arguments are expanded first, so the record names a place a person can read.
          */
@@ -3506,13 +3512,13 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The routing record. Read `state` rather than reading a record as arrival. */
+                /** @description The routing record, pending, and when its delivery comes due. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["RoutingRecord"];
+                        "application/json": components["schemas"]["RoutedRecord"];
                     };
                 };
                 /** @description The body could not be read as this request. */
@@ -3593,7 +3599,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked" | "argument-missing";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "unreachable" | "argument-not-asked" | "argument-missing";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -3727,7 +3733,7 @@ export interface paths {
                             /** @description The refusal's kind, with its facts beside it. */
                             error: {
                                 /** @enum {string} */
-                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "rejected-by-destination" | "delivery-outcome-unknown" | "unreachable" | "argument-not-asked";
+                                code: "unknown-destination" | "capability-undeclared" | "payload-type-unsupported" | "arguments-invalid" | "content-invalid" | "unknown-payload-type" | "unreachable" | "argument-not-asked";
                             } & {
                                 [key: string]: unknown;
                             };
@@ -5552,6 +5558,10 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        RoutedRecord: components["schemas"]["RoutingRecord"] & {
+            /** @description When the undo window closes and the delivery comes due. Cancelling before then calls it off before anything is attempted. */
+            until: string;
+        };
         RouteRequest: {
             /**
              * @description One of the ids `GET /v1/destinations` reports.
@@ -5740,7 +5750,7 @@ export interface components {
         };
         Action: {
             /** @enum {string} */
-            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
+            kind: "captured" | "amended" | "revised" | "tagged" | "untagged" | "suggestion-added" | "suggestion-accepted" | "suggestion-rejected" | "artifact-added" | "artifact-corrected" | "archived" | "unarchived" | "delivery-held" | "routed" | "delivery-failed" | "delivery-cancelled" | "delivery-withdrawn" | "delivery-reinstated" | "destination-created" | "destination-renamed" | "destination-reconfigured" | "destination-retired" | "destination-unretired" | "destination-deleted" | "template-created" | "template-edited" | "template-deleted" | "template-fired" | "pool-setting-changed" | "enrichment-requested" | "work-failed" | "work-abandoned" | "assets-released" | "purged" | "actions-cleared";
             id: string;
             subject?: string;
             /** @description The batch the action was part of, as the client that made the batch named it. */

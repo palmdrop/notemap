@@ -50,7 +50,9 @@ export function nothingMatches(
     anyOf(filter.destinations.map((id) => `to ${destinationName(id)}`)),
     anyOf(filter.sources.map((source) => `from ${source}`)),
   ].filter((band) => band !== "");
-  const names = [...bands, ...filter.tags];
+  const words =
+    filter.words.length === 0 ? [] : [`“${filter.words.join(" ")}”`];
+  const names = [...words, ...bands, ...filter.tags];
 
   const which =
     names.length === 1 || bands.length > 0

@@ -55,11 +55,14 @@ export function startDeliveryRunner(
       }
     | { readonly kind: "settled"; readonly outcome: WorkOutcome };
 
-  async function prepare(record: RoutingRecordId): Promise<Prepared> {
+  async function prepare(
+    record: RoutingRecordId,
+    attempt: number,
+  ): Promise<Prepared> {
     try {
       // Absent means there is nothing left to carry out: the record was
       // cancelled, its item purged, or it has already landed.
-      const attemptable = await pool.routing.deliveryFor(record);
+      const attemptable = await pool.routing.deliveryFor(record, attempt);
       if (attemptable === undefined) {
         return { kind: "settled", outcome: { kind: "succeeded" } };
       }
@@ -100,7 +103,7 @@ export function startDeliveryRunner(
     const subject = lease.job.subject;
     if (subject.kind !== "routing-record") return wrongSubject(lease);
 
-    const prepared = await prepare(subject.record);
+    const prepared = await prepare(subject.record, lease.job.attempt + 1);
     if (prepared.kind === "settled") return prepared.outcome;
 
     const { destination, delivery } = prepared;

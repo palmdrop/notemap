@@ -114,7 +114,7 @@ const RESERVED = {
   arguments: { path: "inbox/a-thought.md" },
 };
 
-/** An item whose delivery never landed: a reservation nothing has left through. */
+/** An item whose delivery was tried and never landed: a reservation nothing has left through. */
 async function reserved() {
   const opened = harness(
     undefined,
@@ -129,6 +129,7 @@ async function reserved() {
 
   const item = await captured(opened.pool);
   const record = succeeded(await opened.pool.routing.route(item.id, RESERVED));
+  await opened.deliverDue();
   return { ...opened, item, record };
 }
 

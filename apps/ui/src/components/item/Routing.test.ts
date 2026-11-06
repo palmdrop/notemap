@@ -1,10 +1,16 @@
-import { render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { afterEach, expect, test, vi } from "vitest";
 
-import { json, routeOf } from "@notemap/client/testing";
+import { asked as sentTo, json, routeOf } from "@notemap/client/testing";
 
+import { firings } from "$lib/firings.svelte";
 import { pool } from "$testing/pool";
 import Routing from "./Routing.svelte";
+
+afterEach(() => {
+  firings.clear();
+  vi.useRealTimers();
+});
 
 const PENDING = {
   id: "rec",
@@ -100,4 +106,63 @@ test("reads a pending create as a path, and as its folder until it has a filenam
     await screen.findByText("…/a-rather-long-filename-for-the-day.md"),
   ).toBeDefined();
   expect(screen.getByText("…/2026/")).toBeDefined();
+});
+
+/** Not landed, so the person may still call it off; once landed it is withdrawn instead. */
+test("offers cancel on a record not yet delivered, and nothing on one that was", async () => {
+  const transport = pool((request) =>
+    routeOf(request) === "POST /v1/routing/rec/cancel"
+      ? new Response(null, { status: 204 })
+      : json(200, { values: [] }),
+  );
+  let undone = 0;
+
+  const { unmount } = render(Routing, {
+    summary: undefined,
+    records: [{ ...PENDING, state: "delivered" }],
+  });
+  await screen.findByRole("link");
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  unmount();
+
+  render(Routing, {
+    summary: undefined,
+    records: [PENDING],
+    onundone: () => (undone += 1),
+  });
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+
+  await vi.waitFor(() => expect(undone).toBe(1));
+  expect(sentTo(transport).map(routeOf)).toContain(
+    "POST /v1/routing/rec/cancel",
+  );
+});
+
+/** What the row offers is what the route in flight offers, read from the same firing. */
+test("offers undo in the window, nothing from its edge while it is attempted, and cancel once retrying", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.parse("2026-08-19T22:14:00.000Z"));
+  pool(() => json(200, { values: [] }));
+  const until = Date.parse("2026-08-19T22:14:05.000Z");
+  firings.opened({ record: "rec", item: "held", name: "Vault", until });
+
+  render(Routing, { summary: undefined, records: [PENDING] });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+
+  // The second the window closes: never `cancel` on the way to nothing.
+  await vi.advanceTimersByTimeAsync(4_000);
+  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  await vi.advanceTimersByTimeAsync(1_000);
+  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+
+  firings.retrying("rec");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
+
+  // Landed, it is read again; until then the row offers nothing.
+  firings.closed("rec");
+  await vi.advanceTimersByTimeAsync(0);
+  expect(screen.queryByRole("button", { name: /undo|cancel/ })).toBeNull();
 });

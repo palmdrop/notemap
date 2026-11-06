@@ -1,9 +1,23 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
 
+- 2026-11-01 — **The feed, the queue and the archive can be read through words.** Every term must
+  appear in an item's text or attachments' names, in any case and with or without accents, in any
+  script. The store keeps each item's words folded beside it.
+  ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 70](../adr/0070-a-filter-may-name-words.md))
+- 2026-11-01 — **Every decision that makes a delivery waits the undo window.** `route` reserves and
+  enqueues the delivery due a configured window later, and attempts nothing inline; the record it
+  answers carries `until`, and the decision's `delivery-held` entry says the same. A refusal arrives when
+  the job runs. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))
+- 2026-11-01 — **A note named after its capture is a short slug, and a taken one is never appended
+  to.** Every script keeps its letters and marks; under `create-or-append` onto a folder, the note
+  goes beside a taken name instead of into it. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))
 - 2026-10-30 — **An action-log entry may name the batch it was written by.** `tag`, `untag`,
   `archive` and `unarchive` take an optional batch id, recorded on every entry they write. A
   reservation a batch's tag fired keeps the id too, which is the one place core reads it back.
@@ -116,7 +130,7 @@
   answers how long until the earliest unleased job of those kinds that is not yet claimable becomes
   so — a fired template's window, a retry's backoff — measured on the pool's own clock, and nothing
   where none is waiting. The daemon's runner asks after every pass, and the delivery runner also
-  whenever the pool records `template-fired`; where the answer falls before its next poll, it
+  whenever the pool records `template-fired` (and, since 2026-11-01, `delivery-held`); where the answer falls before its next poll, it
   claims at that moment rather than on the poll after it. A trigger tag's delivery no longer waits
   up to a poll past its window, however the two are configured.
 - 2026-09-30 — **A reservation nothing has tried does not seal a capture.** An edit reaching an
@@ -897,7 +911,8 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   routing records, and the host or client asks. Core is a primitive API; a confirmation ritual
   is interface policy and belongs where the interface is.
 - **A delivery that lands after its item is purged leaves the trace and not the state** (added
-  2026-08-13). Delivery happens outside any transaction, so an item can be purged between the
+  2026-08-13; since 2026-11-01 the delivery is always a job, and one whose item is gone finds nothing
+  to carry out). Delivery happens outside any transaction, so an item can be purged between the
   attempt and the write that records it. The routing record is item state and dies with the item,
   which is what purge already does to routing records; the action is a trace, and the action log
   carries no foreign key to items precisely so it outlives them. So the `routed` entry is appended
@@ -933,6 +948,15 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   item carries is an empty read rather than a refusal, a filter being a question and not a claim
   that the tag exists. The key and the position are the surface's own, so a filtered read pages
   on the same terms and a position continues from where it names whatever the filter.
+- **The filter also takes words** (added 2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md)), on the feed, the queue and the
+  archive. An item's words are every string its payload's content holds and its attachments'
+  filenames; they and the filter's are folded alike — lower-cased, accents dropped, whitespace made
+  one space — and the filter's split into terms, every one of which must appear somewhere in the
+  item's, inside a word too. Blank words are no filter, and over 200 UTF-16 code units of them, as sent, is refused as
+  `words-too-long`. Nothing is ranked: the key and the position are the surface's own. The store
+  holds each item's folded words beside it, written with the item, and answers the condition
+  behind its port; the fold is one function, `@notemap/text`'s, which the client applies over its
+  cache by the same rule.
 - **The feed's filter also takes states, destinations and sources** (added 2026-10-20). A state is
   `unprocessed`, `routed` (holding a routing record, pending included and withdrawn not), `archived` or `revised`
   (something was revised from it), on the same clauses that make an item processed. A destination
@@ -1125,11 +1149,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   routing record", which was written when the only destination in prospect was a local filesystem.
   Most destinations are remote and unreachable for ordinary reasons, and a decision that evaporates
   because a server was restarting is one the person has to remember to make again.
-- A routing record is minted as a **reservation** the moment the decision is made, and core
-  attempts delivery **once, inline**. Delivered resolves the reservation and fills in the pointer;
-  a destination that refuses removes it and the call is refused; a destination that could not be
-  reached leaves it pending and enqueues a **delivery job**. A destination that is up therefore
-  answers immediately, and only one that was genuinely absent becomes deferred work.
+- A routing record is minted as a **reservation** the moment the decision is made, with a
+  **delivery job** due the **undo window** later *(amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md); core attempted
+  delivery once inline, and only a destination genuinely absent became deferred work)*. Nothing is
+  attempted inline on any path. The call answers the pending record and `until`, when the window
+  closes; delivered resolves the reservation and fills in the pointer, and a destination that
+  refuses removes it, both when the job runs. A window of `0` makes the job due at once. The window
+  is host configuration beside the trigger window, and shorter: a person is looking.
 - **A record's time is when the decision was made**, not when the bytes arrived (stated 2026-08-17).
   The two were the same thing until a delivery could be deferred, and they are now days apart at the
   extreme. The decision is what the record exists to remember, and it is what orders an item's
@@ -1139,24 +1165,13 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   destination and the capability. Under the synchronous model the arguments were consumed by the
   one attempt; a delivery that is carried out later has to be assembled from the record alone, and
   a reservation that could not say what it was pointed at would be a decision nothing could act on.
-- **Core imposes no timeout on the inline attempt.** A default is interface policy, and core is a
-  primitive API; the caller bounds it with the `AbortSignal` that reaches the adapter. A host that
-  passes none waits as long as its destination takes.
-- **An inline attempt that neither answers nor refuses is refused as unknown** (added 2026-08-17).
-  An adapter that throws, or a caller's signal firing mid-attempt, proves nothing either way —
-  aborting stops the waiting, not the destination — so the call is refused as
-  `delivery-outcome-unknown`, no routing record is written, and the item stays in the queue it never
-  left. Nothing is enqueued, because the same evidence rule that abandons a vanished attempt forbids
-  retrying this one. The attempt is appended to the action log under the same code, so a person
-  about to route again can find out that material may already have arrived.
-- **A host that dies during an inline attempt leaves no trace, and this is a known limit.** The
-  deferred path survives it because a reservation and its job are durable before the attempt begins;
-  inline there is nothing written yet, and nothing can record a crash after the fact. The item is
-  left in the queue, which is the safe direction — what is lost is the warning, not the material.
-  Closing it would mean minting the reservation, its job and its lease before the attempt and
-  resolving them after, which is a different shape from the one
-  [ADR 17](../adr/0017-delivery-is-asynchronous-and-retried-on-evidence.md) settled and would want a
-  decision of its own.
+- **Core imposes no timeout on describing the destination**, the one check a route makes that may
+  go to it. The caller bounds it with the `AbortSignal`. *(Amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md):
+  this bounded the inline attempt too.)*
+- *Retired 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*:
+  `delivery-outcome-unknown` as a refusal of the route call, and the known limit of a host dying
+  mid-attempt, both of which belonged to the inline attempt. The reservation and its job are durable
+  before any attempt begins.
 - **Retry is keyed on evidence, not on failure** (narrowed 2026-09-08,
   [ADR 41](../adr/0041-a-delivery-that-cannot-be-confirmed-may-duplicate.md)). `unreachable` means
   the adapter **could not confirm** that anything was delivered, so the job is retried with backoff.
@@ -1175,24 +1190,20 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   place ([ADR 53](../adr/0053-a-reservation-nothing-has-tried-does-not-seal-a-capture.md)). So a
   host releases a delivery lease only where it has not asked for the delivery under it; one it has
   asked for is completed with an outcome, `unreachable` where it cannot say more.
-- **An edit arriving during an inline attempt amends, and this is a known limit** (added
-  2026-09-30). The attempt reads the item before any record exists, so the item is still unprocessed
-  to an edit landing meanwhile, and the record that follows names a delivery of the words the edit
-  replaced. It is the same window as a host dying mid-attempt, and closing it wants the same
-  reshaping.
+- **An edit arriving inside the window amends** (2026-11-01; until then an edit arriving during an
+  inline attempt amended, a known limit). A reservation nothing has tried does not seal a capture
+  (ADR 53), so the delivery carries the edited words when it runs.
 - **Delivery retries are bounded**, unlike mirror work. Mirroring retries forever because giving up
   does not change the fact that material is unmirrored. Giving up on a delivery does change
   something: it hands the decision back, so the person can repair their configuration or route
   somewhere else.
-- **The inline attempt is the first attempt** (added 2026-08-17), and the bound counts it. What
-  `maxAttempts` limits is the number of times a destination is handed one item's material, which for
-  something that cannot be repeated safely is the number worth bounding — not how much of that
-  happened to be done by a job. So the count a person reads on the abandoned surface is the count
-  that was made. *Amended 2026-09-07 for one path*: a **template fired by its trigger tag** makes no
-  inline attempt, so its job's first attempt is the first, numbered from zero. Every other route —
-  including one made by taking a template by hand — is unchanged.
-- **Every failed attempt at a delivery appends the same kind of entry**, whether it was the inline
-  one or a job's, numbered in one sequence. A person reading an item's history is reading one run of
+- **A job's first attempt is the first attempt**, numbered from zero, and the bound counts every
+  one. What `maxAttempts` limits is the number of times a destination is handed one item's material,
+  which for something that cannot be repeated safely is the number worth bounding. So the count a
+  person reads on the abandoned surface is the count that was made. *(Amended 2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md):
+  until then a route made by hand attempted inline, and that attempt was the first; since 2026-09-07
+  a fired template's job started from zero.)*
+- **Every failed attempt at a delivery appends the same kind of entry**, numbered in one sequence. A person reading an item's history is reading one run of
   attempts on one destination; splitting it by which side of the queue it happened on would be
   recording an implementation detail as though it were a fact about the item. Giving up appends
   `work-abandoned` beside the last of them, which is what every kind of work lands on, naming the
@@ -1247,7 +1258,9 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   the artifacts, and every asset the payload and artifacts reference, resolved and openable as a
   stream. It carries neither prior routing records — where else an item went is another
   destination's business — nor pending suggestions, which are regenerable and meaningless
-  undecided.
+  undecided. It also carries which attempt it is, from 1 *(2026-11-03)*: past the first, what a
+  destination already holds may be this delivery's own earlier write, and only the adapter can
+  look.
 - **The delivery is not the mirror record**, although the two carry nearly the same material. The
   mirror record's contract is that a pool can be rebuilt from it
   ([ADR 15](../adr/0015-the-mirror-record-is-authoritative-markdown-is-a-rendering.md)); a change
@@ -1664,9 +1677,14 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   nothing. The window is host configuration, beside the retry policy and the sweep's grace. Its
   whole purpose is that a shell can offer a real *cancel* — inline, against a mounted vault, the
   note exists before the notice is on screen.
+  The daemon's default is 10 seconds *(2026-11-03; 15 before, felt as lateness, which ADR 37's
+  revisit note foresaw)*.
 - **A route made by hand keeps the inline attempt.** What is bought here is a window on the gesture
   that has no review in it; paying for it everywhere would slow every reviewed decision to serve a
-  mistake that surface does not make.
+  mistake that surface does not make. *Superseded 2026-11-01 ([ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: a one-tap template route
+  from the item has no review either, so every decision that makes a delivery waits a window. A
+  decision by hand writes a `delivery-held` entry carrying `until`; the landing writes the `routed`
+  entry it always did, carrying the pointer.
 - **The tag and the reservation commit in one transaction.** There is no I/O to keep out of it,
   because the attempt is a job by construction. So *tagged but not reserved* is a state that cannot
   exist and nothing has to sweep for it — including for a tag that arrived from a client's outbox,
@@ -2143,6 +2161,11 @@ Recorded in full under [docs/adr/](../adr/). In brief:
   was restarting is one the person must make again. One inline attempt keeps interactive feedback;
   only a destination genuinely not reached becomes a job. Delivery is not idempotent, so an
   automatic retry needs proof that nothing was delivered.
+- **[Every decision that makes a delivery waits a short
+  window](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md)** — with one-tap
+  template routes from the item there is no review left to stand in for one, and `undo` is honest
+  only while nothing has been written. Amends ADR 17's inline attempt and ADR 37's exception for a
+  hand route.
 - **[A job's subject names what it is
   about](../adr/0018-a-jobs-subject-names-what-it-is-about.md)** — an optional field per job kind
   is a shape that rots, each with its own paired constraint and no way to say which combinations
@@ -2208,6 +2231,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
       `research/{{captured_at}}.md` is a filename they chose, expanded per item — but that is an
       answer somebody had to write down. The general case, for a capture nobody has configured a
       template for, is still a title nobody has.
+      *Narrowed 2026-11-01*
+      ([ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)): what
+      the derived name is, for every script, is settled, and a taken one no longer files one capture
+      into another's note. A title is still what nobody has.
 - [ ] 2026-08-13 — Whether a capability may declare itself idempotent, and so opt into retrying a
       delivery whose outcome is unknown. ADR 17 abandons those deliberately, being conservative for
       adapters that can promise nothing. A content-addressed store or an API taking an idempotency
@@ -2254,6 +2281,10 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Read through a filter of two tags, the feed, the queue and the archive each answer only the items
   carrying both, paged from a position in either order; a tag nothing carries answers an empty
   page, and a tag that trims to nothing is refused as `tag-invalid`.
+- Read through words, the feed, the queue and the archive each answer only the items whose text or
+  attachment names hold every term, without regard to case or accents, in any script; an item
+  amended answers to its new words and not its old; words over 200 UTF-16 code units are refused as
+  `words-too-long`.
 - Read through `routed` and `archived` and a tag, the feed answers the items carrying the tag that
   are routed, archived or both; through a destination, only items holding a record naming it,
   pending included; through a source, only items captured through it.
@@ -2264,19 +2295,20 @@ Recorded in full under [docs/adr/](../adr/). In brief:
 - Every item answers `processedAt`, equal to its capture time where nothing has processed it.
 - Tagging an item that has been routed and revised succeeds, and the tag does not appear on the
   revision.
-- Routing to a reachable destination answers a delivered record with a pointer, and enqueues no
-  job.
-- Routing to an unreachable destination answers a pending record, leaves the item out of the queue,
-  and enqueues a delivery job that succeeds once the destination returns.
+- Routing answers a pending record and `until`, takes the item out of the queue, and attempts
+  nothing until the undo window has closed; the delivery job then lands it with a pointer.
+- Cancelling inside the window removes the reservation and returns the item, and nothing reaches the
+  destination; cancelling after it landed is refused as `not-pending`.
+- Routing to an unreachable destination leaves the record pending after its first attempt, and the
+  delivery job succeeds once the destination returns.
 - A destination that refuses a delivery abandons it on the first attempt, leaves no routing record,
-  and leaves the item in the queue.
+  and returns the item to the queue.
 - A delivery abandoned after exhausting its retries removes its routing record, returns the item to
   the queue at its original position, and appears on the abandoned-work surface naming that item.
 - A delivery whose lease expired with no outcome reported is abandoned rather than retried, and is
   distinguishable on that surface from one the destination refused.
 - Cancelling a pending delivery removes its record and returns the item to the queue.
-- An item purged while a delivery of it is in flight has the delivery's `routed` entry in its
-  action log and no routing record, and the call is refused as purged.
+- An item purged inside its window is never handed to the destination.
 - An adapter receives every asset the payload and artifacts reference, under the filename it was
   uploaded with, and can read the bytes without reaching any store.
 - A capability that accepts no asset-bearing payload type never causes an asset stream to be

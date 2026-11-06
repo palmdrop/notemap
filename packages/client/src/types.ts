@@ -33,6 +33,7 @@ import type {
   RouteRequest,
   RoutingPreview,
   Presence,
+  RoutedRecord,
   RoutingRecord,
   RoutingTemplate,
   RoutingTemplateId,
@@ -347,7 +348,8 @@ export interface ActionsApi {
  * was made. A shell disables these rather than queuing them.
  */
 export interface RoutingApi {
-  route(item: ItemId, request: RouteRequest): Promise<RoutingRecord>;
+  /** Pending until it lands, which the log says: nothing is attempted before `until`. */
+  route(item: ItemId, request: RouteRequest): Promise<RoutedRecord>;
   /**
    * Indicative rather than binding: the delivery converts again when it runs.
    * Not an outbox operation and not cached.
@@ -499,6 +501,12 @@ export interface Client {
   /** `supplied` is for the asked arguments of the template a trigger tag fires. */
   tag(item: ItemId, tag: string, supplied?: SuppliedArguments): Promise<void>;
   untag(item: ItemId, tag: string): Promise<void>;
+  /**
+   * Takes back a `tag` of this item that has not been sent, as though it was
+   * never made. One already on its way is waited for, so a request made after
+   * this answers reaches the pool behind it.
+   */
+  recall(item: ItemId, tag: string): Promise<void>;
   /**
    * Tags, untags, archives or unarchives every item, as one outbox operation
    * and one request: at most `MAX_BATCH` items. Answers the batch's id, which every log entry it

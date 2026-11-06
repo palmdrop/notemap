@@ -9,6 +9,8 @@
   import Turning from "$components/primitives/marks/Turning.svelte";
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
+  import { cancelRouting } from "$lib/firing";
+  import { firings } from "$lib/firings.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
@@ -69,6 +71,11 @@
   type Line = Went & {
     readonly href?: string;
     readonly taken?: RoutingRecord;
+    /** A delivery not landed yet, and what it offers now, as its route in flight does. */
+    readonly offers?: {
+      readonly record: RoutingRecord;
+      readonly label: "undo" | "cancel";
+    };
   };
 
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
@@ -97,10 +104,9 @@
             reading,
           ),
           href: recordHref(record.item, record.id),
-          // Only a decision the person made by hand is theirs to take back:
-          // a delivery is the pool's, and cancelling one it has carried out
-          // would be undoing something that has already happened elsewhere.
-          ...(target.kind === "user" ? { taken: record } : {}),
+          // A delivery the pool has carried out has happened elsewhere and is
+          // withdrawn, never taken back.
+          ...(target.kind === "user" ? { taken: record } : offered(record)),
         };
       });
     }
@@ -110,12 +116,23 @@
       : wentWhere(summary, nameOf).map((name) => ({ name }));
   });
 
+  function offered(record: RoutingRecord): Pick<Line, "offers"> {
+    if (record.state !== "pending") return {};
+    const label = firings.offer(record.id);
+    return label === undefined ? {} : { offers: { record, label } };
+  }
+
   const summarized = $derived(records.length === 0 && summary !== undefined);
 
   /** A summary counts what has not landed without saying which, so its mark ends the line. */
   const waiting = $derived(
     summarized && summary !== undefined ? summary.pending : 0,
   );
+
+  async function cancel(record: RoutingRecord, name: string) {
+    await cancelRouting(record.id, record.item, name);
+    onundone?.();
+  }
 
   async function undo(record: RoutingRecord) {
     said = "";
@@ -222,6 +239,13 @@
             type="button"
             onclick={() => void undo(record)}
             class="shrink-0 hover:underline">undo</button
+          >
+        {:else if line.offers !== undefined}
+          {@const { record, label } = line.offers}
+          <button
+            type="button"
+            onclick={() => void cancel(record, line.name)}
+            class="shrink-0 hover:underline">{label}</button
           >
         {/if}
       </div>

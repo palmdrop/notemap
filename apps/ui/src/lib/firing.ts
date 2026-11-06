@@ -1,29 +1,44 @@
-import type { RoutingRecord, RoutingTemplate } from "@notemap/client";
+import {
+  saidBy,
+  type RoutedRecord,
+  type RoutingRecord,
+  type RoutingTemplate,
+} from "@notemap/client";
 
 import { itemHref } from "$components/item/href";
 
 import { whereOf, type Supplied } from "./asked";
 import { client } from "./client";
+import { nameOf as destinationName } from "./destinations";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
-import { cancelledKey, keyFor } from "./routing";
+import { cancelledKey, keyFor, placeIn, type Reading } from "./routing";
 import { tallying } from "./tallies";
 import { nameOf, triggeredBy } from "./templates";
 
 /**
- * Calling off a route a trigger tag made, inside the window it waits out. The
- * pool takes the tag off with the reservation, so the item comes back to the
- * queue able to be filed by that tag again.
+ * Calls off a pending record and ends its route in flight. Where a trigger tag
+ * made it, the pool takes the tag off with the reservation, so the item comes
+ * back to the queue able to be filed by that tag again. Throws what the pool
+ * refused.
  */
+export async function callOff(record: string, item: string): Promise<void> {
+  // Arriving once the record is gone, the tag would find nothing to absorb it and file the item again.
+  const recalls = firings.open.find((one) => one.record === record)?.recalls;
+  if (recalls !== undefined) await client.recall(item, recalls);
+
+  await client.routing.cancel(record, item);
+  firings.closed(record);
+}
+
+/** Calling off a route in flight, and saying so in the status line. */
 export function cancelRouting(
   record: string,
   item: string,
   name?: string,
-): void {
-  void client.routing
-    .cancel(record, item)
+): Promise<void> {
+  return callOff(record, item)
     .then(() => {
-      firings.closed(record);
       notices.settled(keyFor(record));
       // Said at once, under the name the log's own entry arrives with.
       notices.raise({
@@ -33,8 +48,11 @@ export function cancelRouting(
         key: cancelledKey(record),
       });
     })
-    .catch(() => {
-      notices.raise({ what: "could not cancel", alarm: true });
+    .catch((error: unknown) => {
+      notices.raise({
+        what: `could not cancel: ${saidBy(error)}`,
+        alarm: true,
+      });
     });
 }
 
@@ -58,9 +76,41 @@ export function cancelBatch(batch: string): void {
         if (said !== undefined) notices.raise(said);
       }
     })
-    .catch(() => {
-      notices.raise({ what: "could not cancel", alarm: true });
+    .catch((error: unknown) => {
+      notices.raise({
+        what: `could not cancel: ${saidBy(error)}`,
+        alarm: true,
+      });
     });
+}
+
+/**
+ * A route this shell just made, drawn in flight at once: the log says the same
+ * a poll later, and the window is shorter than that.
+ */
+export function routedHere(record: RoutedRecord, reading?: Reading): void {
+  const target = record.target;
+  if (target.kind !== "destination") return;
+
+  const place = placeIn(record, undefined, reading);
+  const applied = record.applied;
+  const tag =
+    applied === undefined || applied.firedByTag
+      ? undefined
+      : client.templates.held.find((one) => one.id === applied.template)
+          ?.triggerTag;
+  firings.opened({
+    record: record.id,
+    item: record.item,
+    name:
+      record.applied === undefined
+        ? destinationName(target.destination)
+        : nameOf(record.applied.template),
+    ...(place === undefined ? {} : { where: place }),
+    until: Date.parse(record.until),
+    href: itemHref(record.item),
+    ...(tag === undefined ? {} : { recalls: tag }),
+  });
 }
 
 /** Tags an item, and says what the tag filed where it filed something. */

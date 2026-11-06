@@ -4,7 +4,10 @@
 
 - [ ] destination fields should provide succinct placeholder texts
 
-- [ ] fuzzy search for captures, feed, tags, other views
+- [x] fuzzy search for captures, feed, tags, other views — the queue, the feed and the archive are
+      searched by their words, forgiving of case and accents
+      ([plan](plans/features-from-the-mobile-rethink.md)). Not done: typo-tolerant or ranked
+      search, and search in the log, settings or tags.
 
 - [ ] mobile view improvements (this might be deferred until we do the app?):
     - action button for adding a new capture

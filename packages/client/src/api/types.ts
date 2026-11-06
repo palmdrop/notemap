@@ -89,6 +89,8 @@ export type RouteRequest = components["schemas"]["RouteRequest"];
 export type RoutingPreview = components["schemas"]["RoutingPreview"];
 export type DeliveryOutput = components["schemas"]["DeliveryOutput"];
 export type RoutingRecord = components["schemas"]["RoutingRecord"];
+/** A decision just made: pending, and when its undo window closes and the delivery comes due. */
+export type RoutedRecord = components["schemas"]["RoutedRecord"];
 /** Whether what a record points at is still there. Never what is in it. */
 export type Presence = components["schemas"]["Presence"];
 export type RoutingTemplate = components["schemas"]["RoutingTemplate"];

@@ -146,5 +146,6 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
       artifact(at, overrides.item ?? "item-1", createdAt),
     ),
     assets,
+    attempt: 1,
   };
 }

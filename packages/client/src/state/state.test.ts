@@ -186,16 +186,55 @@ describe("a filter", () => {
     expect(
       filterOf({
         tags: [" kind/quote ", "kind/quote", ""],
+        words: ["  Café   rack", "cafe"],
         states: ["routed", "processed", "routed"],
         destinations: [" vault", ""],
         sources: ["memos", "memos"],
       }),
     ).toEqual({
       tags: ["kind/quote"],
+      words: ["cafe", "rack"],
       states: ["routed"],
       destinations: [" vault"],
       sources: ["memos"],
     });
+  });
+
+  it("keeps an item by its words as the pool does: text and attachment names, folded", () => {
+    const said = anItem("said", {
+      payload: {
+        type: "note",
+        content: { text: "Pasta at the Café", more: ["by the sea"] },
+        metadata: {},
+        assets: [{ slot: "photo", asset: "a1" }],
+      },
+      assets: [
+        {
+          id: "a1",
+          filename: "Hallway.png",
+          mime: "image/png",
+          blob: "b",
+          bytes: 3,
+        },
+      ],
+    });
+    const keeps = (words: string) =>
+      belongs(
+        "feed",
+        emptyPage("newest-first", filterOf({ words: [words] })),
+        said,
+      );
+
+    expect(keeps("CAFE sea")).toBe(true);
+    expect(keeps("hallway")).toBe(true);
+    expect(keeps("cafe mountain")).toBe(false);
+  });
+
+  it("is not whole with words, and does not count them", () => {
+    const filter = filterOf({ words: ["bike rack"] });
+    expect(isWhole(filter)).toBe(false);
+    expect(filterSize(filter)).toBe(0);
+    expect(isWhole(filterOf({ words: ["   "] }))).toBe(true);
   });
 
   it("counts everything it names, and is whole naming nothing", () => {

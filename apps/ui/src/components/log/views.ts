@@ -1,17 +1,24 @@
 import type { ActionKind } from "@notemap/client";
 
+import { UNDRAWN } from "$lib/kinds";
+
 export type View = {
   readonly name: string;
   readonly kinds: readonly ActionKind[];
 };
 
 /**
- * Every kind is in a view: the union of the sets must be the whole of
- * `ActionKind`, so a kind the pool grows fails here rather than falling out of
+ * Every kind the log draws is in a view: the union of the sets must be the
+ * whole of them, so a kind the pool grows fails here rather than falling out of
  * every reading but `everything`.
  */
 type Covering<T extends readonly View[]> =
-  ActionKind extends T[number]["kinds"][number] ? T : never;
+  Exclude<
+    ActionKind,
+    (typeof UNDRAWN)[number]
+  > extends T[number]["kinds"][number]
+    ? T
+    : never;
 
 function covering<const T extends readonly View[]>(views: Covering<T>): T {
   return views;
@@ -27,7 +34,6 @@ export const VIEWS: readonly View[] = covering([
     name: "routing",
     kinds: [
       "routed",
-      "template-fired",
       "delivery-failed",
       "delivery-cancelled",
       "delivery-withdrawn",

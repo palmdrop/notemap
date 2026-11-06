@@ -683,6 +683,13 @@ export function createClient(config: ClientConfig): Client {
         ...(supplied === undefined ? {} : { arguments: supplied }),
       }),
     untag: (item, tag) => mutate({ kind: "untag", item, tag }),
+    recall: (item, tag) =>
+      after(() =>
+        outbox.recall(
+          item,
+          (operation) => operation.kind === "tag" && operation.tag === tag,
+        ),
+      ),
 
     async batch(items, action) {
       // Refused here rather than by the pool: queued, a batch over the limit

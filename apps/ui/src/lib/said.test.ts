@@ -15,6 +15,9 @@ const tags = (...names: string[]) => filterOf({ tags: names });
 
 test("an emptied filter names its tags as a sentence does", () => {
   expect(nothingMatches(tags("a"))).toBe("Nothing matches a.");
+  expect(nothingMatches(filterOf({ words: ["Bike  rack"] }))).toBe(
+    "Nothing matches “bike rack”.",
+  );
   expect(nothingMatches(tags("a", "b"))).toBe("Nothing matches both a and b.");
   expect(nothingMatches(tags("a", "b", "c"))).toBe(
     "Nothing matches all of a, b and c.",

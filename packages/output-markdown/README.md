@@ -62,13 +62,18 @@ composer draws no browse button for an answer it would refuse.
 ## Naming
 
 `oneSegment` flattens a name that was never promised to be one — an uploaded filename may be
-`../../authorized_keys`. Letters and digits of any script survive, because transliterating would be
-notemap deciding somebody's language is wrong.
+`../../authorized_keys`. Letters, their marks and digits of any script survive, because
+transliterating would be notemap deciding somebody's language is wrong. It is normalised to NFC and
+cut on a grapheme, within 120 of them and 200 bytes.
 
-`alternatives` yields `name`, `name-1`, `name-2`, keeping the extension. It is how a name that is
+`numbered` gives `name`, `name-1`, `name-2`, keeping the extension. It is how a name that is
 taken is answered without overwriting whoever took it; what "taken" means is the adapter's, since
 only it can ask.
 
 `deriveFilename` is what to call a note nobody named. It is **weak, and knowingly**: the domain has
-no title, so it is the first line of the longest string the payload carries, sanitised and
-truncated, and the item id when there is no prose at all.
+no title, so it is the first line of the longest string the payload carries, made a slug and cut
+at a word, and the item id when there is no prose at all
+([ADR 68](../../docs/adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md)).
+The slug is lower-cased and NFC, drops quotation marks and apostrophes, and makes every other run of
+anything but letters, marks and digits one `-`. The cut is the last word boundary within 40
+graphemes and 160 bytes, found by `Intl.Segmenter`, or a grapheme where the first word is longer.

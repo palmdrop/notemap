@@ -100,10 +100,31 @@ describe("what committing the line would do", () => {
 describe("a blank leaf is not a gap", () => {
   test("derives the name from what the item says", () => {
     expect(forecastOf(VAULT, "projects/notemap/", SAID)).toMatchObject({
-      leaf: "Picker needs a trail.md",
+      leaf: "picker-needs-a-trail.md",
       derived: true,
       word: "create",
     });
+  });
+
+  test("draws create under the free name where the derived one is taken", () => {
+    const held: Level[] = [
+      {
+        scope: "",
+        entries: [
+          file("picker-needs-a-trail.md", "picker-needs-a-trail.md"),
+          file("picker-needs-a-trail-1.md", "picker-needs-a-trail-1.md"),
+        ],
+      },
+    ];
+
+    const seen = forecastOf(held, "", SAID);
+
+    expect(seen).toMatchObject({
+      word: "create",
+      leaf: "picker-needs-a-trail-2.md",
+      derived: true,
+    });
+    expect(seen?.beside).toBeUndefined();
   });
 
   test("falls back to the item where it says nothing nameable", () => {

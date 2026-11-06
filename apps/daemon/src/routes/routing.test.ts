@@ -63,6 +63,31 @@ async function route(
   });
 }
 
+/** What the item's routing holds for one record, as the pool now reads it. */
+async function recordOf(host: Vaulted, item: string, id: string) {
+  const held = (await body(
+    await host.app.request(`/v1/items/${item}/routing`),
+  )) as { values: Record_[] };
+  return held.values.find((one) => one.id === id);
+}
+
+/** Routed, then carried out as the runner does once the window closes: the record as it then stands. */
+async function landed(
+  host: Vaulted,
+  item: string,
+  args?: unknown,
+): Promise<Record_> {
+  const response = await route(host, item, args);
+  if (response.status !== 200) {
+    throw new Error(`refused: ${await response.text()}`);
+  }
+  const decided = (await body(response)) as Record_;
+  await host.deliver();
+  const record = await recordOf(host, item, decided.id);
+  if (record === undefined) throw new Error("the delivery was given up on");
+  return record;
+}
+
 async function only(host: Pick<Daemon, "app">): Promise<string> {
   const [item] = await captureMany(host.app, 1);
   if (item === undefined) throw new Error("expected a capture");
@@ -221,23 +246,30 @@ describe("an item's routing summary, on every row it appears in", () => {
 });
 
 describe("POST /v1/items/{id}/route", () => {
-  it("delivers to a folder that is there, and names the file it landed at", async () => {
+  it("answers the decision pending, and lands it once the window closes", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
 
     const response = await route(host, item);
     expect(response.status).toBe(200);
-
-    const record = (await body(response)) as Record_;
-    expect(record).toMatchObject({
+    const decided = (await body(response)) as Record_ & { until: string };
+    expect(decided).toMatchObject({
       item,
+      state: "pending",
+      until: expect.any(String) as unknown as string,
+      target: { kind: "destination", destination: host.vault.id },
+    });
+    expect(decided.pointer).toBeUndefined();
+
+    expect(await host.deliver()).toBe(1);
+    const record = await recordOf(host, item, decided.id);
+    expect(record).toMatchObject({
       state: "delivered",
       pointer: "inbox/a-thought.md",
-      target: { kind: "destination", destination: host.vault.id },
     });
 
     const written = await readFile(
-      join(host.vaultRoot, record.pointer ?? ""),
+      join(host.vaultRoot, record?.pointer ?? ""),
       "utf8",
     );
     expect(written).toContain("a thought");
@@ -256,7 +288,7 @@ describe("POST /v1/items/{id}/route", () => {
     expect(await queued(host)).toEqual([]);
   });
 
-  it("refuses a traversal with the destination's own detail, and writes nothing", async () => {
+  it("hands a traversal back once the destination refuses it, and writes nothing", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
 
@@ -264,13 +296,17 @@ describe("POST /v1/items/{id}/route", () => {
       directory: "../..",
       filename: "escaped.md",
     });
+    expect(response.status).toBe(200);
+    await host.deliver();
 
-    expect(response.status).toBe(422);
-    expect(await body(response)).toMatchObject({
-      error: { code: "rejected-by-destination" },
-    });
     // Refused means abandoned at once, so the item is still to be decided.
     expect(await queued(host)).toEqual([item]);
+    const logged = (await body(
+      await host.app.request(`/v1/actions?item=${item}`),
+    )) as { values: { kind: string; detail: Record<string, unknown> }[] };
+    expect(
+      logged.values.find((entry) => entry.kind === "delivery-failed")?.detail,
+    ).toMatchObject({ failure: { code: "rejected-by-destination" } });
   });
 
   it("refuses a capability the destination never declared, without touching the disk", async () => {
@@ -364,11 +400,13 @@ describe("a route carrying words of its own", () => {
     const host = await vaulted("ready");
     const item = await only(host);
 
-    const record = (await body(await rewrite(host, item, TIDIED))) as Record_;
+    const decided = (await body(await rewrite(host, item, TIDIED))) as Record_;
+    await host.deliver();
+    const record = await recordOf(host, item, decided.id);
 
-    expect(record.target).toMatchObject({ content: TIDIED });
+    expect(record?.target).toMatchObject({ content: TIDIED });
     const written = await readFile(
-      join(host.vaultRoot, record.pointer ?? ""),
+      join(host.vaultRoot, record?.pointer ?? ""),
       "utf8",
     );
     expect(written).toContain("a thought, tidied");
@@ -416,8 +454,7 @@ describe("withdrawing and reinstating over the wire", () => {
   }> {
     const host = await vaulted("ready");
     const item = await only(host);
-    const record = (await body(await route(host, item))) as Record_;
-    if (record.state !== "delivered") throw new Error("expected a delivery");
+    const record = await landed(host, item);
     return { host, item, record };
   }
 
@@ -477,7 +514,7 @@ describe("GET /v1/routing/{record}/presence", () => {
   it("finds the note the delivery made, and then finds it gone", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
-    const record = (await body(await route(host, item))) as Record_;
+    const record = await landed(host, item);
 
     const there = await host.app.request(`/v1/routing/${record.id}/presence`);
     expect(there.status).toBe(200);
@@ -536,7 +573,7 @@ describe("POST /v1/routing/{record}/cancel", () => {
   it("refuses a record that has already delivered", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
-    const record = (await body(await route(host, item))) as Record_;
+    const record = await landed(host, item);
 
     const response = await send(host.app, `/v1/routing/${record.id}/cancel`);
     expect(response.status).toBe(409);
@@ -600,7 +637,7 @@ describe("GET /v1/routing/{record}/output", () => {
     const host = await vaulted("ready");
     const item = await only(host);
 
-    const record = (await body(await route(host, item))) as Record_;
+    const record = await landed(host, item);
 
     expect(record.output).toEqual({
       content: {
@@ -616,7 +653,7 @@ describe("GET /v1/routing/{record}/output", () => {
   it("answers the bytes the destination wrote, inert and immutable", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
-    const record = (await body(await route(host, item))) as Record_;
+    const record = await landed(host, item);
 
     const response = await host.app.request(`/v1/routing/${record.id}/output`);
 
@@ -713,7 +750,7 @@ describe("POST /v1/items/{id}/route/preview", () => {
     const item = await only(host);
 
     const shown = (await body(await preview(host, item))) as Preview;
-    const record = (await body(await route(host, item))) as Record_;
+    const record = await landed(host, item);
 
     expect(
       await readFile(join(host.vaultRoot, record.pointer ?? ""), "utf8"),
@@ -736,7 +773,7 @@ describe("POST /v1/items/{id}/route/preview", () => {
   it("answers rejected where the delivery would be refused", async () => {
     const host = await vaulted("ready");
     const item = await only(host);
-    await route(host, item);
+    await landed(host, item);
 
     const shown = (await body(await preview(host, item))) as Preview;
 

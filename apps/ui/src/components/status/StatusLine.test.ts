@@ -479,6 +479,55 @@ test("does not repeat a landing this shell has already reported", async () => {
   expect(notices.said("record:r1")).toBe(true);
 });
 
+test("a landing made by hand offers to keep it as a template, and one a template made does not", async () => {
+  vi.useFakeTimers();
+  // The first read is the mark everything after it is counted from.
+  let logged = [anAction("1", "captured", {})];
+
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, { values: logged });
+    }
+    if (route === "GET /v1/destinations") {
+      return json(200, {
+        values: [{ id: "vault", name: "Vault", kind: "filesystem" }],
+      });
+    }
+    if (route === "GET /v1/items/one") return json(200, anItem("one"));
+    return quiet();
+  });
+  await client.destinations.load();
+
+  render(StatusLine);
+  await vi.advanceTimersByTimeAsync(100);
+
+  logged = [
+    anAction("2", "routed", {
+      record: "r1",
+      destination: "vault",
+      pointer: "a.md",
+    }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(notices.latest?.offer?.label).toBe("save as template");
+
+  logged = [
+    anAction("3", "routed", {
+      record: "r2",
+      destination: "vault",
+      pointer: "b.md",
+      template: "t1",
+      firedByTag: false,
+    }),
+    ...logged,
+  ];
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(notices.latest?.why).toBe("b.md");
+  expect(notices.latest?.offer).toBeUndefined();
+});
+
 test("says what was captured elsewhere, naming it once the client holds it", async () => {
   vi.useFakeTimers();
   let logged = [anAction("1", "routed", { record: "r0" })];
@@ -675,13 +724,23 @@ test("a fired template counts down on the line, with its cancel", async () => {
 
   expect(says("routing Research")).toBeDefined();
   expect(screen.getByText("15s")).toBeDefined();
+  // Inside the window the decision is the person's to take back.
+  expect(
+    screen.getByRole("button", { name: "undo routing Research" }),
+  ).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(5_000);
   expect(screen.getByText("10s")).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(10_000);
   expect(screen.queryByText(/^\d+s$/)).toBeNull();
-  // Still in flight, and still able to be called off.
+  // Still in flight, and being attempted: a cancel now would be refused.
+  expect(says("routing Research")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /routing Research/ })).toBeNull();
+
+  // The pool could not reach it and will try again: between attempts it can be called off.
+  firings.retrying("r1");
+  await vi.advanceTimersByTimeAsync(0);
   expect(
     screen.getByRole("button", { name: "cancel routing Research" }),
   ).toBeDefined();
@@ -696,6 +755,36 @@ test("a fired template counts down on the line, with its cancel", async () => {
   // Said at once rather than a poll later, and the log's copy adds nothing.
   expect(notices.latest?.what).toBe("routing cancelled");
   expect(notices.said("cancelled:r1")).toBe(true);
+});
+
+test("a cancel the pool refuses says why", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(Date.parse("2026-09-30T10:00:00.000Z"));
+
+  pool((request) =>
+    routeOf(request) === "POST /v1/routing/r1/cancel"
+      ? json(409, { error: { code: "delivery-in-flight", record: "r1" } })
+      : quiet(),
+  );
+  render(StatusLine);
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Research",
+    until: Date.parse("2026-09-30T10:00:05.000Z"),
+  });
+  await vi.advanceTimersByTimeAsync(0);
+  await fireEvent.click(
+    screen.getByRole("button", { name: "undo routing Research" }),
+  );
+
+  await vi.waitFor(() => {
+    expect(notices.latest?.what).toBe(
+      "could not cancel: that delivery has already started; it cannot be called back",
+    );
+  });
+  expect(notices.latest?.alarm).toBe(true);
 });
 
 test("the log opens a firing and closes it with the landing", async () => {

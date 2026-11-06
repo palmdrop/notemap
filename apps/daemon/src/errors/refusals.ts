@@ -148,8 +148,6 @@ export const DELIVERY_STATUS = {
   "arguments-invalid": 422,
   "content-invalid": 422,
   "unknown-payload-type": 422,
-  "rejected-by-destination": 422,
-  "delivery-outcome-unknown": 422,
   unreachable: 422,
   "destination-retired": 409,
   "destination-unusable": 409,
@@ -300,6 +298,9 @@ export const KIND_FILTER_STATUS = { "bad-kind": 422 } as const;
 /** A surface's own parameter, which the log does not take. */
 export const TAG_FILTER_STATUS = { "tag-invalid": 422 } as const;
 
+/** The queue's, the feed's and the archive's: words past a search's length. */
+export const WORDS_FILTER_STATUS = { "words-too-long": 422 } as const;
+
 /** Every surface reading items takes a source. */
 export const SOURCE_FILTER_STATUS = { "bad-source": 422 } as const;
 
@@ -365,6 +366,7 @@ const DAEMON_STATUS = {
   ...PARAMETER_STATUS,
   ...KIND_FILTER_STATUS,
   ...TAG_FILTER_STATUS,
+  ...WORDS_FILTER_STATUS,
   ...SOURCE_FILTER_STATUS,
   ...FEED_FILTER_STATUS,
   ...UNSUPPORTED_PARAMETER_STATUS,

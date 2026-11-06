@@ -20,12 +20,16 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   bytes,
+  CONFIG,
   deliverWith,
   drainWith,
   envelope,
   harness,
   itemRecord,
+  routeThrough,
+  SCRATCHPAD,
   SECOND,
+  TEXT,
   upload,
   type Harness,
 } from "./fixture";
@@ -105,6 +109,13 @@ function succeeded<T>(
 
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
+/** A route carried out as the runner would once its window closes, as the record then stands. */
+async function landed(opened: Harness, item: ItemId, wanted = request()) {
+  const record = succeeded(await routeThrough(opened, item, wanted));
+  if (record === undefined) throw new Error("the delivery was given up on");
+  return record;
+}
+
 const MINUTE = 60_000 as Duration;
 
 function request(path = "inbox/a-thought.md") {
@@ -137,7 +148,7 @@ describe("routing to a destination that is up", () => {
     });
     const item = await capture(pool);
 
-    const record = succeeded(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record).toMatchObject({
       pointer: "a-channel",
@@ -146,7 +157,7 @@ describe("routing to a destination that is up", () => {
     expect(await pool.routing.recordsFor(item)).toEqual([record]);
   });
 
-  it("answers a delivered record with its pointer, and enqueues no delivery job", async () => {
+  it("answers a pending record and when it comes due, then lands it as a job", async () => {
     const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers(DELIVERED);
@@ -156,8 +167,8 @@ describe("routing to a destination that is up", () => {
 
     expect(record).toMatchObject({
       item,
-      state: "delivered",
-      pointer: "vault/inbox/a-thought.md",
+      state: "pending",
+      until: "2026-08-06T09:00:00.000Z",
       target: {
         kind: "destination",
         destination: VAULT,
@@ -165,8 +176,103 @@ describe("routing to a destination that is up", () => {
         arguments: { path: "inbox/a-thought.md" },
       },
     });
+    expect(record.pointer).toBeUndefined();
+    expect(opened.destination.received).toEqual([]);
     expect(ids((await pool.views.queue(ALL)).values)).toEqual([]);
-    expect(await deliverWith(opened, opened.destination)()).toBe(0);
+
+    expect(await opened.deliverDue()).toBe(1);
+    expect(await pool.routing.recordsFor(item)).toMatchObject([
+      {
+        id: record.id,
+        state: "delivered",
+        pointer: "vault/inbox/a-thought.md",
+      },
+    ]);
+  });
+
+  it("attempts nothing until the undo window closes", async () => {
+    const destination = fakeDestinations({ capabilities: CAPABILITIES });
+    const opened = harness(
+      { ...CONFIG, undoWindow: (5 * 1000) as Duration },
+      "stub",
+      destination,
+    );
+    open.push(opened);
+    await opened.putDestination({ id: VAULT });
+    const item = await capture(opened.pool);
+
+    const record = succeeded(await opened.pool.routing.route(item, request()));
+
+    expect(record.until).toBe("2026-08-06T09:00:05.000Z");
+    expect(await opened.deliverDue()).toBe(0);
+    expect(destination.received).toEqual([]);
+
+    opened.clock.set("2026-08-06T09:00:05.000Z");
+    expect(await opened.deliverDue()).toBe(1);
+    expect(destination.received).toHaveLength(1);
+  });
+
+  /** Nothing has been tried, so the capture is not sealed, and the delivery carries the edit. */
+  it("carries an edit made inside the window to the destination", async () => {
+    const destination = fakeDestinations({ capabilities: CAPABILITIES });
+    const opened = harness(
+      { ...CONFIG, undoWindow: (5 * 1000) as Duration },
+      "stub",
+      destination,
+    );
+    open.push(opened);
+    await opened.putDestination({ id: VAULT });
+    const item = await capture(opened.pool);
+
+    succeeded(await opened.pool.routing.route(item, request()));
+    const edited = succeeded(
+      await opened.pool.items.edit(
+        item,
+        {
+          source: SCRATCHPAD,
+          sourceItemId: "src-1",
+          payload: {
+            type: TEXT,
+            content: { text: "a thought, as I meant it" },
+            metadata: {},
+            assets: [],
+          },
+        },
+        { kind: "person" },
+      ),
+    );
+    expect(edited.kind).toBe("amended");
+
+    opened.clock.set("2026-08-06T09:00:05.000Z");
+    expect(await opened.deliverDue()).toBe(1);
+    expect(destination.received.map((one) => one.delivery.item)).toEqual([
+      item,
+    ]);
+    expect(destination.received[0]?.delivery.payload.content).toEqual({
+      text: "a thought, as I meant it",
+    });
+  });
+
+  /** What the window is for: against a destination that is up, a cancel inside it is real. */
+  it("calls the decision off inside the window, before the destination hears of it", async () => {
+    const destination = fakeDestinations({ capabilities: CAPABILITIES });
+    const opened = harness(
+      { ...CONFIG, undoWindow: (5 * 1000) as Duration },
+      "stub",
+      destination,
+    );
+    open.push(opened);
+    await opened.putDestination({ id: VAULT });
+    const item = await capture(opened.pool);
+
+    const record = succeeded(await opened.pool.routing.route(item, request()));
+    succeeded(await opened.pool.routing.cancelDelivery(record.id));
+
+    opened.clock.set("2026-08-06T09:00:05.000Z");
+    expect(await opened.deliverDue()).toBe(0);
+    expect(destination.received).toEqual([]);
+    expect(await opened.pool.routing.recordsFor(item)).toEqual([]);
+    expect(ids((await opened.pool.views.queue(ALL)).values)).toEqual([item]);
   });
 
   it("hands the destination everything durable about the item", async () => {
@@ -174,7 +280,7 @@ describe("routing to a destination that is up", () => {
     const { pool } = opened;
     const item = await capture(pool);
 
-    await pool.routing.route(item, request());
+    await routeThrough(opened, item, request());
 
     const [handed] = opened.destination.received;
     expect(handed?.delivery).toMatchObject({
@@ -197,7 +303,7 @@ describe("routing to a destination that is up", () => {
     const item = await capture(pool);
     await drainWith(opened)();
 
-    const record = succeeded(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     const logged = await pool.actions.read(
       { item },
@@ -206,40 +312,52 @@ describe("routing to a destination that is up", () => {
         order: "newest-first",
       },
     );
-    expect(logged.values[0]).toMatchObject({
-      kind: "routed",
-      by: { kind: "person" },
-      detail: { record: record.id, destination: VAULT },
-    });
+    // The landing, then the decision, which says when its window closed.
+    expect(logged.values.slice(0, 2)).toMatchObject([
+      {
+        kind: "routed",
+        by: { kind: "person" },
+        detail: { record: record.id, destination: VAULT },
+      },
+      {
+        kind: "delivery-held",
+        by: { kind: "person" },
+        detail: {
+          record: record.id,
+          destination: VAULT,
+          until: "2026-08-06T09:00:00.000Z",
+        },
+      },
+    ]);
+    expect(logged.values[0]?.detail).not.toHaveProperty("until");
     expect(await drainWith(opened)()).toBe(1);
     expect((await itemRecord(pool, item))?.routing).toEqual([record]);
   });
 });
 
 describe("routing to a destination that refuses", () => {
-  it("refuses the call, writes no record, and leaves the item in the queue", async () => {
+  /** The refusal arrives after the window, so the decision is answered and then taken away. */
+  it("removes the reservation once it refuses, and returns the item to the queue", async () => {
     const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers({ kind: "rejected", detail: "not a vault" });
     const item = await capture(pool);
 
-    const refusal = await pool.routing.route(item, request());
-
-    expect(refusal).toEqual({
-      kind: "refused",
-      refusal: { kind: "rejected-by-destination", detail: "not a vault" },
+    expect(await routeThrough(opened, item, request())).toEqual({
+      kind: "ok",
+      value: undefined,
     });
     expect(await pool.routing.recordsFor(item)).toEqual([]);
     expect(ids((await pool.views.queue(ALL)).values)).toEqual([item]);
   });
 
-  it("leaves the failed attempt in the log", async () => {
+  it("leaves the failed attempt in the log, as the first", async () => {
     const opened = await pooled();
     const { pool } = opened;
     opened.destination.answers({ kind: "rejected", detail: "not a vault" });
     const item = await capture(pool);
 
-    await pool.routing.route(item, request());
+    await routeThrough(opened, item, request());
 
     const logged = await pool.actions.read(
       { item },
@@ -248,8 +366,9 @@ describe("routing to a destination that refuses", () => {
         order: "newest-first",
       },
     );
-    expect(logged.values[0]).toMatchObject({
-      kind: "delivery-failed",
+    expect(
+      logged.values.find((entry) => entry.kind === "delivery-failed"),
+    ).toMatchObject({
       detail: {
         attempt: 1,
         failure: { code: "rejected-by-destination", detail: "not a vault" },
@@ -405,107 +524,17 @@ describe("a destination that cannot say what it can do", () => {
   });
 });
 
-describe("an item purged while its delivery was in flight", () => {
-  it("keeps the routed entry, writes no record, and refuses as purged", async () => {
-    // Purge is not built, so the item goes the way a purge would take it —
-    // and it goes *during* the attempt, which is the whole of the race.
-    let purge = (): void => {};
-    const opened = await pooledWith({
-      deliver: async () => {
-        purge();
-        return DELIVERED;
-      },
-    });
-    const item = await capture(opened.pool);
-    purge = () => removeItem(opened.file, item);
-
-    const outcome = await opened.pool.routing.route(item, request());
-
-    expect(outcome).toMatchObject({ refusal: { kind: "item-purged", item } });
-    const logged = await opened.pool.actions.read(
-      { item },
-      {
-        limit: 50,
-        order: "newest-first",
-      },
-    );
-    expect(logged.values[0]).toMatchObject({
-      kind: "routed",
-      detail: { pointer: "vault/inbox/a-thought.md" },
-    });
-  });
-});
-
-/**
- * Aborting stops the waiting, not the destination, so the bytes may be there
- * already. Nothing may be retried on that, and the person about to route again
- * has to be able to find out that it happened.
- */
-describe("an inline attempt that never answers", () => {
-  it("refuses as unknown, writes no record, and leaves the item in the queue", async () => {
-    const opened = await pooled({ answer: { kind: "hang" } });
-    const item = await capture(opened.pool);
-    const bounded = AbortSignal.abort();
-
-    const outcome = await opened.pool.routing.route(item, request(), bounded);
-
-    expect(outcome).toMatchObject({
-      refusal: { kind: "delivery-outcome-unknown" },
-    });
-    expect(await opened.pool.routing.recordsFor(item)).toEqual([]);
-    expect(ids((await opened.pool.views.queue(ALL)).values)).toEqual([item]);
-  });
-
-  it("leaves the attempt on the log, under the code that warrants a check", async () => {
-    const opened = await pooled({ answer: { kind: "hang" } });
+describe("an item purged inside its window", () => {
+  it("is never handed to the destination", async () => {
+    // Purge is not built, so the item goes the way a purge would take it.
+    const opened = await pooled();
     const item = await capture(opened.pool);
 
-    // Aborted while waiting, rather than before: the other way a host bounds it.
-    await opened.pool.routing.route(item, request(), AbortSignal.timeout(5));
+    succeeded(await opened.pool.routing.route(item, request()));
+    removeItem(opened.file, item);
 
-    const logged = await opened.pool.actions.read(
-      { item },
-      {
-        limit: 50,
-        order: "newest-first",
-      },
-    );
-    expect(logged.values[0]).toMatchObject({
-      kind: "delivery-failed",
-      detail: {
-        destination: VAULT,
-        failure: { code: "delivery-outcome-unknown" },
-      },
-    });
-  });
-
-  it("enqueues nothing, so no machinery hands the destination a second copy", async () => {
-    const opened = await pooled({ answer: { kind: "hang" } });
-    const item = await capture(opened.pool);
-
-    await opened.pool.routing.route(item, request(), AbortSignal.abort());
-    opened.destination.answers(DELIVERED);
-
-    expect(await deliverWith(opened, opened.destination)()).toBe(0);
-    expect(opened.destination.received).toHaveLength(1);
-  });
-
-  /** An adapter that throws is the same unknown: core cannot see how far it got. */
-  it("treats an adapter that throws the same way, carrying its message", async () => {
-    const opened = await pooledWith({
-      deliver: () => {
-        throw new Error("socket closed mid-write");
-      },
-    });
-    const item = await capture(opened.pool);
-
-    expect(await opened.pool.routing.route(item, request())).toEqual({
-      kind: "refused",
-      refusal: {
-        kind: "delivery-outcome-unknown",
-        detail: "socket closed mid-write",
-      },
-    });
+    expect(await opened.deliverDue()).toBe(1);
+    expect(opened.destination.received).toEqual([]);
   });
 });
 
@@ -568,7 +597,7 @@ describe("cancelling a delivery", () => {
     const opened = await pooled();
     const { pool } = opened;
     const item = await capture(pool);
-    const record = succeeded(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(await pool.routing.cancelDelivery(record.id)).toMatchObject({
       refusal: { kind: "not-pending", record: record.id },
@@ -669,7 +698,7 @@ describe("the assets a delivery carries", () => {
   it("arrives whole: every reference, under the name it was uploaded with", async () => {
     const opened = await withAssets(true);
 
-    await opened.pool.routing.route(opened.item, request());
+    await routeThrough(opened, opened.item, request());
 
     const [handed] = opened.destination.received;
     expect(handed?.assets).toEqual([
@@ -691,7 +720,7 @@ describe("the assets a delivery carries", () => {
     const opened = await withAssets(false);
     const before = opened.blobOpens();
 
-    await opened.pool.routing.route(opened.item, request());
+    await routeThrough(opened, opened.item, request());
 
     expect(opened.destination.received[0]?.delivery.assets).toHaveLength(2);
     expect(opened.blobOpens()).toBe(before);
@@ -705,7 +734,7 @@ describe("a delivery carrying words of its own", () => {
     const item = await capture(pool);
 
     succeeded(
-      await pool.routing.route(item, {
+      await routeThrough(opened, item, {
         ...request(),
         content: { text: "a thought, tidied" },
       }),
@@ -735,6 +764,7 @@ describe("a delivery carrying words of its own", () => {
       ...request("inbox/two.md"),
       content: { text: "for the project" },
     });
+    await opened.deliverDue();
 
     const records = await pool.routing.recordsFor(item);
     expect(
@@ -754,7 +784,7 @@ describe("a delivery carrying words of its own", () => {
     const { pool } = opened;
     const item = await capture(pool);
 
-    const record = succeeded(await pool.routing.route(item, request()));
+    const record = await landed(opened, item);
 
     expect(record.target).not.toHaveProperty("content");
     expect(opened.destination.received[0]?.delivery.payload.content).toEqual({
@@ -774,7 +804,9 @@ describe("a delivery carrying words of its own", () => {
         content: { text: "a thought, tidied" },
       }),
     );
+    await opened.deliverDue();
     opened.destination.answers(DELIVERED);
+    opened.clock.set("2026-08-06T09:00:01.000Z");
 
     expect(await deliverWith(opened, opened.destination)()).toBe(1);
     expect(

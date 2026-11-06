@@ -94,6 +94,8 @@ export function deliveredAsset(
 }
 
 type DeliveryOverrides = {
+  /** From 1; past it, the destination may already hold this delivery's own earlier write. */
+  readonly attempt?: number;
   readonly capability?: string;
   readonly arguments?: JsonObject;
   readonly type?: PayloadTypeName;
@@ -131,6 +133,7 @@ export function delivery(overrides: DeliveryOverrides = {}): Delivery {
     createdAt,
     artifacts: [],
     assets: [...(overrides.attached ?? []), ...(overrides.assets ?? [])],
+    attempt: overrides.attempt ?? 1,
   };
 }
 

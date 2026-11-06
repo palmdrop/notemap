@@ -15,6 +15,8 @@ import type {
   Tag,
   TagUse,
 } from "#api/types";
+import { fold, holds, stringsIn, termsOf } from "@notemap/text";
+
 import type { Batch } from "./batches";
 import type { PendingOperation } from "#outbox/operations";
 import type { Key, Order, ReadFailure } from "../types";
@@ -34,12 +36,14 @@ export const FILTER_STATES: readonly FilterState[] = [
 ];
 
 /**
- * What a page is read through: every tag, and any one of each of the rest.
- * Every list empty is the whole surface. States and destinations are the
- * feed's alone.
+ * What a page is read through: every tag and every term of the words, and any
+ * one of each of the rest. Every list empty is the whole surface. States and
+ * destinations are the feed's alone.
  */
 export type Filter = {
   readonly tags: readonly string[];
+  /** Folded as the pool folds them, so the cache and the pool keep the same items. */
+  readonly words: readonly string[];
   readonly states: readonly FilterState[];
   readonly destinations: readonly DestinationId[];
   readonly sources: readonly string[];
@@ -52,6 +56,7 @@ export type FilterNamed = {
 
 export const WHOLE: Filter = {
   tags: [],
+  words: [],
   states: [],
   destinations: [],
   sources: [],
@@ -148,6 +153,7 @@ function tidied(values: readonly string[]): string[] {
 export function filterOf(named: FilterNamed = {}): Filter {
   return {
     tags: tidied((named.tags ?? []).map((tag) => tag.trim())),
+    words: termsOf((named.words ?? []).join(" ")),
     states: tidied(named.states ?? []).filter((state): state is FilterState =>
       FILTER_STATES.includes(state as FilterState),
     ),
@@ -164,10 +170,13 @@ export function filterFor(surface: Surface, filter: Filter): Filter {
 }
 
 export function isWhole(filter: Filter = WHOLE): boolean {
-  return filterSize(filter) === 0;
+  return filterSize(filter) === 0 && filter.words.length === 0;
 }
 
-/** How many things a filter names, counted across its kinds. */
+/**
+ * How many things a filter names, counted across its kinds. The words are not
+ * among them: they are typed rather than chosen, and say themselves.
+ */
 export function filterSize(filter: Filter = WHOLE): number {
   return (
     filter.tags.length +
@@ -189,6 +198,7 @@ export function sameFilter(
 ): boolean {
   return (
     sameList(one.tags, other.tags) &&
+    sameList(one.words, other.words) &&
     sameList(one.states, other.states) &&
     sameList(one.destinations, other.destinations) &&
     sameList(one.sources, other.sources)
@@ -386,10 +396,21 @@ function anyOf<T>(named: readonly T[], holds: (each: T) => boolean): boolean {
   return named.length === 0 || named.some(holds);
 }
 
+/** What the pool reads an item's words as: its text and its attachments' names. */
+function saying(item: Item, terms: readonly string[]): boolean {
+  if (terms.length === 0) return true;
+  const names = (item.assets ?? []).map((asset) => asset.filename);
+  return holds(
+    fold([...stringsIn(item.payload.content), ...names].join("\n")),
+    terms,
+  );
+}
+
 function meets(item: Item, filter: Filter = WHOLE): boolean {
   const tags = item.tags ?? [];
   return (
     filter.tags.every((name) => tags.some((held) => held.name === name)) &&
+    saying(item, filter.words) &&
     anyOf(filter.states, (state) => stateOf(item, state)) &&
     anyOf(filter.destinations, (destination) => routedTo(item, destination)) &&
     anyOf(filter.sources, (source) => item.source === source)
@@ -732,6 +753,7 @@ export function resorted(state: ClientState, id: ItemId): ClientState {
  */
 const PROCESSING: ReadonlySet<string> = new Set([
   "template-fired",
+  "delivery-held",
   "routed",
   "delivery-reinstated",
   "archived",
@@ -818,6 +840,7 @@ export function caughtUp(
  */
 const REROUTING: ReadonlySet<string> = new Set([
   "template-fired",
+  "delivery-held",
   "routed",
   "delivery-reinstated",
 ]);

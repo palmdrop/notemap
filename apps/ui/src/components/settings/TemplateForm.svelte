@@ -16,6 +16,7 @@
   import { askable } from "$lib/asked";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
+  import type { RoutingTemplateDraft } from "$lib/template-draft";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
   import {
     effectiveOf,
@@ -32,11 +33,14 @@
   let {
     destinations,
     editing,
+    starting,
     disabled,
     done,
   }: {
     destinations: readonly Destination[];
     editing?: RoutingTemplate;
+    /** What a new template starts from, where it is being saved from a decision already made. */
+    starting?: RoutingTemplateDraft;
     disabled: boolean;
     done: () => void;
   } = $props();
@@ -70,12 +74,13 @@
   let tag = $state(
     untrack(() => editing?.triggerTag?.slice(TRIGGER_NAMESPACE.length) ?? ""),
   );
+  const from = untrack(() => editing ?? starting);
   let destination = $state(
-    untrack(() => editing?.destination ?? destinations[0]?.id ?? ""),
+    from?.destination ?? untrack(() => destinations[0]?.id ?? ""),
   );
-  let capability = $state(untrack(() => editing?.capability ?? ""));
-  let folder = $state(untrack(() => editing?.folder ?? "create"));
-  let typed = $state(untrack(() => typedFrom(editing?.arguments)));
+  let capability = $state(from?.capability ?? "");
+  let folder = $state(from?.folder ?? "create");
+  let typed = $state(typedFrom(from?.arguments));
   /** Asked fields by name, each holding the label typed for it, blank for none. */
   let asked = $state<Record<string, string>>(
     untrack(() =>
@@ -103,6 +108,7 @@
   let capabilities = $state<readonly Capability[]>([]);
   let said = $state("");
   let busy = $state(false);
+  const unnamed = $derived(name.trim() === "");
 
   const declared = $derived(
     fieldsOf(
@@ -242,7 +248,7 @@
   }
 
   async function save() {
-    if (busy) return;
+    if (busy || unnamed) return;
     busy = true;
     said = "";
 
@@ -303,8 +309,15 @@
     bind:this={nameField}
     bind:value={name}
     aria-label="name"
+    aria-describedby={unnamed ? `${id}-unnamed` : undefined}
     class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
   />
+  {#if unnamed}
+    <span></span>
+    <p id={`${id}-unnamed`} class="col-start-2 max-narrow:col-start-1">
+      a template needs a name
+    </p>
+  {/if}
 
   <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
   <div class="flex items-baseline border-b border-ink">
@@ -471,6 +484,13 @@
     {/if}
   {/each}
 
+  {#if starting?.rewriteLeft === true}
+    <span></span>
+    <p class="col-start-2 max-narrow:col-start-1">
+      The rewrite stays with its item: a template files each item's own words.
+    </p>
+  {/if}
+
   {#if folders}
     <span class="tracking-caps uppercase max-narrow:mt-1.5">if missing</span>
     <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
@@ -490,7 +510,11 @@
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
-      <Action {disabled} working={busy} onclick={() => void save()}>
+      <Action
+        disabled={disabled || unnamed}
+        working={busy}
+        onclick={() => void save()}
+      >
         save
       </Action>
     </span>

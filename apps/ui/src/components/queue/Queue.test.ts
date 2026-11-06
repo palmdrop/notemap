@@ -2252,3 +2252,18 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
     }),
   );
 });
+
+test("`/` puts the caret in the search line, and the words go on the address", async () => {
+  pool(queued("one"));
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.keyDown(window, { key: "/" });
+  const line = screen.getByRole("searchbox", { name: "search" });
+  expect(document.activeElement).toBe(line);
+
+  await fireEvent.input(line, { target: { value: "bike rack" } });
+  await vi.waitFor(() => {
+    expect(String(went.to.at(-1))).toBe("http://localhost/?words=bike+rack");
+  });
+});

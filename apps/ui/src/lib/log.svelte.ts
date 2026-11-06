@@ -11,6 +11,7 @@ import {
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 import { client } from "./client";
+import { drawable } from "./kinds";
 
 /**
  * The log's walked page. The client keeps no page for it and writes none of it
@@ -107,8 +108,9 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     });
     if (mine !== walking) return;
 
-    rows = from === undefined ? page.values : joined(rows, page.values);
-    seek(subjects(page.values));
+    const drawn = page.values.filter((action) => drawable(action.kind));
+    rows = from === undefined ? drawn : joined(rows, drawn);
+    seek(subjects(drawn));
     after = page.after;
     more = page.after !== undefined;
     answered = true;
@@ -231,6 +233,7 @@ export const log = {
 
     const wanted = actions.filter(
       (action) =>
+        drawable(action.kind) &&
         (item === undefined || action.subject === item) &&
         (kinds === undefined || kinds.includes(action.kind)),
     );

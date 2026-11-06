@@ -22,6 +22,7 @@ import {
   bytes,
   collect,
   deliverWith,
+  routeThrough,
   drainWith,
   envelope,
   filesUnder,
@@ -96,18 +97,22 @@ async function captured(
   return result.value.item.id;
 }
 
+/** Routed, and its first attempt made as the window closes: the record as it then stands. */
 async function route(
   opened: Harness,
   item: ItemId,
   args: Record<string, string>,
 ): Promise<RoutingRecord> {
-  const result = await opened.pool.routing.route(item, {
+  const result = await routeThrough(opened, item, {
     destination: VAULT,
     capability: CREATE,
     arguments: args,
   });
   if (result.kind === "refused") {
     throw new Error(`refused: ${JSON.stringify(result.refusal)}`);
+  }
+  if (result.value === undefined) {
+    throw new Error("the delivery was given up on");
   }
   return result.value;
 }
@@ -155,7 +160,7 @@ describe("a capture leaving for a folder on disk", () => {
       [
         join(root, "inbox", "a-thought.md"),
         join(root, "inbox", placed),
-        join(root, "inbox", "what it looked like.md"),
+        join(root, "inbox", "what-it-looked-like.md"),
       ].sort(),
     );
 
@@ -169,12 +174,12 @@ describe("a capture leaving for a folder on disk", () => {
       "PNG-BYTES",
     );
     expect(
-      await readFile(join(root, "inbox", "what it looked like.md"), "utf8"),
+      await readFile(join(root, "inbox", "what-it-looked-like.md"), "utf8"),
     ).toContain(`![${placed}](${placed})`);
 
     // The pointer names the file that is actually there.
     expect(first.pointer).toBe("inbox/a-thought.md");
-    expect(second.pointer).toBe("inbox/what it looked like.md");
+    expect(second.pointer).toBe("inbox/what-it-looked-like.md");
 
     // Pool, mirror and vault agree about what happened.
     const records = await opened.pool.routing.recordsFor(thought);

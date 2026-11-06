@@ -43,6 +43,7 @@ function delivery(
     })),
     createdAt: AT,
     artifacts: [],
+    attempt: 1,
     assets: [],
   };
 }

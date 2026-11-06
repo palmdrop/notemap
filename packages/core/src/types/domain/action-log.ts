@@ -15,6 +15,7 @@ export const ACTION_KINDS = [
   "artifact-corrected",
   "archived",
   "unarchived",
+  "delivery-held",
   "routed",
   "delivery-failed",
   "delivery-cancelled",

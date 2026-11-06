@@ -6,6 +6,7 @@ import type {
   SchemaIssue,
   SurfaceFilter,
   TagFilterRefusal,
+  WordsFilterRefusal,
 } from "@notemap/core";
 
 import type { Identity } from "../auth/types";
@@ -46,6 +47,7 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | TagFilterRefusal
+  | WordsFilterRefusal
   | {
       readonly kind: "bad-state";
       readonly value: string;

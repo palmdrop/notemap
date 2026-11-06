@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   deliverWith,
+  routeThrough,
   drainWith,
   envelope,
   harness,
@@ -86,7 +87,8 @@ async function capture(pool: Pool, id = "item-1"): Promise<ItemId> {
 async function routed(mirroring: Parameters<typeof harness>[1] = "stub") {
   const opened = await pooled(mirroring);
   const item = await capture(opened.pool);
-  const record = succeeded(await opened.pool.routing.route(item, request()));
+  const record = succeeded(await routeThrough(opened, item, request()));
+  if (record === undefined) throw new Error("the delivery was given up on");
   opened.clock.set(WITHDRAWN_AT);
   return { ...opened, item, record };
 }
@@ -168,8 +170,9 @@ describe("withdrawing a delivered record", () => {
   });
 
   it("leaves the item sealed while another delivered record stands", async () => {
-    const { pool, item, record } = await routed();
-    succeeded(await pool.routing.route(item, request("inbox/again.md")));
+    const opened = await routed();
+    const { pool, item, record } = opened;
+    succeeded(await routeThrough(opened, item, request("inbox/again.md")));
     succeeded(await pool.routing.withdraw(record.id));
 
     const outcome = succeeded(

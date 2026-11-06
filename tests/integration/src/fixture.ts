@@ -13,6 +13,8 @@ import {
   type BlobStore,
   type CaptureEnvelope,
   type Clock,
+  type DeliveryRefusal,
+  type DeliveryRequest,
   type Destination,
   type DestinationId,
   type DestinationKindName,
@@ -30,6 +32,8 @@ import {
   type PoolConfig,
   type PoolPorts,
   type PoolStore,
+  type Result,
+  type RoutingRecord,
   type SourceId,
   type TagName,
   type Timestamp,
@@ -91,6 +95,7 @@ export const CONFIG: PoolConfig = {
   sweep: { grace: 86_400_000 as Duration },
   zone: "Europe/Stockholm",
   triggerWindow: 15_000 as Duration,
+  undoWindow: 0 as Duration,
 };
 
 /** A clock that stands still until a test moves it. */
@@ -169,6 +174,8 @@ export type Harness = {
   readonly racingTransaction: (racer: () => Promise<void>) => void;
   /** Closes this pool and opens another over the same files, as a restart does. */
   readonly reopen: () => Promise<Harness>;
+  /** Carries out every delivery that is due, against this pool's destinations, as the daemon's runner does. */
+  readonly deliverDue: () => Promise<number>;
   /** Writes a destination row, which is what a routing record refers to. */
   readonly putDestination: (
     overrides?: DestinationOverrides,
@@ -269,7 +276,7 @@ function over(
    */
   let handedOver = false;
 
-  return {
+  const harnessed: Harness = {
     pool,
     store,
     clock,
@@ -288,6 +295,7 @@ function over(
       handedOver = true;
       return over(directory, config, mirroring, destinations);
     },
+    deliverDue: () => deliverWith(harnessed, destinations)(),
     putDestination: (overrides = {}) =>
       store.transaction((tx) =>
         tx.insertDestination({
@@ -306,6 +314,28 @@ function over(
       if (handedOver) return;
       rmSync(directory, { recursive: true, force: true });
     },
+  };
+  return harnessed;
+}
+
+/**
+ * A route as a person makes one, then carried out as the runner would once its
+ * window closes: the record as it then stands. A delivery given up on removes
+ * its reservation, and answers nothing.
+ */
+export async function routeThrough(
+  harnessed: Harness,
+  item: ItemId,
+  request: DeliveryRequest,
+): Promise<Result<RoutingRecord | undefined, DeliveryRefusal>> {
+  const routed = await harnessed.pool.routing.route(item, request);
+  if (routed.kind === "refused") return routed;
+
+  await harnessed.deliverDue();
+  const records = await harnessed.pool.routing.recordsFor(item);
+  return {
+    kind: "ok",
+    value: records.find((one) => one.id === routed.value.id),
   };
 }
 
@@ -521,6 +551,7 @@ export function deliverWith(harnessed: Harness, destinations: Destinations) {
 
         const attemptable = await harnessed.pool.routing.deliveryFor(
           subject.record,
+          lease.job.attempt + 1,
         );
         // Nothing left to carry out: the record was cancelled, or its item went.
         // Unusable is proof nothing was delivered, so it carries on the same

@@ -101,13 +101,14 @@ A condition a reader puts on a surface, which an item or action must meet to be 
 queue and the feed, a set of tags every one of which an item must carry; on the feed also states,
 destinations and sources, an item meeting any one of each kind named (unprocessed, routed, archived
 or revised; routed to one of the destinations; captured through one of the sources), every kind
-named holding at once; on the log, a view of kinds or one item. Answered by the pool, so it reaches
+named holding at once; on the queue and the feed also **words**, every term of which an item's own
+words must hold, without regard to case or accents; on the log, a view of kinds or one item. Answered by the pool, so it reaches
 as far back as the pool does. A question of the moment rather than a preference: it lasts as long as
 the address that names it, and a surface opened afresh is always the whole of it. What makes a
 surface what it is — the queue holding the unprocessed, the archive the archived — is not a filter:
 it is the surface.
-_Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, search, facet,
-query
+_Avoid_: narrowing *(what a chooser's line does to its offer as it is typed into)*, facet, query;
+search, except as the shell's word for a filter by words, as discard is for **archive**
 
 **Revision**:
 An ordinary capture, made by editing a sealed item, carrying its own capture time, source and
@@ -424,7 +425,8 @@ _Avoid_: export, publish, send, file
 One attempt to place an item at a destination through one of its capabilities. Everything durable
 about the item is handed to the adapter, which reaches back for nothing. A delivery is **pending**
 until it lands, and then either delivered or abandoned; a person may cancel one that is still
-pending. Reshaping the item into the destination's dialect happens here, inside the delivery, and
+pending. Every decision that makes one waits the **undo window** before its first attempt, and a
+fired template waits the trigger window. Reshaping the item into the destination's dialect happens here, inside the delivery, and
 never to the capture — so one item reaches several destinations in several forms and none of them
 is the item. A delivery may also carry **its own words** in place of the capture's, a **rewrite**,
 which is the person's half of the same arrangement.
@@ -495,9 +497,33 @@ the block removed. The record stays, marked with when, and the log says so; it s
 anything the item's routing decides, so the item reads as unrouted, returns to the queue, and is
 no longer sealed by it. A trigger tag that made it comes off with it. **Reinstating** it puts it back.
 Only a delivered record naming a destination is withdrawn: a reservation and a mark by hand are
-**cancelled**, which removes them, since nothing reached anywhere.
+**cancelled**, which removes them, since nothing reached anywhere. Withdrawing is never called
+**undo**.
 _Avoid_: invalidate, which says the record was wrong, where it was true when it was made; unroute;
 retract; restore for its inverse, which is a rebuild's word
+
+**Cancel**:
+Removing a pending reservation before its delivery lands, which returns the item to the queue; and
+removing a mark by hand, which never reached anywhere. Refused while the delivery is being
+attempted, and once it has landed: that record is **withdrawn**. A shell offers it on a
+reservation whose delivery the pool is retrying.
+_Avoid_: abort, revoke
+
+**Undo**:
+The shell's word for cancelling the decision just made, offered only while its delivery waits out
+its window — the **undo window**, or a fired template's — before anything is attempted. The same
+call as **cancel**. Never offered on a
+delivered record, and never a word for withdrawing. A manual mark's `undo` and a discard's
+`undiscard` take back decisions that make no delivery.
+_Avoid_: revert, rollback
+
+**Undo window**:
+How long a decision that makes a delivery waits before its first attempt — a route made by hand, or
+a template applied from the composer — so that **undo** is true. Short, because a person is looking
+at the screen; the trigger window is longer, because a tag may be drained onto a daemon nobody is
+watching. The log says a delivery is held for it with `delivery-held`, as `template-fired` says it
+of a trigger tag's.
+_Avoid_: grace period, delay
 
 **Routing template**:
 A routing decision, saved: a destination, a capability, the arguments as **patterns**, and how its
@@ -665,8 +691,8 @@ _Avoid_: toast, notification, alert, banner, message
 
 **Status line**:
 The one ruled line a shell keeps at the foot of every surface, and the only place it speaks in its
-own voice: the newest live **notice**, what is in flight — a route a trigger tag made, counting down
-its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
+own voice: the newest live **notice**, what is in flight — a route a trigger tag or a person made,
+counting down its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
 flight. A route in flight is drawn there and is not a notice, nothing having happened yet.
 _Avoid_: status bar, footer, corner, toast area
 

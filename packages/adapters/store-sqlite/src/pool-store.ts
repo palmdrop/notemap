@@ -59,6 +59,7 @@ import type {
   WorkQueue,
   WorkWithdrawal,
 } from "@notemap/core";
+import { fold } from "@notemap/text";
 
 import {
   agentColumns,
@@ -82,7 +83,7 @@ import {
 import { storeFootprint } from "./footprint";
 import { poolIdentity } from "./identity";
 import { abandonedWork, jobQueue, nextDue } from "./jobs";
-import { LAST_MODIFIED_AT, MIGRATIONS } from "./migrations";
+import { LAST_MODIFIED_AT, MIGRATIONS, WORDS } from "./migrations";
 import type {
   ActionRow,
   AssetRow,
@@ -251,6 +252,14 @@ function routedTo(destinations: readonly DestinationId[]): Clauses {
   };
 }
 
+/** One `instr` per term, against words folded as the terms were. */
+function holding(terms: readonly string[]): Clauses {
+  return {
+    sql: terms.map(() => `instr(item.words, ?) > 0`),
+    params: [...terms],
+  };
+}
+
 function capturedThrough(sources: readonly SourceId[]): Clauses {
   if (sources.length === 0) return { sql: [], params: [] };
   return {
@@ -262,6 +271,7 @@ function capturedThrough(sources: readonly SourceId[]): Clauses {
 function filtered(filter: FeedFilter = {}): Clauses {
   const parts = [
     carrying(filter.tags ?? []),
+    holding(filter.words ?? []),
     inStates(filter.states ?? []),
     routedTo(filter.destinations ?? []),
     capturedThrough(filter.sources ?? []),
@@ -361,6 +371,9 @@ export function createSqlitePoolStore(
   let shut = false;
   let identity: PoolIdentity;
   try {
+    writer.function("notemap_fold", { deterministic: true }, (text) =>
+      fold(typeof text === "string" ? text : ""),
+    );
     migrate(writer, MIGRATIONS, "pool");
     identity = poolIdentity(writer);
   } catch (cause) {
@@ -403,6 +416,10 @@ export function createSqlitePoolStore(
         content_updated_at = ?, modified_at = ?, source_word = ?
     WHERE id = ?
   `);
+  /** After the content and its attachments are written, since the words are read from both. */
+  const refold = write.query<never, [string]>(
+    `UPDATE items SET words = ${WORDS} WHERE id = ?`,
+  );
   const dropReferences = write.query<never, [string]>(
     `DELETE FROM item_assets WHERE item_id = ?`,
   );
@@ -1155,6 +1172,7 @@ export function createSqlitePoolStore(
         for (const ref of record.payload.assets) {
           insertReference.run(record.id, ref.slot, ref.asset);
         }
+        refold.run(record.id);
 
         const stored = await uncommitted.item(record.id);
         if (stored === undefined) {
@@ -1203,6 +1221,7 @@ export function createSqlitePoolStore(
           for (const ref of payload.assets) {
             insertReference.run(item, ref.slot, ref.asset);
           }
+          refold.run(item);
 
           const stored = await uncommitted.item(item);
           if (stored === undefined) throw new Error(`no item ${item} to amend`);

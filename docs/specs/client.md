@@ -1,8 +1,15 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
+
+- 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
+  and rule the pool answers with. ([plan](../plans/features-from-the-mobile-rethink.md),
+  [ADR 70](../adr/0070-a-filter-may-name-words.md))
+- 2026-11-01 — **A route resolves to a pending record and `until`.** The pool holds every decision
+  that makes a delivery for a short window before it is attempted; the landing arrives from the log.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
 
 - 2026-10-30 — **A batch is one outbox operation about many items**: a tag, an untag, an archive
   or an unarchive. `batch()` and `batches`, and `routing.cancelMany`. An operation drains after
@@ -584,13 +591,20 @@ has walked, so a filtered reading made from them would be silently short of what
   tag named twice is one, so what the pool is asked and what the page is kept by are the same set.
   States, destinations and sources are tidied the same way, without the trim, an id being matched
   exactly *(2026-10-20)*. States and destinations are the feed's, and a filter naming one is never
-  asked of the queue; a source is asked of either *(2026-10-21)*.
+  asked of the queue; a source is asked of either *(2026-10-21)*. **Words are folded into terms**
+  *(2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))* by `@notemap/text`, the function the pool folds with, and asked of either
+  surface as one `words` parameter. Words that come to more than the pool takes are refused here, as
+  `words-too-long`, before the pool is asked *(2026-11-03)*, so a surface drawn from the cache says
+  the same as one the pool answers.
 - **One rule keeps every page**: an item is on a page where the surface's own condition holds —
   anything for the feed, unprocessed for the queue — and it carries every tag the page is filtered
   by, judged against the copy the client holds. It also meets one of each kind of the rest the
   filter names *(2026-10-20)*: a state, read from its archive state, its routing summary
   and `revisedInto` as the queue's own condition is; a destination, read from the ids its routing
-  summary's `to` names; a source, read from its own. Every change that could move an item between
+  summary's `to` names; a source, read from its own. And its words hold every term the filter names
+  *(2026-11-01)*: the strings of its payload's content and the filenames of the assets the pool
+  answered it with, folded and matched by the same function the pool's store uses, so a page drawn
+  from the cache and one the pool answers keep the same items. Every change that could move an item between
   pages asks it: an arrival, a settlement, a decision, an archive and its undo, and a tag or an
   untag. So taking a filter's tag off a row takes the row off the filtered page and leaves it on the
   whole one, and tagging an item the client holds into a filter places it on the filtered page where
@@ -808,6 +822,14 @@ This asymmetry is deliberate and the interface makes it visible: an archive is a
 route or a marking is disabled until the pool is reachable, rather than queued into a promise the
 outbox cannot keep.
 
+**A route answers a pending record and when it comes due** *(2026-11-01,
+[ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*.
+`routing.route` resolves to the record and `until`, the end of the undo window, and never to a
+landing: the pool attempts nothing until then. The client learns of the landing, or of the
+destination refusing, from the log, as it does for a fired template, and reads the item again on
+it. Nothing changes in the outbox, since the window opens at the pool when the decision lands
+there.
+
 **A preview and an output are reads that reach the pool, and neither is queued** (added
 2026-09-04). Asking what a destination would write is a question only the pool can answer, and one
 whose answer describes a moment — queuing it would mean asking later and drawing the answer as
@@ -943,7 +965,8 @@ to re-read it, which is exactly the row a person just acted on.
 **Arrival is observed only while the client is watched** *(amended 2026-09-28)*. A record that
 answered pending and lands later leaves the pool's summary at `pending: 0` and the client's saying
 otherwise, until the item is read again. The client does not poll, but the action log does announce
-it: a watched client reads the item again on `routed` ([the action log](#the-action-log)). An
+it: a watched client reads the item again on `routed`, and on `delivery-held` as on `template-fired`
+([the action log](#the-action-log)). An
 unwatched one does not, so a row can still say a delivery is outstanding after it has arrived, and
 no row ever claims an arrival that did not happen — which is the direction to be wrong in.
 
@@ -1053,6 +1076,8 @@ pool's answer:
   takes its place — otherwise the original would keep content it never carried.
 - On a **refusal** ([http-v1.md](http-v1.md#errors)) the client rolls the operation back and
   surfaces the refusal. Core reports facts, not sentences; rendering the message is the client's.
+  A body the daemon could not read, `malformed-envelope`, is said by the first field its `issues`
+  name — `name is empty` — whatever the request was *(2026-11-03; it said every one was a capture)*.
 - Operations against one item drain **in order**, so a `tag` never overtakes the `capture` that
   created its item.
 
@@ -1066,6 +1091,11 @@ to any later-synced online one regardless of what the person intended, which def
 triage. The cost is client clock skew, accepted because a pool is one person's, its clients their
 own devices, and the clocks ordinarily agreed. *This pins [sync.md](sync.md)'s open question about
 the last-write-wins clock; the wire that carries the stamp is that spec's to define.*
+
+**A tag may be recalled** *(2026-11-03)*. `recall(item, tag)` takes back a `tag` of that item
+nothing has started sending, reversing what it drew, as an opposing operation would; one already
+on its way is waited for, so whatever the caller sends next reaches the pool behind it. A shell
+calls it before calling off a route it put a trigger tag beside.
 
 ### Editing and the hand-over seal
 

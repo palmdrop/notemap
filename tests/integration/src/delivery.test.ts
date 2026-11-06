@@ -50,8 +50,9 @@ afterEach(async () => {
 const ids = (values: readonly Item[]) => values.map((item) => item.id);
 
 /**
- * An item routed to a destination that was not there: a reservation, a job, and
- * an item that has left the queue although nothing has arrived.
+ * An item routed to a destination that was not there, and its first attempt
+ * made as the window closed: a reservation, a job, and an item that has left the
+ * queue although nothing has arrived.
  */
 async function pending() {
   const destination = fakeDestinations({
@@ -70,14 +71,11 @@ async function pending() {
   if (routed.kind === "refused") {
     throw new Error(`refused: ${JSON.stringify(routed.refusal)}`);
   }
+  const deliver = deliverWith(opened, destination);
+  await deliver();
+  const { until: _until, ...record } = routed.value;
 
-  return {
-    ...opened,
-    destination,
-    item,
-    record: routed.value,
-    deliver: deliverWith(opened, destination),
-  };
+  return { ...opened, destination, item, record, deliver };
 }
 
 /** Every attempt after the first is behind a backoff, so the clock has to move. */
@@ -137,6 +135,7 @@ describe("a destination that comes back", () => {
     );
     expect(logged.values.map((action) => action.kind)).toEqual([
       "captured",
+      "delivery-held",
       "delivery-failed",
       "routed",
     ]);
@@ -148,8 +147,8 @@ describe("a destination that never comes back", () => {
     const opened = await pending();
     const { pool } = opened;
 
-    // `maxAttempts` is five and the inline attempt was the first of them, so
-    // four more exhaust it.
+    // `maxAttempts` is five and the attempt as the window closed was the first
+    // of them, so four more exhaust it.
     for (let minute = 1; minute <= 4; minute += 1) {
       minutesLater(opened, minute);
       await opened.deliver();
@@ -174,7 +173,7 @@ describe("a destination that never comes back", () => {
    * handed this material, which is the number that matters for something that
    * cannot be repeated safely.
    */
-  it("counts the inline attempt among the ones it reports", async () => {
+  it("counts every attempt among the ones it reports", async () => {
     const opened = await pending();
 
     for (let minute = 1; minute <= 4; minute += 1) {
@@ -260,6 +259,7 @@ describe("a destination that never comes back", () => {
 describe("a delivery whose host died holding it", () => {
   async function leaseExpired() {
     const opened = await pending();
+    minutesLater(opened, 1);
 
     const [lease] = await opened.pool.work.claim({
       kinds: ["delivery"],
@@ -269,7 +269,7 @@ describe("a delivery whose host died holding it", () => {
     if (lease === undefined) throw new Error("expected a lease");
 
     // The host never reports and never releases: the lease simply runs out.
-    minutesLater(opened, 2);
+    minutesLater(opened, 3);
     return opened;
   }
 
@@ -355,7 +355,7 @@ describe("the delivery a resolved record asks for", () => {
   it("is absent once the record has delivered", async () => {
     const opened = await pending();
     expect(
-      await opened.pool.routing.deliveryFor(opened.record.id),
+      await opened.pool.routing.deliveryFor(opened.record.id, 1),
     ).toBeDefined();
 
     opened.destination.answers(DELIVERED);
@@ -363,7 +363,7 @@ describe("the delivery a resolved record asks for", () => {
     await opened.deliver();
 
     expect(
-      await opened.pool.routing.deliveryFor(opened.record.id),
+      await opened.pool.routing.deliveryFor(opened.record.id, 1),
     ).toBeUndefined();
   });
 });

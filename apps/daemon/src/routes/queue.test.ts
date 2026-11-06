@@ -235,6 +235,54 @@ describe("a tag filter on the surfaces", () => {
   });
 });
 
+describe("words on the surfaces", () => {
+  async function said(app: Hono<AppEnv>): Promise<string[]> {
+    const texts = ["a bike rack", "pasta at the Café", "the rack by the café"];
+    const made: string[] = [];
+    for (const [at, text] of texts.entries()) {
+      const id = `0198f0c2-0000-7000-8000-00000000010${String(at)}`;
+      await post(
+        app,
+        envelope({
+          id,
+          text,
+          capturedAt: `2026-08-08T09:0${String(at)}:00.000Z`,
+        }),
+      );
+      made.push(id);
+    }
+    return made;
+  }
+
+  it("reads only what holds every term, and carries the words on next", async () => {
+    const app = serving();
+    const [bike, , both] = await said(app);
+
+    const page = await slice(app, "/v1/queue?words=RACK&limit=1");
+    expect(ids(page)).toEqual([bike]);
+    expect(
+      new URL(page.next ?? "", "http://pool").searchParams.get("words"),
+    ).toBe("rack");
+    expect(ids(await slice(app, page.next ?? ""))).toEqual([both]);
+
+    expect(ids(await slice(app, "/v1/feed?words=cafe%20rack"))).toEqual([both]);
+  });
+
+  it("reads everything where the words are blank, and refuses a paste", async () => {
+    const app = serving();
+    const made = await said(app);
+
+    expect(ids(await slice(app, "/v1/queue?words=%20%20"))).toEqual(made);
+    for (const path of ["/v1/feed", "/v1/queue", "/v1/archived"]) {
+      const response = await app.request(`${path}?words=${"a".repeat(201)}`);
+      expect(response.status).toBe(422);
+      expect(await body(response)).toEqual({
+        error: { code: "words-too-long", limit: 200 },
+      });
+    }
+  });
+});
+
 describe("the feed's state, destination and source filters", () => {
   const RELAY = "0198f0c2-0000-7000-8000-0000000000a0";
 

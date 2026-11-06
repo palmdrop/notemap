@@ -396,7 +396,7 @@ test("every way a route ends closes its firing", () => {
 });
 
 /** Still pending, so its cancel is still real. */
-test("a delivery the pool will try again leaves its firing open", () => {
+test("a delivery the pool will try again leaves its firing open, and retrying", () => {
   expect(
     firingOf(
       anAction("delivery-failed", {
@@ -405,7 +405,7 @@ test("a delivery the pool will try again leaves its firing open", () => {
       }),
       reading,
     ),
-  ).toBeUndefined();
+  ).toEqual({ retrying: "r1" });
 });
 
 test("an entry about no record touches no firing", () => {
@@ -531,4 +531,60 @@ test("an entry ends a record the way a batch counts it", () => {
     ),
   ).toEqual({ record: "r1" });
   expect(endingOf(anAction("template-fired", fired))).toBeUndefined();
+  // A decision held for its window ends nothing.
+  expect(
+    endingOf(
+      anAction("delivery-held", {
+        ...fired,
+        until: "2026-09-03T10:00:05.000Z",
+      }),
+    ),
+  ).toBeUndefined();
+});
+
+const decision = {
+  record: "r1",
+  target: "destination",
+  destination: "vault",
+  capability: "create",
+  until: "2026-09-03T10:00:05.000Z",
+};
+
+test("a decision held for its window is not a notice: it is in flight", () => {
+  expect(
+    noticeOf(anAction("delivery-held", decision), reading),
+  ).toBeUndefined();
+});
+
+test("a decision made by hand opens a route in flight, named for its destination", () => {
+  expect(firingOf(anAction("delivery-held", decision), reading)).toEqual({
+    opened: {
+      record: "r1",
+      item: "one",
+      name: "Vault",
+      href: "/log?item=one",
+      until: Date.parse("2026-09-03T10:00:05.000Z"),
+    },
+  });
+});
+
+test("a decision from a template a person took is named for the template", () => {
+  const said = firingOf(
+    anAction("delivery-held", {
+      ...decision,
+      template: "t1",
+      firedByTag: false,
+    }),
+    { ...reading, templateOf: () => "Research" },
+  );
+
+  expect(said).toMatchObject({ opened: { name: "Research" } });
+});
+
+test("the landing that follows a decision closes it", () => {
+  const { until: _until, ...landed } = decision;
+
+  expect(
+    firingOf(anAction("routed", { ...landed, pointer: "a.md" }), reading),
+  ).toEqual({ closed: "r1" });
 });

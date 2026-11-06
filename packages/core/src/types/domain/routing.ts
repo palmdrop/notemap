@@ -51,6 +51,11 @@ export type Delivery = {
   readonly artifacts: readonly Artifact[];
   /** Every asset the payload and the artifacts reference, in slot order. */
   readonly assets: readonly DeliveredAsset[];
+  /**
+   * Which attempt at this delivery this is, from 1. Past the first, what the
+   * destination already holds may be this delivery's own earlier write.
+   */
+  readonly attempt: number;
 };
 
 /**
@@ -143,6 +148,9 @@ export type Presence =
   | { readonly kind: "present"; readonly found: number; readonly of: number }
   | { readonly kind: "absent" }
   | { readonly kind: "unknown"; readonly detail?: string };
+
+/** A decision just made: the record, pending, and when its undo window closes and the delivery comes due. */
+export type RoutedRecord = RoutingRecord & { readonly until: Timestamp };
 
 /** What a delivery that landed adds to the reservation it resolves. */
 export type DeliveryLanding = {

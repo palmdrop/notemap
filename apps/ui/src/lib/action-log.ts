@@ -20,8 +20,8 @@ const SAID: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Everything that ends a firing: it landed, failed for good, was given up on,
- * or was called off.
+ * Everything that ends a route in flight: it landed, failed for good, was given
+ * up on, or was called off.
  */
 const ENDS: ReadonlySet<string> = new Set([
   "routed",
@@ -125,12 +125,16 @@ export function endingOf(
 }
 
 /**
- * What an entry in the log does to the routes a trigger tag has in flight: a
- * `template-fired` opens one, and an entry that ends it closes it.
+ * What an entry in the log does to the routes in flight: a `template-fired`
+ * opens one, and so does a `delivery-held`, a decision made by hand. An entry
+ * that ends it closes it, and a failure the pool will try again marks it
+ * retrying.
  */
 export function firingOf(
   action: Action,
   said: {
+    /** A destination's name, for a decision made by hand. */
+    nameOf?: (destination: string) => string;
     /** A template's name where it is known, falling back to the one the entry carries. */
     templateOf?: (template: string) => string | undefined;
     /** Where the values a template was given put the item, where it asks for any. */
@@ -140,20 +144,41 @@ export function firingOf(
     ) => string | undefined;
     about: (item: string) => string;
   },
-): { readonly opened: Firing } | { readonly closed: string } | undefined {
+):
+  | { readonly opened: Firing }
+  | { readonly closed: string }
+  | { readonly retrying: string }
+  | undefined {
   const detail = action.detail as Record<string, unknown>;
   const record = stringAt(detail, "record");
   if (record === undefined) return undefined;
+  if (retried(action.kind, detail)) return { retrying: record };
 
-  if (ENDS.has(action.kind) && !retried(action.kind, detail)) {
-    return { closed: record };
-  }
-  if (action.kind !== "template-fired" || action.subject === undefined) {
-    return undefined;
-  }
+  if (ENDS.has(action.kind)) return { closed: record };
+  if (action.subject === undefined) return undefined;
 
   const template = stringAt(detail, "template");
   const until = stringAt(detail, "until");
+
+  if (action.kind === "delivery-held") {
+    const destination = stringAt(detail, "destination");
+    return {
+      opened: {
+        record,
+        item: action.subject,
+        name:
+          (template === undefined ? undefined : said.templateOf?.(template)) ??
+          (destination === undefined
+            ? undefined
+            : said.nameOf?.(destination)) ??
+          "a destination",
+        href: said.about(action.subject),
+        ...(until === undefined ? {} : { until: Date.parse(until) }),
+      },
+    };
+  }
+  if (action.kind !== "template-fired") return undefined;
+
   const values = detail["arguments"];
   const where =
     template === undefined || typeof values !== "object" || values === null

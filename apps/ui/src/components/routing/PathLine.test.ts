@@ -570,7 +570,7 @@ test("shows the name a blank leaf would get rather than a gap", async () => {
   servingFolder([]);
   draw("", SAID);
 
-  expect(await screen.findByText("+ Picker needs a trail.md")).toBeDefined();
+  expect(await screen.findByText("+ picker-needs-a-trail.md")).toBeDefined();
 });
 
 /**

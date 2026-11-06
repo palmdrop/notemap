@@ -1,16 +1,18 @@
 <script lang="ts">
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { notes } from "$lib/batching";
-  import { left, type Firing } from "$lib/firings.svelte";
+  import { left, offerOf, type Firing } from "$lib/firings.svelte";
 
   import { PANEL } from "./panel";
 
   /**
-   * Routes a trigger tag has in flight. One says its template and how long is
-   * left to call it off, and offers the cancel; once its window has closed the
-   * count gives way to the asking mark, the delivery being attempted. More than
-   * one are counted, and read and cancelled one by one in the panel — unless
-   * one batch fired them all, which is said and cancelled as one.
+   * Routes in flight: a trigger tag's, or a decision made by hand. One says its
+   * name and how long is left to call it off, and offers `undo`; once its window
+   * has closed the count gives way to the asking mark, the delivery being
+   * attempted, and nothing is offered until the pool says it will try again,
+   * when the offer is `cancel`. More than one are counted, and read and called
+   * off one by one in the panel — unless one batch fired them all, which is
+   * said and cancelled as one.
    */
   let {
     open,
@@ -52,6 +54,7 @@
 {#if open.length === 1}
   {@const firing = open[0]!}
   {@const seconds = left(firing, now)}
+  {@const word = offerOf(firing, now)}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
     <span class="max-narrow:hidden"
       >routing <span class="font-semibold">{firing.name}</span
@@ -63,14 +66,16 @@
     {:else}
       <Asking />
     {/if}
-    <button
-      type="button"
-      class="underline"
-      aria-label={`cancel routing ${firing.name}`}
-      onclick={() => oncancel(firing)}
-    >
-      cancel
-    </button>
+    {#if word !== undefined}
+      <button
+        type="button"
+        class="underline"
+        aria-label={`${word} routing ${firing.name}`}
+        onclick={() => oncancel(firing)}
+      >
+        {word}
+      </button>
+    {/if}
   </span>
 {:else if batch !== undefined}
   {@const name = open[0]!.name}
@@ -85,14 +90,16 @@
     {:else}
       <Asking />
     {/if}
-    <button
-      type="button"
-      class="underline"
-      aria-label={`cancel routing ${notes(open.length)} with ${name}`}
-      onclick={() => oncancelbatch(batch)}
-    >
-      cancel
-    </button>
+    {#if open.some((firing) => offerOf(firing, now) !== undefined)}
+      <button
+        type="button"
+        class="underline"
+        aria-label={`cancel routing ${notes(open.length)} with ${name}`}
+        onclick={() => oncancelbatch(batch)}
+      >
+        cancel
+      </button>
+    {/if}
   </span>
 {:else if open.length > 1}
   <button

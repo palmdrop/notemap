@@ -41,4 +41,4 @@ export { PAYLOAD_TYPES } from "./payload";
 export { POOL_SETTINGS } from "./settings";
 
 // A host reads a filter off its own request and hands core what this made of it.
-export { tagFilter } from "./filter";
+export { MAX_WORDS, tagFilter, wordsFilter } from "./filter";

@@ -92,8 +92,12 @@ async function start(): Promise<void> {
     ...(config.mirror === undefined ? {} : { mirrorRoot: config.mirror.root }),
     accounts,
     log,
+    // A delivery held for its window carries `until`; the runner wakes to claim
+    // it then rather than on whichever poll follows.
     heard: (action) => {
-      if (action.kind === "template-fired") runners.delivery?.wake();
+      if (action.kind === "template-fired" || action.kind === "delivery-held") {
+        runners.delivery?.wake();
+      }
     },
   });
 

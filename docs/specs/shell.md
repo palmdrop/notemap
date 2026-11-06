@@ -1,8 +1,25 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-10-30
+**Last updated**: 2026-11-01
 **Shipped**:
+
+- 2026-11-01 — **The queue and the feed can be searched.** A line in the list head, `/` from either
+  surface, on the address as `words=`; every term must be in an item's words or its attachments'
+  names, in any case and with or without accents. ([plan](../plans/features-from-the-mobile-rethink.md))
+- 2026-11-01 — **A route made by hand is in flight until it lands.** It waits a short window
+  before anything is attempted, counting down on the status line with `undo`, then nothing while
+  the delivery is attempted, and `cancel` only once the pool is retrying it; the process surface
+  offers the same beside where the item has gone,
+  and a held row's line for a record not yet delivered ends in what its route in flight offers. The
+  landing is the notice.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
+- 2026-11-01 — **A decision made by hand can be saved as a template**, from the routing record's
+  block or from the notice saying it landed. The form opens prefilled from the record; a note name derived
+  from the item is left off, so the template names each item's own note. A routed note named after
+  its capture is a short slug, and a taken one is never appended to: the composer draws it as a new
+  note beside the one that is there.
+  ([plan](../plans/features-from-the-mobile-rethink.md))
 
 - 2026-10-30 — **Rows can be marked for a batch on the queue and the feed**, and tagged, untagged,
   discarded or undiscarded at once. A tag changed on a marked row changes every marked row, and a
@@ -1066,7 +1083,13 @@ arrow, the destination and the turning mark could each end up on a line of its o
 and the destination are one unit and the place with the mark after it another, and the line breaks
 between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
 the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
-it. An unrouted row
+it. **A held row's line for a record not yet delivered ends in what its route in flight offers**
+*(2026-11-01; amended 2026-11-03, when it always said `cancel`)*, on the queue and the feed alike, as
+a mark by hand's ends in `undo`: `undo` inside the window, nothing while the delivery is attempted,
+and `cancel` once the pool is retrying it — read from the same route in flight the status line
+draws, so the two never disagree and the window's edge goes from `undo` straight to nothing. A
+pending record this shell never saw decided offers `cancel`, being one the pool may be retrying. A
+delivered one offers nothing there, being withdrawn in its block. An unrouted row
 carries nothing, the absence being the word. The only state words left are the ones no line
 says: `discarded`, `revised`, and `[+]` on a revision *(2026-10-01; the word `revision` before it,
 which read as one more tag)*, with `revision` as its label and hover. A delivery that failed is the log's and the status line's to
@@ -1221,6 +1244,16 @@ address last said.
   more`**: whether there is more is what that page answers, and a `load more` that goes as soon as
   it lands is a flash of a claim nobody can act on.
 
+**Search is a line of its own in the list head** *(2026-11-01, [ADR 70](../adr/0070-a-filter-may-name-words.md))*, beside `filter ▾` on the
+queue and the feed: a filter by words, which the shell says as search. Each term must be in an
+item's words or its attachments' names, in any case and with or without accents, inside a word too;
+the list keeps its own order. `/` puts the caret in it from either surface. It is on the address as
+`words=`, as typed, read again a moment after the last key rather than at every letter; the first
+change of a run of typing pushes an entry and the rest replace it, so back takes the words off as
+it takes a tag. Never remembered, as no filter is, and not counted in `filter N ▾`: the line says
+itself. `clear filters` takes the words off with the rest. An emptied list says
+`Nothing matches “bike rack”.`, and beside other filters names the words first.
+
 - **Nothing under the list head says what it is filtered by.** The control's count says a filter
   is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken
   out the same day, as noise above the rows.
@@ -1294,7 +1327,11 @@ composer's `tags` section draws)*; **under them, where the item has gone already
 `→ **Obsidian vault** …/2026-09-13.md, **manual**`, the records as a row's routing line names them, cut
 with `…` where the line runs out and whole in its `title`. It is a fact about the capture rather
 than the decision, and it is drawn where the decision's scrolling cannot take it out of view, so a
-second route is made knowing the first. It is read again after every route. Under that, the words, at the prose measure, with the
+second route is made knowing the first. It is read again after every route, and when a record on
+it lands. **The route just made here offers `undo` beside the line** *(2026-11-01)* while its
+window is open, and whatever the status line's route in flight offers after it — nothing while the
+delivery is attempted, `cancel` once the pool is retrying it *(2026-11-03)* — until it lands; then
+the line reads where it went. Under that, the words, at the prose measure, with the
 capture's attachments above them as [Content](#content) draws them. Under the words, while not editing, a block per link they name *(2026-09-24;
 [Content](#content))*. `edit`, a double click on the words, or `e` opens editing: the words become a
 ruled box with the caret in it, `restore` puts them back and a bold `done` closes the
@@ -1348,7 +1385,10 @@ is the decision it became — the template where nothing was touched, the destin
 where something was. Which of the two went is read off whether anything changed. **A template
 applied here carries its trigger tag onto the item**, after the route, so an item filed by a
 template carries the same classification whichever way the template was reached; a decision the
-person corrected is their own and takes no tag; cancelled, the tag comes back off. **A template
+person corrected is their own and takes no tag; cancelled, the tag comes back off. **An undo takes
+the tag back first** *(2026-11-03)*: one the client has not sent leaves the outbox unsent, and one
+already on its way is let land before the route is called off, since a tag reaching the pool after
+the record is gone would find nothing to absorb it and file the item again. **A template
 that cannot apply is drawn with its reason and not removed** — stranded, its destination disabled
 (`its destination is disabled`), its capability no longer declared. A template is the person's own
 decision, and hiding it because of a setting elsewhere is the worse surprise. Never a pattern: expansion is statically total.
@@ -1504,7 +1544,9 @@ the name the adapter would give a second note there — and commits nothing, so 
 and is routed as any line is. What is stored is then `create-or-append` under a name that was free
 when it was drawn, so a note made under that name before the delivery is added to. A blank leaf is
 not a gap: the name the note would get is shown before committing, derived by the same code the
-adapter will run.
+adapter will run. A derived name is never appended to *(amended 2026-11-01,
+[ADR 68](../adr/0068-a-derived-note-name-is-a-short-slug-and-is-never-appended-to.md))*: where it
+is taken, the row reads `+` under the free name the adapter will give it.
 
 **Places routed to before are consulted beside the line** *(amended 2026-09-04: they used to sit
 under it)*, above what the destination merely offers, under their own label, with **how often each
@@ -1946,9 +1988,14 @@ that carried words of its own in place of the capture's
 ([ADR 45](../adr/0045-a-delivery-may-carry-its-own-content.md)) and kept nothing draws those words,
 so what went is still on the page. A pending record's body is one line, `not yet delivered`.
 
-**The foot holds the presses.** `open ↗` follows the record's URL where it carries one. On the right, `cancel`, in alarm, on a pending
-record — a reservation whose delivery has not landed is the person's to take back — and `undo` on
-a decision made by hand, which is the same call; both say so in the status line and the surface reads
+**The foot holds the presses.** `open ↗` follows the record's URL where it carries one.
+**`save as template`** *(2026-11-01, [features from the mobile
+rethink](../plans/features-from-the-mobile-rethink.md))* sits beside it on a record made by hand to a
+destination the shell still holds, and not withdrawn. It opens Templates with the form prefilled
+from the record (below). On the right, on a pending record, what its route in flight offers, as the
+row's line does *(amended 2026-11-03)*: `undo` inside the window, `cancel` in alarm once the pool is
+retrying it, nothing between — a reservation whose delivery has not landed is the person's to take
+back — and `undo` on a decision made by hand, which is the same call; both say so in the status line and the surface reads
 its records again. A foot with nothing in it is not drawn. *Retired 2026-10-22*: `item` in the
 foot, in the log alone — the log's line leads with the capture's words, which are already the way
 to it.
@@ -2410,7 +2457,9 @@ flight, how much is left, and whether the pool answers.
 panel and is what the panel hangs from — a button that came and went with what had been said would
 be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
 accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
-cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`). **The line is
+cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on the landing of
+a route made by hand, `save as template` *(2026-11-01)*, which opens Templates on that record).
+**The line is
 short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
 `routing failed: taken.md is already there` — and never the code, the place, or the capture, which
 are the panel's, and the log's beyond it. Below `narrow`, `notices` is its mark alone. A notice rises into the line as it arrives: the line is read at
@@ -2430,7 +2479,8 @@ nothing vanishes under somebody's hand; let go, everything lingers again from th
 
 **The right is the counts**, each drawn only while it is true, in a fixed order:
 
-- **A route in flight** — `routing **research** 12s`, with `cancel` (below).
+- **A route in flight** — `routing **research** 12s`, with `undo`; `cancel` once the pool is
+  retrying it (below).
 - **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
   refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
   **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
@@ -2482,10 +2532,12 @@ that the log — read on its own tempo, and holding the pool's own account of th
 does not report it back minutes later as news.
 
 **A routing says only what the record says.** A decision the pool recorded and delivered names
-where it landed; one it recorded and has not carried out reads as **retrying**, and claims no
-landing. The difference is not a nicety: a pending record is one whose delivery was attempted and
-did not go, and the shell saying `routed` there would be inventing the one fact only the delivery
-can establish. What it landed as is said later, when the pool writes it.
+where it landed; one it recorded and has not carried out is a route in flight, and claims no
+landing. The shell saying `routed` there would be inventing the one fact only the delivery can
+establish. What it landed as is said later, when the pool writes it. *(Amended 2026-11-03: a
+pending record read as `retrying`, when every one had been attempted and not gone; since
+2026-11-01 most are waiting out their window, and `retrying` is said only when the log says the
+pool will try again.)*
 
 **A notice names the capture, not only the place** *(2026-09-03)*: what happened and where, the
 path a copy went to, and the stamp the row was read by with the capture's own first words, a colon
@@ -2538,19 +2590,36 @@ store that refused the words, or bytes that could not be read back.
 **`delete`** asks, and then lets it go. **`copy`** takes its words where the browser offers a
 clipboard. It is never resent as it was, since what refused it would refuse it again.
 
+**A route made by hand is in flight too** *(2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
+delivery waits the undo window, so a route from the composer, a template taken there included, is
+drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
+the destination, or for the template where one was taken, and followed by its place. It is drawn
+the moment the route answers, from the record and `until` the answer carries, and the log's
+`delivery-held` entry, carrying `until`, opens the same one on another device. **Inside the window the offer
+is `undo`; once it has closed, nothing, and `cancel` once the pool is retrying the delivery**
+*(amended 2026-11-03: `cancel` was offered as soon as the window closed, while the delivery was
+being attempted and a cancel was refused)* — the same call, said as what it is: taking back the
+decision just made, and calling off a delivery the pool will try again. It never
+says `undo` of a record that has landed, which is withdrawn in its block. The route is no longer
+a notice when it is made; the landing is, `routed **Vault** inbox/a-thought.md`, as a fired
+template's is. A destination that refuses it after the window is said as a fired template's
+failure is: `routing failed: …`, in the accent, `back in the queue`, leading to the item. The
+decision typed into the composer is gone by then.
+
 **A route a trigger tag made is in flight, not a notice** *(2026-09-30, amending 2026-09-07)*.
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
 Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
-**`research`**, the seconds left in the window, and **`cancel`**. Where the template asked for
+**`research`**, the seconds left in the window, and **`undo`** *(`cancel` until 2026-11-01)*. Where the template asked for
 something, what it was given follows the name, label then value — `routing **todo** list Next`
 *(2026-10-19)* — read from the record the tag made, or from `template-fired`'s `arguments`. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
-window closes the count gives way to the asking mark — the delivery is being attempted — and
-`cancel` stays, since a pending record can be called off until it resolves. **The shell asks how it
+window closes the count gives way to the asking mark — the delivery is being attempted — and the
+offer goes with it, since the pool refuses to call off a delivery it is attempting *(amended
+2026-11-03; `cancel` stayed)*. It comes back once the pool says it will try again. **The shell asks how it
 went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
 once each, timed by this device's clock as the countdown is, and only those still ahead for a
 firing first heard of from the log — rather than waiting on the watcher's ten-second tempo, since most deliveries land
@@ -2559,8 +2628,9 @@ within a second of being attempted. It is never drawn in the accent: nothing has
 
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
-record is still pending, so the route stays in flight with its `cancel` beside the `retrying`
-notice. After a catch-up too long to read out, the routes still in flight are asked about, since how
+record is still pending, so the route stays in flight beside the `retrying` notice, and offers
+`cancel` again *(2026-11-03)*, since between attempts the pool can call it off. A cancel the pool refuses says why, in the accent: `could not cancel: that delivery has already
+started; it cannot be called back` *(2026-11-03)*. After a catch-up too long to read out, the routes still in flight are asked about, since how
 they ended may be on a page nobody read. What it ended as is then a notice like any other — `routed **research**` naming the
 template, a failure naming its reason — and one decision reads as one thing from beginning to end
 rather than a route still on its way beside the news that it failed.
@@ -2620,7 +2690,8 @@ happens when nobody is looking at it. The shell **reads the action log on its ow
 ([client.md](client.md#the-action-log)) and says what it finds, so a failure minutes after the
 decision reaches the person who made it without anybody opening `/log`.
 
-**Five kinds are said out loud and no others**: `routed`, `delivery-cancelled`, `delivery-failed`,
+**Five kinds are said out loud and no others** *(`delivery-held`, a decision held for its window,
+opens a route in flight instead, as `template-fired` does; 2026-11-01)*: `routed`, `delivery-cancelled`, `delivery-failed`,
 `work-failed`, `work-abandoned` — the three the log already spends the accent on, the landing, and
 a decision called off, which is said briefly so one taken back on another device is not news
 nobody hears *(the count read four from 2026-09-07, when the cancellation was added, until
@@ -2839,6 +2910,21 @@ line and opened alike. A
 stranded template — one whose destination was deleted — still leads with that and is repointed by an
 ordinary edit of its destination field; the actions are `check again` and `edit`, with `delete` at the right.
 
+**The form says what it is missing** *(2026-11-03)*. While the name is blank, `save` is disabled and
+the line under the field says `a template needs a name`. The trigger tag may be left blank, which
+is a template with no tag, applied by hand.
+
+**A template may be saved from a routing record** *(2026-11-01, [features from the mobile
+rethink](../plans/features-from-the-mobile-rethink.md))*. `/settings/templates?item=<id>&record=<id>`
+reads the item and its records and opens the form at the top of the section, holding the record's
+destination, capability and arguments, and its folder mode as `if missing`. Nothing is asked and no
+trigger tag is set; the caret is in the name, and saving creates. A note's name that is the one the
+item was given, or a free one beside it, is left off, so the place names a folder and each item gets
+its own note; a name somebody typed stays. A record that went with words of its own says under the
+fields that the rewrite stays with its item, since a template files each item's own words. A record
+that cannot be found, or is not one to save, is said in one line, and the section draws as usual.
+Saved or cancelled, the address lets go of the record.
+
 **A template may ask for a field each time it is applied** *(2026-10-19,
 [ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))*. In the form,
 every field that holds text ends in an `ask` option; taken, the field's label turns into a line to
@@ -3032,8 +3118,11 @@ before — or read and found to have kept nothing — is drawn at once and asked
 and a decision made by hand, which sends nothing, is not asked about at all. Where a record is known
 to hold what it sent, its line is held with the asking mark until it lands. `delivery-failed` draws the head and
 the failure's own words as the body, in alarm; `delivery-cancelled` the head and `called off`.
-`template-fired` draws no block — its fact is the template's name, and the routing it began is a
-row of its own. The block is the item's, drawn once and the same wherever a record is read.
+**`delivery-held` and `template-fired` draw no row at all** *(2026-11-03; amended 2026-11-04,
+`template-fired` drew a row of its own with no block, the template's name its fact)*: a route is
+one row, its landing or its cancellation, whether a hand or a trigger tag made it, since the
+decision is in flight on the status line while it lasts and the landing names the template. No view
+reads either. The block is the item's, drawn once and the same wherever a record is read.
 
 **Only what the watcher brings moves** *(2026-09-25)*. A record heard since the log was read
 slides in at its head, as a capture does on the queue, and grows into what it goes on to hold.
@@ -3058,7 +3147,7 @@ head's rule before it)*: `routing`, `captures`, `classification`, `pool`, taken 
 each taken, the count of them on the control, `everything` at the panel's foot while any is taken,
 and none taken being everything. Several may be taken, and the reading is the union of their
 kinds. A view is a fixed set of the pool's own kinds and the URL carries the kinds rather than the
-name — `?kind=routed,template-fired` — so a link somebody writes by hand reads the same way as one
+name — `?kind=routed,delivery-failed` — so a link somebody writes by hand reads the same way as one
 of these; a view is drawn taken where the kinds hold it whole, and a kind a hand-written link named
 outside every view it holds is let go with the first change. The pool does the narrowing: a page holds what it shows, where
 a shell sifting the page after the read would page over rows it then threw away. What arrives at

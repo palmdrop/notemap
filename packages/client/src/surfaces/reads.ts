@@ -1,6 +1,8 @@
 import { answered, type Api } from "#api/http";
 import type { ItemSlice } from "#api/types";
-import { saidBy, Unreachable } from "../errors";
+import { MAX_WORDS } from "@notemap/text";
+
+import { readRefusal, saidBy, Unreachable } from "../errors";
 import type { Writable } from "../observable/observable";
 import {
   cached,
@@ -34,12 +36,19 @@ function positionIn(next: string): string | undefined {
 
 function read(api: Api, surface: Surface, page: ListPage): Promise<ItemSlice> {
   const after = page.after;
-  const { tags, states, destinations, sources } = page.filter ?? WHOLE;
+  const { tags, words, states, destinations, sources } = page.filter ?? WHOLE;
+  // Refused here as the pool refuses it, so a surface read from the cache says the same.
+  if (words.join(" ").length > MAX_WORDS) {
+    return Promise.reject(
+      readRefusal({ error: { code: "words-too-long", limit: MAX_WORDS } }),
+    );
+  }
   const query = {
     order: page.order,
     limit: String(PAGE),
     ...(after === undefined ? {} : { after }),
     ...(tags.length === 0 ? {} : { tag: [...tags] }),
+    ...(words.length === 0 ? {} : { words: words.join(" ") }),
     ...(sources.length === 0 ? {} : { source: [...sources] }),
   };
 

@@ -415,13 +415,13 @@ test("leaves out what is not about the item it is narrowed to", async () => {
 test("narrows to a view's kinds, asking the pool rather than sifting the page", async () => {
   pool(held([anAction("one", { kind: "routed" })]));
   render(Log);
-  log.reading("newest-first", undefined, ["routed", "template-fired"]);
+  log.reading("newest-first", undefined, ["routed", "delivery-failed"]);
   await screen.findByText("routed");
 
   const read = asked().find((route) => route === "GET /v1/actions");
   expect(read).toBeDefined();
   expect(sentUrls().findLast((url) => url.includes("/v1/actions"))).toContain(
-    "kind=routed%2Ctemplate-fired",
+    "kind=routed%2Cdelivery-failed",
   );
 
   log.arrived(arriving(anAction("two", { kind: "tagged" })));
@@ -433,7 +433,6 @@ test("offers the views in a panel and says which are being read", async () => {
   render(Log);
   log.reading("newest-first", undefined, [
     "routed",
-    "template-fired",
     "delivery-failed",
     "delivery-cancelled",
     "delivery-withdrawn",
@@ -547,14 +546,14 @@ test("keeps an oldest-first walk where more happened than a page holds", async (
 
 /** The kind is the rail's second line, under the stamp, and is read as words. */
 test("draws the kind in the rail, under the stamp", async () => {
-  pool(held([anAction("one", { kind: "template-fired" })]));
+  pool(held([anAction("one", { kind: "template-edited" })]));
   const { container } = render(Log);
   reading();
 
-  const word = await screen.findByText("template fired");
+  const word = await screen.findByText("template edited");
   const rail = container.querySelector(".col-start-1");
   expect(rail?.contains(word)).toBe(true);
-  expect(screen.queryByText("template-fired")).toBeNull();
+  expect(screen.queryByText("template-edited")).toBeNull();
 });
 
 test("says discarded where the pool says archived", async () => {
@@ -578,7 +577,7 @@ test("says one fact per row, and never an id", async () => {
   pool(
     held([
       anAction("one", {
-        kind: "template-fired",
+        kind: "template-edited",
         detail: {
           record: "rec",
           template: "tpl",

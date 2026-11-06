@@ -6,7 +6,6 @@ import type {
 
 import { OWN_ARGUMENTS } from "./arguments";
 import { fieldsOf, type Field, type PathRole } from "./schema-form";
-import type { Raised } from "./notices.svelte";
 
 /**
  * The last segment of a place, prefixed `…/` where more remains before it: a
@@ -239,51 +238,4 @@ export function reinstatedKey(record: string): string {
 /** An item discarded, which an `undo` would put back. */
 export function discardedKey(item: string): string {
   return `discarded:${item}`;
-}
-
-/**
- * What a decision just made says about itself. A record the pool answered as
- * `pending` was attempted and did not go, so it reads as **retrying** — saying
- * it was routed would be the shell claiming the one thing only the delivery
- * can establish. It carries the way to the capture it was about: the row it
- * was made on may be gone by the time somebody reads this.
- */
-export function saidOf(
-  record: RoutingRecord,
-  nameOf: (destination: string) => string,
-  which: {
-    readonly about?: string;
-    readonly href?: string;
-    readonly reading?: Reading;
-  } = {},
-): Raised {
-  const where = {
-    ...(which.about === undefined ? {} : { about: which.about }),
-    ...(which.href === undefined ? {} : { href: which.href }),
-  };
-
-  if (record.target.kind !== "destination") {
-    return { what: "marked processed", ...where, key: keyFor(record.id) };
-  }
-
-  const name = nameOf(record.target.destination);
-  const place = placeIn(record, undefined, which.reading);
-
-  return record.state === "delivered"
-    ? {
-        what: "routed",
-        subject: name,
-        ...(place === undefined ? {} : { why: place }),
-        ...where,
-        key: keyFor(record.id),
-      }
-    : {
-        what: "retrying",
-        subject: name,
-        why:
-          place === undefined
-            ? "not delivered yet"
-            : `not delivered yet to ${place}`,
-        ...where,
-      };
 }

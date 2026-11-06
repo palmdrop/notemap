@@ -17,6 +17,7 @@ import {
 
 import { keyboard, online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
+import { firings } from "$lib/firings.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED } from "$lib/said";
 import Process from "./Process.svelte";
@@ -46,6 +47,7 @@ vi.mock("$app/state", () => ({
 
 afterEach(() => {
   notices.clear();
+  firings.clear();
   online(true);
   went.to = [];
 });
@@ -687,6 +689,84 @@ test("puts a template's trigger tag on the item it routed", async () => {
     expect(sentTo(transport).map(routeOf)).toContain("POST /v1/items/one/tag");
   });
   expect(await sent()).toContainEqual({ tag: RESEARCH.triggerTag });
+  expect(notices.shown.at(-1)?.offer).toBeUndefined();
+});
+
+/**
+ * The tag goes after the route, so an undo pressed while it is still on its way
+ * would reach the pool first, and the tag would then find nothing to absorb it
+ * and file the item again.
+ */
+test("undoing a template's route lets its trigger tag land before calling the route off", async () => {
+  let release = () => {};
+  const held = new Promise<void>((done) => {
+    release = done;
+  });
+  const reached: string[] = [];
+  const record = {
+    id: "r",
+    item: "one",
+    at: WHEN,
+    until: new Date(Date.now() + 60_000).toISOString(),
+    state: "pending",
+    target: {
+      kind: "destination",
+      destination: VAULT,
+      capability: "create",
+      arguments: { directory: "research/2026-09-04" },
+    },
+    applied: { template: RESEARCH.id, firedByTag: false },
+  };
+
+  pool(async (request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/destinations") {
+      return json(200, { values: [aDestination()] });
+    }
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    if (route === "GET /v1/items/one/route/resolve") {
+      return json(200, {
+        destination: VAULT,
+        capability: "create",
+        arguments: { directory: "research/2026-09-04" },
+      });
+    }
+    if (route.endsWith("/description")) {
+      return json(200, { kind: "described", capabilities: [CREATE] });
+    }
+    if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: [record] });
+    }
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === "POST /v1/items/one/tag") {
+      await held;
+      reached.push("tag");
+      return json(200, aCapture());
+    }
+    if (route === "POST /v1/routing/r/cancel") {
+      reached.push("cancel");
+      return new Response(null, { status: 204 });
+    }
+    return json(404, { error: { code: "unknown-route" } });
+  });
+  // The surface draws the client's own copy, which a route then folds into.
+  await client.item("one");
+
+  draw();
+  await choose("research");
+  await screen.findByRole("button", { name: "edit place" });
+  await commit();
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/tag");
+  });
+
+  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await new Promise((done) => setTimeout(done, 20));
+  expect(reached).toEqual([]);
+
+  release();
+  await vi.waitFor(() => expect(reached).toEqual(["tag", "cancel"]));
 });
 
 /** Corrected, the decision is the person's own, and their tags are their own too. */
@@ -1252,6 +1332,13 @@ function routing(
       return json(200, { kind: "described", capabilities: [APPEND] });
     }
     if (route === "POST /v1/items/one/route") return json(200, record);
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, { values: [record] });
+    }
+    if (route === "GET /v1/items/one") return json(200, aCapture());
+    if (route === `POST /v1/routing/${String(record["id"])}/cancel`) {
+      return new Response(null, { status: 204 });
+    }
     if (route === "POST /v1/items/one/mark-processed") {
       return json(200, {
         id: "rec",
@@ -1491,7 +1578,7 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
   // In the tree, where the note is about to land, and nowhere else.
-  expect(await screen.findAllByText(/Picker needs a trail\.md/)).toHaveLength(
+  expect(await screen.findAllByText(/picker-needs-a-trail\.md/)).toHaveLength(
     1,
   );
   await commit();
@@ -2227,14 +2314,110 @@ const aTarget = {
   arguments: {},
 };
 
-/** The record goes up; what is said about it belongs to the surface below. */
-test("says in the corner where it went, and stays for a second place", async () => {
+const UNTIL = "2026-09-03T10:00:05.000Z";
+
+/** Taken back from where it was made, while nothing has been attempted. */
+test("offers undo under the head while the route just made is pending", async () => {
+  routing({
+    id: "u",
+    item: "one",
+    at: "2026-09-03T10:00:00.000Z",
+    // Still open whenever this runs.
+    until: new Date(Date.now() + 60_000).toISOString(),
+    state: "pending",
+    target: aTarget,
+  });
+  // The surface draws the client's own copy, which a route then folds into.
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+
+  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/u/cancel");
+  });
+  await vi.waitFor(() => expect(firings.open).toHaveLength(0));
+});
+
+/** A pending record the shell routed, its window closing `after` milliseconds from now. */
+function routedPending(after: number) {
+  routing({
+    id: "u",
+    item: "one",
+    at: "2026-09-03T10:00:00.000Z",
+    until: new Date(Date.now() + after).toISOString(),
+    state: "pending",
+    target: aTarget,
+  });
+}
+
+test("offers nothing once the window has closed, while the delivery is attempted", async () => {
+  routedPending(1_200);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+
+  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  await vi.waitFor(
+    () => expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+    { timeout: 3_000 },
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(firings.open.map((one) => one.record)).toEqual(["u"]);
+});
+
+test("offers cancel once the pool says it will try the delivery again", async () => {
+  routedPending(-1_000);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  await vi.waitFor(() =>
+    expect(firings.open.map((one) => one.record)).toEqual(["u"]),
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+
+  firings.retrying("u");
+
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/routing/u/cancel");
+  });
+  await vi.waitFor(() => expect(firings.open).toHaveLength(0));
+});
+
+test("the offer goes once the route lands", async () => {
+  routedPending(60_000);
+  await client.item("one");
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+
+  // What the status line does on reading the landing from the log.
+  firings.closed("u");
+
+  await vi.waitFor(() =>
+    expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+  );
+  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+});
+
+/** Where it landed is the log's to say; until then it is a route in flight. */
+test("draws the route in flight with its window, and stays for a second place", async () => {
   routing({
     id: "r",
     item: "one",
     at: "2026-09-03T10:00:00.000Z",
-    state: "delivered",
-    pointer: "notes/inbox/picker.md",
+    until: UNTIL,
+    state: "pending",
     target: aTarget,
   });
 
@@ -2243,12 +2426,14 @@ test("says in the corner where it went, and stays for a second place", async () 
   await commit();
 
   await stayed();
-  const said = notices.shown.at(-1);
-  expect(said?.what).toBe("routed");
-  expect(said?.subject).toBe("Vault");
-  expect(said?.why).toBe("notes/inbox/picker.md");
-  expect(said?.href).toBe("/items/one");
-  expect(said?.key).toBe("record:r");
+  expect(firings.open.at(-1)).toMatchObject({
+    record: "r",
+    item: "one",
+    name: "Vault",
+    until: Date.parse(UNTIL),
+    href: "/items/one",
+  });
+  expect(notices.shown).toHaveLength(0);
 
   await choose(/Vault/);
   await commit();
@@ -2660,7 +2845,7 @@ test("the preview's head says the full path the typed line names", async () => {
   await fireEvent.input(line, { target: { value: "research/" } });
 
   expect(await screen.findByText(/# a thought/)).toBeDefined();
-  expect(screen.getByText("Vault / research/a thought.md")).toBeDefined();
+  expect(screen.getByText("Vault / research/a-thought.md")).toBeDefined();
 });
 
 /** The two layouts, by width: asserted as the classes that make them. */

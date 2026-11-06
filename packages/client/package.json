@@ -40,6 +40,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@notemap/text": "workspace:*",
     "openapi-fetch": "^0.17.0",
     "rxjs": "^7.8.2",
     "uuid": "^14.0.1"

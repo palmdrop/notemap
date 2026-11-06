@@ -23,6 +23,7 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@notemap/text": "workspace:*",
     "dequal": "^2.0.3",
     "image-size": "^2.0.4"
   }
