@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { fold, holds, stringsIn, termsOf } from "./fold";
+import { fold, holds, stringsIn, termsOf, unaccented } from "./fold";
 
 describe("fold", () => {
   it("ignores case and accents", () => {
@@ -10,6 +10,10 @@ describe("fold", () => {
 
   it("makes every run of whitespace one space, and trims it", () => {
     expect(fold("  a\n\tbike   rack ")).toBe("a bike rack");
+  });
+
+  it("is `unaccented`, which leaves whitespace as it was", () => {
+    expect(unaccented(" Café\n\tÖLAND ")).toBe(" cafe\n\toland ");
   });
 
   it("leaves a letter that lower-casing decomposes whole", () => {

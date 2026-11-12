@@ -36,6 +36,10 @@
     text-decoration: underline;
   }
 
+  ::highlight(search) {
+    text-shadow: var(--text-shadow-bold);
+  }
+
   /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */
   button:not(:disabled) {
     cursor: pointer;

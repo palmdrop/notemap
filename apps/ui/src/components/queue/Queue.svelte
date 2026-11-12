@@ -431,6 +431,7 @@
     item={row}
     surface="queue"
     filter={$queue.filter.tags}
+    terms={$queue.filter.words}
     selected={!marking.on && selected === row.id}
     marked={marking.has(row.id)}
     cursor={marking.on && selected === row.id}

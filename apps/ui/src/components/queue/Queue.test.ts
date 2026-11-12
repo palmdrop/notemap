@@ -14,6 +14,7 @@ import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
+import { registering, said } from "$testing/highlights";
 import { rows as layout } from "$lib/rows.svelte";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
@@ -2265,5 +2266,17 @@ test("`/` puts the caret in the search line, and the words go on the address", a
   await fireEvent.input(line, { target: { value: "bike rack" } });
   await vi.waitFor(() => {
     expect(String(went.to.at(-1))).toBe("http://localhost/?words=bike+rack");
+  });
+});
+
+test("highlights in each row the words the queue is searched by", async () => {
+  const highlights = registering();
+  at.path = "/?words=BIKE";
+  pool(queued("a bike rack", "a bíke shed"));
+  render(Queue);
+  await screen.findByText("a bike rack");
+
+  await vi.waitFor(() => {
+    expect(said(highlights())).toEqual(["bike", "bíke"]);
   });
 });
