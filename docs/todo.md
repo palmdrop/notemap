@@ -40,7 +40,7 @@
 
 - [ ] highlight things that match the search
 
-- [ ] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
+- [x] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
 
 ## Composer and capture
 

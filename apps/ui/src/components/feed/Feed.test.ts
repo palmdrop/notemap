@@ -744,6 +744,38 @@ test("read by when rows were processed, a row marked processed waits where it st
   await vi.waitFor(() => expect(order()).toEqual(["two", "three", "one"]));
 });
 
+test("read by when rows were processed, a row selected after another stays where it is", async () => {
+  rememberKey("processed");
+  pool((request) =>
+    routeOf(request) === "GET /v1/feed"
+      ? json(200, {
+          values: [anItem("three"), anItem("two"), anItem("one")],
+        })
+      : json(200, { values: [] }),
+  );
+
+  render(Feed);
+  await screen.findByText("one");
+
+  const order = () =>
+    ["one", "two", "three"].sort((a, b) =>
+      screen.getByText(a).compareDocumentPosition(screen.getByText(b)) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1,
+    );
+
+  await open(0);
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await open(2);
+  await tick();
+  expect(order()).toEqual(["three", "two", "one"]);
+
+  await open(0);
+  await tick();
+  expect(order()).toEqual(["three", "two", "one"]);
+});
+
 test("a discard of marked rows says how many are already processed before it is sent", async () => {
   pool(
     held(

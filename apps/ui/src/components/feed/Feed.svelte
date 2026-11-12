@@ -119,6 +119,7 @@
 
   /** Where the selected row last stood, for when it leaves. */
   let stood = $state<number | undefined>(undefined);
+  let stoodFor: string | undefined;
 
   /** The selected row's own copy, which outlives its place on a filtered feed. */
   const heldRow = $derived(client.held(selected ?? ""));
@@ -136,7 +137,7 @@
     // Read by when rows were processed, a decision moves its own row; it waits where it
     // stood until the selection leaves it, as one leaving a list does.
     const at = live.findIndex((row) => row.id === selected);
-    const was = untrack(() => stood);
+    const was = untrack(() => (stoodFor === selected ? stood : undefined));
     if (at !== -1) {
       if ($feed.by !== "processed" || was === undefined || was === at)
         return live;
@@ -151,8 +152,6 @@
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
-
-  let stoodFor: string | undefined;
 
   $effect(() => {
     if (selected === undefined) stoodFor = undefined;
