@@ -17,17 +17,20 @@ function accented(character: string): boolean {
 }
 
 /**
- * Words as a search compares them: lower-cased, accents dropped, every run of
- * whitespace one space. Lower-casing comes first, since it can itself
- * decompose a letter into one and a mark.
+ * Lower-cased and with its accents dropped, its whitespace as it was.
+ * Lower-casing comes first, since it can itself decompose a letter into one and
+ * a mark.
  */
-export function fold(text: string): string {
+export function unaccented(text: string): string {
   return [...text.toLowerCase().normalize("NFD")]
     .filter((character) => !accented(character))
     .join("")
-    .normalize("NFC")
-    .replace(/\s+/gu, " ")
-    .trim();
+    .normalize("NFC");
+}
+
+/** Words as a search compares them: `unaccented`, every run of whitespace one space. */
+export function fold(text: string): string {
+  return unaccented(text).replace(/\s+/gu, " ").trim();
 }
 
 /**

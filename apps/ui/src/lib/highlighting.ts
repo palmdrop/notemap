@@ -1,9 +1,8 @@
 import type { Attachment } from "svelte/attachments";
 
-import { found } from "./found";
+import { found } from "@notemap/text";
 
-/** The name the search's highlight is registered under, and styled by. */
-export const SEARCH = "search";
+const SEARCH = "search";
 
 function search(): Highlight | undefined {
   if (typeof CSS === "undefined" || !("highlights" in CSS)) return undefined;
