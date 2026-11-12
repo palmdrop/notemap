@@ -1,9 +1,16 @@
 <script lang="ts">
+  import type { Readable } from "svelte/store";
+
   import Prose from "./Prose.svelte";
 
-  let { text }: { text: string } = $props();
-
-  const terms = ["creme", "brulee", "rack"];
+  /** Read through a store, as a surface reads its filter's words off its page. */
+  let {
+    text,
+    searched,
+  }: {
+    text: string;
+    searched: Readable<{ readonly words: readonly string[] }>;
+  } = $props();
 </script>
 
-<Prose {text} {terms} />
+<Prose {text} terms={$searched.words} />

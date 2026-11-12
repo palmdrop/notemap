@@ -14,6 +14,7 @@ import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
+import { registering, said } from "$testing/highlights";
 import { rows as layout } from "$lib/rows.svelte";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
@@ -2269,20 +2270,13 @@ test("`/` puts the caret in the search line, and the words go on the address", a
 });
 
 test("highlights in each row the words the queue is searched by", async () => {
-  const registry = new Map<string, Set<Range>>();
-  vi.stubGlobal("CSS", { highlights: registry });
-  vi.stubGlobal("Highlight", Set);
+  const highlights = registering();
   at.path = "/?words=BIKE";
   pool(queued("a bike rack", "a bíke shed"));
   render(Queue);
   await screen.findByText("a bike rack");
 
-  try {
-    await vi.waitFor(() => {
-      const found = [...(registry.get("search") ?? [])];
-      expect(found.map((range) => range.toString())).toEqual(["bike", "bíke"]);
-    });
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  await vi.waitFor(() => {
+    expect(said(highlights())).toEqual(["bike", "bíke"]);
+  });
 });

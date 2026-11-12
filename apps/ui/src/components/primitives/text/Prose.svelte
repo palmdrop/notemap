@@ -15,6 +15,10 @@
   } = $props();
 
   const html = $derived(rendered(text));
+
+  // A prop read off a store counts as changed at every emission, even when it
+  // is the same array; the highlight is taken again only for new terms.
+  const searched = $derived(terms);
 </script>
 
 <!-- Drawn afresh with the html, so the highlight is taken again in the nodes
@@ -22,7 +26,7 @@
 {#key html}
   <div
     class="rendered break-words {full ? '' : 'max-w-prose'}"
-    {@attach highlighting(terms)}
+    {@attach highlighting(searched)}
   >
     <!-- eslint-disable-next-line svelte/no-at-html-tags -- `rendered` escapes the source's own HTML -->
     {@html html}
