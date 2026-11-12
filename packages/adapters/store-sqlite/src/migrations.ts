@@ -978,6 +978,9 @@ export const MIGRATIONS: readonly string[] = [
 
   UPDATE items SET words = ${WORDS};
   `,
+  `
+  CREATE INDEX actions_batch ON actions (batch, at, id) WHERE batch IS NOT NULL;
+  `,
 ];
 
 export const LAST_MODIFIED_AT = "last_modified_at";

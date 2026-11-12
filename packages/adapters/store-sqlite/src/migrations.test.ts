@@ -831,7 +831,7 @@ describe("holding when each item was processed", () => {
 });
 
 /** The version before an item held its words folded for a search. */
-const BEFORE_WORDS = MIGRATIONS.length - 1;
+const BEFORE_WORDS = 34;
 
 describe("an item's words, folded for a search", () => {
   it("are filled in for every item already there, attachments' names and all", async () => {

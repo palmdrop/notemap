@@ -92,17 +92,17 @@ result".
 
 Depends on nothing in phase 1. Verified against it.
 
-- [ ] Core's `ActionQuery` takes `batch`. The SQLite store filters on it, and a migration indexes
+- [x] Core's `ActionQuery` takes `batch`. The SQLite store filters on it, and a migration indexes
       `actions(batch)`.
-- [ ] Daemon: `batch` on `GET /v1/actions`, carried on `next`. OpenAPI written again, and the
+- [x] Daemon: `batch` on `GET /v1/actions`, carried on `next`. OpenAPI written again, and the
       client's types regenerated from it.
-- [ ] Client: `ActionsRequest.batch`.
-- [ ] Tests: store (batch, batch with kinds, batch with item), daemon route and `next`, client
-      query string.
-- [ ] http-v1.md: the parameter, and the line "Nothing reads by it yet" goes. client.md: the
+- [x] Client: `ActionsRequest.batch`.
+- [x] Tests: the daemon route over the SQLite store (batch, batch with item and kinds, `next`),
+      client query string.
+- [x] http-v1.md: the parameter, and the line "Nothing reads by it yet" goes. client.md: the
       read.
-- [ ] Verify: tests, typecheck, lint, `pnpm test:stack` (crosses the HTTP surface).
-- [ ] Commit.
+- [x] Verify: tests, typecheck, lint, `pnpm test:stack` (crosses the HTTP surface).
+- [x] Commit.
 
 ### Phase 3: the shell draws a batch as one row
 

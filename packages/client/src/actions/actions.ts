@@ -15,6 +15,8 @@ export type ActionsDeps = {
 };
 
 const PAGE = 25;
+/** A batch's entries are bounded by the batch, so one is read in as few pages as the pool allows. */
+const BATCH_PAGE = 500;
 
 /** Split on the first comma only: an id may hold one, an ISO 8601 instant may not. */
 function positionOf(after: string): ActionPosition {
@@ -65,12 +67,13 @@ export function createActions(deps: ActionsDeps): Actions {
   }
 
   async function read(request: ActionsRequest): Promise<ActionsPage> {
-    const { after, item, kinds, order } = request;
+    const { after, item, batch, kinds, order } = request;
     const query = {
       order,
-      limit: String(PAGE),
+      limit: String(batch === undefined ? PAGE : BATCH_PAGE),
       ...(after === undefined ? {} : { after: formatted(after) }),
       ...(item === undefined ? {} : { item }),
+      ...(batch === undefined ? {} : { batch }),
       ...(kinds === undefined || kinds.length === 0
         ? {}
         : { kind: kinds.join(",") }),

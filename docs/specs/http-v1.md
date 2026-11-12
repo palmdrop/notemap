@@ -2077,6 +2077,7 @@ sandbox already covers.
 | `limit` | `50` | 1–500 |
 | `after` | *(absent)* | The position to continue from |
 | `item` | *(absent)* | Narrows the read to one subject |
+| `batch` | *(absent)* | Narrows the read to the entries one batch wrote |
 | `kind` | *(absent)* | Narrows the read to entries of these kinds, comma-separated |
 
 - `order`, `limit` and `after` mean what they mean on the feed and are refused in the same ways.
@@ -2090,6 +2091,9 @@ sandbox already covers.
   nothing answers an empty page. The log outlives the material it describes
   ([core.md](core.md#the-action-log)), so a purged item's entries are a normal thing to ask for
   and `404 no-such-item` would be a lie about a log that holds them.
+- **`batch` is not validated either** *(added 2026-11-12)*, for the same reason, and because the
+  pool never holds a batch to check against: an id no batch wrote answers an empty page. It
+  composes with `item` and `kind`.
 
 ```json
 {
@@ -2114,7 +2118,7 @@ sandbox already covers.
 - `detail` is open JSON whose shape follows the kind. It carries facts and never a sentence, the
   same as an error body.
 - `batch`, where present, is the id of the [batch](#a-batch-of-items) the entry was written by,
-  as the client that made the batch named it. Nothing reads by it yet.
+  as the client that made the batch named it, and what `batch` reads by.
 - `next` is a ready-to-fetch relative URL on the same terms as the feed's, carrying the order, the
   limit, the filter where there is one, and the next position. It is absent on the last page.
 

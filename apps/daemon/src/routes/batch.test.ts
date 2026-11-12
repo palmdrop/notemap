@@ -141,6 +141,43 @@ describe("a batch applying a template", () => {
     expect(log.values.map((one) => one.batch)).toEqual(["batch-7", "batch-7"]);
   });
 
+  it("reads the log by batch, and carries the batch into next", async () => {
+    const host = serving();
+    const [first, second, third] = await captureMany(host.app, 3);
+    const READING = { kind: "tag", tag: "reading" };
+
+    await batch(host, [first!, second!], READING, "batch-7");
+    await batch(host, [third!], READING, "batch-8");
+    await send(host.app, `/v1/items/${first}/tag`, { tag: "loose" });
+
+    type Read = {
+      values: { subject: string; batch?: string }[];
+      next?: string;
+    };
+    const page = (await body(
+      await host.app.request("/v1/actions?batch=batch-7&limit=1"),
+    )) as Read;
+    const rest = (await body(await host.app.request(page.next ?? ""))) as Read;
+
+    expect(
+      new URL(page.next ?? "", "http://localhost").searchParams.get("batch"),
+    ).toBe("batch-7");
+    expect(
+      [...page.values, ...rest.values].map((one) => [one.subject, one.batch]),
+    ).toEqual([
+      [second, "batch-7"],
+      [first, "batch-7"],
+    ]);
+    expect(rest.next).toBeUndefined();
+
+    const narrowed = (await body(
+      await host.app.request(
+        `/v1/actions?batch=batch-7&item=${first}&kind=tagged`,
+      ),
+    )) as Read;
+    expect(narrowed.values.map((one) => one.subject)).toEqual([first]);
+  });
+
   it("acts once on an item named twice", async () => {
     const host = serving();
     await template(host);
