@@ -1875,6 +1875,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
 - **A reservation a batch's tag fired keeps the batch** (added 2026-11-01), on the record's
   `applied`, beside the template and `firedByTag`. It is what a batch sent again reads to find what
   it reserved the first time. The log never reads the id back.
+- **Every entry a batch's reservation goes on to write carries the batch** (added 2026-11-12),
+  read from the record's `applied`: `routed`, `delivery-failed`, `work-abandoned`,
+  `delivery-cancelled`, and the `untagged` that gives the trigger tag back where the reservation
+  never landed. A batch is then one thing in the log however long its deliveries took. Withdrawing
+  what a batch filed, and putting it back, are gestures of their own and carry none.
 - **`tag` and `untag` say what they did** (added 2026-11-01): the item, whether anything changed,
   and for `tag` the reservation it fired where it fired one. An absorbed tag or untag answers
   `changed: false`, so a caller never works it out from a read before and after.

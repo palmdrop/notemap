@@ -1,7 +1,7 @@
 import { usability } from "../destinations/usability";
 import type { PoolPorts } from "#types/api/ports";
 import type { Asset } from "#types/domain/asset";
-import type { RoutingRecordId } from "#types/domain/ids";
+import type { BatchId, RoutingRecordId } from "#types/domain/ids";
 import type { Item } from "#types/domain/item";
 import type { Payload } from "#types/domain/payload";
 import type {
@@ -40,6 +40,12 @@ export function templateDetail(record: RoutingRecord): JsonObject {
   return applied === undefined
     ? {}
     : { template: applied.template, firedByTag: applied.firedByTag };
+}
+
+/** The batch whose tag reserved a record, for every entry the reservation goes on to write. */
+export function batchOf(record: RoutingRecord): { batch?: BatchId } {
+  const batch = record.applied?.batch;
+  return batch === undefined ? {} : { batch };
 }
 
 export function asDeliveryWorkOutcome(outcome: DeliveryOutcome): WorkOutcome {

@@ -20,7 +20,7 @@ import type {
 } from "#types/domain/routing";
 import type { Result } from "#types/result";
 import { later } from "#utils/time";
-import { destinationDetail, templateDetail } from "./delivery";
+import { batchOf, destinationDetail, templateDetail } from "./delivery";
 import { releaseTriggerTag } from "../templates/fire";
 import { checkFor } from "./prepare";
 
@@ -136,7 +136,14 @@ export function cancelDelivery(
 
     const at = ports.clock.now();
     await tx.removeRoutingRecord(id);
-    const gave = await releaseTriggerTag(ports, tx, record, at, "person");
+    const gave = await releaseTriggerTag(
+      ports,
+      tx,
+      record,
+      at,
+      "person",
+      batchOf(record),
+    );
     await appendCancelled(ports, tx, record, at, gave);
     if (byHand) {
       await enqueueMirrorWrite(
@@ -166,6 +173,7 @@ function appendCancelled(
   return recordAction(ports, tx, {
     kind: "delivery-cancelled",
     subject: record.item,
+    ...batchOf(record),
     by: { kind: "person" },
     at,
     detail: {
