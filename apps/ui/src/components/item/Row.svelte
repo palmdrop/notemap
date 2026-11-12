@@ -37,6 +37,7 @@
     offline,
     surface,
     filter = [],
+    terms = [],
     commands,
     pending = false,
     layout = "rail",
@@ -61,6 +62,8 @@
     surface: "queue" | "feed" | "item";
     /** The tags the surface is read through, marked where the row carries them. */
     filter?: readonly string[];
+    /** The terms the surface is searched by, highlighted where the row's words hold them. */
+    terms?: readonly string[];
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
@@ -244,7 +247,7 @@
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}
-        <Payload {item} />
+        <Payload {item} {terms} />
       {/if}
       {#if slim}
         <div class="mt-1">

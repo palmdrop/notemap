@@ -10,7 +10,14 @@
   import AttachedLines from "./AttachedLines.svelte";
   import AttachedPictures from "./AttachedPictures.svelte";
 
-  let { item }: { item: Item } = $props();
+  let {
+    item,
+    terms = [],
+  }: {
+    item: Item;
+    /** The terms the surface is searched by, highlighted in the words. */
+    terms?: readonly string[];
+  } = $props();
 
   const attachments = $derived(client.attachments(item));
   const text = $derived(client.says(item));
@@ -20,7 +27,7 @@
 
 {#if text !== ""}
   <Clamp>
-    <Prose {text} />
+    <Prose {text} {terms} />
   </Clamp>
 {/if}
 

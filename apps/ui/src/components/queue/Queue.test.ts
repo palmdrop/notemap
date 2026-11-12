@@ -2267,3 +2267,22 @@ test("`/` puts the caret in the search line, and the words go on the address", a
     expect(String(went.to.at(-1))).toBe("http://localhost/?words=bike+rack");
   });
 });
+
+test("highlights in each row the words the queue is searched by", async () => {
+  const registry = new Map<string, Set<Range>>();
+  vi.stubGlobal("CSS", { highlights: registry });
+  vi.stubGlobal("Highlight", Set);
+  at.path = "/?words=BIKE";
+  pool(queued("a bike rack", "a bíke shed"));
+  render(Queue);
+  await screen.findByText("a bike rack");
+
+  try {
+    await vi.waitFor(() => {
+      const found = [...(registry.get("search") ?? [])];
+      expect(found.map((range) => range.toString())).toEqual(["bike", "bíke"]);
+    });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

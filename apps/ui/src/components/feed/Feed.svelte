@@ -376,6 +376,7 @@
     {item}
     surface="feed"
     filter={$feed.filter.tags}
+    terms={$feed.filter.words}
     selected={!marking.on && selected === item.id}
     marked={marking.has(item.id)}
     cursor={marking.on && selected === item.id}

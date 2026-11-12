@@ -38,7 +38,7 @@
 
 - [x] drag-and-drop for adding assets ([plan](plans/drag-in-attachments.md))
 
-- [ ] highlight things that match the search
+- [x] highlight things that match the search
 
 - [x] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
 

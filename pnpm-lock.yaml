@@ -418,6 +418,9 @@ importers:
       '@notemap/output-markdown':
         specifier: workspace:*
         version: link:../../packages/output-markdown
+      '@notemap/text':
+        specifier: workspace:*
+        version: link:../../packages/plumbing/text
       idb:
         specifier: ^8.0.3
         version: 8.0.3

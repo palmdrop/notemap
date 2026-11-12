@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 
 import { overflowing } from "$testing/dom";
 import Figure from "./Figure.svelte";
 import Prose from "./Prose.svelte";
+import ProseFixture from "./Prose.fixture.svelte";
 import ClampFixture from "./Clamp.fixture.svelte";
 
 test("draws what a person wrote as CommonMark", () => {
@@ -58,4 +59,54 @@ test("says nothing about more lines when nothing is cut off", () => {
 test("a stand-in names what it stands in for", () => {
   render(Figure, { label: "photographed page" });
   expect(screen.getByText("photographed page")).toBeDefined();
+});
+
+/** A registry of highlights where jsdom has none, holding what was registered. */
+function registering(): Map<string, Set<Range>> {
+  const registry = new Map<string, Set<Range>>();
+  vi.stubGlobal("CSS", { highlights: registry });
+  vi.stubGlobal("Highlight", Set);
+  return registry;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+const highlighted = (registry: Map<string, Set<Range>>) =>
+  [...(registry.get("search") ?? [])].map((range) => range.toString());
+
+test("highlights the terms in the words as drawn, and again when the words change", async () => {
+  const registry = registering();
+  const { rerender } = render(ProseFixture, {
+    text: "Crème **brûlée**, and a _bike_ rack",
+  });
+
+  expect(highlighted(registry)).toEqual(["Crème", "brûlée", "rack"]);
+  expect(screen.getByText("brûlée").tagName).toBe("STRONG");
+
+  await rerender({ text: "a RACK of Brûlée" });
+  expect(highlighted(registry)).toEqual(["RACK", "Brûlée"]);
+});
+
+test("highlights what the terms become, and nothing once the words are gone", async () => {
+  const registry = registering();
+  const { rerender, unmount } = render(Prose, {
+    text: "a RACK of Brûlée",
+    terms: ["rack"],
+  });
+
+  await rerender({ terms: [] });
+  expect(highlighted(registry)).toEqual([]);
+
+  await rerender({ terms: ["of"] });
+  expect(highlighted(registry)).toEqual(["of"]);
+
+  unmount();
+  expect(highlighted(registry)).toEqual([]);
+});
+
+test("draws the words alone where the browser has no highlights", () => {
+  render(Prose, { text: "a bike rack", terms: ["rack"] });
+  expect(screen.getByText("a bike rack")).toBeDefined();
 });
