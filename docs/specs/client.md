@@ -1,9 +1,10 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-01
+**Last updated**: 2026-11-12
 **Shipped**:
 
+- 2026-11-12 — **The log can be read by batch**, in pages of 500. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
   and rule the pool answers with. ([plan](../plans/features-from-the-mobile-rethink.md),
   [ADR 70](../adr/0070-a-filter-may-name-words.md))

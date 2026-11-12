@@ -2,9 +2,11 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-11-01
+**Last updated**: 2026-11-12
 **Shipped**:
 
+- 2026-11-12 — **`batch` narrows `GET /v1/actions` to one batch's entries**, unvalidated, and
+  `next` carries it. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-01 — **`words` filters `/v1/feed`, `/v1/queue` and `/v1/archived`**, and `next` carries
   it. Over 200 UTF-16 code units is `422 words-too-long`.
   ([plan](../plans/features-from-the-mobile-rethink.md),

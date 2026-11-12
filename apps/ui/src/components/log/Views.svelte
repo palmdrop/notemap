@@ -37,7 +37,7 @@
   }
 
   function read(kinds: readonly View["kinds"][number][] | undefined): void {
-    void goto(logHref(log.order, log.item, kinds), {
+    void goto(logHref(log.order, log.item, kinds, log.batch), {
       keepFocus: true,
       noScroll: true,
     });

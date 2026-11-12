@@ -21,3 +21,9 @@ test("carries the kinds it is narrowed to, in the pool's own words", () => {
     "/log?kind=routed%2Ctemplate-fired&order=newest-first",
   );
 });
+
+test("narrows to a batch", () => {
+  expect(logHref(undefined, undefined, undefined, "batch-7")).toBe(
+    "/log?batch=batch-7",
+  );
+});

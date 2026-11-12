@@ -4,6 +4,9 @@
 **Last updated**: 2026-11-12
 **Shipped**:
 
+- 2026-11-12 — **A batch's reservation carries the batch onto every entry it writes**: its
+  landing, each failed attempt, giving up, a cancel and the trigger tag given back. A batch reads as
+  one thing in the log however long its deliveries took. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-12 — **A field may carry a placeholder.** `x-notemap-placeholder` is a short example of
   what a settings or account field holds, for a form to draw while the field is empty. Core never
   reads it, and nothing is seeded from it.

@@ -82,7 +82,7 @@ export function asking(
 export type Ending = "routed" | "failed" | "cancelled";
 
 /** The words a batch is said in: what was done, and what an item it left as it was is. */
-function wordsFor(
+export function wordsFor(
   action: BatchAction,
   routing: boolean,
 ): {
@@ -104,16 +104,18 @@ function wordsFor(
 }
 
 /**
- * A batch's one notice, once every item in it has settled: how many it
- * changed, then what came of the rest, counted, and in the accent where
- * anything went wrong. `template` is the name
- * of the one a tag applied, where it applied one.
+ * A batch's one notice: how many it changed, then what came of the rest,
+ * counted, and in the accent where anything went wrong. `template` is the name
+ * of the one a tag applied, where it applied one. An ending not yet reached is
+ * counted as pending, which only the log has reason to say.
  */
-export function resultOf(
+export function resultOf<
+  Outcome extends { readonly outcome: BatchOutcome["outcome"] },
+>(
   action: BatchAction,
   template: string | undefined,
-  outcomes: readonly BatchOutcome[],
-  endings: readonly Ending[],
+  outcomes: readonly Outcome[],
+  endings: readonly (Ending | undefined)[],
 ): Raised {
   const routing =
     action.kind === "tag" &&
@@ -129,6 +131,7 @@ export function resultOf(
     : outcomes.length - refused - count("skipped");
 
   const counts: readonly [number, string][] = [
+    [endings.filter((one) => one === undefined).length, "pending"],
     [failed, "failed"],
     [endings.filter((one) => one === "cancelled").length, "cancelled"],
     [count("skipped"), words.already],

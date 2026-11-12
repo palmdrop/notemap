@@ -1,9 +1,9 @@
 # A batch in the log
 
 **Date**: 2026-11-12
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/core.md`, `docs/specs/http-v1.md`, `docs/specs/client.md`, `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-11-12
 
 ---
 
@@ -57,6 +57,7 @@ result".
 - **A page that adds no visible row.** A page made up only of a drawn batch's entries draws
   nothing new, so `More`'s foot may stay in view without asking again. Fallback: the log walks
   on by itself while a page it read added no visible row and there is more to read.
+  _Answered: `More` asks again whenever a read ends with its foot still in view._
 - **Working out the batch's action from the log alone.** Where the client no longer holds the
   batch, the action is read from its entries: a `tagged`, `untagged`, `archived` or `unarchived`
   with no `record` in its detail. A `template-fired` names the template. A batch whose own
@@ -66,6 +67,7 @@ result".
 - **A watcher arrival moves a group.** An entry arriving for a batch that is already drawn takes
   the group to the head. Moving a whole row could read as motion about nothing. Fallback: the
   group moves without sliding, and only its count changes in place.
+  _Taken: a group never slides._
 - **The index on `actions(batch)`.** ADR 67 says grouping might want one. Add it in the
   migration: it costs one column index, and without it the read is a scan per drawn batch.
 
@@ -108,25 +110,26 @@ Depends on nothing in phase 1. Verified against it.
 
 Depends on phase 2.
 
-- [ ] `batching.ts`: the batch's count from its log entries, with the client's answer folded in
+- [x] `batching.ts`: the batch's count from its log entries, with the client's answer folded in
       where held, through `resultOf`.
-- [ ] `log.svelte.ts`: the `batch` reading, read from and written to the URL (`logHref`). The
+- [x] `log.svelte.ts`: the `batch` reading, read from and written to the URL (`logHref`). The
       groups derived from what the walk holds, the completion read per drawn batch, kept per
       walk and dropped on a restart, sign-out or race. Arrivals join their group.
-- [ ] A group row in `components/log/`: stamp and `BATCH` in the rail, the count in the body,
-      the count a link to the batch reading, and a press opening it to its entries as ordinary
-      rows. In the accent where anything failed or was refused.
-- [ ] The batch reading's head, and its refused and skipped rows drawn from `client.batches`.
-- [ ] The batch notice's `href` to the batch reading (`tallies.ts`).
-- [ ] shell.md: the log section (the group, the batch reading) and the batch notice's link.
-- [ ] Tests: grouping across pages and out of time order, a group's count once complete, kinds
+- [x] A group row in `components/log/`: stamp and `BATCH` in the rail, the count in the body,
+      and a press opening it to its entries as ordinary rows. In the accent where anything failed
+      or was refused. The count is not a link: shell.md says a row of the log offers no
+      narrowing, so the batch reading is reached from the notice.
+- [x] The batch reading's head, and its refused and skipped rows drawn from `client.batches`.
+- [x] The batch notice's `href` to the batch reading (`tallies.ts`).
+- [x] shell.md: the log section (the group, the batch reading) and the batch notice's link.
+- [x] Tests: grouping across pages and out of time order, a group's count once complete, kinds
       narrowing what an opened group draws but not its count, the item reading flat, an arrival
       joining its group, refused and skipped rows only while the client holds the batch, the
       notice's href, no `·` in what a group says.
-- [ ] Tick `todo.md`'s "Group a batch's entries in the log", "batch processing" and "batch
+- [x] Tick `todo.md`'s "Group a batch's entries in the log", "batch processing" and "batch
       processing by tag", and batch-processing.md's open result task.
-- [ ] Verify: tests, typecheck, lint.
-- [ ] Commit.
+- [x] Verify: tests, typecheck, lint.
+- [x] Commit.
 
 ---
 

@@ -193,8 +193,9 @@ Depends on phases 3 and 4.
 - [x] One cancel for the batch in the status line, beside the per-item firings
       (`apps/ui/src/components/status/Firing.svelte`, `apps/ui/src/lib/firings.svelte.ts`).
 - [x] The aggregate result, counted: filed, failed, cancelled, already filed, refused.
-- [ ] Which items failed or were refused, readable from the result. Today it counts them and
-      names none.
+- [x] Which items failed or were refused, readable from the result. Today it counts them and
+      names none. _(2026-11-12, [batch-in-the-log](batch-in-the-log.md): the notice opens the log
+      read by the batch)_
 - [x] Tests:
   - confirm, then commit;
   - confirm, then back out;
