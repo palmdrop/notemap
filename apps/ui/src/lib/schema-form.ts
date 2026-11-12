@@ -9,6 +9,8 @@ export type Field = {
   readonly kind: "text" | "list" | "flag";
   readonly title?: string;
   readonly description?: string;
+  /** Carries `x-notemap-placeholder`: drawn in the field while it is empty, never sent. */
+  readonly placeholder?: string;
   /** Carries `x-notemap-candidates`: a destination can be asked what it could hold. */
   readonly listable: boolean;
   /**
@@ -108,6 +110,9 @@ export function fieldsOf(schema: Schema): readonly Field[] {
         ...(typeof meta["title"] === "string" ? { title: meta["title"] } : {}),
         ...(typeof meta["description"] === "string"
           ? { description: meta["description"] }
+          : {}),
+        ...(typeof meta["x-notemap-placeholder"] === "string"
+          ? { placeholder: meta["x-notemap-placeholder"] }
           : {}),
         ...(preset === undefined ? {} : { preset, fallback: meta["default"] }),
         listable: meta["x-notemap-candidates"] === true,

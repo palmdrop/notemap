@@ -64,6 +64,16 @@ afterEach(() => {
   localStorage.clear();
 });
 
+/** The three rows' words, top first, as drawn. */
+function drawn() {
+  return ["one", "two", "three"].sort((a, b) =>
+    screen.getByText(a).compareDocumentPosition(screen.getByText(b)) &
+    Node.DOCUMENT_POSITION_FOLLOWING
+      ? -1
+      : 1,
+  );
+}
+
 function held(...values: Record<string, unknown>[]) {
   return (request: Request) =>
     routeOf(request) === "GET /v1/feed"
@@ -727,21 +737,56 @@ test("read by when rows were processed, a row marked processed waits where it st
   const sent = sentUrls().find((url) => url.includes("/v1/feed"));
   expect(new URL(sent ?? "http://x").searchParams.get("by")).toBe("processed");
 
-  const order = () =>
-    ["one", "two", "three"].sort((a, b) =>
-      screen.getByText(a).compareDocumentPosition(screen.getByText(b)) &
-      Node.DOCUMENT_POSITION_FOLLOWING
-        ? -1
-        : 1,
-    );
-
   await open(1);
   await client.routing.markProcessed("two");
   await tick();
-  expect(order()).toEqual(["three", "two", "one"]);
+  expect(drawn()).toEqual(["three", "two", "one"]);
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await vi.waitFor(() => expect(order()).toEqual(["two", "three", "one"]));
+  await vi.waitFor(() => expect(drawn()).toEqual(["two", "three", "one"]));
+});
+
+test("read by when rows were processed, a row selected after another stays where it is", async () => {
+  rememberKey("processed");
+  pool((request) =>
+    routeOf(request) === "GET /v1/feed"
+      ? json(200, {
+          values: [anItem("three"), anItem("two"), anItem("one")],
+        })
+      : json(200, { values: [] }),
+  );
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await open(0);
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await open(2);
+  await tick();
+  expect(drawn()).toEqual(["three", "two", "one"]);
+
+  await open(0);
+  await tick();
+  expect(drawn()).toEqual(["three", "two", "one"]);
+});
+
+test("read by when rows were processed, a selected row is drawn where a turned feed puts it", async () => {
+  rememberKey("processed");
+  pool((request) => {
+    if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+    const values = [anItem("three"), anItem("two"), anItem("one")];
+    const oldest =
+      new URL(request.url).searchParams.get("order") === "oldest-first";
+    return json(200, { values: oldest ? values.reverse() : values });
+  });
+
+  render(Feed);
+  await screen.findByText("one");
+
+  await open(0);
+  await tick();
+  await client.loadFeed("oldest-first", "processed");
+  await vi.waitFor(() => expect(drawn()).toEqual(["one", "two", "three"]));
 });
 
 test("a discard of marked rows says how many are already processed before it is sent", async () => {

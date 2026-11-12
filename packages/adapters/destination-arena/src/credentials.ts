@@ -1,4 +1,8 @@
+import { PLACEHOLDER_FIELD } from "@notemap/core";
 import type { JsonObject, JsonSchema } from "@notemap/core";
+
+/** Where an account that names no address of its own is reached. */
+export const ARENA_API = "https://api.are.na";
 
 /**
  * What an account of this kind may carry besides its secret: are.na has no
@@ -14,6 +18,7 @@ export const ARENA_ACCOUNT: JsonSchema = {
       type: "string",
       pattern: "^https?://",
       description: "Where the API is reached. Absent is are.na itself.",
+      [PLACEHOLDER_FIELD]: ARENA_API,
     },
   },
 };

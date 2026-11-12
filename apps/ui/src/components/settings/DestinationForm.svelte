@@ -191,6 +191,7 @@
         <input
           bind:value={typed[field.name]}
           aria-label={field.name}
+          placeholder={field.placeholder}
           class={FIELD}
         />
       {/if}

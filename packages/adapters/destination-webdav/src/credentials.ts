@@ -1,3 +1,4 @@
+import { PLACEHOLDER_FIELD } from "@notemap/core";
 import type { JsonObject, JsonSchema } from "@notemap/core";
 
 /**
@@ -19,6 +20,7 @@ export const WEBDAV_ACCOUNT: JsonSchema = {
       type: "string",
       pattern: "^https?://",
       description: "The collection everything is resolved against.",
+      [PLACEHOLDER_FIELD]: "https://dav.example.com/files/me",
     },
     username: { type: "string", minLength: 1 },
   },

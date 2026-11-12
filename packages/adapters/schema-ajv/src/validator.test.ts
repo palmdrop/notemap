@@ -185,6 +185,19 @@ describe("a vendor keyword this validator does not interpret", () => {
     expect(() => issues(roled(false), { filename: "a.md" })).toThrow();
   });
 
+  it("is tolerated where a field's placeholder is a word", () => {
+    const placeholding = (example: JsonValue): JsonSchema => ({
+      type: "object",
+      properties: {
+        root: { type: "string", "x-notemap-placeholder": example },
+      },
+    });
+
+    expect(issues(placeholding("/path/to/vault"), { root: "/v" })).toEqual([]);
+    expect(() => issues(placeholding(""), { root: "/v" })).toThrow();
+    expect(() => issues(placeholding(true), { root: "/v" })).toThrow();
+  });
+
   it("is tolerated at a schema's root where it says what a capability carries", () => {
     const carrying = (what: JsonValue): JsonSchema => ({
       type: "object",

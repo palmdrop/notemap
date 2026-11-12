@@ -1,3 +1,4 @@
+import { PLACEHOLDER_FIELD } from "@notemap/core";
 import type {
   DestinationKindName,
   JsonObject,
@@ -24,7 +25,11 @@ export const FILESYSTEM_SETTINGS: JsonSchema = {
   required: ["root"],
   additionalProperties: false,
   properties: {
-    root: { type: "string", minLength: 1 },
+    root: {
+      type: "string",
+      minLength: 1,
+      [PLACEHOLDER_FIELD]: "/path/to/vault",
+    },
     [FRONTMATTER]: FRONTMATTER_SETTING,
     [HASHTAGS]: HASHTAGS_SETTING,
   },

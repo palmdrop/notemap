@@ -4,7 +4,12 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { isWhole, type Item } from "@notemap/client";
+  import {
+    isWhole,
+    type Item,
+    type Key,
+    type Order as End,
+  } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
   import Order from "$components/order/Order.svelte";
@@ -117,8 +122,20 @@
     });
   }
 
-  /** Where the selected row last stood, for when it leaves. */
-  let stood = $state<number | undefined>(undefined);
+  /** Where a row last stood while selected, in the reading it stood in. */
+  let stood = $state<
+    { id: string; at: number; order: End; by: Key } | undefined
+  >(undefined);
+
+  function stoodHere(): number | undefined {
+    const was = untrack(() => stood);
+    return was !== undefined &&
+      was.id === selected &&
+      was.order === $feed.order &&
+      was.by === $feed.by
+      ? was.at
+      : undefined;
+  }
 
   /** The selected row's own copy, which outlives its place on a filtered feed. */
   const heldRow = $derived(client.held(selected ?? ""));
@@ -136,7 +153,7 @@
     // Read by when rows were processed, a decision moves its own row; it waits where it
     // stood until the selection leaves it, as one leaving a list does.
     const at = live.findIndex((row) => row.id === selected);
-    const was = untrack(() => stood);
+    const was = stoodHere();
     if (at !== -1) {
       if ($feed.by !== "processed" || was === undefined || was === at)
         return live;
@@ -152,18 +169,20 @@
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
 
-  let stoodFor: string | undefined;
-
   $effect(() => {
-    if (selected === undefined) stoodFor = undefined;
-    const at = rows.findIndex((row) => row.id === selected);
+    const id = selected;
+    const at = rows.findIndex((row) => row.id === id);
     // Only the feed's own place for it: one this surface chose for a held
     // row would outlive a read that has not landed yet.
-    if (at === -1 || !$feed.items.some((row) => row.id === selected)) return;
+    if (
+      id === undefined ||
+      at === -1 ||
+      !$feed.items.some((row) => row.id === id)
+    )
+      return;
     // A row moved by its own decision keeps the place it was selected at.
-    if ($feed.by === "processed" && stoodFor === selected) return;
-    stood = at;
-    stoodFor = selected;
+    if ($feed.by === "processed" && stoodHere() !== undefined) return;
+    stood = { id, at, order: $feed.order, by: $feed.by };
   });
 
   const current = $derived(rows.find((row) => row.id === selected));
