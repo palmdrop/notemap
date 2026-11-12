@@ -244,4 +244,9 @@
   queued job, which is what cancelling a reservation does; `setRoutingRecordWithdrawn` is the
   **withdraw** CONTEXT.md names. Renaming the job half (`pullWork`, say) would leave one meaning.
   Raised reviewing [withdraw-a-routing-record](reviews/withdraw-a-routing-record-2026-10-26.md).
+- [ ] **A search for `οδοσ` never finds `ΟΔΟΣ`.** `fold` lower-cases the whole text, which writes
+  a final sigma at a word's end, so the folded column holds `οδος` and a term typed with a medial
+  σ, as many keyboards write it, matches nothing. Fixing `fold` means a backfill of the folded
+  column. The highlight already treats ς and σ alike. Raised reviewing
+  [search-highlight](reviews/search-highlight-2026-11-12.md).
 - [ ] Allow a user to have multiple pools? Use case: I route some captures to another pool, where I do more granular routing.

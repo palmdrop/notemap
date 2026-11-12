@@ -64,6 +64,12 @@ describe("found", () => {
     expect(holds(fold("bike \u0301rack"), ["kerack"])).toBe(false);
   });
 
+  it("finds a final sigma and a medial one alike, on either side", () => {
+    const text = "ΟΔΟΣ and οδος";
+    expect(said(text, found(text, termsOf("οδος")))).toEqual(["ΟΔΟΣ", "οδος"]);
+    expect(said(text, found(text, ["οδοσ"]))).toEqual(["ΟΔΟΣ", "οδος"]);
+  });
+
   it("joins overlapping and touching spans, in the order of the text", () => {
     const text = "bicycle";
     expect(said(text, found(text, ["cle", "bicy", "cyc"]))).toEqual([

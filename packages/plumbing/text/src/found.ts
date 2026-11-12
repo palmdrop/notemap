@@ -5,10 +5,18 @@ export type Span = { readonly from: number; readonly to: number };
 
 const graphemes = new Intl.Segmenter("und", { granularity: "grapheme" });
 
+/**
+ * Lower-casing the whole of a text writes a final sigma where a word ends, which
+ * one letter on its own never is, so both sides of a match have it medial.
+ */
+function sigmaless(text: string): string {
+  return text.replaceAll("ς", "σ");
+}
+
 function folded(grapheme: string): string {
   // What `unaccented` says of ASCII, without its four passes over the string.
   const code = grapheme.length === 1 ? grapheme.charCodeAt(0) : 0x80;
-  return code < 0x80 ? grapheme.toLowerCase() : unaccented(grapheme);
+  return sigmaless(code < 0x80 ? grapheme.toLowerCase() : unaccented(grapheme));
 }
 
 /**
@@ -32,7 +40,7 @@ export function found(text: string, terms: readonly string[]): readonly Span[] {
   }
 
   const spans: Span[] = [];
-  for (const term of terms) {
+  for (const term of terms.map(sigmaless)) {
     if (term === "") continue;
     for (
       let at = all.indexOf(term);
