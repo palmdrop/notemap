@@ -1,9 +1,12 @@
 # Spec: Core
 
 **Status**: Draft
-**Last updated**: 2026-11-01
+**Last updated**: 2026-11-12
 **Shipped**:
 
+- 2026-11-12 — **A field may carry a placeholder.** `x-notemap-placeholder` is a short example of
+  what a settings, account or arguments field holds, for a form to draw while the field is empty.
+  Core never reads it, and nothing is seeded from it.
 - 2026-11-01 — **The feed, the queue and the archive can be read through words.** Every term must
   appear in an item's text or attachments' names, in any case and with or without accents, in any
   script. The store keeps each item's words folded beside it.
@@ -1658,6 +1661,11 @@ rebuilt from its mirror alone, driven entirely by a CLI and a test suite.
   validator checks it: a condition list with an entry the form could not read would otherwise
   drop that entry, and a field whose every entry was dropped would be offered always — the
   degenerate offer the annotation exists to prevent, arrived at through a typo.
+- **A field may carry a placeholder** (added 2026-11-12). `x-notemap-placeholder` is a short,
+  non-empty string: an example of what the field holds, never its value. A form draws it in the
+  field while the field is empty and sends nothing for it. Core never reads it. The filesystem's
+  `root`, WebDAV's folder and account address, and are.na's account address carry one; are.na's is
+  the address an account without one is sent to.
 - **`establish` is the template's word alone**, and resolves at decision time: unestablished it asks
   the adapter to create, established it asks the adapter to require. No adapter ever hears it, so
   the arguments on a record are always the two-valued thing. The **argument it is carried in is

@@ -52,6 +52,18 @@ describe("the fields a schema asks for", () => {
     ]);
   });
 
+  test("reads a field's placeholder, and nothing where it has none", () => {
+    const [marked, plain] = fieldsOf({
+      type: "object",
+      properties: {
+        root: { type: "string", "x-notemap-placeholder": "/path/to/vault" },
+        name: { type: "string" },
+      },
+    });
+    expect(marked?.placeholder).toBe("/path/to/vault");
+    expect(plain).not.toHaveProperty("placeholder");
+  });
+
   test("reads which part of a path a field holds, and nothing where it is unmarked", () => {
     const roles = fieldsOf({
       type: "object",

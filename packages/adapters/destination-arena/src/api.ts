@@ -1,8 +1,5 @@
-import type { ArenaCredential } from "./credentials";
+import { ARENA_API, type ArenaCredential } from "./credentials";
 import { Refused, TokenRefused, Unreachable } from "./errors";
-
-/** Where an account that names no address of its own is reached. */
-export const ARENA_API = "https://api.are.na";
 
 /** Where an uploaded object ends up, as `/v3/uploads/presign` documents the flow. */
 export const ARENA_UPLOADS = "https://s3.amazonaws.com/arena_images-temp";

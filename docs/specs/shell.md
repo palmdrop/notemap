@@ -1,9 +1,12 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-01
+**Last updated**: 2026-11-12
 **Shipped**:
 
+- 2026-11-12 — **A typed setting shows an example while it is empty.** The destination form and
+  the account form draw a field's `x-notemap-placeholder` in its box; the description is still not
+  drawn.
 - 2026-11-01 — **The queue and the feed can be searched.** A line in the list head, `/` from either
   surface, on the address as `words=`; every term must be in an item's words or its attachments'
   names, in any case and with or without accents. ([plan](../plans/features-from-the-mobile-rethink.md))
@@ -2881,7 +2884,9 @@ now drawn as a row of options with the chosen one bold rather than a `<select>`.
 is named as what it comes out as** *(2026-09-16)*: `default (none)`, read off the schema's own
 `default`, since an unset setting is the kind's default and `—` said nothing about which. A field's
 `description` is not drawn *(2026-09-16)*, on the same terms as the process surface's — a word,
-never a sentence; what a field means is its label and its control.
+never a sentence; what a field means is its label and its control. **A typed field shows an example
+while it is empty** *(2026-11-12)*: the schema's `x-notemap-placeholder`, drawn as the box's
+placeholder and never sent, so a blank field still comes out as unset.
 
 **Deleting is the one thing here that cannot be undone, so it is the one thing that asks — in the
 actions line itself, in alarm, with no sentence**: `Delete Obsidian vault?`, `delete`, `keep`.
@@ -2940,7 +2945,8 @@ and where it came from — `stored <date>` or `config` — plain *(2026-10-01; `
 before)*. `edit` sits at the row's right, and `remove`
 too for a stored one. A config account a stored one replaces is drawn faded, reading `config —
 ignored, a stored one replaces it`, with no actions. `+ add an account` opens a form built from the
-kind's `accountSchema`, as the destination form is built from `settingsSchema`, with a `secret`
+kind's `accountSchema`, as the destination form is built from `settingsSchema` and with its
+placeholders, with a `secret`
 field that is a password input and is never filled from the daemon. On an edit of a stored account,
 leaving it blank keeps the secret held. Editing a config account seeds the form from its fields and
 requires a secret; once saved, its row says the config entry is ignored.

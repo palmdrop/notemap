@@ -2,7 +2,7 @@
 
 ## Shell — layout and interaction
 
-- [ ] destination fields should provide succinct placeholder texts
+- [x] destination fields should provide succinct placeholder texts
 
 - [x] fuzzy search for captures, feed, tags, other views — the queue, the feed and the archive are
       searched by their words, forgiving of case and accents

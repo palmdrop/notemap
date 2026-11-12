@@ -73,6 +73,12 @@ export const INHERITS_FIELD = "x-notemap-inherits";
 export const OFFERED_WHEN_FIELD = "x-notemap-when";
 
 /**
+ * A short example of what a field holds, drawn in the field while it is empty.
+ * Never a value: nothing is seeded from it, and core never reads it.
+ */
+export const PLACEHOLDER_FIELD = "x-notemap-placeholder";
+
+/**
  * Said at the root of a capability's arguments schema rather than on a field:
  * what of the capture a delivery through it carries, where that is not the
  * whole. `"assets"` is the attachments and nothing else. Core never reads it;
@@ -130,6 +136,7 @@ export const ANNOTATIONS: readonly {
   { keyword: OFFERED_ONLY_FIELD, value: FLAG },
   { keyword: OFFERED_WHEN_FIELD, value: CONDITIONS },
   { keyword: PATH_FIELD, value: { enum: [...PATH_ROLES] } },
+  { keyword: PLACEHOLDER_FIELD, value: { type: "string", minLength: 1 } },
 ];
 
 /** Where a capability's path is held: in one field, or split into folders and a leaf. */

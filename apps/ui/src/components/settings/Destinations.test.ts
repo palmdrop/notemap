@@ -364,6 +364,47 @@ test("draws a field's label and its control, never its description", async () =>
   ).toBeNull();
 });
 
+test("shows a field's placeholder while it is empty, and sends nothing for it", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "filesystem",
+            settingsSchema: {
+              type: "object",
+              properties: {
+                root: {
+                  type: "string",
+                  "x-notemap-placeholder": "/path/to/vault",
+                },
+              },
+            },
+          },
+        ],
+      }),
+  });
+
+  render(Destinations);
+  await press("+ add a destination");
+
+  const root = await screen.findByRole("textbox", { name: "root" });
+  expect(root.getAttribute("placeholder")).toBe("/path/to/vault");
+
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Vault" },
+  });
+  await press("create");
+
+  await vi.waitFor(async () =>
+    expect(await sent()).toContainEqual({
+      name: "Vault",
+      kind: "filesystem",
+      settings: {},
+    }),
+  );
+});
+
 function webdavKind(accounts: readonly string[]) {
   return {
     name: "webdav",
