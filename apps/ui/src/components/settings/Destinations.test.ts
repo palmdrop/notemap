@@ -364,7 +364,7 @@ test("draws a field's label and its control, never its description", async () =>
   ).toBeNull();
 });
 
-test("shows a field's placeholder while it is empty, and sends nothing for it", async () => {
+test("shows an optional field's placeholder while it is empty, and sends nothing for it", async () => {
   serving([], {
     "GET /v1/destination-kinds": () =>
       json(200, {

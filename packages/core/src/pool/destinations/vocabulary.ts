@@ -2,8 +2,8 @@ import type { Capability } from "#types/domain/destination";
 import type { JsonObject, JsonSchema, JsonValue } from "#types/json";
 
 /**
- * The words notemap itself puts into an adapter's arguments schema, and reads
- * back out of one. Everything else in there is the adapter's own.
+ * The words notemap itself puts into an adapter's schemas, and reads back out
+ * of them. Everything else in there is the adapter's own.
  */
 
 /** The argument a folder mode is carried in, which core writes and no adapter names. */
@@ -73,8 +73,10 @@ export const INHERITS_FIELD = "x-notemap-inherits";
 export const OFFERED_WHEN_FIELD = "x-notemap-when";
 
 /**
- * A short example of what a field holds, drawn in the field while it is empty.
- * Never a value: nothing is seeded from it, and core never reads it.
+ * A short example of what a settings or account field holds, drawn in the
+ * field while it is empty. Never a value: nothing is seeded from it, and core
+ * never reads it. Where blank is a value of its own, the placeholder is what
+ * blank comes out as, or there is none.
  */
 export const PLACEHOLDER_FIELD = "x-notemap-placeholder";
 

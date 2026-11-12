@@ -1,4 +1,3 @@
-import { PLACEHOLDER_FIELD } from "@notemap/core";
 import type {
   DestinationKindName,
   JsonObject,
@@ -42,7 +41,6 @@ export function webdavSettings(accounts: readonly string[]): JsonSchema {
       root: {
         type: "string",
         title: "Folder",
-        [PLACEHOLDER_FIELD]: "notes",
         description:
           "The folder this destination is, under the account's own. Left blank, the destination is the account's folder itself.",
       },

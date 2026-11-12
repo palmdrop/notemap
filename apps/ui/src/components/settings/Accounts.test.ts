@@ -13,7 +13,10 @@ const KINDS = [
       type: "object",
       required: ["baseUrl", "username"],
       properties: {
-        baseUrl: { type: "string" },
+        baseUrl: {
+          type: "string",
+          "x-notemap-placeholder": "https://dav.example.com/files/me",
+        },
         username: { type: "string" },
       },
     },
@@ -101,9 +104,11 @@ test("creates one from its kind's schema, the secret sent once and never shown",
   await fireEvent.input(await screen.findByLabelText("Name"), {
     target: { value: "nextcloud" },
   });
-  await fireEvent.input(screen.getByLabelText("baseUrl"), {
-    target: { value: FIELDS.baseUrl },
-  });
+  const baseUrl = screen.getByLabelText("baseUrl");
+  expect(baseUrl.getAttribute("placeholder")).toBe(
+    "https://dav.example.com/files/me",
+  );
+  await fireEvent.input(baseUrl, { target: { value: FIELDS.baseUrl } });
   await fireEvent.input(screen.getByLabelText("username"), {
     target: { value: FIELDS.username },
   });

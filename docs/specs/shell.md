@@ -2886,7 +2886,7 @@ is named as what it comes out as** *(2026-09-16)*: `default (none)`, read off th
 `description` is not drawn *(2026-09-16)*, on the same terms as the process surface's — a word,
 never a sentence; what a field means is its label and its control. **A typed field shows an example
 while it is empty** *(2026-11-12)*: the schema's `x-notemap-placeholder`, drawn as the box's
-placeholder and never sent, so a blank field still comes out as unset.
+placeholder. The placeholder itself is never sent; what a blank field sends is unchanged.
 
 **Deleting is the one thing here that cannot be undone, so it is the one thing that asks — in the
 actions line itself, in alarm, with no sentence**: `Delete Obsidian vault?`, `delete`, `keep`.
