@@ -38,6 +38,10 @@
 
 - [x] drag-and-drop for adding assets ([plan](plans/drag-in-attachments.md))
 
+- [ ] highlight things that match the search
+
+- [ ] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
+
 ## Composer and capture
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
