@@ -39,6 +39,9 @@
 
   --tracking-caps: 0.08em;
 
+  /* Bold drawn as a shadow, for where a weight cannot be set: a highlight. */
+  --text-shadow-bold: 0.025em 0 currentColor, -0.025em 0 currentColor;
+
   --spacing-rail: 11rem;
   --spacing-rail-narrow: 5.75rem;
   --spacing-rail-time: 3.25rem;

@@ -4,8 +4,9 @@
 **Last updated**: 2026-11-12
 **Shipped**:
 
-- 2026-11-12 — **What a search found is highlighted.** Each term is drawn inverted wherever a
-  row's words hold it, folded as the search folds it.
+- 2026-11-12 — **What a search found is highlighted.** Each term is drawn bold wherever a
+  row's words hold it, in any case and with or without accents.
+  ([review](../reviews/search-highlight-2026-11-12.md))
 - 2026-11-12 — **A typed setting shows an example while it is empty.** The destination form and
   the account form draw a field's `x-notemap-placeholder` in its box; the description is still not
   drawn.
@@ -1259,13 +1260,14 @@ it takes a tag. Never remembered, as no filter is, and not counted in `filter N 
 itself. `clear filters` takes the words off with the rest. An emptied list says
 `Nothing matches “bike rack”.`, and beside other filters names the words first.
 
-**A row draws what the search found inverted** *(2026-11-12)*: wherever a term is in the row's
-words as drawn, in any case and with or without accents, its letters are set ground on ink, as
-written and never rewritten. Only the words in the timeline are marked: not a tag, an
-attachment's name, or the index's line. A term found only somewhere left unmarked — an
-attachment's name, a link's address — keeps the row on the list and marks nothing, and so does
-one that Markdown splits across two runs of drawn text. A browser without the CSS highlight
-registry draws the rows unmarked.
+**A row draws what the search found bold** *(2026-11-12)*: wherever a term is in the row's
+words as drawn, in any case and with or without accents, its letters are thickened in the ink
+they already have, with nothing behind them, as written and never rewritten. Only the words in the
+timeline are marked: not a tag, an attachment's name, or the index's line. A term found only
+somewhere left unmarked — an attachment's name, a link's address — keeps the row on the list and
+marks nothing, and so does one that Markdown splits across two runs of drawn text. A match below
+a row's ten-line clamp is marked only once `+ N lines` has opened the row. A browser without the
+CSS highlight registry draws the rows unmarked.
 
 - **Nothing under the list head says what it is filtered by.** The control's count says a filter
   is on, and the panel marks each tag in it; a line of the tags under the head was drawn and taken

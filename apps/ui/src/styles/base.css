@@ -36,11 +36,8 @@
     text-decoration: underline;
   }
 
-  /* What a search found in a row's words: inverted, since a link in them is
-     already underlined. */
   ::highlight(search) {
-    background-color: var(--color-ink);
-    color: var(--color-ground);
+    text-shadow: var(--text-shadow-bold);
   }
 
   /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */
