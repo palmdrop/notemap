@@ -180,14 +180,14 @@ and the before-shots artifact serves.
 
 Depends on phase 0.
 
-- [ ] `CONTEXT.md`: the entries `DECISIONS.md` lists under "For the plan"
+- [x] (2026-11-13) `CONTEXT.md`: the entries `DECISIONS.md` lists under "For the plan"
   - Cancel and Undo.
   - Selected for marked.
   - Waiting to send for pending.
   - Rejected and abandoned for a delivery.
   - Unavailable, unusable and stranded.
   - Where the status line is.
-- [ ] Commit
+- [x] (2026-11-13) Commit
 
 **Verify**: every term in `DECISIONS.md`'s "Words for states" and "Rejected and unavailable"
 either is in `CONTEXT.md` or is the shell's own wording for a term that is.
