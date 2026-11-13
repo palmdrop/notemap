@@ -824,13 +824,37 @@ sits in each list's filter; the palette is a preference and sits in settings.
 
 ### Capture is the head of the queue
 
-*Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
-one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
-foot along its bottom rule carrying `attach` behind a rule of its own and the tag chooser at the
-left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
-stamped when it is sent. It is no longer a row of the register, and says nothing until it fails —
-or until `capture` is taken with nothing written and nothing attached, when it says `nothing to
-capture` in its foot, plainly rather than in the accent since nothing failed, until something is written *(2026-10-08)*.
+*Redrawn 2026-11-13 ([ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).
+It was a ruled box above the list at every width from 2026-09-14; the box is now the wide form,
+and a phone writes on a page of its own.*
+
+**Below 900px, the + and the capture page.** A round + floats at the queue's lower right, clear of
+where the status line goes with a few pixels between, and stays there when the line is gone. It
+opens **`/capture`**, a page titled `capture` in the header: the field fills it, with **no
+placeholder and no clock**, since the capture is stamped when it is sent. Under the field are its
+tags, and at its foot a docked bar: **Attach**, **Tag** and **Save**. **Save with nothing to send
+says what is missing** on the line over the bar — `Nothing to capture yet: write something, or
+attach a file.` — rather than doing nothing. Saving goes back to the queue. **A draft kept by
+closing the page says so** when the page opens again — `Draft kept from last time.` — with
+**Clear**, which starts over. The draft is the same one the box holds, words, tags, the answers its
+trigger tags were given and its files, kept across a reload.
+
+**At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
+the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **capture**.
+`mod+⏎` captures from the field.
+
+**At every width, a capture says where it landed**, since the queue reads oldest first by default
+and a new one lands out of sight: `Captured, at the end of the queue` (or `at the top`, read
+newest first) on the status line, with **Show**, which brings its row into view.
+
+**A trigger tag added while writing** asks what its template asks, and the tag is put on only once
+it is answered; closing the question leaves the tag off. Once it is on, a line under the tags says
+what will happen when the capture is sent: `Routes by **Todo**, list Next once it is sent`.
+*(The question is still asked in the tag chooser's own list; it moves into the quick sheet's shape
+with phase 7 of [the plan](../plans/phone-first-shell.md).)*
+
+What follows from 2026-09-14 still holds of the box, and of the page where it says so.
 
 A capture asks nothing — text, any number of attachments, send. Nothing waits on the pool: the client
 mints the asset id and holds the bytes, which go up with the capture when it drains
@@ -909,6 +933,10 @@ Items captured before keep the sources they were stamped with. The shell decides
 attachment by its **media type**, never by the payload's ([Content](#content)).
 
 ### Dropping and pasting files
+
+*Amended 2026-11-13: files dropped or pasted land in the capture box when wide, and on the capture
+page on a phone; a phone's queue has no box to take them, and a phone seldom drops anything.*
+
 
 *Added 2026-10-28.* **A file dropped anywhere on the page is attached**, and so is a picture
 pasted. What takes it is **the open edit**, on whichever surface draws it, and otherwise **the

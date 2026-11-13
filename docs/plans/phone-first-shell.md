@@ -281,16 +281,16 @@ Depends on phase 3.
 
 Depends on phase 4.
 
-- [ ] Below 900px: the + floats clear of the status line and opens the capture page, titled
+- [x] (2026-11-13) Below 900px: the + floats clear of the status line and opens the capture page, titled
       "capture", with no placeholder and no clock. A draft kept by closing the page says so, with
       Clear. Save with nothing to send says what is missing
-- [ ] At 900px and wider: the box at the top of the queue, and Ctrl+Enter captures
-- [ ] At every width: a capture that lands out of sight says where it landed, with Show
-- [ ] A trigger tag added while writing asks its template's question in the quick sheet's shape,
+- [x] (2026-11-13) At 900px and wider: the box at the top of the queue, and Ctrl+Enter captures
+- [x] (2026-11-13) At every width: a capture that lands out of sight says where it landed, with Show
+- [x] (2026-11-13) A trigger tag added while writing asks its template's question *(in the tag chooser's own list until phase 7 builds the quick sheet)* in the quick sheet's shape,
       and says what will happen once the capture is sent. Closing the question leaves the tag off
-- [ ] Dropping and pasting files keep their rules
-- [ ] `shell.md`: Capture is the head of the queue, and Dropping and pasting files where it changes
-- [ ] Commit
+- [x] (2026-11-13) Dropping and pasting files keep their rules
+- [x] (2026-11-13) `shell.md`: Capture is the head of the queue, and Dropping and pasting files where it changes
+- [x] (2026-11-13) Commit
 
 **Verify**: the design's shots 31–36 and w07. A test checks that a draft survives leaving and
 coming back, and that closing the question leaves the tag off.

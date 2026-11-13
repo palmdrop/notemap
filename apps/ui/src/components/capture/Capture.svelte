@@ -4,7 +4,10 @@
 
   import { saidBy } from "@notemap/client";
 
-  import Action from "$components/primitives/controls/Action.svelte";
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import TagSet from "$components/primitives/controls/TagSet.svelte";
   import HeldAttachment from "$components/item/HeldAttachment.svelte";
   import { askingFor, saidFor, type Supplied } from "$lib/asked";
@@ -31,12 +34,15 @@
   import { sorted } from "$lib/picking";
   import { receives } from "$lib/receiving.svelte";
   import { NOTHING_TO_CAPTURE } from "$lib/said";
+  import { fade } from "$lib/motion";
   import { offerable, triggeredBy } from "$lib/templates";
 
   let {
     focus = true,
     selected = false,
+    form: drawn = "box",
     onfocus,
+    oncaptured,
   }: {
     /**
      * Whether the field takes the caret when the queue is drawn. Not on the way
@@ -45,13 +51,24 @@
     focus?: boolean;
     /** The box is the queue's head, and selected as a row is: one of them at a time. */
     selected?: boolean;
+    /**
+     * `box` is the head of the queue on a wide window; `page` is the capture
+     * page a phone opens from its +, its bar docked at its foot.
+     */
+    form?: "box" | "page";
     /** Anything in the box took the focus, which selects it. */
     onfocus?: () => void;
+    /** Sent, with the item it made: for saying where it landed. */
+    oncaptured?: (item: string) => void;
   } = $props();
 
   // Read where the box is drawn, so coming back from another surface restores
   // it the same way a reload does.
   const held = readDraft();
+  /** Something was left here when the page was last closed, said once with Clear. */
+  let kept = $state(
+    held.text.trim() !== "" || held.tags.length > 0 || heldFiles().length > 0,
+  );
   let text = $state(held.text);
   let tags = $state<string[]>([...held.tags]);
   /** By trigger tag, the values given for what its template asks. */
@@ -186,6 +203,24 @@
     }),
   );
 
+  /** Starts over: what was kept from last time goes. */
+  function clear(): void {
+    text = "";
+    tags = [];
+    given = {};
+    chosen = [];
+    clearDraft();
+    kept = false;
+    box?.focus();
+  }
+
+  /** What a trigger tag on it will do once it is sent. */
+  const routes = $derived(
+    tags
+      .map((name) => ({ name, template: triggeredBy(name) }))
+      .find((one) => one.template !== undefined),
+  );
+
   function remove(file: File) {
     chosen = chosen.filter((one) => one !== file);
   }
@@ -231,8 +266,10 @@
       given = {};
       chosen = [];
       clearDraft();
+      kept = false;
 
       for (const name of sent) void sayItFired(item.id, name);
+      oncaptured?.(item.id);
     } catch (error) {
       said = saidBy(error);
       for (const asset of assets) await client.detach(asset).catch(() => {});
@@ -242,23 +279,10 @@
   }
 </script>
 
-<!-- The one thing at the head of the queue that is boxed. No placeholder and no
-     stamp: the box is the invitation, and the capture is stamped when it is
-     sent. Lifted while its tag offer is open, which hangs over the list head
-     beneath it, and not otherwise, so the notices panel still covers it. -->
-<form
-  bind:this={form}
-  onsubmit={(event) => {
-    event.preventDefault();
-    void capture();
-  }}
-  onfocusin={() => onfocus?.()}
-  data-selected={selected ? "" : undefined}
-  class="mt-6 border border-ink has-[.offer]:relative has-[.offer]:z-50"
->
+{#snippet pictured()}
   {#if pictures.length > 0}
     <div
-      class="flex max-h-76 flex-col overflow-y-auto border-b border-transparent px-3 pt-2.5 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-below:border-ink"
+      class="flex max-h-76 flex-col overflow-y-auto border-b border-transparent px-3 pt-2.5 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-below:border-rule"
       transition:slide={{ fade: true }}
       {@attach showingNewest}
       {@attach markingHidden}
@@ -274,27 +298,12 @@
       {/each}
     </div>
   {/if}
+{/snippet}
 
-  <textarea
-    bind:this={box}
-    bind:value={text}
-    oninput={() => {
-      if (said === NOTHING_TO_CAPTURE) said = "";
-    }}
-    onkeydown={(event) => {
-      if (commits(event)) {
-        event.preventDefault();
-        void capture();
-      }
-    }}
-    aria-label="What to capture"
-    class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-wide:min-h-[72px]"
-  ></textarea>
-
+{#snippet filed()}
   {#if files.length > 0}
-    <!-- Ruled off from the field only while files lie past the edge they share. -->
     <div
-      class="flex max-h-44 flex-col overflow-y-auto border-t border-transparent px-3 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-above:border-ink"
+      class="flex max-h-44 flex-col overflow-y-auto border-t border-transparent px-3 pb-0.5 transition-[border-color] duration-(--duration-short) ease-fade data-hidden-above:border-rule"
       transition:slide={{ fade: true }}
       {@attach showingNewest}
       {@attach markingHidden}
@@ -309,59 +318,172 @@
       {/each}
     </div>
   {/if}
+{/snippet}
 
-  <div class="flex items-baseline justify-between border-t border-ink">
-    <span class="flex items-baseline">
-      <span class="border-r border-ink px-3 leading-8">
-        <Action disabled={busy} onclick={() => picker.click()}>attach</Action>
-      </span>
+{#snippet field(placeholder: string | undefined, page: boolean)}
+  <textarea
+    bind:this={box}
+    bind:value={text}
+    {placeholder}
+    oninput={() => {
+      if (said === NOTHING_TO_CAPTURE) said = "";
+    }}
+    onkeydown={(event) => {
+      if (commits(event)) {
+        event.preventDefault();
+        void capture();
+      }
+    }}
+    aria-label="What to capture"
+    class="block w-full resize-y bg-transparent px-gutter py-3 outline-none {page
+      ? 'min-h-[40dvh] flex-1 resize-none'
+      : 'min-h-[88px]'}"></textarea>
+{/snippet}
 
-      <span class="flex items-baseline gap-x-4 px-3 leading-8">
-        <span class="relative -ml-tag flex min-w-0 flex-wrap items-baseline">
-          <TagSet
-            bind:this={chooser}
-            names={tags}
-            {offered}
-            label="Tag the capture"
-            fires={(name) => triggeredBy(name)?.name}
-            ask={askingFor}
-            besides={(name) => saidFor(name, given[name])}
-            onadd={(name, supplied) => {
-              tags = [...tags, name];
-              if (supplied !== undefined)
-                given = { ...given, [name]: supplied };
-            }}
-            onremove={(name) => {
-              tags = tags.filter((one) => one !== name);
-              const { [name]: _dropped, ...rest } = given;
-              given = rest;
-            }}
-          />
-        </span>
+{#snippet tagged()}
+  <span class="relative flex min-w-0 flex-wrap items-center gap-1">
+    <TagSet
+      bind:this={chooser}
+      names={tags}
+      {offered}
+      label="Tag the capture"
+      fires={(name) => triggeredBy(name)?.name}
+      ask={askingFor}
+      besides={(name) => saidFor(name, given[name])}
+      onadd={(name, supplied) => {
+        tags = [...tags, name];
+        if (supplied !== undefined) given = { ...given, [name]: supplied };
+      }}
+      onremove={(name) => {
+        tags = tags.filter((one) => one !== name);
+        const { [name]: _dropped, ...rest } = given;
+        given = rest;
+      }}
+    />
+  </span>
+  {#if routes?.template !== undefined}
+    <p class="flex items-center gap-1.5 text-small text-muted" transition:fade>
+      <Icon name="route" class="size-4" />
+      <span
+        >Routes by <b class="text-ink">{routes.template.name}</b
+        >{#if saidFor(routes.name, given[routes.name]) !== undefined}, {saidFor(
+            routes.name,
+            given[routes.name],
+          )}{/if} once it is sent</span
+      >
+    </p>
+  {/if}
+{/snippet}
 
-        {#if said !== ""}
-          <!-- Only a failure or an empty box reaches this: the capture itself waits on nothing. -->
-          <span
+{#snippet picking()}
+  <input
+    bind:this={picker}
+    type="file"
+    multiple
+    onchange={pick}
+    aria-label="Files to capture"
+    class="hidden"
+  />
+{/snippet}
+
+{#if drawn === "page"}
+  <!-- The capture page: titled by the header, no placeholder and no clock,
+       since it is stamped when it is sent. -->
+  <form
+    bind:this={form}
+    onsubmit={(event) => {
+      event.preventDefault();
+      void capture();
+    }}
+    class="-mx-3.5 flex min-h-[calc(100dvh-var(--spacing-bar))] flex-col"
+  >
+    {#if kept}
+      <p
+        class="flex items-center gap-3 border-b border-rule bg-tag px-gutter py-2 text-small"
+        transition:fade
+      >
+        <span class="flex-1">Draft kept from last time.</span>
+        <button
+          type="button"
+          class="underline underline-offset-[0.2em]"
+          onclick={clear}>Clear</button
+        >
+      </p>
+    {/if}
+    {@render pictured()}
+    {@render field(undefined, true)}
+    {@render filed()}
+    <div class="flex flex-col gap-2 px-gutter pb-3">
+      {@render tagged()}
+    </div>
+    <ActionBar at="foot" label="Capture">
+      {#snippet say()}{#if said !== ""}<span
             role="status"
             class={said === NOTHING_TO_CAPTURE ? "" : "text-danger"}
-          >
-            {said}
-          </span>
-        {/if}
-      </span>
-    </span>
-
-    <span class="border-l border-ink px-3 leading-8">
-      <Action primary submit working={busy}>capture</Action>
-    </span>
-
-    <input
-      bind:this={picker}
-      type="file"
-      multiple
-      onchange={pick}
-      aria-label="Files to capture"
-      class="hidden"
-    />
-  </div>
-</form>
+            >{said === NOTHING_TO_CAPTURE
+              ? "Nothing to capture yet: write something, or attach a file."
+              : said}</span
+          >{/if}{/snippet}
+      <BarAction
+        icon="attach"
+        label="Attach"
+        disabled={busy}
+        onclick={() => picker.click()}
+      />
+      <BarAction icon="tag" label="Tag" onclick={() => chooser?.add()} />
+      <BarAction
+        icon="capture"
+        label="Save"
+        primary
+        working={busy}
+        command="capture"
+        onclick={() => void capture()}
+      />
+    </ActionBar>
+    {@render picking()}
+  </form>
+{:else}
+  <!-- The head of the queue on a wide window. Lifted while its tag offer is
+       open, which hangs over the rows beneath it. -->
+  <form
+    bind:this={form}
+    onsubmit={(event) => {
+      event.preventDefault();
+      void capture();
+    }}
+    onfocusin={() => onfocus?.()}
+    data-selected={selected ? "" : undefined}
+    class="-mx-8 border-b border-rule has-[.offer]:relative has-[.offer]:z-50 max-wide:-mx-3.5"
+  >
+    {@render pictured()}
+    {@render field("Write, or attach…", false)}
+    {@render filed()}
+    <div class="flex flex-wrap items-center gap-2 px-gutter pb-3">
+      <Box icon="attach" disabled={busy} onclick={() => picker.click()}
+        >Attach</Box
+      >
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        {@render tagged()}
+      </div>
+      {#if said !== ""}
+        <span
+          role="status"
+          class="text-small {said === NOTHING_TO_CAPTURE ? '' : 'text-danger'}"
+        >
+          {said}
+        </span>
+      {/if}
+      <span class="text-small text-muted">Ctrl+Enter</span>
+      <button
+        type="submit"
+        disabled={busy}
+        aria-busy={busy || undefined}
+        class="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-ink bg-ink px-3.5 text-paper"
+      >
+        <Icon name="capture" class="size-[1.125rem]" />
+        capture
+      </button>
+    </div>
+    {@render picking()}
+  </form>
+{/if}

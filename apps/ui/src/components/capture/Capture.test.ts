@@ -795,3 +795,76 @@ test("esc steps back to the tags without taking one", async () => {
   ).toBeDefined();
   expect(screen.queryByRole("button", { name: /route\/todo/ })).toBeNull();
 });
+
+test("the capture page keeps a draft across leaving and coming back, says so, and Clear starts over", async () => {
+  captured();
+  const first = render(Capture, { form: "page" });
+  expect(screen.queryByText("Draft kept from last time.")).toBeNull();
+
+  await fireEvent.input(screen.getByLabelText("What to capture"), {
+    target: { value: "half a thought" },
+  });
+  first.unmount();
+
+  render(Capture, { form: "page" });
+  expect(
+    (screen.getByLabelText("What to capture") as HTMLTextAreaElement).value,
+  ).toBe("half a thought");
+  expect(screen.getByText("Draft kept from last time.")).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  expect(
+    (screen.getByLabelText("What to capture") as HTMLTextAreaElement).value,
+  ).toBe("");
+  expect(readDraft().text).toBe("");
+});
+
+test("the capture page has no placeholder, and Save with nothing to send says what is missing", async () => {
+  captured();
+  render(Capture, { form: "page" });
+
+  expect(
+    screen.getByLabelText("What to capture").getAttribute("placeholder"),
+  ).toBeNull();
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(
+    await screen.findByText(
+      "Nothing to capture yet: write something, or attach a file.",
+    ),
+  ).toBeDefined();
+});
+
+test("closing a trigger tag's question leaves the tag off", async () => {
+  await servingTodo(todo());
+
+  await takeTag("route/todo");
+  const line = await screen.findByRole("combobox", { name: "list" });
+  await fireEvent.keyDown(line, { key: "Escape" });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("combobox", { name: "list" })).toBeNull();
+  });
+  expect(screen.queryByRole("button", { name: /route\/todo|todo/ })).toBeNull();
+  expect(readDraft().tags).toEqual([]);
+});
+
+test("a trigger tag says what it will do once the capture is sent", async () => {
+  await servingTodo(todo());
+
+  await takeTag("route/todo");
+  const line = await screen.findByRole("combobox", { name: "list" });
+  await screen.findByText("## Next");
+  await fireEvent.keyDown(line, { key: "ArrowDown" });
+  await fireEvent.keyDown(line, { key: "ArrowDown" });
+  await fireEvent.keyDown(line, { key: "Enter" });
+  await screen.findByText("list Someday");
+
+  expect(
+    await screen.findByText(
+      (_, element) =>
+        /^Routes by todo.* once it is sent$/i.test(
+          element?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+        ) && element?.tagName === "SPAN",
+    ),
+  ).toBeDefined();
+});

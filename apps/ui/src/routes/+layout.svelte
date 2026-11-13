@@ -49,6 +49,7 @@
     "/": "queue",
     "/feed": "feed",
     "/log": "log",
+    "/capture": "capture",
     "/items/[id]": "item",
     "/items/[id]/process": "route",
     "/items/[id]/records/[recordId]": "record",

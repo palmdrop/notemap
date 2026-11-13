@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { resolve } from "$app/paths";
+
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import { width } from "$lib/breakpoint";
+  import { sayLanded } from "$lib/landed";
   import { onMount, tick, untrack } from "svelte";
 
   import { goto, replaceState } from "$app/navigation";
@@ -365,15 +370,29 @@
   </title>
 </svelte:head>
 
-<Capture
-  bind:this={capture}
-  focus={arrived === null}
-  selected={atCapture}
-  onfocus={captureFocused}
-/>
+{#if width.wide}
+  <Capture
+    bind:this={capture}
+    focus={arrived === null}
+    selected={atCapture}
+    onfocus={captureFocused}
+    oncaptured={(item) => sayLanded(item, $queue.order)}
+  />
+{:else}
+  <!-- Clear of the status line, a few pixels between, and there when the
+       line is gone too. -->
+  <a
+    href={resolve("/capture")}
+    aria-label="Capture"
+    title="Capture"
+    class="fixed right-4 bottom-[calc(2.75rem+0.5rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down"
+  >
+    <Icon name="plus" class="size-10" />
+  </a>
+{/if}
 
-<Head>
-  {#if marking.on}
+{#if marking.on}
+  <Head>
     <Marked
       marked={rows.filter((row) => marking.has(row.id))}
       full={marking.full}
@@ -385,18 +404,18 @@
       }}
       onclear={() => marking.clear()}
     />
-  {:else}
-    <FilterPanel
-      bind:this={filterPanel}
-      surface={SURFACE}
-      filter={reading.filter}
-      {view}
-      onview={read}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-  {/if}
-</Head>
+  </Head>
+{/if}
+
+<FilterPanel
+  bind:this={filterPanel}
+  surface={SURFACE}
+  filter={reading.filter}
+  {view}
+  onview={read}
+  ontoggle={reading.toggle}
+  onclear={reading.clear}
+/>
 
 {#if batch.asked !== undefined}
   {@const asked = batch.asked}

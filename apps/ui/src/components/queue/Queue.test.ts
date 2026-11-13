@@ -1935,7 +1935,10 @@ function stampOf(said: string) {
   return within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ });
 }
 
-const head = () => document.querySelector("[data-head]") as HTMLElement;
+/** The list head, drawn only while rows are selected; the page stands in for it otherwise. */
+const head = () =>
+  (document.querySelector("[data-head]") as HTMLElement | null) ??
+  document.body;
 
 test("a click with mod held marks rows, and esc lets go of them all", async () => {
   pool(queued("one", "two", "three"));

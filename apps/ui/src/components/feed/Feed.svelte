@@ -316,8 +316,8 @@
   ]);
 </script>
 
-<Head>
-  {#if marking.on}
+{#if marking.on}
+  <Head>
     <Marked
       marked={rows.filter((row) => marking.has(row.id))}
       full={marking.full}
@@ -329,18 +329,18 @@
       }}
       onclear={() => marking.clear()}
     />
-  {:else}
-    <FilterPanel
-      bind:this={filterPanel}
-      surface={SURFACE}
-      filter={reading.filter}
-      {view}
-      onview={read}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-  {/if}
-</Head>
+  </Head>
+{/if}
+
+<FilterPanel
+  bind:this={filterPanel}
+  surface={SURFACE}
+  filter={reading.filter}
+  {view}
+  onview={read}
+  ontoggle={reading.toggle}
+  onclear={reading.clear}
+/>
 
 {#if batch.asked !== undefined}
   {@const asked = batch.asked}
