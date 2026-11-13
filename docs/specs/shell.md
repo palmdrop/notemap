@@ -5,7 +5,7 @@
 **Shipped**:
 
 - 2026-11-12 — **A batch is one row in the log**, counted in its notice's words and opening to
-  every entry it wrote, wherever those fell. A batch's notice opens the log read by that batch,
+  every entry it wrote, wherever those fell, drawn inside it. A batch's notice opens the log read by that batch,
   which names the items it refused or skipped while this shell holds its answer. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-12 — **What a search found is highlighted.** Each term is drawn bold wherever a
   row's words hold it, in any case and with or without accents.
@@ -3176,7 +3176,10 @@ item that template had already filed is counted `already filed` from the log alo
 the batch wrote says what it did, the row counts its entries by kind: `2 routed, 1 delivery
 failed`. Where the batch could not be read whole, the row counts what the walk holds and says `not
 all of it read`, and it is read again when the pool comes back or the row is opened. A press opens
-the row, and its entries follow it as ordinary rows. The row is whole wherever its entries fell: drawing it reads every entry of the batch from
+the row, and its entries are drawn inside it, under the count in the body's column and set in from
+it, so the rail's `BATCH` stands beside all of them. Each is one line: the time, dated only where its
+day is not the batch's, the kind, the item it was about, and the fact the kind carries. A routing
+record's block is not drawn there; the item is where to read it. The row is whole wherever its entries fell: drawing it reads every entry of the batch from
 the pool, and an entry further down the walk is not drawn again. A view narrows what the opened
 row draws, not what it counts. Like any row, it offers no narrowing: the batch alone is reached
 from its notice. A batch made before 2026-11-12 holds its tags and discards only. Its deliveries

@@ -10,9 +10,10 @@
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { pickable } from "$lib/pick";
+  import { dayOf } from "$lib/stamp";
   import { NOT_ALL_READ } from "$lib/said";
 
-  import LogRow from "./LogRow.svelte";
+  import BatchEntry from "./BatchEntry.svelte";
 
   /**
    * A batch as one row of the log: what came of it, counted as its notice
@@ -54,7 +55,7 @@
   }
 </script>
 
-<div class="col-span-full grid grid-cols-subgrid">
+<div data-batch={id} class="col-span-full grid grid-cols-subgrid">
   <Rail {gap}>
     <Stamp {at} />
     <div class="mt-2 tracking-caps uppercase {alarm ? 'text-alarm' : ''}">
@@ -93,11 +94,16 @@
         <span class="shrink-0 {alarm ? 'text-alarm' : ''}">{said.why}</span>
       {/if}
     </div>
+
+    {#if opened}
+      <div
+        role="list"
+        class="mt-2 grid grid-cols-[auto_auto_1fr] gap-x-[2ch] gap-y-1 pl-[2ch]"
+      >
+        {#each entries as action (action.id)}
+          <BatchEntry {action} day={dayOf(at)} />
+        {/each}
+      </div>
+    {/if}
   </Body>
 </div>
-
-{#if opened}
-  {#each entries as action (action.id)}
-    <LogRow {action} />
-  {/each}
-{/if}

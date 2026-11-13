@@ -75,9 +75,12 @@ test("opens to every entry the batch wrote, the walk's and the rest", async () =
   });
   await fireEvent.click(count);
 
+  const row = count.closest<HTMLElement>("[data-batch]")!;
   await vi.waitFor(() => {
-    expect(screen.getAllByText("tagged")).toHaveLength(2);
+    expect(within(row).getAllByRole("listitem")).toHaveLength(2);
   });
+  expect(within(row).getAllByText("tagged")).toHaveLength(2);
+  expect(screen.getAllByText("tagged")).toHaveLength(2);
 });
 
 test("draws a batch's entries as they are where the log is narrowed to an item", async () => {

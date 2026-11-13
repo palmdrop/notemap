@@ -82,6 +82,18 @@ export type Naming = {
   readonly destination: (id: string) => string;
 };
 
+export function namingIn(
+  templates: readonly { readonly id: string; readonly name: string }[],
+  destinations: readonly { readonly id: string; readonly name: string }[],
+): Naming {
+  return {
+    template: (id) =>
+      templates.find((one) => one.id === id)?.name ?? "a template",
+    destination: (id) =>
+      destinations.find((one) => one.id === id)?.name ?? "a destination",
+  };
+}
+
 function text(value: unknown): string | undefined {
   return typeof value === "string" && value !== "" ? value : undefined;
 }
