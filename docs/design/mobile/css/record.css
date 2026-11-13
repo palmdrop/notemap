@@ -1,0 +1,78 @@
+.record-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem var(--gutter) 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--tag-line);
+  border-radius: var(--radius-control);
+  background: var(--tag);
+  font-size: var(--size-small);
+  line-height: 1.4;
+}
+
+.record-state .i {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.record-state.delivered {
+  border-color: var(--signal);
+  background: var(--signal);
+}
+
+.record-state.abandoned {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.record-state.abandoned b {
+  font-weight: 700;
+}
+
+.written + .preview {
+  margin-top: 0.75rem;
+}
+
+.preview + .label {
+  margin-top: 1.5rem;
+}
+
+.way {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.625rem var(--gutter);
+  border: 0;
+  border-bottom: var(--rule);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.way.danger {
+  color: var(--danger);
+}
+
+.way[disabled] {
+  color: var(--muted);
+  cursor: default;
+}
+
+.way .i {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.way small {
+  display: block;
+  margin-top: 0.125rem;
+  color: var(--muted);
+  font-size: var(--size-small);
+}

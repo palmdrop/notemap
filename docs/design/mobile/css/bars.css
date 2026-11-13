@@ -1,0 +1,229 @@
+/* Bars of actions and choices, drawn as blocks. An action bar is beige, docked at a page's foot
+   under a rule: the main action a wide filled block, the others the icon over the word. One choice
+   of a few is a beige segmented row, the chosen part filled. Choices that can all be on are beige
+   boxes of their own, filled and ticked when on. An action on its own in a page is a box like
+   those. */
+
+/* Actions. */
+.toolbar {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  gap: 0.5rem;
+  padding: 0.5rem var(--gutter) calc(0.5rem + env(safe-area-inset-bottom));
+  border-top: var(--rule);
+  background: var(--off);
+}
+
+.toolbar[hidden] {
+  display: none;
+}
+
+.toolbar > .pill {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--ink);
+  font-size: var(--size-small);
+  line-height: 1;
+}
+
+.toolbar > .pill .i {
+  order: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.toolbar > .pill.primary {
+  flex: 1;
+  flex-direction: row;
+  gap: 0.5rem;
+  min-height: 3rem;
+  margin-left: auto;
+  padding: 0 1rem;
+  border-color: var(--ink);
+  border-radius: var(--radius-control);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--size-body);
+}
+
+.toolbar > .pill.danger {
+  color: var(--danger);
+}
+
+.toolbar > .pill:disabled {
+  opacity: 0.4;
+}
+
+/* A main action that cannot be taken yet stays in its place, beige and dashed, not a heavier grey. */
+.toolbar > .pill.primary:is(:disabled, [aria-disabled="true"]) {
+  border: 1px dashed var(--off-line);
+  background: var(--paper);
+  color: var(--muted);
+  opacity: 1;
+}
+
+.toolbar > .pill:not(:disabled):active {
+  background: var(--off-down);
+}
+
+.toolbar > .pill.primary:not(:disabled):active {
+  background: var(--muted);
+}
+
+/* An action on its own, in the page rather than at its foot. */
+.pill.lone {
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border-color: var(--off-line);
+  background: var(--off);
+}
+
+.pill.lone:active {
+  background: var(--off-down);
+}
+
+/* One of a few. */
+.toggles.one {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0.1875rem;
+  padding: 0.1875rem;
+  border: 1px solid var(--off-line);
+  border-radius: var(--radius-control);
+  background: var(--off);
+}
+
+:has(> .toggles.one) {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toggles.one > .pill {
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 0.1875rem);
+  background: none;
+  color: var(--ink);
+}
+
+.toggles.one > .pill[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.toggles.one > .pill:not([aria-pressed="true"]):not(:disabled):active {
+  background: var(--off-down);
+}
+
+.toggles.one > .pill:disabled {
+  color: var(--muted);
+}
+
+.toggles.one > .pill[aria-pressed="true"]:disabled {
+  background: var(--chip-line);
+  color: var(--ink);
+}
+
+/* Any number on. */
+.toggles:not(.one) > .tag,
+.pill.ask {
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid var(--off-line);
+  border-radius: var(--radius-control);
+  background: var(--off);
+  color: var(--ink);
+  font-size: var(--size-body);
+}
+
+.field-head .pill.ask {
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  font-size: var(--size-small);
+}
+
+.toggles:not(.one) > .tag[aria-pressed="true"],
+.pill.ask[aria-pressed="true"] {
+  padding-left: 0.625rem;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+:is(.toggles:not(.one) > .tag, .pill.ask)[aria-pressed="true"]::before {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+:is(.toggles:not(.one) > .tag, .pill.ask):not([aria-pressed="true"]):active {
+  background: var(--off-down);
+}
+
+/* Docked, where they floated. */
+.iv-actions,
+.iv-edit-foot {
+  position: static;
+  transform: none;
+}
+
+.iv-page {
+  padding-bottom: 2rem;
+}
+
+.capture-tools {
+  padding: 0;
+}
+
+.route-foot {
+  bottom: var(--keyboard, 0px);
+  padding: 0;
+}
+
+.route-foot > :not(:empty) {
+  flex: 1;
+}
+
+.batch-bar {
+  right: 0;
+  bottom: var(--keyboard, 0px);
+  left: 0;
+  transform: none;
+}
+
+@media (min-width: 900px) {
+  html[data-frame="full"] .batch-bar {
+    left: var(--nav);
+  }
+}
+
+/* Why the main action is not there yet, said over the bar. */
+.bar-say {
+  margin: 0;
+  padding: 0.5rem var(--gutter);
+  border-top: var(--rule);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: var(--size-small);
+  pointer-events: auto;
+}
+
+.bar-say[hidden] {
+  display: none;
+}
+
+.route-foot {
+  flex-direction: column;
+}

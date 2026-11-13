@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>notemap design</title>
+    <style>
+      body { margin: 2rem; font: 15px/1.5 Arial, "Liberation Sans", sans-serif; }
+      h1, h2 { font-weight: 400; }
+      li { margin: 0.25rem 0; }
+    </style>
+  </head>
+  <body>
+    <h1>notemap design</h1>
+    <h2>Views</h2>
+    <ul>
+      <li><a href="queue.html">queue</a> (on a wide window: <a href="queue.html?frame=full">without the phone frame</a>): <a href="queue.html?offline">offline</a>, <a href="queue.html?empty">empty</a></li>
+      <li><a href="feed.html">feed</a>, what was routed, discarded or done: <a href="feed.html?offline">offline</a>, where the rest of the list is with the pool</li>
+      <li><a href="route.html">route</a>, opened from an item: <a href="route.html?template=Todo">by Todo</a>, which asks a question, <a href="route.html?template=Project%20note">by Project note</a>, which asks two</li>
+      <li><a href="record.html">record</a>, a routing record: <a href="record.html?state=pending">pending</a>, <a href="record.html?state=abandoned">tried and rejected</a>, <a href="record.html?state=withdrawn">withdrawn</a>, <a href="record.html?state=cancelled">tried and cancelled</a></li>
+      <li><a href="capture.html">capture</a>, opened from the + button</li>
+      <li><a href="log.html">log</a>, what happened, and an item's history: <a href="log.html?item=the%20bench%20by%20the%20river%20has%20a%20plaque%20now">one item</a>, <a href="log.html?batch=b1">one batch</a></li>
+      <li><a href="morph.html">morph</a>, the shape drawn seven ways; any page takes <code>?morph=&lt;name&gt;</code></li>
+      <li><a href="settings.html">settings</a>, opened from the menu: <a href="settings.html?offline">with the pool out of reach</a>, <a href="settings.html?open#access">a pool with no password</a>, <a href="settings.html#destinations/jotter">an unusable destination</a>, <a href="settings.html#templates/jot">a stranded template</a></li>
+      <li><a href="signin.html">sign in</a>: <a href="signin.html?wrong">a password not accepted</a>, <a href="signin.html?offline">the pool out of reach</a></li>
+    </ul>
+    <h2>Reference</h2>
+    <ul>
+      <li><a href="reference/ui-sketch.png">the developer's sketch of the queue</a></li>
+      <li><a href="reference/new-ui-inspo1.png">inspiration 1</a>, <a href="reference/new-ui-inspo2.png">inspiration 2</a></li>
+      <li><a href="reference/v2-prototype/">round 2's prototype</a></li>
+    </ul>
+  </body>
+</html>

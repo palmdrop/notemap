@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-frame="phone">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>notemap design: capture</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/drawer.css" />
+    <link rel="stylesheet" href="css/sheet.css" />
+    <link rel="stylesheet" href="css/quick.css" />
+    <link rel="stylesheet" href="css/capture.css" />
+    <link rel="stylesheet" href="css/bars.css" />
+    <script type="module" src="js/design.js"></script>
+    <script type="module" src="js/capture.js"></script>
+  </head>
+  <body>
+    <div class="device">
+      <div class="screen capture">
+        <header class="capture-bar">
+          <a class="icon-button" href="queue.html" aria-label="Close, keeping the draft"><svg class="i"><use href="#i-close"></use></svg></a>
+          <h1>capture</h1>
+        </header>
+
+        <main class="capture-page">
+          <p class="kept" hidden><span></span><button type="button" class="quiet" data-act="clear">Clear</button></p>
+          <div class="held" hidden></div>
+          <textarea name="text" aria-label="What to capture" autofocus></textarea>
+        </main>
+        <ul class="capture-tags tag-line"></ul>
+        <p class="capture-firing" hidden></p>
+        <p class="capture-say" role="status" hidden></p>
+
+        <footer class="capture-tools">
+          <div class="toolbar">
+            <label class="pill">
+              <input type="file" name="files" multiple hidden />
+              <svg class="i"><use href="#i-attach"></use></svg>Attach
+            </label>
+            <label class="pill">
+              <input type="file" name="camera" accept="image/*" capture="environment" hidden />
+              <svg class="i"><use href="#i-camera"></use></svg>Camera
+            </label>
+            <button class="pill primary" data-act="capture" aria-disabled="true"><svg class="i"><use href="#i-check"></use></svg>Save</button>
+          </div>
+        </footer>
+
+        <div class="veil" hidden></div>
+        <section class="sheet quick" id="ask" aria-label="Question" hidden>
+          <div class="sheet-head">
+            <h2></h2>
+            <button class="icon-button" data-act="unask" aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <p class="quick-what"></p>
+          <ul class="answers"></ul>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

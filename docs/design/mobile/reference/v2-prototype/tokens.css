@@ -1,0 +1,122 @@
+/* Notemap, round 2: the visual system as roles. Draft, 2026-10-31.
+   Ink on white stays the ground. A small palette that means something, five sizes of one face,
+   and one icon set. Nothing outside this file names a colour, a size or a radius.
+   Every text colour below is checked against the ground it sits on: all pass WCAG AA (4.5:1),
+   most pass AAA. Figures are in the comment beside each. */
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url("fonts/bricolage-grotesque-latin.woff2") format("woff2");
+}
+
+:root {
+  /* ---- type: one face, five sizes, two weights ------------------------------ */
+  --face: "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --text-xs: 12px;  --lead-xs: 16px;   /* caps labels, badges, the day heading */
+  --text-sm: 13px;  --lead-sm: 18px;   /* metadata: time, destination, a row's second line */
+  --text-md: 15px;  --lead-md: 22px;   /* the interface: rows, buttons, menus */
+  --text-lg: 17px;  --lead-lg: 26px;   /* reading: a capture opened whole */
+  --text-xl: 22px;  --lead-xl: 28px;   /* a screen's title, a step's question, an outcome */
+  --regular: 400;
+  --bold: 600;
+  --track-caps: 0.08em;
+
+  /* ---- colour: ink on white, and five meanings ------------------------------ */
+  --ground: #ffffff;
+  --ink: #000000;          /* 21:1 */
+  --muted: #5e5e5e;        /* secondary text, 6.5:1 on ground, 5.9:1 on --surface */
+  --inert: #767676;        /* disabled only, 4.5:1 */
+  --surface: #f4f4f2;      /* a quiet panel: a preview's head, a pressed row */
+  --hair: #e2e2e0;         /* between rows. Never between regions: that is --rule */
+  --rule: 1px solid var(--ink);
+  --rule-hair: 1px solid var(--hair);
+
+  /* The accent: what the one primary action on a screen is filled with, what a text button is
+     drawn in, and how a selected row is marked. Ink by default; blue with data-accent="blue". */
+  --primary: var(--ink);       /* ink 21:1, or blue 7.9:1 */
+  --on-primary: #ffffff;
+  --action: var(--ink);        /* text buttons: Add tag, Change, Reword */
+  --action-line: underline;    /* ink text buttons are underlined so they read as presses */
+  --select: #f0f0ee;           /* a selected row, the current place in the menu. Ink 18:1, muted 5.7:1 */
+  --select-ink: var(--ink);
+  --primary-tint: var(--select);
+  --blue: #1f3bd6;             /* 7.9:1 on ground, 7.5:1 on its tint */
+  --blue-tint: #eceffd;
+  --link: var(--blue);         /* a link inside a capture or in prose, whichever the accent */
+
+  --danger: #c41230;       /* discard, withdraw, a refusal. 6.0:1 */
+  --danger-tint: #fdecef;  /* 5.3:1 */
+
+  --success: #1c7a3e;      /* delivered, online. 5.4:1 */
+  --success-tint: #e6f3ea; /* 4.7:1 */
+
+  --pending: #8a5200;      /* delivering, waiting to send, offline. 6.4:1 */
+  --pending-tint: #fff2d6; /* 5.8:1 */
+
+  --night: #161616;        /* the notice strip's ground */
+  --on-night: #ffffff;
+  --on-night-act: #ffffff;  /* the strip's offer, underlined; with blue, #aebcff, 9.9:1 on --night */
+  --on-night-line: underline;
+
+  --veil: rgba(0, 0, 0, 0.36);
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* ---- space ---------------------------------------------------------------- */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px;
+  --edge: 16px;            /* the screen's side margin */
+  --hit: 48px;             /* anything a thumb presses. Never under 44 */
+  --bar: 56px;             /* the app bar, the action bar */
+  --row: 64px;             /* a chooseable row with a second line */
+
+  /* ---- shape ---------------------------------------------------------------- */
+  --radius-sm: 6px;        /* a pill, a thumbnail */
+  --radius-md: 10px;       /* a button, a field, a card, an icon's tile */
+  --radius-lg: 16px;       /* a sheet's top, the capture button */
+  --radius-full: 999px;
+
+  /* ---- icons: Lucide, stroked, two sizes ------------------------------------ */
+  --icon: 22px;            /* in a bar, a button, a tile */
+  --icon-sm: 16px;         /* inline with metadata */
+  --icon-stroke: 1.75;
+
+  /* ---- motion --------------------------------------------------------------- */
+  --beat: 180ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ---- measure -------------------------------------------------------------- */
+  --measure-read: 44rem;
+}
+
+[data-accent="blue"] {
+  --primary: var(--blue);
+  --action: var(--blue);
+  --action-line: none;
+  --select: var(--blue-tint);
+  --select-ink: var(--blue);
+  --on-night-act: #aebcff;
+  --on-night-line: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --beat: 0ms; }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ground); }
+body {
+  font-family: var(--face);
+  font-size: var(--text-md);
+  line-height: var(--lead-md);
+  color: var(--ink);
+  text-wrap: pretty;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-align: left; }
+.num { font-variant-numeric: tabular-nums; }
+
+.i { width: var(--icon); height: var(--icon); flex: none; fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
+.i.sm { width: var(--icon-sm); height: var(--icon-sm); stroke-width: 2; }

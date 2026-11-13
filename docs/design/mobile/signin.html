@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-frame="phone">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>notemap design: sign in</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/route.css" />
+    <link rel="stylesheet" href="css/record.css" />
+    <link rel="stylesheet" href="css/settings.css" />
+    <link rel="stylesheet" href="css/bars.css" />
+    <script type="module" src="js/design.js"></script>
+    <script type="module" src="js/signin.js"></script>
+  </head>
+  <body>
+    <div class="device">
+      <div class="screen route settings">
+        <header class="route-head">
+          <div class="route-bar">
+            <h1 class="signin-mark">notemap</h1>
+          </div>
+          <p class="excerpt">notemap.example.org</p>
+        </header>
+        <main class="step">
+          <form class="form signin">
+            <p class="record-state abandoned" hidden></p>
+            <div class="part">
+              <label class="field"><span>password</span><input type="password" name="password" autocomplete="current-password" autofocus /></label>
+              <p class="hint">The pool's password. Signing in keeps this browser signed in until it signs out.</p>
+            </div>
+          </form>
+        </main>
+        <footer class="route-foot">
+          <p class="bar-say" hidden></p>
+          <div class="toolbar">
+            <button class="pill primary" data-act="sign-in" aria-disabled="true"><svg class="i"><use href="#i-next"></use></svg><span>Sign in</span></button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

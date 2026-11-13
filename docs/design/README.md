@@ -6,6 +6,7 @@ What the shell is supposed to look like. Since 2026-09-14 that is being redrawn
 
 | | |
 |---|---|
+| `mobile/` | **Next.** The phone-first redesign ([ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)), with its decisions and shots. It replaces `brief.md` and `redrawn/` as the shell is rebuilt against it. |
 | `brief.md` | **Current.** The statement of the new system, and the whole of what the Claude Design project is told. Until `shell.md` catches up, section by section, this is what the shell is meant to be. |
 | `redrawn/` | **Current, and what is built against.** The settled drawings as plain HTML and CSS — `queue.html` (with `#index`), `process.html` (with `#editing`), `item.html` (with `#record`), `log.html` (with `#routing` and `#history`), `settings.html` (one section per hash, `#menu` for the phone's menu alone, `#editing` / `#asking` / `#disabled` / `#sources` for its states), `tokens.css` — and `shots/` of each at 1440 and 390 (the process surface also at 1000). Open them in a browser; resize; read the CSS. The face is loaded from Google Fonts here only because a mockup has no daemon to serve it. |
 | `issues-2026-09-11.md` | The findings the redesign answers. |

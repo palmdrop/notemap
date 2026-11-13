@@ -1,0 +1,289 @@
+/* The queue on a wide window, without the phone frame: the menu as a column of its own, a box
+   to write in at the top instead of the + button, and an opened item beside the list rather
+   than over it. Panels open at the side; a quick route is a dialog. */
+
+@media (min-width: 900px) {
+  html[data-frame="full"] {
+    --nav: 15rem;
+    --time-column: 4.25rem;
+
+    .screen {
+      display: grid;
+      grid-template-columns: var(--nav) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-areas: "nav head" "nav main" "nav line";
+      height: 100vh;
+      height: 100dvh;
+    }
+
+
+    /* The menu, always there. */
+    .drawer,
+    .drawer[hidden] {
+      grid-area: nav;
+      position: static;
+      z-index: auto;
+      display: flex;
+      width: auto;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .drawer-head [data-close],
+    .bar-title [data-open="drawer"] {
+      display: none;
+    }
+
+    .drawer-head {
+      min-height: var(--bar);
+    }
+
+    .drawer nav a {
+      min-height: 2.75rem;
+      font-size: var(--size-body);
+    }
+
+    /* The bar: the title, the search always open, the filter and the notices, on one line. */
+    .app-bar {
+      grid-area: head;
+      position: static;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: var(--bar);
+      padding-right: var(--gutter);
+    }
+
+    .app-bar:is([data-mode="title"], [data-mode="search"]) .bar-title {
+      display: contents;
+    }
+
+    .app-bar:is([data-mode="title"], [data-mode="search"]) .bar-search {
+      display: flex;
+      order: 2;
+      flex: 1;
+      max-width: 26rem;
+      min-height: 0;
+      margin-left: auto;
+      padding: 0;
+    }
+
+    .app-bar[data-mode="marking"] .bar-marking {
+      flex: 1;
+    }
+
+    .bar-title h1 {
+      order: 1;
+      padding-left: var(--gutter);
+    }
+
+    .bar-title .actions {
+      order: 3;
+      margin-right: 0;
+    }
+
+    [data-search="open"],
+    [data-search="close"] {
+      display: none;
+    }
+
+    .bar-search:has(input:placeholder-shown) [data-search="clear"] {
+      display: none;
+    }
+
+    .bar-search input {
+      min-height: 2.25rem;
+      padding: 0 0.75rem;
+      border: var(--rule);
+      border-radius: var(--radius-control);
+    }
+
+    main {
+      grid-area: main;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .day-head {
+      top: 0;
+    }
+
+    .end {
+      height: 4rem;
+    }
+
+    .fab {
+      display: none;
+    }
+
+    /* Writing, at the top of the list. */
+    .composer {
+      display: block;
+      margin: 0;
+      border-bottom: var(--rule);
+      background: var(--paper);
+    }
+
+    .composer textarea {
+      display: block;
+      width: 100%;
+      min-height: 4.5rem;
+      padding: 1rem var(--gutter) 0.5rem calc(var(--gutter) + var(--time-column));
+      border: 0;
+      outline: none;
+      resize: vertical;
+      background: none;
+      font: inherit;
+      font-size: 1rem;
+    }
+
+    .composer-foot {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0 var(--gutter) 0.75rem calc(var(--gutter) + var(--time-column));
+    }
+
+    .composer-foot .keys {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: var(--size-small);
+    }
+
+    .composer:focus-within {
+      box-shadow: inset 3px 0 0 var(--ink);
+    }
+
+    /* Rows: the text kept to a readable measure, Route and the circle to select on hover. */
+    .row-face {
+      grid-template-columns: var(--time-column) minmax(0, 46rem) auto;
+      column-gap: 0;
+      padding: 0.875rem var(--gutter);
+    }
+
+    .row-face > .pending-dot {
+      top: 1.25rem;
+      right: auto;
+      left: calc(var(--gutter) + 2.75rem);
+    }
+
+    .row-face .picture {
+      max-width: 28rem;
+    }
+
+    .row-face .picture img {
+      max-height: 18rem;
+      object-fit: cover;
+    }
+
+    .item:hover .row-face {
+      background: var(--tag);
+    }
+
+    .item.current .row-face {
+      box-shadow: inset 3px 0 0 var(--ink);
+    }
+
+    .item.open .row-face {
+      background: var(--card);
+    }
+
+    .tick {
+      display: flex;
+      visibility: hidden;
+    }
+
+    .item:hover .tick,
+    [data-marking] .tick {
+      visibility: visible;
+    }
+
+    .row-route {
+      display: inline-flex;
+      align-self: start;
+      justify-self: end;
+      grid-column: 3;
+      grid-row: 1;
+      margin-left: 1rem;
+      visibility: hidden;
+    }
+
+    .item:hover .row-route,
+    .item.current .row-route {
+      visibility: visible;
+    }
+
+    [data-marking] .row-route {
+      display: none;
+    }
+
+    /* An opened item: over the list's right side, and beside the list where there is room. */
+    .item-view {
+      inset: 0 0 0 auto;
+      width: min(34rem, 60vw);
+      border-left: var(--rule);
+      box-shadow: -1rem 0 2rem rgb(0 0 0 / 0.08);
+    }
+
+    .item-view .iv-page {
+      padding-inline: 1.25rem;
+    }
+
+    /* The status line, under the list only. */
+    .status-line {
+      grid-area: line;
+      position: static;
+      z-index: auto;
+      padding-right: var(--gutter);
+      animation: none;
+    }
+
+    /* Panels at the side, a quick route in the middle. */
+    .sheet,
+    .screen:has(> .status-line:not([hidden])) #notices {
+      inset: 0 0 0 auto;
+      width: 26rem;
+      max-height: none;
+      border-top: 0;
+      border-left: var(--rule);
+    }
+
+    #quick {
+      inset: 12vh auto auto 50%;
+      width: 28rem;
+      max-height: 76vh;
+      border: var(--rule);
+      border-radius: 0.75rem;
+      transform: translateX(-50%);
+    }
+
+    .alarm-strip {
+      position: fixed;
+      top: var(--bar);
+      left: var(--nav);
+    }
+
+    .batch-bar {
+      left: calc(50% + var(--nav) / 2);
+    }
+  }
+}
+
+@media (min-width: 1200px) {
+  html[data-frame="full"] {
+    .screen:has(> .item-view:not([hidden])) {
+      grid-template-columns: var(--nav) minmax(22rem, 1fr) minmax(26rem, 36rem);
+      grid-template-areas: "nav head pane" "nav main pane" "nav line pane";
+    }
+
+    .item-view {
+      grid-area: pane;
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      width: auto;
+      min-height: 0;
+      box-shadow: none;
+    }
+  }
+}

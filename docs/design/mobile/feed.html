@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en" data-frame="phone">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>notemap design: feed</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/queue.css" />
+    <link rel="stylesheet" href="css/drawer.css" />
+    <link rel="stylesheet" href="css/sheet.css" />
+    <link rel="stylesheet" href="css/viewer.css" />
+    <link rel="stylesheet" href="css/item.css" />
+    <link rel="stylesheet" href="css/notices.css" />
+    <link rel="stylesheet" href="css/quick.css" />
+    <script type="module" src="js/design.js"></script>
+    <script type="module" src="js/queue.js"></script>
+    <script type="module" src="js/item.js"></script>
+    <script type="module" src="js/morph.js"></script>
+    <script type="module" src="js/keyboard.js"></script>
+    <script type="module" src="js/wide.js"></script>
+    <link rel="stylesheet" href="css/wide.css" />
+    <link rel="stylesheet" href="css/bars.css" />
+  </head>
+  <body>
+    <div class="device">
+      <div class="screen">
+        <header class="app-bar" data-mode="title">
+          <div class="bar-row bar-title">
+            <button class="icon-button" data-open="drawer" aria-label="Menu"><svg class="i"><use href="#i-menu"></use></svg></button>
+            <h1>feed</h1>
+            <div class="actions">
+              <button class="icon-button" data-search="open" aria-label="Search"><svg class="i"><use href="#i-search"></use></svg></button>
+              <button class="icon-button filter-pill" data-open="view" aria-label="Filter and order"><svg class="i"><use href="#i-filter"></use></svg><span class="badge count"></span></button>
+              <button class="icon-button notices-pill" data-open="notices" aria-label="Notices"><svg class="i"><use href="#i-bell"></use></svg><span class="badge"></span></button>
+            </div>
+          </div>
+          <div class="bar-row bar-marking">
+            <button class="icon-button" data-mark-stop aria-label="Stop selecting"><svg class="i"><use href="#i-close"></use></svg></button>
+            <h1 class="marked-n">0 selected</h1>
+            <button class="pill plain" data-mark-all>All</button>
+          </div>
+          <form class="bar-row bar-search" role="search">
+            <button type="button" class="icon-button" data-search="close" aria-label="Close the search"><svg class="i"><use href="#i-back"></use></svg></button>
+            <input type="search" name="words" placeholder="Search the feed" autocomplete="off" />
+            <button type="button" class="icon-button" data-search="clear" aria-label="Clear"><svg class="i"><use href="#i-close"></use></svg></button>
+          </form>
+        </header>
+
+        <main>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Tuesday</span>
+              <time datetime="2026-11-03">2026-11-03</time>
+              <span class="count">3</span>
+            </h2>
+            <ol class="items">
+              <li class="item" data-outcome="routed" data-dest="vault" data-source="web-app" data-tags="work" data-records='[{"state": "delivered", "facts": [["destination", "Vault"], ["action", "append"], ["shape", "task"], ["file", "todo.md"], ["heading", "## Next"], ["if missing", "Make it"], ["template", "Todo"]], "decided": "2026-11-03 10:21", "output": "- [ ] ask Mira whether the workshop moved to thursday #work", "place": "todo.md", "delivered": "10:21"}]'>
+                <time>10:20</time>
+                <div class="body">
+                  <p class="text">ask Mira whether the workshop moved to thursday</p>
+                  <ul class="went"><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">todo</span>.md</span></li></ul>
+                  <ul class="tags"><li>#work</li></ul>
+                </div>
+              </li>
+              <li class="item" data-outcome="routed" data-dest="board vault" data-source="phone-shortcut" data-records='[{"state": "delivered", "facts": [["destination", "Board"], ["action", "new block"], ["channel", "seeded"]], "decided": "2026-11-03 09:05", "output": "the light in the stairwell at 9, almost orange", "place": "seeded", "delivered": "09:05"}, {"state": "delivered", "facts": [["destination", "Vault"], ["action", "new note"], ["shape", "raw"], ["file", "seeded/the-light-in-the-stairwell-at-9-almost.md"], ["if missing", "Make it"]], "decided": "2026-11-03 09:05", "output": "---\ncaptured_at: 2026-11-03T09:02\ntags: []\n---\n\nthe light in the stairwell at 9, almost orange", "place": "seeded/the-light-in-the-stairwell-at-9-almost.md", "delivered": "09:06"}]'>
+                <time>09:02</time>
+                <div class="body">
+                  <p class="text">the light in the stairwell at 9, almost orange</p>
+                  <span class="picture"><img src="assets/still-here.jpg" alt="" /></span>
+                  <ul class="went"><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Board</b><span class="place"><span class="cut">seeded</span></span></li><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/the-light-in-the-stairwell-at-9-almost</span>.md</span></li></ul>
+                </div>
+              </li>
+              <li class="item" data-outcome="discarded" data-dest="" data-source="web-app" data-state="discarded">
+                <time>08:40</time>
+                <div class="body">
+                  <p class="text">unsubscribe from the hardware store newsletter</p>
+                  <ul class="went"><li class="discarded"><svg class="i"><use href="#i-trash"></use></svg>Discarded</li></ul>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Monday</span>
+              <time datetime="2026-11-02">2026-11-02</time>
+              <span class="count">3</span>
+            </h2>
+            <ol class="items">
+              <li class="item" data-outcome="routed" data-dest="vault" data-source="cli" data-tags="reading" data-records='[{"state": "delivered", "facts": [["destination", "Vault"], ["action", "append"], ["shape", "list"], ["file", "reading.md"], ["heading", "## To read"], ["if missing", "Make it"]], "decided": "2026-11-02 21:16", "output": "- a book to look for: the one about the city of forty years of maps #reading", "place": "reading.md", "delivered": "21:16"}]'>
+                <time>21:15</time>
+                <div class="body">
+                  <p class="text">a book to look for: the one about the city of forty years of maps</p>
+                  <ul class="went"><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">reading</span>.md</span></li></ul>
+                  <ul class="tags"><li>#reading</li></ul>
+                </div>
+              </li>
+              <li class="item" data-outcome="manual" data-dest="" data-source="phone-shortcut" data-tags="home" data-state="done">
+                <time>17:48</time>
+                <div class="body">
+                  <p class="text">the tap washer is the 1/2 inch kind, not 3/4</p>
+                  <ul class="went"><li class="done"><svg class="i"><use href="#i-check"></use></svg>Done</li></ul>
+                  <ul class="tags"><li>#home</li></ul>
+                </div>
+              </li>
+              <li class="item" data-outcome="routed" data-dest="vault" data-source="web-app" data-tags="idea" data-records='[{"state": "delivered", "facts": [["destination", "Vault"], ["action", "append"], ["shape", "list"], ["file", "projects/notemap.md"], ["heading", "## Ideas"], ["if missing", "Make it the first time"], ["template", "Project note"]], "decided": "2026-11-02 12:07", "output": "- notemap: the queue could open on the oldest day instead #idea", "place": "projects/notemap.md", "delivered": "12:07"}]'>
+                <time>12:05</time>
+                <div class="body">
+                  <p class="text">notemap: the queue could open on the oldest day instead</p>
+                  <ul class="went"><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/notemap</span>.md</span></li></ul>
+                  <ul class="tags"><li>#idea</li></ul>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Sunday</span>
+              <time datetime="2026-11-01">2026-11-01</time>
+              <span class="count">2</span>
+            </h2>
+            <ol class="items">
+              <li class="item" data-outcome="routed" data-dest="cloud" data-source="phone-shortcut" data-tags="recipe" data-records='[{"state": "delivered", "facts": [["destination", "Cloud"], ["action", "new note"], ["shape", "raw"], ["file", "shared/soup-leek-potato-a-little-mustard-at-the.md"], ["if missing", "Make it"]], "decided": "2026-11-01 15:31", "output": "---\ncaptured_at: 2026-11-01T15:30\ntags: [recipe]\n---\n\nsoup: leek, potato, a little mustard at the end", "place": "shared/soup-leek-potato-a-little-mustard-at-the.md", "delivered": "15:40"}]'>
+                <time>15:30</time>
+                <div class="body">
+                  <p class="text">soup: leek, potato, a little mustard at the end</p>
+                  <ul class="went"><li class="delivered"><svg class="i"><use href="#i-route"></use></svg><b>Cloud</b><span class="place"><span class="cut">…/soup-leek-potato-a-little-mustard-at-the</span>.md</span></li></ul>
+                  <ul class="tags"><li>#recipe</li></ul>
+                </div>
+              </li>
+              <li class="item" data-outcome="routed" data-dest="vault" data-source="web-app" data-records='[{"state": "withdrawn", "facts": [["destination", "Vault"], ["action", "new note"], ["shape", "raw"], ["file", "journal/2026-11.md"]], "decided": "2026-11-01 11:13", "output": "---\ncaptured_at: 2026-11-01T11:12\ntags: []\n---\n\nthe bench by the river has a plaque now", "place": "journal/2026-11.md", "delivered": "11:13"}]'>
+                <time>11:12</time>
+                <div class="body">
+                  <p class="text">the bench by the river has a plaque now</p>
+                  <ul class="went"><li class="withdrawn"><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/2026-11</span>.md</span></li></ul>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <div class="list-foot">
+            <p><span class="n">12 of 61</span> shown</p>
+            <button class="pill lone" data-more>Load 20 more</button>
+          </div>
+          <div class="nothing" hidden>
+            <p>Nothing matches the filter.</p>
+            <button class="pill" data-clear-filter>Clear filter</button>
+          </div>
+          <div class="nothing drained" hidden>
+            <p>Nothing routed yet</p>
+          </div>
+          <div class="end"></div>
+        </main>
+
+        <a class="fab" href="capture.html" aria-label="Capture"><svg class="i"><use href="#i-plus"></use></svg></a>
+
+        <div class="veil" data-close hidden></div>
+
+        <aside class="drawer" id="drawer" aria-label="Menu" hidden>
+          <div class="drawer-head">
+            <span class="mark">notemap</span>
+            <button class="icon-button" data-close aria-label="Close the menu"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <nav>
+            <a href="queue.html"><svg class="i"><use href="#i-queue"></use></svg><span>queue</span><span class="n">9</span></a>
+            <a href="feed.html" aria-current="page"><svg class="i"><use href="#i-feed"></use></svg><span>feed</span><span class="n">24</span></a>
+            <a href="log.html"><svg class="i"><use href="#i-log"></use></svg><span>log</span></a>
+            <a href="settings.html"><svg class="i"><use href="#i-settings"></use></svg><span>settings</span></a>
+          </nav>
+          <p class="drawer-pending" hidden><span class="pending-dot"></span><span class="n"></span> waiting to send</p>
+          <div class="drawer-foot">
+            <span class="online">online</span>
+            <span>signed in as admin</span>
+          </div>
+        </aside>
+
+        <section class="sheet" id="view" aria-label="Filter" hidden>
+          <div class="sheet-head">
+            <h2>filter</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <div class="sheet-part">
+            <h3>Order</h3>
+            <div class="toggles one" data-group="order">
+              <button class="pill" data-value="newest" data-default aria-pressed="true">Newest first</button>
+              <button class="pill" data-value="oldest" aria-pressed="false">Oldest first</button>
+              <button class="pill" data-value="processed" aria-pressed="false">Newest processed</button>
+            </div>
+          </div>
+          <div class="sheet-part">
+            <h3>What became of it</h3>
+            <div class="toggles" data-group="outcome">
+              <button class="tag" data-value="routed" aria-pressed="false">routed</button>
+              <button class="tag" data-value="discarded" aria-pressed="false">discarded</button>
+              <button class="tag" data-value="manual" aria-pressed="false">manual</button>
+            </div>
+          </div>
+          <div class="sheet-part">
+            <h3>Destination</h3>
+            <div class="toggles" data-group="dest">
+              <button class="tag" data-value="vault" aria-pressed="false">Vault</button>
+              <button class="tag" data-value="cloud" aria-pressed="false">Cloud</button>
+              <button class="tag" data-value="board" aria-pressed="false">Board</button>
+            </div>
+          </div>
+          <div class="sheet-part">
+            <h3>Source</h3>
+            <div class="toggles" data-group="source">
+              <button class="tag" data-value="web-app" aria-pressed="false">web app</button>
+              <button class="tag" data-value="phone-shortcut" aria-pressed="false">phone shortcut</button>
+              <button class="tag" data-value="cli" aria-pressed="false">cli</button>
+            </div>
+          </div>
+          <div class="sheet-part">
+            <h3>Tags</h3>
+            <div class="toggles" data-group="tag">
+              <button class="tag" data-value="home" aria-pressed="false">#home</button>
+              <button class="tag" data-value="work" aria-pressed="false">#work</button>
+              <button class="tag" data-value="reading" aria-pressed="false">#reading</button>
+              <button class="tag" data-value="recipe" aria-pressed="false">#recipe</button>
+              <button class="tag" data-value="idea" aria-pressed="false">#idea</button>
+            </div>
+          </div>
+          <div class="sheet-foot toolbar">
+            <button type="button" class="pill" data-reset><svg class="i"><use href="#i-undo"></use></svg>Reset</button>
+            <button type="button" class="pill primary" data-close><svg class="i"><use href="#i-check"></use></svg>Show <span class="shown">9</span></button>
+          </div>
+        </section>
+
+        <section class="sheet quick" id="batch-route" aria-label="Route the selected" hidden>
+          <div class="sheet-head">
+            <h2>route</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <p class="quick-what"></p>
+          <ul class="quick-templates"></ul>
+          <p class="sheet-note">A batch is routed by a template's trigger tag. Templates without one are routed an item at a time.</p>
+        </section>
+
+        <section class="sheet" id="batch-tags" aria-label="Tag the selected" hidden>
+          <div class="sheet-head">
+            <h2>tag</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <p class="quick-what"></p>
+          <div class="sheet-part">
+            <div class="toggles batch-tag-list"></div>
+            <p class="sheet-note">A tag on some of them is marked with a dash. Tap it to put it on all, again to take it off all.</p>
+          </div>
+          <div class="sheet-foot toolbar">
+            <button type="button" class="pill" data-close><svg class="i"><use href="#i-close"></use></svg>Cancel</button>
+            <button type="button" class="pill primary" data-batch-tags-apply><svg class="i"><use href="#i-check"></use></svg>Apply</button>
+          </div>
+        </section>
+
+
+        <div class="alarm-strip" role="alert" hidden>
+          <span class="say"></span>
+          <button class="pill" data-alarm-open>Open</button>
+          <button class="icon-button" data-alarm-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+        </div>
+        <div class="status-line" hidden>
+          <button class="sl-open" data-open="notices" aria-label="Open the notices"><span class="sl-say"></span><span class="sl-counts"></span></button>
+          <button class="sl-cancel" hidden>Cancel</button>
+        </div>
+        <footer class="batch-bar toolbar" hidden>
+          <button class="pill" data-batch="undiscard"><svg class="i"><use href="#i-undo"></use></svg>Undiscard</button>
+          <button class="pill danger" data-batch="discard"><svg class="i"><use href="#i-trash"></use></svg>Discard</button>
+          <button class="pill" data-batch="tag"><svg class="i"><use href="#i-tag"></use></svg>Tag</button>
+          <button class="pill primary" data-batch="route"><svg class="i"><use href="#i-route"></use></svg>Route</button>
+        </footer>
+
+        <section class="sheet notices" id="notices" aria-label="Notices" hidden>
+          <div class="sheet-head">
+            <h2>notices</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <h3 class="notices-part">on its way</h3>
+          <ol class="notice-list" data-flying>
+            <li class="notice">
+              <time>10:02</time>
+              <div class="body">
+                <p class="what"><span class="spinner"></span>Waiting for <b>Cloud</b></p>
+                <p class="about">notes from the planning meeting</p>
+                <p class="why">Cloud has not answered since 09:40. It is tried again when it does.</p>
+                <div class="ways"><button class="pill" data-online>Cancel</button></div>
+              </div>
+            </li>
+            <li class="notice">
+              <time>09:58</time>
+              <div class="body">
+                <p class="what"><span class="spinner"></span>Sending to <b>Vault</b></p>
+                <p class="about">the lease, signed</p>
+              </div>
+            </li>
+          </ol>
+          <h3 class="notices-part waiting-part">waiting to send</h3>
+          <ol class="notice-list" data-waiting></ol>
+          <h3 class="notices-part">this session</h3>
+          <ol class="notice-list" data-live>
+            <li class="notice alarm">
+              <time>11:52</time>
+              <div class="body">
+                <p class="what">Rejected by <b>Vault</b></p>
+                <p class="about">still here, on the wall by the station</p>
+                <p class="why">Vault has no folder named projects/street/, and the route said it must exist. The item is back in the queue.</p>
+                <div class="ways"><a class="pill" href="route.html">Route again</a></div>
+              </div>
+            </li>
+            <li class="notice alarm">
+              <time>09:31</time>
+              <div class="body">
+                <p class="what">Refused by the pool</p>
+                <p class="about">receipt for the bike, and the photos of the frame</p>
+                <p class="why">The pictures are 52 MB together, over the pool's 25 MB. Kept on this device until you change or delete it.</p>
+                <div class="ways"><button class="pill" data-open-item>Open</button><button class="pill danger" data-delete-refused>Delete</button></div>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="item-view" aria-label="Item" hidden>
+          <header class="iv-bar">
+            <button class="icon-button" data-iv="close" aria-label="Back to the queue"><svg class="i"><use href="#i-back"></use></svg></button>
+            <p class="iv-when"><span class="weekday"></span><span class="iv-time"></span></p>
+            <div class="iv-steps">
+              <span class="iv-pos"></span>
+              <div class="morph mini">
+                <button class="pill" data-iv="prev" aria-label="Previous"><svg class="i"><use href="#i-chevron-left"></use></svg></button>
+                <button class="pill" data-iv="next" aria-label="Next"><svg class="i"><use href="#i-chevron"></use></svg></button>
+              </div>
+            </div>
+            <div class="iv-more">
+              <button class="icon-button" data-iv="more" aria-label="More" aria-haspopup="menu" aria-expanded="false"><svg class="i"><use href="#i-more"></use></svg></button>
+              <ul class="menu" role="menu" hidden>
+                <li><button role="menuitem" data-iv="edit"><svg class="i"><use href="#i-edit"></use></svg>Edit</button></li>
+                <li><button role="menuitem" data-iv="copy"><svg class="i"><use href="#i-copy"></use></svg>Copy</button></li>
+                <li><button role="menuitem" data-iv="history"><svg class="i"><use href="#i-log"></use></svg>History</button></li>
+              </ul>
+            </div>
+          </header>
+          <div class="iv-page">
+            <p class="iv-status" hidden></p>
+            <ul class="iv-routes" aria-label="Routing records" hidden></ul>
+            <div class="iv-pictures"></div>
+            <div class="iv-files"></div>
+            <div class="held iv-held" hidden></div>
+            <p class="iv-text"></p>
+            <div class="iv-extra"></div>
+            <textarea class="iv-edit" aria-label="The words" hidden></textarea>
+          </div>
+          <ul class="iv-tags tag-line"></ul>
+          <div class="strip iv-strip" role="status" hidden>
+            <span class="say"></span>
+            <button class="pill" data-iv="undo"><svg class="i"><use href="#i-undo"></use></svg>Undo</button>
+          </div>
+          <footer class="iv-actions toolbar">
+            <a class="pill primary" href="route.html"><svg class="i"><use href="#i-route"></use></svg><span>Route again</span></a>
+          </footer>
+          <footer class="iv-edit-foot toolbar" hidden>
+            <label class="pill"><input type="file" multiple hidden data-iv="attach" /><svg class="i"><use href="#i-attach"></use></svg>Attach</label>
+            <button class="pill" data-iv="cancel"><svg class="i"><use href="#i-close"></use></svg>Cancel</button>
+            <button class="pill primary" data-iv="save"><svg class="i"><use href="#i-check"></use></svg>Save</button>
+          </footer>
+        </section>
+
+        <div class="viewer" hidden>
+          <div class="viewer-head">
+            <button class="icon-button" data-viewer="close" aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+            <span class="where"></span>
+          </div>
+          <img alt="" />
+          <button class="icon-button step prev" data-viewer="prev" aria-label="Previous picture"><svg class="i"><use href="#i-back"></use></svg></button>
+          <button class="icon-button step next" data-viewer="next" aria-label="Next picture"><svg class="i"><use href="#i-next"></use></svg></button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
