@@ -123,6 +123,25 @@ describe("reading the action log", () => {
     expect(query(everything!).get("limit")).toBe("25");
   });
 
+  it("reads a batch at the usual page size from a pool that serves fewer", async () => {
+    const { client, transport } = clientOver((request) =>
+      query(request).get("limit") === "500"
+        ? refusal(422, "limit-too-large", { limit: 500, max: 100 })
+        : slice([anAction("one", { batch: "batch-7" })]),
+    );
+
+    const page = await client.actions.read({
+      order: "oldest-first",
+      batch: "batch-7",
+    });
+
+    expect(page.values.map((one) => one.id)).toEqual(["one"]);
+    expect(asked(transport).map((one) => query(one).get("limit"))).toEqual([
+      "500",
+      "25",
+    ]);
+  });
+
   it("surfaces a refusal as every other read does", async () => {
     const { client } = clientOver(() => refusal(422, "bad-position"));
 
