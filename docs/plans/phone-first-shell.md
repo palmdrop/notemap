@@ -86,6 +86,8 @@ The developer's own, not reopened here:
 - **The index view stays**, as a second way to read the queue and the feed, chosen in the filter.
   Draw it in the spirit of the old one (one line per item, the time, the first words, the tags),
   in the new register and by day. The developer gives feedback on it after this plan.
+- **Dark ships rough.** An inversion of the new tokens by role, so every view works in it, marked
+  rough for the developer's feedback once it is built. It is not designed beyond that here.
 - **One branch for the redesign.** The ADRs, the design, the reviews, this plan and the code all
   land together, on `agent/mobile-first-rethink`, in one PR. This departs on purpose from "branch
   per plan": the developer asked for it so that the docs and the code they describe merge as one.
@@ -117,15 +119,6 @@ Motion follows the shell's existing rules: `lib/motion.ts`, `components/primitiv
 `prefers-reduced-motion`. Movement says what happened, and never delays a press or the next read.
 The mock draws some of it (`.leaving`, the sheets, the swipe). Where it draws none, choose it to
 the same rules, and list what you chose for the tuning step.
-
----
-
-## Open decisions
-
-Ask the developer before the phase that needs it. Do not pick one quietly.
-
-1. **Dark.** Appearance offers it and the design has not drawn it. Ship an inversion of the new
-   tokens, marked rough for the tuning step, or hide the option until it is drawn? (Phase 2.)
 
 ---
 
@@ -222,7 +215,7 @@ Depends on phase 1.
   - The transitions they share (see Motion): a sheet rising, a panel or the drawer coming in from
     the side, a veil fading, and a row leaving.
   - A main action that cannot be taken yet: dashed, with the line above saying why.
-- [ ] Dark: as the developer decided (open decision 2)
+- [ ] Dark, rough: the new tokens inverted by role, every piece checked in it (see Settled)
 - [ ] `shell.md`: Visual direction and Tokens and themes, rewritten
 - [ ] Commit
 
