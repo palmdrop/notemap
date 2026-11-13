@@ -45,8 +45,6 @@
     | "template"
     | "circle"
     | "circle-check";
-
-  export const SPRITE = "/icons/notemap.svg";
 </script>
 
 <script lang="ts">
@@ -70,5 +68,5 @@
   aria-hidden={label === undefined ? "true" : undefined}
   focusable="false"
 >
-  <use href="{SPRITE}#i-{name}" />
+  <use href="#i-{name}" />
 </svg>

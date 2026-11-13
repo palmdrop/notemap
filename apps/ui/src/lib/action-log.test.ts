@@ -81,6 +81,8 @@ test("a delivery refused says why on the line, and the rest in the panel", () =>
   expect(said?.what).toBe("routing failed: taken.md is already there");
   expect(said?.why).toBe("Vault, rejected-by-destination, back in the queue");
   expect(said?.alarm).toBe(true);
+  // Turned down after its window: the one thing that interrupts.
+  expect(said?.strip).toBe(true);
 });
 
 test("a failure the destination gave no words for names where it was going", () => {
@@ -125,6 +127,9 @@ test("a delivery given up on keeps its reason and takes the failure's place", ()
   expect(abandoned?.what).toBe("routing failed: still not mounted");
   expect(abandoned?.why).toBe("Vault, unreachable, back in the queue");
   expect(abandoned?.alarm).toBe(true);
+  expect(abandoned?.strip).toBe(true);
+  // Retried, it is not over, and says nothing over the header.
+  expect(failed?.strip).toBeUndefined();
   expect(abandoned?.only).toBe(failed?.only);
   expect(abandoned?.only).toBe("delivery:r1");
 });
@@ -356,6 +361,7 @@ test("a fired template opens a firing, named for the template, with its window",
       record: "r1",
       item: "one",
       name: "Research",
+      to: "Vault",
       href: "/log?item=one",
       until: Date.parse("2026-09-03T10:00:15.000Z"),
     },
@@ -562,6 +568,7 @@ test("a decision made by hand opens a route in flight, named for its destination
       record: "r1",
       item: "one",
       name: "Vault",
+      to: "Vault",
       href: "/log?item=one",
       until: Date.parse("2026-09-03T10:00:05.000Z"),
     },

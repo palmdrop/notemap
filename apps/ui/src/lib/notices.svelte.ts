@@ -52,6 +52,11 @@ export type Notice = {
    * one thing takes the place of the words before it.
    */
   readonly only?: string;
+  /**
+   * A delivery turned down after its window closed: the one thing that
+   * interrupts, said once in the red strip under the header.
+   */
+  readonly strip?: boolean;
   /** When it was said, for the panel to say when. */
   readonly at: number;
 };
@@ -70,6 +75,18 @@ let holding = $state(false);
 
 /** Alarms raised since the panel was last opened. */
 let unseen = $state(0);
+
+/** How long the strip holds before it goes. */
+const STRIPPED = 8_000;
+
+let stripped = $state<Notice | undefined>(undefined);
+let stripTimer: ReturnType<typeof setTimeout> | undefined;
+
+function unstrip(): void {
+  clearTimeout(stripTimer);
+  stripTimer = undefined;
+  stripped = undefined;
+}
 
 const spoken = new SvelteSet<string>();
 const timers = new SvelteMap<string, ReturnType<typeof setTimeout>>();
@@ -136,6 +153,14 @@ export const notices = {
     unseen = 0;
   },
 
+  /** What the red strip says, while it says it. */
+  get strip(): Notice | undefined {
+    return stripped;
+  },
+
+  /** The strip's ×, or the reader going to look. */
+  unstrip,
+
   /** This session's notices, oldest first, live or gone. */
   get history(): readonly Said[] {
     const live = held.map((notice) => notice.id);
@@ -182,6 +207,11 @@ export const notices = {
 
     if (notice.alarm === true && notice.counted !== false && !restated) {
       unseen += 1;
+    }
+    if (notice.strip === true) {
+      clearTimeout(stripTimer);
+      stripped = raised;
+      stripTimer = setTimeout(unstrip, STRIPPED);
     }
     if (!holding) wait(raised);
 
@@ -246,6 +276,7 @@ export const notices = {
     past = [];
     holding = false;
     unseen = 0;
+    unstrip();
     spoken.clear();
   },
 };

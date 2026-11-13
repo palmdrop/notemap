@@ -469,10 +469,7 @@
             <span>{did}</span>
           {/if}
           {#if offer !== undefined}
-            <Action
-              alarm={offer === "cancel"}
-              onclick={() =>
-                void takeBack(offer === "undo" ? "undone" : "cancelled")}
+            <Action alarm onclick={() => void takeBack("cancelled")}
               >{offer}</Action
             >
           {/if}
@@ -587,10 +584,7 @@
                 >
               {/if}
               {#if offer !== undefined}
-                <Action
-                  alarm={offer === "cancel"}
-                  onclick={() =>
-                    void takeBack(offer === "undo" ? "undone" : "cancelled")}
+                <Action alarm onclick={() => void takeBack("cancelled")}
                   >{offer}</Action
                 >
               {:else if byHand && said === undefined}

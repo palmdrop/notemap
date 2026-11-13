@@ -614,7 +614,7 @@ test("a folded pending record offers cancel on its line, and says nothing else",
   expect(screen.queryByText(NOT_YET_DELIVERED)).toBeNull();
 });
 
-test("a pending record in its window offers undo, and nothing once the window closes", async () => {
+test("a pending record in its window offers cancel, and nothing once the window closes", async () => {
   await named();
   firings.opened({
     record: RECORD.id,
@@ -626,7 +626,7 @@ test("a pending record in its window offers undo, and nothing once the window cl
   const { unmount } = render(Block, {
     record: { ...RECORD, state: "pending" },
   });
-  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
   unmount();
 
   firings.clear();

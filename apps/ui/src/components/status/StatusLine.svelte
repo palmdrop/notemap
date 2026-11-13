@@ -7,7 +7,6 @@
   import type { Action, ActionsSince, PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
-  import Line from "$components/primitives/frame/Line.svelte";
   import { templateFromHref } from "$components/settings/href";
   import { SHOWN_AFTER } from "$components/primitives/marks/Asking.svelte";
   import { arrivalOf, endingOf, firingOf, noticeOf } from "$lib/action-log";
@@ -17,6 +16,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { cancelBatch, cancelRouting, recheckFirings } from "$lib/firing";
   import { firings, type Firing } from "$lib/firings.svelte";
+  import { fade } from "$lib/motion";
   import { notices, type Offer } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
   import {
@@ -35,19 +35,24 @@
   import FiringSegment from "./Firing.svelte";
   import Message from "./Message.svelte";
   import Panel from "./Panel.svelte";
+  import { panel } from "./panel.svelte";
 
-  /** Signed out: the pool's work has left with the session, and the device's own has not. */
-  let { shut = false }: { shut?: boolean } = $props();
+  /**
+   * Signed out: the pool's work has left with the session, and the device's
+   * own has not. `drawn` is whether this surface has the line at its foot —
+   * the queue, the feed and the log — and it is drawn there only while it has
+   * something to say. What it hears it hears on every surface.
+   */
+  let { shut = false, drawn = true }: { shut?: boolean; drawn?: boolean } =
+    $props();
 
   const pool = reachable();
   const outbox = client.outbox;
-  const queue = client.counts.queue;
 
   /** How long an arrival's notice waits for its copy before it goes without its words. */
   const ARRIVING = 5_000;
 
-  let open = $state(false);
-  let line = $state<HTMLElement | undefined>(undefined);
+  const open = $derived(panel.open);
 
   const refused = $derived($outbox.filter((held) => held.state === "refused"));
   const unsent = $derived($outbox.filter((held) => held.state !== "refused"));
@@ -63,6 +68,13 @@
     unsent.filter((held) => clock - Date.parse(held.at) >= SHOWN_AFTER),
   );
 
+  /** Something is true or was just said: the line is drawn only then. */
+  const saying = $derived(
+    (!shut && (firings.open.length > 0 || notices.latest !== undefined)) ||
+      waited.length > 0 ||
+      !pool.yes,
+  );
+
   $effect(() => {
     const due = unsent
       .map((held) => Date.parse(held.at) + SHOWN_AFTER)
@@ -76,11 +88,12 @@
   });
 
   function toggle(): void {
-    open = !shut && !open;
+    if (shut) panel.close();
+    else panel.toggle();
   }
 
   $effect(() => {
-    if (shut) open = false;
+    if (shut) panel.close();
   });
 
   // Opening the panel is seeing what went wrong, and so is anything that goes
@@ -192,19 +205,6 @@
           },
         ],
   );
-
-  // A press anywhere but the line or its panel puts the panel away.
-  $effect(() => {
-    if (!open) return;
-
-    const away = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Node && line?.contains(target) === true) return;
-      open = false;
-    };
-    document.addEventListener("pointerdown", away);
-    return () => document.removeEventListener("pointerdown", away);
-  });
 
   /**
    * Which capture a log entry was about. The log names an id, and an id is the
@@ -362,61 +362,64 @@
   });
 </script>
 
-<Line
-  bind:line
-  onhold={() => notices.hold()}
-  onrelease={() => notices.release()}
->
-  {#if open && !shut}
-    <Panel
-      history={notices.history}
-      firings={firings.open}
-      now={firings.now}
-      unsent={waited}
-      refused={kept}
-      onclose={() => (open = false)}
-      ontake={(id) => notices.take(id)}
-      oncancel={cancel}
-      onforget={() => notices.clearHistory()}
-      oncopy={(held) => void copyRefused(held)}
-      onedit={(held) => {
-        open = false;
-        void editRefused(held);
-      }}
-      ondelete={(held) => void deleteRefused(held)}
-    />
-  {/if}
+{#if open && !shut}
+  <Panel
+    history={notices.history}
+    firings={firings.open}
+    now={firings.now}
+    unsent={waited}
+    refused={kept}
+    offline={!pool.yes}
+    onclose={() => panel.close()}
+    ontake={(id) => notices.take(id)}
+    oncancel={cancel}
+    onforget={() => notices.clearHistory()}
+    oncopy={(held) => void copyRefused(held)}
+    onedit={(held) => {
+      panel.close();
+      void editRefused(held);
+    }}
+    ondelete={(held) => void deleteRefused(held)}
+  />
+{/if}
 
+{#if drawn && saying}
+  <!-- Under somebody's pointer or focus, nothing on it leaves. -->
   <div
-    class="flex h-status items-center gap-x-5 px-3 max-wide:gap-x-3 max-wide:px-3.5"
+    role="presentation"
+    transition:fade
+    data-status-line
+    onpointerenter={() => notices.hold()}
+    onpointerleave={() => notices.release()}
+    onfocusin={() => notices.hold()}
+    onfocusout={(event) => {
+      const into = event.relatedTarget;
+      if (into instanceof Node && event.currentTarget.contains(into)) return;
+      notices.release();
+    }}
+    class="sticky bottom-0 z-20 flex min-h-11 items-center gap-x-4 border-t border-rule bg-paper px-gutter pb-[env(safe-area-inset-bottom)] text-small"
   >
     {#if shut}
       <span class="flex-1"></span>
-    {:else}
-      <Message
-        notice={notices.latest}
-        unseen={notices.unseen + kept.length}
-        expanded={open}
-        ontoggle={toggle}
-        ontake={(id) => notices.take(id)}
-      />
-
+    {:else if firings.open.length > 0}
       <FiringSegment
         open={firings.open}
         now={firings.now}
-        expanded={open}
+        offline={!pool.yes}
         oncancel={cancel}
         oncancelbatch={cancelBatch}
         ontoggle={toggle}
       />
+    {:else if notices.latest !== undefined}
+      <Message
+        notice={notices.latest}
+        ontoggle={toggle}
+        ontake={(id) => notices.take(id)}
+      />
+    {:else}
+      <span class="flex-1"></span>
     {/if}
 
-    <Counts
-      pending={waited.length}
-      queue={shut ? undefined : $queue}
-      reachable={pool.yes}
-      expanded={open}
-      ontoggle={toggle}
-    />
+    <Counts pending={waited.length} reachable={pool.yes} ontoggle={toggle} />
   </div>
-</Line>
+{/if}

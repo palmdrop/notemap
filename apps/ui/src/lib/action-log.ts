@@ -172,6 +172,9 @@ export function firingOf(
             ? undefined
             : said.nameOf?.(destination)) ??
           "a destination",
+        ...(destination === undefined || said.nameOf === undefined
+          ? {}
+          : { to: said.nameOf(destination) }),
         href: said.about(action.subject),
         ...(until === undefined ? {} : { until: Date.parse(until) }),
       },
@@ -180,6 +183,7 @@ export function firingOf(
   if (action.kind !== "template-fired") return undefined;
 
   const values = detail["arguments"];
+  const target = stringAt(detail, "destination");
   const where =
     template === undefined || typeof values !== "object" || values === null
       ? undefined
@@ -193,6 +197,9 @@ export function firingOf(
         stringAt(detail, "name") ??
         "a template",
       ...(where === undefined ? {} : { where }),
+      ...(target === undefined || said.nameOf === undefined
+        ? {}
+        : { to: said.nameOf(target) }),
       href: said.about(action.subject),
       ...(until === undefined ? {} : { until: Date.parse(until) }),
       ...(action.batch === undefined ? {} : { batch: action.batch }),
@@ -298,6 +305,7 @@ export function noticeOf(
       ]),
       ...where,
       ...(again ? {} : { alarm: true }),
+      ...(again || record === undefined ? {} : { strip: true }),
       ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
@@ -324,6 +332,7 @@ export function noticeOf(
       ]),
       ...where,
       alarm: true,
+      ...(record === undefined ? {} : { strip: true }),
       ...runOf(record),
       key: `abandoned:${record ?? action.id}`,
     };

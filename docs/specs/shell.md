@@ -787,29 +787,40 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### The shape of the shell
 
-Two columns, designed at 375px and given air on a wider screen. There is no second layout: no
-two-pane desktop, no bottom bar, no sheet. *Amended 2026-09-30
-([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md))*: there is one bar at the bottom,
-the **status line** ([below](#the-status-line)), fixed under every surface; a page's foot is padded
-clear of it, whatever is scrolled or focused into view stops clear of it with a little room to
-spare *(2026-10-08)*, and the process surface fills the viewport less its height. *Amended 2026-08-24*: the second column is the metadata
-rail, and it survives a phone rather than collapsing into the first. *Amended 2026-09-29
-([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md))*: the register has a second
-layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
-`narrow`. The two columns stay; by day, below `narrow`, the rail narrows to the width of a time.
+*(Rewritten 2026-11-13, [ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)
+and [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md).
+From 2026-08-20 it was two columns designed at 375px and given air on a wider screen, four words in
+a bar for navigation, and one ruled status line under every surface.)*
 
-Navigation names **four** surfaces — `queue`, `feed`, `log` and `settings` — as four equals at the
-bar's left, the current one bold, each holding its bold width so the one beside it does not move
-([Motion](#visual-direction)). *Amended 2026-09-14*: the log and settings joined the two; the
-wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
-surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
-where the surfaces would be.
+**One build, drawn for a phone first.** The queue, the feed and the log are lists under a
+**header**. A page that acts — the item, capture, a route, settings — docks its actions in a bar at
+its foot. Filters, the notices, the quick route and questions open as **sheets** from the foot.
+An item opens full screen. Below 900px every width draws this.
 
-The chrome carries what is true of the shell rather than of any item. *Amended 2026-09-30*: it says
-it in the **status line** rather than in one glyph at the bar's right, which said `●`, `○` or `◐`
-with the count only in its title; the bar is navigation alone. The order control is a reading
-preference and sits in the head of each list that has one; the palette is a preference and sits in
-settings. A refusal goes to the status line.
+**The header** is the title in the display face and, on a list, icons for **search**, **filter**
+(with how many tags it holds) and **notices** (with a red count of what went wrong). Each icon
+stands for the surface's own command — `/`, `f`, `n` — so a key and a press do one thing, and the
+counts come from the same rows as everywhere else. A page that is not a list has the title alone,
+until its own header is drawn.
+
+**Navigation is the drawer** on a phone, opened from the header's menu icon and coming in from the
+left over a veil: `queue`, `feed`, `log` and `settings`, each an icon and a word, the current one on
+the band, the queue with how much it holds. Under them, how much is waiting to send, and at its foot
+whether the pool answers — `online`, or `offline, last answered 12:31` in ink — and who this is.
+**The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
+queue.
+
+**A wide window** (900px and wider) draws the same views, and a handful of pieces take a wide form.
+**The menu is a column**, always there, from 1200px, holding the same as the drawer; **from 900 to
+1199px it is a rail of icons**, each with its count as a small figure and its word as its label, and
+at its foot a dot for whether the pool answers. The header loses its menu icon. The status line
+runs under the list only. The other pieces' wide forms — the capture box, the item beside the list,
+a toolbar for a docked bar, a panel or a dialog for a sheet — are described with each.
+
+**The chrome carries what is true of the shell rather than of any item**, and says it on the status
+line ([below](#the-status-line)) while it is true, and in the drawer or the menu: the queue's size,
+what is waiting to send, whether the pool answers. The order control is a reading preference and
+sits in each list's filter; the palette is a preference and sits in settings.
 
 ### Capture is the head of the queue
 
@@ -2461,82 +2472,84 @@ never answered still draws no failure at all.
 
 ### The status line
 
-*(2026-09-30, [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md). It replaces the corner,
-which said what happened from 2026-09-03, and the bar's glyph.)* The shell says anything in its own
-voice from **one ruled line fixed to the bottom of every surface**, at the shell's one size,
-ruled along its top and down both its ends *(2026-10-01)*. **It is as wide as a selected row's box**
-*(2026-10-02)*, reaching as far past the page's column as the box does, so its ends fall on the
-box's edges. **Below `narrow` it spans the screen** and its ends are the screen's, drawn with no
-rule, as the panel above it is. **One place, with gradations** — a second place would be a reader learning where
-to look to learn nothing more. A **notice** is work that has already happened, reported to somebody
-who did not ask: an item routed and where it went, a delivery that failed, a delivery given up on.
-Beside the notices the line says what is true of the shell rather than of any item: what is in
-flight, how much is left, and whether the pool answers.
+*(Rewritten 2026-11-13, [ADR 74](../adr/0074-the-status-line-is-at-the-foot-of-the-lists-while-something-is-true.md).
+It was one ruled line fixed under every surface from 2026-09-30,
+[ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md), which replaced the corner and the
+bar's glyph.)* The shell says anything in its own voice from **one ruled line at the foot of the
+queue, the feed and the log**, the surfaces with no docked bar, and **only while it has something to
+say**. It fades in when something becomes true and out when nothing is. A page with a bar docked at
+its foot — the item, capture, a route, settings — has no line, and says what happens there on the
+page. When wide it runs under the list only, not under the menu. It is drawn at `text-small`,
+ruled along its top, `paper` under it, and it clears the phone's home indicator. **One place, with
+gradations** — a second place would be a reader learning where to look to learn nothing more. A
+**notice** is work that has already happened, reported to somebody who did not ask: an item routed
+and where it went, a delivery that failed, a delivery given up on. Beside the notices the line says
+what is true of the shell rather than of any item: what is in flight, how much is waiting, and
+whether the pool answers.
 
-**The left is the message line.** It begins with **`notices ▴`**, always there, which opens the
-panel and is what the panel hangs from — a button that came and went with what had been said would
-be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
-accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
-cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on the landing of
-a route made by hand, `save as template` *(2026-11-01)*, which opens Templates on that record).
-**The line is
-short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
-`routing failed: taken.md is already there` — and never the code, the place, or the capture, which
-are the panel's, and the log's beyond it. Below `narrow`, `notices` is its mark alone. A notice rises into the line as it arrives: the line is read at
-the edge of the eye, and motion is what tells that edge something was said.
+**The left is the newest thing happening or just said**, one of:
 
-**Every notice goes on its own, and none is dismissed** *(2026-10-01; until then a failure stood
-until somebody cleared it)*. A success is a glance and leaves after four seconds; one that offers
-something, and anything that went wrong, after ten, which is long enough to reach for an `undo` or
-read the reason. Nothing has to be cleared, because nothing is lost by going: the panel reads back
-every notice of the session, and the way back is not only here either — a discarded row offers
-`unarchive`, and a manual mark's record offers `undo` on the item surface. **What went wrong is
-counted** on `notices` until the panel is next opened, so a failure that lingered and went while
-nobody was looking is still in front of them when they return; opening the panel is the whole of
-acknowledging it, and what goes wrong while it is open is seen as it arrives. The accent is spent on what went wrong and on nothing else, as it is in the log.
-**Nothing leaves while the pointer is over the line or focus is inside it**, its panel included, so
-nothing vanishes under somebody's hand; let go, everything lingers again from the start.
+- **A route in its window**: the spinner, `Routing by **Todo**`, what it was given for what it
+  asks, label then value (`, list Next`), the seconds left, and **Cancel**.
+- **A route being attempted**, once its window has closed: `Sending to **Vault**`, with nothing to
+  offer, since the pool refuses to call off a delivery it is attempting.
+- **A route the pool will retry**: `Waiting for **Vault**`, with **Cancel**.
+- **Otherwise the newest notice still live**, cut to fit rather than wrapped, and beside it whatever
+  it offers: `Undo` for a discard or a manual mark just made, and on the landing of a route made by
+  hand `save as template` *(2026-11-01)*.
 
-**The right is the counts**, each drawn only while it is true, in a fixed order:
+**Cancel and Undo are underlined words, not buttons.** Cancel is for a route still in its window, or
+one the pool is retrying; Undo is for a decision just made that makes no delivery
+([CONTEXT.md](../../CONTEXT.md)). **Offline, nothing offers Cancel** — not the line, not the row,
+not the notices — since cancelling needs the pool.
 
-- **A route in flight** — `routing **research** 12s`, with `undo`; `cancel` once the pool is
-  retrying it (below).
-- **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
-  refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
-  **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
-  row's own mark does: a tag drains within a moment, and `1 pending` that came and went would say
+**The right is what is true, counted in words, in a fixed order**, each only while it is true:
+
+- **`2 waiting`**, with the dot: the outbox operations this device has not sent, never a refusal.
+  It counts work **only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
+  row's own mark does: a tag drains within a moment, and a count that came and went would say
   nothing but move the line. Work restored from an earlier session has waited already.
-- **How much is left** — `14 in queue`, the pool's own count of what the queue holds, read from
-  `GET /v1/counts` and leading to the queue. It is the pool's number: what this device has not sent
-  is the pending count's. It keeps its last answer while the pool is out of reach.
-- **`offline`**, last, while the pool does not answer *(2026-10-01; a glyph said both states
-  until then)*. A pool that answers is the ordinary state and says nothing, as pending work says
-  nothing while there is none.
+- **`Offline`**, last, in ink with a cloud struck out, while the pool does not answer. Offline is
+  not a failure.
 
-A press on any count but the queue's opens the panel. **Below `narrow`** the words go: a route in
-flight is `routing 12s cancel`, pending `◐ 3`, the queue's count is not drawn, and `offline` stays
-a word.
+**The queue's size left the line** *(2026-11-13; `14 in queue` was its third count)*: it is in the
+drawer and the menu, beside `queue`. So did **`notices (n) ▴`**: the notices open from the
+header's bell, which carries the red count, and from the line itself.
 
-**The panel** opens above the line from `notices`, a press on the message or a count, or `n`
-anywhere, and closes on `esc`, on its own `close`, or on a press anywhere outside the line. It
-**hangs from `notices`** at the line's left, its left edge on the line's own, at most `28rem` wide
-so it reads as the notices' own rather than as a sheet over the page, and spans the line below
-`narrow`. It **slides open and shut** as a section does, and stands clear of the line's rule,
-which stays drawn under it so the two never read as one box. **It is read from the bottom**: it
-opens on the newest, and a notice arriving while it is open slides in there and stays in view. Opened before anything has been said, it says `No notices.` It is the one place a
-notice that has gone can be read again: this session's notices, **oldest first so the newest sits
-nearest the line**, each with its time, what happened in bold, why, the capture it was about as
-`<stamp>: <first words>`, and `open` *(amended 2026-10-08; it was `look`, and what happened was
-plain)*. A notice
-still live keeps its offer; one that has gone does not, since what it offered may no longer be true.
-`clear` lets go of what has gone, each one sliding out, so the panel shrinks into what is left. Under the notices, **in flight**: each route in flight with its
-countdown, `open` and `cancel`, and each operation this device has not sent, with its time and
-`open`. The log, reached from the bar, is where the whole of it is *(2026-10-08; the panel's head
-led there too)*. It holds the last hundred notices and is the
-session's: a reload empties it, and the log is the durable account. While it is open, `esc` is its
-own before any surface's.
+**A press on the line opens the notices**, and a press on them again — on the veil or the × —
+closes them, as do `esc` and `n`. **The bell in the header** opens the same notices from the queue,
+the feed and the log, and carries **a red count of what went wrong since they were last opened**,
+and of the refused captures still held; opening them is the whole of acknowledging it, and what
+goes wrong while they are open is seen as it arrives.
 
-**A notice is never wider than the screen allows**: the line cuts its message to fit, and the panel
+**Every notice goes on its own, and none is dismissed** *(2026-10-01)*. A success is a glance and
+leaves after four seconds; one that offers something, and anything that went wrong, after ten.
+Nothing has to be cleared, because nothing is lost by going: the notices read back every notice of
+the session. **Nothing leaves while the pointer is over the line or focus is inside it**, so nothing
+vanishes under somebody's hand; let go, everything lingers again from the start. A notice rises into
+the line as it arrives.
+
+**The notices** are a sheet on a phone and a panel at the right when wide
+([the pieces](#visual-direction)), titled `notices`, read top down under bands:
+
+- **on its way**: each route in flight, the spinner and its phrase, its seconds, what it was given,
+  the capture, `open`, and Cancel as a box where it is offered.
+- **waiting to send**: each operation this device has not sent, with its time and the dot.
+- **refused**: the captures the pool refused and this device still holds (below).
+- **this session**: this session's notices, newest first, each with its time and its words, the
+  capture it was about, why, and `open`; `Clear` lets go of what has gone. A notice still live
+  keeps its offer; one that has gone does not.
+
+Opened before anything has been said, it says `No notices.` It holds the last hundred notices and is
+the session's: a reload empties it, and the log is the durable account.
+
+**The one popup** *(2026-11-13)*. A delivery turned down after its window has closed — a delivery
+the destination rejected, or one given up on after its retries — gets **a red strip under the
+header**, said once, with `Show` where it has somewhere to go, and gone after eight seconds or on
+its ×. The row says it too, and the notices keep it. Nothing else interrupts: a retry is not over
+and says nothing there.
+
+**A notice is never wider than the screen allows**: the line cuts its message to fit, and the notices
 wraps a path or an address with no break in it anywhere rather than pushing past its edge.
 
 **A gesture speaks when its subject leaves the screen.** Routing, marking done and archiving take
@@ -2612,15 +2625,14 @@ clipboard. It is never resent as it was, since what refused it would refuse it a
 
 **A route made by hand is in flight too** *(2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
 delivery waits the undo window, so a route from the composer, a template taken there included, is
-drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
-the destination, or for the template where one was taken, and followed by its place. It is drawn
+drawn on the line as a fired one is — `Routing by` **`Vault`**, `4s`, Cancel — named for
+the destination, or for the template where one was taken. It is drawn
 the moment the route answers, from the record and `until` the answer carries, and the log's
 `delivery-held` entry, carrying `until`, opens the same one on another device. **Inside the window the offer
-is `undo`; once it has closed, nothing, and `cancel` once the pool is retrying the delivery**
-*(amended 2026-11-03: `cancel` was offered as soon as the window closed, while the delivery was
-being attempted and a cancel was refused)* — the same call, said as what it is: taking back the
-decision just made, and calling off a delivery the pool will try again. It never
-says `undo` of a record that has landed, which is withdrawn in its block. The route is no longer
+is Cancel; once it has closed, nothing, and Cancel again once the pool is retrying the delivery**
+*(amended 2026-11-13: the window's offer was `undo` from 2026-11-01; amended 2026-11-03: `cancel`
+was offered as soon as the window closed, while the delivery was being attempted and a cancel was
+refused)*. It never offers Cancel of a record that has landed, which is withdrawn in its block. The route is no longer
 a notice when it is made; the landing is, `routed **Vault** inbox/a-thought.md`, as a fired
 template's is. A destination that refuses it after the window is said as a fired template's
 failure is: `routing failed: …`, in the accent, `back in the queue`, leading to the item. The
@@ -2630,21 +2642,22 @@ decision typed into the composer is gone by then.
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
-Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
-**`research`**, the seconds left in the window, and **`undo`** *(`cancel` until 2026-11-01)*. Where the template asked for
-something, what it was given follows the name, label then value — `routing **todo** list Next`
+Nothing has happened yet, so the line draws it in place of a notice: `Routing by`
+**`Research`**, the seconds left in the window, and **Cancel** *(2026-11-13; `undo` from
+2026-11-01, `cancel` before)*. Where the template asked for
+something, what it was given follows the name, label then value — `Routing by **Todo**, list Next`
 *(2026-10-19)* — read from the record the tag made, or from `template-fired`'s `arguments`. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
-window closes the count gives way to the asking mark — the delivery is being attempted — and the
+window closes the count gives way to `Sending to` and the destination — the delivery is being attempted — and the
 offer goes with it, since the pool refuses to call off a delivery it is attempting *(amended
 2026-11-03; `cancel` stayed)*. It comes back once the pool says it will try again. **The shell asks how it
 went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
 once each, timed by this device's clock as the countdown is, and only those still ahead for a
 firing first heard of from the log — rather than waiting on the watcher's ten-second tempo, since most deliveries land
-within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 4s`, the soonest window
-— and each is read and cancelled in the panel.
+within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `Routing 2 4s`, the soonest window
+— and each is read and cancelled in the notices; a batch's routes are said and cancelled as one.
 
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
@@ -3424,8 +3437,9 @@ a failure, and is said in ink.
 **Icons with words.** Every state and every action has words; an icon only supports them, and is
 hidden from a reader where a word is beside it. An icon that is a button alone carries its own
 label. The set is Carbon, with Tabler's route icon and a few drawn glyphs (a circle and a ticked
-circle, refresh, a lock, a cloud struck out), kept as one sprite, `static/icons/notemap.svg`, and
-named by role in `primitives/icon/Icon`.
+circle, refresh, a lock, a cloud struck out), kept as one sprite, `primitives/icon/notemap.svg`, drawn once into the page so an icon first
+drawn while the pool is out of reach is there all the same, and named by role in
+`primitives/icon/Icon`.
 
 **No dots as separators.** Words or space do the job: "Rejected by Vault in projects/", "todo.md
 in Vault".

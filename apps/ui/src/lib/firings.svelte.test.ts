@@ -5,6 +5,7 @@ import {
   left,
   LOOKS_AFTER,
   offerOf,
+  phaseOf,
   type Firing,
 } from "./firings.svelte";
 
@@ -132,11 +133,11 @@ test("looks only ahead for a firing first heard of after its window closed", asy
   expect(ask).toHaveBeenCalledTimes(LOOKS_AFTER.length - 2);
 });
 
-test("offers undo in the window, nothing while it is attempted, and cancel once retrying", () => {
+test("offers cancel in the window, nothing while it is attempted, and cancel once retrying", () => {
   const until = Date.parse("2026-09-30T10:00:05.000Z");
   const at = Date.parse("2026-09-30T10:00:00.000Z");
 
-  expect(offerOf({ ...research, until }, at)).toBe("undo");
+  expect(offerOf({ ...research, until }, at)).toBe("cancel");
   expect(offerOf({ ...research, until }, until)).toBeUndefined();
   expect(offerOf({ ...research, until, retrying: true }, until)).toBe("cancel");
   // A window nobody said the end of may still be open.
@@ -160,7 +161,7 @@ test("a pending record offers what its route in flight offers, and nothing once 
   expect(firings.offer("r1")).toBe("cancel");
 
   firings.opened({ ...research, until });
-  expect(firings.offer("r1")).toBe("undo");
+  expect(firings.offer("r1")).toBe("cancel");
 
   vi.setSystemTime(until);
   vi.advanceTimersByTime(1_000);
@@ -171,4 +172,16 @@ test("a pending record offers what its route in flight offers, and nothing once 
 
   firings.closed("r1");
   expect(firings.offer("r1")).toBeUndefined();
+});
+
+test("says which of its three steps a route in flight is on", () => {
+  const until = Date.parse("2026-09-30T10:00:05.000Z");
+  const at = Date.parse("2026-09-30T10:00:00.000Z");
+
+  expect(phaseOf({ ...research, until }, at)).toBe("window");
+  expect(phaseOf({ ...research, until }, until)).toBe("sending");
+  expect(phaseOf({ ...research, until, retrying: true }, until)).toBe(
+    "retrying",
+  );
+  expect(phaseOf(research, until)).toBe("window");
 });

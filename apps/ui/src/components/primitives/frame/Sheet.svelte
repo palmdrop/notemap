@@ -9,11 +9,11 @@
     $props();
 </script>
 
-<!-- The foot clears the status line, so the last row is never under it. -->
+<!-- The foot clears the + and the status line, so the last row is never under them. -->
 <div
   class="overflow-x-clip px-8 max-wide:px-3.5 {fills
-    ? 'flex h-[calc(100dvh-var(--spacing-status))] flex-col'
-    : 'min-h-screen pb-24'}"
+    ? 'flex h-[calc(100dvh-var(--spacing-bar))] flex-col'
+    : 'pb-24'}"
 >
   {@render children()}
 </div>

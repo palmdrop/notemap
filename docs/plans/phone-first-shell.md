@@ -226,21 +226,21 @@ fixture draws each piece in each of its states, and its shots match `css/bars.cs
 
 Depends on phase 2.
 
-- [ ] The header: title and icons for search, filter (with a count) and notices (with a red
+- [x] (2026-11-13) The header: title and icons for search, filter (with a count) and notices (with a red
       count). Counts come from the same rows everywhere
-- [ ] Navigation: the drawer below 900px, with the queue's waiting count and who is signed in. A
+- [x] (2026-11-13) Navigation: the drawer below 900px, with the queue's waiting count and who is signed in. A
       column at 1200px and wider, and a rail of icons with counts from 900 to 1199px. The four
       words in the bar go
-- [ ] The status line, as ADR 74 has it. It sits at the foot of the queue, the feed and the log,
+- [x] (2026-11-13) The status line, as ADR 74 has it. It sits at the foot of the queue, the feed and the log,
       only while something is true, and under the list only when wide.
   - Left: what is happening or was just said.
   - Right: "n waiting", then "Offline".
   - Cancel and Undo are underlined words, and nothing offers Cancel while offline.
   - Notices open from the line and from the bell. `notices (n) ▴` and the queue count go.
-- [ ] The red strip under the header, the one popup, for a delivery turned down after its window
-- [ ] Offline said in ink, with "as of" and the time the pool last answered
-- [ ] `shell.md`: The shape of the shell and The status line
-- [ ] Commit
+- [x] (2026-11-13) The red strip under the header, the one popup, for a delivery turned down after its window
+- [x] (2026-11-13) Offline said in ink, with "as of" and the time the pool last answered
+- [x] (2026-11-13) `shell.md`: The shape of the shell and The status line
+- [x] (2026-11-13) Commit
 
 **Verify**: the design's shots 01 to 06 and w01, 390 and 1440. A test drives the line through a
 route in its window, a passing message, waiting work and offline, and checks that Cancel is

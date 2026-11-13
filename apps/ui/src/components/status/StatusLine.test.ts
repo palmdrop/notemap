@@ -9,7 +9,8 @@ import { firings } from "$lib/firings.svelte";
 import { clearDraft, heldFiles, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
 import { tallying } from "$lib/tallies";
-import StatusLine from "./StatusLine.svelte";
+import StatusLine from "./StatusLine.fixture.svelte";
+import { panel } from "./panel.svelte";
 
 /** The one element saying this, whatever spans it is drawn in. */
 const says = (text: string) =>
@@ -36,6 +37,7 @@ function firstValueOf<T>(source: {
 }
 
 afterEach(() => {
+  panel.close();
   notices.clear();
   firings.clear();
   tallying.clear();
@@ -186,7 +188,7 @@ test("what went wrong is counted on notices until the panel is opened", async ()
   await vi.advanceTimersByTimeAsync(60_000);
 
   const toggle = screen.getByRole("button", { name: "notices, 1 gone wrong" });
-  expect(toggle.textContent?.replace(/\s+/g, " ").trim()).toBe("notices (1) ▴");
+  expect(toggle.textContent?.trim()).toBe("1");
 
   await fireEvent.click(toggle);
   expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
@@ -220,7 +222,7 @@ test("notices opens the panel when nothing has been said", async () => {
   ).toBe("true");
 });
 
-test("the panel opens and closes by command, and closes on a press outside", async () => {
+test("the panel opens and closes by command, and closes on a press on the veil", async () => {
   pool(quiet);
   render(StatusLine);
   notices.raise({ what: "copied" });
@@ -236,7 +238,7 @@ test("the panel opens and closes by command, and closes on a press outside", asy
 
   command("notices").run();
   await screen.findByRole("region", { name: "notices" });
-  await fireEvent.pointerDown(document.body);
+  await fireEvent.click(document.querySelector(".bg-veil")!);
   await vi.waitFor(() => {
     expect(screen.queryByRole("region", { name: "notices" })).toBeNull();
   });
@@ -368,29 +370,51 @@ test("counts the work this device holds, and lists it in the panel", async () =>
 
   await client.tag("one", "kind/quote");
 
-  await screen.findByRole("button", { name: "1 pending" });
-  expect(screen.getByText("offline")).toBeDefined();
+  await screen.findByRole("button", { name: "1 waiting" });
+  expect(screen.getByText("Offline")).toBeDefined();
 
   command("notices").run();
-  const flying = await screen.findByRole("list", { name: "in flight" });
-  expect(flying.textContent?.replace(/\s+/g, " ")).toContain("tag kind/quote");
-  expect(flying.textContent).toContain("pending");
+  const waiting = await screen.findByRole("list", { name: "waiting to send" });
+  expect(waiting.textContent?.replace(/\s+/g, " ")).toContain("tag kind/quote");
 });
 
-test("says how many items the queue holds, once the pool has counted", async () => {
+test("leaves the queue's size to the drawer, and is not drawn while nothing is true", async () => {
   const transport = pool(quiet);
   transport.counts = () => json(200, { queue: 14 });
-  render(StatusLine);
-
-  expect(screen.queryByText(/in queue/)).toBeNull();
+  const { container } = render(StatusLine);
 
   await client.counts.load();
 
-  expect((await screen.findByText("14 in queue")).getAttribute("href")).toBe(
-    "/",
-  );
+  expect(screen.queryByText(/14/)).toBeNull();
   // A pool that answers is the ordinary state, and says nothing.
-  expect(screen.queryByText("offline")).toBeNull();
+  expect(screen.queryByText("Offline")).toBeNull();
+  expect(container.querySelector("[data-status-line]")).toBeNull();
+
+  notices.raise({ what: "copied" });
+  await vi.waitFor(() => {
+    expect(container.querySelector("[data-status-line]")).not.toBeNull();
+  });
+});
+
+test("offline, nothing offers Cancel: not the line, and not the notices", async () => {
+  const transport = pool(quiet);
+  transport.unreachable(true);
+  render(StatusLine);
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Research",
+    until: Date.now() + 15_000,
+  });
+
+  await screen.findByText("Offline");
+  expect(says("Routing by Research")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /Cancel/ })).toBeNull();
+
+  command("notices").run();
+  const flying = await screen.findByRole("list", { name: "on its way" });
+  expect(within(flying).queryByRole("button", { name: "Cancel" })).toBeNull();
 });
 
 /** The log is the only place this is written, and nobody was reading it. */
@@ -722,11 +746,11 @@ test("a fired template counts down on the line, with its cancel", async () => {
   });
   await vi.advanceTimersByTimeAsync(0);
 
-  expect(says("routing Research")).toBeDefined();
+  expect(says("Routing by Research")).toBeDefined();
   expect(screen.getByText("15s")).toBeDefined();
   // Inside the window the decision is the person's to take back.
   expect(
-    screen.getByRole("button", { name: "undo routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   ).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(5_000);
@@ -735,18 +759,18 @@ test("a fired template counts down on the line, with its cancel", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
   expect(screen.queryByText(/^\d+s$/)).toBeNull();
   // Still in flight, and being attempted: a cancel now would be refused.
-  expect(says("routing Research")).toBeDefined();
+  expect(says("Sending to Research")).toBeDefined();
   expect(screen.queryByRole("button", { name: /routing Research/ })).toBeNull();
 
   // The pool could not reach it and will try again: between attempts it can be called off.
   firings.retrying("r1");
   await vi.advanceTimersByTimeAsync(0);
   expect(
-    screen.getByRole("button", { name: "cancel routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   ).toBeDefined();
 
   await fireEvent.click(
-    screen.getByRole("button", { name: "cancel routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   );
   await vi.waitFor(() => {
     expect(firings.open).toHaveLength(0);
@@ -776,7 +800,7 @@ test("a cancel the pool refuses says why", async () => {
   });
   await vi.advanceTimersByTimeAsync(0);
   await fireEvent.click(
-    screen.getByRole("button", { name: "undo routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   );
 
   await vi.waitFor(() => {
@@ -809,7 +833,7 @@ test("the log opens a firing and closes it with the landing", async () => {
     ...logged,
   ];
   await vi.advanceTimersByTimeAsync(10_000);
-  await vi.waitFor(() => says("routing Research links"));
+  await vi.waitFor(() => says("Routing by Research links"));
 
   logged = [
     anAction("3", "routed", {
@@ -837,12 +861,12 @@ test("more than one firing is counted, and each is cancelled in the panel", asyn
   firings.opened({ record: "r2", item: "two", name: "Reading" });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: /routing 2/ }),
+    await screen.findByRole("button", { name: /Routing 2/ }),
   );
 
-  const flying = screen.getByRole("list", { name: "in flight" });
+  const flying = screen.getByRole("list", { name: "on its way" });
   expect(
-    within(flying).getAllByRole("button", { name: "cancel" }),
+    within(flying).getAllByRole("button", { name: "Cancel" }),
   ).toHaveLength(2);
 });
 
@@ -876,7 +900,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   await client.drain();
 
   const cancel = await screen.findByRole("button", {
-    name: /^cancel routing 2 notes/,
+    name: /^Cancel routing 2 notes/,
   });
   await fireEvent.click(cancel);
 
@@ -1032,10 +1056,10 @@ test("work that drains at once is never counted", async () => {
   transport.unreachable(true);
   await client.tag("one", "kind/quote");
   await vi.advanceTimersByTimeAsync(100);
-  expect(screen.queryByRole("button", { name: "1 pending" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "1 waiting" })).toBeNull();
 
   await vi.advanceTimersByTimeAsync(200);
-  expect(screen.getByRole("button", { name: "1 pending" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "1 waiting" })).toBeDefined();
 });
 
 test("a refused capture edited puts every file it carried back in the box, by name", async () => {

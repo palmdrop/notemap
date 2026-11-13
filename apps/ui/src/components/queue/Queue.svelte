@@ -343,7 +343,12 @@
           { id: "capture", label: "capture", run: () => capture?.commit() },
         ]
       : []),
-    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
+    {
+      id: "filter",
+      label: "filter",
+      count: reading.filter.tags.length,
+      run: () => void filterPanel?.show(),
+    },
     { id: "search", label: "search", run: () => search?.focus() },
     {
       id: "view",

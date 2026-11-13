@@ -301,7 +301,12 @@
     }),
     // Nothing one row is given is offered while many are marked.
     ...(marking.on ? [] : reached()),
-    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
+    {
+      id: "filter",
+      label: "filter",
+      count: reading.filter.tags.length,
+      run: () => void filterPanel?.show(),
+    },
     { id: "search", label: "search", run: () => search?.focus() },
     {
       id: "view",

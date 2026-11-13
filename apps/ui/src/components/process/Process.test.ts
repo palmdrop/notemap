@@ -761,7 +761,7 @@ test("undoing a template's route lets its trigger tag land before calling the ro
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 
-  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
   await new Promise((done) => setTimeout(done, 20));
   expect(reached).toEqual([]);
 
@@ -2317,7 +2317,7 @@ const aTarget = {
 const UNTIL = "2026-09-03T10:00:05.000Z";
 
 /** Taken back from where it was made, while nothing has been attempted. */
-test("offers undo under the head while the route just made is pending", async () => {
+test("offers cancel under the head while the route just made is pending", async () => {
   routing({
     id: "u",
     item: "one",
@@ -2334,7 +2334,7 @@ test("offers undo under the head while the route just made is pending", async ()
   await choose(/Vault/);
   await commit();
 
-  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/u/cancel");
@@ -2362,9 +2362,9 @@ test("offers nothing once the window has closed, while the delivery is attempted
   await choose(/Vault/);
   await commit();
 
-  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
   await vi.waitFor(
-    () => expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+    () => expect(screen.queryByRole("button", { name: "cancel" })).toBeNull(),
     { timeout: 3_000 },
   );
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
@@ -2399,13 +2399,13 @@ test("the offer goes once the route lands", async () => {
   draw();
   await choose(/Vault/);
   await commit();
-  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
 
   // What the status line does on reading the landing from the log.
   firings.closed("u");
 
   await vi.waitFor(() =>
-    expect(screen.queryByRole("button", { name: "undo" })).toBeNull(),
+    expect(screen.queryByRole("button", { name: "cancel" })).toBeNull(),
   );
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
 });

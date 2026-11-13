@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import Box from "$components/primitives/blocks/Box.svelte";
   import { slide } from "$lib/motion";
 
   /**
@@ -38,44 +39,42 @@
 
 <li
   transition:slide={{ fade: true }}
-  class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-wide:grid-cols-1 {alarm
-    ? 'text-danger'
-    : ''}"
+  class="grid grid-cols-[var(--spacing-time)_1fr] gap-x-gutter border-b border-rule px-gutter py-3"
 >
-  <span class="tabular-nums max-wide:hidden">{when ?? ""}</span>
+  <span class="text-time text-muted tabular-nums">{when ?? ""}</span>
 
-  <span class="grid min-w-0 gap-0.5">
-    <span class="flex items-baseline gap-2 wrap-anywhere">
-      <span class="font-semibold">
+  <span class="grid min-w-0 gap-1">
+    <span
+      class="flex items-center gap-2 wrap-anywhere {alarm ? 'text-danger' : ''}"
+    >
+      {@render mark?.()}
+      <span>
         {what}
         {#if subject !== undefined}
-          {subject}
+          <b>{subject}</b>
         {/if}
       </span>
-      {@render mark?.()}
     </span>
+
+    {#if about !== undefined}
+      <span class="text-small wrap-anywhere text-muted">{about}</span>
+    {/if}
 
     {#if why !== undefined}
       <span class="wrap-anywhere whitespace-pre-line">{why}</span>
     {/if}
 
-    {#if about !== undefined}
-      <span class="wrap-anywhere">{about}</span>
-    {/if}
-
     {#if href !== undefined || offer !== undefined || actions !== undefined}
-      <span class="flex justify-end gap-4">
-        {#if href !== undefined}
-          <a {href} class="underline">open</a>
-        {/if}
-
+      <span class="mt-1 flex flex-wrap items-center gap-2">
         {#if offer !== undefined}
-          <button type="button" onclick={offer.take} class="underline">
-            {offer.label}
-          </button>
+          <Box onclick={offer.take}>{offer.label}</Box>
         {/if}
 
         {@render actions?.()}
+
+        {#if href !== undefined}
+          <a {href} class="ml-auto underline underline-offset-[0.2em]">open</a>
+        {/if}
       </span>
     {/if}
   </span>
