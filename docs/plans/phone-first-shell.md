@@ -1,7 +1,7 @@
 # The phone-first shell
 
 **Date**: 2026-11-13
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/shell.md`, `CONTEXT.md`
 **Closed**:
 
@@ -166,12 +166,12 @@ view it touches at 390 and at 1440, against the design's shots.
 
 Depends on nothing.
 
-- [ ] Work on `agent/mobile-first-rethink`, in its worktree at `~/repos/notemap-rethink`, separate
+- [x] (2026-11-13) Work on `agent/mobile-first-rethink`, in its worktree at `~/repos/notemap-rethink`, separate
       from `~/repos/notemap`, and only there. If the worktree is gone, add it again at that path
       with `git worktree add`. Rebase on `main` first if `main` has moved and the branch has no
       open PR. `pnpm install --frozen-lockfile`
-- [ ] Shoot the app as it is at 390 and 1440, every route, into an artifact, as the "before"
-- [ ] Commit (this plan's checkboxes)
+- [x] (2026-11-13) Shoot the app as it is at 390 and 1440, every route, into an artifact, as the "before"
+- [x] (2026-11-13) Commit (this plan's checkboxes)
 
 **Verify**: `git -C ~/repos/notemap-rethink branch --show-current` is `agent/mobile-first-rethink`,
 and the before-shots artifact serves.
