@@ -4326,6 +4326,8 @@ export interface paths {
                     after?: string;
                     /** @description Narrows the read to one subject. Never validated: an id no item has answers an empty page, since the log outlives what it describes. */
                     item?: string;
+                    /** @description Narrows the read to the entries one batch wrote. Never validated: an id no batch wrote answers an empty page. */
+                    batch?: string;
                     /** @description Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`. */
                     kind?: string;
                 };

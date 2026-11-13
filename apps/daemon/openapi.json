@@ -8826,6 +8826,17 @@
           {
             "schema": {
               "type": "string",
+              "description": "Narrows the read to the entries one batch wrote. Never validated: an id no batch wrote answers an empty page.",
+              "example": "0198f0c2-0000-7000-8000-000000000000"
+            },
+            "required": false,
+            "description": "Narrows the read to the entries one batch wrote. Never validated: an id no batch wrote answers an empty page.",
+            "name": "batch",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "Narrows the read to entries of these kinds, comma-separated. One that is not a kind is refused with `422 bad-kind`.",
               "example": "routed,delivery-failed"
             },

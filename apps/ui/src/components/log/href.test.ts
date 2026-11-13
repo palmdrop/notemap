@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { logHref } from "./href";
 
 test("narrows to a subject and carries the order it is being read in", () => {
-  expect(logHref("oldest-first", "0198f0c2-item")).toBe(
+  expect(logHref("oldest-first", { item: "0198f0c2-item" })).toBe(
     "/log?item=0198f0c2-item&order=oldest-first",
   );
 });
@@ -13,11 +13,15 @@ test("widens again without losing the order", () => {
 });
 
 test("escapes a subject that is not a bare id", () => {
-  expect(logHref("newest-first", "a b&c")).toContain("item=a+b%26c");
+  expect(logHref("newest-first", { item: "a b&c" })).toContain("item=a+b%26c");
 });
 
 test("carries the kinds it is narrowed to, in the pool's own words", () => {
-  expect(logHref("newest-first", undefined, ["routed", "template-fired"])).toBe(
+  expect(logHref("newest-first", { kinds: ["routed", "template-fired"] })).toBe(
     "/log?kind=routed%2Ctemplate-fired&order=newest-first",
   );
+});
+
+test("narrows to a batch", () => {
+  expect(logHref(undefined, { batch: "batch-7" })).toBe("/log?batch=batch-7");
 });

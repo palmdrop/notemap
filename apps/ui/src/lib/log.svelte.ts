@@ -20,6 +20,7 @@ import { drawable } from "./kinds";
  */
 let order = $state<Order>("newest-first");
 let item = $state<ItemId | undefined>(undefined);
+let batch = $state<string | undefined>(undefined);
 let kinds = $state<readonly ActionKind[] | undefined>(undefined);
 let rows = $state<readonly Action[]>([]);
 let after = $state<ActionPosition | undefined>(undefined);
@@ -69,6 +70,61 @@ function seek(ids: readonly (ItemId | undefined)[]): void {
 const subjects = (actions: readonly Action[]) =>
   actions.map((action) => action.subject);
 
+/**
+ * Every entry of each batch drawn, read by the batch, so a group counts what
+ * came of it wherever its entries fell. A read that failed is asked again with
+ * the next read that names the batch, the pool coming back, or the group
+ * being opened.
+ */
+const wholes = new SvelteMap<string, readonly Action[] | "asking" | "failed">();
+
+/** What the watcher brought for a batch while it was being read. */
+const early = new SvelteMap<string, Action[]>();
+
+/** Whether a batch is drawn as one row: not where the reading is narrowed to an item or to one batch. */
+const grouping = () => item === undefined && batch === undefined;
+
+async function wholeOf(id: string, mine: number): Promise<void> {
+  wholes.set(id, "asking");
+  const read: Action[] = [];
+  try {
+    let after: ActionPosition | undefined;
+    do {
+      const page = await client.actions.read({
+        order: "oldest-first",
+        batch: id,
+        ...(after === undefined ? {} : { after }),
+      });
+      if (mine !== walking) return;
+      read.push(...page.values);
+      after = page.after;
+    } while (after !== undefined);
+    wholes.set(id, joined(read, early.get(id) ?? []));
+  } catch {
+    if (mine === walking) wholes.set(id, "failed");
+  } finally {
+    if (mine === walking) early.delete(id);
+  }
+}
+
+function known(id: string): boolean {
+  const held = wholes.get(id);
+  return held !== undefined && held !== "failed";
+}
+
+function complete(actions: readonly Action[]): void {
+  const wanted = new Set(
+    batch !== undefined
+      ? [batch]
+      : grouping()
+        ? actions.flatMap((one) => (one.batch === undefined ? [] : [one.batch]))
+        : [],
+  );
+  for (const id of wanted) {
+    if (!known(id)) void wholeOf(id, walking);
+  }
+}
+
 /** Whether anything has ever asked. Plain, so no effect can take a dependency on it. */
 let asked = false;
 
@@ -103,6 +159,7 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     const page = await client.actions.read({
       order,
       ...(item === undefined ? {} : { item }),
+      ...(batch === undefined ? {} : { batch }),
       ...(kinds === undefined ? {} : { kinds }),
       ...(from === undefined ? {} : { after: from }),
     });
@@ -111,6 +168,16 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     const drawn = page.values.filter((action) => drawable(action.kind));
     rows = from === undefined ? drawn : joined(rows, drawn);
     seek(subjects(drawn));
+    // The batch read whole already, where one page held it and no kind narrowed it.
+    if (
+      batch !== undefined &&
+      from === undefined &&
+      kinds === undefined &&
+      page.after === undefined
+    ) {
+      wholes.set(batch, page.values);
+    }
+    complete(drawn);
     after = page.after;
     more = page.after !== undefined;
     answered = true;
@@ -139,6 +206,7 @@ function restart(
   wanted: Order,
   subject: ItemId | undefined,
   narrowed: readonly ActionKind[] | undefined,
+  one: string | undefined,
   asking: boolean,
 ): void {
   walking += 1;
@@ -147,8 +215,11 @@ function restart(
   order = wanted;
   item = subject;
   kinds = narrowed;
+  batch = one;
   rows = [];
   heard.clear();
+  wholes.clear();
+  early.clear();
   after = undefined;
   more = false;
   answered = false;
@@ -162,6 +233,13 @@ export const log = {
   },
   get item() {
     return item;
+  },
+  get batch() {
+    return batch;
+  },
+  /** Whether a batch is drawn as one row in this reading. */
+  get grouping() {
+    return grouping();
   },
   get kinds() {
     return kinds;
@@ -196,6 +274,10 @@ export const log = {
   sought(id: ItemId): "asking" | "gone" | undefined {
     return sought.get(id);
   },
+  /** Every entry a batch wrote, once read; `asking` while it is being read. */
+  whole(id: string): readonly Action[] | "asking" | "failed" | undefined {
+    return wholes.get(id);
+  },
   /** Whether a row arrived from the watcher rather than with a read. */
   heard(id: Action["id"]): boolean {
     return heard.has(id);
@@ -210,11 +292,15 @@ export const log = {
     wanted: Order,
     subject: ItemId | undefined,
     narrowed?: readonly ActionKind[],
+    one?: string,
   ): void {
     const same =
-      wanted === order && subject === item && sameKinds(narrowed, kinds);
+      wanted === order &&
+      subject === item &&
+      one === batch &&
+      sameKinds(narrowed, kinds);
     if (same && (answered || loading)) return;
-    restart(wanted, subject, narrowed, true);
+    restart(wanted, subject, narrowed, one, true);
   },
 
   /**
@@ -229,12 +315,24 @@ export const log = {
    * months before it. Read the other way round, the walk is what brings it.
    */
   arrived(actions: readonly Action[]): void {
+    // A batch is counted whole in either order.
+    for (const action of actions) {
+      if (action.batch === undefined) continue;
+      const whole = wholes.get(action.batch);
+      if (Array.isArray(whole)) {
+        wholes.set(action.batch, joined(whole, [action]));
+      } else if (whole === "asking") {
+        early.set(action.batch, [...(early.get(action.batch) ?? []), action]);
+      }
+    }
+
     if (!answered || order !== "newest-first") return;
 
     const wanted = actions.filter(
       (action) =>
         drawable(action.kind) &&
         (item === undefined || action.subject === item) &&
+        (batch === undefined || action.batch === batch) &&
         (kinds === undefined || kinds.includes(action.kind)),
     );
     if (wanted.length === 0) return;
@@ -244,6 +342,7 @@ export const log = {
     }
     rows = ahead(rows, [...wanted].reverse());
     seek(subjects(wanted));
+    complete(wanted);
   },
 
   /**
@@ -258,7 +357,7 @@ export const log = {
   raced(): void {
     if (!answered || order !== "newest-first") return;
 
-    restart(order, item, kinds, false);
+    restart(order, item, kinds, batch, false);
   },
 
   /**
@@ -267,7 +366,18 @@ export const log = {
    * cache for it to keep, so it has to ask for itself or stay blank.
    */
   again(): void {
-    if (asked && !answered && !loading) restart(order, item, kinds, false);
+    if (asked && !answered && !loading) {
+      restart(order, item, kinds, batch, false);
+    } else if (answered) {
+      complete(rows);
+    }
+  },
+
+  /** A group opened: its entries drawn, and read again where the last read failed. */
+  opening(id: string): void {
+    const whole = wholes.get(id);
+    if (Array.isArray(whole)) seek(subjects(whole));
+    else if (whole === "failed") void wholeOf(id, walking);
   },
 
   /**
@@ -276,7 +386,7 @@ export const log = {
    * assigning `page.url`, so nothing here can be driven by reading it back.
    */
   turn(wanted: Order): void {
-    restart(wanted, item, kinds, true);
+    restart(wanted, item, kinds, batch, true);
   },
 
   next(): void {
@@ -293,10 +403,13 @@ export const log = {
     loading = false;
     order = "newest-first";
     item = undefined;
+    batch = undefined;
     kinds = undefined;
     rows = [];
     heard.clear();
     sought.clear();
+    wholes.clear();
+    early.clear();
     chosen = false;
     after = undefined;
     more = false;

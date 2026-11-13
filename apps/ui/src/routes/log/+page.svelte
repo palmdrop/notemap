@@ -3,6 +3,7 @@
 
   import { page } from "$app/state";
 
+  import { BATCH_PARAM } from "$components/log/href";
   import Log from "$components/log/Log.svelte";
   import { kindsIn } from "$components/log/views";
   import { log } from "$lib/log.svelte";
@@ -19,6 +20,7 @@
         orderFor("log", url),
         url.searchParams.get("item") ?? undefined,
         kindsIn(url),
+        url.searchParams.get(BATCH_PARAM) ?? undefined,
       ),
     );
   });

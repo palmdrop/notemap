@@ -310,6 +310,8 @@ export type ActionsRequest = {
   readonly order: Order;
   /** Narrows the read to one subject. Never validated: the log outlives the material. */
   readonly item?: ItemId;
+  /** Narrows the read to the entries one batch wrote, read in pages as large as the pool answers. */
+  readonly batch?: string;
   /** Narrows the read to entries of any of these kinds. */
   readonly kinds?: readonly ActionKind[];
   readonly after?: ActionPosition;

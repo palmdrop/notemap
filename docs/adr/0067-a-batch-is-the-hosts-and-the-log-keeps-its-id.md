@@ -1,7 +1,7 @@
 # 67. A batch is the host's, and the log keeps its id
 
 **Date**: 2026-10-30
-**Status**: Accepted, amended 2026-11-01 — extends [ADR 12](0012-core-keeps-an-append-only-action-log.md)
+**Status**: Accepted, amended 2026-11-01 and 2026-11-12 — extends [ADR 12](0012-core-keeps-an-append-only-action-log.md)
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -102,6 +102,25 @@ earlier single tag made was folded into the batch, so the batch's cancel called 
 Core still never makes a batch and never checks that one exists. A batch resent after its
 reservation was delivered answers `skipped`. Telling that case apart would mean reading delivered
 records by batch, which nothing needs yet.
+
+## Amendment, 2026-11-12: a reservation's entries carry its batch
+
+The log was to group a batch later, and a batch that applied a trigger tag is mostly what its
+deliveries did: whether each landed, failed or was called off. Those entries were written by the
+runner and the cancel, minutes or hours after the batch, and carried no id, so a group could hold
+the tags and never what came of them.
+
+- **Every entry a batch's reservation writes carries the batch**, read from `applied.batch`:
+  `routed`, `delivery-failed`, `work-abandoned`, `delivery-cancelled`, and the `untagged` that
+  gives the trigger tag back.
+- **Withdrawing and reinstating carry none.** They are a later gesture on what the batch filed,
+  not part of the batch. A cancel is a gesture too, made from the status line or the item, but it
+  ends a reservation that is still the batch's: what the batch's notice counts as `cancelled`.
+  A withdrawal comes after the batch has said what came of it, and would change nothing it said.
+- **Entries written before this carry none.** A batch from before it groups only its tags,
+  archives and their undoing.
+
+Core still never reads the id from the log. The shell does, through `GET /v1/actions?batch=`.
 
 ## More information
 

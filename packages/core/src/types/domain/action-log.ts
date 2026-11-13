@@ -56,6 +56,7 @@ export type Action = {
 
 export type ActionQuery = {
   readonly item?: ItemId;
+  readonly batch?: BatchId;
   /** Any of these kinds; absent or empty reads them all. */
   readonly kinds?: readonly ActionKind[];
 };

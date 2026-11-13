@@ -2,6 +2,7 @@ import { recordAction } from "./actions";
 import { enqueueMirrorWrite } from "./mirror";
 import {
   DELIVERY_FAILURE,
+  batchOf,
   destinationDetail,
   templateDetail,
 } from "./routing/delivery";
@@ -207,6 +208,7 @@ async function land(
   await recordAction(ports, tx, {
     kind: "routed",
     subject: record.item,
+    ...batchOf(record),
     by: { kind: "person" },
     at,
     detail: {
@@ -250,7 +252,14 @@ async function concluded(
     // Nothing landed, so a tag that filed it there says something untrue — and
     // one left on the item could never file it again.
     if (record !== undefined) {
-      await releaseTriggerTag(ports, tx, record, ended.at, "notemap");
+      await releaseTriggerTag(
+        ports,
+        tx,
+        record,
+        ended.at,
+        "notemap",
+        batchOf(record),
+      );
     }
   }
 
@@ -261,6 +270,7 @@ async function concluded(
     await recordAction(ports, tx, {
       kind: "delivery-failed",
       subject: record.item,
+      ...batchOf(record),
       by: { kind: "notemap" },
       at: ended.at,
       detail: {
@@ -289,6 +299,7 @@ async function concluded(
   await recordAction(ports, tx, {
     kind: "work-abandoned",
     ...(item === undefined ? {} : { subject: item }),
+    ...(record === undefined ? {} : batchOf(record)),
     by: { kind: "notemap" },
     at: ended.at,
     detail: {

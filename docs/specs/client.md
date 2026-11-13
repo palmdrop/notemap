@@ -1,9 +1,10 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-01
+**Last updated**: 2026-11-13
 **Shipped**:
 
+- 2026-11-12 — **The log can be read by batch**, in pages of 500. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
   and rule the pool answers with. ([plan](../plans/features-from-the-mobile-rethink.md),
   [ADR 70](../adr/0070-a-filter-may-name-words.md))
@@ -665,7 +666,7 @@ has walked, so a filtered reading made from them would be silently short of what
 
 **Everything the pool has done is read, and none of it is held.** A client reads
 `GET /v1/actions` a page at a time, taking an **order** and, where a reader has narrowed it, one
-subject and any set of kinds. It is not one of the surfaces: there is no held page, no projection to subscribe to and
+subject, one batch and any set of kinds. It is not one of the surfaces: there is no held page, no projection to subscribe to and
 no reconnect that reads it again. What has been walked belongs to whoever is looking at it, and
 goes when they do.
 
@@ -685,6 +686,10 @@ goes when they do.
   [retention](#what-the-cache-keeps) bounds what this adds.
 - **A subject filter is never validated.** The log outlives the material it describes
   ([core.md](core.md#the-action-log)), so an id no item has is a filter matching nothing.
+- **A batch is read in pages of 500** *(added 2026-11-12)*, the most the pool answers at once,
+  where any other read takes 25. A batch's entries are bounded by the batch, and a reader reading
+  one wants the whole of it rather than a page to scroll. A pool that refuses 500 as
+  `limit-too-large` is asked again at 25.
 - A refusal and an unreachable pool are told apart here as they are everywhere else; the caller
   is the one that decides what to draw.
 

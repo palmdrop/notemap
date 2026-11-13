@@ -1,5 +1,7 @@
 import type { Batch } from "@notemap/client";
 
+import { logHref } from "$components/log/href";
+
 import { resultOf, type Ending } from "./batching";
 import type { Raised } from "./notices.svelte";
 
@@ -35,12 +37,15 @@ function forget(): void {
 function settled(tally: Tally): Raised | undefined {
   const endings = [...tally.endings.values()];
   if (endings.some((one) => one === undefined)) return undefined;
-  return resultOf(
-    tally.batch.action,
-    tally.name,
-    tally.batch.outcomes ?? [],
-    endings as Ending[],
-  );
+  return {
+    ...resultOf(
+      tally.batch.action,
+      tally.name,
+      tally.batch.outcomes ?? [],
+      endings,
+    ),
+    href: logHref(undefined, { batch: tally.batch.id }),
+  };
 }
 
 /**

@@ -1045,6 +1045,10 @@ export function createSqlitePoolStore(
             clauses.push("subject = ?");
             params.push(query.item);
           }
+          if (query.batch !== undefined) {
+            clauses.push("batch = ?");
+            params.push(query.batch);
+          }
           if (query.kinds !== undefined && query.kinds.length > 0) {
             clauses.push(`kind IN (${placeholders(query.kinds.length)})`);
             params.push(...query.kinds);

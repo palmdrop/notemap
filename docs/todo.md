@@ -15,7 +15,7 @@
     - tag input using a centered input field and expandable
     - bottom bar for switching views
 
-- [ ] batch processing, i.e selecting many captures and routing them all at once, or discarding
+- [x] batch processing, i.e selecting many captures and routing them all at once, or discarding
     - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
 
 - [ ] command palette
@@ -97,7 +97,7 @@
 
 ## Seeing what happened — log, routing records, revisions
 
-- [ ] Group a batch's entries in the log. Every entry a batch writes carries its batch id from the
+- [x] Group a batch's entries in the log ([plan](plans/batch-in-the-log.md)). Every entry a batch writes carries its batch id from the
   first batch on ([batch-processing](plans/batch-processing.md)), but the log and the status line
   still draw them one by one. Open: whether a batch is drawn collapsed into one line that opens to
   its entries, and whether the log route can be read by batch.

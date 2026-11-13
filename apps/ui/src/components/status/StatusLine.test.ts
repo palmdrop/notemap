@@ -887,6 +887,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   expect(notices.latest).toMatchObject({
     what: "0 notes routed",
     why: "2 cancelled",
+    href: expect.stringMatching(/^\/log\?batch=/),
   });
 });
 

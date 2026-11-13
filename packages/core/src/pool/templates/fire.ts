@@ -195,6 +195,8 @@ export async function releaseTriggerTag(
   record: RoutingRecord,
   at: Timestamp,
   by: "person" | "notemap",
+  /** The batch the entry belongs to, where giving the tag back ends a batch's reservation. */
+  part: { batch?: BatchId } = {},
 ): Promise<TagName | undefined> {
   if (record.applied === undefined) return undefined;
 
@@ -212,6 +214,7 @@ export async function releaseTriggerTag(
   await recordAction(ports, tx, {
     kind: "untagged",
     subject: record.item,
+    ...part,
     by: { kind: by },
     at,
     detail: { tag, record: record.id, template: template.id },

@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import {
   ACTION_KINDS,
   type ActionKind,
+  type BatchId,
   type ItemId,
   type Pool,
 } from "@notemap/core";
@@ -20,6 +21,7 @@ export function actionsHandler(pool: Pool) {
     // Not checked against the pool: the log outlives the material, so an id no
     // item has is a filter that matches nothing rather than a mistake.
     const item = url.searchParams.get("item") ?? undefined;
+    const batch = url.searchParams.get("batch") ?? undefined;
 
     const rawKind = url.searchParams.get("kind");
     const kinds = rawKind === null ? [] : rawKind.split(",");
@@ -42,6 +44,7 @@ export function actionsHandler(pool: Pool) {
     const slice = await pool.actions.read(
       {
         ...(item === undefined ? {} : { item: item as ItemId }),
+        ...(batch === undefined ? {} : { batch: batch as BatchId }),
         ...(kinds.length === 0 ? {} : { kinds: kinds as ActionKind[] }),
       },
       page,
@@ -59,6 +62,7 @@ export function actionsHandler(pool: Pool) {
                   order: query.order,
                   limit: String(query.limit),
                   ...(item === undefined ? {} : { item }),
+                  ...(batch === undefined ? {} : { batch }),
                   ...(rawKind === null ? {} : { kind: rawKind }),
                 },
                 slice.next,

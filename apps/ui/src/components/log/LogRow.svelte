@@ -6,15 +6,15 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Block from "$components/record/Block.svelte";
-  import { factOf, failed, flattened, known } from "$lib/actions";
+  import { factOf, failed, flattened, known, namingIn } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
   import { recordsOf } from "$lib/records.svelte";
   import { following, slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
-  import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   import Detail from "./Detail.svelte";
+  import FactSaid from "./FactSaid.svelte";
   import Says from "./Says.svelte";
 
   /**
@@ -40,23 +40,11 @@
   const destinations = client.destinations.all;
   const templates = client.templates.all;
 
-  const naming = $derived({
-    template: (id: string) =>
-      $templates.find((one) => one.id === id)?.name ?? "a template",
-    destination: (id: string) =>
-      $destinations.find((one) => one.id === id)?.name ?? "a destination",
-  });
+  const naming = $derived(namingIn($templates, $destinations));
 
   const bad = $derived(failed(action.kind));
   const fact = $derived(factOf(action.kind, action.detail, naming));
   const pairs = $derived(known(action.kind) ? [] : flattened(action.detail));
-
-  /** A trigger tag reads as the trigger it is, as it does on a row. */
-  const trigger = $derived(
-    fact?.trigger === true && fact.said.startsWith(TRIGGER_NAMESPACE)
-      ? fact.said.slice(TRIGGER_NAMESPACE.length)
-      : undefined,
-  );
 
   const text = (value: unknown): string | undefined =>
     typeof value === "string" && value !== "" ? value : undefined;
@@ -149,16 +137,7 @@
 
 {#snippet factLine()}
   {#if fact !== undefined}
-    <span
-      class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
-      true
-        ? 'text-alarm'
-        : ''} {trigger === undefined
-        ? ''
-        : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"
-    >
-      {trigger ?? fact.said}
-    </span>
+    <FactSaid {fact} />
   {/if}
 {/snippet}
 

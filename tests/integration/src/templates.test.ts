@@ -1794,6 +1794,79 @@ describe("a batch the log keeps", () => {
     expect(record?.applied).toMatchObject({ firedByTag: true, batch: BATCH });
   });
 
+  async function batchFired() {
+    const opened = await pooled();
+    succeeded(
+      await opened.pool.templates.create(draft({ triggerTag: RESEARCH })),
+    );
+    const item = captured(await opened.pool.capture(envelope()));
+    const tagged = succeeded(
+      await opened.pool.items.tag(item.id, RESEARCH, PERSON, { batch: BATCH }),
+    );
+    if (tagged.fired === undefined) throw new Error("expected a reservation");
+    return { ...opened, item, record: tagged.fired };
+  }
+
+  const batchOf = (actions: readonly Action[], kind: Action["kind"]) =>
+    actions.filter((one) => one.kind === kind).map((one) => one.batch);
+
+  it("carries the batch on the landing of a reservation its tag fired", async () => {
+    const { pool, deliver, item, clock } = await batchFired();
+
+    clock.set(AFTER);
+    await deliver();
+
+    expect(batchOf(await logFor(pool, item.id), "routed")).toEqual([BATCH]);
+  });
+
+  it("carries the batch on every attempt that failed, and on giving up", async () => {
+    const { pool, destination, deliver, item, clock } = await batchFired();
+    destination.answers({ kind: "rejected", detail: "research/ is missing" });
+
+    clock.set(AFTER);
+    await deliver();
+
+    const written = await logFor(pool, item.id);
+    expect(batchOf(written, "delivery-failed")).toEqual([BATCH]);
+    expect(batchOf(written, "work-abandoned")).toEqual([BATCH]);
+    expect(batchOf(written, "untagged")).toEqual([BATCH]);
+  });
+
+  it("carries the batch on a failure the pool will try again", async () => {
+    const { pool, destination, deliver, item, clock } = await batchFired();
+    destination.answers({ kind: "unreachable", detail: "ECONNREFUSED" });
+
+    clock.set(AFTER);
+    await deliver();
+
+    expect(batchOf(await logFor(pool, item.id), "delivery-failed")).toEqual([
+      BATCH,
+    ]);
+  });
+
+  it("carries the batch on a cancellation, and on the tag it gave back", async () => {
+    const { pool, item, record, clock } = await batchFired();
+    clock.set(INSIDE);
+
+    succeeded(await pool.routing.cancelDelivery(record));
+
+    const written = await logFor(pool, item.id);
+    expect(batchOf(written, "delivery-cancelled")).toEqual([BATCH]);
+    expect(batchOf(written, "untagged")).toEqual([BATCH]);
+  });
+
+  it("carries none on withdrawing what a batch filed, which is a gesture of its own", async () => {
+    const { pool, deliver, item, record, clock } = await batchFired();
+    clock.set(AFTER);
+    await deliver();
+
+    succeeded(await pool.routing.withdraw(record));
+
+    const written = await logFor(pool, item.id);
+    expect(batchOf(written, "delivery-withdrawn")).toEqual([undefined]);
+    expect(batchOf(written, "untagged")).toEqual([undefined]);
+  });
+
   it("carries no batch where none was given", async () => {
     const { pool } = await pooled();
     succeeded(await pool.templates.create(draft({ triggerTag: RESEARCH })));

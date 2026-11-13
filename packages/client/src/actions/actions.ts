@@ -1,5 +1,6 @@
 import { answered, type Api } from "#api/http";
 import type { Action, ItemId } from "#api/types";
+import { Refused } from "../errors";
 import type {
   ActionsApi,
   ActionsPage,
@@ -15,6 +16,8 @@ export type ActionsDeps = {
 };
 
 const PAGE = 25;
+/** A batch is read whole, so in as few pages as a pool serves; one that serves fewer is read at the usual size. */
+const BATCH_PAGE = 500;
 
 /** Split on the first comma only: an id may hold one, an ISO 8601 instant may not. */
 function positionOf(after: string): ActionPosition {
@@ -65,12 +68,28 @@ export function createActions(deps: ActionsDeps): Actions {
   }
 
   async function read(request: ActionsRequest): Promise<ActionsPage> {
-    const { after, item, kinds, order } = request;
+    if (request.batch === undefined) return page(request, PAGE);
+    try {
+      return await page(request, BATCH_PAGE);
+    } catch (error) {
+      if (error instanceof Refused && error.code === "limit-too-large") {
+        return page(request, PAGE);
+      }
+      throw error;
+    }
+  }
+
+  async function page(
+    request: ActionsRequest,
+    limit: number,
+  ): Promise<ActionsPage> {
+    const { after, item, batch, kinds, order } = request;
     const query = {
       order,
-      limit: String(PAGE),
+      limit: String(limit),
       ...(after === undefined ? {} : { after: formatted(after) }),
       ...(item === undefined ? {} : { item }),
+      ...(batch === undefined ? {} : { batch }),
       ...(kinds === undefined || kinds.length === 0
         ? {}
         : { kind: kinds.join(",") }),

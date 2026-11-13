@@ -20,6 +20,8 @@ This pool has never held it, or does not hold it any more. A link outlives the i
 
 export const NOTHING_LOGGED = "Nothing has happened yet.";
 
+export const NOT_ALL_READ = "not all of it read";
+
 export const QUEUE_EMPTY = "Queue is empty.";
 
 export const NOTHING_TO_CAPTURE = "nothing to capture";
