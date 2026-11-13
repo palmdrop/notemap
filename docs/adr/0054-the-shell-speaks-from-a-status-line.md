@@ -1,7 +1,8 @@
 # 54. The shell speaks from a status line, and a fired template counts down
 
 **Date**: 2026-09-30
-**Status**: Accepted. Amends [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
+**Status**: Partly superseded by [ADR 74](0074-the-status-line-is-at-the-foot-of-the-lists-while-something-is-true.md) (where the line is drawn and what it holds).
+Was: Accepted. Amends [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
 on the chrome ("the bar is `queue · feed · log · settings` and one status glyph") and
 [ADR 37](0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md) on the
 window's visibility ("no countdown, no bar"). Supersedes the corner, which shell.md settled on
