@@ -1,7 +1,7 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-12
+**Last updated**: 2026-11-13
 **Shipped**:
 
 - 2026-11-12 — **A batch is one row in the log**, counted in its notice's words and opening to
@@ -3171,8 +3171,12 @@ delivery that failed hours after the batch brings the batch back to the head. Th
 `BATCH` under the stamp. The body counts what came of the batch in its notice's words, `3 notes
 routed` and the template bold, with the rest at the right: `1 failed, 1 pending`. It is in the
 accent where anything failed or was refused. **The counts are set apart by a comma, as the
-notice's are, and never by a dot.** A press opens the row, and its entries follow it as ordinary
-rows. The row is whole wherever its entries fell: drawing it reads every entry of the batch from
+notice's are, and never by a dot.** A tag names the template it fires, as the notice does, so an
+item that template had already filed is counted `already filed` from the log alone. Where nothing
+the batch wrote says what it did, the row counts its entries by kind: `2 routed, 1 delivery
+failed`. Where the batch could not be read whole, the row counts what the walk holds and says `not
+all of it read`, and it is read again when the pool comes back or the row is opened. A press opens
+the row, and its entries follow it as ordinary rows. The row is whole wherever its entries fell: drawing it reads every entry of the batch from
 the pool, and an entry further down the walk is not drawn again. A view narrows what the opened
 row draws, not what it counts. Like any row, it offers no narrowing: the batch alone is reached
 from its notice. A batch made before 2026-11-12 holds its tags and discards only. Its deliveries
@@ -3183,7 +3187,9 @@ carry no batch, and are drawn as rows of their own.
 refused or left as it was. So while this shell still holds the batch's answer, because it made the
 batch and has not been reloaded since, those items are drawn first, with no stamp: `REFUSED` with
 the refusal's code, in alarm, and `SKIPPED` with what the item already was. Elsewhere the count is
-what the log holds.
+what the log holds. The head counts as the row does, with the same fallbacks, and asks no longer
+than the batch is being read: a batch the pool has no entry for leaves the head at `BATCH` and
+`all of the log`.
 
 **The log is narrowed to views** *(added 2026-09-13; a dropdown since 2026-10-01, tabs on the
 head's rule before it)*: `routing`, `captures`, `classification`, `pool`, taken and let go from

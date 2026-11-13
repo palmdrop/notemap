@@ -44,7 +44,7 @@ function settled(tally: Tally): Raised | undefined {
       tally.batch.outcomes ?? [],
       endings,
     ),
-    href: logHref(undefined, undefined, undefined, tally.batch.id),
+    href: logHref(undefined, { batch: tally.batch.id }),
   };
 }
 

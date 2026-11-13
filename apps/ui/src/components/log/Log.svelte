@@ -10,13 +10,13 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
-  import { batchSaid } from "$lib/batch-log";
+  import { batchSaid, byKind, namesIn } from "$lib/batch-log";
   import { wordsFor } from "$lib/batching";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { duration } from "$lib/motion";
   import { reachable } from "$lib/reachable.svelte";
-  import { NOTHING_LOGGED } from "$lib/said";
+  import { NOT_ALL_READ, NOTHING_LOGGED } from "$lib/said";
 
   import BatchRow from "./BatchRow.svelte";
   import { grouped } from "./groups";
@@ -108,22 +108,24 @@
     log.batch === undefined ? undefined : $batches.get(log.batch),
   );
 
+  const read = $derived(
+    log.batch === undefined ? undefined : log.whole(log.batch),
+  );
+
+  /** The batch read whole where it was, and what the walk holds of it where that failed. */
   const said = $derived.by(() => {
-    if (log.batch === undefined) return undefined;
-    const entries = whole(log.batch);
-    return entries === undefined
-      ? undefined
-      : batchSaid(
-          entries,
-          made,
-          (template) => $templates.find((one) => one.id === template)?.name,
-        );
+    if (log.batch === undefined || read === "asking") return undefined;
+    const entries = Array.isArray(read) ? read : log.rows;
+    return batchSaid(entries, made, namesIn($templates)) ?? byKind(entries);
   });
 
   /** What the pool wrote nothing for: the items the batch refused, and those it left as they were. */
   const unlogged = $derived.by(() => {
     if (made?.outcomes === undefined) return [];
-    const routing = made.outcomes.some((one) => one.outcome === "reserved");
+    const routing =
+      (made.action.kind === "tag" &&
+        namesIn($templates).trigger(made.action.tag) !== undefined) ||
+      made.outcomes.some((one) => one.outcome === "reserved");
     const left = wordsFor(made.action, routing).already;
     return made.outcomes.flatMap((one) =>
       one.outcome === "refused"
@@ -160,7 +162,7 @@
   <p class="pt-5">
     <span class="font-semibold tracking-caps uppercase">history</span>
     <Says id={log.item} href={itemHref(log.item)} />
-    <a href={logHref(log.order, undefined, log.kinds)} class="ml-[2ch]"
+    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
       >all of the log</a
     >
   </p>
@@ -170,9 +172,9 @@
   <!-- The log narrowed to one batch, said above the head as history is. -->
   <p class="pt-5">
     <span class="font-semibold tracking-caps uppercase">batch</span>
-    {#if said === undefined}
+    {#if said === undefined && (read === "asking" || log.loading)}
       <Asking />
-    {:else}
+    {:else if said !== undefined}
       <span class={said.alarm === true ? "text-alarm" : ""}>
         {said.what}
         {#if said.subject !== undefined}
@@ -183,7 +185,10 @@
         {/if}
       </span>
     {/if}
-    <a href={logHref(log.order, undefined, log.kinds)} class="ml-[2ch]"
+    {#if read === "failed"}
+      <span class="ml-[2ch]">{NOT_ALL_READ}</span>
+    {/if}
+    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
       >all of the log</a
     >
   </p>
@@ -197,7 +202,7 @@
     : ''}"
 >
   <Register>
-    {#if log.quiet && drawn.length === 0}
+    {#if log.quiet && drawn.length === 0 && unlogged.length === 0}
       <Rail>
         <div class="cleared"><StateWord word="quiet" inline /></div>
       </Rail>

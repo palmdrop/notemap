@@ -156,3 +156,48 @@ test("reads one batch with what this client was told of the items it refused and
   expect(screen.getByText("skipped")).toBeDefined();
   expect(document.body.textContent).not.toContain("·");
 });
+
+test("says what the log holds of a batch that changed nothing, rather than asking forever", async () => {
+  const b1 = [
+    anAction("a1", {
+      batch: "b1",
+      kind: "routed",
+      detail: { record: "r1" },
+    }),
+  ];
+  pool(logged(b1, { b1 }));
+  render(Log);
+  log.reading("newest-first", undefined, undefined, "b1");
+
+  const head = await screen.findByText(/1 routed/);
+  expect(head.closest("p")?.querySelector("[role=status]")).toBeNull();
+});
+
+test("stops asking over a batch the pool has no entry for", async () => {
+  pool(logged([]));
+  render(Log);
+  log.reading("newest-first", undefined, undefined, "nowhere");
+
+  await vi.waitFor(() => expect(log.loading).toBe(false));
+  const head = screen.getByText("all of the log").closest("p")!;
+  await vi.waitFor(() =>
+    expect(head.querySelector("[role=status]")).toBeNull(),
+  );
+});
+
+test("says a batch it could not read whole was not all read", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route !== "GET /v1/actions") return json(200, { values: [] });
+    return new URL(request.url).searchParams.has("batch")
+      ? json(422, { error: { code: "bad-position" } })
+      : json(200, { values: [anAction("a1", { batch: "b1" })] });
+  });
+  render(Log);
+  log.reading("newest-first", undefined);
+
+  expect(await screen.findByText("not all of it read")).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: /1 note tagged reading/ }),
+  ).toBeDefined();
+});

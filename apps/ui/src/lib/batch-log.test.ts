@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import type { Action, Batch } from "@notemap/client";
 import { anItem } from "@notemap/client/testing";
 
-import { batchSaid } from "./batch-log";
+import { batchSaid, byKind } from "./batch-log";
 
 const BATCH = "batch-7";
 const TAG = "route/research";
@@ -32,7 +32,10 @@ const fired = (subject: string, record: string) => [
   entry("template-fired", subject, { record, template: "t1" }),
 ];
 
-const named = (id: string) => (id === "t1" ? "Research" : undefined);
+const named = {
+  template: (id: string) => (id === "t1" ? "Research" : undefined),
+  trigger: () => undefined,
+};
 
 test("counts a routing batch by how each reservation ended, as its notice does", () => {
   const said = batchSaid(
@@ -155,4 +158,48 @@ test("never draws a middle dot between its counts", () => {
 
   expect(JSON.stringify(said)).not.toContain("·");
   expect(said?.why).toBe("1 failed, 1 cancelled");
+});
+
+test("names the template its tag fires where the batch reserved nothing, as its notice does", () => {
+  const said = batchSaid(
+    [entry("tagged", "a", { tag: TAG }), entry("tagged", "b", { tag: TAG })],
+    undefined,
+    { ...named, trigger: (tag) => (tag === TAG ? "Research" : undefined) },
+  );
+
+  expect(said).toEqual({
+    what: "0 notes routed",
+    subject: "Research",
+    why: "2 already filed",
+  });
+});
+
+test("counts an item the template had already filed as left as it was, not as tagged", () => {
+  const said = batchSaid(
+    [
+      ...fired("a", "r1"),
+      entry("routed", "a", { record: "r1" }),
+      entry("tagged", "b", { tag: TAG }),
+    ],
+    undefined,
+    named,
+  );
+
+  expect(said).toEqual({
+    what: "1 note routed",
+    subject: "Research",
+    why: "1 already filed",
+  });
+});
+
+test("counts what the log holds by kind, where nothing says what the batch did", () => {
+  expect(
+    byKind([
+      entry("routed", "a", { record: "r1" }),
+      entry("routed", "b", { record: "r2" }),
+      entry("template-fired", "c", { record: "r3" }),
+      entry("delivery-failed", "c", { record: "r3" }),
+    ]),
+  ).toEqual({ what: "2 routed, 1 delivery failed" });
+  expect(byKind([])).toBeUndefined();
 });

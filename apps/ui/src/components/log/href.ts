@@ -15,9 +15,15 @@ export const BATCH_PARAM = "batch";
  */
 export function logHref(
   order: Order | undefined,
-  item?: string,
-  kinds?: readonly ActionKind[],
-  batch?: string,
+  {
+    item,
+    kinds,
+    batch,
+  }: {
+    readonly item?: string | undefined;
+    readonly kinds?: readonly ActionKind[] | undefined;
+    readonly batch?: string | undefined;
+  } = {},
 ): string {
   const query = new URLSearchParams({
     ...(item === undefined ? {} : { item }),

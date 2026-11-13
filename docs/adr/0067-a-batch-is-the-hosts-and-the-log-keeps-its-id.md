@@ -114,7 +114,9 @@ the tags and never what came of them.
   `routed`, `delivery-failed`, `work-abandoned`, `delivery-cancelled`, and the `untagged` that
   gives the trigger tag back.
 - **Withdrawing and reinstating carry none.** They are a later gesture on what the batch filed,
-  not part of the batch.
+  not part of the batch. A cancel is a gesture too, made from the status line or the item, but it
+  ends a reservation that is still the batch's: what the batch's notice counts as `cancelled`.
+  A withdrawal comes after the batch has said what came of it, and would change nothing it said.
 - **Entries written before this carry none.** A batch from before it groups only its tags,
   archives and their undoing.
 

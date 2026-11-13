@@ -72,10 +72,14 @@ const subjects = (actions: readonly Action[]) =>
 
 /**
  * Every entry of each batch drawn, read by the batch, so a group counts what
- * came of it wherever its entries fell. A read that failed is left out, to be
- * asked again with the next read that names the batch.
+ * came of it wherever its entries fell. A read that failed is asked again with
+ * the next read that names the batch, the pool coming back, or the group
+ * being opened.
  */
-const wholes = new SvelteMap<string, readonly Action[] | "asking">();
+const wholes = new SvelteMap<string, readonly Action[] | "asking" | "failed">();
+
+/** What the watcher brought for a batch while it was being read. */
+const early = new SvelteMap<string, Action[]>();
 
 /** Whether a batch is drawn as one row: not where the reading is narrowed to an item or to one batch. */
 const grouping = () => item === undefined && batch === undefined;
@@ -95,12 +99,17 @@ async function wholeOf(id: string, mine: number): Promise<void> {
       read.push(...page.values);
       after = page.after;
     } while (after !== undefined);
-    const held = wholes.get(id);
-    wholes.set(id, joined(read, held === "asking" ? [] : (held ?? [])));
-    seek(subjects(read));
+    wholes.set(id, joined(read, early.get(id) ?? []));
   } catch {
-    if (mine === walking) wholes.delete(id);
+    if (mine === walking) wholes.set(id, "failed");
+  } finally {
+    if (mine === walking) early.delete(id);
   }
+}
+
+function known(id: string): boolean {
+  const held = wholes.get(id);
+  return held !== undefined && held !== "failed";
 }
 
 function complete(actions: readonly Action[]): void {
@@ -112,7 +121,7 @@ function complete(actions: readonly Action[]): void {
         : [],
   );
   for (const id of wanted) {
-    if (!wholes.has(id)) void wholeOf(id, walking);
+    if (!known(id)) void wholeOf(id, walking);
   }
 }
 
@@ -159,6 +168,15 @@ async function walk(from: ActionPosition | undefined): Promise<void> {
     const drawn = page.values.filter((action) => drawable(action.kind));
     rows = from === undefined ? drawn : joined(rows, drawn);
     seek(subjects(drawn));
+    // The batch read whole already, where one page held it and no kind narrowed it.
+    if (
+      batch !== undefined &&
+      from === undefined &&
+      kinds === undefined &&
+      page.after === undefined
+    ) {
+      wholes.set(batch, page.values);
+    }
     complete(drawn);
     after = page.after;
     more = page.after !== undefined;
@@ -201,6 +219,7 @@ function restart(
   rows = [];
   heard.clear();
   wholes.clear();
+  early.clear();
   after = undefined;
   more = false;
   answered = false;
@@ -256,7 +275,7 @@ export const log = {
     return sought.get(id);
   },
   /** Every entry a batch wrote, once read; `asking` while it is being read. */
-  whole(id: string): readonly Action[] | "asking" | undefined {
+  whole(id: string): readonly Action[] | "asking" | "failed" | undefined {
     return wholes.get(id);
   },
   /** Whether a row arrived from the watcher rather than with a read. */
@@ -296,15 +315,18 @@ export const log = {
    * months before it. Read the other way round, the walk is what brings it.
    */
   arrived(actions: readonly Action[]): void {
-    if (!answered || order !== "newest-first") return;
-
+    // A batch is counted whole in either order.
     for (const action of actions) {
-      const whole =
-        action.batch === undefined ? undefined : wholes.get(action.batch);
-      if (action.batch !== undefined && Array.isArray(whole)) {
+      if (action.batch === undefined) continue;
+      const whole = wholes.get(action.batch);
+      if (Array.isArray(whole)) {
         wholes.set(action.batch, joined(whole, [action]));
+      } else if (whole === "asking") {
+        early.set(action.batch, [...(early.get(action.batch) ?? []), action]);
       }
     }
+
+    if (!answered || order !== "newest-first") return;
 
     const wanted = actions.filter(
       (action) =>
@@ -346,7 +368,16 @@ export const log = {
   again(): void {
     if (asked && !answered && !loading) {
       restart(order, item, kinds, batch, false);
+    } else if (answered) {
+      complete(rows);
     }
+  },
+
+  /** A group opened: its entries drawn, and read again where the last read failed. */
+  opening(id: string): void {
+    const whole = wholes.get(id);
+    if (Array.isArray(whole)) seek(subjects(whole));
+    else if (whole === "failed") void wholeOf(id, walking);
   },
 
   /**
@@ -378,6 +409,7 @@ export const log = {
     heard.clear();
     sought.clear();
     wholes.clear();
+    early.clear();
     chosen = false;
     after = undefined;
     more = false;

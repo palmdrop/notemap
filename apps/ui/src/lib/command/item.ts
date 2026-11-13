@@ -134,7 +134,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
           id: "open",
           label: "history",
           group: WORK,
-          href: logHref(undefined, item.id),
+          href: logHref(undefined, { item: item.id }),
         }
       : { id: "open", label: "open", group: WORK, href: at.address },
   );

@@ -314,3 +314,107 @@ test("draws no row for a template fired, read or heard", async () => {
   expect(log.rows.map((row) => row.id)).toEqual(["two"]);
   expect(log.heard("three")).toBe(false);
 });
+
+function inBatch(
+  id: string,
+  batch: string,
+  at = "2026-09-02T11:14:00.000Z",
+): Row {
+  return { ...anAction(id), kind: "tagged", batch, at, detail: { tag: "t" } };
+}
+
+/** Answers the walk with `walked`, and a read by batch with whatever `byBatch` answers. */
+function batched(walked: Row[], byBatch: () => Promise<Response> | Response) {
+  return pool((request: Request) => {
+    if (routeOf(request) !== "GET /v1/actions")
+      return json(200, { values: [] });
+    return new URL(request.url).searchParams.has("batch")
+      ? byBatch()
+      : json(200, { values: walked });
+  });
+}
+
+const batchReads = () =>
+  asked().filter((route) => route === "GET /v1/actions").length - 1;
+
+const wholeIds = (batch: string) => {
+  const whole = log.whole(batch);
+  return Array.isArray(whole) ? whole.map((one) => one.id) : whole;
+};
+
+test("counts a batch whole read oldest-first, as the watcher brings more of it", async () => {
+  batched([inBatch("one", "b1")], () =>
+    json(200, { values: [inBatch("one", "b1")] }),
+  );
+
+  log.reading("oldest-first", undefined);
+  await vi.waitFor(() => expect(wholeIds("b1")).toEqual(["one"]));
+
+  log.arrived([inBatch("two", "b1", "2026-09-02T11:15:00.000Z") as Action]);
+
+  expect(wholeIds("b1")).toEqual(["one", "two"]);
+});
+
+test("keeps what the watcher brought for a batch while it was being read", async () => {
+  let answer: (response: Response) => void = () => undefined;
+  batched(
+    [inBatch("one", "b1")],
+    () => new Promise<Response>((resolve) => (answer = resolve)),
+  );
+
+  log.reading("newest-first", undefined);
+  await vi.waitFor(() => expect(log.whole("b1")).toBe("asking"));
+
+  log.arrived([inBatch("two", "b1", "2026-09-02T11:15:00.000Z") as Action]);
+  answer(json(200, { values: [inBatch("one", "b1")] }));
+
+  await vi.waitFor(() => expect(wholeIds("b1")).toEqual(["one", "two"]));
+});
+
+test("asks again for a batch it failed to read, when the pool comes back and when the group opens", async () => {
+  let failing = true;
+  batched([inBatch("one", "b1")], () =>
+    failing
+      ? refusal(422, "bad-position")
+      : json(200, { values: [inBatch("one", "b1")] }),
+  );
+
+  log.reading("newest-first", undefined);
+  await vi.waitFor(() => expect(log.whole("b1")).toBe("failed"));
+  expect(batchReads()).toBe(1);
+
+  log.opening("b1");
+  await vi.waitFor(() => expect(log.whole("b1")).toBe("failed"));
+  expect(batchReads()).toBe(2);
+
+  failing = false;
+  log.again();
+  await vi.waitFor(() => expect(wholeIds("b1")).toEqual(["one"]));
+});
+
+test("a batch read that lands after a turn does not answer for the reading it left", async () => {
+  let answer: (response: Response) => void = () => undefined;
+  batched(
+    [inBatch("one", "b1")],
+    () => new Promise<Response>((resolve) => (answer = resolve)),
+  );
+
+  log.reading("newest-first", undefined);
+  await vi.waitFor(() => expect(log.whole("b1")).toBe("asking"));
+
+  log.reading("newest-first", "0198f0c2-item");
+  answer(json(200, { values: [inBatch("one", "b1")] }));
+  await settled();
+
+  expect(log.whole("b1")).toBeUndefined();
+});
+
+test("reads a batch once where its reading holds it in one page", async () => {
+  answering([inBatch("one", "b1")]);
+
+  log.reading("newest-first", undefined, undefined, "b1");
+  await settled();
+
+  expect(reads()).toBe(1);
+  expect(wholeIds("b1")).toEqual(["one"]);
+});

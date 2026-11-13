@@ -5,11 +5,12 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
-  import { batchSaid } from "$lib/batch-log";
+  import { batchSaid, byKind, namesIn } from "$lib/batch-log";
   import { notes } from "$lib/batching";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { pickable } from "$lib/pick";
+  import { NOT_ALL_READ } from "$lib/said";
 
   import LogRow from "./LogRow.svelte";
 
@@ -33,18 +34,24 @@
   const batches = client.batches;
 
   const whole = $derived(log.whole(id));
-  const said = $derived(
-    batchSaid(
-      Array.isArray(whole) ? whole : entries,
-      $batches.get(id),
-      (template) => $templates.find((one) => one.id === template)?.name,
-    ) ?? {
-      what: notes(new Set(entries.map((one) => one.subject)).size),
-    },
-  );
+  /** Counted from what the walk holds, where the batch could not be read whole. */
+  const said = $derived.by(() => {
+    const counted = Array.isArray(whole) ? whole : entries;
+    return (
+      batchSaid(counted, $batches.get(id), namesIn($templates)) ??
+      byKind(counted) ?? {
+        what: notes(new Set(entries.map((one) => one.subject)).size),
+      }
+    );
+  });
   const alarm = $derived(said.alarm === true);
 
   let opened = $state(false);
+
+  function toggle(): void {
+    opened = !opened;
+    if (opened) log.opening(id);
+  }
 </script>
 
 <div class="col-span-full grid grid-cols-subgrid">
@@ -60,13 +67,13 @@
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="flex cursor-pointer items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
-      onclick={pickable(() => (opened = !opened))}
+      onclick={pickable(toggle)}
     >
       <span class="min-w-0 truncate">
         <button
           type="button"
           aria-expanded={opened}
-          onclick={() => (opened = !opened)}
+          onclick={toggle}
           class="text-left hover:underline"
         >
           {said.what}
@@ -76,6 +83,9 @@
         </button>
         {#if whole === "asking"}
           <Asking />
+        {/if}
+        {#if whole === "failed"}
+          <span class="ml-[2ch]">{NOT_ALL_READ}</span>
         {/if}
       </span>
 
