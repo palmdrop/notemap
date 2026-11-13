@@ -11,7 +11,7 @@
     <a
       href={settingsHref(one.slug)}
       aria-current={current === one.slug ? "page" : undefined}
-      class="py-0.5 hover:underline max-narrow:flex max-narrow:h-11 max-narrow:items-center max-narrow:border-b max-narrow:border-ink
+      class="py-0.5 hover:underline max-wide:flex max-wide:h-11 max-wide:items-center max-wide:border-b max-wide:border-ink
         {current === one.slug ? 'font-semibold' : ''}"
     >
       {one.label}

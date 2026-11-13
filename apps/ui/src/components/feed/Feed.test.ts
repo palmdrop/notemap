@@ -345,7 +345,9 @@ test("says an archived row is discarded and still pending", async () => {
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
 
-  expect(await screen.findByRole("img", { name: "pending" })).toBeDefined();
+  expect(
+    await screen.findByRole("img", { name: "waiting to send" }),
+  ).toBeDefined();
   expect(screen.getByText("discarded")).toBeDefined();
 });
 

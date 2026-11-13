@@ -146,12 +146,12 @@
 
 <form
   onsubmit={submit}
-  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
+  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-wide:grid-cols-1"
 >
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">name</span>
   <input bind:value={name} aria-label="Name" required class={FIELD} />
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">kind</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">kind</span>
   {#if editing === undefined}
     <div class="flex flex-wrap gap-x-[2ch]">
       {#each kinds as one (one.name)}
@@ -173,7 +173,7 @@
 
   <!-- The kind's own names, so the label read is the label an error will name. -->
   {#each fields as field (field.name)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">
+    <span class="tracking-caps uppercase max-wide:mt-1.5">
       {field.name}{field.required ? "" : " (optional)"}
     </span>
     <div>
@@ -199,13 +199,13 @@
   {/each}
 
   {#if unfamiliarRoot}
-    <p role="status" class="col-start-2 max-narrow:col-start-1">
+    <p role="status" class="col-start-2 max-wide:col-start-1">
       notemap has not used {typedRoot} before — check it names the right place.
     </p>
   {/if}
 
   <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
+    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-wide:col-span-1"
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
@@ -220,7 +220,7 @@
   </div>
 
   {#if said !== ""}
-    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
+    <p role="status" class="col-span-2 text-danger max-wide:col-span-1">
       {said}
     </p>
   {/if}

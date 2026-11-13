@@ -29,7 +29,7 @@
   );
 </script>
 
-<div class="flex min-w-0 flex-1 items-baseline gap-4 max-narrow:gap-3">
+<div class="flex min-w-0 flex-1 items-baseline gap-4 max-wide:gap-3">
   <button
     type="button"
     aria-label={label}
@@ -39,9 +39,9 @@
     class="flex-none whitespace-nowrap"
     class:font-semibold={expanded}
   >
-    <span class="max-narrow:hidden">notices</span>
+    <span class="max-wide:hidden">notices</span>
     {#if unseen > 0}
-      <span class="text-alarm tabular-nums">({unseen})</span>
+      <span class="text-danger tabular-nums">({unseen})</span>
     {/if}
     {expanded ? "▾" : "▴"}
   </button>
@@ -55,7 +55,7 @@
         onclick={ontoggle}
         in:arrive
         class="min-w-0 truncate text-left {notice.alarm === true
-          ? 'text-alarm'
+          ? 'text-danger'
           : ''}"
       >
         <span role={notice.alarm === true ? "alert" : "status"}>

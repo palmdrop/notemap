@@ -31,7 +31,7 @@
 {#snippet written()}
   {#if dated}
     <span
-      class="flex tabular-nums {inline ? '' : 'max-narrow:flex-col'} {weight ??
+      class="flex tabular-nums {inline ? '' : 'max-wide:flex-col'} {weight ??
         ''}"
     >
       <!-- Bold on a selected index line, which must not widen the column: each
@@ -44,7 +44,7 @@
       >
       <span
         aria-hidden="true"
-        class="w-[1ch] shrink-0 font-normal {inline ? '' : 'max-narrow:hidden'}"
+        class="w-[1ch] shrink-0 font-normal {inline ? '' : 'max-wide:hidden'}"
       ></span>
       <span data-word={timeOf(at)} class="steady-weight whitespace-nowrap"
         >{timeOf(at)}</span

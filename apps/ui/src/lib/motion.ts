@@ -384,3 +384,35 @@ export function markingHidden(node: HTMLElement): () => void {
     changed.disconnect();
   };
 }
+
+/** A sheet rising from the foot, its whole height. */
+export function fromFoot(node: Element, params: Moving = {}): TransitionConfig {
+  return fly(node, { ...timing(params), y: "100%", opacity: 1 });
+}
+
+/** A panel or the drawer coming in from its side, its whole width. */
+export function fromSide(
+  node: Element,
+  params: Moving & { side?: "left" | "right" } = {},
+): TransitionConfig {
+  const x = params.side === "left" ? "-100%" : "100%";
+  return fly(node, { ...timing(params), x, opacity: 1 });
+}
+
+/**
+ * A row going out sideways, and the rows below closing up behind it: half the
+ * time travelling, half closing, so the gap never opens before the row is gone.
+ */
+export function leave(node: Element, params: Moving = {}): TransitionConfig {
+  const { duration: time, easing: curve } = timing(params);
+  const height = node.getBoundingClientRect().height;
+  return {
+    duration: time * 2,
+    easing: curve,
+    css: (t) => {
+      const across = Math.min(1, (1 - t) * 2);
+      const closing = Math.max(0, (1 - t) * 2 - 1);
+      return `transform: translateX(${String(-across * 100)}%); opacity: ${String(1 - across)}; height: ${String(height * (1 - closing))}px; overflow: hidden`;
+    },
+  };
+}

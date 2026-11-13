@@ -1074,7 +1074,7 @@
 
 {#snippet labelled(name: string, field: (typeof fields)[number])}
   <div
-    class="mt-3 grid grid-cols-[9rem_1fr] items-baseline max-narrow:grid-cols-1"
+    class="mt-3 grid grid-cols-[9rem_1fr] items-baseline max-wide:grid-cols-1"
   >
     <span class="tracking-caps uppercase">{name}</span>
     <div class="min-w-0">{@render control(field)}</div>
@@ -1088,7 +1088,7 @@
   class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-none wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
 >
   <div
-    class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
+    class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-wide:max-h-[34%] max-wide:pt-3.5 max-wide:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
   >
     <div class="mb-2 flex items-baseline justify-between gap-x-[2ch]">
       <Stamp at={item.createdAt} inline />
@@ -1347,19 +1347,19 @@
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />
       {:else if previewFailed !== ""}
-        <span role="status" class="text-alarm">{previewFailed}</span>
+        <span role="status" class="text-danger">{previewFailed}</span>
       {/if}
     </Section>
 
     {#if said !== ""}
-      <div role="status" class="mt-3 text-alarm">{said}</div>
+      <div role="status" class="mt-3 text-danger">{said}</div>
     {/if}
   </div>
 
   <div
     class="flex h-12 flex-none items-center justify-between border-t border-ink wide:ml-8"
   >
-    <div class="flex gap-x-6 max-narrow:gap-x-4">
+    <div class="flex gap-x-6 max-wide:gap-x-4">
       <Action
         disabled={around.previous === undefined}
         onclick={() => walk(around.previous)}
@@ -1380,7 +1380,7 @@
       onclick={() => void send()}
       class="inverted h-8 px-5 font-semibold {busy
         ? ''
-        : 'disabled:bg-transparent disabled:text-inert'}"
+        : 'disabled:bg-transparent disabled:text-muted'}"
     >
       <Working working={busy}>route</Working>
     </button>

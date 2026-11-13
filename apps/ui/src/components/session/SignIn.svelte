@@ -65,7 +65,7 @@
       sign in
     </Action>
     {#if refused !== undefined}
-      <span role="alert" class="text-alarm">{refused}</span>
+      <span role="alert" class="text-danger">{refused}</span>
     {/if}
   </div>
 </form>

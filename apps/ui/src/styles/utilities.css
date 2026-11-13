@@ -5,7 +5,7 @@
  */
 @utility inverted {
   background: var(--color-ink);
-  color: var(--color-ground);
+  color: var(--color-paper);
   padding-inline: 0.375rem;
   margin-inline: -0.375rem;
 }
@@ -64,7 +64,7 @@
     margin: 0;
   }
   & > * + * {
-    margin-top: var(--text-shell--line-height);
+    margin-top: var(--text-body--line-height);
   }
   & h1,
   & h2,
@@ -151,5 +151,17 @@
     top: anchor(bottom);
     left: anchor(left);
     position-try-fallbacks: flip-inline;
+  }
+}
+
+/** Anything under way: a ring a quarter of it ink, turning. Still where motion is reduced. */
+@utility spinner {
+  border: 1.5px solid var(--color-rule);
+  border-top-color: var(--color-ink);
+  border-radius: 50%;
+  animation: var(--animate-turning);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }

@@ -48,12 +48,12 @@
   data-leads={leads ? "" : undefined}
   class="sticky top-0 z-10 col-span-full {leads
     ? '-mt-day-head'
-    : 'mt-3.5'} flex h-day-head items-center gap-x-[2ch] border-b border-ink bg-ground tabular-nums"
+    : 'mt-3.5'} flex h-day-head items-center gap-x-[2ch] border-b border-ink bg-paper tabular-nums"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach stick}
 >
   <time datetime={dayOf(at)} class="font-semibold">{dayOf(at)}</time>
-  <span class="max-narrow:hidden">{weekdayOf(at)}</span>
+  <span class="max-wide:hidden">{weekdayOf(at)}</span>
 </div>
 
 <style>
@@ -64,7 +64,7 @@
     left: calc(50% - 50vw);
     width: 100vw;
     z-index: -1;
-    background: var(--color-ground);
+    background: var(--color-paper);
     border-bottom: 1px solid var(--color-ink);
   }
 </style>

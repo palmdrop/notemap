@@ -154,7 +154,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="py-4 {opened
-    ? '-mx-3 -mt-px border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2'
+    ? '-mx-3 -mt-px border border-ink px-3 max-wide:-mx-2 max-wide:px-2'
     : 'border-b border-b-ink'}"
   onclick={pickable(pick)}
 >
@@ -179,8 +179,8 @@
 
     <span
       class="ml-auto whitespace-nowrap {said.alarm
-        ? 'text-alarm'
-        : ''} max-narrow:ml-0 max-narrow:w-full"
+        ? 'text-danger'
+        : ''} max-wide:ml-0 max-wide:w-full"
     >
       {#if said.asking === true}
         <Asking subject={destination?.name} />
@@ -191,7 +191,7 @@
   </div>
 
   {#if stranded}
-    <p class="mt-1 text-alarm">Does nothing until repointed.</p>
+    <p class="mt-1 text-danger">Does nothing until repointed.</p>
   {/if}
 
   {#if opened && !editing}
@@ -249,7 +249,7 @@
       </Fact>
 
       {#if report?.kind === "folder-missing"}
-        <p class="mt-2 text-alarm">
+        <p class="mt-2 text-danger">
           Next delivery refused, and the item returns to the queue.
         </p>
       {/if}
@@ -261,7 +261,7 @@
           <Action disabled={asking} onclick={oncheck}>check again</Action>
         {/if}
         <Action disabled={offline} onclick={onedit}>edit</Action>
-        <span class="ml-auto max-narrow:ml-0">
+        <span class="ml-auto max-wide:ml-0">
           <Action alarm disabled={offline} onclick={ondelete}>delete</Action>
         </span>
       </div>

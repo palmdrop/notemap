@@ -3316,135 +3316,139 @@ Every colour, face, size and spacing step is named by **role** in one `@theme` b
 `tokens.test.ts` fails the build on one — a hex, a colour function, a `dark:` variant, a font
 family, a Tailwind palette colour, or any of the roles the shell used to have and no longer does.
 
-The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
-nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
-with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
-`read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
-breakpoints.
+**The roles, as of 2026-11-13** ([ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)):
+
+- **Surfaces.** `paper`, white, for what is read; `ink` on it. `off`, beige, for what can be
+  pressed, with `off-line` for its edge and `off-down` for it pressed. `band`, grey, for a heading
+  over a group of rows. `rule` for the rule between regions, which is grey and not ink.
+- **The box grey.** `tag`, `tag-line` and `tag-ink`, for what is under way and for a state's box:
+  "Routing by Todo", "On its way", a tag.
+- **Meaning.** `signal`, green, for delivered or available and nothing else. `danger`, red, for
+  failed, rejected or destructive. `muted` for a secondary line and for what cannot be taken.
+  `veil` behind a sheet or a dialog. `chip`, the one chip grey left, for the + button.
+- **Faces.** `font-display`, Syne, for headings, bands and titles. `font-text`, Arimo, for
+  everything else.
+- **Sizes, five, by role.** `text-title`, `text-weekday`, `text-body`, `text-time` and
+  `text-small`, each with its line height. `tracking-caps` stays for a label the old views still
+  draw.
+- **Spacing.** `gutter`; `time`, the time column; `bar`, a header or a docked bar; `target`, the
+  least a target is on a phone; `icon`, `fab` and `thumb`; `menu` and `menu-rail`, the menu as a
+  column and as a rail of icons; `panel`, a side panel; `measure`, `read` and `prose`. `radius-control`
+  and `radius-tag`.
+- **Breakpoints, two.** `wide` at 900px, below which every piece is drawn in its phone's form,
+  and `full` at 1200px, from which the menu is a column rather than a rail. They are in pixels,
+  since they are the window's width and not the type's. `lib/breakpoint.ts` holds the same two for
+  the pieces that are a different component at each width, and reads them reactively. The old
+  `narrow` (44rem) is folded into `wide`.
+
+The old register's widths (`rail`, `rail-narrow`, `rail-time`, `day-head`, `gap-time`, `status`,
+`tag`, `tag-line`) are kept only until the views that use them are redrawn.
 
 **Durations are the one scale named by magnitude** *(2026-09-25)*: `duration-short` for what
 opens in place, `duration-long` for what enters, leaves or moves across, `ease-motion` for what
-travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both ends,
-since a fade on `ease-motion` is most of the way there in its first frames and reads as a snap on
-the way in *(amended 2026-09-25; there was one easing)*, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
-far a thing moves rather than by what it is, which is why these alone are not roles. The durations
-are zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
-and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
-inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
+travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both
+ends, since a fade on `ease-motion` is most of the way there in its first frames and reads as a
+snap on the way in. `duration-turn` is one turn of the spinner *(2026-11-13; `duration-step`, a
+beat of the asking mark's stepping squares, went with them)*. What uses which is decided by how far
+a thing moves rather than by what it is, which is why these alone are not roles. The durations are
+zero under `prefers-reduced-motion`, and the spinner stands still, so a reader who asked for
+stillness gets it from the one file; the gate fails a duration, delay or easing named anywhere
+else.
 
-**Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
-words, `auto`, `light` and `dark`, the chosen one bold. `auto` is the browser's own answer and the
-default, because it is the only one that can be right before a person has said anything. The
-choice is remembered and applied **before first paint**, or the page shows one palette and
-corrects itself in front of the reader.
+**Dark is rough** *(2026-11-13)*. Every colour role is a `light-dark()` pair, and dark is each
+role inverted: ink and paper swap, beige, the band and the box grey go dark, the red and the green
+are lifted to read on black. It is there so every view works in it, and it is not designed beyond
+that; the developer gives feedback on it once it is built.
+
+**Which palette is on is the reader's**, chosen in settings under *Appearance*: `auto`, `light`
+or `dark`. `auto` is the browser's own answer and the default, because it is the only one that can
+be right before a person has said anything. The choice is remembered and applied **before first
+paint**, or the page shows one palette and corrects itself in front of the reader.
 
 ### Visual direction
 
-*Settled 2026-09-14 in [ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md),
-against [the brief](../design/brief.md) and the drawings in `docs/design/redrawn/`. What they
-settled is below. Where this section and the drawings disagree, the drawings win.*
+*Settled 2026-11-13 in [ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)
+and, for a wide window, [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md),
+against the design in [`docs/design/mobile/`](../design/mobile/) and what was settled with it in
+its [DECISIONS.md](../design/mobile/DECISIONS.md). Where this section and the design disagree,
+DECISIONS.md wins, then the drawings.*
 
-**Printed and digital at once.** An index, a ledger, a running head — set on screen with nothing
-that pretends to be paper. The references are one face, one weight or two, one size, black on
-white, with columns and a few rules doing all the work. None of them use size for hierarchy.
-None of them use grey.
+**Drawn for a phone first.** Capture and triage happen on a phone, with one hand and the thumb at
+the foot. Below 900px every width draws the phone's views. At 900px and wider the views are the
+same, and a handful of pieces take a wide form; a piece that differs by width is one component
+with two forms, chosen by width.
 
-**Colour.** Ground `#fff`, ink `#000`, and nothing between them by default. **One red**, for
-failure and for destructive action only: a refused operation, a delivery that is retrying or
-abandoned, `discard`. Never for a primary action, never for a link, never for structure. Primary
-actions are ink — bold, or inverted. **Green went** on 2026-09-14: a destination that answered
-says `reached` in words. **Grey went** with it; secondary is regular weight, primary is bold or
-capitals, and the one grey the tokens hold is for a control that is genuinely inert and for
-nothing else. Dark theme is the inversion, designed once, in light.
+**Three surfaces.** Beige is what can be pressed: every button, toggle and choice. A grey band
+heads a group of rows. White with a rule is what is read: rows, records, the words of an item.
+The box grey is kept for what is under way and for a state's box. A plain label is enough for a
+single field; a band is for a group of rows.
 
-**Type.** One face, Bricolage Grotesque at 400 and 600, self-hosted from `static/fonts/` and
-served by the daemon beside the app — a face on the same origin is exactly as offline as the app,
-which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
-captured prose, timestamps, labels, actions, the bar. **The size grows with the screen**
-*(2026-10-02)*: 15px on 22px is the size at 350px wide and below, at the browser's default, and
-the root grows from there in straight lines to a quarter more at 500px and half as much again at
-1200px, where it stops. Every size and measure is in `rem`, so the whole shell grows with it as it
-would under the browser's zoom, the one size staying one size at any width. The breakpoints do not
-move: a media query's `rem` is the browser's, not the root's. Hierarchy is weight, capitals or small-caps
-with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
-under the cursor is underlined, never coloured. **The face is asked for in the page's head and never
-swapped in** *(2026-09-25)*: it comes from the same origin as the page, so it is there before first
-paint, and a fallback laid out first and replaced would move every line on the page once.
+**Blocks.** The pieces are in `components/primitives/`, each with its phone form and its wide form
+where it has one:
+
+- **An action bar** (`blocks/ActionBar`, `blocks/BarAction`) is beige and docked at a page's foot
+  under a rule. The main action is a wide filled block in ink; the others are an icon over a word,
+  with no box. When wide it is a toolbar at the head of the pane it acts on, each action an icon
+  beside its word, and a button with a key says it in its tooltip ("Done (m)").
+- **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
+  the bar says why ("Pick a destination to save."). Pressing it does nothing.
+- **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled.
+  **Choices that can all be on** are boxes of their own (`blocks/Toggle`), filled and ticked when
+  on. **A long choice** is radio rows (`blocks/RadioRows`), each with a line saying what it does
+  where it needs one.
+- **An action standing alone in a page**, and every other button, is a beige box (`blocks/Box`),
+  red words in it where it is destructive.
+- **A band** (`blocks/Band`) heads a group of rows: grey, ruled edge to edge, the display face,
+  lower case.
+- **A sheet** (`sheets/Sheet`) rises from the foot over a veil on a phone. When wide it is a panel
+  at the right, or a dialog in the middle for a quick choice. It closes by its ×, by `esc` and by
+  a press on the veil.
+- **A dialog** (`sheets/Dialog`) is for what needs an answer before anything else: losing changes,
+  a delete that loses something. Its first way keeps things as they are and has the focus.
+- **Under way** is the spinner (`marks/Spinner`); **waiting to send** is the dot (`marks/Dot`).
+  The stepping squares and the turning quarter went on 2026-11-13.
+
+**Type.** Syne, upright, at one weight, for headings, bands and titles; Arimo, which has Arial's
+metrics, for everything else. Five sizes, by role. Both faces are self-hosted from
+`static/fonts/`, with their licences (SIL OFL 1.1), and served beside the app, so they are exactly
+as offline as the app. **Faces are asked for in the page's head and never swapped in**
+*(2026-09-25)*: a fallback laid out first and replaced would move every line on the page once.
+**The root no longer grows with the screen** *(2026-11-13; it grew from 350px to 1200px since
+2026-10-02)*: the five sizes are the scale, and a wide window spends its width on a second pane,
+not on bigger type.
+
+**Colour.** Ink on white is the ground. Green means delivered or available and nothing else. Red
+means failed, rejected or destructive. Anything under way is grey, with a spinner. Offline is not
+a failure, and is said in ink.
+
+**Icons with words.** Every state and every action has words; an icon only supports them, and is
+hidden from a reader where a word is beside it. An icon that is a button alone carries its own
+label. The set is Carbon, with Tabler's route icon and a few drawn glyphs (a circle and a ticked
+circle, refresh, a lock, a cloud struck out), kept as one sprite, `static/icons/notemap.svg`, and
+named by role in `primitives/icon/Icon`.
+
+**No dots as separators.** Words or space do the job: "Rejected by Vault in projects/", "todo.md
+in Vault".
+
+**Focus is visible**: a 2px ink outline, offset, on whatever has the keyboard's focus.
 
 **The page's width does not depend on its length** *(2026-09-25)*. The scrollbar's gutter is kept
-whether or not the page scrolls, so a list emptied for a moment while it is read again, or a page
-growing past the window as it loads, moves nothing sideways.
+whether or not the page scrolls.
 
-**Grid.** Two idioms, and the rule for which is where. *Lists are open*: queue, feed and log rows
-align on shared columns with no rule between rows; whitespace separates entries. *Rules mark a
-change of region*: a 1px ink rule under the bar; a vertical rule between the date column and the
-body, running the height of the list; a ruled box around the capture field; a ruled box around
-the selected row with the actions as its foot; rules between sections of the process surface and
-of settings; a ruled frame around a routing record. Nothing is ever boxed on four sides except the
-capture field, a record block, a control, and the selected row.
+**Motion.** Movement says what changed, and never delays a press or the next read; everything is
+still under `prefers-reduced-motion`. The transitions the pieces share are in `lib/motion.ts`:
+`fromFoot`, a sheet rising its whole height; `fromSide`, a panel or the drawer coming in from its
+side; `fade`, the veil behind a sheet or a dialog, the line over a bar; `rise`, a dialog; and
+`leave`, a row going out sideways while the rows below close up behind it, half the time each.
+**What a read brought never moves** *(2026-09-25)*: a page, a re-read, a turned order, the pool's
+first answer over the cache. Only a change moves — a decision let go, a capture, an item heard
+about, a row processed elsewhere — so the reader's eye goes to the one thing that changed.
 
-**Every surface is a register.** A fixed column of times, a wide column of content: the row reads
-as a dated entry in a ledger, which is why the capture time is its title. The left column is a
-**metadata rail** — the stamp, the tags, and on the feed the state word and where the item went.
-The right column holds nothing but what was captured. Both surfaces are one grid, each item
-one element laid on the grid's own tracks, so the columns stay in register down the whole page
-and a row still has a height of its own to arrive and leave by *(amended 2026-09-25; an item
-dropped two bare cells into the grid, which left nothing to slide)*.
-
-**A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
-time, and the two columns survive, because the rail is what says what a thing is.
-
-**The measure.** Every surface, the bar with it, is capped at 72rem *(amended 2026-09-25; the page
-and the bar were 56rem and the process surface alone 72rem, which widened the bar and moved the
-navigation on the way in; before 2026-09-14 the page was 72rem too, when at a desk the capture
-field and the bar read as wider than anything under them)*. **A paragraph
-is capped at 38rem** — about seventy characters — inside the body column: the column keeps its
-width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
-indent.
-
-**Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
-slides in and out of a list; a notice rises into the status line; a section, a
-settings row and `more` slide open and shut over `short`; each attachment in the capture box and
-in an edit comes and goes as a row does, sliding and fading over `long`, being a thing arriving
-rather than a disclosure — the list as a whole too, as its first arrives or its last is dropped
-*(each one since 2026-10-07; the box held one picture until then)*; an
-open section of the
-process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
-described, the decision cleared by `route` — over `short`, turned from wherever it stands when a
-change lands mid-way, typing included; the process surface's next item fades up; a form in
-settings — adding or editing a template, a destination, an account, a token — and the server's
-sources slide open and shut, a `+ add` sliding shut as its form opens — or, where its line also
-holds the disabled destinations, fading out of it — and a form grows and
-shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
-row's box fades in and out whole, its foot with its edges and the rail's rule it covers, the one
-leaving and the one arriving in step. The current surface in the
-bar and the current view **ease into bold and out of it** over `short`,
-each word holding its bold width throughout so nothing beside it moves. A surface is current
-anywhere under its own address — `settings` at a section's. A selected index line grows into its row and shrinks back
-out of it, the one height easing into the other. No navigation moves: an item carried from its
-row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
-overlays — the order chooser, the path and candidate lists — do not move of themselves: they
-are used at typing speed, and a panel fading in behind a keystroke reads as lag. **The path and
-candidate lists grow and shrink into what they hold** *(2026-10-16)*, over `short`, wherever they
-are drawn — the template form too, where the open section's own growing was the whole form's
-and nothing beside the list moved with it. A box already following a list that grows lets the list
-lead rather than starting over a frame behind it. **Except the tag
-chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
-right across the room the `+` held *(2026-10-01; it used to widen into it)*, and its panel unrolls
-downward from where it will stand, both over `short` and back again as it closes; the panel
-grows and shrinks over `short` as typing narrows it, turned from wherever it stands at each key.
-Nothing waits on either: the caret is live from the first frame and a key is never held back,
-though a quick hand may be a step ahead of the panel. **A tag slides in** across its line when it
-is added and out when it is taken off, down where a narrow width stacks the tags; one drawn with
-its row does not. **What a read
-brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.
-Only a change moves — a decision let go, a capture, an item heard about, a row processed
-elsewhere — so the reader's eye goes to the one thing that changed. Nothing else moves.
-
-*What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
-for a result and red for an action, the accent edge on the open row, the furlable rail — was the
-direction of 2026-08-19 and is superseded. The furl went with the old row on 2026-09-14: the index
-view is how a reader sees more at once.
+*What was here before* — one face at one size, ink on white with no grey, a rail of metadata beside
+every row, rules and columns doing all the work ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md),
+2026-09-14) — was drawn for a desk and narrowed for a phone, and is superseded. The views not yet
+redrawn keep their structure in the new tokens until their phase of
+[the phone-first plan](../plans/phone-first-shell.md) lands.
 
 ## Constraints
 

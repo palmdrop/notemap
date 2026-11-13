@@ -136,7 +136,7 @@
     }
   }}
   aria-label="What it says"
-  class="block min-h-[88px] w-full resize-y bg-transparent outline-none max-narrow:min-h-[72px]"
+  class="block min-h-[88px] w-full resize-y bg-transparent outline-none max-wide:min-h-[72px]"
 ></textarea>
 
 <!-- Under the words behind the short rule, where the row being edited draws them. -->
@@ -178,7 +178,7 @@
     onclick={(event) => {
       if (event.target === event.currentTarget) void answer("stay");
     }}
-    class="m-auto w-[min(28rem,calc(100vw-2rem))] border border-ink bg-ground p-0 text-ink backdrop:bg-ground/70"
+    class="m-auto w-[min(28rem,calc(100vw-2rem))] border border-ink bg-paper p-0 text-ink backdrop:bg-paper/70"
   >
     <p id="{id}-about" class="px-3 py-2.5 wrap-anywhere">
       unsaved changes to {self.about}

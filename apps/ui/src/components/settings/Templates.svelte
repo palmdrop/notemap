@@ -152,7 +152,7 @@
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-4 text-alarm">{said}</p>
+    <p role="status" class="mt-4 text-danger">{said}</p>
   {/if}
 
   {#if unfound}
@@ -226,7 +226,7 @@
   <!-- Deleting a template is not the irreversible thing deleting a destination
        is: a record made from one keeps resolving without it. So it asks in a
        line rather than in a modal. -->
-  <div role="dialog" aria-label="Delete a template" class="mt-4 text-alarm">
+  <div role="dialog" aria-label="Delete a template" class="mt-4 text-danger">
     <p>
       Delete {doomed.name}? Records made from it keep resolving; its tag stops
       filing anything.

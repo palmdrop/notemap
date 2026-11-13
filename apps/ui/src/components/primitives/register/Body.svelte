@@ -31,7 +31,7 @@
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-body
   data-selected={selected ? "" : undefined}
-  class="col-start-2 -mr-3 min-w-0 border-t border-r pr-3 pb-3 pl-gutter transition-[border-color] duration-(--duration-short) ease-fade max-narrow:-mr-2 max-narrow:pr-2 max-narrow:pl-3.5
+  class="col-start-2 -mr-3 min-w-0 border-t border-r pr-3 pb-3 pl-gutter transition-[border-color] duration-(--duration-short) ease-fade max-wide:-mr-2 max-wide:pr-2 max-wide:pl-3.5
     {onpick === undefined ? '' : 'cursor-pointer'}
     {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
     {selected ? 'border-ink' : 'border-transparent'}"

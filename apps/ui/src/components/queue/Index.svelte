@@ -148,7 +148,7 @@
     onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
-    <span class="absolute inset-y-0 -left-3 max-narrow:-left-2">
+    <span class="absolute inset-y-0 -left-3 max-wide:-left-2">
       <Gutter
         marked={marked?.(line.item.id) ?? false}
         cursor={cursor === line.item.id}
@@ -170,7 +170,7 @@
     <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
       {line.said}
     </span>
-    <span class="text-right whitespace-nowrap max-narrow:hidden">
+    <span class="text-right whitespace-nowrap max-wide:hidden">
       <span class="inline-flex gap-x-[1ch]">
         {#each line.tags as tag (tag.name)}
           {@const said =
@@ -192,7 +192,7 @@
 {/snippet}
 
 <div
-  class="grid grid-cols-[max-content_1fr_max-content] gap-x-6 max-narrow:grid-cols-[max-content_1fr]"
+  class="grid grid-cols-[max-content_1fr_max-content] gap-x-6 max-wide:grid-cols-[max-content_1fr]"
 >
   {#each lines as line (line.key)}
     <!-- Not an `{#if}`: that would be the block the transitions belong to,

@@ -252,7 +252,7 @@
     {/each}
 
     {#if said !== ""}
-      <div role="status" class="mt-1 text-alarm">{said}</div>
+      <div role="status" class="mt-1 text-danger">{said}</div>
     {/if}
   </div>
 {/if}

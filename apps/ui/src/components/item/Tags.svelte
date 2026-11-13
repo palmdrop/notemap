@@ -79,7 +79,7 @@
 
 <div
   class="relative -ml-tag flex min-w-0 flex-wrap items-baseline {stacked
-    ? 'max-narrow:flex-col max-narrow:items-start'
+    ? 'max-wide:flex-col max-wide:items-start'
     : ''}"
 >
   <TagSet

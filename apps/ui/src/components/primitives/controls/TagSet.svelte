@@ -468,7 +468,7 @@
             ? '-translate-x-(--spacing-tag) font-semibold'
             : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
             ? 'underline'
-            : ''} {pending ? 'text-inert' : ''}"
+            : ''} {pending ? 'text-muted' : ''}"
         >
           {@render said(fired === undefined ? name : trigger(name))}
         </button>{#if chosen === name}<button
@@ -495,7 +495,7 @@
      from the place rather than the line, which is gone before the offer has
      finished closing. -->
 <span
-  class="h-(--text-shell--line-height) min-w-tag-line flex-1 self-start pl-tag"
+  class="h-(--text-body--line-height) min-w-tag-line flex-1 self-start pl-tag"
 >
   <span class="block h-full" style="anchor-name: {anchor}">
     {#if adding}
@@ -550,17 +550,17 @@
   <div
     class="offer z-30 {step === undefined
       ? ''
-      : 'max-narrow:fixed max-narrow:inset-x-0 max-narrow:top-auto max-narrow:bottom-0'}"
+      : 'max-wide:fixed max-wide:inset-x-0 max-wide:top-auto max-wide:bottom-0'}"
     style="position-anchor: {anchor}"
     in:slide|global={{ magnitude: "short" }}
     out:pinned|global={{ magnitude: "short" }}
   >
     <div
       bind:this={panel}
-      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1 {step ===
+      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-paper px-2.5 py-1 {step ===
       undefined
         ? ''
-        : 'max-narrow:w-full'}"
+        : 'max-wide:w-full'}"
     >
       {#if stepping !== undefined && step !== undefined}
         <!-- What is being asked, and for which template, since the line holds

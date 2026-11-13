@@ -150,7 +150,7 @@
   <div class="col-span-full grid grid-cols-subgrid">
     <Rail {gap}>
       <Stamp at={action.at} />
-      <div class="mt-2 tracking-caps uppercase {bad ? 'text-alarm' : ''}">
+      <div class="mt-2 tracking-caps uppercase {bad ? 'text-danger' : ''}">
         {kindWord(action.kind)}
       </div>
     </Rail>
@@ -168,7 +168,7 @@
         />
       {:else}
         <div
-          class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
+          class="flex items-baseline justify-between gap-x-[3ch] max-wide:flex-col max-wide:items-stretch"
         >
           {#if action.subject !== undefined}
             <span class="min-w-0 truncate">{@render subject()}</span>

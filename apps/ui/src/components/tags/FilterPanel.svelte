@@ -231,7 +231,7 @@
           {said(one)}
         </span>
         {#if one.template !== undefined}
-          <span class="max-narrow:hidden">→ {one.template}</span>
+          <span class="max-wide:hidden">→ {one.template}</span>
         {/if}
         <span class="ml-auto pl-4 tabular-nums">{one.count}</span>
       </span>
@@ -278,7 +278,7 @@
   {#if open}
     <div
       id="{id}-panel"
-      class="absolute top-full right-0 z-30 mt-1 w-max max-w-[min(32rem,90vw)] min-w-56 border border-ink bg-ground px-2.5 py-1"
+      class="absolute top-full right-0 z-30 mt-1 w-max max-w-[min(32rem,90vw)] min-w-56 border border-ink bg-paper px-2.5 py-1"
     >
       <div class="mb-1 flex items-baseline gap-3">
         <input

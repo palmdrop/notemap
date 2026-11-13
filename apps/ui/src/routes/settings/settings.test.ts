@@ -55,8 +55,8 @@ test("on a section, the menu is hidden below `narrow` and the section is not", (
   const { container } = render(Layout, { children });
 
   const [rail, section] = container.querySelectorAll(":scope > div > div");
-  expect(rail?.className).toContain("max-narrow:hidden");
-  expect(section?.className).not.toContain("max-narrow:hidden");
+  expect(rail?.className).toContain("max-wide:hidden");
+  expect(section?.className).not.toContain("max-wide:hidden");
 });
 
 test("bare `/settings`, the menu is not hidden and the section is", () => {
@@ -65,8 +65,8 @@ test("bare `/settings`, the menu is not hidden and the section is", () => {
   const { container } = render(Layout, { children });
 
   const [rail, section] = container.querySelectorAll(":scope > div > div");
-  expect(rail?.className).not.toContain("max-narrow:hidden");
-  expect(section?.className).toContain("max-narrow:hidden");
+  expect(rail?.className).not.toContain("max-wide:hidden");
+  expect(section?.className).toContain("max-wide:hidden");
 });
 
 test("`/settings` redirects to destinations from `narrow` up", async () => {

@@ -28,10 +28,10 @@
   disabled={why !== undefined}
   aria-label={label}
   title={why}
-  class="flex w-full items-baseline justify-between gap-x-[2ch] text-left hover:underline disabled:text-inert disabled:no-underline {hit
+  class="flex w-full items-baseline justify-between gap-x-[2ch] text-left hover:underline disabled:text-muted disabled:no-underline {hit
     ? 'font-semibold'
     : ''}"
 >
-  <span class={alarm && why === undefined ? "text-alarm" : ""}>{label}</span>
+  <span class={alarm && why === undefined ? "text-danger" : ""}>{label}</span>
   <span class="min-w-0 truncate">{why ?? aside ?? ""}</span>
 </button>

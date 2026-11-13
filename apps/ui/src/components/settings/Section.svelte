@@ -26,7 +26,7 @@
 {#if !sub}
   <a
     href={resolve("/settings")}
-    class="mb-2 hidden hover:underline max-narrow:block"
+    class="mb-2 hidden hover:underline max-wide:block"
   >
     ← settings
   </a>

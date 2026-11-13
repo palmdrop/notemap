@@ -32,17 +32,15 @@
     aria-controls={PANEL}
     onclick={ontoggle}
   >
-    <span class="max-narrow:hidden">{pending} pending</span>
-    <span class="narrow:hidden"
-      ><span class="text-glyph">◐</span> {pending}</span
-    >
+    <span class="max-wide:hidden">{pending} pending</span>
+    <span class="wide:hidden"><span class="text-small">◐</span> {pending}</span>
   </button>
 {/if}
 
 {#if queue !== undefined}
   <a
     href={resolve("/")}
-    class="flex-none whitespace-nowrap tabular-nums max-narrow:hidden"
+    class="flex-none whitespace-nowrap tabular-nums max-wide:hidden"
   >
     {queue} in queue
   </a>

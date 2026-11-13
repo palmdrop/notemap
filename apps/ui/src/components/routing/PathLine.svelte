@@ -399,7 +399,7 @@
     >
       <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
           data-ghost
-          class="text-inert">{ghost}</span
+          class="text-muted">{ghost}</span
         >{/if}
     </div>
 

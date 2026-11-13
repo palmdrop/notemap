@@ -434,12 +434,12 @@
         class="flex cursor-pointer items-baseline gap-x-[1ch] {lead ===
         undefined
           ? 'max-w-read'
-          : 'max-narrow:flex-wrap'}"
+          : 'max-wide:flex-wrap'}"
         onclick={pickable(() => (opened = !opened))}
       >
         {#if lead !== undefined}
           <!-- The excerpt gives way first: where it went is what the line is for. -->
-          <span class="min-w-[6ch] shrink-[1000] truncate max-narrow:basis-full"
+          <span class="min-w-[6ch] shrink-[1000] truncate max-wide:basis-full"
             >{@render lead()}</span
           >
         {/if}
@@ -447,7 +447,7 @@
           class="flex min-w-0 items-baseline gap-x-[0.6ch] whitespace-nowrap {lead ===
           undefined
             ? ''
-            : 'max-narrow:grow max-narrow:basis-0'}"
+            : 'max-wide:grow max-wide:basis-0'}"
         >
           {#if lead !== undefined}
             <span aria-hidden="true" class="shrink-0">→</span>
@@ -480,7 +480,7 @@
       </div>
 
       {#if failed !== "" && !open}
-        <div role="status" class="mt-1 text-alarm">{failed}</div>
+        <div role="status" class="mt-1 text-danger">{failed}</div>
       {/if}
     {/if}
 
@@ -519,7 +519,7 @@
         </div>
 
         {#if said !== undefined}
-          <div class="px-3 py-2.5 break-words {alarm ? 'text-alarm' : ''}">
+          <div class="px-3 py-2.5 break-words {alarm ? 'text-danger' : ''}">
             {said}
           </div>
         {:else if !delivered}
@@ -530,7 +530,7 @@
               <AttachedPictures {attachments} picture="max-h-48" />
               {#if body !== undefined}
                 <pre
-                  class="font-shell break-words whitespace-pre-wrap">{body}</pre>
+                  class="font-text break-words whitespace-pre-wrap">{body}</pre>
               {:else if !kept && !byHand}
                 <div>{NOTHING_KEPT}</div>
               {:else if kept && !blind && unreadable === ""}
@@ -563,7 +563,7 @@
         {#if facts.length > 0}
           <div
             data-facts
-            class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-narrow:grid-cols-1"
+            class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-wide:grid-cols-1"
           >
             {#each facts as argument, index (index)}
               <span class="tracking-caps uppercase">{argument.name}</span>
@@ -574,7 +574,7 @@
 
         {#if footed}
           <div class="flex items-baseline justify-end px-3 py-1">
-            <div class="flex flex-wrap gap-x-5 max-narrow:gap-x-3.5">
+            <div class="flex flex-wrap gap-x-5 max-wide:gap-x-3.5">
               {#if link !== undefined}
                 <a href={link} rel="noreferrer" class="hover:underline"
                   >open ↗</a
@@ -616,7 +616,7 @@
                 >{askingToWithdraw(presence, kind, record.pointer)}</span
               >
             {/if}
-            <div class="flex gap-x-5 max-narrow:gap-x-3.5">
+            <div class="flex gap-x-5 max-wide:gap-x-3.5">
               <Action alarm onclick={() => void withdraw()}>withdraw</Action>
               <Action onclick={() => (confirming = false)}>keep</Action>
             </div>
@@ -624,7 +624,7 @@
         {/if}
 
         {#if failed !== ""}
-          <div role="status" class="px-3 py-1.5 text-alarm">
+          <div role="status" class="px-3 py-1.5 text-danger">
             {failed}
           </div>
         {/if}

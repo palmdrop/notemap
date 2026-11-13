@@ -196,7 +196,7 @@
    * `narrow` the label gives up its fixed width.
    */
   const GRID =
-    "grid grid-cols-[9rem_28ch] gap-x-2.5 max-narrow:grid-cols-[1fr_min(28ch,60%)]";
+    "grid grid-cols-[9rem_28ch] gap-x-2.5 max-wide:grid-cols-[1fr_min(28ch,60%)]";
 </script>
 
 {#snippet row(
@@ -373,6 +373,6 @@
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-4 text-alarm">{said}</p>
+    <p role="status" class="mt-4 text-danger">{said}</p>
   {/if}
 </Section>

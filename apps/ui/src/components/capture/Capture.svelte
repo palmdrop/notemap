@@ -288,7 +288,7 @@
       }
     }}
     aria-label="What to capture"
-    class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-narrow:min-h-[72px]"
+    class="block min-h-[88px] w-full resize-y bg-transparent px-3 py-2.5 outline-none max-wide:min-h-[72px]"
   ></textarea>
 
   {#if files.length > 0}
@@ -343,7 +343,7 @@
           <!-- Only a failure or an empty box reaches this: the capture itself waits on nothing. -->
           <span
             role="status"
-            class={said === NOTHING_TO_CAPTURE ? "" : "text-alarm"}
+            class={said === NOTHING_TO_CAPTURE ? "" : "text-danger"}
           >
             {said}
           </span>

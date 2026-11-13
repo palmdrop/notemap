@@ -90,7 +90,7 @@
       role="group"
       aria-label={label}
       onmousedown={(event) => event.preventDefault()}
-      class="absolute top-full right-0 z-30 mt-1 w-max min-w-36 border border-ink bg-ground px-2.5 py-1"
+      class="absolute top-full right-0 z-30 mt-1 w-max min-w-36 border border-ink bg-paper px-2.5 py-1"
     >
       {#each options as one, at (one.value)}
         {#if one.band !== undefined && one.band !== options[at - 1]?.band}

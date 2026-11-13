@@ -119,7 +119,7 @@
         {/each}
 
         {#if sourcesFailed !== ""}
-          <p class="mt-2 text-alarm">{sourcesFailed}</p>
+          <p class="mt-2 text-danger">{sourcesFailed}</p>
         {/if}
       </div>
     {/if}

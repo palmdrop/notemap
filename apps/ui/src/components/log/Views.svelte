@@ -99,7 +99,7 @@
     {#if open}
       <div
         id="{id}-panel"
-        class="absolute top-full right-0 z-30 mt-1 w-max min-w-56 border border-ink bg-ground px-2.5 py-1"
+        class="absolute top-full right-0 z-30 mt-1 w-max min-w-56 border border-ink bg-paper px-2.5 py-1"
       >
         <div
           bind:this={list}
@@ -151,5 +151,5 @@
 </Head>
 
 {#if log.refused !== undefined}
-  <div role="status" class="pt-2 text-alarm">{log.refused}</div>
+  <div role="status" class="pt-2 text-danger">{log.refused}</div>
 {/if}

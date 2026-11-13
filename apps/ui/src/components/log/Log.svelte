@@ -175,7 +175,7 @@
     {#if said === undefined && (read === "asking" || log.loading)}
       <Asking />
     {:else if said !== undefined}
-      <span class={said.alarm === true ? "text-alarm" : ""}>
+      <span class={said.alarm === true ? "text-danger" : ""}>
         {said.what}
         {#if said.subject !== undefined}
           <span class="font-semibold">{said.subject}</span>

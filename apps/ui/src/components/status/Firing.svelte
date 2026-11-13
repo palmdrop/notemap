@@ -56,11 +56,11 @@
   {@const seconds = left(firing, now)}
   {@const word = offerOf(firing, now)}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
-    <span class="max-narrow:hidden"
+    <span class="max-wide:hidden"
       >routing <span class="font-semibold">{firing.name}</span
       >{#if firing.where !== undefined}&nbsp;{firing.where}{/if}</span
     >
-    <span class="narrow:hidden">routing</span>
+    <span class="wide:hidden">routing</span>
     {#if seconds !== undefined}
       <span class="tabular-nums">{seconds}s</span>
     {:else}
@@ -80,11 +80,11 @@
 {:else if batch !== undefined}
   {@const name = open[0]!.name}
   <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
-    <span class="max-narrow:hidden"
+    <span class="max-wide:hidden"
       >routing {notes(open.length)} with
       <span class="font-semibold">{name}</span></span
     >
-    <span class="narrow:hidden">routing {open.length}</span>
+    <span class="wide:hidden">routing {open.length}</span>
     {#if soonest !== undefined}
       <span class="tabular-nums">{soonest}s</span>
     {:else}

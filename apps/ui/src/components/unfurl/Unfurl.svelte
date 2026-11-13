@@ -73,7 +73,7 @@
       target="_blank"
     >
       <div
-        class="flex h-[calc(var(--text-shell--line-height)*4)] gap-3 overflow-hidden"
+        class="flex h-[calc(var(--text-body--line-height)*4)] gap-3 overflow-hidden"
       >
         <!-- The picture's room is kept whether or not one comes, so the words
          beside it never move when it does. -->

@@ -155,7 +155,7 @@ test("draws what was sent exactly as it was sent, and the note beneath", async (
   const sent = await screen.findByText(/# a thought/);
   expect(sent.tagName).toBe("PRE");
   // The one face, not the browser's monospace.
-  expect(sent.className).toContain("font-shell");
+  expect(sent.className).toContain("font-text");
   expect(sent.textContent).toBe(NOTE);
   expect(screen.queryByRole("heading")).toBeNull();
   expect(screen.queryByRole("button", { name: "raw" })).toBeNull();

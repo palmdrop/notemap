@@ -314,8 +314,10 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
     },
   });
 
-  expect(screen.getByText("delivery failed").className).toContain("text-alarm");
-  expect(screen.getByText("unreachable").className).toContain("text-alarm");
+  expect(screen.getByText("delivery failed").className).toContain(
+    "text-danger",
+  );
+  expect(screen.getByText("unreachable").className).toContain("text-danger");
   expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
   // Pending, but what failed is no reservation to call off.
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
@@ -323,7 +325,7 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
   await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
   // The failure's own words are the block's body, said in alarm.
   expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
-    "text-alarm",
+    "text-danger",
   );
   expect(screen.queryByText("attempt")).toBeNull();
   expect(screen.queryByText("rec")).toBeNull();
@@ -341,7 +343,7 @@ test("leaves a destruction as a fact rather than a warning", () => {
   });
 
   const word = screen.getByText("purged");
-  expect(word.className).not.toContain("text-alarm");
+  expect(word.className).not.toContain("text-danger");
 });
 
 test("says no refusal before a read, and counts nothing", async () => {
@@ -368,7 +370,7 @@ test("puts a refusal in the head, in alarm", async () => {
     "the app lost its place in the list; reload",
   );
   expect(said.getAttribute("role")).toBe("status");
-  expect(said.className).toContain("text-alarm");
+  expect(said.className).toContain("text-danger");
 });
 
 /**

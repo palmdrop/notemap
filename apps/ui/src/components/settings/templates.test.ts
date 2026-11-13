@@ -196,7 +196,7 @@ test("a destination that cannot be asked draws no alarm", async () => {
   render(Templates);
 
   const said = await screen.findByText("not reachable");
-  expect(said.className).not.toContain("text-alarm");
+  expect(said.className).not.toContain("text-danger");
 });
 
 test("a missing folder is drawn as a thing to act on, and named", async () => {
@@ -208,7 +208,7 @@ test("a missing folder is drawn as a thing to act on, and named", async () => {
   render(Templates);
 
   const said = await screen.findByText(/research\/ missing/);
-  expect(said.className).toContain("text-alarm");
+  expect(said.className).toContain("text-danger");
 });
 
 test("opening one says what it does, into what, and how much it has", async () => {

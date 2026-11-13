@@ -63,9 +63,9 @@
 
 <form
   onsubmit={submit}
-  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
+  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-wide:grid-cols-1"
 >
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">name</span>
   {#if editing === undefined}
     <input bind:value={name} aria-label="Name" required class={FIELD} />
   {:else}
@@ -73,7 +73,7 @@
     <span>{editing.name}</span>
   {/if}
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">kind</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">kind</span>
   {#if editing === undefined}
     <div class="flex flex-wrap gap-x-[2ch]">
       {#each kinds as one (one.name)}
@@ -92,7 +92,7 @@
   {/if}
 
   {#each fields as field (field.name)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">
+    <span class="tracking-caps uppercase max-wide:mt-1.5">
       {field.name}{field.required ? "" : " (optional)"}
     </span>
     <input
@@ -103,7 +103,7 @@
     />
   {/each}
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">secret</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">secret</span>
   <input
     type="password"
     autocomplete="new-password"
@@ -115,7 +115,7 @@
   />
 
   <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
+    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-wide:col-span-1"
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
@@ -126,7 +126,7 @@
   </div>
 
   {#if said !== ""}
-    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
+    <p role="status" class="col-span-2 text-danger max-wide:col-span-1">
       {said}
     </p>
   {/if}

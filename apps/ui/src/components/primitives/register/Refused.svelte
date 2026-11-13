@@ -9,5 +9,5 @@
 
 <Rail>{surface}</Rail>
 <Body>
-  <div role="status" class="text-alarm">{refused}</div>
+  <div role="status" class="text-danger">{refused}</div>
 </Body>

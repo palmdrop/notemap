@@ -39,11 +39,11 @@
   ground runs the width of the window so nothing scrolls through beside it;
   on a phone the line does too, and its ends are the screen's.
 -->
-<div class="fixed inset-x-0 bottom-0 z-10 bg-ground px-5 max-narrow:px-0">
+<div class="fixed inset-x-0 bottom-0 z-10 bg-paper px-5 max-wide:px-0">
   <div
     bind:this={line}
     role="presentation"
-    class="relative mx-auto w-full max-w-[calc(var(--spacing-measure)+--spacing(6))] border-x border-t border-ink max-narrow:border-x-0"
+    class="relative mx-auto w-full max-w-[calc(var(--spacing-measure)+--spacing(6))] border-x border-t border-ink max-wide:border-x-0"
     onpointerenter={() => held(true, focused)}
     onpointerleave={() => held(false, focused)}
     onfocusin={() => held(hovered, true)}

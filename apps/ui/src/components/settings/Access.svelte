@@ -137,7 +137,7 @@
         <span>
           this browser holds a session
           {#if signOutFailed !== undefined}
-            <span class="text-alarm">— {signOutFailed}</span>
+            <span class="text-danger">— {signOutFailed}</span>
           {/if}
         </span>
         <Action working={signingOut} onclick={() => void signOut()}>
@@ -173,10 +173,12 @@
 
       {#if minted !== undefined}
         <div
-          class="mt-4 border border-alarm p-3"
+          class="mt-4 border border-danger p-3"
           transition:slide={{ magnitude: "short" }}
         >
-          <p class="text-alarm">Copy now. The token will not be shown again.</p>
+          <p class="text-danger">
+            Copy now. The token will not be shown again.
+          </p>
           <p class="mt-2 break-all select-all">{minted.token}</p>
           <div class="mt-2 flex flex-wrap items-baseline gap-x-6">
             {#if copyable()}
@@ -216,7 +218,7 @@
       {/if}
 
       {#if said !== ""}
-        <p role="status" class="mt-3 text-alarm">{said}</p>
+        <p role="status" class="mt-3 text-danger">{said}</p>
       {/if}
     </Section>
   {/if}

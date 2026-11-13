@@ -34,7 +34,7 @@
 
 <span class="whitespace-nowrap">{notes(marked.length)} marked</span>
 {#if full}
-  <span role="status" class="whitespace-nowrap text-inert"
+  <span role="status" class="whitespace-nowrap text-muted"
     >the most one batch takes is {String(MAX_BATCH)}</span
   >
 {/if}

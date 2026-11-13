@@ -2785,7 +2785,7 @@ test("says a destination that could not be reached, and routing is still availab
 
   // In plain ink: the destination being asleep is ordinary, not a failure.
   const said = await screen.findByText("out of reach");
-  expect(said.className).not.toContain("text-alarm");
+  expect(said.className).not.toContain("text-danger");
   expect(
     (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
       .disabled,

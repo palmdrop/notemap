@@ -59,7 +59,7 @@
   onclick={(event) => {
     if (event.target === event.currentTarget) answer(false);
   }}
-  class="m-auto w-[min(32rem,calc(100vw-2rem))] border border-ink bg-ground p-0 text-ink backdrop:bg-ground/70"
+  class="m-auto w-[min(32rem,calc(100vw-2rem))] border border-ink bg-paper p-0 text-ink backdrop:bg-paper/70"
 >
   <div class="px-3 py-2.5">
     <p id="{id}-what" class="wrap-anywhere">

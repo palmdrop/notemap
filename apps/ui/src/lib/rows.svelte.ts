@@ -1,7 +1,7 @@
 import { on } from "svelte/events";
 import { createSubscriber } from "svelte/reactivity";
 
-import { narrow } from "./breakpoint";
+import { wide } from "./breakpoint";
 
 /**
  * How a register draws its rows. `by day` heads each day and keeps only the
@@ -28,9 +28,9 @@ function held(): Rows {
 let choice = $state<Rows>(held());
 
 const crossed = createSubscriber((update) => {
-  let was = narrow();
+  let was = !wide();
   return on(window, "resize", () => {
-    if (narrow() === was) return;
+    if (!wide() === was) return;
     was = !was;
     update();
   });
@@ -38,7 +38,7 @@ const crossed = createSubscriber((update) => {
 
 function isNarrow(): boolean {
   crossed();
-  return narrow();
+  return !wide();
 }
 
 export const rows = {

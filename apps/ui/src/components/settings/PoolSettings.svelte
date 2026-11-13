@@ -93,6 +93,6 @@
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-4 text-alarm">{said}</p>
+    <p role="status" class="mt-4 text-danger">{said}</p>
   {/if}
 </Section>

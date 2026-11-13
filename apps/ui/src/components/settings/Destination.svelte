@@ -149,7 +149,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="py-4 {opened
-    ? '-mx-3 -mt-px border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2'
+    ? '-mx-3 -mt-px border border-ink px-3 max-wide:-mx-2 max-wide:px-2'
     : 'border-b border-b-ink'}"
   onclick={pickable(pick)}
 >
@@ -165,8 +165,8 @@
     <span>{one.kind}</span>
 
     <span
-      class="ml-auto whitespace-nowrap max-narrow:ml-0 max-narrow:w-full {status.alarm
-        ? 'text-alarm'
+      class="ml-auto whitespace-nowrap max-wide:ml-0 max-wide:w-full {status.alarm
+        ? 'text-danger'
         : ''}"
     >
       {#if status.asking === true}
@@ -204,7 +204,7 @@
 
       {#if asked}
         <div
-          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3 text-alarm"
+          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3 text-danger"
         >
           {#if refusal !== undefined}
             <span>{refusal}</span>
@@ -238,9 +238,9 @@
             {disabled ? "enable" : "disable"}
           </Action>
           {#if retireFailed !== ""}
-            <span class="text-alarm">{retireFailed}</span>
+            <span class="text-danger">{retireFailed}</span>
           {/if}
-          <span class="ml-auto max-narrow:ml-0">
+          <span class="ml-auto max-wide:ml-0">
             <Action alarm disabled={offline} onclick={() => (asked = true)}>
               delete
             </Action>

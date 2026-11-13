@@ -200,7 +200,7 @@
   {/if}
 
   {#if records.refused !== ""}
-    <div role="status" class="mt-2 text-alarm">{records.refused}</div>
+    <div role="status" class="mt-2 text-danger">{records.refused}</div>
   {/if}
 {/snippet}
 
@@ -262,7 +262,7 @@
     {#if selected}
       <div
         data-foot
-        class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-narrow:-mx-2 max-narrow:px-2"
+        class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-wide:-mx-2 max-wide:px-2"
         transition:fade
       >
         {#if editing !== undefined}

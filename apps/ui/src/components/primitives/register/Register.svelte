@@ -17,7 +17,7 @@
 <div
   class="grid {slim
     ? 'grid-cols-[var(--spacing-rail-time)_1fr]'
-    : 'grid-cols-[var(--spacing-rail)_1fr] max-narrow:grid-cols-[var(--spacing-rail-narrow)_1fr]'}"
+    : 'grid-cols-[var(--spacing-rail)_1fr] max-wide:grid-cols-[var(--spacing-rail-narrow)_1fr]'}"
 >
   {@render children()}
 </div>

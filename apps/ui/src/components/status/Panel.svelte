@@ -74,11 +74,11 @@
   transition:slide
   id={PANEL}
   aria-label="notices"
-  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-ground max-narrow:left-0 max-narrow:w-full max-narrow:max-w-none max-narrow:border-x-0"
+  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-paper max-wide:left-0 max-wide:w-full max-wide:max-w-none max-wide:border-x-0"
 >
   <div>
     <header
-      class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-ground px-3 py-1.5"
+      class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-paper px-3 py-1.5"
     >
       <span class="font-semibold">notices</span>
       <span class="flex gap-4">
@@ -116,7 +116,7 @@
 
     {#if refused.length > 0}
       <h2
-        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
+        class="sticky top-0 border-y border-ink bg-paper px-3 py-1.5 font-semibold"
       >
         refused
       </h2>
@@ -134,7 +134,7 @@
 
     {#if flying}
       <h2
-        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
+        class="sticky top-0 border-y border-ink bg-paper px-3 py-1.5 font-semibold"
       >
         in flight
       </h2>

@@ -6,7 +6,7 @@
 </script>
 
 <div
-  class="grid grid-cols-[9rem_1fr] border-t border-ink py-1.5 first:border-t-0 max-narrow:grid-cols-1"
+  class="grid grid-cols-[9rem_1fr] border-t border-ink py-1.5 first:border-t-0 max-wide:grid-cols-1"
 >
   <div class="tracking-caps uppercase">{name}</div>
   <div class="min-w-0">

@@ -43,11 +43,11 @@
 <div
   class="flex w-full min-w-0 flex-wrap items-baseline justify-between gap-x-5"
 >
-  <div class="flex flex-wrap items-baseline gap-x-5 max-narrow:gap-x-3">
+  <div class="flex flex-wrap items-baseline gap-x-5 max-wide:gap-x-3">
     {@render drawn(decide)}
   </div>
 
-  <div class="flex flex-wrap items-baseline gap-x-5 max-narrow:gap-x-3">
+  <div class="flex flex-wrap items-baseline gap-x-5 max-wide:gap-x-3">
     {@render drawn(work)}
   </div>
 </div>

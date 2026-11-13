@@ -28,7 +28,7 @@
   class="sticky top-0 z-40 mt-3.5 flex h-day-head items-center justify-end"
   {@attach stick}
 >
-  <div class="flex items-baseline gap-x-5 bg-ground pl-[1ch]">
+  <div class="flex items-baseline gap-x-5 bg-paper pl-[1ch]">
     {@render children()}
   </div>
 </div>
@@ -41,7 +41,7 @@
     left: calc(50% - 50vw);
     width: 100vw;
     z-index: -1;
-    background: var(--color-ground);
+    background: var(--color-paper);
     border-bottom: 1px solid var(--color-ink);
   }
 </style>

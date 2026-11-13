@@ -302,9 +302,9 @@
     event.preventDefault();
     void save();
   }}
-  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
+  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-wide:grid-cols-1"
 >
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">name</span>
   <input
     bind:this={nameField}
     bind:value={name}
@@ -314,12 +314,12 @@
   />
   {#if unnamed}
     <span></span>
-    <p id={`${id}-unnamed`} class="col-start-2 max-narrow:col-start-1">
+    <p id={`${id}-unnamed`} class="col-start-2 max-wide:col-start-1">
       a template needs a name
     </p>
   {/if}
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">trigger tag</span>
   <div class="flex items-baseline border-b border-ink">
     <span aria-hidden="true">{TRIGGER_NAMESPACE}</span>
     <input
@@ -329,7 +329,7 @@
     />
   </div>
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">destination</span>
+  <span class="tracking-caps uppercase max-wide:mt-1.5">destination</span>
   <div class="flex flex-wrap gap-x-[2ch]">
     {#each destinations as one (one.id)}
       <Option
@@ -342,7 +342,7 @@
   </div>
 
   {#if offersOutput}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">output</span>
+    <span class="tracking-caps uppercase max-wide:mt-1.5">output</span>
     <div class="flex flex-wrap gap-x-[2ch]">
       <Option
         label="everything"
@@ -358,7 +358,7 @@
   {/if}
 
   {#if !(offersOutput && assetsOnly)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">action</span>
+    <span class="tracking-caps uppercase max-wide:mt-1.5">action</span>
     <div class="flex flex-wrap gap-x-[2ch]">
       {#each offersOutput ? actions : capabilities as one (one.name)}
         <Option
@@ -377,10 +377,10 @@
         aria-label={`${field.title ?? field.name} label`}
         aria-describedby={undefaulted(field)}
         placeholder={field.title ?? field.name}
-        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
+        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-wide:mt-1.5 max-wide:w-full"
       />
     {:else}
-      <span class="tracking-caps uppercase max-narrow:mt-1.5">
+      <span class="tracking-caps uppercase max-wide:mt-1.5">
         {field.title ?? field.name}
       </span>
     {/if}
@@ -476,7 +476,7 @@
          out as is the pool's answer, and the pool refuses one it does not know. -->
     {#if field.name === patterned}
       <span></span>
-      <p class="col-start-2 flex flex-wrap gap-x-[2ch] max-narrow:col-start-1">
+      <p class="col-start-2 flex flex-wrap gap-x-[2ch] max-wide:col-start-1">
         {#each PATTERNS as pattern (pattern)}
           <span>{pattern}</span>
         {/each}
@@ -486,13 +486,13 @@
 
   {#if starting?.rewriteLeft === true}
     <span></span>
-    <p class="col-start-2 max-narrow:col-start-1">
+    <p class="col-start-2 max-wide:col-start-1">
       The rewrite stays with its item: a template files each item's own words.
     </p>
   {/if}
 
   {#if folders}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">if missing</span>
+    <span class="tracking-caps uppercase max-wide:mt-1.5">if missing</span>
     <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
       {#each FOLDERS as one (one.name)}
         <Option
@@ -506,7 +506,7 @@
   {/if}
 
   <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
+    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-wide:col-span-1"
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
@@ -521,7 +521,7 @@
   </div>
 
   {#if said !== ""}
-    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
+    <p role="status" class="col-span-2 text-danger max-wide:col-span-1">
       {said}
     </p>
   {/if}

@@ -196,12 +196,12 @@ either is in `CONTEXT.md` or is the shell's own wording for a term that is.
 
 Depends on phase 1.
 
-- [ ] `styles/tokens.css` takes the design's tokens by role: ink, paper, `--off` and its line,
+- [x] (2026-11-13) `styles/tokens.css` takes the design's tokens by role: ink, paper, `--off` and its line,
       band, the box grey, signal, danger, muted; the five sizes; gutter, bar and radius. Faces are
       Syne (display) and Arimo (text), self-hosted in `static/fonts/` with their licences, and
       Bricolage goes. The breakpoints are 900px (wide) and 1200px (the menu's full width)
-- [ ] The icon sprite, served with the app and named by role, and an `Icon` component
-- [ ] The pieces, in `components/primitives/`, each with its phone form and its wide form where
+- [x] (2026-11-13) The icon sprite, served with the app and named by role, and an `Icon` component
+- [x] (2026-11-13) The pieces, in `components/primitives/`, each with its phone form and its wide form where
       it has one:
   - The docked bar and the wide toolbar.
   - The segmented choice.
@@ -215,9 +215,9 @@ Depends on phase 1.
   - The transitions they share (see Motion): a sheet rising, a panel or the drawer coming in from
     the side, a veil fading, and a row leaving.
   - A main action that cannot be taken yet: dashed, with the line above saying why.
-- [ ] Dark, rough: the new tokens inverted by role, every piece checked in it (see Settled)
-- [ ] `shell.md`: Visual direction and Tokens and themes, rewritten
-- [ ] Commit
+- [x] (2026-11-13) Dark, rough: the new tokens inverted by role, every piece checked in it (see Settled)
+- [x] (2026-11-13) `shell.md`: Visual direction and Tokens and themes, rewritten
+- [x] (2026-11-13) Commit
 
 **Verify**: the existing `tokens.test.ts` and the new pieces' tests pass. A scratch page or a test
 fixture draws each piece in each of its states, and its shots match `css/bars.css` in the design.

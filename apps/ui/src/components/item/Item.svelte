@@ -214,7 +214,7 @@
         {#if aboutRecords.asking === true}
           <Asking />
         {:else if aboutRecords.alarm}
-          <div role="status" class="text-alarm">{aboutRecords.said}</div>
+          <div role="status" class="text-danger">{aboutRecords.said}</div>
         {:else if aboutRecords.gone === true}
           <Prose text={aboutRecords.said} />
         {:else}
@@ -230,7 +230,7 @@
     </Rail>
     <Body>
       {#if refused !== undefined}
-        <div role="status" class="text-alarm">{refused}</div>
+        <div role="status" class="text-danger">{refused}</div>
       {:else if read.failure !== undefined}
         <div>{NO_ITEM_OFFLINE}</div>
       {:else}

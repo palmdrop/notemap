@@ -22,7 +22,7 @@
 </script>
 
 <section
-  class="grid grid-cols-[9rem_1fr] border-b border-ink py-3 max-narrow:grid-cols-1 max-narrow:gap-1 max-narrow:py-2.5"
+  class="grid grid-cols-[9rem_1fr] border-b border-ink py-3 max-wide:grid-cols-1 max-wide:gap-1 max-wide:py-2.5"
 >
   <button
     type="button"

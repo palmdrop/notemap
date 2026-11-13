@@ -38,11 +38,11 @@
 
 <li
   transition:slide={{ fade: true }}
-  class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-narrow:grid-cols-1 {alarm
-    ? 'text-alarm'
+  class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-wide:grid-cols-1 {alarm
+    ? 'text-danger'
     : ''}"
 >
-  <span class="tabular-nums max-narrow:hidden">{when ?? ""}</span>
+  <span class="tabular-nums max-wide:hidden">{when ?? ""}</span>
 
   <span class="grid min-w-0 gap-0.5">
     <span class="flex items-baseline gap-2 wrap-anywhere">
