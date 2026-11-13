@@ -8,6 +8,7 @@
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Cached from "$components/primitives/marks/Cached.svelte";
@@ -15,7 +16,7 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
-  import type { Layout } from "$lib/rows.svelte";
+  import { width } from "$lib/breakpoint";
   import { became, editable } from "$lib/lineage";
   import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
   import { pickedBy, type Picked } from "$lib/marking.svelte";
@@ -40,7 +41,6 @@
     terms = [],
     commands,
     pending = false,
-    layout = "rail",
     opens = false,
     cached = false,
     motion,
@@ -67,8 +67,6 @@
     /** The surface's own list for this row, empty where it is not the selected one. */
     commands: readonly Command[];
     pending?: boolean;
-    /** By day, the stamp says only the time; slim, the rail holds nothing else. */
-    layout?: Layout;
     /** The first row under a heading, laying its top edge on the heading's rule. */
     opens?: boolean;
     /** Drawn from what this client holds rather than from the pool's answer. */
@@ -80,10 +78,7 @@
     onprocess?: () => void;
   } = $props();
 
-  const byDay = $derived(layout !== "rail");
-  const slim = $derived(layout === "slim");
   const routed = $derived(surface !== "item");
-  const headed = $derived(byDay || surface !== "item");
 
   let editing = $state<Editing | undefined>(undefined);
   let row = $state<HTMLElement | undefined>(undefined);
@@ -170,15 +165,11 @@
     <StateWord {word} />
   {/if}
 
-  {#if pending}
-    <Pending since={undrainedSince(item.id)} />
-  {/if}
-
   {#if cached}
     <Cached />
   {/if}
 
-  <div class={slim ? "" : "mt-0.5"}>
+  <div>
     <Tags
       bind:this={tags}
       {item}
@@ -187,7 +178,7 @@
       addable={selected || (marked && (cursor || pointed))}
       fixed={marking && !marked}
       onbatch={marked ? onbatch : undefined}
-      stacked={!slim}
+      stacked={false}
     />
   </div>
 
@@ -212,24 +203,27 @@
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach following}
 >
-  <!-- Where the pointer is only decides whether a marked row offers its `+`. -->
+  <!-- Where the pointer is decides whether a marked row offers its `+`, and,
+       when wide, whether the row offers Route beside its words. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={row}
     data-row={item.id}
     data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
-    data-headed={headed ? "" : undefined}
+    data-headed=""
     onpointerenter={() => (pointed = true)}
     onpointerleave={() => (pointed = false)}
-    class="col-span-full grid grid-cols-subgrid {opens ? '-mt-px' : ''} {headed
-      ? 'scroll-mt-day-head'
-      : ''}"
+    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule transition-[background-color] duration-(--duration-short) ease-fade {selected
+      ? 'bg-band'
+      : pointed && width.wide && onprocess !== undefined
+        ? 'bg-tag'
+        : ''}"
   >
     <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
       <Stamp
         at={item.createdAt}
-        dated={!byDay}
+        dated={false}
         opened={selected}
         {marked}
         {marking}
@@ -237,10 +231,6 @@
           ? undefined
           : (event) => pick?.(pickedBy(event))}
       />
-
-      {#if !slim}
-        {@render facts()}
-      {/if}
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>
@@ -249,20 +239,26 @@
       {:else}
         <Payload {item} {terms} />
       {/if}
-      {#if slim}
-        <div class="mt-1">
-          {@render facts()}
-        </div>
-      {/if}
+      {@render facts()}
     </Body>
 
-    <!-- The box's foot, spanning both columns and closing the rail's rule. Every
-         row reserves this height, selected or not, so selecting a row shifts
-         nothing above or below it; unselected, the rail's rule runs through it. -->
+    {#if pending}
+      <!-- The waiting dot, in the row's corner. -->
+      <span class="absolute top-5 right-gutter leading-none">
+        <Pending since={undrainedSince(item.id)} inline />
+      </span>
+    {/if}
+
+    {#if pointed && width.wide && !selected && !marking && reach !== undefined && surface === "queue"}
+      <span class="absolute top-3 right-gutter" transition:fade>
+        <Box icon="route" title="Route (p)" onclick={reach}>Route</Box>
+      </span>
+    {/if}
+
     {#if selected}
       <div
         data-foot
-        class="col-span-full row-start-2 -mx-3 flex h-9 items-center border border-ink px-3 max-wide:-mx-2 max-wide:px-2"
+        class="col-span-full row-start-2 flex min-h-11 items-center border-t border-rule bg-off px-gutter"
         transition:fade
       >
         {#if editing !== undefined}
@@ -271,9 +267,6 @@
           <Actions {commands} />
         {/if}
       </div>
-    {:else}
-      <div class="col-start-1 row-start-2 h-9 rule-right" transition:fade></div>
-      <div class="col-start-2 row-start-2 h-9"></div>
     {/if}
   </div>
 </div>

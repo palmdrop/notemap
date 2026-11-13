@@ -170,7 +170,7 @@
     <Strip />
     <div class="flex-1">
       <Sheet {fills}>
-        <Column {fills}>
+        <Column {fills} {list}>
           {#if shut}
             <SignIn />
           {:else if who.known}

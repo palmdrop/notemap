@@ -1,5 +1,9 @@
 <script lang="ts">
   import Bell from "$components/status/Bell.svelte";
+  import Search from "$components/tags/Search.svelte";
+  import { tick } from "svelte";
+
+  import { searching } from "./searching.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { commandOf } from "$lib/command/stack.svelte";
@@ -26,6 +30,23 @@
   const filter = $derived(list ? commandOf("filter") : undefined);
   const filtered = $derived(filter?.count ?? 0);
 
+  const field = $derived(search?.field);
+  /** On a phone the line takes the header's place while it is open. */
+  const takes = $derived(!width.wide && searching.open && field !== undefined);
+
+  let box = $state<Search | undefined>(undefined);
+
+  // `/` or the icon asked for the caret.
+  $effect(() => {
+    if (searching.asked === 0) return;
+    void tick().then(() => box?.focus());
+  });
+
+  // A search left open on a phone that is now empty closes with the page.
+  $effect(() => {
+    if (field === undefined) searching.close();
+  });
+
   function run(id: "search" | "filter"): void {
     const found = commandOf(id);
     if (found !== undefined && "run" in found) void found.run();
@@ -37,50 +58,85 @@
     ? 'pl-gutter'
     : 'pl-1'}"
 >
-  {#if !width.wide}
+  {#if takes && field !== undefined}
     <button
       type="button"
-      onclick={onmenu}
+      onclick={() => {
+        searching.close();
+        if (field.words !== "") field.onsearch("", true);
+      }}
       class="grid min-h-target min-w-target place-items-center"
     >
-      <Icon name="menu" label="Menu" />
+      <Icon name="back" label="Close search" />
     </button>
-  {/if}
-  <h1 class="min-w-0 truncate font-display text-title font-normal">{title}</h1>
-
-  {#if list}
-    <div class="-mr-2 ml-auto flex items-center">
-      {#if search !== undefined}
-        <button
-          type="button"
-          title="Search (/)"
-          onclick={() => run("search")}
-          class="grid min-h-target min-w-target place-items-center"
-        >
-          <Icon name="search" label="Search" />
-        </button>
-      {/if}
-      {#if filter !== undefined}
-        <button
-          type="button"
-          title="Filter (f)"
-          aria-label={filtered > 0
-            ? `Filter, ${String(filtered)} on`
-            : "Filter"}
-          onclick={() => run("filter")}
-          class="relative grid min-h-target min-w-target place-items-center"
-        >
-          <Icon name="filter" />
-          {#if filtered > 0}
-            <span
-              aria-hidden="true"
-              class="absolute top-1 right-0.5 grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full bg-ink px-1 text-badge font-bold text-paper tabular-nums"
-              >{filtered}</span
-            >
-          {/if}
-        </button>
-      {/if}
-      <Bell />
+    <div class="min-w-0 flex-1">
+      <Search
+        bind:this={box}
+        words={field.words}
+        onsearch={field.onsearch}
+        placeholder={`Search the ${title}`}
+      />
     </div>
+  {:else}
+    {#if !width.wide}
+      <button
+        type="button"
+        onclick={onmenu}
+        class="grid min-h-target min-w-target place-items-center"
+      >
+        <Icon name="menu" label="Menu" />
+      </button>
+    {/if}
+    <h1 class="min-w-0 truncate font-display text-title font-normal">
+      {title}
+    </h1>
+
+    {#if list && width.wide && field !== undefined}
+      <div class="mx-auto w-full max-w-[26rem] min-w-0 px-4">
+        <Search
+          bind:this={box}
+          words={field.words}
+          onsearch={field.onsearch}
+          placeholder={`Search the ${title}`}
+          boxed
+        />
+      </div>
+    {/if}
+
+    {#if list}
+      <div class="-mr-2 ml-auto flex items-center">
+        {#if search !== undefined && !width.wide}
+          <button
+            type="button"
+            title="Search (/)"
+            onclick={() => run("search")}
+            class="grid min-h-target min-w-target place-items-center"
+          >
+            <Icon name="search" label="Search" />
+          </button>
+        {/if}
+        {#if filter !== undefined}
+          <button
+            type="button"
+            title="Filter (f)"
+            aria-label={filtered > 0
+              ? `Filter, ${String(filtered)} on`
+              : "Filter"}
+            onclick={() => run("filter")}
+            class="relative grid min-h-target min-w-target place-items-center"
+          >
+            <Icon name="filter" />
+            {#if filtered > 0}
+              <span
+                aria-hidden="true"
+                class="absolute top-1 right-0.5 grid h-[1.125rem] min-w-[1.125rem] place-items-center rounded-full bg-ink px-1 text-badge font-bold text-paper tabular-nums"
+                >{filtered}</span
+              >
+            {/if}
+          </button>
+        {/if}
+        <Bell />
+      </div>
+    {/if}
   {/if}
 </header>

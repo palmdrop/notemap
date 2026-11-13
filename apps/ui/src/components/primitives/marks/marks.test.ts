@@ -25,10 +25,10 @@ test("under a heading that says the day, draws the time alone and still names th
   ).toBeDefined();
 });
 
-test("bolds the time alone on a row, and leaves the index's bold to its selection", () => {
+test("draws the time plain on a row and on the index alike", () => {
   const at = new Date(2026, 8, 13, 7, 2).toISOString();
   render(Stamp, { at, dated: false });
-  expect(screen.getByText("07:02").className).toContain("font-semibold");
+  expect(screen.getByText("07:02").className).not.toContain("font-semibold");
   cleanup();
 
   render(Stamp, { at, dated: false, inline: true });

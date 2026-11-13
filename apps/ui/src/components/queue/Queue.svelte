@@ -4,28 +4,26 @@
   import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
+  import { filterSize, type Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
-  import Order from "$components/order/Order.svelte";
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
-  import Search from "$components/tags/Search.svelte";
-  import ViewChooser from "$components/view/ViewChooser.svelte";
+  import { searching } from "$components/frame/searching.svelte";
   import { itemHref, processHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands, markCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain, type Drawn } from "$lib/days";
+  import { byDay, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -38,7 +36,6 @@
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { rows as layout } from "$lib/rows.svelte";
   import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
@@ -84,7 +81,6 @@
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
   let filterPanel = $state<FilterPanel | undefined>(undefined);
-  let search = $state<Search | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
 
@@ -244,7 +240,7 @@
   const current = $derived(rows.find((row) => row.id === selected));
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+  const headed = $derived(byDay(rows));
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -346,10 +342,15 @@
     {
       id: "filter",
       label: "filter",
-      count: reading.filter.tags.length,
+      count: filterSize(reading.filter),
       run: () => void filterPanel?.show(),
     },
-    { id: "search", label: "search", run: () => search?.focus() },
+    {
+      id: "search",
+      label: "search",
+      field: { words: reading.words, onsearch: reading.search },
+      run: () => searching.focus(),
+    },
     {
       id: "view",
       label: "view",
@@ -385,20 +386,15 @@
       onclear={() => marking.clear()}
     />
   {:else}
-    <ViewChooser {view} onchoose={read} />
     <FilterPanel
       bind:this={filterPanel}
       surface={SURFACE}
       filter={reading.filter}
+      {view}
+      onview={read}
       ontoggle={reading.toggle}
       onclear={reading.clear}
     />
-    <Search
-      bind:this={search}
-      words={reading.words}
-      onsearch={reading.search}
-    />
-    <Order />
   {/if}
 </Head>
 
@@ -416,6 +412,7 @@
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
   <Day
     at={one.at}
+    count={one.count}
     leads={refused === undefined && one.key === headed[0]?.key}
     {motion}
   />
@@ -445,7 +442,6 @@
     offline={!pool.yes}
     commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
-    layout={layout.drawn}
     {opens}
     onselect={(how) => select(row.id, how)}
     onprocess={marking.on ? undefined : () => process(row)}
@@ -467,12 +463,10 @@
   <Index
     {motion}
     bind:this={index}
-    byDay={layout.byDay}
     leads={refused === undefined}
     items={rows}
     selected={marking.on ? undefined : selected}
     cursor={marking.on ? selected : undefined}
-    slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
     marking={marking.on}
@@ -487,13 +481,14 @@
     <More
       loading={$queue.loading}
       first={rows.length === 0}
+      shown={rows.length}
       offline={!pool.yes}
       failed={$queue.failure !== undefined}
       onmore={() => void client.loadQueue()}
     />
   {/if}
 {:else}
-  <Register slim={layout.slim}>
+  <Register>
     {#if refused !== undefined}
       <Refused surface="queue" {refused} />
     {/if}
@@ -509,6 +504,7 @@
       <More
         loading={$queue.loading}
         first={rows.length === 0}
+        shown={rows.length}
         offline={!pool.yes}
         failed={$queue.failure !== undefined}
         onmore={() => void client.loadQueue()}

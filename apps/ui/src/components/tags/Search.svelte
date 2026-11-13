@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
 
   /**
-   * The words a list is searched by, typed in its head. Settled a moment after
+   * The words a list is searched by, typed in the header. Settled a moment after
    * the last key, so the list is read once a word is, not at every letter. The
    * first change of a run of typing pushes an entry, so going back takes the
    * words off as it takes a tag; the rest of the run replaces it. Never
@@ -11,10 +11,15 @@
   let {
     words,
     onsearch,
+    placeholder = "search",
+    boxed = false,
   }: {
     /** As the address holds them, which back and `clear filters` move. */
     words: string;
     onsearch: (words: string, push: boolean) => void;
+    placeholder?: string;
+    /** A box, as a wide header holds it; ruled under, as a phone's does. */
+    boxed?: boolean;
   } = $props();
 
   const SETTLES = 250;
@@ -58,6 +63,8 @@
   onblur={() => (pushed = false)}
   type="search"
   aria-label="search"
-  placeholder="search"
-  class="w-[16ch] min-w-0 border-b border-ink bg-transparent px-0 py-0 outline-none"
+  {placeholder}
+  class="min-h-9 w-full min-w-0 bg-transparent outline-none {boxed
+    ? 'rounded-control border border-rule px-3'
+    : 'border-b border-rule px-2'}"
 />

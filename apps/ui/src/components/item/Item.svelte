@@ -19,11 +19,10 @@
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain } from "$lib/days";
+  import { byDay } from "$lib/days";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { rows as layout } from "$lib/rows.svelte";
   import {
     NO_ITEM_OFFLINE,
     NO_RECORDS_OFFLINE,
@@ -126,7 +125,7 @@
       createdAt: record.at,
       record,
     }));
-    return layout.byDay ? byDay(dated) : plain(dated);
+    return byDay(dated);
   });
 
   const stateOf = (record: RoutingRecord): string =>
@@ -145,15 +144,9 @@
   });
 </script>
 
-<Register slim={layout.slim}>
+<Register>
   {#if item !== undefined}
-    {#if layout.byDay}
-      <Day at={item.createdAt} />
-    {:else}
-      <!-- The room a heading would hold, so the box's top edge is not drawn
-           against the bar's rule. -->
-      <div class="col-span-full h-3.5"></div>
-    {/if}
+    <Day at={item.createdAt} />
 
     <!-- The capture as a selected row is drawn, box and foot, the page being
          the one item there is. An item view is where a person looks to find
@@ -166,8 +159,7 @@
       offline={!pool.yes}
       {commands}
       pending={undrained.has(item.id)}
-      layout={layout.drawn}
-      opens={layout.byDay}
+      opens
       cached={read?.fromCache === true}
     />
 
@@ -180,13 +172,10 @@
           <!-- The record's own address, where this is not already it. -->
           {#if only === undefined}
             <a href={recordHref(record.item, record.id)} class="block w-max">
-              <Stamp at={record.at} dated={!layout.byDay} />
+              <Stamp at={record.at} dated={false} />
             </a>
           {:else}
-            <Stamp at={record.at} dated={!layout.byDay} />
-          {/if}
-          {#if !layout.slim}
-            <StateWord word={stateOf(record)} />
+            <Stamp at={record.at} dated={false} />
           {/if}
         </Rail>
         <Body>
@@ -197,9 +186,7 @@
             editing={row?.isEditing() === true}
             onundone={() => records.reread()}
           />
-          {#if layout.slim}
-            <StateWord word={stateOf(record)} />
-          {/if}
+          <StateWord word={stateOf(record)} />
         </Body>
       {/if}
     {/each}

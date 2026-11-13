@@ -250,30 +250,30 @@ absent while offline.
 
 Depends on phase 3.
 
-- [ ] Rows by day only, as ADR 73 has it.
+- [x] (2026-11-13) Rows by day only, as ADR 73 has it.
   - Each day gets a sticky heading with the weekday in Syne, the date and the count.
   - The time sits in a narrow column, and the body holds the words, the link preview (not a link),
     the record lines with the end of the path, the tags and the state lines in words.
   - The rail and Appearance's `rows` setting go.
-- [ ] Trigger tags drawn as the route icon and the name, everywhere
-- [ ] The rows' states in words, per `DECISIONS.md` "Rows" and "Words for states":
+- [x] (2026-11-13) Trigger tags drawn as the route icon and the name, everywhere
+- [ ] The rows' states in words, per `DECISIONS.md` "Rows" and "Words for states" *(2026-11-13: the waiting dot is in the corner; the window's line waits for phase 7, which keeps the row; a refused capture and "Rejected by Vault" on a queue row are not drawn yet)*:
   - A refused capture, kept on the device.
   - "Rejected by Vault in place".
   - A route in its window, with "Routing by Todo, list Next", the seconds and Cancel.
   - The waiting dot.
-- [ ] The filter as a sheet, or a panel when wide.
+- [x] (2026-11-13) The filter as a sheet, or a panel when wide.
   - Order.
   - Tags.
   - The queue's templates band.
   - The feed's bands for what became of an item, its destination and its source.
   - The feed's order by when an item was processed.
-- [ ] Search in the header. "Nothing matches “words”." when nothing is found
-- [ ] A long list's foot: how much is shown, and Load more (see Unknowns)
-- [ ] Wide: rows at a readable measure, and the circle and Route on hover beside the words
-- [ ] The index view, kept: one line per item by day, chosen in the filter, in the spirit of the
+- [x] (2026-11-13) Search in the header. "Nothing matches “words”." when nothing is found
+- [x] (2026-11-13) A long list's foot: how much is shown, and Load more (see Unknowns)
+- [x] (2026-11-13) Wide: rows at a readable measure, and the circle and Route on hover beside the words
+- [x] (2026-11-13) The index view, kept: one line per item by day, chosen in the filter, in the spirit of the
       old one (see Settled)
-- [ ] `shell.md`: The row, Draining and the list sections
-- [ ] Commit
+- [x] (2026-11-13) `shell.md`: The row, Draining and the list sections
+- [x] (2026-11-13) Commit
 
 **Verify**: the design's shots 01–08, 50–52, w01 and w20 against the app's.
 

@@ -28,6 +28,11 @@ export type Command = {
   readonly primary?: boolean;
   readonly alarm?: boolean;
   readonly refusal?: string;
+  /** What a surface is searched by, for the header to draw the line that searches it. */
+  readonly field?: {
+    readonly words: string;
+    readonly onsearch: (words: string, push: boolean) => void;
+  };
   /** How many of it there are, drawn beside its icon: the tags a filter holds. */
   readonly count?: number;
   /** Fires even while a field has the caret: a route, and an edit's `save`. */

@@ -4,7 +4,7 @@ import type { Filter, FilterState } from "@notemap/client";
 
 export const NOTHING_CAPTURED = "Nothing captured yet.";
 
-export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
+export const NO_MORE_OFFLINE = "The rest is with the pool, out of reach.";
 
 export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
 

@@ -78,7 +78,7 @@
 </script>
 
 <div
-  class="relative -ml-tag flex min-w-0 flex-wrap items-baseline {stacked
+  class="relative flex min-w-0 flex-wrap items-center gap-1 {stacked
     ? 'max-wide:flex-col max-wide:items-start'
     : ''}"
 >

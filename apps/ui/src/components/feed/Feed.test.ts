@@ -113,17 +113,18 @@ test.each(["timeline", "index"] as const)(
   },
 );
 
-test("the view is chosen in the head, and v turns it", async () => {
+test("the view is chosen in the filter, and v turns it", async () => {
   pool(held(anItem("one")));
 
   const { container } = render(Feed);
   await screen.findByText("one");
   expect(container.querySelector("[data-rail]")).not.toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "View" }));
-  await fireEvent.click(screen.getByRole("button", { name: "index" }));
+  await fireEvent.keyDown(window, { key: "f" });
+  await fireEvent.click(await screen.findByRole("button", { name: "Index" }));
   expect(container.querySelector("[data-rail]")).toBeNull();
   expect(localStorage.getItem("notemap:view:feed")).toBe("index");
+  await fireEvent.click(screen.getByRole("button", { name: "Show" }));
 
   await fireEvent.keyDown(window, { key: "v" });
   expect(container.querySelector("[data-rail]")).not.toBeNull();
@@ -370,14 +371,14 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   render(Feed);
   expect(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   ).toBeDefined();
 
   transport.unreachable(true);
   await client.loadFeed();
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 });
 
 test("says nothing in the foot of a feed read to the end", async () => {
@@ -385,7 +386,7 @@ test("says nothing in the foot of a feed read to the end", async () => {
 
   render(Feed);
   await screen.findByText("one");
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 
   // There is no next page to be denied, so being out of reach costs nothing.
   online(false);

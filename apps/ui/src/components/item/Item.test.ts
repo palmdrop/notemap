@@ -255,7 +255,6 @@ test("draws each record as a row under the capture's box, with the way into it",
   expect(screen.getByText("drafts")).toBeDefined();
   // The box's foot is the edge between the two regions; a rule under it read as a double.
   expect(container.querySelector("[data-foot]")).not.toBeNull();
-  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 
   const ways = screen
     .getAllByRole("link")

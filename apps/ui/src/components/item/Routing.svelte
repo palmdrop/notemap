@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import {
     saidBy,
     type RoutingRecord,
@@ -161,7 +162,7 @@
      saying it has not landed stays at its end. -->
 {#snippet single(line: Line)}
   <span class="flex max-w-full min-w-0 items-baseline gap-x-[0.5ch]">
-    <span aria-hidden="true" class="shrink-0">→</span>
+    <Icon name="route" class="size-3.5 shrink-0 self-center" />
     <span class="min-w-0 truncate font-semibold">{line.name}</span>
   </span>
   {#if line.place !== undefined || line.note !== undefined || line.pending === true}
@@ -186,7 +187,7 @@
 {/snippet}
 
 {#snippet joined()}
-  <span aria-hidden="true">→</span>
+  <Icon name="route" class="inline size-3.5 align-[-0.125em]" />
   {#each lines as line, at (at)}{@render went(line)}{at < lines.length - 1
       ? ", "
       : ""}{/each}
@@ -209,7 +210,7 @@
     title={lines.map((line) => line.name).join(", ")}
   >
     <span class="flex min-w-0 items-baseline gap-x-[0.5ch]">
-      <span aria-hidden="true" class="shrink-0">→</span>
+      <Icon name="route" class="size-3.5 shrink-0 self-center" />
       <span class="min-w-0 truncate"
         >{#each lines as line, at (at)}{@render went(line)}{at <
           lines.length - 1

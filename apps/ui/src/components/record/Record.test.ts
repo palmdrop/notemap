@@ -74,16 +74,17 @@ test("draws the capture and the one record under it", async () => {
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.queryByText("drafts/two.md")).toBeNull();
-  expect(screen.getByText(dayOf(RECORD.at))).toBeDefined();
+  expect(screen.getAllByText(dayOf(RECORD.at)).length).toBeGreaterThan(0);
   expect(screen.getByText("delivered")).toBeDefined();
   expect(container.querySelector("[data-foot]")).not.toBeNull();
   // Its own address is where a record is read: it is drawn open, and does not fold.
   expect(container.querySelector("[data-folded]")).toBeNull();
   expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
-  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
 
   // The address bar already says which record this is: the stamp goes nowhere.
-  expect(screen.getByText(dayOf(RECORD.at)).closest("a")).toBeNull();
+  for (const said of screen.getAllByText(dayOf(RECORD.at))) {
+    expect(said.closest("a")).toBeNull();
+  }
   expect(screen.queryByText("rec")).toBeNull();
   expect(screen.queryByText("routing record")).toBeNull();
 });

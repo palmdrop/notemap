@@ -28,8 +28,6 @@ test("offers the three palettes and marks the one on", async () => {
 
   await fireEvent.click(option("dark"));
   expect(chosen()).toBe("dark");
-  expect(option("dark").classList.contains("font-semibold")).toBe(true);
-  expect(option("auto").classList.contains("font-semibold")).toBe(false);
   expect(wearing()).toBe("dark");
 
   await fireEvent.click(option("auto"));
@@ -48,15 +46,7 @@ test("remembers the choice, so a reload does not undo it", async () => {
   expect(chosen()).toBe("light");
 });
 
-test("offers the three ways of drawing rows, auto until one is chosen, and remembers it", async () => {
+test("keeps only the theme: rows are read by day at every width", () => {
   render(Appearance);
-  expect(chosen("Rows")).toBe("auto");
-
-  await fireEvent.click(option("by day", "Rows"));
-  expect(chosen("Rows")).toBe("by day");
-  expect(localStorage.getItem("notemap:rows")).toBe("by day");
-
-  cleanup();
-  render(Appearance);
-  expect(chosen("Rows")).toBe("by day");
+  expect(screen.queryByRole("group", { name: "Rows" })).toBeNull();
 });

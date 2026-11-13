@@ -31,10 +31,9 @@
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-body
   data-selected={selected ? "" : undefined}
-  class="col-start-2 -mr-3 min-w-0 border-t border-r pr-3 pb-3 pl-gutter transition-[border-color] duration-(--duration-short) ease-fade max-wide:-mr-2 max-wide:pr-2 max-wide:pl-3.5
+  class="col-start-2 flex min-w-0 flex-col gap-3 py-4 pr-gutter wide:pr-36
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
-    {selected ? 'border-ink' : 'border-transparent'}"
+    {gap ? 'pt-[calc(--spacing(4)+var(--spacing-gap-time))]' : ''}"
 >
   {@render children?.()}
 </div>

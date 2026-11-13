@@ -85,21 +85,16 @@ test("an action that has asked cannot be taken again, and keeps its label until 
   }
 });
 
-/** A word, a mark, and a panel of marked options: the shell draws its own. */
+/** One of a few: a segmented row, the end being read filled. */
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
   render(OrderSelector, { order: "oldest-first", onchoose: chose });
 
-  const control = screen.getByLabelText("Order");
-  expect(control.textContent).toContain("oldest");
-  expect(control.getAttribute("aria-expanded")).toBe("false");
-  expect(document.querySelector("select")).toBeNull();
+  const oldest = screen.getByRole("button", { name: "Oldest first" });
+  expect(oldest.getAttribute("aria-pressed")).toBe("true");
 
-  await fireEvent.click(control);
-  await fireEvent.click(screen.getByRole("button", { name: "newest" }));
-
+  await fireEvent.click(screen.getByRole("button", { name: "Newest first" }));
   expect(chose).toHaveBeenCalledWith("newest-first", "capture");
-  expect(control.getAttribute("aria-expanded")).toBe("false");
 });
 
 test("offers the feed the key as well as the end", async () => {
@@ -111,72 +106,17 @@ test("offers the feed the key as well as the end", async () => {
     onchoose: chose,
   });
 
-  const control = screen.getByLabelText("Order");
-  expect(control.textContent).toContain("latest processed");
+  expect(
+    screen
+      .getByRole("button", { name: "When processed" })
+      .getAttribute("aria-pressed"),
+  ).toBe("true");
 
-  await fireEvent.click(control);
-  expect(screen.getByText("captured")).toBeTruthy();
-  expect(screen.getByText("processed")).toBeTruthy();
-  for (const word of ["newest", "oldest", "latest", "earliest"]) {
-    expect(screen.getByRole("button", { name: word })).toBeTruthy();
-  }
-
-  await fireEvent.click(screen.getByRole("button", { name: "earliest" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Oldest first" }));
   expect(chose).toHaveBeenCalledWith("oldest-first", "processed");
-});
 
-test("marks the end it is already reading from, and offers the other", async () => {
-  render(OrderSelector, { order: "newest-first", onchoose: vi.fn() });
-
-  await fireEvent.click(screen.getByLabelText("Order"));
-
-  const marked = screen
-    .getAllByRole("button")
-    .filter((one) => one.getAttribute("aria-pressed") === "true");
-  // The mark is the pointer `where` already uses.
-  expect(marked.map((one) => one.textContent?.trim())).toEqual(["▸ newest"]);
-});
-
-test("shuts on escape without choosing anything", async () => {
-  const chose = vi.fn();
-  render(OrderSelector, { order: "oldest-first", onchoose: chose });
-
-  const control = screen.getByLabelText("Order");
-  await fireEvent.click(control);
-  await fireEvent.keyDown(control, { key: "Escape" });
-
-  expect(control.getAttribute("aria-expanded")).toBe("false");
-  expect(chose).not.toHaveBeenCalled();
-});
-
-/**
- * The panel is shut by leaving the control, so a pointer that moved the caret
- * into it would shut it on the way to the option being taken. Safari is where
- * that bites: it gives a clicked button no focus, and the trigger's own would
- * have gone. The place line prevents the same default for the same reason.
- */
-test("takes no focus when it is pointed at, so choosing survives the pointer", async () => {
-  render(OrderSelector, { order: "oldest-first", onchoose: vi.fn() });
-
-  await fireEvent.click(screen.getByLabelText("Order"));
-
-  const down = fireEvent.mouseDown(
-    screen.getByRole("button", { name: "oldest" }),
-  );
-  // `fireEvent` answers false where the default was prevented.
-  expect(await down).toBe(false);
-});
-
-/** A panel of buttons is what it is, and `listbox` would promise options. */
-test("draws its panel as a named group rather than a listbox", async () => {
-  render(OrderSelector, { order: "oldest-first", onchoose: vi.fn() });
-
-  const control = screen.getByLabelText("Order");
-  await fireEvent.click(control);
-
-  expect(screen.queryByRole("listbox")).toBeNull();
-  const panel = screen.getByRole("group", { name: "Order" });
-  expect(control.getAttribute("aria-controls")).toBe(panel.id);
+  await fireEvent.click(screen.getByRole("button", { name: "When captured" }));
+  expect(chose).toHaveBeenCalledWith("newest-first", "capture");
 });
 
 function tagSet(
@@ -442,18 +382,17 @@ test("a tag the item carries is removed by pressing it, then its ×", async () =
 });
 
 /** Its room is held either side whether or not it is selected, so nothing beside it moves. */
-test("a selected tag's × takes no room of its own", async () => {
+test("a selected tag offers its × as a box joined to it", async () => {
   tagSet({ names: ["design", "notemap"] });
   const word = screen.getByRole("button", { name: "design" });
   const box = word.parentElement!;
-  expect(box.classList.contains("px-tag")).toBe(true);
 
   await fireEvent.click(word);
 
   const remove = screen.getByRole("button", { name: "remove design" });
   expect(remove.parentElement).toBe(box);
-  expect(remove.classList.contains("absolute")).toBe(true);
-  expect(box.classList.contains("px-tag")).toBe(true);
+  expect(word.classList.contains("rounded-r-none")).toBe(true);
+  expect(remove.classList.contains("rounded-l-none")).toBe(true);
 });
 
 /** The `+` wraps where the line would, so opening the line moves nothing. */
@@ -560,7 +499,7 @@ test("a tag set that cannot be added to still holds the +'s place, unreachable",
 
   expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
   const held = [...container.querySelectorAll("button")].find(
-    (button) => button.textContent?.trim() === "+",
+    (button) => button.textContent?.replace(/\s+/g, " ").trim() === "+ tag",
   );
   expect(held?.getAttribute("aria-hidden")).toBe("true");
   expect(held?.getAttribute("tabindex")).toBe("-1");

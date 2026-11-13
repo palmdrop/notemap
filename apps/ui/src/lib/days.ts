@@ -2,7 +2,13 @@ import { dayOf } from "./stamp";
 
 /** A heading over the first of a day's rows, or one of the rows it heads. */
 export type Drawn<T> =
-  | { readonly kind: "day"; readonly key: string; readonly at: string }
+  | {
+      readonly kind: "day";
+      readonly key: string;
+      readonly at: string;
+      /** How many rows the heading heads, as drawn. */
+      readonly count: number;
+    }
   | {
       readonly kind: "row";
       readonly key: string;
@@ -26,6 +32,7 @@ export function byDay<
   const drawn: Drawn<T>[] = [];
   const seen = new Map<string, number>();
   let current: string | undefined;
+  let heading: { count: number } | undefined;
 
   for (const row of rows) {
     const day = dayOf(dayAt(row));
@@ -34,13 +41,16 @@ export function byDay<
       // A day read twice, out of order, still needs a key of its own.
       const times = seen.get(day) ?? 0;
       seen.set(day, times + 1);
-      drawn.push({
+      heading = {
         kind: "day",
         key: times === 0 ? `day:${day}` : `day:${day}:${times}`,
         at: dayAt(row),
-      });
+        count: 0,
+      } as Drawn<T> & { count: number };
+      drawn.push(heading as Drawn<T>);
       current = day;
     }
+    if (heading !== undefined) heading.count += 1;
     drawn.push({ kind: "row", key: row.id, row, opens });
   }
 

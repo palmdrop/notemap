@@ -41,10 +41,9 @@
   ondblclick={onreach === undefined ? undefined : doubled(onreach)}
   data-rail
   data-selected={selected ? "" : undefined}
-  class="relative col-start-1 -ml-3 min-w-0 border-t border-l border-ink rule-right pr-4 pb-3 pl-3 transition-[border-color] duration-(--duration-short) ease-fade max-wide:-ml-2 max-wide:pr-2.5 max-wide:pl-2
+  class="relative col-start-1 min-w-0 py-4 pl-gutter text-time
     {onpick === undefined ? '' : 'cursor-pointer'}
-    {gap ? 'pt-[calc(--spacing(3)+var(--spacing-gap-time))]' : 'pt-3'}
-    {selected ? '' : 'border-t-transparent border-l-transparent'}"
+    {gap ? 'pt-[calc(--spacing(4)+var(--spacing-gap-time))]' : ''}"
 >
   <Gutter {marked} {cursor} />
   {@render children?.()}

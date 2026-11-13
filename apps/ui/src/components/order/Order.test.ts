@@ -7,10 +7,13 @@ import { pool } from "$testing/pool";
 import { log } from "$lib/log.svelte";
 import Order from "./Order.svelte";
 
-/** A word, a mark, and a panel of marked options. */
-async function turn(word: string) {
-  await fireEvent.click(screen.getByLabelText("Order"));
-  await fireEvent.click(screen.getByRole("button", { name: word }));
+/** One of a few, a segmented row: the end not being read is pressed. */
+async function turn(word: "newest" | "oldest") {
+  await fireEvent.click(
+    screen.getByRole("button", {
+      name: word === "newest" ? "Newest first" : "Oldest first",
+    }),
+  );
 }
 
 /** Chrome, so it is drawn a level above whichever surface it acts on. */
@@ -90,10 +93,10 @@ test("turns the surface being read, and not the other one", async () => {
 
   render(Order);
 
-  await turn("newest");
+  await turn("oldest");
 
   await vi.waitFor(() => {
-    expect(ordersOf(transport, "feed")).toEqual(["newest-first"]);
+    expect(ordersOf(transport, "feed")).toEqual(["oldest-first"]);
   });
   expect(ordersOf(transport, "queue")).toEqual([]);
 });
@@ -108,7 +111,9 @@ test("will not turn around while a read is still walking", async () => {
   const transport = serving("queue", () => held);
 
   render(Order);
-  const control = screen.getByLabelText("Order") as HTMLButtonElement;
+  const control = screen.getByRole("button", {
+    name: "Oldest first",
+  }) as HTMLButtonElement;
 
   // Nothing is walking until something asks, which the surface does on mount.
   void transport;

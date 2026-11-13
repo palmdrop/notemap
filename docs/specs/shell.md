@@ -964,10 +964,28 @@ view** once it has grown, since a drop can come from far down the queue; an edit
 
 ### The row
 
-*Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
-What was here before — the open row as a fill with an accent edge, the facts it opened with, the
-furlable rail — is superseded; the dated amendments it carried are folded in below where they
-still hold.*
+*Redrawn 2026-11-13 ([ADR 73](../adr/0073-the-register-is-read-by-day-and-the-rail-goes.md),
+[ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)).
+The rail, the ruled box of a selected row and the `rows` setting went; what follows from 2026-09-14
+still holds where it does not speak of them.*
+
+**Rows are read by day, at every width.** Each day has a band: the weekday in the display face,
+then the date, then how many rows the day holds in a circle at the end. The band holds under the
+header while its rows scroll beneath it. A row is ruled under, white, and runs the width of its
+pane: on the left a narrow column holding the time alone, at `text-time`; on the right the body,
+holding in order the capture's words, a link's preview (which is not a link), the record lines with
+the route icon and the end of the path, the tags, and the state lines in words. **The waiting dot**
+sits in the row's corner while something about the item is waiting to send.
+
+**Tags are small boxes of the box grey** with their `#`; **a trigger tag is the route icon and the
+name after `route/`**, everywhere — a row, the item, the filter, the offer — never `#route/…` and
+never small caps *(2026-11-13; bold small caps from 2026-09-14)*. The `+ tag` that adds one is a
+dashed box.
+
+**A selected row** — by a click, or walked to by `j` and `k` — is drawn on the band, its actions as
+a beige strip under its words. *(Until the item view is redrawn, a tap selects the row rather than
+opening the item.)* **When wide**, a row under the pointer turns the box grey and offers **Route**
+beside its words, at a readable measure rather than at the window's edge.
 
 **Processing starts in the row.** The queue is one scrollable list a person works freely
 ([client.md](client.md#the-queue)), and leaving it costs the reader their place — so every
@@ -1177,45 +1195,28 @@ walked to by `j`/`k` stops clear of the line, by day or not, and clear of the st
 
 #### Rows by day
 
-*Added 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)).* **A register
-can be read by day**, the reader's choice under Appearance as `rows` with `auto`, `by day` or `rail`, held
-on the device like the palette. `rail` is everything above. `by day` is below. `auto`, the
-default, is by day below `narrow` and the rail above it, since the rail's width is what a phone
-cannot spare.
+*Rewritten 2026-11-13 ([ADR 73](../adr/0073-the-register-is-read-by-day-and-the-rail-goes.md)).
+From 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)) reading by day was
+the reader's choice under Appearance, `auto`, `by day` or `rail`; the choice went with the rail.*
 
-**By day, each day is headed once.** A heading goes before the first row of each local day, in
-whichever order the list is read: the date bold, the weekday beside it (`2026-09-13 sunday`),
-ruled under. **Below `narrow` the weekday is not drawn** *(2026-10-01)*: held at the top, the
-heading shares its line with the list head's controls, and a phone has room for the date and
-them and no more. There is no month heading. It spans both columns and holds at the top of the page
-while its day's rows scroll beneath it, and the next day's heading slides over it. A row walked
-to by `j`/`k` stops clear of it. A heading comes and goes with the rows it heads: the last row of
-a day leaving takes the heading with it. **Held at the top, a heading spans the screen**, its
-ground and its rule reaching both edges, since a selected row's box reaches past the columns and
-its edges would otherwise show beside the heading as the row scrolls under it. It spans the screen
-from the moment it reaches the top's band, so the next day's heading covers the last one edge to
-edge as it slides over it, and at no other time. **The heading is a line tall with even room
-above and below the date**, and the room between one day and the next is margin outside it: held
-at the top, the date sits as far from the top of the screen as from the rule under it.
-
-**The row keeps only its time**, the heading having said the day, **in bold** *(2026-10-02)*, so it
-stands apart from the tags under or beside it. The index's line keeps it plain; a selected line has
-opened into the row, which keeps it bold. The stamp still names the whole
-instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
-wide as a time, and everything else it held **follows the capture** in the body: the state word,
-`pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
-line, and nothing above the text reads as its title. The tag line is held on every row, as it is
-in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
-only space. The tags are told from the capture by their `#` ([Tagging](#tagging)), not by a rule
-between the two: a short one was tried the same day and taken out. **Above `narrow`, the rail
-keeps its width** and holds the time and the tags.
-
-**The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
-edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one
-rule's width higher and its top edge falls on the heading's rule. A selected first row draws one
-line where the heading's rule and its box meet, not two, and nothing asks which row is selected.
+**Each day is headed once**, before its first row in whichever order the list is read, and the
+heading comes and goes with the rows it heads: the last row of a day leaving takes the heading
+with it. A row walked to by `j`/`k` stops clear of it. **The row keeps only its time**, the heading
+having said the day; the stamp still names the whole instant to assistive technology. **The first
+row of a day lays its top edge on the heading's rule.** The index reads by day too: a heading per
+day, and a line per item with its time, its first words and its tags.
 
 #### Tags, and a filter
+
+*Amended 2026-11-13: the filter is a sheet, or a panel at the right when wide, opened by the
+header's filter icon, which counts what the filter holds, or by `f`. It holds, under plain labels,
+the **order** (Oldest first, Newest first; the feed also When captured and When processed), the
+**view** (Rows or Index), the feed's bands for what became of an item, its destination and its
+source, then the **tags** — each a box that can be on, filled and ticked when on, with its count —
+found by typing into a line, and the trigger tags apart under **Templates**, each the route icon
+and its name. Its foot is `clear n` and **Show**. **Search moved to the header** *(2026-11-13)*: on
+a phone the search icon, or `/`, turns the header into the search line, `Search the queue`, with a
+way back; when wide the line is always in the header. The list head holds only what a batch does.*
 
 *Added 2026-09-28.* **The list head holds a `tags ▾` control beside the order**, the way to a
 **filter** ([CONTEXT.md](../../CONTEXT.md)) and what answers which tags exist at all, which nothing

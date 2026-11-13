@@ -59,8 +59,8 @@
     <time
       datetime={at}
       data-word={timeOf(at)}
-      class="steady-weight whitespace-nowrap tabular-nums {weight ??
-        (inline ? '' : 'font-semibold')}">{timeOf(at)}</time
+      class="steady-weight whitespace-nowrap tabular-nums {weight ?? ''}"
+      >{timeOf(at)}</time
     >
   {/if}
 {/snippet}

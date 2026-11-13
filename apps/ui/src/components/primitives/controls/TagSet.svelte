@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
@@ -251,8 +252,11 @@
   );
 
   /** How a trigger tag is drawn, in the chooser and on the row alike. */
-  const TRIGGER =
-    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+  const TRIGGER = "inline-flex items-center gap-1";
+
+  /** A tag on a row or an item: a small box of the box grey. */
+  const CHIP =
+    "inline-flex min-h-6 items-center rounded-tag border border-tag-line bg-tag px-1.5 text-small text-tag-ink";
 
   const WAITING = "files the item once the edit is saved";
 
@@ -401,9 +405,11 @@
 <!-- A carried tag is marked `#`, which is how it reads as a tag beside prose
      in the same face and size; the mark is not part of its name. Bold when
      selected, holding its width so nothing beside it moves. -->
-{#snippet said(word: string)}
-  <span class="steady-weight" data-word={`#${word}`}
-    ><span><span aria-hidden="true">#</span><span>{word}</span></span></span
+{#snippet said(word: string, triggered = false)}
+  <span class="inline-flex items-center {triggered ? 'gap-1' : ''}"
+    >{#if triggered}<Icon name="route" class="size-3.5" />{:else}<span
+        aria-hidden="true">#</span
+      >{/if}<span>{word}</span></span
   >
 {/snippet}
 
@@ -430,17 +436,18 @@
         aria-label={fired === undefined
           ? undefined
           : `${name}, routes to ${fired}`}
-        class="px-tag {fired === undefined ? '' : TRIGGER} {filtered
-          ? 'underline'
-          : ''}"
+        class="{CHIP} {filtered ? 'border-ink' : ''}"
       >
-        {@render said(fired === undefined ? name : trigger(name))}
+        {@render said(
+          fired === undefined ? name : trigger(name),
+          fired !== undefined,
+        )}
       </span>
     {:else}
       <!-- Room on both sides, always: selected, the word steps left by one
            side's room and the `×` takes the two, so nothing beside it moves. -->
       <span
-        class="relative inline-block px-tag"
+        class="relative inline-flex items-center"
         data-chosen={chosen === name ? "" : undefined}
       >
         <button
@@ -463,14 +470,14 @@
                 .filter((part) => part !== undefined)
                 .join(", ")}
           title={pending ? WAITING : undefined}
-          class="transition-transform duration-(--duration-short) ease-(--ease-motion) {chosen ===
-          name
-            ? '-translate-x-(--spacing-tag) font-semibold'
-            : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
-            ? 'underline'
-            : ''} {pending ? 'text-muted' : ''}"
+          class="{CHIP} {chosen === name
+            ? 'rounded-r-none border-ink'
+            : ''} {filtered ? 'border-ink' : ''} {pending ? 'text-muted' : ''}"
         >
-          {@render said(fired === undefined ? name : trigger(name))}
+          {@render said(
+            fired === undefined ? name : trigger(name),
+            fired !== undefined,
+          )}
         </button>{#if chosen === name}<button
             type="button"
             aria-label={`remove ${name}`}
@@ -478,7 +485,7 @@
               chosen = undefined;
               onremove(name);
             }}
-            class="absolute right-0 hover:underline"
+            class="{CHIP} rounded-l-none border-l-0 border-ink"
             transition:fade
           >
             ×
@@ -531,7 +538,10 @@
         tabindex={addable ? undefined : -1}
         disabled={!addable}
         onclick={open}
-        class="hover:underline {addable ? '' : 'invisible'}">+</button
+        class="{addable
+          ? 'inline-flex'
+          : 'hidden'} min-h-6 items-center gap-1 rounded-tag border border-dashed border-rule px-1.5 text-small text-muted"
+        ><span aria-hidden="true">+</span> tag</button
       >
     {/if}
   </span>
@@ -569,7 +579,9 @@
           id="{id}-step"
           class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
         >
-          <span class={TRIGGER}>{trigger(stepping.tag)}</span>
+          <span class={TRIGGER}
+            ><Icon name="route" class="size-3.5" />{trigger(stepping.tag)}</span
+          >
           → {stepping.ask.template},
           <span class="font-semibold">{step.label}</span>
           {#if step.default !== undefined}
@@ -603,7 +615,11 @@
             {#if row.fresh}
               + {row.label}
             {:else}
-              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
+              <span class={fired === undefined ? "" : TRIGGER}
+                >{#if fired !== undefined}<Icon
+                    name="route"
+                    class="size-3.5"
+                  />{/if}{row.label}</span
               >
             {/if}{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
           </Walked>

@@ -246,7 +246,7 @@ test("walks on from the position the last page handed back", async () => {
   reading();
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   );
 
   await vi.waitFor(() => {
@@ -264,7 +264,7 @@ test("keeps one row for an id a second page hands back again", async () => {
   reading();
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   );
 
   await vi.waitFor(() => {

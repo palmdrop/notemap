@@ -15,10 +15,10 @@ import { notices } from "$lib/notices.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
 import { registering, said } from "$testing/highlights";
-import { rows as layout } from "$lib/rows.svelte";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import Queue from "./Queue.svelte";
+import Listed from "./Queue.fixture.svelte";
 
 keyboard();
 
@@ -282,10 +282,9 @@ async function capture(said: string) {
 }
 
 /** A row comes and goes by sliding, by day or not: a read is what draws still. */
-test.each(["rail", "by day"] as const)(
+test.each(["by day"] as const)(
   "a captured row slides in and a released one slides out, read %s",
-  async (reading) => {
-    layout.choose(reading);
+  async () => {
     let queued = [anItem("one")];
     pool((request) => {
       const route = routeOf(request);
@@ -422,14 +421,14 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   render(Queue);
   expect(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   ).toBeDefined();
 
   transport.unreachable(true);
   await client.loadQueue();
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 });
 
 test("says nothing in the foot of a queue read to the end", async () => {
@@ -437,7 +436,7 @@ test("says nothing in the foot of a queue read to the end", async () => {
 
   render(Queue);
   await screen.findByText("one");
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 
   // There is no next page to be denied, so being out of reach costs nothing.
   online(false);
@@ -803,26 +802,18 @@ test("draws the box around the selected row and nowhere else", async () => {
   expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
 });
 
-/** Every row reserves the foot's height, so selecting one shifts nothing. */
-test("keeps the foot's height on every row, selected or not", async () => {
+/** The selected row's actions are a strip under its words; an unselected row has none. */
+test("draws the selected row's actions as a strip under it, and no other row's", async () => {
   pool(queued("one", "two"));
 
   const { container } = render(Queue);
   await screen.findByText("one");
-
-  // Unselected, the foot is one cell per column with the rail's rule between
-  // them; selected, one strip holding the actions. Both are the same height.
-  const feet = () =>
-    [...container.querySelectorAll(".h-9")].map((foot) =>
-      foot.classList.contains("col-span-full") ? "box" : "cell",
-    );
-  expect(feet()).toEqual(["cell", "cell", "cell", "cell"]);
+  expect(container.querySelectorAll("[data-foot]")).toHaveLength(0);
 
   await open(0);
-  expect(feet()).toEqual(["box", "cell", "cell"]);
+  expect(container.querySelectorAll("[data-foot]")).toHaveLength(1);
 });
 
-/** The keys the actions are drawn to be guessed from. */
 const LATER = "2026-08-19T10:00:00.000Z";
 
 test("j past the last row held reads the next page and steps into it", async () => {
@@ -1026,28 +1017,27 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const { container } = render(Queue);
   await screen.findByText("one");
 
-  await fireEvent.click(screen.getByRole("button", { name: "View" }));
-  await fireEvent.click(screen.getByRole("button", { name: "index" }));
+  await fireEvent.keyDown(window, { key: "f" });
+  await fireEvent.click(await screen.findByRole("button", { name: "Index" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Show" }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
   expect(localStorage.getItem("notemap:view:queue")).toBe("index");
 
-  // A gap after more than half a day, and not after less.
-  const gapped = [...container.querySelectorAll("[data-gap]")];
-  expect(gapped).toHaveLength(1);
-  expect(gapped[0]?.textContent).toContain("three");
-  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
-    "index",
-  );
+  // Read by day, as the rows are: a heading for each day and no gaps.
+  expect(container.querySelectorAll("[data-gap]")).toHaveLength(0);
+  expect(container.querySelectorAll("[data-day]").length).toBeGreaterThan(0);
 
   cleanup();
   rememberView("queue", "index");
   render(Queue);
   await screen.findByText("one");
-  expect(container.querySelector("[data-gap]")).toBeDefined();
-  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
-    "index",
-  );
+  await fireEvent.keyDown(window, { key: "f" });
+  expect(
+    (await screen.findByRole("button", { name: "Index" })).getAttribute(
+      "aria-pressed",
+    ),
+  ).toBe("true");
 });
 
 test("v turns the list to the other view, and back", async () => {
@@ -1735,7 +1725,7 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
   const days = [...container.querySelectorAll("[data-day]")];
   expect(
     days.map((day) => day.textContent?.replace(/\s+/g, " ").trim()),
-  ).toEqual(["2026-09-12 saturday", "2026-09-13 sunday"]);
+  ).toEqual(["saturday 2026-09-12 2", "sunday 2026-09-13 1"]);
   expect(screen.getByText("08:14")).toBeDefined();
   expect(
     screen.queryByText("2026-09-12", { selector: "button *:not(.sr-only)" }),
@@ -1778,45 +1768,17 @@ test.each(["timeline", "index"] as const)(
   },
 );
 
-test("reads by day on a wide screen only when chosen, keeping the tags in the rail", async () => {
+test("reads by day at every width, the tags with the words", async () => {
   pool(overDays());
 
   const { container } = render(Queue);
   await screen.findByText("three");
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-
-  layout.choose("by day");
-  await tick();
   expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
-  expect(screen.getByText("design").closest("[data-rail]")).not.toBeNull();
-});
-
-test("the rail, chosen, draws no headings on a narrow screen", async () => {
-  viewport(390);
-  layout.choose("rail");
-  pool(overDays());
-
-  const { container } = render(Queue);
-  await screen.findByText("three");
-
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-  expect(screen.getAllByText("2026-09-12").length).toBeGreaterThan(0);
-});
-
-test("auto follows the window as it crosses narrow", async () => {
-  pool(overDays());
-
-  const { container } = render(Queue);
-  await screen.findByText("three");
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-
-  viewport(390);
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
-
-  viewport(1024);
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+  expect(screen.getByText("design").closest("[data-body]")).not.toBeNull();
+  const counts = [...container.querySelectorAll("[data-day]")].map(
+    (day) => day.lastElementChild?.textContent,
+  );
+  expect(counts).toEqual(["2", "1"]);
 });
 
 test("walks across a heading, and a day's heading leaves with its last row", async () => {
@@ -1872,11 +1834,6 @@ test("the index reads by day too: headings, the time alone, and no gap", async (
       .getByRole("button", { name: "2026-09-13 07:02" })
       .querySelector("time")?.textContent,
   ).toBe("07:02");
-
-  layout.choose("rail");
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-  expect(container.querySelectorAll("[data-gap]")).toHaveLength(1);
 });
 
 test("a trigger tag on a row asks what its template asks, and sends it with the tag", async () => {
@@ -2258,7 +2215,7 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
 
 test("`/` puts the caret in the search line, and the words go on the address", async () => {
   pool(queued("one"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "/" });
