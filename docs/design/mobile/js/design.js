@@ -100,6 +100,8 @@ style.textContent = `
   .design-panel select { width: 100%; font: inherit; }
   .design-panel .licence { margin: .25rem 0 .75rem; color: #666; }
   @media (max-width: 719px) { .design-panel { display: none; } html.dev .design-panel { display: block; } }
+  html[data-frame="full"] .design-panel { top: auto; right: auto; left: .5rem; bottom: 3rem; width: auto; height: 2.25rem; overflow: hidden; opacity: .6; }
+  html[data-frame="full"] .design-panel:hover, html[data-frame="full"] .design-panel:focus-within { width: 13rem; height: auto; opacity: 1; }
 `;
 document.head.append(style);
 if (params.has("dev")) document.documentElement.classList.add("dev");

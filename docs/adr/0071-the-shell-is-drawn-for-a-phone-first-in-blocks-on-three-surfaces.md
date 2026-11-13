@@ -4,6 +4,7 @@
 **Status**: Accepted. Supersedes [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
 on type, colour, grid and chrome. Its processing tiers are superseded by
 [ADR 72](0072-processing-is-a-quick-sheet-and-a-route-in-steps.md).
+Amended by [ADR 76](0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md) on a wide window.
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -92,8 +93,7 @@ through the queue. The other variants are kept in `morph.html` as drawings.
 **No dots as separators.** Words or space do the job: "Rejected by Vault in projects/", "todo.md
 in Vault".
 
-A wide window's layout is not decided here. Until it is, the phone's layout is what every width
-draws.
+A wide window's layout is not decided here.
 
 ### Consequences
 

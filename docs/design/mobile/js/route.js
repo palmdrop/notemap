@@ -6,6 +6,8 @@ import { glyph } from "./glyphs.js";
 import { mountTags } from "./tags.js";
 
 const $ = (s, root = document) => root.querySelector(s);
+// On a wide window the route is one surface: the item on the left, every step at once on the right.
+const wide = () => document.documentElement.dataset.frame === "full" && matchMedia("(min-width: 900px)").matches;
 
 const handed = JSON.parse(sessionStorage.getItem("nm-routing") ?? "null");
 const item = handed ?? { text: "idea: a bike rack that folds flat into the hallway wall", pictures: [], tags: ["home", "idea"] };
@@ -104,7 +106,7 @@ function ready(step) {
 
 function go(step, push = true) {
   at = step;
-  if (push) history.pushState({ at }, "");
+  if (push && !wide()) history.pushState({ at }, "");
   render();
 }
 addEventListener("popstate", (e) => {
@@ -246,9 +248,12 @@ const radioRows = (act, options, current) =>
 
 function askStep(a) {
   const typed = a.typed && s.answers[a.key] && !a.options.includes(s.answers[a.key]) ? s.answers[a.key] : "";
+  // Side by side with every other step, an answer is picked, not moved on from.
+  const answers = wide() ? radioRows("answer", a.options.map((o) => [o, o]), s.answers[a.key])
+    : `<ul class="rows">${a.options.map((o) =>
+      row({ act: "answer", x: o, name: esc(o), end: icon("chevron", "end"), pressed: s.answers[a.key] === o })).join("")}</ul>`;
   return `<h3 class="label">${esc(a.question)}</h3>
-    <ul class="rows">${a.options.map((o) =>
-      row({ act: "answer", x: o, name: esc(o), end: icon("chevron", "end"), pressed: s.answers[a.key] === o })).join("")}</ul>
+    ${answers}
     ${a.typed ? `<label class="field"><span>${esc(a.typed)}</span><input name="answer" value="${esc(typed)}" autocomplete="off" /></label>` : ""}`;
 }
 
@@ -309,13 +314,83 @@ function renderSteps() {
   $(".steps").innerHTML = `<div class="toolbar"><button class="pill" data-act="back">${icon("back")}Back</button>${onward}</div>`;
 }
 
+// Every step at once: a step that waits on an earlier one says so in a line, and the place a
+// template or destination was picked from folds to one row once it is picked.
+const section = (name, body, key = "") =>
+  `<section class="sec" data-sec="${name}"${key ? ` data-ask="${esc(key)}"` : ""}><h2 class="sec-head">${esc(name)}</h2>${body}</section>`;
+const waits = (name, on) => section(name, `<p class="hint waiting">${on}</p>`);
+
+function allReady() {
+  return path().filter((step) => step !== "check").every(ready);
+}
+
+function why() {
+  if (!s.dest && !s.template) return "Pick a template or a destination to route.";
+  const step = path().find((st) => st !== "check" && !ready(st));
+  if (askOf(step)) return `Answer “${askOf(step).question}” to route.`;
+  if (step === "place") return s.makes === "create" ? "Name the note to route." : s.makes === "append" ? "Pick a note to append to." : "Pick a channel to route.";
+  return "";
+}
+
+function renderWide() {
+  $(".step-of").innerHTML = "";
+  const t = tpl();
+  const picked = t ?? dest();
+  const parts = [];
+  if (!picked) parts.push(section("where", STEPS.where().replace(/<h3 class="label">Other<\/h3>[\s\S]*$/, "")));
+  else parts.push(section("where", `<ul class="rows">${row({ act: "change-where", name: esc(picked.name), ic: picked.icon,
+    sub: t ? `template: ${esc(t.where)} in ${esc(DESTINATIONS.find((d) => d.id === t.dest).name)}` : "destination", end: `<span class="end-word">Change</span>` })}</ul>`));
+  if (t) {
+    for (const a of t.ask ?? []) parts.push(section(a.question, askStep(a).replace(/^\s*<h3 class="label">[\s\S]*?<\/h3>/, ""), a.key));
+    parts.push(section("check", STEPS.check()));
+  } else if (s.dest) {
+    parts.push(section("how", STEPS.how()), section("place", STEPS.place()), section("check", STEPS.check().replace(/^\s*<dl class="facts">[\s\S]*?<\/dl>/, "")));
+  } else {
+    const first = "Pick a template or a destination first.";
+    parts.push(waits("how", first), waits("place", first), waits("check", first));
+  }
+  $(".step").innerHTML = parts.join("");
+  const reason = allReady() ? "" : why();
+  $(".steps").innerHTML = `${reason ? `<p class="bar-say">${esc(reason)}</p>` : ""}<div class="toolbar">
+    <button class="pill primary" data-act="route"${reason ? ' aria-disabled="true"' : ""}>${icon("route")}Route</button></div>`;
+}
+
+function renderWideFoot() {
+  const reason = allReady() ? "" : why();
+  const say = $(".steps .bar-say");
+  if (reason && !say) $(".steps").insertAdjacentHTML("afterbegin", `<p class="bar-say"></p>`);
+  if (!reason) say?.remove();
+  if (reason) $(".steps .bar-say").textContent = reason;
+  $(".steps [data-act=route]")?.setAttribute("aria-disabled", String(!!reason));
+}
+
+function renderNote() {
+  const note = $(".route-note");
+  note.hidden = !wide();
+  if (note.hidden) return;
+  $(".toolbar", note).hidden = routed;
+  $(".rn-when", note).textContent = `${captured.date} ${captured.time}`;
+  $(".rn-words", note).textContent = item.text;
+  $(".rn-pictures", note).innerHTML = item.pictures.map((src) => `<img src="${esc(src)}" alt="" />`).join("");
+}
+
 function render() {
   $(".route-bar h1").textContent = "route";
+  renderNote();
+  if (wide()) {
+    $(".route-done").innerHTML = "";
+    renderWide();
+    return mountCheckTags();
+  }
   $(".excerpt").textContent = item.about ?? item.text.split("\n")[0];
   renderSteps();
   $(".route-done").innerHTML = "";
   $(".step").innerHTML = askOf(at) ? askStep(askOf(at)) : STEPS[at]();
   $(".step").scrollTop = 0;
+  mountCheckTags();
+}
+
+function mountCheckTags() {
   const list = $(".check-tags");
   if (list) mountTags(list, { tags: [...item.tags], onChange: (tags) => {
     item.tags = tags;
@@ -329,6 +404,7 @@ function render() {
 let routed = false;
 function done() {
   routed = true;
+  $(".route-note .toolbar").hidden = true;
   history.replaceState({ at: "done" }, "");
   $(".steps").innerHTML = "";
   $(".step-of").textContent = "";
@@ -400,7 +476,9 @@ document.addEventListener("click", (e) => {
     sessionStorage.setItem("nm-decided", JSON.stringify({ kind: act, about: item.about ?? item.text.split("\n")[0] }));
     return (location.href = "queue.html");
   }
+  if (act === "answer" && wide()) { s.answers[b.closest("[data-ask]").dataset.ask] = x; return render(); }
   if (act === "answer") { s.answers[at] = x; return go(path()[path().indexOf(at) + 1]); }
+  if (act === "change-where") { s = fresh(); return render(); }
   if (act === "free-name") { s.name = x; return render(); }
   if (act === "folder-mode") { s.folderMode = x; return render(); }
   if (act === "again") return restart();
@@ -421,8 +499,10 @@ document.addEventListener("click", (e) => {
   if (act === "heading") { s.heading = x || null; return render(); }
   if (act === "channel") { s.channel = x; return render(); }
   if (act === "edit") { s.editing = true; render(); return $("textarea[name=words]").focus(); }
+  if (act === "goto" && wide()) return $(`[data-sec="${x}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" });
   if (act === "goto") return go(x);
   if (act === "unpin") return unpin();
+  if (act === "route" && b.getAttribute("aria-disabled") === "true") return;
   if (act === "route") return done();
   if (act === "undo") {
     routed = false;
@@ -444,11 +524,11 @@ document.addEventListener("input", (e) => {
     input.setSelectionRange(caret, caret);
   }
   if (e.target.name === "answer") {
-    s.answers[at] = e.target.value;
+    s.answers[e.target.closest("[data-ask]")?.dataset.ask ?? at] = e.target.value;
     document.querySelectorAll(`[data-act=answer]`).forEach((b) => b.setAttribute("aria-pressed", "false"));
   }
   if (e.target.name === "name") $(".taken-slot").innerHTML = taken();
-  if (["name", "answer"].includes(e.target.name)) renderSteps();
+  if (["name", "answer"].includes(e.target.name)) wide() ? renderWideFoot() : renderSteps();
 });
 
 const asked = new URLSearchParams(location.search).get("template");
@@ -459,3 +539,4 @@ if (TEMPLATES.some((t) => t.name === asked)) {
   history.pushState({ at }, "");
 }
 render();
+matchMedia("(min-width: 900px)").addEventListener("change", render);

@@ -126,36 +126,57 @@ them; what is left open, and what the plan has to carry into the notemap repo, i
   later: focusable rows, focus styles, reduced motion, a 3:1 edge on controls, 44px targets), and
   anything about the correctness of data.
 
-## The wide queue, a draft
+## A wide window
 
-Set aside for now, to come back to later in this session. The queue alone, on a window 900px and
-wider without the phone frame (`?frame=full`). The phone layout is unchanged below that.
+Drawn 2026-11-13, for the developer to review. A window 900px and wider, without the phone frame
+(`?frame=full`). Below 900 the phone's layout is what every width draws. The views are the
+phone's; what changes is a handful of pieces, each with a phone form and a wide one:
 
-- The menu is a column of its own, always there; the drawer's footer stays in it.
-- The bar is one line: the title, the search always open, filter and notices.
-- A box to write in sits at the top of the list instead of the + button; Ctrl+Enter captures.
-- Rows keep a readable measure. Hovering one shows the circle to select it and Route, which opens
-  the quick route as a dialog.
-- An opened item sits beside the list from 1200px, and over the list's right side below that.
-- Filter and notices open as panels at the right. The status line runs under the list only.
-- Keys: j and k (or the arrows) move between rows, and move the opened item with them; Enter
-  opens; r routes; / searches; c writes.
+| Phone | Wide |
+|---|---|
+| The drawer | The menu as a column, always there; a rail of icons with counts from 900 to 1199 |
+| The + and the capture page | A box at the top of the queue; Ctrl+Enter captures |
+| The item, full screen | The item beside the list, at every wide width, its actions at its head |
+| A docked bar at a page's foot | A toolbar at the head of the pane it acts on; a route's own foot keeps Route |
+| A bottom sheet | Filter and notices as panels at the right, a quick route as a dialog |
+| Hold to select, swipe to route | Ctrl/cmd-click and shift-click select; Route and the circle on hover |
+| The batch bar | The batch's actions in the head, beside the count |
+| The route page, one step at a time | One surface: the item on the left, every step at once on the right |
 
-Known from the second review, not yet acted on: between 900 and 1199 the opened item covers the
-list (three columns with an icon rail was recommended); Route sits far from the words and the
-batch bar overflows at 1440; a capture written in the box lands out of sight; the spec's marking
-keys are not bound; the feed and settings need drawing in the frame before a plan for wide.
+- **The bar** is one line: the title, the search always open, filter and notices.
+- **A capture from the box** lands where the order puts it, and the line says so ("Captured, at
+  the end of the queue", Show), as on the phone.
+- **Rows** keep a readable measure, and Route stays beside the words rather than at the window's
+  edge. With an item open, the row's Route goes: the pane has its own.
+- **The route surface.** The item, whole, on the left, with Discard and Done at its head. On the
+  right, every step: where (templates and destinations; once picked, one row with Change), then a
+  template's questions or how and place, then the check with the tags and the preview. A step that
+  waits on an earlier one says so in a line ("Pick a template or a destination first."). A
+  template's answers are radio rows: picked, not moved on from. Route sits at the foot of the
+  steps, dashed with the reason above it until everything is answered. After routing the right
+  side is the routed state, as on the phone, and the item's Discard and Done go.
+- **Keys** are the shell's own, as `bindings.ts` has them: `j` `k` and the arrows walk the rows,
+  and with an item open they open the next; Enter opens; `esc` closes; `p` routes (the quick
+  dialog); `m` done; `D` discard; `e` edit; `t` tag; `[` `]` step the opened item; `space`
+  selects, `J` `K` select as they walk; `/` search; `f` filter; `n` notices; `k` on the first row
+  goes up into the box. A button with a key says it in its tooltip.
+- **The status line** runs under the list only.
+- **Not drawn, the same at every width:** settings, a record, the log's rows, sign in. They take
+  the menu column and keep the phone's page in a readable column.
 
 ## For the plan
 
-Suggested order: the ADR, then CONTEXT, then shell.md by section, then the code, a surface at a
-time, the queue and the item view first. The wide frame is a plan of its own.
+Suggested order: CONTEXT, then shell.md by section, then the code, a surface at a time, the queue
+and the item view first. Each piece in the wide table is one component with two forms, chosen by
+width, built with its phone form rather than after it.
 
-- **A new ADR superseding 46, 52 and 54.** ADR 46 says one face and one size, ink on white, no
-  grey or green, and processing as one surface; 52 makes "by day" a choice; 54 shapes the status
-  line. The new one states blocks, beige and bands, the three surfaces and the box grey, two
-  faces (Syne for headings), sizes, docked bars, sheets, the drawer, the full-screen item, the
-  route as steps, and what green and red mean.
+- **The ADRs are written** in notemap: 71 to 75 for the phone, 76 for a wide window.
+- **One build for everything.** The app is the same SvelteKit build, installed or wrapped
+  (Capacitor), not a second codebase. Wrapped, it needs what the daemon's own origin gave it for
+  free: the daemon's address, set in the app; an access token rather than the session cookie,
+  which does not cross from the app's origin; and CORS on the daemon for that origin.
+- **Shots.** `oneshot run notemap-shoot-mobile <design-url> <out-dir>` walks every state drawn
+  here, at 390 and wide; serve this directory with `node server.mjs` first.
 - **CONTEXT.md.**
   - Undo: Cancel is the shell's word for a route in its window; Undo stays for a manual mark and
     a discard just made.
@@ -185,8 +206,10 @@ time, the queue and the item view first. The wide frame is a plan of its own.
     chosen. What changes is only what is drawn; what an untouched field sends does not. The
     cost: once something else is picked, going back to the default pins it rather than unsetting
     it. Also: destructive ways in bands; "unavailable" for a failed check; Save with a reason.
-  - The process surface: steps instead of one surface; the preview shown on the check, not asked
-    for; the tags section kept, on the check.
+  - The process surface: steps instead of one surface on a phone, one surface of every step beside
+    the item on a wide window; the preview shown on the check, not asked for; the tags section
+    kept, on the check.
+  - A wide window: the table above, the keys, and Marking rows for a batch with a pointer.
   - Visual direction; Tokens: the new tokens by role (`--off`, band, the box grey, signal,
     danger).
 - **Accessibility**, as its own section of the plan (see Out of scope above).

@@ -157,6 +157,7 @@
     /* Rows: the text kept to a readable measure, Route and the circle to select on hover. */
     .row-face {
       grid-template-columns: var(--time-column) minmax(0, 46rem) auto;
+      justify-content: start;
       column-gap: 0;
       padding: 0.875rem var(--gutter);
     }
@@ -217,16 +218,88 @@
       display: none;
     }
 
-    /* An opened item: over the list's right side, and beside the list where there is room. */
+    /* An opened item: a column beside the list, its actions at its head, where a pointer
+       reaches them from the words. */
+    .screen:has(> .item-view:not([hidden])) {
+      grid-template-columns: var(--nav) minmax(20rem, 1fr) minmax(24rem, 36rem);
+      grid-template-areas: "nav head pane" "nav main pane" "nav line pane";
+    }
+
     .item-view {
-      inset: 0 0 0 auto;
-      width: min(34rem, 60vw);
+      grid-area: pane;
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      min-height: 0;
       border-left: var(--rule);
-      box-shadow: -1rem 0 2rem rgb(0 0 0 / 0.08);
     }
 
     .item-view .iv-page {
+      order: 3;
       padding-inline: 1.25rem;
+    }
+
+    .item-view .iv-bar {
+      order: 0;
+    }
+
+    .item-view .toolbar {
+      order: 1;
+      padding: 0.5rem 1.25rem;
+      border-top: 0;
+      border-bottom: var(--rule);
+    }
+
+    .item-view .iv-strip {
+      order: 2;
+      border-top: 0;
+      border-bottom: var(--rule);
+    }
+
+    .item-view .iv-tags {
+      order: 4;
+      margin-bottom: auto;
+      padding-inline: 1.25rem;
+    }
+
+    .item-view .iv-page {
+      flex: 0 1 auto;
+    }
+
+    .screen:has(> .item-view:not([hidden])) {
+      .row-route {
+        display: none;
+      }
+
+      .composer-foot .keys {
+        display: none;
+      }
+    }
+
+    .bar-search,
+    .bar-search input {
+      min-width: 0;
+    }
+
+    .bar-search input {
+      width: 100%;
+    }
+
+    .item-view .toolbar > .pill {
+      flex-direction: row;
+      gap: 0.375rem;
+      min-height: 2.5rem;
+      font-size: var(--size-body);
+    }
+
+    .item-view .toolbar > .pill.primary {
+      flex: 0 1 12rem;
+      min-height: 2.5rem;
+      margin-left: auto;
+    }
+
+    .item-view .toolbar > .pill:first-child:not(.primary) {
+      margin-left: -0.625rem;
     }
 
     /* The status line, under the list only. */
@@ -248,6 +321,15 @@
       border-left: var(--rule);
     }
 
+    .sheet:not([hidden]) {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet > .toolbar:last-child {
+      margin-top: auto;
+    }
+
     #quick {
       inset: 12vh auto auto 50%;
       width: 28rem;
@@ -263,27 +345,85 @@
       left: var(--nav);
     }
 
-    .batch-bar {
-      left: calc(50% + var(--nav) / 2);
+    /* Selecting: the head holds the count and the batch's actions, in a row. */
+    .app-bar[data-mode="marking"] .bar-marking {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .bar-marking h1 {
+      flex: 0 0 auto;
+      margin-right: 0.5rem;
+    }
+
+    .batch-bar.in-head {
+      position: static;
+      order: 3;
+      width: auto;
+      margin-left: auto;
+      padding: 0;
+      border: 0;
+      background: none;
+    }
+
+    .batch-bar.in-head > .pill {
+      flex-direction: row;
+      gap: 0.375rem;
+      min-height: 2.5rem;
+      font-size: var(--size-body);
+    }
+
+    .batch-bar.in-head > .pill.primary {
+      flex: 0 0 auto;
+      min-height: 2.5rem;
+      padding: 0 1.25rem;
+    }
+
+    [data-marking] .item.marked .row-face {
+      background: var(--card);
     }
   }
 }
 
-@media (min-width: 1200px) {
+/* Between 900 and 1199 the menu is a rail of icons, so the list keeps its width beside an opened
+   item. */
+@media (min-width: 900px) and (max-width: 1199px) {
   html[data-frame="full"] {
-    .screen:has(> .item-view:not([hidden])) {
-      grid-template-columns: var(--nav) minmax(22rem, 1fr) minmax(26rem, 36rem);
-      grid-template-areas: "nav head pane" "nav main pane" "nav line pane";
+    --nav: 4rem;
+
+    .drawer-head {
+      justify-content: center;
+      padding: 0;
     }
 
-    .item-view {
-      grid-area: pane;
+    .drawer .mark {
+      display: none;
+    }
+
+    .drawer nav a {
       position: relative;
-      inset: auto;
-      z-index: auto;
-      width: auto;
-      min-height: 0;
-      box-shadow: none;
+      grid-template-columns: var(--icon);
+      justify-content: center;
+      padding: 0;
+    }
+
+    .drawer nav a > span:not(.n),
+    .drawer-pending,
+    .drawer-foot > :not(.online, .offline) {
+      display: none;
+    }
+
+    .drawer nav .n {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.375rem;
+      font-size: 0.6875rem;
+    }
+
+    .drawer-foot {
+      justify-content: center;
+      font-size: 0;
     }
   }
 }

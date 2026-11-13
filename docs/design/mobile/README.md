@@ -2,13 +2,15 @@
 
 The redesign of the shell for a phone first, in plain HTML, CSS and a little JS
 ([ADR 71](../../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md) to
-[75](../../adr/0075-a-setting-left-unset-is-drawn-as-its-default.md)). Nothing here is built and
+[76](../../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)). Nothing here is built and
 nothing here is the app: it is what the shell is implemented against. Copied on 2026-11-13 from
 the scratch repo it was drawn in (`~/repos/notemap-design`), which stays the place to change it;
 copy again when it changes.
 
 - `DECISIONS.md`: what was settled with the developer, and what the plan carries into the specs.
-- `shots/`: every state at 390, in the order of a walk through the shell.
+- `shots/`: every state at 390, in the order of a walk through the shell, then `w*` at a wide
+  window. Re-take them with `oneshot run notemap-shoot-mobile http://127.0.0.1:5190/ <dir>`,
+  with `node server.mjs` serving this directory.
 - The reviews that shaped it: [audit](../../reviews/mobile-rethink-audit-2026-10-30.md),
   [first review](../../reviews/mobile-design-review-2026-11-09.md),
   [second review](../../reviews/mobile-design-review-2026-11-13.md).

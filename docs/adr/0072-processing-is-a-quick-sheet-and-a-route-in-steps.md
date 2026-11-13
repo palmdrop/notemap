@@ -4,6 +4,7 @@
 **Status**: Accepted. Supersedes the processing tiers of
 [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md): the
 row's ruled strip and the process surface as one page.
+Amended by [ADR 76](0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md): on a wide window the route page is one surface.
 **Deciders**: palmdrop, with Claude
 
 ---

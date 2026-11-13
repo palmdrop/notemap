@@ -264,7 +264,7 @@ if (OFFLINE) {
 
 // Selecting rows, for a batch: holding a row selects it, and then a tap selects more.
 
-function select(on, first = null) {
+export function select(on, first = null) {
   marking = on;
   document.documentElement.toggleAttribute("data-marking", on);
   $(".app-bar").dataset.mode = on ? "marking" : "title";
@@ -274,7 +274,7 @@ function select(on, first = null) {
   countMarked();
   drawLine();
 }
-function countMarked() {
+export function countMarked() {
   const n = $$("main .item.marked:not([hidden])").length;
   $(".marked-n").textContent = `${n} selected`;
   for (const b of $$(".batch-bar .pill")) b.disabled = n === 0;
