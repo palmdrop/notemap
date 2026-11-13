@@ -200,7 +200,7 @@ Depends on phase 2.
       `features-from-the-mobile-rethink` (worktree `~/repos/notemap-features`). Undo is offered only while a
       delivery is pending. A delivered record is withdrawn, as its own action. Decisions that deliver
       get a 3–5 s window, and a pending delivery can be cancelled from the queue; both are planned there
-- [ ] Round 3: from the developer's Figma sketch of the queue (the feel, icons, corners,
+- [x] Round 3: from the developer's Figma sketch of the queue (the feel, icons, corners,
       shadows, type). Waits for the sketch. It must leave room for two later layouts of the
       register (ADR 52's word), which are not drawn now:
       a **calendar**, each day marked by colour and a count of its captures; and a **timeline**, a
@@ -223,13 +223,18 @@ Depends on the developer's explicit sign-off at the checkpoint. Phase 4 writes d
 `CONTEXT.md` and plans. Each of those is shown to the developer and confirmed before it is
 committed.
 
-- [ ] With the developer, settle the split route by route: web shell now, app only, or later
-- [ ] ADR superseding ADR 46's layout decision, if what was settled departs from it (`core:adr`)
-- [ ] Renames agreed, if any, into `CONTEXT.md`
-- [ ] Follow-up plans: at least one for the web shell's share. The settled drawings move into
+- [x] With the developer, settle the split route by route: web shell now, app only, or later
+      _(2026-11-13 — one SvelteKit build for everything; the app wraps it later)_
+- [x] ADR superseding ADR 46's layout decision, if what was settled departs from it (`core:adr`)
+      _(2026-11-13 — ADRs 71 to 76)_
+- [-] Renames agreed, if any, into `CONTEXT.md` _(moved — phase 1 of
+      [phone-first-shell](phone-first-shell.md), with the code)_
+- [x] Follow-up plans: at least one for the web shell's share. The settled drawings move into
       `docs/design/redrawn/` in that plan's PR, not here. The mobile app gets its own design
       session (technology is a decision for the developer)
-- [ ] Commit; open a PR for this branch
+- [x] Commit _(2026-11-13)_
+- [-] Open a PR for this branch _(moved — the developer asked for one PR with the code;
+      [phone-first-shell](phone-first-shell.md) opens it)_
 
 **Verify**: the follow-up plans exist in `docs/plans/` and each names the routes it covers.
 
