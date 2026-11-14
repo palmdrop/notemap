@@ -22,11 +22,11 @@ vi.mock("$app/navigation", () => ({
 
 /** Both act when taken, from the item's own actions: no second step and no commit. */
 async function manual() {
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
 }
 
 async function discard() {
-  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Discard" }));
 }
 
 afterEach(() => {
@@ -253,8 +253,8 @@ test("draws each record as a row under the capture's box, with the way into it",
 
   await screen.findByText("drafts/two.md");
   expect(screen.getByText("drafts")).toBeDefined();
-  // The box's foot is the edge between the two regions; a rule under it read as a double.
-  expect(container.querySelector("[data-foot]")).not.toBeNull();
+  // The item's actions are its bar, not a selected row's foot.
+  expect(container.querySelector("[data-foot]")).toBeNull();
 
   const ways = screen
     .getAllByRole("link")
@@ -458,7 +458,7 @@ test("process goes to the surface for it", async () => {
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "process" }));
+  await fireEvent.click(screen.getByRole("button", { name: /^Route/ }));
 
   expect(went.to).toEqual(["/items/one/process"]);
 });
@@ -624,8 +624,8 @@ test("while the item is edited only its tags are reached", async () => {
 
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
-  expect(screen.getByRole("button", { name: "save" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: /^Route/ })).toBeNull();
+  expect(screen.getByRole("button", { name: "Save" })).toBeDefined();
 
   field.blur();
   await fireEvent.keyDown(window, { key: "p" });
@@ -705,17 +705,19 @@ test("stands the asking mark under the box while the records are read", async ()
   expect(container.querySelector("[data-asking]")).toBeNull();
 });
 
-test("draws the capture as the queue's selected row does: a box with its actions as the foot", async () => {
+test("draws the capture with its actions in a bar of their own", async () => {
   pool(holding(saying("linked", "what the link names")));
 
   const { container } = render(Item, { id: "linked" });
   await screen.findByText("what the link names");
 
-  // The rail and the body both draw the box's edges, as a selected row's do.
   expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(
-    screen.getByRole("button", { name: "discard" }).closest("[data-foot]"),
-  ).not.toBeNull();
+    screen
+      .getByRole("button", { name: "Discard" })
+      .closest("[role=toolbar]")
+      ?.getAttribute("aria-label"),
+  ).toBe("Item");
 });
 
 test("reads by day on a narrow screen, as the queue does: headings, the time alone, tags under the capture", async () => {
@@ -750,7 +752,7 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
     [...container.querySelectorAll("[data-day]")].map((day) =>
       day.getAttribute("data-day"),
     ),
-  ).toEqual(["2026-08-19", "2026-08-20"]);
+  ).toEqual(["2026-08-20"]);
   expect(screen.getByText("09:30")).toBeDefined();
   expect(screen.getByText("08:05")).toBeDefined();
   expect(screen.getByRole("link", { name: "2026-08-20 08:05" })).toBeDefined();
@@ -761,4 +763,25 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
     screen.getByText("routed").compareDocumentPosition(tag) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+});
+
+test("a routed item offers Route again, and a discarded one says so with Undiscard", async () => {
+  pool(routed([RECORD]));
+  const first = render(Item, { id: "routed" });
+  expect(
+    await screen.findByRole("button", { name: "Route again" }),
+  ).toBeDefined();
+  first.unmount();
+
+  pool(
+    holding(
+      saying("gone", "thrown out", {
+        archived: { at: "2026-08-20T10:00:00.000Z", by: { kind: "person" } },
+      }),
+    ),
+  );
+  render(Item, { id: "gone" });
+  expect(await screen.findByText("Discarded")).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
 });

@@ -76,7 +76,7 @@ test("draws the capture and the one record under it", async () => {
   expect(screen.queryByText("drafts/two.md")).toBeNull();
   expect(screen.getAllByText(dayOf(RECORD.at)).length).toBeGreaterThan(0);
   expect(screen.getByText("delivered")).toBeDefined();
-  expect(container.querySelector("[data-foot]")).not.toBeNull();
+  expect(container.querySelector("[role=toolbar]")).not.toBeNull();
   // Its own address is where a record is read: it is drawn open, and does not fold.
   expect(container.querySelector("[data-folded]")).toBeNull();
   expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
@@ -119,7 +119,7 @@ test("says records are out of reach while the item still draws", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  expect(screen.getByRole("button", { name: /^Route/ })).toBeDefined();
 });
 
 test("drops what one record sent when another is drawn", async () => {

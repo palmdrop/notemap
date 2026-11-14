@@ -3,6 +3,8 @@
   import { SvelteSet } from "svelte/reactivity";
   import type { ItemState, RoutingRecord } from "@notemap/client";
 
+  import ItemBar from "$components/item/ItemBar.svelte";
+  import { width } from "$lib/breakpoint";
   import Row from "$components/item/Row.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Day from "$components/primitives/register/Day.svelte";
@@ -144,10 +146,14 @@
   });
 </script>
 
+{#if item !== undefined && width.wide}
+  <div class="-mx-8">
+    <ItemBar {item} {commands} editing={row?.editor()} />
+  </div>
+{/if}
+
 <Register>
   {#if item !== undefined}
-    <Day at={item.createdAt} />
-
     <!-- The capture as a selected row is drawn, box and foot, the page being
          the one item there is. An item view is where a person looks to find
          out what happened, so it says when it was drawn from the cache. -->
@@ -159,6 +165,7 @@
       offline={!pool.yes}
       {commands}
       pending={undrained.has(item.id)}
+      foot={false}
       opens
       cached={read?.fromCache === true}
     />
@@ -229,3 +236,9 @@
     <Body><Asking /></Body>
   {/if}
 </Register>
+
+{#if item !== undefined && !width.wide}
+  <div class="sticky bottom-0 z-20 -mx-3.5 mt-6">
+    <ItemBar {item} {commands} editing={row?.editor()} />
+  </div>
+{/if}

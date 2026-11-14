@@ -45,6 +45,9 @@
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
+  /** Drawn beside an open item when wide: the list without its capture box. */
+  let { beside = false }: { beside?: boolean } = $props();
+
   const SURFACE = "queue";
 
   /** On the queue's address, once, on the way back from processing. */
@@ -370,7 +373,7 @@
   </title>
 </svelte:head>
 
-{#if width.wide}
+{#if width.wide && !beside}
   <Capture
     bind:this={capture}
     focus={arrived === null}
@@ -378,7 +381,7 @@
     onfocus={captureFocused}
     oncaptured={(item) => sayLanded(item, $queue.order)}
   />
-{:else}
+{:else if !width.wide}
   <!-- Clear of the status line, a few pixels between, and there when the
        line is gone too. -->
   <a

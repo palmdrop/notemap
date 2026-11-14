@@ -299,24 +299,24 @@ coming back, and that closing the question leaves the tag off.
 
 Depends on phase 4.
 
-- [ ] Below 900px the item is full screen. At 900px and wider it sits beside the list, with its
+- [x] (2026-11-14) Below 900px the item is full screen. At 900px and wider it sits beside the list, with its
       actions at the head of its pane
-- [ ] The header: back (or close when wide), the day and the time, the position, and Previous and
+- [x] (2026-11-14) The header: back (or close when wide), the day and the time, the position, and Previous and
       Next in the morph shape. The ⋯ menu holds Edit, Copy (only where there is a clipboard and
       something to copy) and History
-- [ ] The bar: Discard, Done and Route
+- [x] (2026-11-14) The bar: Discard, Done and Route
   - What it just did is said on a ruled line over the bar, with Undo.
   - Manual has Undo in its status box, and Discarded has Undiscard.
   - The status boxes stay grey while something is under way.
-- [ ] Editing: double tap on the words, or Edit. The field has a ruled edge and the bar is Attach,
+- [x] (2026-11-14) Editing: double tap on the words, or Edit. The field has a ruled edge and the bar is Attach,
       Cancel and Save. Leaving with changes asks, and that includes the system's back gesture
       through history
-- [ ] Tags on the item. A trigger tag asks its template's question and locks while it counts
-- [ ] The feed's item is sealed. Edit there says that saving makes a revision, and Route says
+- [x] (2026-11-14) Tags on the item *(the question is still asked in the tag chooser's own list until the quick sheet)*. A trigger tag asks its template's question and locks while it counts
+- [ ] The feed's item is sealed *(2026-11-14: Route says Route again; Edit does not yet say that saving makes a revision)*. Edit there says that saving makes a revision, and Route says
       "Route again"
-- [ ] A refused capture's item: Done and Route are off, and Discard becomes Delete, which asks
-- [ ] `shell.md`: An item has an address, Actions and Tagging, where they change
-- [ ] Commit
+- [ ] A refused capture's item *(not built: a refused capture lives in the outbox and has no item page; its notice keeps Copy, Edit and Delete)*: Done and Route are off, and Discard becomes Delete, which asks
+- [x] (2026-11-14) `shell.md`: An item has an address, Actions and Tagging, where they change
+- [x] (2026-11-14) Commit
 
 **Verify**: the design's shots 20–30, 53, w02–w04 and w20. Tests cover back with unsaved changes
 and the trigger tag's question.

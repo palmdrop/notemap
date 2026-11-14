@@ -7,6 +7,9 @@
   import SignIn from "$components/session/SignIn.svelte";
   import Drawer from "$components/frame/Drawer.svelte";
   import Header from "$components/frame/Header.svelte";
+  import ItemHead from "$components/item/ItemHead.svelte";
+  import Feed from "$components/feed/Feed.svelte";
+  import Queue from "$components/queue/Queue.svelte";
   import Menu from "$components/frame/Menu.svelte";
   import Reach from "$components/frame/Reach.svelte";
   import Strip from "$components/frame/Strip.svelte";
@@ -55,6 +58,24 @@
     "/items/[id]/records/[recordId]": "record",
   };
   let drawer = $state(false);
+
+  const feed = client.feed;
+  const queueList = client.queue;
+  /** When wide, an open item is read beside the list it is in. */
+  const beside = $derived.by((): "queue" | "feed" | undefined => {
+    const id = page.params["id"];
+    if (
+      !width.wide ||
+      shut ||
+      page.route.id !== "/items/[id]" ||
+      id === undefined
+    )
+      return undefined;
+    return $feed.items.some((one) => one.id === id) &&
+      !$queueList.items.some((one) => one.id === id)
+      ? "feed"
+      : "queue";
+  });
 
   // Read whenever the pool is in reach and the door is open: a read refused
   // at start would otherwise leave completion offering nothing until a tag
@@ -166,21 +187,58 @@
     </aside>
   {/if}
 
-  <div class="flex min-h-dvh min-w-0 flex-col">
-    <Header {title} list={list && !shut} onmenu={() => (drawer = true)} />
-    <Strip />
-    <div class="flex-1">
-      <Sheet {fills}>
-        <Column {fills} {list}>
-          {#if shut}
-            <SignIn />
-          {:else if who.known}
-            {@render children()}
-          {/if}
-        </Column>
-      </Sheet>
+  <div
+    class="min-h-dvh min-w-0 {beside === undefined
+      ? 'flex flex-col'
+      : 'grid grid-cols-[minmax(0,28rem)_minmax(0,1fr)]'}"
+  >
+    {#if beside !== undefined}
+      <!-- The list the open item is read in, beside it when wide. -->
+      <section
+        aria-label={beside}
+        class="sticky top-0 flex h-dvh flex-col overflow-y-auto border-r border-rule"
+      >
+        <Header title={beside} list onmenu={() => (drawer = true)} />
+        <div class="flex-1">
+          <Sheet>
+            <Column list>
+              {#if beside === "queue"}
+                <Queue beside />
+              {:else}
+                <Feed />
+              {/if}
+            </Column>
+          </Sheet>
+        </div>
+        <StatusLine {shut} drawn />
+      </section>
+    {/if}
+    <div
+      class={beside === undefined
+        ? "contents"
+        : "flex min-h-dvh min-w-0 flex-col"}
+    >
+      {#if page.route.id === "/items/[id]" && !shut && page.params["id"] !== undefined}
+        <ItemHead id={page.params["id"]} />
+      {:else}
+        <Header {title} list={list && !shut} onmenu={() => (drawer = true)} />
+      {/if}
+      <Strip />
+      <div class="flex-1">
+        <Sheet {fills}>
+          <Column {fills} {list}>
+            {#if shut}
+              <SignIn />
+            {:else if who.known}
+              {@render children()}
+            {/if}
+          </Column>
+        </Sheet>
+      </div>
+      {#if beside === undefined}
+        <StatusLine {shut} drawn={list || shut} />
+      {/if}
     </div>
-    <StatusLine {shut} drawn={list || shut} />
   </div>
 </div>
 

@@ -1901,6 +1901,31 @@ leaves it somewhere to land.
 
 ### An item has an address
 
+*Redrawn 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
+**Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
+it sits beside the list it is read in**, the queue while it is work and the feed after, and a row
+pressed in that list opens in its place. *(A tap on a row of the full-width list still selects it in
+place when wide, its actions under it; the item opens from its `open`, or from a row beside an
+open item.)*
+
+**Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
+stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
+menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History. Back
+returns where the item was opened from; reached by a link, it goes to the item's list.
+
+**Its bar** is Discard, Done and Route, docked at its foot on a phone and a toolbar at the head of
+its pane when wide. A routed item, sealed, offers **Route again**. What a press just did is said on
+the ruled line over the bar, with Undo. **Discarded** is a grey state box with **Undiscard**, and
+**Manual: processed by hand** a box of its own; the Undo of a manual mark is in its record.
+
+**Editing** is Edit in the ⋯ menu, `e`, or a double tap on the words. The field has a ruled edge,
+and the bar becomes **Attach, Cancel and Save**. **Leaving with changes asks** `lose your
+changes?` — Keep editing, Lose changes, Save — and that includes the system's back gesture, which
+reaches the same guard through history. *(Save stays in the question: it was there before, and
+dropping it would lose a way out; DECISIONS.md names only the first two.)*
+
+
 **`/items/{id}` draws one item, `/items/{id}/process` is where it is processed, and
 `/items/{id}/records/{recordId}` draws one of its routing records.** All three are surfaces
 *(amended 2026-09-14: the decision was a modal until then)*: the first and last are things being

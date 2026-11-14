@@ -16,6 +16,10 @@
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+
+  import { itemHref } from "$components/item/href";
   import { width } from "$lib/breakpoint";
   import { became, editable } from "$lib/lineage";
   import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
@@ -44,6 +48,7 @@
     opens = false,
     cached = false,
     motion,
+    foot = true,
     onselect,
     onprocess,
   }: {
@@ -73,6 +78,8 @@
     cached?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
+    /** Whether a selected row draws its actions under it; the item view docks its own. */
+    foot?: boolean;
     /** Absent where the row is the whole surface, and there is nothing to select it from. */
     onselect?: (how: Picked) => void;
     onprocess?: () => void;
@@ -129,9 +136,34 @@
     return editing !== undefined;
   }
 
-  /** A row being rewritten is not picked, nor processed, until that is left. */
-  const pick = $derived(editing === undefined ? onselect : undefined);
-  const reach = $derived(editing === undefined ? onprocess : undefined);
+  /** The editable shape, for the bar that saves it. */
+  export function editor(): Editing | undefined {
+    return editing;
+  }
+
+  /**
+   * A row being rewritten is not picked, nor processed, until that is left.
+   * On a phone a tap opens the item, full screen; on the item a double tap on
+   * the words edits it.
+   */
+  const pick = $derived(
+    editing !== undefined
+      ? undefined
+      : (!width.wide || page.route.id === "/items/[id]") &&
+          !marking &&
+          surface !== "item"
+        ? () => void goto(itemHref(item.id))
+        : onselect,
+  );
+  const reach = $derived(
+    editing !== undefined
+      ? undefined
+      : surface === "item"
+        ? mayEdit
+          ? edit
+          : undefined
+        : onprocess,
+  );
 
   /** Brings the row into view, for the keys that walk the list. */
   export function reveal(): void {
@@ -214,7 +246,8 @@
     data-headed=""
     onpointerenter={() => (pointed = true)}
     onpointerleave={() => (pointed = false)}
-    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule transition-[background-color] duration-(--duration-short) ease-fade {selected
+    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule transition-[background-color] duration-(--duration-short) ease-fade {selected &&
+    surface !== 'item'
       ? 'bg-band'
       : pointed && width.wide && onprocess !== undefined
         ? 'bg-tag'
@@ -255,7 +288,7 @@
       </span>
     {/if}
 
-    {#if selected}
+    {#if selected && foot}
       <div
         data-foot
         class="col-span-full row-start-2 flex min-h-11 items-center border-t border-rule bg-off px-gutter"

@@ -45,7 +45,6 @@
 
 <dialog
   {@attach modal}
-  role="alertdialog"
   aria-labelledby="{id}-title"
   aria-describedby="{id}-about"
   oncancel={(event) => {
@@ -70,13 +69,13 @@
       {title}
     </h2>
     <div id="{id}-about" class="leading-[1.45]">{@render children()}</div>
-    <div class="mt-5 flex justify-end gap-2">
+    <div class="mt-5 flex flex-wrap justify-end gap-2">
       {#each ways as way, at (way.label)}
         <button
           type="button"
           data-way={at}
           onclick={() => answer(way.value)}
-          class="inline-flex min-h-9 items-center rounded-control border px-3.5 {way.kind ===
+          class="inline-flex min-h-9 items-center rounded-control border px-3.5 whitespace-nowrap {way.kind ===
           'primary'
             ? 'border-ink bg-ink text-paper'
             : way.kind === 'danger'

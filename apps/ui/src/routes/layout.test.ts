@@ -12,7 +12,7 @@ vi.mock("$app/paths", () => ({
 }));
 
 vi.mock("$app/state", () => ({
-  page: { url: new URL("http://localhost/"), route: { id: "/" } },
+  page: { url: new URL("http://localhost/"), route: { id: "/" }, params: {} },
 }));
 
 const children = createRawSnippet(() => ({

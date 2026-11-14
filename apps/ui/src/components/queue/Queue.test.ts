@@ -1281,7 +1281,8 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-const dialog = () => screen.queryByRole("dialog", { name: "Unsaved changes" });
+const dialog = () =>
+  screen.queryByRole("dialog", { name: "lose your changes?" });
 
 /** Leaving an edit with changes asks first, wherever the row has scrolled to. */
 test("leaving a row edited with changes asks, and staying goes back into the field", async () => {
@@ -1326,7 +1327,7 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   await fireEvent.click(screen.getByRole("button", { name: "close" }));
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "revert" }),
+    within(dialog()!).getByRole("button", { name: "Lose changes" }),
   );
   await tick();
   expect(screen.queryByLabelText("What it says")).toBeNull();
@@ -1341,7 +1342,7 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   await fireEvent.keyDown(window, { key: "j" });
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/edit");
@@ -1373,7 +1374,7 @@ test("staying, asked from the capture box, goes back into the field and asks not
   expect(dialog()).not.toBeNull();
 
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "keep editing" }),
+    within(dialog()!).getByRole("button", { name: "Keep editing" }),
   );
   await vi.waitFor(() => {
     expect(document.activeElement).toBe(field);
@@ -1399,7 +1400,7 @@ test("saving, asked from the capture box, lands the caret in the box", async () 
   box.focus();
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
 
   await vi.waitFor(() => {
@@ -1614,7 +1615,7 @@ test("an edit let go takes a waiting trigger tag with it, and not an ordinary on
   await fireEvent.click(screen.getByRole("button", { name: "close" }));
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "revert" }),
+    within(dialog()!).getByRole("button", { name: "Lose changes" }),
   );
   await tick();
 
@@ -1648,7 +1649,7 @@ test("a waiting trigger tag alone asks before the edit is left, and saving it se
   expect(dialog()).not.toBeNull();
 
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
