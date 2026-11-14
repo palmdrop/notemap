@@ -21,8 +21,18 @@
 
   import { itemHref } from "$components/item/href";
   import { width } from "$lib/breakpoint";
+  import { cancelRouting } from "$lib/firing";
+  import { firings, left, type Firing } from "$lib/firings.svelte";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { became, editable } from "$lib/lineage";
-  import { bringIntoView, fade, following, settled, slide } from "$lib/motion";
+  import {
+    bringIntoView,
+    fade,
+    following,
+    leave,
+    settled,
+    slide,
+  } from "$lib/motion";
   import { pickedBy, type Picked } from "$lib/marking.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
@@ -49,6 +59,7 @@
     cached = false,
     motion,
     foot = true,
+    firing,
     onselect,
     onprocess,
   }: {
@@ -78,6 +89,8 @@
     cached?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
+    /** Its route in its window, said on the row as on the line, with Cancel. */
+    firing?: Firing | undefined;
     /** Whether a selected row draws its actions under it; the item view docks its own. */
     foot?: boolean;
     /** Absent where the row is the whole surface, and there is nothing to select it from. */
@@ -136,6 +149,36 @@
     return editing !== undefined;
   }
 
+  /**
+   * A swipe left on a row opens the quick route, the row following the
+   * finger. One that starts within the edge's 24px is the system's back
+   * gesture, not the row's.
+   */
+  const EDGE = 24;
+  const ENOUGH = 80;
+  let swipe = $state<{ from: number; dx: number } | undefined>(undefined);
+  const swipes = $derived(
+    !width.wide && !marking && surface !== "item" && onprocess !== undefined,
+  );
+
+  function swipeFrom(event: PointerEvent): void {
+    if (!swipes || event.pointerType === "mouse") return;
+    const x = event.clientX;
+    if (x < EDGE || x > window.innerWidth - EDGE) return;
+    swipe = { from: x, dx: 0 };
+  }
+
+  function swipeAlong(event: PointerEvent): void {
+    if (swipe === undefined) return;
+    swipe = { ...swipe, dx: Math.min(0, event.clientX - swipe.from) };
+  }
+
+  function swipeEnd(): void {
+    const went = swipe?.dx ?? 0;
+    swipe = undefined;
+    if (went <= -ENOUGH) onprocess?.();
+  }
+
   /** The editable shape, for the bar that saves it. */
   export function editor(): Editing | undefined {
     return editing;
@@ -187,7 +230,37 @@
   });
 </script>
 
+{#snippet windowed(firing: Firing)}
+  {@const seconds = left(firing, firings.now)}
+  <p
+    class="flex items-center gap-2 rounded-tag border border-tag-line bg-tag px-2 py-1 text-small text-tag-ink"
+  >
+    <Spinner />
+    <span class="min-w-0 flex-1"
+      >Routing by <b class="text-ink">{firing.name}</b
+      >{#if firing.where !== undefined}, {firing.where}{/if}</span
+    >
+    {#if seconds !== undefined}
+      <span class="tabular-nums">{seconds}s</span>
+    {/if}
+    {#if !offline}
+      <button
+        type="button"
+        class="underline underline-offset-[0.2em]"
+        aria-label={`Cancel routing ${firing.name}`}
+        onclick={(event) => {
+          event.stopPropagation();
+          void cancelRouting(firing.record, firing.item, firing.name);
+        }}>Cancel</button
+      >
+    {/if}
+  </p>
+{/snippet}
+
 {#snippet facts()}
+  {#if firing !== undefined}
+    {@render windowed(firing)}
+  {/if}
   {#if word === "revision"}
     <span class="mt-2 block w-max" title="revision">
       <span aria-hidden="true">[+]</span>
@@ -232,7 +305,8 @@
      is what moves, the inner what its height follows. -->
 <div
   class="col-span-full grid grid-cols-subgrid"
-  transition:slide={{ fade: true, still: motion?.still ?? true }}
+  in:slide={{ fade: true, still: motion?.still ?? true }}
+  out:leave={{ still: motion?.still ?? true }}
   {@attach following}
 >
   <!-- Where the pointer is decides whether a marked row offers its `+`, and,
@@ -246,7 +320,16 @@
     data-headed=""
     onpointerenter={() => (pointed = true)}
     onpointerleave={() => (pointed = false)}
-    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule transition-[background-color] duration-(--duration-short) ease-fade {selected &&
+    onpointerdown={swipeFrom}
+    onpointermove={swipeAlong}
+    onpointerup={swipeEnd}
+    onpointercancel={() => (swipe = undefined)}
+    style:translate={swipe === undefined || swipe.dx === 0
+      ? undefined
+      : `${String(swipe.dx)}px 0`}
+    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
+      ? 'touch-pan-y'
+      : ''} transition-[background-color] duration-(--duration-short) ease-fade {selected &&
     surface !== 'item'
       ? 'bg-band'
       : pointed && width.wide && onprocess !== undefined

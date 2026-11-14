@@ -8,21 +8,23 @@ import {
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
-import { anItem, json, routeOf } from "@notemap/client/testing";
+import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
+import { quick } from "$lib/quicking.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
 import { registering, said } from "$testing/highlights";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
+import { firings } from "$lib/firings.svelte";
 import Queue from "./Queue.svelte";
 import Listed from "./Queue.fixture.svelte";
 
 keyboard();
 
-/** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
+/** Every slide and every leaving asked for, to tell a row that moved from one drawn still or not at all. */
 const slid = vi.hoisted(() => ({
   calls: [] as { node: Element; still: boolean | undefined }[],
 }));
@@ -33,6 +35,10 @@ vi.mock("$lib/motion", async (actual) => {
     slide: (node: Element, params?: Parameters<typeof motion.slide>[1]) => {
       slid.calls.push({ node, still: params?.still });
       return motion.slide(node, params);
+    },
+    leave: (node: Element, params?: Parameters<typeof motion.leave>[1]) => {
+      slid.calls.push({ node, still: params?.still });
+      return motion.leave(node, params);
     },
   };
 });
@@ -67,6 +73,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  quick.close();
   notices.clear();
   went.to = [];
   replaced.urls = [];
@@ -779,7 +786,7 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
   // The second click of a double is not a toggle: select, nothing, go.
   expect(stamps(true)).toHaveLength(1);
 });
@@ -898,7 +905,7 @@ test("enter selects, and enter on a selected row opens process", async () => {
   expect(went.to).toEqual([]);
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 });
 
 /** A decision takes the row away; the selection stays where the hand is. */
@@ -1097,7 +1104,7 @@ test("the selected index line opens into the whole row, actions and all", async 
   expect(screen.getByText("one").closest("[data-row]")).toBeNull();
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/two/process"]);
+  expect(quick.item).toBe("two");
 });
 
 /** Shift is the guard on the one decision that sends an item away. */
@@ -2241,5 +2248,98 @@ test("highlights in each row the words the queue is searched by", async () => {
 
   await vi.waitFor(() => {
     expect(said(highlights())).toEqual(["bike", "bíke"]);
+  });
+});
+
+test("a route in its window keeps its row, counting down with Cancel", async () => {
+  let held = ["one", "two"];
+  const cancelled: string[] = [];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: held.map((id) => anItem(id)) });
+    }
+    if (route === "POST /v1/routing/r1/cancel") {
+      cancelled.push(route);
+      return json(200, {});
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Vault",
+    until: Date.now() + 10_000,
+  });
+  held = ["two"];
+  await client.loadQueue();
+
+  // Off the queue in the pool's eyes, and still drawn while its window is open.
+  const line = await screen.findByText(/Routing by/);
+  expect(line.closest("[data-row]")?.getAttribute("data-row")).toBe("one");
+  expect(screen.getByText("10s")).toBeDefined();
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Cancel routing Vault" }),
+  );
+  await vi.waitFor(() => {
+    expect(cancelled).toEqual(["POST /v1/routing/r1/cancel"]);
+  });
+
+  // Called off, it is work again: the row stays, and says nothing of a route.
+  await vi.waitFor(() => {
+    expect(screen.queryByText(/Routing by/)).toBeNull();
+  });
+  expect(document.querySelector('[data-row="one"]')).not.toBeNull();
+  firings.clear();
+});
+
+test("a route's row leaves once its window has closed", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: ["one", "two"].map((id) => anItem(id)) });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r1",
+        item: "one",
+        at: new Date().toISOString(),
+        state: "pending",
+        until: new Date(Date.now() + 10_000).toISOString(),
+        target: {
+          kind: "destination",
+          destination: "vault",
+          capability: "create",
+          arguments: {},
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Queue);
+  await screen.findByText("one");
+  const record = await client.routing.route("one", {
+    destination: "vault",
+    capability: "create",
+    arguments: {},
+  });
+  firings.opened({
+    record: record.id,
+    item: "one",
+    name: "Vault",
+    until: Date.parse(record.until ?? ""),
+  });
+  expect(read(client.queue).items.map((one) => one.id)).toEqual(["two"]);
+  await screen.findByText(/Routing by/);
+
+  firings.closed("r1");
+  await vi.waitFor(() => {
+    expect(document.querySelector('[data-row="one"]')).toBeNull();
   });
 });

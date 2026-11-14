@@ -8,6 +8,7 @@ import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
 import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
+import { quick } from "$lib/quicking.svelte";
 import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
@@ -30,6 +31,7 @@ async function discard() {
 }
 
 afterEach(() => {
+  quick.close();
   notices.clear();
   went.to = [];
 });
@@ -460,7 +462,7 @@ test("process goes to the surface for it", async () => {
 
   await fireEvent.click(screen.getByRole("button", { name: /^Route/ }));
 
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 });
 
 test("takes back a decision the person made by hand, and reads the records again", async () => {
@@ -612,7 +614,7 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
 
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/linked/process"]);
+  expect(quick.item).toBe("linked");
 });
 
 /** An edit offers the item's tags and nothing that decides it, until it is closed. */
@@ -636,7 +638,7 @@ test("while the item is edited only its tags are reached", async () => {
 
   await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/linked/process"]);
+  expect(quick.item).toBe("linked");
 });
 
 /** The same order as on a row: the field, then the editable shape, and no more. */

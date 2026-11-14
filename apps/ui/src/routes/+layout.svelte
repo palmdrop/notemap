@@ -8,6 +8,8 @@
   import Drawer from "$components/frame/Drawer.svelte";
   import Header from "$components/frame/Header.svelte";
   import ItemHead from "$components/item/ItemHead.svelte";
+  import Quick from "$components/quick/Quick.svelte";
+  import { quick } from "$lib/quicking.svelte";
   import Feed from "$components/feed/Feed.svelte";
   import Queue from "$components/queue/Queue.svelte";
   import Menu from "$components/frame/Menu.svelte";
@@ -252,6 +254,10 @@
     who={who.who}
     onclose={() => (drawer = false)}
   />
+{/if}
+
+{#if quick.item !== undefined && !shut}
+  <Quick item={quick.item} onclose={() => quick.close()} />
 {/if}
 
 <Dropping />

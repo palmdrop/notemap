@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { quick } from "$lib/quicking.svelte";
   import { untrack } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
   import type { ItemState, RoutingRecord } from "@notemap/client";
@@ -15,9 +16,8 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import Block from "$components/record/Block.svelte";
-  import { goto } from "$app/navigation";
 
-  import { processHref, recordHref } from "$components/item/href";
+  import { recordHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
@@ -97,7 +97,7 @@
       ? []
       : commandsFor(item, {
           offline: !pool.yes,
-          onprocess: () => void goto(processHref(id)),
+          onprocess: () => quick.open(id),
           onedit: () => row?.edit(),
           tag: () => row?.tag(),
         }),

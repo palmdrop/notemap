@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { SvelteMap } from "svelte/reactivity";
+  import { quick } from "$lib/quicking.svelte";
   import { resolve } from "$app/paths";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
@@ -6,7 +8,7 @@
   import { sayLanded } from "$lib/landed";
   import { onMount, tick, untrack } from "svelte";
 
-  import { goto, replaceState } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
   import { filterSize, type Item } from "@notemap/client";
@@ -22,7 +24,7 @@
   import Register from "$components/primitives/register/Register.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
   import { searching } from "$components/frame/searching.svelte";
-  import { itemHref, processHref } from "$components/item/href";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
@@ -31,6 +33,7 @@
   import { byDay, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
+  import { firings, phaseOf } from "$lib/firings.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { Marking, PLAINLY, picked, type Picked } from "$lib/marking.svelte";
   import { batched } from "$lib/batched.svelte";
@@ -115,8 +118,28 @@
    * where it stood until the selection leaves it: the decision can be looked
    * at, and taken back from the row, after it is made.
    */
+  /**
+   * A route in its window keeps its row, by hand or by trigger tag, until the
+   * window closes and the row slides out. The pool has already taken the item
+   * off the queue, so the row is drawn from what this list last held of it.
+   */
+  const seen = new SvelteMap<string, Item>();
+  $effect(() => {
+    for (const row of $queue.items) seen.set(row.id, row);
+  });
+  const inWindow = $derived(
+    firings.open
+      .filter(
+        (firing) =>
+          phaseOf(firing, firings.now) === "window" &&
+          !$queue.items.some((row) => row.id === firing.item) &&
+          seen.has(firing.item),
+      )
+      .map((firing) => seen.get(firing.item) as Item),
+  );
+
   const rows = $derived.by(() => {
-    const live = $queue.items;
+    const live = withWindows($queue.items);
     const kept = $heldRow;
     if (
       selected === undefined ||
@@ -131,6 +154,16 @@
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
+
+  function withWindows(live: readonly Item[]): readonly Item[] {
+    let drawn = [...live];
+    for (const kept of inWindow) {
+      if (drawn.some((row) => row.id === kept.id)) continue;
+      const place = placeOf(drawn, kept, $queue.order);
+      drawn = [...drawn.slice(0, place), kept, ...drawn.slice(place)];
+    }
+    return drawn;
+  }
 
   /** A held row is still drawn, so the queue is not empty until it is let go. */
   const drained = $derived(
@@ -236,7 +269,7 @@
 
   /** The deep tier: a surface of its own, which comes back here when it is done. */
   function process(item: Item) {
-    void goto(processHref(item.id));
+    quick.open(item.id);
   }
 
   function read(wanted: View) {
@@ -464,6 +497,7 @@
     offline={!pool.yes}
     commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
+    firing={firings.open.find((firing) => firing.item === row.id)}
     {opens}
     onselect={(how) => select(row.id, how)}
     onprocess={marking.on ? undefined : () => process(row)}

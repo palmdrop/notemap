@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { quick } from "$lib/quicking.svelte";
   import { onMount, tick, untrack } from "svelte";
 
-  import { goto, replaceState } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
   import {
@@ -25,7 +26,7 @@
   import ClearFilters from "$components/tags/ClearFilters.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
   import { searching } from "$components/frame/searching.svelte";
-  import { itemHref, processHref } from "$components/item/href";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
@@ -238,7 +239,7 @@
   });
 
   function process(item: Item) {
-    void goto(processHref(item.id));
+    quick.open(item.id);
   }
 
   function read(wanted: View) {
@@ -388,7 +389,7 @@
     pending={undrained.has(item.id)}
     {opens}
     onselect={(how) => select(item.id, how)}
-    onprocess={marking.on ? undefined : () => void goto(processHref(item.id))}
+    onprocess={marking.on ? undefined : () => quick.open(item.id)}
   />
 {/snippet}
 
@@ -415,7 +416,7 @@
     marking={marking.on}
     onselect={select}
     onprocess={(id) => {
-      if (!marking.on) void goto(processHref(id));
+      if (!marking.on) quick.open(id);
     }}
   />
 

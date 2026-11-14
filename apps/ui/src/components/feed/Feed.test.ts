@@ -15,6 +15,7 @@ import { keyboard, online, viewport } from "$testing/dom";
 import { remember, rememberKey } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
+import { quick } from "$lib/quicking.svelte";
 import Feed from "./Feed.svelte";
 
 keyboard();
@@ -59,6 +60,7 @@ function stamps(expanded: boolean) {
 }
 
 afterEach(() => {
+  quick.close();
   slid.calls = [];
   went.to = [];
   localStorage.clear();
@@ -149,7 +151,7 @@ test("an index line opens into its whole row in place, without sliding", async (
   expect(slid.calls.some((call) => call.still === false)).toBe(false);
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/gone/process"]);
+  expect(quick.item).toBe("gone");
 });
 
 test("says an archived row is discarded, and offers the way back", async () => {
@@ -554,7 +556,7 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
   // The second click of a double is not a toggle: select, nothing, go.
   expect(stamps(true)).toHaveLength(1);
 });
@@ -587,7 +589,7 @@ test("walks the rows with j and k, and processes the one selected", async () => 
 
   await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(stamps(true)).toHaveLength(0);
@@ -612,7 +614,7 @@ test("j past the last row held reads the next page and steps into it", async () 
   await vi.waitFor(async () => {
     went.to = [];
     await fireEvent.keyDown(window, { key: "p" });
-    expect(went.to).toEqual(["/items/two/process"]);
+    expect(quick.item).toBe("two");
   });
 });
 
@@ -651,7 +653,7 @@ test("j past the last row while its next page is read steps once it lands", asyn
   await vi.waitFor(async () => {
     went.to = [];
     await fireEvent.keyDown(window, { key: "p" });
-    expect(went.to).toEqual(["/items/two/process"]);
+    expect(quick.item).toBe("two");
   });
 });
 

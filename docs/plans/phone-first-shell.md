@@ -325,22 +325,22 @@ and the trigger tag's question.
 
 Depends on phase 6.
 
-- [ ] The quick sheet, a dialog when wide.
+- [x] (2026-11-14) The quick sheet, a dialog when wide.
   - Templates by name and icon, with a template's question asked in the same sheet and its answers
     moving on as they are tapped.
   - More options leads to the route page.
-- [ ] Reaching it:
+- [x] (2026-11-14) Reaching it:
   - From the item's Route.
   - By a swipe left on a row, with 24px at each edge left to the system (see Unknowns).
   - By hovering a row and pressing Route.
   - With `p`.
-- [ ] A route in its window keeps its row, by hand or by trigger tag, counts down, and slides out
+- [x] (2026-11-14) A route in its window keeps its row, by hand or by trigger tag, counts down, and slides out
       when the window closes. Its three phrasings follow `DECISIONS.md`:
   - In the window.
   - Being attempted.
   - Retrying.
-- [ ] `shell.md`: the quick route, and the window's drawing in the row and on the line
-- [ ] Commit
+- [x] (2026-11-14) `shell.md`: the quick route, and the window's drawing in the row and on the line
+- [x] (2026-11-14) Commit
 
 **Verify**: the design's shots 09–13 and w05. A test runs a route through its window, its Cancel,
 and the row leaving.

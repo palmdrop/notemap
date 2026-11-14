@@ -1361,6 +1361,33 @@ source and tag it holds, and `f` still opens it.
 - With the pool out of reach the feed draws the filter from what it holds, and says so as any
   cache-drawn surface does ([client.md](client.md#a-filtered-surface)).
 
+#### The quick route
+
+*Added 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md)).*
+**Routing starts in a sheet**, titled `route`, a dialog in the middle when wide. It names the item
+by its first words, then lists the templates whose destination is still offered, each a row with
+an icon for what it files into (a note for one that appends, a folder, a cloud, a board), its name,
+and where it files — `todo.md in Vault`. **A template that asks nothing routes on its Route.** One
+that asks ([ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
+opens in place and asks it: the destination's answers as rows, which move on as they are tapped,
+the last of them routing, and a line for a typed answer with Next. **More options** leads to the
+route page, `/items/{id}/process`.
+
+**It is reached** from the item's Route, from a row's Route under the pointer when wide, by **a
+swipe left on a row** on a phone — the row following the finger, and a swipe that starts within
+24px of either edge left to the system's back gesture — and with `p` wherever an item is in hand.
+`process` is the quick route's command now; the route page is reached through it.
+
+**A route made from it is in its window at once** ([below](#the-status-line)): drawn on the line,
+and on its row.
+
+**A route in its window keeps its row** *(2026-11-13)*, by hand or by trigger tag. The pool has
+already taken the item off the queue, so the row is drawn from what the list last held of it, at
+its place in the order, with a box-grey line: the spinner, `Routing by **Todo**, list Next`, the
+seconds left, and **Cancel** (not offline). Cancelled, it is work again and stays. When the window
+closes the row **slides out sideways and the rows below close up**; the line goes on saying the
+delivery's next step, `Sending to Vault`, until it lands.
+
 #### The process surface
 
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
