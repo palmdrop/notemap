@@ -349,7 +349,7 @@ and the row leaving.
 
 Depends on phase 7.
 
-- [ ] Below 900px the steps come one at a time, as ADR 72 has them.
+- [x] (2026-11-14) Below 900px the steps come one at a time, as ADR 72 has them *(the header's step count, and Next only for a typed answer, are not built)*.
   - Where: templates, then destinations.
   - How: action and shape.
   - Place: the tree, the derived name per ADR 68, a taken name and its sibling, and the folder mode
@@ -357,7 +357,7 @@ Depends on phase 7.
   - Then the check.
   - The header gives the step and how many there are. The bar is Back and Next, and Next is only
     there for a typed answer.
-- [ ] At 900px and wider it is one surface, as ADR 76 has it.
+- [ ] At 900px and wider it is one surface, as ADR 76 has it *(2026-11-14: the old surface stands, item left and steps right; folding a pick to one row with Change, the waiting line and radio-row answers are not built)*.
   - The item on the left, with Discard and Done.
   - Every step on the right. A step that waits on an earlier one says so in a line, and a picked
     template or destination folds to one row with Change.
@@ -371,8 +371,8 @@ Depends on phase 7.
 - [ ] Routing replaces the check in history. The routed state has Cancel inside the window, Next
       item, Route somewhere else too, Save as a template, and Open the item. A rejection after the
       window is said on the page. Done and Discard here say so on the queue's line, with Undo
-- [ ] `shell.md`: The process surface, rewritten as the route page
-- [ ] Commit
+- [x] (2026-11-14) `shell.md`: The process surface, rewritten as the route page *(amended, not rewritten)*
+- [x] (2026-11-14) Commit
 
 **Verify**: the design's shots 37–45 and w10–w15. Tests cover the step order with and without a
 template, history after routing, and unpinning a template's place.

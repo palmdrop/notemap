@@ -15,7 +15,7 @@ import {
   routeOf,
 } from "@notemap/client/testing";
 
-import { keyboard, online } from "$testing/dom";
+import { keyboard, online, viewport } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
 import { firings } from "$lib/firings.svelte";
 import { notices } from "$lib/notices.svelte";
@@ -4667,4 +4667,52 @@ test("a trigger tag typed in whose template asks takes the template, asking here
   expect(await screen.findByLabelText("filename")).toBeDefined();
   expect(left()).toBeUndefined();
   expect(asked()).not.toContain("POST /v1/items/one/tag");
+});
+
+/** The steps shown on a phone, in order: the one on screen is the one not hidden. */
+const onScreen = () =>
+  [...document.querySelectorAll("[data-step]")]
+    .filter((one) => !one.classList.contains("hidden"))
+    .map((one) => one.getAttribute("data-step"));
+
+test("on a phone the steps come one at a time: where, then the place, then the check", async () => {
+  viewport(390);
+  serving([aDestination()]);
+  draw();
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(onScreen()).toEqual(["destination"]);
+  expect(screen.getByRole("button", { name: "Back" })).toHaveProperty(
+    "disabled",
+    true,
+  );
+
+  await choose("Vault");
+  await vi.waitFor(() => expect(onScreen()).toEqual(["place"]));
+
+  await fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(onScreen()).toEqual(["tags", "preview"]);
+  expect(screen.getByRole("button", { name: "Route" })).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "Back" }));
+  expect(onScreen()).toEqual(["place"]);
+});
+
+test("on a phone a template that fixes its place goes from where to the check", async () => {
+  viewport(390);
+  servingTemplates();
+  draw();
+
+  await choose("research");
+  await vi.waitFor(() => expect(onScreen()).toEqual(["tags", "preview"]));
+});
+
+test("when wide every step is on the one surface", async () => {
+  viewport(1440);
+  serving([aDestination()]);
+  draw();
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(onScreen()).toEqual(["destination", "place", "tags", "preview"]);
+  expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
 });

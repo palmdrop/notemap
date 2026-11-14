@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import { width } from "$lib/breakpoint";
   import { onMount, tick, untrack } from "svelte";
 
   import { goto } from "$app/navigation";
@@ -390,6 +393,36 @@
       Object.entries(values).filter(([name]) => !(name in asking)),
     );
   }
+
+  /**
+   * On a phone the steps come one at a time: where, then how where there is a
+   * choice of output, then the place where a template does not fix it, then
+   * the check. When wide every step is on the one surface.
+   */
+  type StepName = "where" | "how" | "place" | "check";
+  const WHY_NOT = "Pick a destination, and where in it, to route.";
+  const stepped = $derived.by((): readonly StepName[] => [
+    "where",
+    ...(offersOutput ? (["how"] as const) : []),
+    ...(applied !== undefined && chosen === undefined
+      ? []
+      : (["place"] as const)),
+    "check",
+  ]);
+  let stepAt = $state(0);
+  const step = $derived(stepped[Math.min(stepAt, stepped.length - 1)]);
+  const onPhone = $derived(!width.wide);
+  const shows = (name: StepName): boolean => !onPhone || step === name;
+
+  // A destination or a template picked is the where answered: on to the next.
+  let pickedBefore: string | undefined;
+  $effect(() => {
+    const now = chosen ?? applied?.id;
+    if (now !== undefined && now !== pickedBefore && step === "where") {
+      stepAt = Math.min(1, stepped.length - 1);
+    }
+    pickedBefore = now;
+  });
 
   const ready = $derived(
     chosen !== undefined && capability !== undefined && askedSettled,
@@ -1162,7 +1195,12 @@
   </div>
 
   <div class="min-h-0 min-w-0 flex-1 overflow-auto wide:pt-2 wide:pl-8">
-    <Section name="destination" open ontoggle={() => undefined}>
+    <Section
+      name="destination"
+      hidden={!shows("where")}
+      open
+      ontoggle={() => undefined}
+    >
       {#if chosen === undefined}
         <DestinationLine
           destinations={[...$templates, ...offeredDestinations, ...HAND]}
@@ -1246,7 +1284,12 @@
     </Section>
 
     {#if offersOutput}
-      <Section name="output" open ontoggle={() => undefined}>
+      <Section
+        name="output"
+        hidden={!shows("how")}
+        open
+        ontoggle={() => undefined}
+      >
         <div class="flex flex-wrap gap-x-[2ch]">
           <Option
             label="everything"
@@ -1264,7 +1307,8 @@
 
     <Section
       name="place"
-      open={opened.place}
+      hidden={!shows("place")}
+      open={opened.place || onPhone}
       ontoggle={() => (opened.place = !opened.place)}
     >
       {#if chosen === undefined && applied !== undefined}
@@ -1324,7 +1368,12 @@
       {/if}
     </Section>
 
-    <Section name="tags" open ontoggle={() => undefined}>
+    <Section
+      name="tags"
+      hidden={!shows("check")}
+      open
+      ontoggle={() => undefined}
+    >
       <ComposerTags
         item={item.id}
         names={tags}
@@ -1335,6 +1384,7 @@
 
     <Section
       name="preview"
+      hidden={!shows("check")}
       open={opened.preview || shown !== undefined || pending}
       ontoggle={() => (opened.preview = !opened.preview)}
     >
@@ -1356,33 +1406,65 @@
     {/if}
   </div>
 
-  <div
-    class="flex h-12 flex-none items-center justify-between border-t border-ink wide:ml-8"
-  >
-    <div class="flex gap-x-6 max-wide:gap-x-4">
-      <Action
-        disabled={around.previous === undefined}
-        onclick={() => walk(around.previous)}
-      >
-        ← previous
-      </Action>
-      <Action
-        disabled={around.next === undefined}
-        onclick={() => walk(around.next)}
-      >
-        next →
-      </Action>
+  {#if onPhone}
+    <div class="-mx-3.5 flex-none">
+      <ActionBar at="foot" label="Route">
+        {#snippet say()}{#if step === "check" && !ready && !busy}{WHY_NOT}{/if}{/snippet}
+        <BarAction
+          icon="back"
+          label="Back"
+          disabled={stepAt === 0}
+          onclick={() => (stepAt = Math.max(0, stepAt - 1))}
+        />
+        {#if step === "check"}
+          <BarAction
+            icon="route"
+            label="Route"
+            primary
+            working={busy}
+            why={!ready && !busy ? WHY_NOT : undefined}
+            command="route"
+            onclick={() => void send()}
+          />
+        {:else}
+          <BarAction
+            icon="next"
+            label="Next"
+            primary
+            onclick={() => (stepAt = Math.min(stepped.length - 1, stepAt + 1))}
+          />
+        {/if}
+      </ActionBar>
     </div>
-    <button
-      type="button"
-      disabled={!ready || busy}
-      aria-busy={busy || undefined}
-      onclick={() => void send()}
-      class="inverted h-8 px-5 font-semibold {busy
-        ? ''
-        : 'disabled:bg-transparent disabled:text-muted'}"
+  {:else}
+    <div
+      class="flex h-12 flex-none items-center justify-between border-t border-rule wide:ml-8"
     >
-      <Working working={busy}>route</Working>
-    </button>
-  </div>
+      <div class="flex gap-x-6 max-wide:gap-x-4">
+        <Action
+          disabled={around.previous === undefined}
+          onclick={() => walk(around.previous)}
+        >
+          ← previous
+        </Action>
+        <Action
+          disabled={around.next === undefined}
+          onclick={() => walk(around.next)}
+        >
+          next →
+        </Action>
+      </div>
+      <button
+        type="button"
+        disabled={!ready || busy}
+        aria-busy={busy || undefined}
+        onclick={() => void send()}
+        class="inverted h-8 px-5 font-semibold {busy
+          ? ''
+          : 'disabled:bg-transparent disabled:text-muted'}"
+      >
+        <Working working={busy}>route</Working>
+      </button>
+    </div>
+  {/if}
 </div>

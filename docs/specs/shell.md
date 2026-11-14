@@ -1390,6 +1390,20 @@ delivery's next step, `Sending to Vault`, until it lands.
 
 #### The process surface
 
+*Amended 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)): the
+process surface is **the route page**, reached from the quick route's More options. **Below 900px
+its steps come one at a time** — where (templates, then destinations), how where the destination
+offers a choice of output, the place where a template does not fix it, then the check (the tags
+and the preview) — each under a band, with a bar docked at the foot: **Back**, and **Next**, or
+**Route** at the check, dashed with the reason above it until there is something to send. Picking
+where moves on by itself. **At 900px and wider it is one surface**, as before: the item on the left
+and every step on the right under its band, Route at the foot of the steps. What the steps do is
+unchanged below. *(Still to build: the header saying which step of how many, Next only for a typed
+answer, a picked template folding to one row with Change, the check's facts opening their steps, and
+a fixed place changed for one route.)*
+
+
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
 What was here — the composer as a modal over the register, its chrome, its two columns and its
 measure — is superseded; the rules that outlived the modal are folded in below.*
