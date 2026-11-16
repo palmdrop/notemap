@@ -567,26 +567,41 @@
   >
     <div
       bind:this={panel}
-      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-paper px-2.5 py-1 {step ===
-      undefined
-        ? ''
-        : 'max-wide:w-full'}"
+      class="mt-1 overflow-y-auto bg-paper px-2.5 {step === undefined
+        ? 'max-h-64 w-max min-w-36 border border-ink py-1'
+        : 'max-h-[70dvh] w-[26rem] max-w-full rounded-t-control border border-rule max-wide:w-full max-wide:border-x-0 max-wide:border-b-0'}"
     >
       {#if stepping !== undefined && step !== undefined}
-        <!-- What is being asked, and for which template, since the line holds
-             only the value. -->
-        <div
-          id="{id}-step"
-          class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
-        >
-          <span class={TRIGGER}
-            ><Icon name="route" class="size-3.5" />{trigger(stepping.tag)}</span
+        <!-- The quick sheet's shape: the trigger, the template it applies, and
+             what it asks. Closing it leaves the tag off. -->
+        <div id="{id}-step" class="-mx-2.5 mb-1">
+          <div
+            class="flex min-h-bar items-center justify-between gap-3 border-b border-rule px-gutter"
           >
-          → {stepping.ask.template},
-          <span class="font-semibold">{step.label}</span>
-          {#if step.default !== undefined}
-            <span>default {step.default}</span>
-          {/if}
+            <span class="font-display text-title lowercase"
+              >{trigger(stepping.tag)}</span
+            >
+            <button
+              type="button"
+              aria-label="Leave the tag off"
+              onmousedown={(event) => event.preventDefault()}
+              onclick={close}
+              class="grid min-h-target min-w-target place-items-center"
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <div
+            class="grid min-h-bar grid-cols-[var(--spacing-icon)_1fr] items-center gap-3 border-b border-ink px-gutter py-2"
+          >
+            <Icon name="route" />
+            <span class="min-w-0">
+              <span class="block">{stepping.ask.template}</span>
+              <small class="block text-small text-muted"
+                >{step.label}{#if step.default !== undefined}, default {step.default}{/if}</small
+              >
+            </span>
+          </div>
         </div>
       {/if}
       <div
@@ -612,7 +627,18 @@
                 ? take(row.label)
                 : give(row.value ?? row.label)}
           >
-            {#if row.fresh}
+            {#if step !== undefined}
+              <span
+                class="-mx-2.5 flex min-h-target items-center justify-between gap-3 border-b border-rule pr-gutter pl-[calc(var(--spacing-gutter)+var(--spacing-icon)+0.75rem)]"
+              >
+                <span>{row.fresh ? `+ ${row.label}` : row.label}</span>
+                {#if stepping !== undefined && stepping.at + 1 >= stepping.ask.steps.length}
+                  <span class="underline underline-offset-[0.2em]">Route</span>
+                {:else}
+                  <Icon name="chevron" class="size-5" />
+                {/if}
+              </span>
+            {:else if row.fresh}
               + {row.label}
             {:else}
               <span class={fired === undefined ? "" : TRIGGER}

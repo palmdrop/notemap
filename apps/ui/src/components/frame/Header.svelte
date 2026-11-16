@@ -76,8 +76,8 @@
     <div class="min-w-0 flex-1">
       <Search
         bind:this={box}
-        words={field.words}
-        onsearch={field.onsearch}
+        words={field?.words ?? ""}
+        onsearch={(words, push) => field?.onsearch(words, push)}
         placeholder={`Search the ${title}`}
       />
     </div>
@@ -115,8 +115,8 @@
       <div class="mx-auto w-full max-w-[26rem] min-w-0 px-4">
         <Search
           bind:this={box}
-          words={field.words}
-          onsearch={field.onsearch}
+          words={field?.words ?? ""}
+          onsearch={(words, push) => field?.onsearch(words, push)}
           placeholder={`Search the ${title}`}
           boxed
         />
