@@ -94,7 +94,7 @@
 {/if}
 
 {#if sheet === "tag"}
-  <BatchTags {marked} {onbatch} onclose={() => (sheet = undefined)} />
+  <BatchTags {marked} onclose={() => (sheet = undefined)} />
 {:else if sheet === "route"}
   <BatchRoute
     count={marked.length}

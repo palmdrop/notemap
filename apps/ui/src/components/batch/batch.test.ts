@@ -3,7 +3,8 @@ import { expect, test, vi } from "vitest";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
-import { client, pool } from "$testing/pool";
+import { client, pool, sent } from "$testing/pool";
+import { notices } from "$lib/notices.svelte";
 import BatchRoute from "./BatchRoute.svelte";
 import BatchTags from "./BatchTags.svelte";
 
@@ -16,13 +17,12 @@ const tagged = (id: string, ...names: string[]) =>
     })),
   });
 
-test("the tag sheet says each tag is on all, some or none of the selected rows, and a press puts it on all or takes it off all", async () => {
-  pool(() => json(200, { values: [] }));
-  const onbatch = vi.fn();
+test("the tag sheet says each tag is on all, some or none of the selected rows, and sends nothing until Apply", async () => {
+  const transport = pool(() => json(200, { values: [] }));
+  const onclose = vi.fn();
   render(BatchTags, {
     marked: [tagged("one", "home", "idea"), tagged("two", "home")],
-    onbatch,
-    onclose: vi.fn(),
+    onclose,
   });
 
   const home = screen.getByRole("checkbox", { name: /home/ });
@@ -31,9 +31,32 @@ test("the tag sheet says each tag is on all, some or none of the selected rows, 
   expect(idea.getAttribute("aria-checked")).toBe("mixed");
 
   await fireEvent.click(home);
-  expect(onbatch).toHaveBeenLastCalledWith({ kind: "untag", tag: "home" });
   await fireEvent.click(idea);
-  expect(onbatch).toHaveBeenLastCalledWith({ kind: "tag", tag: "idea" });
+  expect(home.getAttribute("aria-checked")).toBe("false");
+  expect(idea.getAttribute("aria-checked")).toBe("true");
+  const posted = () =>
+    transport.sent.filter((request) => request.method !== "GET");
+  expect(posted()).toHaveLength(0);
+
+  await fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+  expect(onclose).toHaveBeenCalled();
+  await vi.waitFor(() => expect(notices.latest?.what).toBe("Tagged"));
+  // Each change goes only to the rows it changes: idea to the one without it.
+  await vi.waitFor(async () => {
+    const bodies = await sent();
+    expect(bodies).toContainEqual(
+      expect.objectContaining({
+        items: ["one", "two"],
+        action: { kind: "untag", tag: "home" },
+      }),
+    );
+    expect(bodies).toContainEqual(
+      expect.objectContaining({
+        items: ["two"],
+        action: { kind: "tag", tag: "idea" },
+      }),
+    );
+  });
 });
 
 test("a batch is routed only by a template with a trigger tag, as that tag", async () => {
