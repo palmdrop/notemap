@@ -447,25 +447,25 @@ Save's reason.
 
 Depends on phases 3 to 11.
 
-- [ ] Keys: the existing bindings reach the new views. When wide, a button with a key shows it in
+- [x] (2026-11-16) Keys: the existing bindings reach the new views. When wide, a button with a key shows it in
       its tooltip. Check the full list in `DECISIONS.md` "A wide window"
-- [ ] Accessibility, built through every phase and checked here:
+- [x] (2026-11-16) Accessibility, built through every phase and checked here *(two fail and are left for tuning: a control's edge is under 3:1 with the design's tokens, and tags and the filter's boxes are under 44px)*:
   - Rows can be focused.
   - Focus is visible.
   - Reduced motion is respected: walk every transition with `prefers-reduced-motion` on.
   - A control's edge has 3:1 contrast against what it sits on.
   - Targets are at least 44px on a phone.
   - States are said in words.
-- [ ] No feature lost: walk the audit's control table and place every control, or list the
+- [x] (2026-11-16) No feature lost: walk the audit's control table and place every control, or list the
       deliberate exceptions for the developer
-- [ ] `docs/design/README.md`: `mobile/` is what the shell is built against. `brief.md` and
-      `redrawn/` are removed once the developer confirms
-- [ ] `pnpm test:stack`
-- [ ] Motion: every transition is listed in the artifact, with what it says and where the design
+- [x] (2026-11-16) `docs/design/README.md`: `mobile/` is what the shell is built against. `brief.md` and
+      `redrawn/` are removed once the developer confirms *(marked superseded, not removed)*
+- [x] (2026-11-16) `pnpm test:stack`
+- [x] (2026-11-16) Motion: every transition is listed in the artifact, with what it says and where the design
       drew it or where it was chosen
-- [ ] Publish the before/after and the app-against-design artifacts for the developer's tuning
+- [x] (2026-11-16) Publish the before/after and the app-against-design artifacts for the developer's tuning
       step, then stop
-- [ ] Commit, and open one PR for the branch (`core:open-pr`): the ADRs, the design, the reviews,
+- [x] (2026-11-16) Commit, and open one PR for the branch (`core:open-pr`): the ADRs, the design, the reviews,
       this plan and the code together
 
 **Verify**: the control table is placed in full. Every state in the design's `shots/` has an app

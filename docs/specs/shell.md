@@ -4,6 +4,14 @@
 **Last updated**: 2026-11-13
 **Shipped**:
 
+- 2026-11-16 — **The phone-first shell** (ADRs 71 to 76): new tokens, faces and icons; a header,
+  a drawer, a menu column or rail, and a status line only while something is true; rows by day
+  with a filter sheet and search in the header; capture as a page on a phone and a box when wide;
+  the item full screen or beside its list; the quick route and a route's row kept through its
+  window; the route page in steps on a phone; selecting for a batch by holding a row; the log by
+  day; settings' menu as rows with defaults drawn as picked. Parts are still to build, listed in
+  the plan. ([plan](../plans/phone-first-shell.md))
+
 - 2026-11-12 — **A batch is one row in the log**, counted in its notice's words and opening to
   every entry it wrote, wherever those fell, drawn inside it. A batch's notice opens the log read by that batch,
   which names the items it refused or skipped while this shell holds its answer. ([plan](../plans/batch-in-the-log.md))
