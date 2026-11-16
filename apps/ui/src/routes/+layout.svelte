@@ -109,8 +109,19 @@
             : "notemap")),
   );
 
-  /** The one surface that is a frame rather than a page. */
+  /** The one surface that is a frame rather than a page, and takes the window when wide. */
   const fills = $derived(page.route.id === "/items/[id]/process");
+
+  /** Pages drawn edge to edge in ruled rows, their own padding inside them. */
+  const BLEEDS = new Set([
+    "/items/[id]/process",
+    "/items/[id]/records/[recordId]",
+    "/settings/[section]",
+    "/settings",
+  ]);
+  const bleeds = $derived(BLEEDS.has(page.route.id ?? ""));
+  /** The menu column, when wide, everywhere but a route being made. */
+  const menued = $derived(width.wide && !shut && !fills);
 
   // Signing out is the pool's work leaving with it. A failure about a
   // delivery nobody can now look up would outlive the session that raised it.
@@ -159,13 +170,13 @@
 </svelte:head>
 
 <div
-  class="min-h-dvh {width.wide && !shut
+  class="min-h-dvh {menued
     ? width.full
       ? 'grid grid-cols-[var(--spacing-menu)_minmax(0,1fr)]'
       : 'grid grid-cols-[var(--spacing-menu-rail)_minmax(0,1fr)]'
     : ''}"
 >
-  {#if width.wide && !shut}
+  {#if menued}
     <aside
       class="sticky top-0 flex h-dvh flex-col border-r border-rule bg-paper"
     >
@@ -190,7 +201,7 @@
   {/if}
 
   <div
-    class="min-h-dvh min-w-0 {beside === undefined
+    class="{fills ? 'h-dvh' : 'min-h-dvh'} min-w-0 {beside === undefined
       ? 'flex flex-col'
       : 'grid grid-cols-[minmax(0,28rem)_minmax(0,1fr)]'}"
   >
@@ -226,9 +237,9 @@
         <Header {title} list={list && !shut} onmenu={() => (drawer = true)} />
       {/if}
       <Strip />
-      <div class="flex-1">
-        <Sheet {fills}>
-          <Column {fills} {list}>
+      <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
+        <Sheet {fills} bleeds={bleeds && !shut}>
+          <Column {fills} list={list || fills}>
             {#if shut}
               <SignIn />
             {:else if who.known}

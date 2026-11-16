@@ -53,7 +53,7 @@
             : "border border-ink bg-ink text-paper active:bg-muted disabled:opacity-40"
         }`
       : `rounded-control px-2.5 ${head ? "flex-row gap-1.5 min-h-10" : "flex-col gap-1 min-h-target text-small leading-none"} ${
-          danger ? "text-danger" : "text-ink"
+          why !== undefined ? "text-muted" : danger ? "text-danger" : "text-ink"
         } active:bg-off-down disabled:opacity-40`,
   );
 </script>

@@ -7,6 +7,7 @@
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { commandOf } from "$lib/command/stack.svelte";
+  import { heading } from "$lib/heading.svelte";
 
   /**
    * The head of every page: on a phone the menu, the title, and on a list the
@@ -25,6 +26,9 @@
     list?: boolean;
     onmenu: () => void;
   } = $props();
+
+  /** A page that draws its own head: a way out, its title, its step, its subject. */
+  const own = $derived(list ? undefined : heading.current);
 
   const search = $derived(list ? commandOf("search") : undefined);
   const filter = $derived(list ? commandOf("filter") : undefined);
@@ -78,7 +82,18 @@
       />
     </div>
   {:else}
-    {#if !width.wide}
+    {#if own !== undefined}
+      <button
+        type="button"
+        onclick={own.out.run}
+        title="{own.out.label} (Esc)"
+        class="grid min-h-target min-w-target place-items-center {width.wide
+          ? '-ml-3'
+          : ''}"
+      >
+        <Icon name={own.out.icon} label={own.out.label} />
+      </button>
+    {:else if !width.wide}
       <button
         type="button"
         onclick={onmenu}
@@ -88,8 +103,13 @@
       </button>
     {/if}
     <h1 class="min-w-0 truncate font-display text-title font-normal">
-      {title}
+      {own?.title ?? title}
     </h1>
+    {#if own?.aside !== undefined}
+      <span class="ml-auto shrink-0 text-small text-muted tabular-nums"
+        >{own.aside}</span
+      >
+    {/if}
 
     {#if list && width.wide && field !== undefined}
       <div class="mx-auto w-full max-w-[26rem] min-w-0 px-4">
@@ -140,3 +160,8 @@
     {/if}
   {/if}
 </header>
+{#if own?.under !== undefined && own.under !== ""}
+  <p class="truncate border-b border-rule bg-paper px-gutter py-2.5 text-muted">
+    {own.under}
+  </p>
+{/if}

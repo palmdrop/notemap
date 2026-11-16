@@ -388,14 +388,16 @@
 </script>
 
 <div>
-  <div class="relative border-b border-ink px-2 py-0.5">
+  <div
+    class="relative min-h-11 rounded-control border border-rule bg-tag px-3 py-2.5 focus-within:border-ink"
+  >
     <!-- The input's own text is transparent and this is what is read, so the
          completion offered can be drawn after what was typed. Alignment is
          exact: one face, one size, in both. -->
     <div
       bind:this={shown}
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden px-2 py-0.5 whitespace-pre"
+      class="pointer-events-none absolute inset-0 overflow-hidden px-3 py-2.5 whitespace-pre"
     >
       <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
           data-ghost

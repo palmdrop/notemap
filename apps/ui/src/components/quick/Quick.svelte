@@ -13,8 +13,7 @@
   import { aboutItem } from "$lib/excerpt";
   import { routedHere } from "$lib/firing";
   import { slide } from "$lib/motion";
-  import { nameOf } from "$lib/destinations";
-  import { placeOf } from "$lib/templates";
+  import { templateIcon, whereOf } from "$lib/looks";
 
   /**
    * The quick route: the templates by name and icon, each with where it
@@ -48,18 +47,10 @@
   const step = $derived(steps?.find((one) => given[one.field] === undefined));
 
   function iconOf(template: RoutingTemplate): IconName {
-    if (template.capability === "append") return "file";
-    const kind = $destinations.find(
-      (one) => one.id === template.destination,
-    )?.kind;
-    return kind === "webdav" ? "cloud" : kind === "arena" ? "grid" : "folder";
-  }
-
-  function whereOf(template: RoutingTemplate): string {
-    const place = placeOf(template).replace(/,? ?asks each time$/, "");
-    return place === "" || place === "—"
-      ? nameOf(template.destination)
-      : `${place} in ${nameOf(template.destination)}`;
+    return templateIcon(
+      template,
+      $destinations.find((one) => one.id === template.destination)?.kind,
+    );
   }
 
   async function route(template: RoutingTemplate, values: Supplied) {

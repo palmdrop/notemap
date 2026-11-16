@@ -355,16 +355,21 @@ const stayed = async () => {
   });
   expect(left()).toBeUndefined();
   expect(
-    await screen.findByRole("combobox", { name: "what became of it" }),
+    await screen.findByRole("button", { name: "Route it somewhere else too" }),
   ).toBeDefined();
 };
 
+/** A main action that cannot be taken yet stays in its place, dashed, rather than disabled. */
+const held = (button: HTMLElement) =>
+  (button as HTMLButtonElement).disabled ||
+  button.getAttribute("aria-disabled") === "true";
+
 const commit = async () => {
   const button = (await screen.findByRole("button", {
-    name: "route",
+    name: "Route",
   })) as HTMLButtonElement;
   await vi.waitFor(() => {
-    expect(button.disabled).toBe(false);
+    expect(held(button)).toBe(false);
   });
   return fireEvent.click(button);
 };
@@ -424,14 +429,16 @@ test("takes a template, draws what it resolved to, and leaves it editable", asyn
   draw();
   await choose("research");
 
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   expect(screen.getByText("research/2026-09-04")).toBeDefined();
   expect(screen.queryByLabelText("directory")).toBeNull();
   expect(
     screen.getByText("research", { selector: ".font-semibold" }),
   ).toBeTruthy();
 
-  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /for this route$/ }),
+  );
 
   const directory = (await screen.findByLabelText(
     "directory",
@@ -505,13 +512,15 @@ test("a template's summary hides the capability choice until edit", async () => 
   draw();
   await choose("research");
 
-  await screen.findByRole("button", { name: "edit place" });
-  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+  await screen.findByRole("button", { name: /for this route$/ });
+  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /for this route$/ }),
+  );
 
   expect(
-    (await screen.findByRole("button", { name: "create" })).getAttribute(
+    (await screen.findByRole("button", { name: "new note" })).getAttribute(
       "aria-pressed",
     ),
   ).toBe("true");
@@ -558,7 +567,7 @@ test("keeps the capability a template resolved to, over the one the line settles
   draw();
   await choose("research");
   await fireEvent.click(
-    await screen.findByRole("button", { name: "edit place" }),
+    await screen.findByRole("button", { name: /for this route$/ }),
   );
 
   // `create`'s form, not the line: the template said what it meant.
@@ -586,7 +595,7 @@ test("commits an untouched template as the template, so the record names it", as
 
   draw();
   await choose("research");
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   await commit();
 
   await vi.waitFor(() => {
@@ -612,7 +621,7 @@ test("a template holding a field the form does not offer is still untouched", as
 
   draw();
   await choose("research");
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   await commit();
 
   await vi.waitFor(() => {
@@ -627,7 +636,7 @@ test("commits a corrected one as the decision it became", async () => {
   draw();
   await choose("research");
   await fireEvent.click(
-    await screen.findByRole("button", { name: "edit place" }),
+    await screen.findByRole("button", { name: /for this route$/ }),
   );
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
@@ -682,7 +691,7 @@ test("puts a template's trigger tag on the item it routed", async () => {
 
   draw();
   await choose("research");
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   await commit();
 
   await vi.waitFor(() => {
@@ -755,13 +764,13 @@ test("undoing a template's route lets its trigger tag land before calling the ro
 
   draw();
   await choose("research");
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   await commit();
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
   });
 
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
   await new Promise((done) => setTimeout(done, 20));
   expect(reached).toEqual([]);
 
@@ -776,7 +785,7 @@ test("leaves a corrected template's tag off the item", async () => {
   draw();
   await choose("research");
   await fireEvent.click(
-    await screen.findByRole("button", { name: "edit place" }),
+    await screen.findByRole("button", { name: /for this route$/ }),
   );
   await fireEvent.input(await screen.findByLabelText("directory"), {
     target: { value: "reading/2026" },
@@ -848,11 +857,13 @@ test("a lined template draws its place read-only, with edit to reopen the line",
   await choose("research");
 
   // The read-only summary, not the line: its own `edit` is what says so.
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   expect(screen.getByText("research/2026-09-04.md")).toBeDefined();
   expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "edit place" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: /for this route$/ }),
+  );
 
   const line = (await screen.findByRole("combobox", {
     name: "place",
@@ -867,7 +878,7 @@ test("a lined template edited and left alone still commits as the template", asy
   draw();
   await choose("research");
   await fireEvent.click(
-    await screen.findByRole("button", { name: "edit place" }),
+    await screen.findByRole("button", { name: /for this route$/ }),
   );
   await screen.findByRole("combobox", { name: "place" });
   await commit();
@@ -886,7 +897,7 @@ test("choosing a destination directly draws the line, not the read-only summary"
   await choose(/Vault/);
 
   expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
-  expect(screen.queryByRole("button", { name: "edit place" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /for this route$/ })).toBeNull();
 });
 
 /** `change`, behind the template's own line, gives the decision back, including the place. */
@@ -918,7 +929,7 @@ test("takes the template of a trigger tag typed in its own row, and routes nothi
   await fireEvent.input(line, { target: { value: "route/research" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
   expect(screen.getByText("research/2026-09-04")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/items/one/tag");
   expect(asked()).not.toContain("POST /v1/items/one/route");
@@ -1007,9 +1018,9 @@ test("a capability that asks for nothing is one choice away from routed", async 
   draw();
   await choose(/Vault/);
 
-  const commit = screen.getByRole("button", { name: "route" });
+  const commit = screen.getByRole("button", { name: "Route" });
   await vi.waitFor(() => {
-    expect((commit as HTMLButtonElement).disabled).toBe(false);
+    expect(held(commit)).toBe(false);
   });
 
   await fireEvent.click(commit);
@@ -1032,10 +1043,7 @@ test("an unavailable destination stays in the list, says why, and is not routabl
     (screen.getByRole("button", { name: /Vault/ }) as HTMLButtonElement)
       .disabled,
   ).toBe(true);
-  expect(
-    (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
+  expect(held(screen.getByRole("button", { name: "Route" }))).toBe(true);
 });
 
 test("a disabled destination is not offered at all", async () => {
@@ -1442,7 +1450,7 @@ test("enter on a half-typed place completes it and routes nothing, and mod-enter
 
   expect(line.value).toBe("projects/");
   expect(
-    screen.getByRole("button", { name: "route" }).getAttribute("aria-busy"),
+    screen.getByRole("button", { name: "Route" }).getAttribute("aria-busy"),
   ).toBeNull();
 
   await fireEvent.keyDown(line, { key: "Enter", ctrlKey: true });
@@ -1496,11 +1504,14 @@ test("chooses an argument the schema fixes rather than typing it", async () => {
 });
 
 /** Absent is a value here — it inherits — so there has to be a way back to it. */
-test("gives an argument back where the one taken is taken again", async () => {
+test("an argument taken again stays taken, the default being drawn as picked", async () => {
   const transport = await pickingFrontmatter(["full", "full"]);
 
   await vi.waitFor(async () => {
-    expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "inbox",
+      frontmatter: "full",
+    });
   });
 });
 
@@ -1517,20 +1528,25 @@ test("offers a conditional argument only once the others make it mean something"
     target: { value: "inbox" },
   });
 
-  expect(screen.queryByText("trigger tags")).toBeNull();
+  const how = () => within(section("how"));
+  expect(how().queryByText("trigger tags")).toBeNull();
 
-  const [hashtagsYes] = screen.getAllByRole("button", { name: "yes" });
+  const [hashtagsYes] = how().getAllByRole("button", { name: "yes" });
   await fireEvent.click(hashtagsYes as HTMLElement);
-  expect(await screen.findByText("trigger tags")).toBeDefined();
+  expect(await how().findByText("trigger tags")).toBeDefined();
 
-  const [, triggerYes] = screen.getAllByRole("button", { name: "yes" });
+  const [, triggerYes] = how().getAllByRole("button", { name: "yes" });
   await fireEvent.click(triggerYes as HTMLElement);
-  await fireEvent.click(hashtagsYes as HTMLElement);
-  expect(screen.queryByText("trigger tags")).toBeNull();
+  const [hashtagsNo] = how().getAllByRole("button", { name: "no" });
+  await fireEvent.click(hashtagsNo as HTMLElement);
+  expect(how().queryByText("trigger tags")).toBeNull();
 
   await commit();
   await vi.waitFor(async () => {
-    expect((await routed(transport)).arguments).toEqual({ directory: "inbox" });
+    expect((await routed(transport)).arguments).toEqual({
+      directory: "inbox",
+      hashtags: false,
+    });
   });
 });
 
@@ -1546,9 +1562,9 @@ test("judges a conditional argument against what the destination's settings impl
   await screen.findByLabelText("directory");
 
   expect(await screen.findByText("trigger tags")).toBeDefined();
-  const full = screen.getByRole("button", { name: "full (default)" });
-  expect(full.getAttribute("aria-pressed")).toBe("false");
-  expect(full.textContent).toContain("▹");
+  // Left unset, the default is drawn as the one picked.
+  const full = screen.getByRole("button", { name: "full" });
+  expect(full.getAttribute("aria-pressed")).toBe("true");
 });
 
 async function pickingFrontmatter(taken: readonly string[]) {
@@ -1578,9 +1594,9 @@ test("a blank leaf submits a path that ends in a slash", async () => {
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "drafts/" } });
   // In the tree, where the note is about to land, and nowhere else.
-  expect(await screen.findAllByText(/picker-needs-a-trail\.md/)).toHaveLength(
-    1,
-  );
+  expect(
+    await within(section("place")).findAllByText(/picker-needs-a-trail\.md/),
+  ).toHaveLength(1);
   await commit();
 
   await vi.waitFor(async () => {
@@ -1799,8 +1815,8 @@ test("an unreachable destination is still routable", async () => {
   await fireEvent.input(line, { target: { value: "notes/decisions.md" } });
   await screen.findByText("best effort");
 
-  const commit = screen.getByRole("button", { name: "route" });
-  expect((commit as HTMLButtonElement).disabled).toBe(false);
+  const commit = screen.getByRole("button", { name: "Route" });
+  expect(held(commit)).toBe(false);
   expect(screen.queryByRole("alert")).toBeNull();
 
   await fireEvent.click(commit);
@@ -1835,7 +1851,9 @@ test("the kind that draws the line settles what to do, with no do step", async (
   await choose(/Vault/);
 
   expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
-  expect(screen.queryByRole("button", { name: "create-or-append" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "new note or append" }),
+  ).toBeNull();
 });
 
 /** One thing it can do is not a choice, so it is not one anybody is asked to make. */
@@ -1850,7 +1868,7 @@ test("a kind that can do one thing settles it, with no do step", async () => {
   await choose(/Vault/);
 
   expect(await screen.findByLabelText("directory")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
 });
 
 /**
@@ -1981,7 +1999,7 @@ test("enter never commits from the field, and mod-enter does", async () => {
   await fireEvent.keyDown(field, { key: "Enter" });
   // A send marks the button busy before it awaits anything.
   expect(
-    screen.getByRole("button", { name: "route" }).getAttribute("aria-busy"),
+    screen.getByRole("button", { name: "Route" }).getAttribute("aria-busy"),
   ).toBeNull();
 
   await fireEvent.keyDown(field, { key: "Enter", metaKey: true });
@@ -2012,7 +2030,9 @@ test("draws a handful of a long answer, and the rest when asked", async () => {
 
   await choose("12 more");
 
-  expect(await screen.findByText("channel 19")).toBeDefined();
+  expect(
+    await within(section("place")).findAllByText("channel 19"),
+  ).not.toHaveLength(0);
 });
 
 test("narrowing gets there without asking for the rest", async () => {
@@ -2028,7 +2048,9 @@ test("narrowing gets there without asking for the rest", async () => {
 
   await fireEvent.input(field, { target: { value: "channel 19" } });
 
-  expect(await screen.findByText("channel 19")).toBeDefined();
+  expect(
+    await within(section("place")).findAllByText("channel 19"),
+  ).not.toHaveLength(0);
   expect(screen.queryByRole("button", { name: /more/ })).toBeNull();
 });
 
@@ -2215,12 +2237,12 @@ test("a kind that draws the browser chooses among two", async () => {
   draw();
   await choose(/Vault/);
 
-  expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "new note" })).toBeDefined();
   expect(screen.getByRole("button", { name: "append" })).toBeDefined();
   // Nothing is picked for you, so no field is drawn until one is.
   expect(screen.queryByLabelText("directory")).toBeNull();
 
-  await choose("create");
+  await choose("new note");
   expect(await screen.findByLabelText("directory")).toBeDefined();
 });
 
@@ -2273,18 +2295,16 @@ test("narrows the bands to what is typed, and draws the one hit bold", async () 
   drawAbout({ text: "a note" });
 
   await screen.findByRole("button", { name: "Vault" });
-  expect(screen.getByRole("button", { name: "manual" })).toBeDefined();
 
   const line = screen.getByRole("combobox", { name: "what became of it" });
   await fireEvent.input(line, { target: { value: "Va" } });
 
   expect(screen.getAllByText("Vault")).toHaveLength(1);
-  expect(screen.getByRole("button", { name: "Vault" }).className).toContain(
-    "font-semibold",
-  );
-  // The other bands narrow with it, to nothing.
-  expect(screen.queryByRole("button", { name: "manual" })).toBeNull();
-  expect(screen.queryByText("otherwise")).toBeNull();
+  expect(
+    screen
+      .getByRole("button", { name: "Vault" })
+      .querySelector(".font-semibold"),
+  ).not.toBeNull();
 });
 
 /** A sentence out of a schema is not the composer's voice. */
@@ -2334,7 +2354,7 @@ test("offers cancel under the head while the route just made is pending", async 
   await choose(/Vault/);
   await commit();
 
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/u/cancel");
@@ -2362,12 +2382,12 @@ test("offers nothing once the window has closed, while the delivery is attempted
   await choose(/Vault/);
   await commit();
 
-  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Cancel" })).toBeDefined();
   await vi.waitFor(
-    () => expect(screen.queryByRole("button", { name: "cancel" })).toBeNull(),
+    () => expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull(),
     { timeout: 3_000 },
   );
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   expect(firings.open.map((one) => one.record)).toEqual(["u"]);
 });
 
@@ -2381,11 +2401,11 @@ test("offers cancel once the pool says it will try the delivery again", async ()
   await vi.waitFor(() =>
     expect(firings.open.map((one) => one.record)).toEqual(["u"]),
   );
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
 
   firings.retrying("u");
 
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/u/cancel");
   });
@@ -2399,15 +2419,15 @@ test("the offer goes once the route lands", async () => {
   draw();
   await choose(/Vault/);
   await commit();
-  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Cancel" })).toBeDefined();
 
   // What the status line does on reading the landing from the log.
   firings.closed("u");
 
   await vi.waitFor(() =>
-    expect(screen.queryByRole("button", { name: "cancel" })).toBeNull(),
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull(),
   );
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
 });
 
 /** Where it landed is the log's to say; until then it is a route in flight. */
@@ -2435,6 +2455,7 @@ test("draws the route in flight with its window, and stays for a second place", 
   });
   expect(notices.shown).toHaveLength(0);
 
+  await choose("Route it somewhere else too");
   await choose(/Vault/);
   await commit();
   await vi.waitFor(() => {
@@ -2467,7 +2488,7 @@ test("advances to the next item in the queue after a decision, and esc returns s
   await fireEvent.keyDown(window, { key: "[" });
   expect(left()).toBe("/items/two/process");
 
-  await choose(/^manual/);
+  await choose("Done");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2488,7 +2509,7 @@ test("advances to the row after this one, not the top of the queue", async () =>
   await client.enter("queue");
 
   draw();
-  await choose(/^manual/);
+  await choose("Done");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2509,7 +2530,7 @@ test("goes to the first queued item after deciding one that was not on the queue
   await client.enter("queue");
 
   draw();
-  await choose(/^manual/);
+  await choose("Done");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/zero/process");
   });
@@ -2546,7 +2567,7 @@ test("reads the next page before returning to a queue that has more", async () =
   await client.enter("queue");
 
   draw();
-  await choose(/^manual/);
+  await choose("Done");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2566,7 +2587,7 @@ test("returns to the queue when nothing is left", async () => {
   await client.enter("queue");
 
   draw();
-  await choose(/^manual/);
+  await choose("Done");
   await vi.waitFor(() => {
     expect(left()).toBe("/");
   });
@@ -2786,10 +2807,7 @@ test("says a destination that could not be reached, and routing is still availab
   // In plain ink: the destination being asleep is ordinary, not a failure.
   const said = await screen.findByText("out of reach");
   expect(said.className).not.toContain("text-danger");
-  expect(
-    (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(false);
+  expect(held(screen.getByRole("button", { name: "Route" }))).toBe(false);
 });
 
 /** The head line the schema-driven form's arguments name, above the preview. */
@@ -2857,12 +2875,10 @@ test("stacks below the wide breakpoint and takes two columns from it", async () 
 
   expect(frame.className).toContain("flex-col");
   expect(frame.className).toContain(
-    "wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]",
+    "wide:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]",
   );
-  const head = frame.firstElementChild as HTMLElement;
-  expect(head.className).toContain("border-b");
-  expect(head.className).toContain("wide:border-r");
-  expect(head.className).toContain("wide:row-span-2");
+  const item = screen.getByRole("region", { name: "item" });
+  expect(item.className).toContain("border-r");
 });
 
 /**
@@ -2934,15 +2950,15 @@ test("offers manual and discard below the destinations", async () => {
   draw();
 
   await screen.findByRole("button", { name: /Vault/ });
-  await screen.findByRole("button", { name: /^manual/ });
-  await screen.findByRole("button", { name: /^discard/ });
+  await screen.findByRole("button", { name: "Done" });
+  await screen.findByRole("button", { name: "Discard" });
 });
 
 test("taking discard archives the item, closes, and offers it back", async () => {
   const transport = serving([aDestination()]);
   draw();
 
-  await choose(/^discard/);
+  await choose("Discard");
 
   await vi.waitFor(() => {
     expect(left()).toBe("/");
@@ -2963,7 +2979,7 @@ test("taking the offer unarchives it", async () => {
   const transport = serving([aDestination()]);
   draw();
 
-  await choose(/^discard/);
+  await choose("Discard");
   await vi.waitFor(() => {
     expect(sentTo(transport).map(routeOf)).toContain(
       "POST /v1/items/one/archive",
@@ -3012,7 +3028,7 @@ test("a destination that shares a prefix with one of the two takes nothing", asy
   await fireEvent.keyDown(line, { key: "Enter" });
 
   expect(screen.getByRole("button", { name: "discography" })).toBeDefined();
-  expect(screen.getByRole("button", { name: "discard" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Discard" })).toBeDefined();
   expect(sentTo(transport).map(routeOf)).not.toContain(
     "POST /v1/items/one/archive",
   );
@@ -3027,13 +3043,13 @@ test("an entry that cannot apply stays in the list and says why", async () => {
     }),
   );
 
-  const discard = await screen.findByRole("button", { name: /^discard/ });
-  const manual = await screen.findByRole("button", { name: /^manual/ });
+  const discard = await screen.findByRole("button", { name: "Discard" });
+  const manual = await screen.findByRole("button", { name: "Done" });
 
-  expect((discard as HTMLButtonElement).disabled).toBe(true);
-  expect(discard.textContent).toContain("already discarded");
-  expect((manual as HTMLButtonElement).disabled).toBe(true);
-  expect(manual.textContent).toContain("already marked");
+  expect(held(discard)).toBe(true);
+  expect(discard.getAttribute("title")).toContain("already discarded");
+  expect(held(manual)).toBe(true);
+  expect(manual.getAttribute("title")).toContain("already marked");
 });
 
 /** The row's `done` field, moved to where the decision is made. */
@@ -3042,7 +3058,7 @@ test("manual marks processed at once, says so with an undo, and advances", async
   const transport = serving([aDestination()]);
   draw();
 
-  await choose(/^manual/);
+  await choose("Done");
 
   await vi.waitFor(() => {
     expect(left()).toBe("/");
@@ -3067,15 +3083,15 @@ test("with the pool out of reach the composer opens and discards", async () => {
   draw();
 
   const vault = await screen.findByRole("button", { name: /Vault/ });
-  const manual = await screen.findByRole("button", { name: /^manual/ });
+  const manual = await screen.findByRole("button", { name: "Done" });
   expect((vault as HTMLButtonElement).disabled).toBe(true);
   expect(vault.textContent).toContain("pool out of reach");
-  expect((manual as HTMLButtonElement).disabled).toBe(true);
+  expect(held(manual)).toBe(true);
 
-  const discard = await screen.findByRole("button", { name: /^discard/ });
-  expect((discard as HTMLButtonElement).disabled).toBe(false);
+  const discard = await screen.findByRole("button", { name: "Discard" });
+  expect(held(discard)).toBe(false);
 
-  await choose(/^discard/);
+  await choose("Discard");
   await vi.waitFor(() => {
     expect(left()).toBe("/");
   });
@@ -3207,11 +3223,11 @@ test("words put back, by restore or by typing them again, are nothing to lose", 
   draw();
   await screen.findByRole("button", { name: /Vault/ });
 
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "something else" },
   });
-  await choose("restore");
+  await choose("Restore");
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(left()).toBe("/?selected=one");
@@ -3222,7 +3238,7 @@ test("words typed back to what the capture says are nothing to lose", async () =
   draw();
   await screen.findByRole("button", { name: /Vault/ });
 
-  await choose("edit");
+  await choose("Edit");
   const words = await screen.findByLabelText("words");
   await fireEvent.input(words, { target: { value: "something else" } });
   await fireEvent.input(words, { target: { value: "a note" } });
@@ -3253,11 +3269,11 @@ test("words a route carried are nothing to lose after it", async () => {
   serving([aDestination()]);
   draw();
 
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
-  await choose("done");
+  await choose("Use these words");
   await choose("Vault");
   await described();
   await fireEvent.input(await screen.findByLabelText("directory"), {
@@ -3569,7 +3585,7 @@ test("leaves a template's own arguments alone", async () => {
   draw();
   await choose("research");
   await fireEvent.click(
-    await screen.findByRole("button", { name: "edit place" }),
+    await screen.findByRole("button", { name: /for this route$/ }),
   );
 
   const directory = (await screen.findByLabelText(
@@ -3598,24 +3614,24 @@ test("the head draws the capture, read-only until edit", async () => {
 
   expect(head()).toBeTruthy();
   expect(screen.queryByLabelText("words")).toBeNull();
-  expect(screen.getByRole("button", { name: "edit" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Edit" })).toBeDefined();
 });
 
 test("edit opens the capture's words in a box, and routing sends what was typed", async () => {
   serving([aDestination()]);
 
   draw();
-  await choose("edit");
+  await choose("Edit");
 
   const field = (await screen.findByLabelText("words")) as HTMLTextAreaElement;
   expect(field.value).toBe("a note");
   expect(field.className).toContain("border");
   // Hidden meanwhile: the two words under the box are the way out.
-  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
-  expect(screen.getByRole("button", { name: "restore" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Restore" })).toBeDefined();
 
   await fireEvent.input(field, { target: { value: "a note, tidied" } });
-  await choose("done");
+  await choose("Use these words");
   expect(screen.queryByLabelText("words")).toBeNull();
   expect(screen.getByText("a note, tidied")).toBeDefined();
 
@@ -3644,7 +3660,7 @@ test("e and a double click on the words open editing too", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   expect(await screen.findByLabelText("words")).toBeDefined();
 
-  await choose("done");
+  await choose("Use these words");
   expect(screen.queryByLabelText("words")).toBeNull();
 
   await fireEvent.dblClick(head());
@@ -3656,7 +3672,7 @@ test("changing destination keeps the words and clears the arguments", async () =
   serving([aDestination(), aDestination({ id: BOARD, name: "Board" })]);
 
   draw();
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
@@ -3694,7 +3710,7 @@ test("the preview is asked for again when the words change, with the words it wo
     );
   expect(previews()).toHaveLength(1);
 
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
@@ -3711,7 +3727,7 @@ test("an empty rewrite sends the words the payload schema allows", async () => {
   serving([aDestination()]);
 
   draw();
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "" },
   });
@@ -3738,9 +3754,9 @@ test("opening the words and typing nothing carries nothing", async () => {
   serving([aDestination()]);
 
   draw();
-  await choose("edit");
+  await choose("Edit");
   await screen.findByLabelText("words");
-  await choose("done");
+  await choose("Use these words");
 
   await choose("Vault");
   await described();
@@ -3763,12 +3779,12 @@ test("restoring the capture's words draws them again and carries nothing", async
   serving([aDestination()]);
 
   draw();
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
 
-  await choose("restore");
+  await choose("Restore");
 
   expect(screen.queryByLabelText("words")).toBeNull();
   expect(head()).toBeTruthy();
@@ -3801,10 +3817,7 @@ test("⌘⏎ routes from inside a field, where esc only leaves the field", async
   draw();
   await choose(/Vault/);
   await vi.waitFor(() => {
-    expect(
-      (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
-        .disabled,
-    ).toBe(false);
+    expect(held(screen.getByRole("button", { name: "Route" }))).toBe(false);
   });
 
   await fireEvent.keyDown(window, { key: "e" });
@@ -3869,7 +3882,7 @@ function holding(held: string) {
 }
 
 const section = (name: string) =>
-  screen.getByRole("button", { name }).closest("section")!;
+  document.querySelector<HTMLElement>(`[data-step="${name}"]`)!;
 
 test("a destination slow to describe itself is named where its place will be", async () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -3899,7 +3912,7 @@ test("a preview being asked for stands in the block it will fill", async () => {
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/route/preview");
   });
-  expect(section("preview").querySelector("[data-asking]")).not.toBeNull();
+  expect(section("check").querySelector("[data-asking]")).not.toBeNull();
   expect(screen.queryByText(/# a thought/)).toBeNull();
 });
 
@@ -3910,11 +3923,10 @@ test("routing is said on route itself, and nothing appears under the sections", 
   await fireEvent.input(await described(), { target: { value: "inbox" } });
   await commit();
 
-  const button = screen.getByRole("button", { name: /route/ });
+  const button = screen.getByRole("button", { name: "Route" });
   await vi.waitFor(() => {
     expect(button.getAttribute("aria-busy")).toBe("true");
   });
-  expect(button.querySelector("[data-asking]")).not.toBeNull();
   expect(screen.queryByText("routing…")).toBeNull();
 
   releases.forEach((release) =>
@@ -3922,9 +3934,9 @@ test("routing is said on route itself, and nothing appears under the sections", 
       json(200, { id: "r", item: "one", state: "delivered", target: {} }),
     ),
   );
-  await vi.waitFor(() => {
-    expect(button.getAttribute("aria-busy")).toBeNull();
-  });
+  expect(
+    await screen.findByRole("button", { name: "Next item" }),
+  ).toBeDefined();
 });
 
 test("a browse being asked stands the mark where its entries will be", async () => {
@@ -3969,7 +3981,7 @@ test("draws the item's tags in the composer alone, not in the head", async () =>
   const tagged = aCapture({ tags: [{ name: "seedling", addedAt: WHEN }] });
 
   draw(tagged);
-  await screen.findByRole("button", { name: "tags" });
+  await screen.findByText("tags");
 
   expect(screen.getAllByText("seedling")).toHaveLength(1);
 });
@@ -3979,8 +3991,7 @@ test("the tags section is open with no tags, its + drawn", async () => {
 
   draw();
 
-  const label = await screen.findByRole("button", { name: "tags" });
-  expect(label.getAttribute("aria-expanded")).toBe("true");
+  await screen.findByText("tags");
   expect(screen.getByRole("button", { name: "Add a tag" })).toBeDefined();
 });
 
@@ -4014,22 +4025,22 @@ test("the asking mark stands from the keystroke, before the next preview is aske
     sentTo(transport).filter(
       (request) => routeOf(request) === "POST /v1/items/one/route/preview",
     );
-  expect(section("preview").querySelector("[data-asking]")).toBeNull();
+  expect(section("check").querySelector("[data-asking]")).toBeNull();
 
-  await choose("edit");
+  await choose("Edit");
   await fireEvent.input(await screen.findByLabelText("words"), {
     target: { value: "a note, tidied" },
   });
 
   expect(previews()).toHaveLength(1);
-  expect(section("preview").querySelector("[data-asking]")).not.toBeNull();
+  expect(section("check").querySelector("[data-asking]")).not.toBeNull();
   expect(screen.getByText(/# a thought/)).toBeDefined();
 
   await vi.waitFor(() => {
     expect(previews()).toHaveLength(2);
   });
   await vi.waitFor(() => {
-    expect(section("preview").querySelector("[data-asking]")).toBeNull();
+    expect(section("check").querySelector("[data-asking]")).toBeNull();
   });
 });
 
@@ -4180,9 +4191,9 @@ test("offers attachments only where the item has attachments and the destination
   await choose(/Vault/);
 
   expect(
-    await screen.findByRole("button", { name: /attachments only/ }),
+    await screen.findByRole("button", { name: /Attachments only/ }),
   ).toBeDefined();
-  const everything = screen.getByRole("button", { name: "everything" });
+  const everything = screen.getByRole("button", { name: "Everything" });
   expect(everything.getAttribute("aria-pressed")).toBe("true");
 });
 
@@ -4193,7 +4204,7 @@ test("does not offer attachments only for a capture with none", async () => {
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  expect(screen.queryByRole("button", { name: /attachments only/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /Attachments only/ })).toBeNull();
 });
 
 test("attachments only routes the carrier to the folder the line had typed", async () => {
@@ -4204,7 +4215,7 @@ test("attachments only routes the carrier to the folder the line had typed", asy
 
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "library/paper-notes.md" } });
-  await choose(/attachments only/);
+  await choose(/Attachments only/);
 
   const folder = (await screen.findByRole("combobox", {
     name: "Folder",
@@ -4232,9 +4243,9 @@ test("taking everything gives the line back as it was, in the folder as it stand
 
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "library/a.md" } });
-  await choose(/attachments only/);
+  await choose(/Attachments only/);
   await screen.findByRole("combobox", { name: "Folder" });
-  await choose("everything");
+  await choose("Everything");
 
   const back = (await screen.findByRole("combobox", {
     name: "place",
@@ -4249,14 +4260,14 @@ test("draws no edit while only the attachments go, and lets a rewrite go", async
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
   await fireEvent.input(screen.getByLabelText("words"), {
     target: { value: "rewritten" },
   });
-  await choose(/attachments only/);
+  await choose(/Attachments only/);
 
   expect(screen.queryByLabelText("words")).toBeNull();
-  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
 
   await commit();
   await vi.waitFor(() => {
@@ -4304,9 +4315,14 @@ test("a template placing the attachments alone draws attachments only taken, and
   draw(aPaper());
   await choose("library");
 
-  const only = await screen.findByRole("button", { name: "attachments only" });
-  expect(only.getAttribute("aria-pressed")).toBe("true");
-  expect(await screen.findByText("library/")).toBeDefined();
+  const action = await screen.findByText("attachments only");
+  expect(action.closest("[data-fact]")?.getAttribute("data-fact")).toBe(
+    "action",
+  );
+  const placed = [...section("check").querySelectorAll("[data-fact]")]
+    .filter((fact) => fact.getAttribute("data-fact") !== "template")
+    .map((fact) => fact.querySelector("dd")?.textContent?.trim());
+  expect(placed).toContain("library");
 
   await commit();
   expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
@@ -4321,12 +4337,12 @@ test("a rewrite made before taking an attachments-only template is neither drawn
   });
 
   draw(aPaper());
-  await fireEvent.click(screen.getByRole("button", { name: "edit" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Edit" }));
   await fireEvent.input(screen.getByLabelText("words"), {
     target: { value: "rewritten" },
   });
   await choose("library");
-  await screen.findByRole("button", { name: "attachments only" });
+  await screen.findByRole("button", { name: "Attachments only" });
 
   expect(screen.queryByLabelText("words")).toBeNull();
   expect(screen.queryByText("rewritten")).toBeNull();
@@ -4345,7 +4361,7 @@ test("attachments only keeps a create template's folder and its folder mode", as
 
   draw(aPaper());
   await choose("filed");
-  await choose("attachments only");
+  await choose("Attachments only");
 
   const folder = (await screen.findByRole("combobox", {
     name: "Folder",
@@ -4370,9 +4386,9 @@ test("everything gives a create template back as itself", async () => {
 
   draw(aPaper());
   await choose("filed");
-  await choose("attachments only");
+  await choose("Attachments only");
   await screen.findByRole("combobox", { name: "Folder" });
-  await choose("everything");
+  await choose("Everything");
 
   await commit();
   expect(await routeSent()).toContainEqual({ template: FILED.id });
@@ -4414,10 +4430,12 @@ test("a kind that settles nothing offers both capabilities for a capture with at
   draw(aPaper());
   await choose(/Board/);
 
-  expect(await screen.findByRole("button", { name: "create" })).toBeDefined();
-  expect(screen.getByRole("button", { name: "place-assets" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "new note" })).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: "attachments only" }),
+  ).toBeDefined();
   // The switch belongs to a kind that settles one; this one asks instead.
-  expect(screen.queryByRole("button", { name: /attachments only/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /Attachments only/ })).toBeNull();
 });
 
 /**
@@ -4431,8 +4449,8 @@ test("a capability carrying the attachments alone is not offered for a capture w
   await choose(/Board/);
 
   expect(await screen.findByLabelText("Channel")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "place-assets" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "attachments only" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
 });
 
 /**
@@ -4450,9 +4468,14 @@ test("a template that placed the attachments alone still draws for a capture wit
   draw();
   await choose("library");
 
-  const only = await screen.findByRole("button", { name: "attachments only" });
-  expect(only.getAttribute("aria-pressed")).toBe("true");
-  expect(await screen.findByText("library/")).toBeDefined();
+  const action = await screen.findByText("attachments only");
+  expect(action.closest("[data-fact]")?.getAttribute("data-fact")).toBe(
+    "action",
+  );
+  const placed = [...section("check").querySelectorAll("[data-fact]")]
+    .filter((fact) => fact.getAttribute("data-fact") !== "template")
+    .map((fact) => fact.querySelector("dd")?.textContent?.trim());
+  expect(placed).toContain("library");
 
   await commit();
   expect(await routeSent()).toContainEqual({ template: LIBRARY.id });
@@ -4629,17 +4652,13 @@ test("a template that asks draws the field open, gives it the caret, and commits
 
   draw();
   await choose("research");
-  await screen.findByRole("button", { name: "edit place" });
+  await screen.findByRole("button", { name: /for this route$/ });
 
-  const name = (await screen.findByLabelText("filename")) as HTMLInputElement;
-  expect(screen.getByText("name")).toBeDefined();
+  const name = (await screen.findByLabelText("name")) as HTMLInputElement;
   await vi.waitFor(() => {
     expect(document.activeElement).toBe(name);
   });
-  expect(
-    (screen.getByRole("button", { name: "route" }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
+  expect(held(screen.getByRole("button", { name: "Route" }))).toBe(true);
 
   await fireEvent.input(name, { target: { value: "milk.md" } });
   await commit();
@@ -4681,7 +4700,7 @@ test("on a phone the steps come one at a time: where, then the place, then the c
   draw();
 
   await screen.findByRole("button", { name: "Vault" });
-  expect(onScreen()).toEqual(["destination"]);
+  expect(onScreen()).toEqual(["where"]);
   expect(screen.getByRole("button", { name: "Back" })).toHaveProperty(
     "disabled",
     true,
@@ -4691,7 +4710,7 @@ test("on a phone the steps come one at a time: where, then the place, then the c
   await vi.waitFor(() => expect(onScreen()).toEqual(["place"]));
 
   await fireEvent.click(screen.getByRole("button", { name: "Next" }));
-  expect(onScreen()).toEqual(["tags", "preview"]);
+  expect(onScreen()).toEqual(["check"]);
   expect(screen.getByRole("button", { name: "Route" })).toBeDefined();
 
   await fireEvent.click(screen.getByRole("button", { name: "Back" }));
@@ -4704,7 +4723,7 @@ test("on a phone a template that fixes its place goes from where to the check", 
   draw();
 
   await choose("research");
-  await vi.waitFor(() => expect(onScreen()).toEqual(["tags", "preview"]));
+  await vi.waitFor(() => expect(onScreen()).toEqual(["check"]));
 });
 
 test("when wide every step is on the one surface", async () => {
@@ -4713,6 +4732,6 @@ test("when wide every step is on the one surface", async () => {
   draw();
 
   await screen.findByRole("button", { name: "Vault" });
-  expect(onScreen()).toEqual(["destination", "place", "tags", "preview"]);
+  expect(onScreen()).toEqual(["where", "how", "place", "check"]);
   expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
 });
