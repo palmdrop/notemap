@@ -1,7 +1,7 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-13
+**Last updated**: 2026-11-16
 **Shipped**:
 
 - 2026-11-16 — **The phone-first shell** (ADRs 71 to 76): new tokens, faces and icons; a header,
@@ -9,8 +9,10 @@
   with a filter sheet and search in the header; capture as a page on a phone and a box when wide;
   the item full screen or beside its list; the quick route and a route's row kept through its
   window; the route page in steps on a phone; selecting for a batch by holding a row; the log by
-  day; settings' menu as rows with defaults drawn as picked. Parts are still to build, listed in
-  the plan. ([plan](../plans/phone-first-shell.md))
+  day; settings as pages, each destination, template and form a page of its own with defaults
+  drawn as picked; the route page in steps on a phone and as one surface when wide, with a check
+  and a routed state; a record's own page in the one vocabulary; rows that say a delivery rejected
+  or a capture refused. ([plan](../plans/phone-first-shell.md))
 
 - 2026-11-12 — **A batch is one row in the log**, counted in its notice's words and opening to
   every entry it wrote, wherever those fell, drawn inside it. A batch's notice opens the log read by that batch,
@@ -859,8 +861,11 @@ newest first) on the status line, with **Show**, which brings its row into view.
 **A trigger tag added while writing** asks what its template asks, and the tag is put on only once
 it is answered; closing the question leaves the tag off. Once it is on, a line under the tags says
 what will happen when the capture is sent: `Routes by **Todo**, list Next once it is sent`.
-*(The question is still asked in the tag chooser's own list; it moves into the quick sheet's shape
-with phase 7 of [the plan](../plans/phone-first-shell.md).)*
+*(Amended 2026-11-16.)* The question is asked in the quick sheet's shape, here and on the item:
+a sheet at the foot on a phone, or a panel by the tag line when wide, headed with the trigger's
+name and a close that leaves the tag off, then the template's row, then the answers ruled, each
+ending in **Route** on the last question and a chevron before it. The tag line keeps its keys:
+`↑↓` walk the answers and `⏎` takes one.
 
 What follows from 2026-09-14 still holds of the box, and of the page where it says so.
 
@@ -1004,6 +1009,15 @@ view** once it has grown, since a drop can come from far down the queue; an edit
 [ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)).
 The rail, the ruled box of a selected row and the `rows` setting went; what follows from 2026-09-14
 still holds where it does not speak of them.*
+
+*Amended 2026-11-16.* **A delivery turned down after its window is said on the queue row it came
+back to**, in red under the route icon: `Rejected by **Vault**: taken.md is already there`, or
+`Not delivered to **Vault**` for one the pool gave up on. The line and the strip say the same, and
+the notices keep it; the row says it for this session, the shell holding no record of a failure the
+pool kept none of. **A capture the pool refused is a row at the queue's end**, kept on this device:
+its time, its words, `Refused by the pool: why. Kept on this device only, until it is changed or
+deleted.` with the cloud-off icon, and **Copy**, **Edit** (which opens it on the capture page) and
+**Delete**, which asks first, it being the only copy. It has no item page: it is not in the pool.
 
 **Rows are read by day, at every width.** Each day has a band: the weekday in the display face,
 then the date, then how many rows the day holds in a circle at the end. The band holds under the
@@ -1405,11 +1419,32 @@ its steps come one at a time** — where (templates, then destinations), how whe
 offers a choice of output, the place where a template does not fix it, then the check (the tags
 and the preview) — each under a band, with a bar docked at the foot: **Back**, and **Next**, or
 **Route** at the check, dashed with the reason above it until there is something to send. Picking
-where moves on by itself. **At 900px and wider it is one surface**, as before: the item on the left
-and every step on the right under its band, Route at the foot of the steps. What the steps do is
-unchanged below. *(Still to build: the header saying which step of how many, Next only for a typed
-answer, a picked template folding to one row with Change, the check's facts opening their steps, and
-a fixed place changed for one route.)*
+where moves on by itself. **At 900px and wider it is one surface**: the item, whole, on the left
+with **Discard** and **Done** at its head, and every step at once on the right under its own
+heading, a step that waits on an earlier one saying so in a line ("Pick a template or a destination
+first."), and Route at the foot of the steps. What the steps do is unchanged below.
+
+*Amended 2026-11-16.* **The header** says which step of how many on a phone (`where  1 of 4`), the
+words of the item under it. A template's questions are steps of their own (`question  2 of 3`),
+whose answers move on as they are tapped on a phone and are radio rows when wide; a typed answer
+has **Next**, and Next is otherwise only on how and place. **A picked template or destination folds
+to one row** with its icon, where it files, and **Change**. **How** holds the output (everything
+or attachments only), the action where the kind offers a choice, and every short choice of shape
+as a segmented row, the default drawn as picked. **Place** holds the line or the fields, and the
+folder mode as radio rows only where the place is a new note in a folder.
+
+**The check** lists the decision's facts in the one vocabulary — destination, template, action,
+the place, shape, if missing — each opening the step that set it, or scrolling to it when wide. A
+place a template fixed says `set by Todo; change it for this route`, and changing it carries the
+route on by hand. Under the facts, the item's own tags, said to be the item's, and **as it will be
+written**: the preview, with **Edit** under it for the words this route alone carries.
+
+**After routing** the steps give way to **the routed state**, titled `routed`: the facts, a state
+row saying where the route stands (in its window with the seconds to cancel, sending, waiting for
+the destination, delivered, or rejected in the destination's words), and **and then**: Route it
+somewhere else too, Save this as a template (for a route made by hand), Open the item. The bar is
+**Cancel** while the window is open, and **Next item**. The steps are not entries in history, so
+back after routing leaves for where the route began.
 
 
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
@@ -2169,6 +2204,15 @@ drawn where there is none.
 
 ### Actions
 
+*Amended 2026-11-16.* When wide, a click on a row opens its item beside the list, as a tap does on
+a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
+selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
+**Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
+right — each naming its key in its title. The rest of this section holds under those words.
+**A sealed item is edited as a revision** on its own page and in the feed, never on the queue: the
+bar's line says `Sealed: saving makes a revision, and what was routed stays as it was.`, and the
+pool makes the revision a capture of its own. A discarded item is undiscarded first.
+
 *Redrawn 2026-09-14.* A selected row's actions are the foot of the box it is drawn as, in two
 groups, and are not six of a kind.
 
@@ -2283,8 +2327,10 @@ select as before. While selecting, every row shows a round check in its time col
 selected. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
 **Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
 at the foot on a phone, in the list's head when wide. **Tag** opens a sheet of every tag the rows
-have or could have, each on all of them (ticked), on some (a dash) or on none; a press puts it on
-every row, or takes one they all carry off them all, and a new tag can be typed. **Route** offers
+have or could have, each on all of them (filled), on some (a dash) or on none; a press puts it on
+every row, again takes it off them all, and a new tag can be typed. Nothing is sent until
+**Apply** *(2026-11-16)*: each change goes only to the rows it changes, and the line says `Tagged`
+with **Undo**, which puts every row's tags back as they were. **Route** offers
 only templates with a trigger tag: one that asks asks once, for every note; the batch is then
 confirmed (`route 3 notes with Todo, list Next?`), and counts down on one line with one Cancel,
 which is one `POST /v1/routing/cancel` for the batch.
@@ -2987,11 +3033,29 @@ column. **A choice left unset is drawn with the kind's default as picked**; ther
 (x)` option. The field stays unset — nothing is sent for it — until another value is picked; picking
 the default again after that pins it. **Save is "Save"**, and until there is something to save the
 line over it says what is missing: `Name it to save.`, `Pick a kind to save.`, `Fill in root to
-save.` *(The destination form has it; the template and account forms keep their own words until
-their pass.)* **A pool with no password** says so in Access, and how to set one where the daemon
+save.`, `Pick a destination to save.`, `Give it a secret to save.` **A pool with no password** says so in Access, and how to set one where the daemon
 runs: nothing sets a password over HTTP. **Sign in** is a page of its own under the header `sign
 in`: a name and a password in ruled boxes, and **Sign in** as the main action, dashed until a
 password is typed; a password that is not accepted is said in red above it.
+
+*Amended 2026-11-16.* **The menu is in bands**, routing (Destinations, Templates, Accounts), the
+pool (Pool settings, Access, Server, Storage) and this device (Appearance), each row saying the one
+thing worth knowing before it is opened. **A section is a page** with its name in the header and,
+on a phone, back to the menu. **A destination and a template each have a page of their own**, at
+`?open={id}` on their section: where it stands in a box (`Available. Checked 2 min ago.` in green,
+`Unavailable:` or `Unusable:` with the destination's reason in red, `Stranded.` for a template
+whose destination was deleted), its facts in ruled rows in the one vocabulary, and **Disable**
+and **Delete…** in a band of their own, Delete asking in a dialog. Its bar is **Check again** and
+**Edit**. Lists are rows with an icon by kind, a line saying where or what, the state at the right
+(`available`, `unavailable`, `unusable`, `disabled`) and a chevron; a template's row carries its
+trigger tag, and says in red what its report found wrong. **A form is a page too** (`?new`, or
+`?open={id}&edit`), headed `new destination` or `edit template` with a close: bands for its parts,
+plain labels for single fields, a short choice a segmented row and a long one radio rows, a field's
+description under it. Leaving it with changes, by its Cancel or the system's back, asks **lose
+your changes?** — Keep editing or Lose changes. **Access** draws the session's line, `Signed in.
+This browser holds a session.`, with **Sign out** in it, and each token with **Revoke** inline in
+red. A page's bar is docked at the foot on a phone and is a toolbar at the head of the page when
+wide. What follows is the register this replaced, kept where it still holds.
 
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
@@ -3234,13 +3298,18 @@ Read by one item it is headed **this item**, by one batch **this batch**, each b
 capture or the batch said beside it and **All of the log** as a box. A batch is still one row that
 opens in place.*
 
-**A record's own page** *(2026-11-13)* draws the item's register narrowed to the one record, under
-the header `record`, with a bar docked at its foot holding the everyday ways: **Item**, **Save as
-template** for a route made by hand, and **Copy path** where the delivery named one. Withdraw stays
-in the record's own block, apart from these. *(Still to build: the facts in the one vocabulary —
-action and shape — Open in … where the record has an address, a band of its own for Withdraw, its
-dialog saying what the destination answered, and an abandoned or cancelled delivery's page titled
-`tried`.)*
+**A record's own page** *(2026-11-13, amended 2026-11-16)* is headed `record`, with back and the
+item's words under it. A box says where it stands: **Delivered to Vault.** in green, a pending one
+grey with a spinner and its window's words, **Withdrawn at 16:31.** grey. Its facts are in the one
+vocabulary — destination, the place, template, action, shape, if missing, decided — and under the
+band **as written** is what the delivery wrote, exactly. **Withdraw** has a band of its own,
+saying what it does and that nothing at the destination is touched, and asks in a dialog that says
+what the destination answered. The bar holds **Item**, **Save as template** for a route made by
+hand, **Cancel** for a pending one, **Undo** for a manual mark, and as the main action **Open in
+Vault** where the record has an address, **Copy path** otherwise, or **Reinstate** just after a
+withdrawal made here. A delivery that was cancelled or given up on left no record: its page is the
+log's account, titled `tried`, saying `Cancelled. Nothing reached Vault.` or why it was not
+delivered.
 
 `/log` is the register *(redrawn 2026-09-14, [shell-redesign](../plans/shell-redesign.md) phase
 5b)*: the rail carries the stamp and, under it, **the kind**; the body carries what the action was

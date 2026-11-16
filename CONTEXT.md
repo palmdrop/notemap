@@ -422,7 +422,11 @@ asks the capability rather than knowing it by name. It may say the same of itsel
 a capture's assets and nothing else, which is how a surface finds the one to offer as
 "attachments only". Core matches and refuses; it holds no list of
 its own, so a new kind of destination needs no change in core.
-_Avoid_: verb, action, method, operation
+_Avoid_: verb, action, method, operation. The shell alone labels it **action** where it reads a
+route out as facts — on the route page's check, a record and a template — beside **shape** for the
+**conversion**, in one vocabulary: new note, append, new note or append, attachments only; raw,
+list, task. That is a label on a drawn fact, as `discard` is drawn for archive, and the glossary's
+words stay what code and docs say.
 
 **Route**:
 To decide that an item belongs at a destination. Non-destructive: the item stays in the feed, and

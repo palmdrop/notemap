@@ -1,9 +1,9 @@
 # The phone-first shell
 
 **Date**: 2026-11-13
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`, `CONTEXT.md`
-**Closed**:
+**Closed**: 2026-11-16
 
 ---
 
@@ -256,7 +256,7 @@ Depends on phase 3.
     the record lines with the end of the path, the tags and the state lines in words.
   - The rail and Appearance's `rows` setting go.
 - [x] (2026-11-13) Trigger tags drawn as the route icon and the name, everywhere
-- [ ] The rows' states in words, per `DECISIONS.md` "Rows" and "Words for states" *(2026-11-13: the waiting dot is in the corner; the window's line waits for phase 7, which keeps the row; a refused capture and "Rejected by Vault" on a queue row are not drawn yet)*:
+- [x] (2026-11-16) The rows' states in words, per `DECISIONS.md` "Rows" and "Words for states" *(a rejection is said on its row for the session; a refused capture is a row at the queue's end)*:
   - A refused capture, kept on the device.
   - "Rejected by Vault in place".
   - A route in its window, with "Routing by Todo, list Next", the seconds and Cancel.
@@ -286,7 +286,7 @@ Depends on phase 4.
       Clear. Save with nothing to send says what is missing
 - [x] (2026-11-13) At 900px and wider: the box at the top of the queue, and Ctrl+Enter captures
 - [x] (2026-11-13) At every width: a capture that lands out of sight says where it landed, with Show
-- [x] (2026-11-13) A trigger tag added while writing asks its template's question *(in the tag chooser's own list until phase 7 builds the quick sheet)* in the quick sheet's shape,
+- [x] (2026-11-13) A trigger tag added while writing asks its template's question in the quick sheet's shape,
       and says what will happen once the capture is sent. Closing the question leaves the tag off
 - [x] (2026-11-13) Dropping and pasting files keep their rules
 - [x] (2026-11-13) `shell.md`: Capture is the head of the queue, and Dropping and pasting files where it changes
@@ -311,10 +311,10 @@ Depends on phase 4.
 - [x] (2026-11-14) Editing: double tap on the words, or Edit. The field has a ruled edge and the bar is Attach,
       Cancel and Save. Leaving with changes asks, and that includes the system's back gesture
       through history
-- [x] (2026-11-14) Tags on the item *(the question is still asked in the tag chooser's own list until the quick sheet)*. A trigger tag asks its template's question and locks while it counts
-- [ ] The feed's item is sealed *(2026-11-14: Route says Route again; Edit does not yet say that saving makes a revision)*. Edit there says that saving makes a revision, and Route says
+- [x] (2026-11-14) Tags on the item. A trigger tag asks its template's question and locks while it counts
+- [x] (2026-11-16) The feed's item is sealed. Edit there says that saving makes a revision, and Route says *(Edit there opens a revision, which the shell did not offer before; never on the queue)*
       "Route again"
-- [ ] A refused capture's item *(not built: a refused capture lives in the outbox and has no item page; its notice keeps Copy, Edit and Delete)*: Done and Route are off, and Discard becomes Delete, which asks
+- [x] (2026-11-16) A refused capture's item: Done and Route are off, and Discard becomes Delete, which asks *(it is not in the pool, so it has no item page: its row carries Copy, Edit and Delete, which asks)*
 - [x] (2026-11-14) `shell.md`: An item has an address, Actions and Tagging, where they change
 - [x] (2026-11-14) Commit
 
@@ -349,7 +349,7 @@ and the row leaving.
 
 Depends on phase 7.
 
-- [x] (2026-11-14) Below 900px the steps come one at a time, as ADR 72 has them *(the header's step count, and Next only for a typed answer, are not built)*.
+- [x] (2026-11-14) Below 900px the steps come one at a time, as ADR 72 has them.
   - Where: templates, then destinations.
   - How: action and shape.
   - Place: the tree, the derived name per ADR 68, a taken name and its sibling, and the folder mode
@@ -357,18 +357,18 @@ Depends on phase 7.
   - Then the check.
   - The header gives the step and how many there are. The bar is Back and Next, and Next is only
     there for a typed answer.
-- [ ] At 900px and wider it is one surface, as ADR 76 has it *(2026-11-14: the old surface stands, item left and steps right; folding a pick to one row with Change, the waiting line and radio-row answers are not built)*.
+- [x] (2026-11-16) At 900px and wider it is one surface, as ADR 76 has it.
   - The item on the left, with Discard and Done.
   - Every step on the right. A step that waits on an earlier one says so in a line, and a picked
     template or destination folds to one row with Change.
   - A template's answers are radio rows.
   - Route sits at the foot of the steps.
-- [ ] The check:
+- [x] (2026-11-16) The check:
   - Every fact opens its step, or scrolls to it when wide.
   - A place a template fixes can be changed for one route, which then carries on by hand.
   - The item's tags can be edited.
   - The preview, with Edit under it, rewrites for one route.
-- [ ] Routing replaces the check in history. The routed state has Cancel inside the window, Next
+- [x] (2026-11-16) Routing replaces the check in history. The routed state has Cancel inside the window, Next *(the steps are not history entries, so back after routing leaves for where the route began)*
       item, Route somewhere else too, Save as a template, and Open the item. A rejection after the
       window is said on the page. Done and Discard here say so on the queue's line, with Undo
 - [x] (2026-11-14) `shell.md`: The process surface, rewritten as the route page *(amended, not rewritten)*
@@ -388,7 +388,7 @@ Depends on phase 4. It can run beside phases 5 to 8.
 - [x] (2026-11-16) Discard, Tag and Route. They dock at the foot on a phone and sit in the header when wide.
       The feed has Undiscard
 - [x] (2026-11-16) Tag: a sheet showing each tag as on all the rows, on some (a dash), or on none, with Apply
-      and Undo *(a press applies at once; there is no Apply or Undo)*
+      and Undo
 - [x] (2026-11-16) Route: only templates with a trigger tag. The question is asked once, the batch is
       confirmed, and then it counts down on one line with one Cancel (see Unknowns)
 - [x] (2026-11-16) `shell.md`: Marking rows for a batch
@@ -401,7 +401,7 @@ cancelled in its window.
 
 Depends on phase 4.
 
-- [ ] The record page *(2026-11-16: the bar holds Item, Save as template and Copy path; the facts' vocabulary, Open in …, Withdraw's band and the 'tried' page are not built)*.
+- [x] (2026-11-16) The record page.
   - The facts use the one vocabulary (action, shape).
   - The bar holds Item, Save as template, and Open in … only where there is an address, otherwise
     Copy path.
@@ -420,18 +420,18 @@ Depends on phase 4.
 Depends on phase 2. It can run beside phases 3 to 10.
 
 - [x] (2026-11-16) The menu of sections, each section a page in a readable column, and the menu column when wide
-- [ ] Forms *(2026-11-16: the default drawn as picked, and Save with its reason, in the destination form; the rest not built)*.
+- [x] (2026-11-16) Forms.
   - An unset field shows its default as picked (ADR 75).
   - Save is always "Save", and says what is missing.
   - A field picked from a destination is a Browse row.
   - Long choices are rows, and destructive actions get their own band.
   - Leaving with changes asks.
-- [ ] Destinations and templates *(not built)*.
+- [x] (2026-11-16) Destinations and templates. *("unusable" is what the destination's description says; a template whose destination was deleted is "stranded")*
   - "Unavailable" with the destination's reason.
   - Check again is off while offline.
   - "Unusable" for a kind the pool no longer has, and "stranded" for a template that points at it.
   - A trigger tag is drawn as on rows.
-- [ ] Access *(the open pool's words were already there; Revoke and Sign out not redrawn)*.
+- [x] (2026-11-16) Access. *(a pool with no password says how to set one; nothing sets one over HTTP)*
   - Revoke inline on each token.
   - Sign out in the session's line.
   - A pool with no password, per the Unknowns.
