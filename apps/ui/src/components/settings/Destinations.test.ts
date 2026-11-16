@@ -394,7 +394,7 @@ test("shows an optional field's placeholder while it is empty, and sends nothing
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Vault" },
   });
-  await press("create");
+  await press("Save");
 
   await vi.waitFor(async () =>
     expect(await sent()).toContainEqual({
@@ -462,15 +462,16 @@ test("chooses a setting the schema fixes, rather than typing it from memory", as
   render(Destinations);
   await press("+ add a destination");
 
-  // Blank leads, because an unset one is what a destination that never said
-  // has — and it says what unset comes out as, since nothing else here does.
-  await screen.findByRole("button", { name: "default (none)" });
+  // Unset, the kind's default is drawn as the picked option; there is no
+  // "default (none)" of its own.
+  const none = await screen.findByRole("button", { name: "none" });
+  expect(none.getAttribute("aria-pressed")).toBe("true");
   expect(screen.getByRole("button", { name: "full" })).toBeDefined();
-  expect(screen.getByRole("button", { name: "none" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: /^default/ })).toBeNull();
 });
 
 /** A boolean setting is two options under a person's words, and a chosen `no` is sent as one. */
-test("chooses a boolean setting as yes or no, and says what unset comes out as", async () => {
+test("chooses a boolean setting as yes or no, drawing the default as picked and sending nothing for it", async () => {
   serving([], {
     "GET /v1/destination-kinds": () =>
       json(200, {
@@ -493,13 +494,18 @@ test("chooses a boolean setting as yes or no, and says what unset comes out as",
   render(Destinations);
   await press("+ add a destination");
 
-  await screen.findByRole("button", { name: "default (no)" });
+  expect(
+    (await screen.findByRole("button", { name: "no" })).getAttribute(
+      "aria-pressed",
+    ),
+  ).toBe("true");
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
   });
+  // The default, already drawn as picked, leaves the field unset.
   await press("no");
   await press("use it anyway");
 
@@ -507,7 +513,7 @@ test("chooses a boolean setting as yes or no, and says what unset comes out as",
     expect(await sent()).toContainEqual({
       name: "Second brain",
       kind: "filesystem",
-      settings: { root: "~/second-brain", hashtags: false },
+      settings: { root: "~/second-brain" },
     });
   });
 });
@@ -539,7 +545,7 @@ test("hides a setting the others make meaningless", async () => {
 
   render(Destinations);
   await press("+ add a destination");
-  await screen.findByRole("button", { name: "default (no)" });
+  await screen.findByRole("button", { name: "no" });
 
   expect(screen.queryByText(/^extra/)).toBeNull();
   await press("yes");
@@ -584,7 +590,7 @@ test("checks a root nothing has used before, and writes nothing until confirmed"
   });
 
   await screen.findByText(/notemap has not used/);
-  expect(screen.queryByRole("button", { name: "create" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   expect(asked()).not.toContain("POST /v1/destinations");
 
   await press("use it anyway");
@@ -607,7 +613,7 @@ test("asks nothing for a root already under one notemap holds", async () => {
   });
 
   expect(screen.queryByText(/notemap has not used/)).toBeNull();
-  await press("create");
+  await press("Save");
 
   await screen.findByRole("button", { name: "Second brain" });
 });
@@ -747,4 +753,62 @@ test("asks again for the kinds once the daemon is reachable", async () => {
   online(true);
 
   await vi.waitFor(() => expect(adding().disabled).toBe(false));
+});
+
+test("Save says what is missing until there is something to save", async () => {
+  serving([]);
+  render(Destinations);
+  await press("+ add a destination");
+
+  expect(await screen.findByText("Name it to save.")).toBeDefined();
+  expect(
+    (screen.getByRole("button", { name: "Save" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Second brain" },
+  });
+  expect(await screen.findByText(/^Fill in root to save\.$/)).toBeDefined();
+});
+
+test("a default picked again after another is pinned, not unset", async () => {
+  serving([], {
+    "GET /v1/destination-kinds": () =>
+      json(200, {
+        values: [
+          {
+            name: "filesystem",
+            settingsSchema: {
+              type: "object",
+              required: ["root"],
+              properties: {
+                root: { type: "string" },
+                hashtags: { type: "boolean", default: false },
+              },
+            },
+          },
+        ],
+      }),
+  });
+  render(Destinations);
+  await press("+ add a destination");
+
+  await fireEvent.input(screen.getByLabelText("Name"), {
+    target: { value: "Second brain" },
+  });
+  await fireEvent.input(screen.getByLabelText("root"), {
+    target: { value: "~/second-brain" },
+  });
+  await press("yes");
+  await press("no");
+  await press("use it anyway");
+
+  await vi.waitFor(async () => {
+    expect(await sent()).toContainEqual({
+      name: "Second brain",
+      kind: "filesystem",
+      settings: { root: "~/second-brain", hashtags: false },
+    });
+  });
 });

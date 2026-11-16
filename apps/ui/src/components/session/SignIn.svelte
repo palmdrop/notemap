@@ -1,13 +1,8 @@
 <script lang="ts">
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { saidBy } from "@notemap/client";
 
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Body from "$components/primitives/register/Body.svelte";
-  import Rail from "$components/primitives/register/Rail.svelte";
-  import Register from "$components/primitives/register/Register.svelte";
   import { client } from "$lib/client";
-
-  const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
   let name = $state("admin");
   let password = $state("");
@@ -32,40 +27,46 @@
   }
 </script>
 
-<form onsubmit={submit}>
-  <Register>
-    <Rail>name</Rail>
-    <Body>
-      <input
-        bind:value={name}
-        autocomplete="username"
-        name="username"
-        aria-label="name"
-        class={FIELD}
-      />
-    </Body>
+<form onsubmit={submit} class="mx-auto flex max-w-read flex-col gap-4 pt-6">
+  <label class="flex flex-col gap-1">
+    <span class="text-small text-muted">Name</span>
+    <input
+      bind:value={name}
+      autocomplete="username"
+      name="username"
+      aria-label="name"
+      class="min-h-11 rounded-control border border-rule bg-paper px-3 outline-none"
+    />
+  </label>
 
-    <Rail>password</Rail>
-    <Body>
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        bind:value={password}
-        type="password"
-        autocomplete="current-password"
-        name="password"
-        aria-label="password"
-        autofocus
-        class={FIELD}
-      />
-    </Body>
-  </Register>
+  <label class="flex flex-col gap-1">
+    <span class="text-small text-muted">Password</span>
+    <!-- svelte-ignore a11y_autofocus -->
+    <input
+      bind:value={password}
+      type="password"
+      autocomplete="current-password"
+      name="password"
+      aria-label="password"
+      autofocus
+      class="min-h-11 rounded-control border border-rule bg-paper px-3 outline-none"
+    />
+  </label>
 
-  <div class="mt-6 flex items-baseline gap-6">
-    <Action submit primary disabled={password === ""} working={sending}>
-      sign in
-    </Action>
-    {#if refused !== undefined}
-      <span role="alert" class="text-danger">{refused}</span>
-    {/if}
-  </div>
+  {#if refused !== undefined}
+    <p role="alert" class="text-danger">{refused}</p>
+  {/if}
+
+  <button
+    type="submit"
+    disabled={password === "" || sending}
+    aria-busy={sending || undefined}
+    class="inline-flex min-h-12 items-center justify-center gap-2 rounded-control border bg-ink px-4 text-paper {password ===
+    ''
+      ? 'border-dashed border-off-line bg-paper text-muted'
+      : 'border-ink'}"
+  >
+    {#if sending}<Spinner />{/if}
+    Sign in
+  </button>
 </form>

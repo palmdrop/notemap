@@ -14,10 +14,10 @@
 </svelte:head>
 
 <div
-  class="grid grid-cols-[var(--spacing-rail)_1fr] max-wide:grid-cols-1 max-wide:gap-0"
+  class="grid grid-cols-[14rem_minmax(0,var(--spacing-read))] max-wide:grid-cols-1 max-wide:gap-0"
 >
   <div
-    class="border-r border-ink pt-5 pr-4 pb-12 max-wide:border-r-0 max-wide:pt-2 max-wide:pr-0 max-wide:pb-0
+    class="-ml-8 border-r border-rule pb-12 max-wide:ml-0 max-wide:border-r-0 max-wide:pb-0
       {atMenu ? '' : 'max-wide:hidden'}"
   >
     <Menu />

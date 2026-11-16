@@ -2972,6 +2972,19 @@ replaced rather than pushed, as the order is.
 
 ### Settings
 
+*Amended 2026-11-13 ([ADR 75](../adr/0075-a-setting-left-unset-is-drawn-as-its-default.md)).*
+**The menu of sections** is a list of rows, each leading to its section with a chevron on a phone,
+the current one on the band; **when wide** it is a column beside the section, which keeps a readable
+column. **A choice left unset is drawn with the kind's default as picked**; there is no `default
+(x)` option. The field stays unset — nothing is sent for it — until another value is picked; picking
+the default again after that pins it. **Save is "Save"**, and until there is something to save the
+line over it says what is missing: `Name it to save.`, `Pick a kind to save.`, `Fill in root to
+save.` *(The destination form has it; the template and account forms keep their own words until
+their pass.)* **A pool with no password** says so in Access, and how to set one where the daemon
+runs: nothing sets a password over HTTP. **Sign in** is a page of its own under the header `sign
+in`: a name and a password in ruled boxes, and **Sign in** as the main action, dashed until a
+password is typed; a password that is not accepted is said in red above it.
+
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |

@@ -419,26 +419,26 @@ Depends on phase 4.
 
 Depends on phase 2. It can run beside phases 3 to 10.
 
-- [ ] The menu of sections, each section a page in a readable column, and the menu column when wide
-- [ ] Forms.
+- [x] (2026-11-16) The menu of sections, each section a page in a readable column, and the menu column when wide
+- [ ] Forms *(2026-11-16: the default drawn as picked, and Save with its reason, in the destination form; the rest not built)*.
   - An unset field shows its default as picked (ADR 75).
   - Save is always "Save", and says what is missing.
   - A field picked from a destination is a Browse row.
   - Long choices are rows, and destructive actions get their own band.
   - Leaving with changes asks.
-- [ ] Destinations and templates.
+- [ ] Destinations and templates *(not built)*.
   - "Unavailable" with the destination's reason.
   - Check again is off while offline.
   - "Unusable" for a kind the pool no longer has, and "stranded" for a template that points at it.
   - A trigger tag is drawn as on rows.
-- [ ] Access.
+- [ ] Access *(the open pool's words were already there; Revoke and Sign out not redrawn)*.
   - Revoke inline on each token.
   - Sign out in the session's line.
   - A pool with no password, per the Unknowns.
-- [ ] Appearance: only the theme
-- [ ] Sign in as a page of its own: a password that isn't accepted, and the pool out of reach
-- [ ] `shell.md`: Settings
-- [ ] Commit
+- [x] (2026-11-14) Appearance: only the theme
+- [x] (2026-11-16) Sign in as a page of its own: a password that isn't accepted, and the pool out of reach
+- [x] (2026-11-16) `shell.md`: Settings *(amended)*
+- [x] (2026-11-16) Commit
 
 **Verify**: the design's shots 60–83. Tests cover a default drawn as picked and left unset, and
 Save's reason.

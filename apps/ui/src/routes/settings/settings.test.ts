@@ -42,11 +42,11 @@ test("the menu marks the current section, and leaves the rest plain", () => {
 
   const templates = screen.getByRole("link", { name: "Templates" });
   expect(templates.getAttribute("aria-current")).toBe("page");
-  expect(templates.classList.contains("font-semibold")).toBe(true);
+  expect(templates.classList.contains("bg-band")).toBe(true);
 
   const destinations = screen.getByRole("link", { name: "Destinations" });
   expect(destinations.getAttribute("aria-current")).toBeNull();
-  expect(destinations.classList.contains("font-semibold")).toBe(false);
+  expect(destinations.classList.contains("bg-band")).toBe(false);
 });
 
 test("on a section, the menu is hidden below `narrow` and the section is not", () => {

@@ -101,7 +101,12 @@
     // value of its own there — it means *inherit* — and a field that could be
     // left unset but never returned to unset is a one-way door. Blank leads,
     // because that is what a destination that never said this has.
-    const blank = held === "" || !field.required ? [""] : [];
+    const blank =
+      field.preset !== undefined
+        ? []
+        : held === "" || !field.required
+          ? [""]
+          : [];
 
     if (held === "") return [...blank, ...published];
 
@@ -111,11 +116,22 @@
     ];
   }
 
+  /** Why it cannot be saved yet, said over Save rather than leaving it dead. */
+  const missing = $derived.by(() => {
+    if (name.trim() === "") return "Name it to save.";
+    if (chosen === undefined) return "Pick a kind to save.";
+    const empty = fields.find(
+      (field) =>
+        field.required &&
+        field.preset === undefined &&
+        (typed[field.name] ?? "").trim() === "",
+    );
+    return empty === undefined ? undefined : `Fill in ${empty.name} to save.`;
+  });
+
   function labelFor(field: Field, value: string): string {
     if (value === "") {
-      return field.preset === undefined
-        ? "unset"
-        : `default (${labelOf(field, field.preset)})`;
+      return "unset";
     }
     return (listed(field) ?? []).includes(value)
       ? labelOf(field, value)
@@ -180,10 +196,16 @@
       {#if listed(field) !== undefined}
         <div class="flex flex-wrap gap-x-[2ch]">
           {#each offered(field) as one (one)}
+            <!-- Unset, the kind's default is drawn as picked, and stays unset until another is. -->
             <Option
               label={labelFor(field, one)}
-              chosen={(typed[field.name] ?? "") === one}
-              onchoose={() => (typed[field.name] = one)}
+              chosen={(typed[field.name] ?? "") === one ||
+                ((typed[field.name] ?? "") === "" && field.preset === one)}
+              onchoose={() => {
+                if ((typed[field.name] ?? "") === "" && field.preset === one)
+                  return;
+                typed[field.name] = one;
+              }}
             />
           {/each}
         </div>
@@ -204,17 +226,18 @@
     </p>
   {/if}
 
+  {#if missing !== undefined && !disabled}
+    <p class="col-span-2 text-small text-muted max-wide:col-span-1">
+      {missing}
+    </p>
+  {/if}
   <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-wide:col-span-1"
+    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-rule pt-2.5 max-wide:col-span-1"
   >
     <Action onclick={done}>cancel</Action>
     <span class="inverted">
-      <Action submit disabled={busy || disabled}>
-        {unfamiliarRoot
-          ? "use it anyway"
-          : editing === undefined
-            ? "create"
-            : "save"}
+      <Action submit disabled={busy || disabled || missing !== undefined}>
+        {unfamiliarRoot ? "use it anyway" : "Save"}
       </Action>
     </span>
   </div>
