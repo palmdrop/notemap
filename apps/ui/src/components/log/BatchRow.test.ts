@@ -152,7 +152,7 @@ test("reads one batch with what this client was told of the items it refused and
     "1 already tagged, 1 refused",
   );
   expect(
-    within(head.closest("p")!).getByRole("link", { name: "all of the log" }),
+    within(head.closest("p")!).getByRole("link", { name: "All of the log" }),
   ).toBeDefined();
   expect(screen.getByText("refused")).toBeDefined();
   expect(screen.getByText("no-such-item")).toBeDefined();
@@ -182,7 +182,7 @@ test("stops asking over a batch the pool has no entry for", async () => {
   log.reading("newest-first", undefined, undefined, "nowhere");
 
   await vi.waitFor(() => expect(log.loading).toBe(false));
-  const head = screen.getByText("all of the log").closest("p")!;
+  const head = screen.getByText("All of the log").closest("p")!;
   await vi.waitFor(() =>
     expect(head.querySelector("[role=status]")).toBeNull(),
   );

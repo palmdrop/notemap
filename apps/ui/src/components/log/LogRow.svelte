@@ -149,8 +149,8 @@
 >
   <div class="col-span-full grid grid-cols-subgrid">
     <Rail {gap}>
-      <Stamp at={action.at} />
-      <div class="mt-2 tracking-caps uppercase {bad ? 'text-danger' : ''}">
+      <Stamp at={action.at} dated={false} />
+      <div class="mt-2 text-small {bad ? 'text-danger' : 'text-muted'}">
         {kindWord(action.kind)}
       </div>
     </Rail>

@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { SvelteMap } from "svelte/reactivity";
+
+  import Day from "$components/primitives/register/Day.svelte";
+  import { dayOf } from "$lib/stamp";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import { onMount, tick, untrack } from "svelte";
 
   import type { Action } from "@notemap/client";
@@ -155,23 +160,41 @@
 
     return () => held.unsubscribe();
   });
+
+  /** The rows that open a day, read in the log's order, with the day they open. */
+  const heads = $derived.by(() => {
+    const opening = new SvelteMap<string, string>();
+    let day: string | undefined;
+    for (const { row, key } of rows) {
+      const at = row.kind === "action" ? row.action.at : row.at;
+      const today = dayOf(at);
+      if (today !== day) opening.set(key, at);
+      day = today;
+    }
+    return opening;
+  });
 </script>
 
 {#if log.item !== undefined}
   <!-- History: the log narrowed to one item, said above the head. -->
-  <p class="pt-5">
-    <span class="font-semibold tracking-caps uppercase">history</span>
+  <p
+    class="-mx-3.5 flex flex-wrap items-center gap-3 border-b border-rule px-gutter py-3 wide:-mx-8"
+  >
+    <span class="font-display text-weekday lowercase">this item</span>
     <Says id={log.item} href={itemHref(log.item)} />
-    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
-      >all of the log</a
+    <span class="ml-auto"
+      ><Box href={logHref(log.order, { kinds: log.kinds })}>All of the log</Box
+      ></span
     >
   </p>
 {/if}
 
 {#if log.batch !== undefined}
   <!-- The log narrowed to one batch, said above the head as history is. -->
-  <p class="pt-5">
-    <span class="font-semibold tracking-caps uppercase">batch</span>
+  <p
+    class="-mx-3.5 flex flex-wrap items-center gap-3 border-b border-rule px-gutter py-3 wide:-mx-8"
+  >
+    <span class="font-display text-weekday lowercase">this batch</span>
     {#if said === undefined && (read === "asking" || log.loading)}
       <Asking />
     {:else if said !== undefined}
@@ -188,8 +211,9 @@
     {#if read === "failed"}
       <span class="ml-[2ch]">{NOT_ALL_READ}</span>
     {/if}
-    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
-      >all of the log</a
+    <span class="ml-auto"
+      ><Box href={logHref(log.order, { kinds: log.kinds })}>All of the log</Box
+      ></span
     >
   </p>
 {/if}
@@ -221,6 +245,9 @@
     {/each}
 
     {#each rows as { row, key, gap } (key)}
+      {#if heads.has(key)}
+        <Day at={heads.get(key) ?? ""} />
+      {/if}
       {#if row.kind === "action"}
         <LogRow action={row.action} {gap} heard={log.heard(row.action.id)} />
       {:else}

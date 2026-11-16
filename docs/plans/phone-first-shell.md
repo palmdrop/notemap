@@ -401,17 +401,17 @@ cancelled in its window.
 
 Depends on phase 4.
 
-- [ ] The record page.
+- [ ] The record page *(2026-11-16: the bar holds Item, Save as template and Copy path; the facts' vocabulary, Open in …, Withdraw's band and the 'tried' page are not built)*.
   - The facts use the one vocabulary (action, shape).
   - The bar holds Item, Save as template, and Open in … only where there is an address, otherwise
     Copy path.
   - Withdraw has its own band, and its dialog follows the Unknowns.
   - Pending, rejected and abandoned are each in words. A delivery that was abandoned or cancelled
     gets the log's account, titled "tried".
-- [ ] The log in the new register. A batch is one row that opens in place. Reading by item and by
+- [x] (2026-11-16) The log in the new register. A batch is one row that opens in place. Reading by item and by
       batch keeps "All of the log"
-- [ ] `shell.md`: The log, and the record's sections
-- [ ] Commit
+- [x] (2026-11-16) `shell.md`: The log, and the record's sections *(amended)*
+- [x] (2026-11-16) Commit
 
 **Verify**: the design's shots 46 and 54–57, and w21.
 

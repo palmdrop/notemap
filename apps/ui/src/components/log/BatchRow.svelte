@@ -57,8 +57,8 @@
 
 <div data-batch={id} class="col-span-full grid grid-cols-subgrid">
   <Rail {gap}>
-    <Stamp {at} />
-    <div class="mt-2 tracking-caps uppercase {alarm ? 'text-danger' : ''}">
+    <Stamp {at} dated={false} />
+    <div class="mt-2 text-small {alarm ? 'text-danger' : 'text-muted'}">
       batch
     </div>
   </Rail>

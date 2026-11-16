@@ -3207,6 +3207,20 @@ last heard. Choosing the option already chosen sends nothing.
 
 ### The log
 
+*Amended 2026-11-13: the log is read in the new register — a band per day, the time in a narrow
+column, every row ruled under — and its status line is at its foot only while something is true.
+Read by one item it is headed **this item**, by one batch **this batch**, each band with the
+capture or the batch said beside it and **All of the log** as a box. A batch is still one row that
+opens in place.*
+
+**A record's own page** *(2026-11-13)* draws the item's register narrowed to the one record, under
+the header `record`, with a bar docked at its foot holding the everyday ways: **Item**, **Save as
+template** for a route made by hand, and **Copy path** where the delivery named one. Withdraw stays
+in the record's own block, apart from these. *(Still to build: the facts in the one vocabulary —
+action and shape — Open in … where the record has an address, a band of its own for Withdraw, its
+dialog saying what the destination answered, and an abandoned or cancelled delivery's page titled
+`tried`.)*
+
 `/log` is the register *(redrawn 2026-09-14, [shell-redesign](../plans/shell-redesign.md) phase
 5b)*: the rail carries the stamp and, under it, **the kind**; the body carries what the action was
 about and the one fact the kind is worth; and for a routing kind, the record itself, folded to

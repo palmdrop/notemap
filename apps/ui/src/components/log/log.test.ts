@@ -195,7 +195,7 @@ test("says what the narrowed log is narrowed to in the capture's own words", asy
   render(Log);
   reading(SUBJECT);
 
-  const head = (await screen.findByText("history")).parentElement;
+  const head = (await screen.findByText("this item")).parentElement;
   expect(head?.textContent).toContain("the picker needs a trail");
   expect(
     screen.getByRole("link", { name: "the picker needs a trail" }),
@@ -219,7 +219,7 @@ test("says what it is narrowed to, and offers the way back", async () => {
   reading("0198f0c2-9d3a-7b21-8e4f-112233445e6f");
 
   expect(
-    await screen.findByRole("link", { name: "all of the log" }),
+    await screen.findByRole("link", { name: "All of the log" }),
   ).toBeDefined();
 
   await vi.waitFor(() => {

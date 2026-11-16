@@ -119,7 +119,7 @@ test("says records are out of reach while the item still draws", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.getByRole("button", { name: /^Route/ })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Item" })).toBeDefined();
 });
 
 test("drops what one record sent when another is drawn", async () => {
@@ -138,4 +138,18 @@ test("drops what one record sent when another is drawn", async () => {
 
   expect(await screen.findByText("# rec-2")).toBeDefined();
   expect(screen.queryByText("# rec")).toBeNull();
+});
+
+test("a record's bar leads to its item, offers a route made by hand as a template, and copies a path where there is one", async () => {
+  pool(answering());
+  await client.item("one");
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    (await screen.findByRole("link", { name: "Item" })).getAttribute("href"),
+  ).toBe("/items/one");
+  expect(
+    await screen.findByRole("link", { name: "Save as template" }),
+  ).toBeDefined();
 });

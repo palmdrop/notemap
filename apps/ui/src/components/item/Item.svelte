@@ -146,7 +146,7 @@
   });
 </script>
 
-{#if item !== undefined && width.wide}
+{#if item !== undefined && only === undefined && width.wide}
   <div class="-mx-8">
     <ItemBar {item} {commands} editing={row?.editor()} />
   </div>
@@ -237,7 +237,7 @@
   {/if}
 </Register>
 
-{#if item !== undefined && !width.wide}
+{#if item !== undefined && only === undefined && !width.wide}
   <div class="sticky bottom-0 z-20 -mx-3.5 mt-6">
     <ItemBar {item} {commands} editing={row?.editor()} />
   </div>

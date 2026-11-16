@@ -25,7 +25,7 @@
 <div
   data-head
   data-covers={covers ? "" : undefined}
-  class="sticky top-bar z-40 -mx-8 flex items-center max-wide:-mx-3.5"
+  class="sticky top-bar z-40 -mx-8 flex flex-wrap items-center gap-4 border-b border-rule bg-paper px-gutter py-2 max-wide:-mx-3.5"
   {@attach stick}
 >
   {@render children()}
