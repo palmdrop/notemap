@@ -20,6 +20,7 @@ import { asked, client, pool, sent } from "$testing/pool";
 import { firings } from "$lib/firings.svelte";
 import { notices } from "$lib/notices.svelte";
 import { NO_PREVIEW_OFFERED } from "$lib/said";
+import { heading } from "$lib/heading.svelte";
 import Process from "./Process.svelte";
 
 keyboard();
@@ -4734,4 +4735,81 @@ test("when wide every step is on the one surface", async () => {
   await screen.findByRole("button", { name: "Vault" });
   expect(onScreen()).toEqual(["where", "how", "place", "check"]);
   expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
+});
+
+test("on a phone the header says which step of how many, and a fact on the check opens its step", async () => {
+  viewport(390);
+  serving([aDestination()]);
+  draw();
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(heading.current?.aside).toBe("where  1 of 4");
+  expect(heading.current?.title).toBe("route");
+
+  await choose("Vault");
+  await vi.waitFor(() => expect(onScreen()).toEqual(["place"]));
+  expect(heading.current?.aside).toBe("place  2 of 3");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(onScreen()).toEqual(["check"]);
+
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "Change destination" }),
+  );
+  await vi.waitFor(() => expect(onScreen()).toEqual(["where"]));
+});
+
+test("a place a template fixed is changed for one route, which then goes as a decision of its own", async () => {
+  servingTemplates();
+  draw();
+
+  await choose("research");
+  const fixed = await screen.findByRole("button", { name: /for this route$/ });
+  expect(fixed.textContent).toContain("set by research");
+
+  await fireEvent.click(fixed);
+  const directory = (await screen.findByLabelText(
+    "directory",
+  )) as HTMLInputElement;
+  await fireEvent.input(directory, { target: { value: "elsewhere" } });
+  await commit();
+
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/route");
+  });
+  expect(await sent()).toContainEqual(
+    expect.objectContaining({
+      destination: VAULT,
+      arguments: { directory: "elsewhere" },
+    }),
+  );
+});
+
+test("after routing the steps give way to the routed state, and Next item moves on", async () => {
+  routing(
+    {
+      id: "r",
+      item: "one",
+      at: "2026-09-03T10:00:00.000Z",
+      until: new Date(Date.now() + 60_000).toISOString(),
+      state: "pending",
+      target: aTarget,
+    },
+    [aCapture(), aCapture({ id: "two" })],
+  );
+  await client.loadQueue();
+
+  draw();
+  await choose(/Vault/);
+  await commit();
+
+  expect(await screen.findByText("and then")).toBeDefined();
+  await vi.waitFor(() => expect(heading.current?.title).toBe("routed"));
+  expect(
+    screen.getByRole("link", { name: /Open the item/ }).getAttribute("href"),
+  ).toBe("/items/one");
+  expect(screen.getByText(/Routing to Vault/)).toBeDefined();
+
+  await fireEvent.click(screen.getByRole("button", { name: "Next item" }));
+  await vi.waitFor(() => expect(left()).toBe("/items/two/process"));
 });

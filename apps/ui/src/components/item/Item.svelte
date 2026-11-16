@@ -25,20 +25,14 @@
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import {
-    NO_ITEM_OFFLINE,
-    NO_RECORDS_OFFLINE,
-    NO_SUCH_ITEM,
-    NO_SUCH_RECORD,
-  } from "$lib/said";
+  import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
 
   /**
    * The item as a register: the capture is the first row, then a rule, then
    * each routing record is a row of its own — its stamp and state in the rail,
-   * the record as a block in the body. `only` narrows the records to one,
-   * which is what the record's own address draws.
+   * the record as a block in the body.
    */
-  let { id, only }: { id: string; only?: string } = $props();
+  let { id }: { id: string } = $props();
 
   const pool = reachable();
   const undrained = pending();
@@ -58,15 +52,12 @@
    */
   const standing = new SvelteSet<string>();
 
-  // An item that was never routed has no records to read, unless one is
-  // being asked for by name — then the pool is what says it is not there —
-  // or one this view drew has been withdrawn since.
+  // An item that was never routed has no records to read, unless one this
+  // view drew has been withdrawn since.
   const records = recordsOf(
     () =>
       item !== undefined &&
-      (only !== undefined ||
-        item.routing !== undefined ||
-        untrack(() => standing.size > 0))
+      (item.routing !== undefined || untrack(() => standing.size > 0))
         ? item.id
         : undefined,
     () => pool.yes,
@@ -113,12 +104,9 @@
   );
 
   const drawn = $derived(
-    only === undefined
-      ? records.all.filter(
-          (record) =>
-            record.withdrawnAt === undefined || standing.has(record.id),
-        )
-      : records.all.filter((record) => record.id === only),
+    records.all.filter(
+      (record) => record.withdrawnAt === undefined || standing.has(record.id),
+    ),
   );
 
   /** The records as drawn: under a heading per day, where the reader reads by day. */
@@ -136,18 +124,16 @@
 
   /** What the record rows say instead of records, where they have none to say. */
   const aboutRecords = $derived.by(() => {
-    if (item?.routing === undefined && only === undefined) return undefined;
+    if (item?.routing === undefined) return undefined;
     if (records.refused !== "") return { said: records.refused, alarm: true };
     if (drawn.length > 0) return undefined;
     if (!pool.yes) return { said: NO_RECORDS_OFFLINE, alarm: false };
-    if (only !== undefined && records.settled)
-      return { said: NO_SUCH_RECORD, alarm: false, gone: true };
     if (!records.settled) return { said: "", alarm: false, asking: true };
     return undefined;
   });
 </script>
 
-{#if item !== undefined && only === undefined && width.wide}
+{#if item !== undefined && width.wide}
   <div class="-mx-8">
     <ItemBar {item} {commands} editing={row?.editor()} />
   </div>
@@ -177,20 +163,16 @@
       {:else}
         {@const record = one.row.record}
         <Rail>
-          <!-- The record's own address, where this is not already it. -->
-          {#if only === undefined}
-            <a href={recordHref(record.item, record.id)} class="block w-max">
-              <Stamp at={record.at} dated={false} />
-            </a>
-          {:else}
+          <!-- The record's own address. -->
+          <a href={recordHref(record.item, record.id)} class="block w-max">
             <Stamp at={record.at} dated={false} />
-          {/if}
+          </a>
         </Rail>
         <Body>
           <Block
             {record}
             held={item}
-            folds={only === undefined}
+            folds
             editing={row?.isEditing() === true}
             onundone={() => records.reread()}
           />
@@ -200,18 +182,12 @@
     {/each}
 
     {#if aboutRecords !== undefined}
-      <Rail>
-        {#if aboutRecords.gone === true}
-          <StateWord word="gone" />
-        {/if}
-      </Rail>
+      <Rail />
       <Body>
         {#if aboutRecords.asking === true}
           <Asking />
         {:else if aboutRecords.alarm}
           <div role="status" class="text-danger">{aboutRecords.said}</div>
-        {:else if aboutRecords.gone === true}
-          <Prose text={aboutRecords.said} />
         {:else}
           <div>{aboutRecords.said}</div>
         {/if}
@@ -238,7 +214,7 @@
   {/if}
 </Register>
 
-{#if item !== undefined && only === undefined && !width.wide}
+{#if item !== undefined && !width.wide}
   <div aria-hidden="true" class="h-28"></div>
   <div class="fixed inset-x-0 bottom-0 z-20">
     <ItemBar {item} {commands} editing={row?.editor()} />
