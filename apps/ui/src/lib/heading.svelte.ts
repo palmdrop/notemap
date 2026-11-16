@@ -5,8 +5,8 @@
  */
 export type Heading = {
   readonly title: string;
-  /** Close leaves something under way, back goes up a level. */
-  readonly out: {
+  /** Close leaves something under way, back goes up a level. None, and the menu stands. */
+  readonly out?: {
     readonly icon: "close" | "back";
     readonly label: string;
     readonly run: () => void;
@@ -24,9 +24,10 @@ export const heading = {
 };
 
 /** Registers the page's head for as long as the calling component lives. */
-export function headed(read: () => Heading): void {
+export function headed(read: () => Heading | undefined): void {
   $effect(() => {
     const now = read();
+    if (now === undefined) return;
     current = now;
     return () => {
       if (current === now) current = undefined;

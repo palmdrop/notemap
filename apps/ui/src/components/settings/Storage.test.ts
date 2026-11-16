@@ -142,7 +142,7 @@ test("folds the paths away, and gives them up on asking", async () => {
   // Reference material, not a figure anyone scans: it does not crowd the rows.
   expect(screen.queryByText("/var/lib/notemap/state/notemap.db")).toBeNull();
 
-  await pressNth("show", 1);
+  await pressNth("Show", 1);
 
   await screen.findByText("/var/lib/notemap/state/notemap.db");
   await screen.findByText("/var/lib/notemap/assets");
@@ -161,7 +161,7 @@ test("folds what the roots hold away, and says it with each root's size", async 
 
   expect(screen.queryByText(/142 assets/)).toBeNull();
 
-  await pressNth("show", 0);
+  await pressNth("Show", 0);
 
   await screen.findByText("142 assets / 140 files (70 MB)");
   await screen.findByText("1,204 records / 2,408 files (3.5 MB)");
@@ -212,7 +212,7 @@ test("the reclaim is inert where there is nothing to take", async () => {
   // The figure says it: a label naming the action needs no sentence beside it.
   await screen.findByText("0 bytes");
   const button = await screen.findByRole<HTMLButtonElement>("button", {
-    name: "reclaim now",
+    name: /^Reclaim/,
   });
   expect(button.disabled).toBe(true);
 });
@@ -237,7 +237,7 @@ test("the reclaim fires, says what it took, and asks again", async () => {
   await screen.findByText(/2 files left behind/);
   await screen.findByText("714 KB");
 
-  await press("reclaim now");
+  await press(/^Reclaim/);
 
   await screen.findByText(/took 2 files, 714 KB/);
   await screen.findByText("0 bytes");
@@ -262,7 +262,7 @@ test("drops what a reclaim took once the section looks again", async () => {
   render(StorageSection);
   await screen.findByText(/2 files left behind/);
 
-  await press("reclaim now");
+  await press(/^Reclaim/);
   await screen.findByText(/took 2 files, 714 KB/);
 
   transport.unreachable(true);

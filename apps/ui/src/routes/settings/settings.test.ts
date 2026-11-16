@@ -40,13 +40,13 @@ test("the menu marks the current section, and leaves the rest plain", () => {
   atSection.params.section = "templates";
   render(Menu);
 
-  const templates = screen.getByRole("link", { name: "Templates" });
+  const templates = screen.getByRole("link", { name: /^Templates/ });
   expect(templates.getAttribute("aria-current")).toBe("page");
-  expect(templates.classList.contains("bg-band")).toBe(true);
+  expect(templates.classList.contains("bg-off")).toBe(true);
 
-  const destinations = screen.getByRole("link", { name: "Destinations" });
+  const destinations = screen.getByRole("link", { name: /^Destinations/ });
   expect(destinations.getAttribute("aria-current")).toBeNull();
-  expect(destinations.classList.contains("bg-band")).toBe(false);
+  expect(destinations.classList.contains("bg-off")).toBe(false);
 });
 
 test("on a section, the menu is hidden below `narrow` and the section is not", () => {

@@ -37,7 +37,7 @@ test("asks again on request, out of the probe's own turn", async () => {
   await screen.findByText(/available/);
   const before = probes(transport).length;
 
-  await press("check again");
+  await press("Check again");
 
   await vi.waitFor(() =>
     expect(probes(transport).length).toBeGreaterThan(before),
@@ -71,11 +71,11 @@ test("sources are folded, and shown on request", async () => {
   render(Server);
 
   expect(screen.queryByText("memos")).toBeNull();
-  await press("show");
+  await press("Show");
 
   await screen.findByText("memos");
   expect(asked()).toContain("GET /v1/sources");
 
-  await press("hide");
+  await press("Hide");
   expect(screen.queryByText("memos")).toBeNull();
 });

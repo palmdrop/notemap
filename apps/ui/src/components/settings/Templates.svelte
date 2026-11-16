@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { replaceState } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
   import {
@@ -9,23 +9,89 @@
     type RoutingTemplateReport,
   } from "@notemap/client";
 
-  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
-  import TemplateRow from "$components/settings/Template.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
+  import Trigger from "$components/primitives/marks/Trigger.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import Dialog from "$components/primitives/sheets/Dialog.svelte";
+  import TemplatePage from "$components/settings/Template.svelte";
   import TemplateForm from "$components/settings/TemplateForm.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
+  import {
+    capabilityHeld,
+    described,
+    readingHeld,
+  } from "$lib/described.svelte";
+  import { templateIcon } from "$lib/looks";
+  import { nameFor } from "$lib/names.svelte";
+  import { resolve } from "$lib/naming";
+  import { placeOf } from "$lib/templates";
+  import { reportSaid } from "$lib/template-state";
   import { reachable } from "$lib/reachable.svelte";
-  import { slide } from "$lib/motion";
+
+  import { newHref, openHref, settingsHref } from "./href";
   import { draftOf, type RoutingTemplateDraft } from "$lib/template-draft";
 
   const templates = client.templates.all;
   const destinations = client.destinations.all;
   const pool = reachable();
 
-  let adding = $state(false);
-  let opened = $state<string | undefined>(undefined);
-  let editing = $state<string | undefined>(undefined);
+  /** The list, one template on its own page, or a form: read off the address. */
+  const opened = $derived(page.url.searchParams.get("open") ?? undefined);
+  const editing = $derived(page.url.searchParams.has("edit"));
+  const adding = $derived(page.url.searchParams.has("new"));
+  const one = $derived($templates.find((each) => each.id === opened));
+
+  // A channel id says nothing a person can read: what each template names is
+  // asked for once, and drawn by name once it is known.
+  $effect(() => {
+    for (const one of $templates) {
+      void described(one.destination);
+      void resolve(
+        one.destination,
+        Object.keys(one.arguments).map((field) => ({
+          capability: one.capability,
+          field,
+          value: String(one.arguments[field] ?? ""),
+        })),
+      );
+    }
+  });
+
+  /** Where a template files, by name: "todo.md in Vault". */
+  function whereOf(one: RoutingTemplate): string {
+    const reading = readingHeld(one.destination, one.capability);
+    void capabilityHeld(one.destination, one.capability);
+    const place =
+      reading === "asking"
+        ? ""
+        : placeOf(
+            one,
+            (field, value) =>
+              nameFor({
+                destination: one.destination,
+                capability: one.capability,
+                field,
+                value,
+              }),
+            reading,
+          );
+    const name =
+      $destinations.find((each) => each.id === one.destination)?.name ??
+      "a destination";
+    return place === "" || place === "—" ? name : `${place} in ${name}`;
+  }
+
+  /** A form done with gives way to what it was opened from, in its place in history. */
+  function back(): void {
+    void goto(
+      opened === undefined || adding
+        ? settingsHref("templates")
+        : openHref("templates", opened),
+      { replaceState: true },
+    );
+  }
   let doomed = $state<RoutingTemplate | undefined>(undefined);
   let said = $state("");
 
@@ -144,104 +210,120 @@
   }
 </script>
 
-<Section name="templates">
-  {#if !pool.yes}
-    <!-- The chrome already says the pool is out of reach; this names what that
-         costs here, and is not painted as an alarm. -->
-    <p role="status" class="mt-4">Templates can be read but not changed.</p>
-  {/if}
+{#if starting !== undefined}
+  <TemplateForm
+    destinations={$destinations}
+    {starting}
+    disabled={!pool.yes}
+    done={started}
+  />
+{:else if adding}
+  <TemplateForm destinations={$destinations} disabled={!pool.yes} done={back} />
+{:else if one !== undefined && editing}
+  <TemplateForm
+    destinations={$destinations}
+    editing={one}
+    disabled={!pool.yes}
+    done={back}
+  />
+{:else if one !== undefined}
+  <TemplatePage
+    {one}
+    destination={$destinations.find((each) => each.id === one.destination)}
+    report={reports[one.id]}
+    asking={asking[one.id] === true}
+    offline={!pool.yes}
+    oncheck={() => void asks(one)}
+    ondelete={() => (doomed = one)}
+  />
+{:else}
+  <Section name="templates">
+    <div class="flex flex-col">
+      <div>
+        {#if !pool.yes}
+          <!-- The chrome already says the pool is out of reach; this names
+               what that costs here, and is not painted as an alarm. -->
+          <p role="status" class="m-0 px-gutter py-3 text-small text-muted">
+            The pool is out of reach. Templates can be read but not changed.
+          </p>
+        {/if}
 
-  {#if said !== ""}
-    <p role="status" class="mt-4 text-danger">{said}</p>
-  {/if}
+        {#if said !== ""}
+          <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
+        {/if}
 
-  {#if unfound}
-    <p role="status" class="mt-4">
-      That routing record cannot be saved as a template.
-    </p>
-  {/if}
+        {#if unfound}
+          <p role="status" class="m-0 px-gutter py-3">
+            That routing record cannot be saved as a template.
+          </p>
+        {/if}
 
-  {#if starting !== undefined}
-    <Unfolding>
-      <TemplateForm
-        destinations={$destinations}
-        {starting}
-        disabled={!pool.yes}
-        done={started}
-      />
-    </Unfolding>
-  {/if}
+        {#each $templates as each (each.id)}
+          {@const destination = $destinations.find(
+            (held) => held.id === each.destination,
+          )}
+          {@const report = reportSaid(
+            reports[each.id],
+            asking[each.id] === true,
+          )}
+          <LinkRow
+            icon={templateIcon(each, destination?.kind)}
+            title={each.name}
+            label={each.name}
+            line={destination === undefined
+              ? "stranded: its destination was deleted. Does nothing until repointed."
+              : report.alarm || report.text === "not reachable"
+                ? report.text
+                : whereOf(each)}
+            lineDanger={destination === undefined || report.alarm}
+            href={openHref("templates", each.id)}
+          >
+            {#snippet aside()}
+              {#if each.triggerTag !== undefined}<Trigger
+                  tag={each.triggerTag}
+                />{/if}
+            {/snippet}
+          </LinkRow>
+        {/each}
+      </div>
 
-  {#each $templates as one (one.id)}
-    <TemplateRow
-      {one}
-      destination={$destinations.find((each) => each.id === one.destination)}
-      report={reports[one.id]}
-      asking={asking[one.id] === true}
-      opened={opened === one.id}
-      editing={editing === one.id}
-      offline={!pool.yes}
-      onopen={() => {
-        opened = opened === one.id ? undefined : one.id;
-        editing = undefined;
-      }}
-      oncheck={() => void asks(one)}
-      onedit={() => (editing = editing === one.id ? undefined : one.id)}
-      ondelete={() => (doomed = one)}
-    >
-      {#if editing === one.id}
-        <Unfolding>
-          <TemplateForm
-            destinations={$destinations}
-            editing={one}
-            disabled={!pool.yes}
-            done={() => (editing = undefined)}
-          />
-        </Unfolding>
-      {/if}
-    </TemplateRow>
-  {/each}
-
-  {#if adding}
-    <Unfolding>
-      <TemplateForm
-        destinations={$destinations}
-        disabled={!pool.yes}
-        done={() => (adding = false)}
-      />
-    </Unfolding>
-  {:else}
-    <div class="mt-6" transition:slide={{ magnitude: "short" }}>
-      <Action
-        disabled={!pool.yes || $destinations.length === 0}
-        onclick={() => (adding = true)}
-      >
-        + add a template
-      </Action>
+      <PageBar label="Templates">
+        <BarAction
+          icon="plus"
+          label="Add a template"
+          primary
+          why={!pool.yes
+            ? "The pool is out of reach."
+            : $destinations.length === 0
+              ? "Add a destination first."
+              : undefined}
+          href={newHref("templates")}
+        />
+      </PageBar>
     </div>
-  {/if}
-</Section>
+  </Section>
+{/if}
 
 {#if doomed !== undefined}
-  <!-- Deleting a template is not the irreversible thing deleting a destination
-       is: a record made from one keeps resolving without it. So it asks in a
-       line rather than in a modal. -->
-  <div role="dialog" aria-label="Delete a template" class="mt-4 text-danger">
-    <p>
-      Delete {doomed.name}? Records made from it keep resolving; its tag stops
-      filing anything.
+  {@const going = doomed}
+  <Dialog
+    title="Delete {going.name}?"
+    ways={[
+      { label: "Keep", value: false },
+      { label: "Delete", value: true, kind: "danger" },
+    ]}
+    onanswer={(yes) => {
+      const id = going.id;
+      doomed = undefined;
+      if (yes === true)
+        void attempt(async () => {
+          await client.templates.delete(id);
+          await goto(settingsHref("templates"), { replaceState: true });
+        });
+    }}
+  >
+    <p class="m-0">
+      Records made from it keep resolving; its tag stops filing anything.
     </p>
-    <div class="mt-2 flex flex-wrap items-baseline gap-x-6">
-      <Action
-        onclick={() =>
-          void attempt(async () => {
-            await client.templates.delete((doomed as RoutingTemplate).id);
-            doomed = undefined;
-          })}
-      >
-        delete anyway
-      </Action>
-      <Action onclick={() => (doomed = undefined)}>keep</Action>
-    </div>
-  </div>
+  </Dialog>
 {/if}

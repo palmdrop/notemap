@@ -1,21 +1,33 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
-  import { saidBy } from "@notemap/client";
-  import type {
-    Destination,
-    DestinationDescription,
-    DestinationProbe,
+  import { goto } from "$app/navigation";
+  import {
+    saidBy,
+    type Destination,
+    type DestinationDescription,
+    type DestinationProbe,
   } from "@notemap/client";
 
-  import Fact from "$components/settings/Fact.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Lead from "$components/primitives/text/Lead.svelte";
-  import Asking from "$components/primitives/marks/Asking.svelte";
-  import { slide } from "$lib/motion";
-  import { pickable } from "$lib/pick";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
+  import Facts from "$components/primitives/rows/Facts.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import StateBox from "$components/primitives/rows/StateBox.svelte";
+  import Dialog from "$components/primitives/sheets/Dialog.svelte";
+  import { client } from "$lib/client";
+  import { alarming, standingOf } from "$lib/destination-state";
+  import { headed } from "$lib/heading.svelte";
+  import { kindName } from "$lib/looks";
   import { since } from "$lib/stamp";
+  import { actionOf, type Fact } from "$lib/vocabulary";
 
+  import { editHref, openHref, settingsHref } from "./href";
+
+  /**
+   * One destination on a page of its own: where it stands, what it can do and
+   * what it is set to, the templates that file there, and Disable and Delete in
+   * a band of their own. Check again and Edit are its bar.
+   */
   let {
     one,
     described,
@@ -23,105 +35,75 @@
     checkedAt,
     asking,
     probing,
-    opened,
-    editing,
     offline,
-    onopen,
     oncheck,
-    onedit,
     onretire,
     ondelete,
-    children,
   }: {
     one: Destination;
     described?: DestinationDescription;
     probed?: DestinationProbe;
-    /** When either question last settled, for the facts grid's `checked …`. */
     checkedAt?: string;
     asking: boolean;
     probing: boolean;
-    opened: boolean;
-    /** The form is drawn below in its place; the row's own line and facts wait. */
-    editing: boolean;
     offline: boolean;
-    onopen: () => void;
     oncheck: () => void;
-    onedit: () => void;
     onretire: () => Promise<unknown>;
     ondelete: () => Promise<unknown>;
-    children?: Snippet;
   } = $props();
 
+  const templates = client.templates.all;
+
   const disabled = $derived(one.retired === true);
-
-  const can = $derived(
-    described === undefined
-      ? undefined
-      : described.kind === "described"
-        ? described.capabilities.map((each) => each.name).join(", ")
-        : undefined,
+  const standing = $derived(
+    standingOf(one, described, probed, asking || probing),
+  );
+  const checked = $derived(
+    checkedAt === undefined ? "" : ` Checked ${since(checkedAt)}.`,
   );
 
-  const refusing = $derived(
-    described === undefined || described.kind === "described"
-      ? undefined
-      : `${described.kind} — ${described.detail}`,
+  const filing = $derived(
+    $templates.filter((each) => each.destination === one.id),
   );
 
-  /** `reached` reads `available`; `unusable` stays, since it is the bigger fact. */
-  const PROBE_WORD: Partial<Record<DestinationProbe["kind"], string>> = {
-    ready: "available",
-    unreachable: "unavailable",
-  };
-
-  // A kind that cannot be probed is drawn as it was before probing existed.
-  const reach = $derived.by(() => {
-    if (probed === undefined || probed.kind === "not-offered") return undefined;
-    if (probed.kind === "ready") {
-      return { said: "available", alarm: false };
-    }
-
-    return {
-      said: `${PROBE_WORD[probed.kind] ?? probed.kind} — ${probed.detail}`,
-      alarm: probed.kind === "rejected",
-    };
-  });
-
-  /** What the row leads with, collapsed and in the facts grid alike. */
-  const status = $derived.by(
-    (): { said: string; alarm: boolean; asking?: boolean } => {
-      if (refusing !== undefined) return { said: refusing, alarm: true };
-      if (reach !== undefined) return reach;
-      if (asking || probing) return { said: "", alarm: false, asking: true };
-      if (can !== undefined) return { said: "answered", alarm: false };
-      if (disabled) return { said: "disabled", alarm: false };
-      return { said: "not asked yet", alarm: false };
+  const facts = $derived.by((): Fact[] => [
+    {
+      label: "actions",
+      value:
+        described?.kind === "described"
+          ? described.capabilities.map((each) => actionOf(each.name)).join(", ")
+          : disabled
+            ? "not offered, so not asked"
+            : asking
+              ? "asking…"
+              : "none",
     },
-  );
-
-  const since_ = $derived(
-    checkedAt === undefined ? undefined : since(checkedAt),
-  );
+    ...Object.entries(one.settings ?? {}).map(([key, value]) => ({
+      label: key,
+      value: String(value),
+    })),
+  ]);
 
   let busy = $state(false);
-  let retireFailed = $state("");
-  let asked = $state(false);
+  let failed = $state("");
+  let deleting = $state(false);
   let refusal = $state<string | undefined>(undefined);
 
-  async function toggleRetire() {
+  async function toggleRetire(): Promise<void> {
     busy = true;
-    retireFailed = "";
+    failed = "";
     try {
       await onretire();
     } catch (error) {
-      retireFailed = saidBy(error);
+      failed = saidBy(error);
     } finally {
       busy = false;
     }
   }
 
-  async function confirmDelete() {
+  async function remove(): Promise<void> {
     busy = true;
+    refusal = undefined;
     try {
       await ondelete();
     } catch (error) {
@@ -131,126 +113,120 @@
     }
   }
 
-  function cancelAsk() {
-    asked = false;
-    refusal = undefined;
-  }
-
-  // A row with a form or an ask open closes only through them — `cancel`,
-  // `save`, `keep` — or when another row is opened; a click inside it is not
-  // a way out that throws away what was typed.
-  function pick() {
-    if (editing || asked) return;
-    onopen();
-  }
+  headed(() => ({
+    title: one.name,
+    out: {
+      icon: "back",
+      label: "Destinations",
+      run: () => void goto(settingsHref("destinations")),
+    },
+    under: kindName(one.kind),
+  }));
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="py-4 {opened
-    ? '-mx-3 -mt-px border border-ink px-3 max-wide:-mx-2 max-wide:px-2'
-    : 'border-b border-b-ink'}"
-  onclick={pickable(pick)}
->
-  <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <button
-      type="button"
-      onclick={pick}
-      aria-expanded={opened}
-      class="font-semibold hover:underline"
-    >
-      {one.name}
-    </button>
-    <span>{one.kind}</span>
+{#if deleting}
+  <Dialog
+    title="Delete {one.name}?"
+    ways={[
+      { label: "Keep", value: false },
+      { label: "Delete", value: true, kind: "danger" },
+    ]}
+    onanswer={(yes) => {
+      deleting = false;
+      if (yes === true) void remove();
+    }}
+  >
+    <p class="m-0">
+      Only while no record names it. A destination something was routed to can
+      be disabled instead.
+    </p>
+  </Dialog>
+{/if}
 
-    <span
-      class="ml-auto whitespace-nowrap max-wide:ml-0 max-wide:w-full {status.alarm
-        ? 'text-danger'
-        : ''}"
-    >
-      {#if status.asking === true}
-        <Asking subject={one.name} />
-      {:else}
-        {status.said}
-      {/if}
-    </span>
+<div class="flex flex-col">
+  <div class="pb-4">
+    {#if standing.word === "available"}
+      <StateBox tone="good" icon="check">Available.{checked}</StateBox>
+    {:else if standing.word === "checking"}
+      <StateBox turning>Checking {one.name}…</StateBox>
+    {:else if alarming(standing)}
+      <StateBox tone="danger" icon="close">
+        <b class="capitalize">{standing.word}:</b>
+        {standing.why ?? ""}{checked}
+      </StateBox>
+    {:else if disabled}
+      <StateBox icon="pause">
+        Disabled. Not offered for new routes; what went there stays as it is.
+      </StateBox>
+    {/if}
+
+    <Facts {facts} />
+
+    {#if filing.length > 0}
+      <div
+        class="grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-3 border-b border-rule px-gutter py-3"
+      >
+        <span class="text-small text-muted">templates</span>
+        <span class="flex flex-wrap gap-x-3 gap-y-1">
+          {#each filing as each (each.id)}
+            <a href={openHref("templates", each.id)}>{each.name}</a>
+          {/each}
+        </span>
+      </div>
+    {/if}
+
+    <Band>disable or delete</Band>
+    <LinkRow
+      icon="pause"
+      title={disabled ? "Enable" : "Disable"}
+      line={disabled
+        ? "Offered for new routes again."
+        : "Not offered for new routes. What went there, and what is on its way, stays as it is."}
+      chevron={false}
+      disabled={offline || busy}
+      onclick={() => void toggleRetire()}
+    />
+    <LinkRow
+      icon="trash"
+      title="Delete…"
+      line="Only while no record names it. Otherwise, disable it."
+      danger
+      chevron={false}
+      disabled={offline || busy}
+      onclick={() => (deleting = true)}
+    />
+    {#if failed !== ""}
+      <p role="status" class="m-0 px-gutter py-3 text-danger">{failed}</p>
+    {/if}
+    {#if refusal !== undefined}
+      <div class="px-gutter py-3 text-danger" role="status">
+        <p class="m-0">{refusal}</p>
+        {#if !disabled}
+          <button
+            type="button"
+            class="mt-2 underline underline-offset-[0.2em]"
+            onclick={() =>
+              void toggleRetire().then(() => (refusal = undefined))}
+            >Disable instead</button
+          >
+        {/if}
+      </div>
+    {/if}
   </div>
 
-  {#if opened && !editing}
-    <div class="mt-4" transition:slide={{ magnitude: "short" }}>
-      <Fact name="actions">
-        {#if can !== undefined}
-          {can}
-        {:else if asking}
-          <Asking />
-        {:else}
-          {disabled ? "not offered, so not asked" : "unasked"}
-        {/if}
-      </Fact>
-      <Fact name="status">
-        {#if status.asking === true}
-          <Asking />
-        {:else}
-          <Lead
-            lead={status.said}
-            rest={since_ === undefined ? undefined : `checked ${since_}`}
-          />
-        {/if}
-      </Fact>
-      {#each Object.entries(one.settings ?? {}) as [key, value] (key)}
-        <Fact name={key}>{String(value)}</Fact>
-      {/each}
-
-      {#if asked}
-        <div
-          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3 text-danger"
-        >
-          {#if refusal !== undefined}
-            <span>{refusal}</span>
-            <Action
-              working={busy}
-              onclick={() => void toggleRetire().then(() => (asked = false))}
-            >
-              disable instead
-            </Action>
-          {:else}
-            <span>Delete {one.name}?</span>
-            <Action working={busy} onclick={() => void confirmDelete()}>
-              delete
-            </Action>
-          {/if}
-          <Action onclick={cancelAsk}>keep</Action>
-        </div>
-      {:else}
-        <div
-          class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
-        >
-          <Action disabled={asking || probing} onclick={oncheck}>
-            check again
-          </Action>
-          <Action disabled={offline} onclick={onedit}>edit</Action>
-          <Action
-            disabled={offline}
-            working={busy}
-            onclick={() => void toggleRetire()}
-          >
-            {disabled ? "enable" : "disable"}
-          </Action>
-          {#if retireFailed !== ""}
-            <span class="text-danger">{retireFailed}</span>
-          {/if}
-          <span class="ml-auto max-wide:ml-0">
-            <Action alarm disabled={offline} onclick={() => (asked = true)}>
-              delete
-            </Action>
-          </span>
-        </div>
-      {/if}
-    </div>
-  {/if}
-
-  {#if opened}
-    {@render children?.()}
-  {/if}
+  <PageBar label={one.name}>
+    <BarAction
+      icon="refresh"
+      label="Check again"
+      disabled={offline || asking || probing || disabled}
+      onclick={oncheck}
+    />
+    <BarAction
+      icon="edit"
+      label="Edit"
+      primary
+      why={offline ? "The pool is out of reach." : undefined}
+      href={editHref("destinations", one.id)}
+    />
+  </PageBar>
 </div>

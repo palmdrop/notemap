@@ -5,7 +5,7 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
@@ -96,7 +96,6 @@
     {:else}
       <Lead {...status} />
     {/if}
-    <Action disabled={asking} onclick={() => void knock()}>check again</Action>
   </Fact>
   <Fact name="api">
     <!-- The daemon serves this one, not this app: let the browser leave. -->
@@ -105,11 +104,21 @@
     </a>
   </Fact>
 
+  <div class="px-gutter py-3">
+    <Box icon="refresh" disabled={asking} onclick={() => void knock()}
+      >Check again</Box
+    >
+  </div>
+
   <Section name="sources" sub>
     {#snippet right()}
-      <Action onclick={() => (showSources = !showSources)}>
-        {showSources ? "hide" : "show"}
-      </Action>
+      <button
+        type="button"
+        class="min-h-target underline underline-offset-[0.2em]"
+        onclick={() => (showSources = !showSources)}
+      >
+        {showSources ? "Hide" : "Show"}
+      </button>
     {/snippet}
 
     {#if showSources}
@@ -119,7 +128,7 @@
         {/each}
 
         {#if sourcesFailed !== ""}
-          <p class="mt-2 text-danger">{sourcesFailed}</p>
+          <p class="m-0 px-gutter py-3 text-danger">{sourcesFailed}</p>
         {/if}
       </div>
     {/if}

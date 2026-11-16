@@ -28,3 +28,14 @@ export function whereOf(template: RoutingTemplate): string {
     ? nameOf(template.destination)
     : `${place} in ${nameOf(template.destination)}`;
 }
+
+const KIND_NAMES: Readonly<Record<string, string>> = {
+  filesystem: "markdown folder",
+  webdav: "webdav",
+  arena: "are.na",
+};
+
+/** A destination's kind, in the words a person knows it by. */
+export function kindName(kind: string): string {
+  return KIND_NAMES[kind] ?? kind;
+}

@@ -11,12 +11,15 @@
     on,
     disabled = false,
     small = false,
+    label,
     ontoggle,
     children,
   }: {
     on: boolean;
     disabled?: boolean;
     small?: boolean;
+    /** Its name where its words alone do not say which. */
+    label?: string;
     ontoggle: () => void;
     children: Snippet;
   } = $props();
@@ -24,6 +27,7 @@
 
 <button
   type="button"
+  aria-label={label}
   aria-pressed={on}
   {disabled}
   onclick={ontoggle}

@@ -17,15 +17,12 @@
   class="grid grid-cols-[14rem_minmax(0,var(--spacing-read))] max-wide:grid-cols-1 max-wide:gap-0"
 >
   <div
-    class="-ml-8 border-r border-rule pb-12 max-wide:ml-0 max-wide:border-r-0 max-wide:pb-0
+    class="border-r border-rule max-wide:border-r-0
       {atMenu ? '' : 'max-wide:hidden'}"
   >
     <Menu />
   </div>
-  <div
-    class="min-w-0 pt-5 pb-12 pl-gutter max-wide:pt-3 max-wide:pl-0
-      {atMenu ? 'max-wide:hidden' : ''}"
-  >
+  <div class="min-w-0 {atMenu ? 'max-wide:hidden' : ''}">
     {@render children()}
   </div>
 </div>

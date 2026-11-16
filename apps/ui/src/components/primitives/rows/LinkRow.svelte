@@ -21,7 +21,9 @@
     href,
     onclick,
     badge,
+    aside,
     label,
+    lineDanger = false,
     strong = false,
     why,
   }: {
@@ -37,8 +39,12 @@
     href?: string;
     onclick?: () => void;
     badge?: Snippet;
+    /** Drawn at the right, before the state: a trigger tag. */
+    aside?: Snippet;
     /** The row's name for a reader that does not read its line and state. */
     label?: string;
+    /** The line says something wrong. */
+    lineDanger?: boolean;
     /** The one a typed line has narrowed to. */
     strong?: boolean;
     /** Why it cannot be taken, said in its line's place. */
@@ -79,10 +85,15 @@
       {#if badge !== undefined}{@render badge()}{/if}
     </span>
     {#if (why ?? line) !== undefined}
-      <small class="block text-small text-muted">{why ?? line}</small>
+      <small
+        class="block text-small {lineDanger && why === undefined
+          ? 'text-danger'
+          : 'text-muted'}">{why ?? line}</small
+      >
     {/if}
   </span>
   <span class="flex items-center gap-2">
+    {#if aside !== undefined}{@render aside()}{/if}
     {#if end !== undefined}
       <span class="text-small {endDanger ? 'text-danger' : 'text-muted'}"
         >{end}</span

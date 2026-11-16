@@ -33,7 +33,7 @@
   {#if say !== undefined && !head}
     <p
       transition:fade
-      class="border-t border-rule bg-paper px-gutter py-2 text-small text-muted"
+      class="border-t border-rule bg-paper px-gutter py-2 text-small text-muted empty:hidden"
     >
       {@render say()}
     </p>
@@ -48,7 +48,10 @@
     {@render children()}
   </div>
   {#if say !== undefined && head}
-    <p transition:fade class="bg-paper px-gutter py-2 text-small text-muted">
+    <p
+      transition:fade
+      class="bg-paper px-gutter py-2 text-small text-muted empty:hidden"
+    >
       {@render say()}
     </p>
   {/if}

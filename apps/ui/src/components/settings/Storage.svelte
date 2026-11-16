@@ -3,7 +3,7 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import { client } from "$lib/client";
@@ -195,8 +195,7 @@
    * their own, with whatever qualifies a figure right-aligned beneath it. Below
    * `narrow` the label gives up its fixed width.
    */
-  const GRID =
-    "grid grid-cols-[9rem_28ch] gap-x-2.5 max-wide:grid-cols-[1fr_min(28ch,60%)]";
+  const GRID = "grid grid-cols-1";
 </script>
 
 {#snippet row(
@@ -205,34 +204,36 @@
   detail?: string,
   asking?: boolean,
 )}
-  <span class="tracking-caps uppercase">{name}</span>
-  <span class="text-right tabular-nums">
-    {#if size === undefined}
-      <Asking />
-    {:else}
-      <span class="font-semibold">{size}</span>
-    {/if}
-  </span>
-
-  <!-- What the size is made of takes a line of its own under the
-       figure, at every width, rather than a column beside it. -->
-  {#if detail !== undefined || asking === true}
-    <span class="col-start-2 min-w-0 text-right break-words">
-      {#if asking === true}
-        <!-- A walk already answered once and running again: the remembered
-             figures stand, and the mark says a fresher set is coming. -->
+  <div
+    class="col-span-full grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-3 border-b border-rule px-gutter py-3"
+  >
+    <span class="text-small text-muted">{name}</span>
+    <span class="text-right tabular-nums">
+      {#if size === undefined}
         <Asking />
       {:else}
-        {detail}
+        {size}
+      {/if}
+      <!-- What the size is made of takes a line of its own under the figure. -->
+      {#if detail !== undefined || asking === true}
+        <small class="block text-small break-words text-muted">
+          {#if asking === true}
+            <!-- A walk already answered once and running again: the remembered
+                 figures stand, and the mark says a fresher set is coming. -->
+            <Asking />
+          {:else}
+            {detail}
+          {/if}
+        </small>
       {/if}
     </span>
-  {/if}
+  </div>
 {/snippet}
 
 <Section name="storage">
   {#if held === undefined}
     <!-- Nothing is cached, so there is no older figure to draw instead. -->
-    <p role="status" class="mt-4">
+    <p role="status" class="m-0 px-gutter py-4">
       {#if pool.yes}
         <Asking subject="storage" />
       {:else}
@@ -241,10 +242,6 @@
     </p>
   {:else}
     <div class={GRID}>
-      <!-- One head, over the one column that is read down. -->
-      <span></span>
-      <span class="text-right tracking-caps uppercase"> size </span>
-
       {@render row("pool", sizeOf(held.pool.bytes))}
       {@render row(
         "assets",
@@ -266,7 +263,7 @@
     <!-- What the rows above come to, and what is left where they live: the two
          figures a person reads together, set apart by space rather than ruled
          off from what they are a sum of. -->
-    <div class="{GRID} mt-5">
+    <div class={GRID}>
       {@render row(
         "total",
         total === undefined ? undefined : sizeOf(total),
@@ -279,7 +276,7 @@
     </div>
 
     {#if reclaimable !== undefined}
-      <div class="{GRID} mt-5">
+      <div class={GRID}>
         {@render row(
           "reclaimable",
           sizeOf(reclaimable.bytes),
@@ -288,9 +285,11 @@
             : `${count(reclaimable.count, "file")} left behind`,
         )}
 
-        <span></span>
-        <span class="col-start-2 text-right">
-          <Action
+        <div
+          class="col-span-full flex flex-wrap items-center gap-3 px-gutter py-3"
+        >
+          <Box
+            icon="trash"
             disabled={reclaimable.count === 0}
             working={reclaiming}
             title={reclaimable.count === 0
@@ -298,21 +297,19 @@
               : undefined}
             onclick={() => void reclaim()}
           >
-            reclaim now
-          </Action>
+            Reclaim {sizeOf(reclaimable.bytes)}
+          </Box>
           {#if took !== undefined}
-            <span class="ml-[1ch]">
+            <span class="text-small text-muted">
               took {count(took.blobs, "file")}, {sizeOf(took.bytes)}
             </span>
           {/if}
-        </span>
-
-        {#if grace !== undefined && grace.count > 0}
-          <span></span>
-          <span class="col-start-2 text-right">
-            {count(grace.count, "file")} waiting out the grace window
-          </span>
-        {/if}
+          {#if grace !== undefined && grace.count > 0}
+            <span class="text-small text-muted">
+              {count(grace.count, "file")} waiting out the grace window
+            </span>
+          {/if}
+        </div>
 
         {#if held.assets.saved > 0}
           {@render row(
@@ -324,11 +321,14 @@
       </div>
     {/if}
 
-    <div class="mt-5">
+    <div>
       <Fact name="stats">
-        <Action onclick={() => (showStats = !showStats)}>
-          {showStats ? "hide" : "show"}
-        </Action>
+        <button
+          type="button"
+          class="underline underline-offset-[0.2em]"
+          onclick={() => (showStats = !showStats)}
+          >{showStats ? "Hide" : "Show"}</button
+        >
       </Fact>
 
       {#if showStats}
@@ -344,9 +344,12 @@
       {/if}
 
       <Fact name="paths">
-        <Action onclick={() => (showPaths = !showPaths)}>
-          {showPaths ? "hide" : "show"}
-        </Action>
+        <button
+          type="button"
+          class="underline underline-offset-[0.2em]"
+          onclick={() => (showPaths = !showPaths)}
+          >{showPaths ? "Hide" : "Show"}</button
+        >
       </Fact>
 
       {#if showPaths}

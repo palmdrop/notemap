@@ -82,7 +82,7 @@
       />
     </div>
   {:else}
-    {#if own !== undefined}
+    {#if own?.out !== undefined}
       <button
         type="button"
         onclick={own.out.run}

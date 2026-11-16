@@ -1,11 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
 import { online } from "$testing/dom";
 import { asked, client, pool, sent } from "$testing/pool";
 import Destinations from "./Destinations.svelte";
+import { address } from "$testing/address.svelte";
+import { follow } from "$testing/router";
+
+vi.mock("$app/state", () => import("$testing/address.svelte"));
+vi.mock("$app/navigation", () => import("$testing/router"));
+
+follow();
+beforeEach(() => {
+  address.path = "/settings/destinations";
+});
 
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
 
@@ -64,15 +74,18 @@ const described = () =>
     capabilities: [{ name: "create", accepts: [], argumentsSchema: {} }],
   });
 
-/** Processing a destination happens on the row, which opens on its own name. */
+/** A destination opens on a page of its own, from its row in the list. */
 async function open(name: string) {
-  return fireEvent.click(await screen.findByRole("button", { name }));
+  return fireEvent.click(await screen.findByRole("link", { name }));
 }
+
+const go = async (name: string | RegExp) =>
+  fireEvent.click(await screen.findByRole("link", { name }));
 
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
-test("lists what the pool holds, disabled ones hidden until shown", async () => {
+test("lists what the pool holds, each saying where it stands", async () => {
   serving(
     [aDestination(), aDestination({ id: "b", name: "Board", retired: true })],
     {
@@ -83,25 +96,18 @@ test("lists what the pool holds, disabled ones hidden until shown", async () => 
   );
 
   render(Destinations);
-  await screen.findByRole("button", { name: "Vault" });
-  expect(screen.queryByRole("button", { name: "Board" })).toBeNull();
-  expect(screen.getByText("show 1 disabled")).toBeDefined();
-
-  await press("show 1 disabled");
-  await screen.findByRole("button", { name: "Board" });
-  expect(screen.getByText("disabled")).toBeDefined();
+  const vault = await screen.findByRole("link", { name: "Vault" });
+  const board = screen.getByRole("link", { name: "Board" });
+  expect(board.textContent).toContain("disabled");
 
   // The list still fills from pool state alone; both questions follow it.
-  await screen.findByText(/available/);
+  await vi.waitFor(() => expect(vault.textContent).toContain("available"));
   expect(asked().sort()).toEqual([
     "GET /v1/destination-kinds",
     "GET /v1/destinations",
     `GET /v1/destinations/${VAULT}/description`,
     `GET /v1/destinations/${VAULT}/probe`,
   ]);
-
-  await press("hide 1 disabled");
-  expect(screen.queryByRole("button", { name: "Board" })).toBeNull();
 });
 
 test("says what a destination can do without anyone asking it to", async () => {
@@ -116,7 +122,7 @@ test("says what a destination can do without anyone asking it to", async () => {
   render(Destinations);
   await open("Vault");
 
-  await screen.findByText("create");
+  await screen.findByText("new note");
 });
 
 test("says a destination is not really there, though it describes itself fine", async () => {
@@ -127,7 +133,10 @@ test("says a destination is not really there, though it describes itself fine", 
   });
 
   render(Destinations);
+  const vault = await screen.findByRole("link", { name: "Vault" });
+  await vi.waitFor(() => expect(vault.textContent).toContain("unavailable"));
 
+  await open("Vault");
   await screen.findByText(/~\/notes is not there/);
 });
 
@@ -140,7 +149,7 @@ test("says nothing at all where the kind cannot be probed", async () => {
 
   render(Destinations);
 
-  await screen.findByText(/answered/);
+  await screen.findByText(/available/);
   expect(screen.queryByText(/not-offered/)).toBeNull();
 });
 
@@ -157,8 +166,10 @@ test("leaves one that cannot describe itself saying so, and the rest listed", as
 
   render(Destinations);
 
+  await screen.findByText("unusable");
+  await screen.findByText("available");
+  await open("Vault");
   await screen.findByText(/the drive is not mounted/);
-  await screen.findByText(/answered/);
 });
 
 /** The one worth re-asking on: it may simply have been asleep. */
@@ -173,7 +184,7 @@ test("asks a destination that was unreachable again, once the pool is back", asy
   });
 
   render(Destinations);
-  await screen.findByText(/unavailable — the drive is asleep/);
+  await screen.findByText("unavailable");
   expect(answers).toBe(1);
 
   transport.unreachable(true);
@@ -199,7 +210,7 @@ test("does not ask a destination that already answered", async () => {
   });
 
   render(Destinations);
-  await screen.findByText(/~\/notes is not there/);
+  await screen.findByText("unavailable");
 
   // The list re-emitting is what re-runs the asking, so it is what must not.
   await client.destinations.load();
@@ -211,7 +222,7 @@ test("does not ask a destination that already answered", async () => {
  * The call that can hang is the one that must say it is running: describing
  * answers at once, so a row whose probe is still out used to read "unasked".
  */
-test("says a row is being asked while its probe is still out", async () => {
+test("says a destination is being checked while its probe is still out", async () => {
   let answer: ((value: Response) => void) | undefined;
   serving([aDestination()], {
     [`GET /v1/destinations/${VAULT}/description`]: () => described(),
@@ -225,45 +236,23 @@ test("says a row is being asked while its probe is still out", async () => {
   await open("Vault");
 
   // Describing has landed; only the probe is still out.
-  await screen.findByText("create");
-  expect(screen.queryByText("unasked")).toBeNull();
-  // The row's lead and its status both stand where the answer will.
-  expect((await screen.findAllByText("loading")).length).toBe(2);
+  await screen.findByText("new note");
+  expect(await screen.findByText(/Checking Vault/)).toBeDefined();
 
   answer?.(json(200, { kind: "ready" }));
-  await screen.findAllByText(/available/);
+  await screen.findByText(/Available\./);
 });
 
-test("the opened row is a box, and the rest are ruled", async () => {
-  serving([aDestination(), aDestination({ id: "other", name: "Other" })]);
-
-  render(Destinations);
-  const vault = await screen.findByRole("button", { name: "Vault" });
-  const row = (name: string) =>
-    screen.getByRole("button", { name }).closest("div.py-4") as HTMLElement;
-
-  expect(row("Vault").classList.contains("border")).toBe(false);
-  await fireEvent.click(vault);
-  expect(row("Vault").classList.contains("border")).toBe(true);
-  expect(row("Other").classList.contains("border")).toBe(false);
-
-  await open("Other");
-  expect(row("Vault").classList.contains("border")).toBe(false);
-  expect(row("Other").classList.contains("border")).toBe(true);
-});
-
-test("keeps a destination's doings behind opening it", async () => {
+test("keeps a destination's doings on its own page", async () => {
   serving([aDestination()]);
 
   render(Destinations);
-  await screen.findByRole("button", { name: "Vault" });
-  expect(screen.queryByRole("button", { name: "disable" })).toBeNull();
+  await screen.findByRole("link", { name: "Vault" });
+  expect(screen.queryByRole("button", { name: /^Disable/ })).toBeNull();
 
   await open("Vault");
-  expect(screen.getByRole("button", { name: "disable" })).toBeDefined();
-
-  await open("Vault");
-  expect(screen.queryByRole("button", { name: "disable" })).toBeNull();
+  expect(await screen.findByRole("button", { name: /^Disable/ })).toBeDefined();
+  expect(address.path).toBe(`/settings/destinations?open=${VAULT}`);
 });
 
 test("asks one destination what it can do, on request", async () => {
@@ -277,9 +266,9 @@ test("asks one destination what it can do, on request", async () => {
 
   render(Destinations);
   await open("Vault");
-  await press("check again");
+  await press("Check again");
 
-  await screen.findByText("create");
+  await screen.findByText("new note");
   expect(asked()).toContain(`GET /v1/destinations/${VAULT}/description`);
 });
 
@@ -294,22 +283,21 @@ test("shows one the daemon cannot make sense of as unusable, and keeps it listed
 
   render(Destinations);
   await open("Vault");
-  await press("check again");
+  await press("Check again");
 
-  // Said both on the collapsed line and, opened, in the facts grid.
   await vi.waitFor(() =>
     expect(
       screen.getAllByText(/nothing here speaks the kanban kind/).length,
     ).toBeGreaterThan(0),
   );
-  expect(screen.getByRole("button", { name: "Vault" })).toBeDefined();
+  expect(screen.getByText("unusable:")).toBeDefined();
 });
 
 test("adds one from the kind's own schema", async () => {
   serving([]);
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   // The fields are the kind's, not this component's.
   await fireEvent.input(screen.getByLabelText("Name"), {
@@ -318,10 +306,9 @@ test("adds one from the kind's own schema", async () => {
   await fireEvent.input(screen.getByLabelText("root"), {
     target: { value: "~/second-brain" },
   });
-  // Nothing is known yet, so the button already says what it is about to do.
-  await press("use it anyway");
+  await press("Save");
 
-  await screen.findByRole("button", { name: "Second brain" });
+  await screen.findByRole("link", { name: "Second brain" });
 
   const created = asked().filter((route) => route === "POST /v1/destinations");
   expect(created).toHaveLength(1);
@@ -332,7 +319,7 @@ test("adds one from the kind's own schema", async () => {
  * says an account is meant, and that it is one the daemon's config declares, is
  * the kind's own description of the field, so the form has to show it.
  */
-test("draws a field's label and its control, never its description", async () => {
+test("draws a field's label, its control, and what the kind says of it", async () => {
   serving([], {
     "GET /v1/destination-kinds": () =>
       json(200, {
@@ -356,12 +343,12 @@ test("draws a field's label and its control, never its description", async () =>
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   await screen.findByRole("textbox", { name: "profile" });
   expect(
-    screen.queryByText("The name of an account in the configuration."),
-  ).toBeNull();
+    screen.getByText("The name of an account in the configuration."),
+  ).toBeDefined();
 });
 
 test("shows an optional field's placeholder while it is empty, and sends nothing for it", async () => {
@@ -386,7 +373,7 @@ test("shows an optional field's placeholder while it is empty, and sends nothing
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   const root = await screen.findByRole("textbox", { name: "root" });
   expect(root.getAttribute("placeholder")).toBe("/path/to/vault");
@@ -426,7 +413,7 @@ test("offers the accounts the daemon declares, rather than a box to type one int
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   await screen.findByRole("button", { name: "home" });
   expect(screen.getByRole("button", { name: "work" })).toBeDefined();
@@ -460,7 +447,7 @@ test("chooses a setting the schema fixes, rather than typing it from memory", as
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   // Unset, the kind's default is drawn as the picked option; there is no
   // "default (none)" of its own.
@@ -492,7 +479,7 @@ test("chooses a boolean setting as yes or no, drawing the default as picked and 
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   expect(
     (await screen.findByRole("button", { name: "no" })).getAttribute(
@@ -507,7 +494,7 @@ test("chooses a boolean setting as yes or no, drawing the default as picked and 
   });
   // The default, already drawn as picked, leaves the field unset.
   await press("no");
-  await press("use it anyway");
+  await press("Save");
 
   await vi.waitFor(async () => {
     expect(await sent()).toContainEqual({
@@ -544,7 +531,7 @@ test("hides a setting the others make meaningless", async () => {
   });
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
   await screen.findByRole("button", { name: "no" });
 
   expect(screen.queryByText(/^extra/)).toBeNull();
@@ -568,19 +555,20 @@ test("keeps an account the daemon no longer declares, and says it does not", asy
 
   render(Destinations);
   await open("Vault");
-  await press("edit");
+  await go("Edit");
 
   // Opening the form must not move the destination to whichever name sorts first.
-  await screen.findByRole("button", {
+  const held = await screen.findByRole("radio", {
     name: "retired-last-week — not declared",
   });
+  expect(held.getAttribute("aria-checked")).toBe("true");
 });
 
 test("checks a root nothing has used before, and writes nothing until confirmed", async () => {
   serving([]);
 
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Second brain" },
@@ -590,11 +578,10 @@ test("checks a root nothing has used before, and writes nothing until confirmed"
   });
 
   await screen.findByText(/notemap has not used/);
-  expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   expect(asked()).not.toContain("POST /v1/destinations");
 
-  await press("use it anyway");
-  await screen.findByRole("button", { name: "Second brain" });
+  await press("Save");
+  await screen.findByRole("link", { name: "Second brain" });
   expect(asked()).toContain("POST /v1/destinations");
 });
 
@@ -602,8 +589,8 @@ test("asks nothing for a root already under one notemap holds", async () => {
   serving([aDestination({ settings: { root: "~/notes" } })]);
 
   render(Destinations);
-  await screen.findByRole("button", { name: "Vault" });
-  await press("+ add a destination");
+  await screen.findByRole("link", { name: "Vault" });
+  await go("Add a destination");
 
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Second brain" },
@@ -615,7 +602,7 @@ test("asks nothing for a root already under one notemap holds", async () => {
   expect(screen.queryByText(/notemap has not used/)).toBeNull();
   await press("Save");
 
-  await screen.findByRole("button", { name: "Second brain" });
+  await screen.findByRole("link", { name: "Second brain" });
 });
 
 test("disables one, and offers it again", async () => {
@@ -623,20 +610,16 @@ test("disables one, and offers it again", async () => {
 
   render(Destinations);
   await open("Vault");
-  await press("disable");
+  await press(/^Disable/);
+  await press(/^Enable/);
 
-  // A disabled destination is hidden from the ordinary list; showing it
-  // brings back the row, still open, so it can be enabled again.
-  await press("show 1 disabled");
-  await press("enable");
-
-  await screen.findByRole("button", { name: "disable" });
+  await screen.findByRole("button", { name: /^Disable/ });
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/retire`);
   expect(asked()).toContain(`POST /v1/destinations/${VAULT}/unretire`);
 });
 
 /** The one thing here that cannot be undone, so the one thing that asks first. */
-test("asks before deleting, in the actions line, and offers the reversible half instead", async () => {
+test("asks before deleting, in a dialog, and offers the reversible half instead", async () => {
   serving([aDestination()], {
     [`DELETE /v1/destinations/${VAULT}`]: () =>
       json(409, { error: { code: "destination-in-use", destination: VAULT } }),
@@ -644,53 +627,45 @@ test("asks before deleting, in the actions line, and offers the reversible half 
 
   render(Destinations);
   await open("Vault");
-  await press("delete");
+  await press(/^Delete…/);
 
   expect(await screen.findByText("Delete Vault?")).toBeDefined();
   expect(asked()).not.toContain(`DELETE /v1/destinations/${VAULT}`);
 
-  await press("delete");
+  await press("Delete");
   // Only the pool knows whether a record has ever named it, so its refusal is
-  // the answer — and it lands where the alternative it leaves is already on screen.
+  // the answer, and it lands beside the alternative it leaves.
   await screen.findByText(/retire it instead/);
-  expect(screen.getByRole("button", { name: "disable instead" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Disable instead" })).toBeDefined();
 });
 
-test("keeps the ask open under a click inside it, and `keep` turns it back", async () => {
+test("Keep turns the ask back", async () => {
   serving([aDestination()]);
 
   render(Destinations);
   await open("Vault");
-  await press("delete");
+  await press(/^Delete…/);
+  expect(await screen.findByText("Delete Vault?")).toBeDefined();
 
-  await fireEvent.click(await screen.findByText("Delete Vault?"));
-  expect(screen.getByText("Delete Vault?")).toBeDefined();
-
-  await press("keep");
+  await press("Keep");
   expect(screen.queryByText("Delete Vault?")).toBeNull();
-  expect(screen.getByRole("button", { name: "delete" })).toBeDefined();
+  expect(asked()).not.toContain(`DELETE /v1/destinations/${VAULT}`);
 });
 
-test("the edit form replaces the actions, holds under a click on its label, and `cancel` restores them", async () => {
+test("the edit form is a page of its own, and Cancel goes back to the destination", async () => {
   serving([aDestination()]);
 
   render(Destinations);
   await open("Vault");
-  await press("edit");
+  await go("Edit");
 
   const form = await screen.findByRole("textbox", { name: "Name" });
-  expect(screen.queryByRole("button", { name: "delete" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Delete…/ })).toBeNull();
+  expect((form as HTMLInputElement).value).toBe("Vault");
 
-  // The label is no control, so the row's own click-to-open would have taken
-  // this as a toggle and thrown the form away with whatever was typed.
-  await fireEvent.input(form, { target: { value: "Vault renamed" } });
-  await fireEvent.click(screen.getByText("name"));
-  expect(screen.getByRole("textbox", { name: "Name" })).toBe(form);
-  expect((form as HTMLInputElement).value).toBe("Vault renamed");
-
-  await press("cancel");
+  await press("Cancel");
   expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
-  expect(screen.getByRole("button", { name: "delete" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: /^Delete…/ })).toBeDefined();
 });
 
 test("deletes one nothing has ever named", async () => {
@@ -701,37 +676,37 @@ test("deletes one nothing has ever named", async () => {
 
   render(Destinations);
   await open("Vault");
-  await press("delete");
-  await press("delete");
+  await press(/^Delete…/);
+  await press("Delete");
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "Vault" })).toBeNull();
+    expect(asked()).toContain(`DELETE /v1/destinations/${VAULT}`);
   });
+  await vi.waitFor(() => expect(address.path).toBe("/settings/destinations"));
 });
 
 /** Editing is online-only, and the interface makes that visible rather than queuing it. */
-test("reads while the pool is unreachable, and disables every change", async () => {
+test("reads while the pool is unreachable, and holds every change", async () => {
   serving([aDestination()]);
   render(Destinations);
   await open("Vault");
+  await screen.findByRole("button", { name: /^Disable/ });
 
   online(false);
 
-  const disabled = (name: string) =>
-    (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
+  const held = (name: string | RegExp) => {
+    const one = screen.getByRole(
+      /^Edit$/.test(String(name)) ? "button" : "button",
+      { name },
+    ) as HTMLButtonElement;
+    return one.disabled || one.getAttribute("aria-disabled") === "true";
+  };
 
   await vi.waitFor(() => {
-    expect(disabled("edit")).toBe(true);
+    expect(held("Edit")).toBe(true);
   });
-  expect(disabled("disable")).toBe(true);
-  expect(disabled("delete")).toBe(true);
-  expect(disabled("+ add a destination")).toBe(true);
-
-  // Checking is a read, so it survives what the changes do not.
-  expect(disabled("check again")).toBe(false);
-  expect(
-    screen.getByText(/Destinations can be read but not changed/),
-  ).toBeDefined();
+  expect(held(/^Disable/)).toBe(true);
+  expect(held(/^Delete…/)).toBe(true);
 });
 
 /** A screen opened while the daemon was down would otherwise have no form to add one with. */
@@ -743,28 +718,31 @@ test("asks again for the kinds once the daemon is reachable", async () => {
   render(Destinations);
 
   const adding = () =>
-    screen.getByRole("button", {
-      name: "+ add a destination",
-    }) as HTMLButtonElement;
+    screen.getByRole("button", { name: "Add a destination" });
 
-  await vi.waitFor(() => expect(adding().disabled).toBe(true));
+  await vi.waitFor(() =>
+    expect(adding().getAttribute("aria-disabled")).toBe("true"),
+  );
 
   serving([]);
   online(true);
 
-  await vi.waitFor(() => expect(adding().disabled).toBe(false));
+  await vi.waitFor(() =>
+    expect(
+      screen.getByRole("link", { name: "Add a destination" }),
+    ).toBeDefined(),
+  );
 });
 
 test("Save says what is missing until there is something to save", async () => {
   serving([]);
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   expect(await screen.findByText("Name it to save.")).toBeDefined();
   expect(
-    (screen.getByRole("button", { name: "Save" }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
+    screen.getByRole("button", { name: "Save" }).getAttribute("aria-disabled"),
+  ).toBe("true");
 
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Second brain" },
@@ -792,7 +770,7 @@ test("a default picked again after another is pinned, not unset", async () => {
       }),
   });
   render(Destinations);
-  await press("+ add a destination");
+  await go("Add a destination");
 
   await fireEvent.input(screen.getByLabelText("Name"), {
     target: { value: "Second brain" },
@@ -802,7 +780,7 @@ test("a default picked again after another is pinned, not unset", async () => {
   });
   await press("yes");
   await press("no");
-  await press("use it anyway");
+  await press("Save");
 
   await vi.waitFor(async () => {
     expect(await sent()).toContainEqual({

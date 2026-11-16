@@ -9,23 +9,41 @@
     type DestinationProbe,
   } from "@notemap/client";
 
-  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
-  import DestinationRow from "$components/settings/Destination.svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import DestinationPage from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
+  import { alarming, standingOf } from "$lib/destination-state";
+  import { kindIcon, kindName } from "$lib/looks";
   import { reachable } from "$lib/reachable.svelte";
-  import { fade, slide } from "$lib/motion";
+
+  import { openHref, newHref, settingsHref } from "./href";
 
   const destinations = client.destinations.all;
   const pool = reachable();
 
   let kinds = $state<readonly DestinationKind[]>([]);
-  let adding = $state(false);
-  let opened = $state<string | undefined>(undefined);
-  let editing = $state<string | undefined>(undefined);
-  let showDisabled = $state(false);
+  /** The list, one destination on its own page, or a form: read off the address. */
+  const opened = $derived(page.url.searchParams.get("open") ?? undefined);
+  const editing = $derived(page.url.searchParams.has("edit"));
+  const adding = $derived(page.url.searchParams.has("new"));
+  const one = $derived($destinations.find((each) => each.id === opened));
+
+  /** A form done with gives way to what it was opened from, in its place in history. */
+  function back(): void {
+    void goto(
+      opened === undefined || adding
+        ? settingsHref("destinations")
+        : openHref("destinations", opened),
+      { replaceState: true },
+    );
+  }
   let said = $state("");
 
   /** Per destination rather than for the list: either question is I/O that may hang. */
@@ -34,14 +52,6 @@
   let asking = $state<Record<string, boolean>>({});
   let reaching = $state<Record<string, boolean>>({});
   let checkedAt = $state<Record<string, string>>({});
-
-  const disabled = $derived(
-    $destinations.filter((one) => one.retired === true).length,
-  );
-
-  const shown = $derived(
-    $destinations.filter((one) => showDisabled || one.retired !== true),
-  );
 
   async function read() {
     try {
@@ -129,91 +139,87 @@
   });
 </script>
 
-<Section name="destinations">
-  {#if !pool.yes}
-    <!-- The chrome already says the pool is out of reach; this names what that
-         costs here, and is not painted as an alarm. -->
-    <p role="status" class="mt-4">Destinations can be read but not changed.</p>
-  {/if}
-
-  {#if said !== ""}
-    <p role="status" class="mt-4 text-danger">{said}</p>
-  {/if}
-
-  {#each shown as one (one.id)}
-    <DestinationRow
-      {one}
-      described={described[one.id]}
-      probed={probed[one.id]}
-      checkedAt={checkedAt[one.id]}
-      asking={asking[one.id] === true}
-      probing={reaching[one.id] === true}
-      opened={opened === one.id}
-      editing={editing === one.id}
-      offline={!pool.yes}
-      onopen={() => {
-        opened = opened === one.id ? undefined : one.id;
-        editing = undefined;
-      }}
-      oncheck={() => void check(one)}
-      onedit={() => (editing = editing === one.id ? undefined : one.id)}
-      onretire={() =>
-        one.retired
-          ? client.destinations.unretire(one.id)
-          : client.destinations.retire(one.id)}
-      ondelete={() => client.destinations.delete(one.id)}
-    >
-      {#if editing === one.id}
-        <Unfolding>
-          <DestinationForm
-            {kinds}
-            existing={$destinations}
-            editing={one}
-            disabled={!pool.yes}
-            done={() => (editing = undefined)}
-          />
-        </Unfolding>
+{#if adding}
+  <DestinationForm
+    {kinds}
+    existing={$destinations}
+    disabled={!pool.yes}
+    done={back}
+  />
+{:else if one !== undefined && editing}
+  <DestinationForm
+    {kinds}
+    existing={$destinations}
+    editing={one}
+    disabled={!pool.yes}
+    done={back}
+  />
+{:else if one !== undefined}
+  <DestinationPage
+    {one}
+    described={described[one.id]}
+    probed={probed[one.id]}
+    checkedAt={checkedAt[one.id]}
+    asking={asking[one.id] === true}
+    probing={reaching[one.id] === true}
+    offline={!pool.yes}
+    oncheck={() => void check(one)}
+    onretire={() =>
+      one.retired
+        ? client.destinations.unretire(one.id)
+        : client.destinations.retire(one.id)}
+    ondelete={async () => {
+      await client.destinations.delete(one.id);
+      await goto(settingsHref("destinations"), { replaceState: true });
+    }}
+  />
+{:else}
+  <Section name="destinations">
+    <div class="flex flex-col">
+      {#if !pool.yes}
+        <!-- The chrome already says the pool is out of reach; this names what that
+           costs here, and is not painted as an alarm. -->
+        <p role="status" class="m-0 px-gutter py-3 text-small text-muted">
+          The pool is out of reach. Destinations can be read but not changed.
+        </p>
       {/if}
-    </DestinationRow>
-  {/each}
 
-  {#if adding}
-    <Unfolding>
-      <DestinationForm
-        {kinds}
-        existing={$destinations}
-        disabled={!pool.yes}
-        done={() => (adding = false)}
-      />
-    </Unfolding>
-  {/if}
+      {#if said !== ""}
+        <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
+      {/if}
 
-  <!-- `+ add` slides shut with its line as the form opens, as its siblings'
-       do; where the line also carries the disabled ones it stays, and `+ add`
-       fades out of it instead. -->
-  {#if !adding || disabled > 0}
-    <div
-      class="mt-6 flex flex-wrap items-baseline justify-between gap-x-[2ch]"
-      transition:slide={{ magnitude: "short" }}
-    >
-      {#if !adding}
-        <span transition:fade>
-          <Action
-            disabled={!pool.yes || kinds.length === 0}
-            onclick={() => (adding = true)}
-          >
-            + add a destination
-          </Action>
-        </span>
-      {:else}
-        <span></span>
-      {/if}
-      {#if disabled > 0}
-        <Action onclick={() => (showDisabled = !showDisabled)}>
-          {showDisabled ? "hide" : "show"}
-          {disabled} disabled
-        </Action>
-      {/if}
+      {#each $destinations as each (each.id)}
+        {@const standing = standingOf(
+          each,
+          described[each.id],
+          probed[each.id],
+          asking[each.id] === true || reaching[each.id] === true,
+        )}
+        <LinkRow
+          icon={kindIcon(each.kind)}
+          title={each.name}
+          label={each.name}
+          line={kindName(each.kind)}
+          end={standing.word}
+          endDanger={alarming(standing)}
+          muted={each.retired === true}
+          href={openHref("destinations", each.id)}
+        />
+      {/each}
+
+      <PageBar label="Destinations">
+        <BarAction
+          icon="plus"
+          label="Add a destination"
+          primary
+          why={!pool.yes
+            ? "The pool is out of reach."
+            : kinds.length === 0
+              ? "The pool has said no kinds yet."
+              : undefined}
+          href={newHref("destinations")}
+        />
+      </PageBar>
     </div>
-  {/if}
-</Section>
+  </Section>
+{/if}

@@ -3,10 +3,10 @@
   import { saidBy, type Action, type Presence } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
-  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
   import Band from "$components/primitives/blocks/Band.svelte";
   import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
   import Facts from "$components/primitives/rows/Facts.svelte";
   import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import StateBox from "$components/primitives/rows/StateBox.svelte";
@@ -409,68 +409,68 @@
   </Dialog>
 {/if}
 
-<div class="pb-4">
-  {#if held !== undefined}
-    {#if withdrawn}
-      <StateBox icon="link-off">
-        Withdrawn{withdrawnAt === undefined
-          ? ""
-          : ` at ${timeOf(withdrawnAt)}`}. Nothing at {to} was touched.
+<div class="flex flex-col">
+  <div class="pb-4">
+    {#if held !== undefined}
+      {#if withdrawn}
+        <StateBox icon="link-off">
+          Withdrawn{withdrawnAt === undefined
+            ? ""
+            : ` at ${timeOf(withdrawnAt)}`}. Nothing at {to} was touched.
+        </StateBox>
+      {:else if delivered}
+        <StateBox tone="good" icon="check">
+          {byHand ? "Processed by hand." : `Delivered to ${to}.`}
+        </StateBox>
+      {:else}
+        <StateBox turning>{waiting}</StateBox>
+      {/if}
+
+      <Facts {facts} />
+
+      {#if !byHand}
+        <Band>as written</Band>
+        <Written record={held} held={$heldItem} />
+      {/if}
+
+      {#if withdrawable}
+        <Band>withdraw</Band>
+        <LinkRow
+          icon="link-off"
+          title="Withdraw this record"
+          line="For a note deleted or moved in {to}. Nothing there is touched; the item goes back to the queue."
+          danger
+          chevron={false}
+          disabled={!pool.yes}
+          onclick={() => void askToWithdraw()}
+        />
+      {/if}
+
+      {#if failed !== ""}
+        <p role="status" class="m-0 px-gutter py-3 text-danger">{failed}</p>
+      {/if}
+    {:else if account !== undefined}
+      <StateBox
+        icon={account.cancelled ? "close" : undefined}
+        tone={account.cancelled ? "plain" : "danger"}
+      >
+        {account.said}
       </StateBox>
-    {:else if delivered}
-      <StateBox tone="good" icon="check">
-        {byHand ? "Processed by hand." : `Delivered to ${to}.`}
-      </StateBox>
+      <Facts facts={account.facts} />
+    {:else if records.refused !== ""}
+      <p role="status" class="m-0 px-gutter py-4 text-danger">
+        {records.refused}
+      </p>
+    {:else if !pool.yes}
+      <p class="m-0 px-gutter py-4">{NO_RECORDS_OFFLINE}</p>
+    {:else if records.settled && tried !== undefined}
+      <div class="px-gutter py-4"><Prose text={NO_SUCH_RECORD} /></div>
     {:else}
-      <StateBox turning>{waiting}</StateBox>
+      <div class="px-gutter py-4"><Asking /></div>
     {/if}
+  </div>
 
-    <Facts {facts} />
-
-    {#if !byHand}
-      <Band>as written</Band>
-      <Written record={held} held={$heldItem} />
-    {/if}
-
-    {#if withdrawable}
-      <Band>withdraw</Band>
-      <LinkRow
-        icon="link-off"
-        title="Withdraw this record"
-        line="For a note deleted or moved in {to}. Nothing there is touched; the item goes back to the queue."
-        danger
-        chevron={false}
-        disabled={!pool.yes}
-        onclick={() => void askToWithdraw()}
-      />
-    {/if}
-
-    {#if failed !== ""}
-      <p role="status" class="m-0 px-gutter py-3 text-danger">{failed}</p>
-    {/if}
-  {:else if account !== undefined}
-    <StateBox
-      icon={account.cancelled ? "close" : undefined}
-      tone={account.cancelled ? "plain" : "danger"}
-    >
-      {account.said}
-    </StateBox>
-    <Facts facts={account.facts} />
-  {:else if records.refused !== ""}
-    <p role="status" class="m-0 px-gutter py-4 text-danger">
-      {records.refused}
-    </p>
-  {:else if !pool.yes}
-    <p class="m-0 px-gutter py-4">{NO_RECORDS_OFFLINE}</p>
-  {:else if records.settled && tried !== undefined}
-    <div class="px-gutter py-4"><Prose text={NO_SUCH_RECORD} /></div>
-  {:else}
-    <div class="px-gutter py-4"><Asking /></div>
-  {/if}
-</div>
-
-<div class="sticky bottom-0 z-20 mt-6">
-  <ActionBar at="foot" label="Record">
+  <PageBar label="Record">
     <BarAction icon="file" label="Item" href={itemHref(item)} />
     {#if savable && held !== undefined}
       <BarAction
@@ -512,5 +512,5 @@
         />
       {/if}
     {/if}
-  </ActionBar>
+  </PageBar>
 </div>

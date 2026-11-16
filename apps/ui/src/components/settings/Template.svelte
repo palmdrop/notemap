@@ -1,13 +1,21 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { goto } from "$app/navigation";
 
   import type { Destination, RoutingTemplate } from "@notemap/client";
   import type { RoutingTemplateReport } from "@notemap/client";
 
-  import Fact from "$components/settings/Fact.svelte";
-  import Lead from "$components/primitives/text/Lead.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Asking from "$components/primitives/marks/Asking.svelte";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
+  import Trigger from "$components/primitives/marks/Trigger.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import StateBox from "$components/primitives/rows/StateBox.svelte";
+  import { headed } from "$lib/heading.svelte";
+  import { whereOf } from "$lib/looks";
+  import { reportSaid } from "$lib/template-state";
+  import { actionOf, labelFor, wordFor } from "$lib/vocabulary";
+
+  import { editHref, openHref, settingsHref } from "./href";
   import { carriesAssets } from "$lib/capability";
   import { argumentsOf } from "$lib/arguments";
   import { askedOf } from "$lib/asked";
@@ -16,8 +24,6 @@
     described,
     readingHeld,
   } from "$lib/described.svelte";
-  import { slide } from "$lib/motion";
-  import { pickable } from "$lib/pick";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { placeOf } from "$lib/templates";
@@ -27,70 +33,23 @@
     destination,
     report,
     asking,
-    opened,
-    editing,
     offline,
-    onopen,
     oncheck,
-    onedit,
     ondelete,
-    children,
   }: {
     one: RoutingTemplate;
     /** Absent means it was deleted under the template, which is what strands one. */
     destination?: Destination;
     report?: RoutingTemplateReport;
     asking: boolean;
-    opened: boolean;
-    /**
-     * The form is open below. What a template says and what it is being changed
-     * to are the same fields twice, and the settled copy is the one to go: a
-     * row reading `create` above an input reading `require` says the template
-     * refused the edit.
-     */
-    editing: boolean;
     offline: boolean;
-    onopen: () => void;
     oncheck: () => void;
-    onedit: () => void;
     ondelete: () => void;
-    children?: Snippet;
   } = $props();
 
   const stranded = $derived(destination === undefined);
 
-  /**
-   * What the row leads with. Only the two that a person has to act on take the
-   * accent: *could not ask* is an ordinary condition — a vault asleep on a
-   * train — and lighting up four rows for it would make the colour say nothing.
-   */
-  const said = $derived.by(() => {
-    if (report === undefined) {
-      return { text: "not asked yet", alarm: false, asking };
-    }
-
-    switch (report.kind) {
-      case "fits":
-        return { text: "ok", alarm: false };
-      case "stranded":
-        return { text: "destination deleted", alarm: true };
-      case "destination-retired":
-        return { text: "destination disabled", alarm: true };
-      case "folder-missing":
-        return { text: `${report.folder} missing`, alarm: true };
-      case "capability-undeclared":
-        return {
-          text: `${report.capability} is no longer offered`,
-          alarm: true,
-        };
-      case "arguments-invalid":
-        return { text: "arguments refused", alarm: true };
-      case "destination-unusable":
-        return { text: report.detail, alarm: false };
-      case "unreachable":
-        return { text: "not reachable", alarm: false };
-    }
-  });
+  const said = $derived(reportSaid(report, asking));
 
   /**
    * Asked once per row, and only for what is not remembered already: this page
@@ -110,11 +69,6 @@
       })),
     );
   });
-
-  function pick() {
-    if (editing) return;
-    onopen();
-  }
 
   const capability = $derived(capabilityHeld(one.destination, one.capability));
   const reading = $derived(readingHeld(one.destination, one.capability));
@@ -148,127 +102,150 @@
       capability?.argumentsSchema,
     ),
   );
+
+  headed(() => ({
+    title: one.name,
+    out: {
+      icon: "back",
+      label: "Templates",
+      run: () => void goto(settingsHref("templates")),
+    },
+    under: whereOf(one),
+  }));
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="py-4 {opened
-    ? '-mx-3 -mt-px border border-ink px-3 max-wide:-mx-2 max-wide:px-2'
-    : 'border-b border-b-ink'}"
-  onclick={pickable(pick)}
->
-  <div class="flex cursor-pointer flex-wrap items-baseline gap-x-3">
-    <button
-      type="button"
-      onclick={pick}
-      aria-expanded={opened}
-      class="font-semibold hover:underline"
-    >
-      {one.name}
-    </button>
-    <span>{destination?.name ?? one.destination}</span>
-    {#if one.triggerTag !== undefined}
-      <span
-        class="font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]"
+<div class="flex flex-col">
+  <div class="pb-4">
+    {#if stranded}
+      <StateBox tone="danger" icon="route">
+        <b>Stranded.</b> Its destination was deleted, so nothing is routed by this
+        template. Point it at another destination, or delete it.
+      </StateBox>
+    {:else if said.alarm}
+      <StateBox tone="danger" icon="close">{said.text}</StateBox>
+    {:else if said.asking === true}
+      <StateBox turning
+        >Asking {destination?.name ?? "its destination"}…</StateBox
       >
-        {one.triggerTag.replace(/^route\//, "")}
-      </span>
     {/if}
-    <span class="break-all">{place}</span>
 
-    <span
-      class="ml-auto whitespace-nowrap {said.alarm
-        ? 'text-danger'
-        : ''} max-wide:ml-0 max-wide:w-full"
-    >
-      {#if said.asking === true}
-        <Asking subject={destination?.name} />
-      {:else}
-        {said.text}
-      {/if}
-    </span>
-  </div>
+    <dl class="m-0">
+      {#snippet row(label: string, body: import("svelte").Snippet)}
+        <div
+          class="grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-3 border-b border-rule px-gutter py-3"
+          data-fact={label}
+        >
+          <dt class="text-small text-muted">{label}</dt>
+          <dd class="m-0 min-w-0 break-words">{@render body()}</dd>
+        </div>
+      {/snippet}
 
-  {#if stranded}
-    <p class="mt-1 text-danger">Does nothing until repointed.</p>
-  {/if}
-
-  {#if opened && !editing}
-    <div class="mt-4" transition:slide={{ magnitude: "short" }}>
-      <Fact name="tag">
-        {one.triggerTag ?? "none — taken in the composer"}
-      </Fact>
-      <Fact name="destination">
-        {#if destination === undefined}
-          <Lead lead={one.destination} rest="deleted" />
+      {#snippet tagged()}
+        {#if one.triggerTag === undefined}
+          none: picked when routing
         {:else}
-          {destination.name}
+          <Trigger tag={one.triggerTag} />
+          <small class="block text-small text-muted">#{one.triggerTag}</small>
         {/if}
-      </Fact>
-      {#if capability !== undefined && carriesAssets(capability)}
-        <Fact name="output">attachments only</Fact>
-      {:else}
-        <Fact name="action">{one.capability}</Fact>
-      {/if}
-      <Fact name="place">{place}</Fact>
+      {/snippet}
+      {@render row("tag", tagged)}
+
+      {#snippet where()}
+        {#if destination === undefined}
+          {one.destination}
+          <small class="block text-small text-danger">deleted</small>
+        {:else}
+          <a href={openHref("destinations", destination.id)}
+            >{destination.name}</a
+          >
+        {/if}
+      {/snippet}
+      {@render row("destination", where)}
+
+      {#snippet did()}
+        {capability !== undefined && carriesAssets(capability)
+          ? "attachments only"
+          : actionOf(one.capability)}
+      {/snippet}
+      {@render row("action", did)}
+
+      {#snippet placed()}{place}{/snippet}
+      {@render row("place", placed)}
+
       {#each asks as asked (asked.field)}
-        <Fact name={asked.label}>
-          <Lead
-            lead="asked each time"
-            rest={asked.default === undefined
+        {#snippet question()}
+          asked each time
+          <small class="block text-small text-muted"
+            >{asked.default === undefined
               ? "no default"
-              : `default ${asked.default}`}
-          />
-        </Fact>
+              : `default ${asked.default}`}</small
+          >
+        {/snippet}
+        {@render row(asked.label, question)}
       {/each}
+
       {#each taken as setting (setting.name)}
-        <Fact name={setting.name}>{setting.said}</Fact>
+        {#snippet value()}{wordFor(setting.name, setting.said)}{/snippet}
+        {@render row(labelFor({ name: setting.name }), value)}
       {/each}
-      <Fact name="if missing">
-        <Lead
-          lead={one.folder}
-          rest={one.folder === "establish"
-            ? one.establishedAt === undefined
+
+      {#snippet missing()}
+        {wordFor("folder", one.folder)}
+        {#if one.folder === "establish"}
+          <small class="block text-small text-muted"
+            >{one.establishedAt === undefined
               ? "not established yet"
-              : `established ${one.establishedAt.slice(0, 10)}`
-            : undefined}
-        />
-      </Fact>
-      <Fact name="used">
+              : `established ${one.establishedAt.slice(0, 10)}`}</small
+          >
+        {/if}
+      {/snippet}
+      {@render row("if missing", missing)}
+
+      {#snippet used()}
         {#if one.fired.records === 0}
           nothing yet
         {:else}
-          <Lead
-            lead={`${String(one.fired.records)} times`}
-            rest={one.fired.lastAt === undefined
-              ? undefined
-              : `last ${one.fired.lastAt.slice(0, 10)}`}
-          />
+          {one.fired.records} times{one.fired.lastAt === undefined
+            ? ""
+            : `, last ${one.fired.lastAt.slice(0, 10)}`}
         {/if}
-      </Fact>
+      {/snippet}
+      {@render row("used", used)}
+    </dl>
 
-      {#if report?.kind === "folder-missing"}
-        <p class="mt-2 text-danger">
-          Next delivery refused, and the item returns to the queue.
-        </p>
-      {/if}
+    {#if report?.kind === "folder-missing"}
+      <p class="m-0 px-gutter py-3 text-danger">
+        Next delivery refused, and the item returns to the queue.
+      </p>
+    {/if}
 
-      <div
-        class="mt-3 flex flex-wrap items-baseline gap-x-6 border-t border-t-ink pt-3"
-      >
-        {#if !stranded}
-          <Action disabled={asking} onclick={oncheck}>check again</Action>
-        {/if}
-        <Action disabled={offline} onclick={onedit}>edit</Action>
-        <span class="ml-auto max-wide:ml-0">
-          <Action alarm disabled={offline} onclick={ondelete}>delete</Action>
-        </span>
-      </div>
-    </div>
-  {/if}
+    <Band>delete</Band>
+    <LinkRow
+      icon="trash"
+      title="Delete…"
+      line="Items already routed by it keep their records."
+      danger
+      chevron={false}
+      disabled={offline}
+      onclick={ondelete}
+    />
+  </div>
 
-  {#if opened}
-    {@render children?.()}
-  {/if}
+  <PageBar label={one.name}>
+    {#if !stranded}
+      <BarAction
+        icon="refresh"
+        label="Check again"
+        disabled={asking || offline}
+        onclick={oncheck}
+      />
+    {/if}
+    <BarAction
+      icon="edit"
+      label="Edit"
+      primary
+      why={offline ? "The pool is out of reach." : undefined}
+      href={editHref("templates", one.id)}
+    />
+  </PageBar>
 </div>
