@@ -25,6 +25,8 @@ export type Surroundings = {
   readonly onprocess: () => void;
   readonly onedit: () => void;
   readonly tag?: () => void;
+  /** The surface edits a sealed item by revising it: the item's own and the feed, never the queue. */
+  readonly revises?: boolean;
 };
 
 /**
@@ -106,9 +108,9 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     });
   }
 
-  // A processed item is not this row's to rewrite: editing it would append a
-  // revision, which the queue is not where to do.
-  if (editable(item)) {
+  // A routed item is sealed: editing it makes a revision, a capture of its own,
+  // and what was routed stays as it was. A discarded one is undiscarded first.
+  if (editable(item) || (at.revises === true && item.archived === undefined)) {
     commands.push({ id: "edit", label: "edit", group: WORK, run: at.onedit });
   }
 

@@ -2361,3 +2361,44 @@ test("on a phone holding a row selects it, and says the hint no more", async () 
   expect(await screen.findByText("1 selected")).toBeDefined();
   expect(screen.queryByText("Hold a row to select several.")).toBeNull();
 });
+
+test("a delivery turned down after its window is said in red on the row it came back to", async () => {
+  pool(queued("a", "b"));
+  render(Queue);
+  await screen.findByText("a");
+
+  notices.raise({
+    what: "Rejected by",
+    subject: "Vault",
+    why: "taken.md is already there, back in the queue",
+    href: "/items/a",
+    alarm: true,
+  });
+
+  const said = await screen.findByText(/taken\.md is already there/);
+  expect(said.textContent).toBe("Rejected by Vault: taken.md is already there");
+  expect(said.closest("p")?.className).toContain("text-danger");
+  expect(screen.getAllByText(/Rejected by/)).toHaveLength(1);
+});
+
+test("a capture the pool refused is a row of the queue, kept on this device", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? json(422, { error: { code: "payload-invalid" } })
+      : queued("a")(request),
+  );
+  render(Queue);
+  await screen.findByText("a");
+
+  await client.capture({ channel: "web-manual", text: "a thought refused" });
+  await client.drain();
+
+  const words = await screen.findByText("a thought refused");
+  const row = words.closest("[data-refused]") as HTMLElement;
+  expect(row.textContent).toContain("Refused by the pool");
+  expect(row.textContent).toContain("Kept on this device only");
+
+  // The only copy: Delete asks before it goes.
+  await fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
+  expect(within(row).getByText("Delete it for good?")).toBeDefined();
+});

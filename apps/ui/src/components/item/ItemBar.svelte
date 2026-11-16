@@ -5,7 +5,7 @@
   import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import Box from "$components/primitives/blocks/Box.svelte";
   import type { Command } from "$lib/command/command";
-  import { became } from "$lib/lineage";
+  import { became, editable } from "$lib/lineage";
   import { notices } from "$lib/notices.svelte";
 
   import type { Editing } from "./editing.svelte";
@@ -74,6 +74,8 @@
 
 {#if editing !== undefined}
   <ActionBar label="Editing">
+    {#snippet say()}{#if !editable(item)}Sealed: saving makes a revision, and
+        what was routed stays as it was.{/if}{/snippet}
     <BarAction
       icon="attach"
       label="Attach"

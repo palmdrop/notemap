@@ -24,6 +24,8 @@
   import { width } from "$lib/breakpoint";
   import { cancelRouting } from "$lib/firing";
   import { firings, left, type Firing } from "$lib/firings.svelte";
+  import { NOT_DELIVERED, REJECTED } from "$lib/action-log";
+  import { notices } from "$lib/notices.svelte";
   import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { became, editable } from "$lib/lineage";
   import {
@@ -102,6 +104,21 @@
 
   const routed = $derived(surface !== "item");
 
+  /**
+   * The last delivery of this item the destination turned down, or the pool
+   * gave up on, this session: on the queue the row says so in red.
+   */
+  const turned = $derived(
+    surface === "queue"
+      ? notices.history.findLast(
+          (one) =>
+            one.alarm === true &&
+            one.href === itemHref(item.id) &&
+            (one.what === REJECTED || one.what === NOT_DELIVERED),
+        )
+      : undefined,
+  );
+
   let editing = $state<Editing | undefined>(undefined);
   let row = $state<HTMLElement | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
@@ -126,7 +143,10 @@
       item.revisedInto.length > 0,
   );
   const word = $derived(finished ? became(item) : undefined);
-  const mayEdit = $derived(editable(item));
+  /** A sealed item is edited by revising it, which the queue never does. */
+  const mayEdit = $derived(
+    editable(item) || (surface !== "queue" && item.archived === undefined),
+  );
 
   // The box's foot is where `close` and `save` are, so a row that loses the
   // selection has no way out of the editable shape and must not be left in it.
@@ -311,6 +331,17 @@
 {#snippet facts()}
   {#if firing !== undefined}
     {@render windowed(firing)}
+  {:else if turned !== undefined}
+    <!-- A delivery turned down after its window: the item is back, and says why. -->
+    <p class="mt-2 flex items-start gap-2 text-small text-danger">
+      <Icon name="route" class="mt-px size-4 flex-none" />
+      <span
+        >{turned.what} <b>{turned.subject}</b>{#if turned.why !== undefined}: {turned.why.replace(
+            /,? ?back in the queue$/,
+            "",
+          )}{/if}</span
+      >
+    </p>
   {/if}
   {#if word === "revision"}
     <span class="mt-2 block w-max" title="revision">

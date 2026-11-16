@@ -21,6 +21,8 @@
   import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
+  import { isCapture } from "$lib/refused";
+  import RefusedRow from "./RefusedRow.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
@@ -95,6 +97,12 @@
   let filterPanel = $state<FilterPanel | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
+
+  /** Captures the pool refused, kept on this device: rows at the queue's end. */
+  const outbox = client.outbox;
+  const kept = $derived(
+    $outbox.filter((held) => held.state === "refused").filter(isCapture),
+  );
 
   /**
    * Whether there is more is what the pool's first page answers, so rows drawn
@@ -523,6 +531,14 @@
     <Register><Refused surface="queue" {refused} /></Register>
   {/if}
 
+  {#if kept.length > 0}
+    <Register>
+      {#each kept as held (held.id)}
+        <RefusedRow {held} />
+      {/each}
+    </Register>
+  {/if}
+
   <Index
     {motion}
     bind:this={index}
@@ -561,6 +577,10 @@
            and they would play only when it turned, never as a row comes or
            goes. A render is transparent to them. -->
       {@render (one.kind === "day" ? heading : entry)(one as never)}
+    {/each}
+
+    {#each kept as held (held.id)}
+      <RefusedRow {held} />
     {/each}
 
     {#if footed}

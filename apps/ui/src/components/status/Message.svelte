@@ -30,8 +30,8 @@
     <span role={notice.alarm === true ? "alert" : "status"}>
       {notice.what}
       {#if notice.subject !== undefined}
-        <b>{notice.subject}</b>
-      {/if}
+        <b>{notice.subject}</b
+        >{/if}{#if notice.alarm === true && notice.why !== undefined}: {notice.why}{/if}
     </span>
   </button>
 {/key}

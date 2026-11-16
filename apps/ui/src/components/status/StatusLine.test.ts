@@ -464,9 +464,8 @@ test("says what logged while nobody was asking", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
 
   const said = await screen.findByRole("alert");
-  expect(said.textContent).toContain(
-    "routing failed: taken.md is already there",
-  );
+  expect(said.textContent).toContain("Rejected by");
+  expect(said.textContent).toContain("taken.md is already there");
 
   // Which capture it was about, read in the panel: the log names an id.
   command("notices").run();

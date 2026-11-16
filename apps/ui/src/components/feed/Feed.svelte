@@ -254,6 +254,7 @@
     current === undefined
       ? []
       : commandsFor(current, {
+          revises: true,
           address: itemHref(current.id),
           offline: !pool.yes,
           onprocess: () => process(current),

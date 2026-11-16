@@ -787,3 +787,26 @@ test("a routed item offers Route again, and a discarded one says so with Undisca
   expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
   expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
 });
+
+/** The feed's items are sealed: editing one says what saving it does. */
+test("editing a routed item says that saving makes a revision", async () => {
+  pool(holding(saying("routed", "what was filed", ROUTED)));
+
+  render(Item, { id: "routed" });
+  await screen.findByText("what was filed");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  await screen.findByLabelText("What it says");
+  expect(screen.getByText(/saving makes a revision/)).toBeDefined();
+});
+
+test("editing an unrouted item says nothing of revisions", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  await screen.findByLabelText("What it says");
+  expect(screen.queryByText(/saving makes a revision/)).toBeNull();
+});

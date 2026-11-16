@@ -96,6 +96,7 @@
     item === undefined
       ? []
       : commandsFor(item, {
+          revises: true,
           offline: !pool.yes,
           onprocess: () => quick.open(id),
           onedit: () => row?.edit(),
@@ -238,7 +239,8 @@
 </Register>
 
 {#if item !== undefined && only === undefined && !width.wide}
-  <div class="sticky bottom-0 z-20 -mx-3.5 mt-6">
+  <div aria-hidden="true" class="h-28"></div>
+  <div class="fixed inset-x-0 bottom-0 z-20">
     <ItemBar {item} {commands} editing={row?.editor()} />
   </div>
 {/if}
