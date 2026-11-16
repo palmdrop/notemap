@@ -147,7 +147,7 @@ test("an index line opens into its whole row in place, without sliding", async (
   await open();
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
   expect(screen.getByText("discarded")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
   expect(slid.calls.some((call) => call.still === false)).toBe(false);
 
   await fireEvent.keyDown(window, { key: "Enter" });
@@ -166,7 +166,7 @@ test("says an archived row is discarded, and offers the way back", async () => {
   expect(await screen.findByText("discarded")).toBeDefined();
   await open();
 
-  await fireEvent.click(screen.getByRole("button", { name: "undiscard" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Undiscard" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/gone/unarchive");
@@ -434,8 +434,8 @@ test("opens a row in place, with what the queue's row offers", async () => {
   await screen.findByText("one");
   await open();
 
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+  expect(screen.getByRole("button", { name: "Route" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Open" }).getAttribute("href")).toBe(
     "/items/one",
   );
 });
@@ -557,8 +557,9 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // The second click of a double is not a toggle: select, nothing, go.
-  expect(stamps(true)).toHaveLength(1);
+  // When wide a click opens the item beside the list; the second click of a
+  // double is not a second opening.
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 test("puts the view back where the reader left it to read one item", async () => {

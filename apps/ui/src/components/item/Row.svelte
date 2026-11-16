@@ -18,7 +18,6 @@
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import type { Command } from "$lib/command/command";
   import { goto } from "$app/navigation";
-  import { page } from "$app/state";
 
   import { itemHref } from "$components/item/href";
   import { width } from "$lib/breakpoint";
@@ -242,15 +241,14 @@
 
   /**
    * A row being rewritten is not picked, nor processed, until that is left.
-   * On a phone a tap opens the item, full screen; on the item a double tap on
-   * the words edits it.
+   * A tap or a click opens the item, full screen on a phone and beside the
+   * list when wide; ctrl or shift selects instead. On the item a double tap
+   * on the words edits it.
    */
   const picked = $derived(
     editing !== undefined
       ? undefined
-      : (!width.wide || page.route.id === "/items/[id]") &&
-          !marking &&
-          surface !== "item"
+      : !marking && surface !== "item"
         ? (how: Picked) => {
             if (how.toggle || how.range) onselect?.(how);
             else void goto(itemHref(item.id));
@@ -430,7 +428,12 @@
         {marking}
         onopen={onselect === undefined
           ? undefined
-          : (event) => pick?.(pickedBy(event))}
+          : (event) =>
+              // When wide the time selects the row in place, for the keys
+              // and the strip; anywhere else on it opens the item beside.
+              width.wide
+                ? onselect?.(pickedBy(event))
+                : pick?.(pickedBy(event))}
       />
       {#if marking}
         <span class="mt-2 block" aria-hidden="true">

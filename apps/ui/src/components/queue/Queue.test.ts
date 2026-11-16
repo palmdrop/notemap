@@ -103,7 +103,7 @@ function stamps(expanded: boolean) {
 
 /** Discarding is the quick tier: it acts from the row, at once. */
 async function discard() {
-  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Discard" }));
 }
 
 /** Where the person had scrolled, as the browser would report it. */
@@ -147,9 +147,9 @@ test("discards with the pool unreachable, and says what it cannot queue", async 
   // The door itself never closes: what a decision needs of the pool is said
   // by the surface behind it. On the row, discarding is the one decision that
   // needs nothing of the pool.
-  expect(disabled("process")).toBe(false);
-  expect(disabled("manual")).toBe(true);
-  expect(disabled("discard")).toBe(false);
+  expect(disabled("Route")).toBe(false);
+  expect(disabled("Done")).toBe(true);
+  expect(disabled("Discard")).toBe(false);
 
   await discard();
 
@@ -167,14 +167,14 @@ test("opens one row at a time, in place", async () => {
   await screen.findByText("one");
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Route" })).toHaveLength(1);
   expect(stamps(true)).toHaveLength(1);
 
   await open(0);
 
   // The second row's stamp, the first one now being expanded.
   expect(stamps(true)).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Route" })).toHaveLength(1);
 });
 
 /** The queue holds unrouted items, so opening one has nothing to ask about. */
@@ -189,7 +189,7 @@ test("opens a row without asking where an item has never been, and without sayin
 
   await open(0);
 
-  expect(await screen.findByRole("button", { name: "process" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Route" })).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -231,11 +231,11 @@ test("offers the edit on an unprocessed row and not on a processed one", async (
   await screen.findByText("mine");
 
   await open(1);
-  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   expect(screen.getByText("revised")).toBeDefined();
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "edit" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
 });
 
 test("reads from the end the reader last chose, not the one the queue defaults to", async () => {
@@ -514,10 +514,10 @@ test("offers the way to an item without taking the gesture that opens the row", 
 
   // Triage is opening a row in place, and the address is behind that rather
   // than instead of it.
-  expect(screen.queryByRole("link", { name: "open" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
 
   await open(0);
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+  expect(screen.getByRole("link", { name: "Open" }).getAttribute("href")).toBe(
     "/items/one",
   );
   expect(stamps(true)).toHaveLength(1);
@@ -595,7 +595,7 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
   await vi.waitFor(() => {
     expect(notices.shown.map((notice) => notice.what)).toContain(
@@ -714,7 +714,7 @@ test("a discarded row stays where it stood while it is selected, and leaves when
     expect(screen.getByText("discarded")).toBeDefined();
   });
   expect(screen.getByText("one")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
   expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 
@@ -787,8 +787,9 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // The second click of a double is not a toggle: select, nothing, go.
-  expect(stamps(true)).toHaveLength(1);
+  // When wide a click opens the item beside the list; the second click of a
+  // double is not a second opening.
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 /** The box is the selection, and the actions are its foot. */
@@ -806,7 +807,7 @@ test("draws the box around the selected row and nowhere else", async () => {
   await open(0);
   expect(boxed()).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: "Add a tag" })).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(1);
 });
 
 /** The selected row's actions are a strip under its words; an unselected row has none. */
@@ -954,7 +955,7 @@ test("arrives with the row named on its address selected, and takes the name off
   await vi.waitFor(() => {
     expect(stamps(true)).toHaveLength(1);
   });
-  expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+  expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(1);
   expect(replaced.urls).toEqual(["http://localhost/"]);
 
   // The keys are the row's: the capture field did not take the caret.
@@ -1074,11 +1075,9 @@ test("an index line is selected from its stamp as from anywhere else on it", asy
   await fireEvent.click(stamps(false)[0]!);
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
 
+  // Selected, the line is the whole row, and a click on it opens the item beside.
   await fireEvent.click(container.querySelector("[data-row] [data-body]")!);
-  expect(container.querySelector("[data-rail]")).toBeNull();
-
-  await fireEvent.click(screen.getByText("one"));
-  expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 /** Selected, an index line is the row the timeline draws, and does what it does. */
@@ -1093,7 +1092,7 @@ test("the selected index line opens into the whole row, actions and all", async 
   await fireEvent.keyDown(window, { key: "j" });
   expect(container.querySelectorAll("[data-row]")).toHaveLength(1);
   expect(container.querySelector("[data-row]")?.textContent).toContain("one");
-  expect(screen.getByRole("button", { name: "discard" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Discard" })).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "e" });
   expect(await screen.findByLabelText("What it says")).toBeTruthy();
@@ -1489,7 +1488,7 @@ test("while a row is edited only its tags are reached", async () => {
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Route" })).toBeNull();
   expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
 
   field.blur();
@@ -2051,7 +2050,8 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   render(Queue);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"));
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  const strip = () => document.querySelector<HTMLElement>("[data-foot]");
+  expect(within(strip()!).getByRole("button", { name: "Route" })).toBeDefined();
 
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
@@ -2062,7 +2062,7 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   expect(document.querySelectorAll("[data-rail][data-selected]")).toHaveLength(
     0,
   );
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
+  expect(strip()).toBeNull();
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual([]);
 });

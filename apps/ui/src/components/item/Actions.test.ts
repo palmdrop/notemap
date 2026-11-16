@@ -70,8 +70,8 @@ test("draws the decisions on the left and the rest on the right", () => {
   const { container } = draw(saying("a note"));
 
   expect(groups(container)).toEqual([
-    ["process", "manual", "discard"],
-    ["edit", "copy", "open"],
+    ["Route", "Done", "Discard"],
+    ["Edit", "Copy", "Open"],
   ]);
 });
 
@@ -89,7 +89,7 @@ test("marks manual at once, with no note, and offers the way back in the corner"
   );
   render(Actions, drawing(anItem("one")));
 
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/mark-processed");
@@ -126,7 +126,7 @@ test("taking a manual mark back from the status line says so at once", async () 
   });
   render(Actions, drawing(anItem("one")));
 
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
   const marked = await vi.waitFor(() => {
     const raised = notices.shown.at(-1);
     expect(raised?.what).toBe("marked manual");
@@ -146,7 +146,7 @@ test("discards at once and offers the way back in the corner", async () => {
   render(Actions, drawing(anItem("two")));
 
   await fireEvent.click(
-    screen.getAllByRole("button", { name: "discard" }).at(-1)!,
+    screen.getAllByRole("button", { name: "Discard" }).at(-1)!,
   );
 
   await vi.waitFor(() => {
@@ -166,9 +166,9 @@ test("cannot mark manual offline, and cannot discard what is discarded", () => {
   const control = (name: string) =>
     screen.getByRole("button", { name }) as HTMLButtonElement;
 
-  expect(control("manual").disabled).toBe(true);
-  expect(control("manual").title).toBe("pool out of reach");
-  expect(control("discard").disabled).toBe(false);
+  expect(control("Done").disabled).toBe(true);
+  expect(control("Done").title).toBe("pool out of reach");
+  expect(control("Discard").disabled).toBe(false);
 
   void rerender(
     drawing(
@@ -176,8 +176,8 @@ test("cannot mark manual offline, and cannot discard what is discarded", () => {
       { offline: false },
     ),
   );
-  expect(control("discard").disabled).toBe(true);
-  expect(control("manual").disabled).toBe(false);
+  expect(control("Discard").disabled).toBe(true);
+  expect(control("Done").disabled).toBe(false);
 });
 
 /**
@@ -188,8 +188,8 @@ test("cannot mark manual offline, and cannot discard what is discarded", () => {
 test("offers no copy where the browser hands over no clipboard", () => {
   const { container } = draw(saying("a note"));
 
-  expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
-  expect(groups(container)[1]).toEqual(["edit", "open"]);
+  expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
+  expect(groups(container)[1]).toEqual(["Edit", "Open"]);
 });
 
 test("offers no copy of a capture that says nothing", () => {
@@ -200,7 +200,7 @@ test("offers no copy of a capture that says nothing", () => {
     }),
   );
 
-  expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Copy" })).toBeNull();
 });
 
 /**
@@ -210,7 +210,7 @@ test("offers no copy of a capture that says nothing", () => {
 test("never disables the way out", () => {
   draw();
 
-  const process = screen.getByRole("button", { name: "process" });
+  const process = screen.getByRole("button", { name: "Route" });
   expect((process as HTMLButtonElement).disabled).toBe(false);
 });
 
@@ -228,7 +228,7 @@ test("copies the capture's text and says in the corner what it took", async () =
   const held = clipboard();
   draw(saying("a note"));
 
-  await fireEvent.click(screen.getByRole("button", { name: "copy" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Copy" }));
 
   await vi.waitFor(() => {
     expect(held.writeText).toHaveBeenCalledWith("a note");
@@ -244,8 +244,8 @@ test("copies the capture's text and says in the corner what it took", async () =
 test("offers the way back on a discarded item, beside the way out", async () => {
   draw(anItem("one", { archived: { archivedAt: "2026-09-04T10:00:00.000Z" } }));
 
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
-  await fireEvent.click(screen.getByRole("button", { name: "undiscard" }));
+  expect(screen.getByRole("button", { name: "Route" })).toBeDefined();
+  await fireEvent.click(screen.getByRole("button", { name: "Undiscard" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/unarchive");
@@ -255,7 +255,7 @@ test("offers the way back on a discarded item, beside the way out", async () => 
 test("offers no way back on an item that is not discarded", () => {
   draw();
 
-  expect(screen.queryByRole("button", { name: "undiscard" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undiscard" })).toBeNull();
   expect(screen.queryByRole("button", { name: "unarchive" })).toBeNull();
 });
 
@@ -264,14 +264,14 @@ test("offers history where there is no address to open", () => {
   clipboard();
   const { container } = render(Actions, drawing(saying("a note")));
 
-  expect(groups(container)[1]).toEqual(["edit", "copy", "history"]);
+  expect(groups(container)[1]).toEqual(["Edit", "Copy", "History"]);
   expect(
-    screen.getByRole("link", { name: "history" }).getAttribute("href"),
+    screen.getByRole("link", { name: "History" }).getAttribute("href"),
   ).toBe("/log?item=one");
 });
 
 test("offers no history where open leads to the item", () => {
   draw();
 
-  expect(screen.queryByRole("link", { name: "history" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "History" })).toBeNull();
 });

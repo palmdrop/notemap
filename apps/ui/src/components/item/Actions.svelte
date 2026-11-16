@@ -1,6 +1,19 @@
 <script lang="ts">
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import type { IconName } from "$components/primitives/icon/Icon.svelte";
+  import { chordFor } from "$lib/command/bindings";
   import { DECIDE, WORK, type Command } from "$lib/command/command";
+  import { spoken } from "$lib/command/keys";
+
+  const ICONS: Readonly<Record<string, IconName>> = {
+    process: "route",
+    manual: "check",
+    discard: "trash",
+    undiscard: "undo",
+    edit: "edit",
+    copy: "copy",
+    open: "file",
+  };
 
   /**
    * The quick tier on the left — every decision that needs no destination —
@@ -27,27 +40,31 @@
 
 {#snippet drawn(tier: readonly Command[])}
   {#each tier as command (command.id)}
-    <Action
-      primary={command.primary}
-      alarm={command.alarm}
+    {@const chord = chordFor(command.id)}
+    <Box
+      icon={ICONS[command.id]}
+      danger={command.alarm}
       disabled={command.refusal !== undefined}
-      title={command.refusal}
+      title={command.refusal ??
+        (chord === undefined
+          ? undefined
+          : `${command.label} (${spoken(chord)})`)}
       href={href(command)}
       onclick={onclick(command)}
     >
       {command.label}
-    </Action>
+    </Box>
   {/each}
 {/snippet}
 
 <div
-  class="flex w-full min-w-0 flex-wrap items-baseline justify-between gap-x-5"
+  class="flex w-full min-w-0 flex-wrap items-center justify-between gap-2 py-1.5"
 >
-  <div class="flex flex-wrap items-baseline gap-x-5 max-wide:gap-x-3">
+  <div class="flex flex-wrap items-center gap-2">
     {@render drawn(decide)}
   </div>
 
-  <div class="flex flex-wrap items-baseline gap-x-5 max-wide:gap-x-3">
+  <div class="flex flex-wrap items-center gap-2">
     {@render drawn(work)}
   </div>
 </div>

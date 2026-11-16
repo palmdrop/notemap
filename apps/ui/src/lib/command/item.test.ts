@@ -115,13 +115,13 @@ test("goes to the address it is given, and to the log where it has none", () => 
   const open = commandsFor(item, { ...at, address: "/items/one" }).find(
     (c) => c.id === "open",
   );
-  expect(open?.label).toBe("open");
+  expect(open?.label).toBe("Open");
   expect(open !== undefined && "href" in open ? open.href : undefined).toBe(
     "/items/one",
   );
 
   const history = commandsFor(item, at).find((c) => c.id === "open");
-  expect(history?.label).toBe("history");
+  expect(history?.label).toBe("History");
   expect(
     history !== undefined && "href" in history ? history.href : undefined,
   ).toBe("/log?item=one");

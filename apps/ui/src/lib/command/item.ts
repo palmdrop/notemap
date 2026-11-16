@@ -77,21 +77,21 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     // say, not this row's.
     {
       id: "process",
-      label: "process",
+      label: "Route",
       group: DECIDE,
       primary: true,
       run: at.onprocess,
     },
     {
       id: MANUAL,
-      label: "manual",
+      label: "Done",
       group: DECIDE,
       refusal: refusalFor(MANUAL, item, offline),
       run: () => void manual(item),
     },
     {
       id: DISCARD,
-      label: "discard",
+      label: "Discard",
       group: DECIDE,
       alarm: true,
       refusal: refusalFor(DISCARD, item, offline),
@@ -102,7 +102,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   if (item.archived !== undefined) {
     commands.push({
       id: "undiscard",
-      label: "undiscard",
+      label: "Undiscard",
       group: DECIDE,
       run: () => undiscard(item),
     });
@@ -111,7 +111,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   // A routed item is sealed: editing it makes a revision, a capture of its own,
   // and what was routed stays as it was. A discarded one is undiscarded first.
   if (editable(item) || (at.revises === true && item.archived === undefined)) {
-    commands.push({ id: "edit", label: "edit", group: WORK, run: at.onedit });
+    commands.push({ id: "edit", label: "Edit", group: WORK, run: at.onedit });
   }
 
   // Offered only where the browser has a clipboard to give, and only where
@@ -121,7 +121,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   if (copyable() && holds !== "") {
     commands.push({
       id: "copy",
-      label: "copy",
+      label: "Copy",
       group: WORK,
       run: () => void copy(item),
     });
@@ -134,15 +134,15 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     at.address === undefined
       ? {
           id: "open",
-          label: "history",
+          label: "History",
           group: WORK,
           href: logHref(undefined, { item: item.id }),
         }
-      : { id: "open", label: "open", group: WORK, href: at.address },
+      : { id: "open", label: "Open", group: WORK, href: at.address },
   );
 
   if (at.tag !== undefined) {
-    commands.push({ id: "tag", label: "tag", run: at.tag });
+    commands.push({ id: "tag", label: "Tag", run: at.tag });
   }
 
   return commands;
