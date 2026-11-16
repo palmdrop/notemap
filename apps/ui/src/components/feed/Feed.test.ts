@@ -820,7 +820,7 @@ test("a discard of marked rows says how many are already processed before it is 
   }
 
   const head = document.querySelector("[data-head]") as HTMLElement;
-  await fireEvent.click(within(head).getByRole("button", { name: "discard" }));
+  await fireEvent.click(within(head).getByRole("button", { name: "Discard" }));
 
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
@@ -846,11 +846,11 @@ test("undiscard is offered only where something marked is discarded, and discard
     within(head()).queryByRole("button", { name }) !== null;
 
   await fireEvent.click(stamp("gone"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([false, true]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([false, true]);
 
   await fireEvent.click(stamp("kept"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([true, true]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([true, true]);
 
   await fireEvent.click(stamp("gone"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([true, false]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([true, false]);
 });

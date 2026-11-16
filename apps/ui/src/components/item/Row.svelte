@@ -9,6 +9,7 @@
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
   import Box from "$components/primitives/blocks/Box.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Cached from "$components/primitives/marks/Cached.svelte";
@@ -34,6 +35,7 @@
     slide,
   } from "$lib/motion";
   import { pickedBy, type Picked } from "$lib/marking.svelte";
+  import { noteHeld } from "$lib/held-hint.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -161,7 +163,39 @@
     !width.wide && !marking && surface !== "item" && onprocess !== undefined,
   );
 
+  /**
+   * Holding a row selects it, and starts selecting: the first time a row is
+   * held the list says so once. The press that follows the hold is not a tap.
+   */
+  const HOLD = 500;
+  let holding: ReturnType<typeof setTimeout> | undefined;
+  let held = false;
+
+  function holdFrom(event: PointerEvent): void {
+    if (
+      width.wide ||
+      event.pointerType === "mouse" ||
+      surface === "item" ||
+      onselect === undefined
+    )
+      return;
+    held = false;
+    clearTimeout(holding);
+    holding = setTimeout(() => {
+      held = true;
+      swipe = undefined;
+      onselect?.({ toggle: true, range: false });
+      noteHeld();
+    }, HOLD);
+  }
+
+  function letGo(): void {
+    clearTimeout(holding);
+    holding = undefined;
+  }
+
   function swipeFrom(event: PointerEvent): void {
+    holdFrom(event);
     if (!swipes || event.pointerType === "mouse") return;
     const x = event.clientX;
     if (x < EDGE || x > window.innerWidth - EDGE) return;
@@ -170,10 +204,12 @@
 
   function swipeAlong(event: PointerEvent): void {
     if (swipe === undefined) return;
+    if (Math.abs(event.clientX - swipe.from) > 10) letGo();
     swipe = { ...swipe, dx: Math.min(0, event.clientX - swipe.from) };
   }
 
   function swipeEnd(): void {
+    letGo();
     const went = swipe?.dx ?? 0;
     swipe = undefined;
     if (went <= -ENOUGH) onprocess?.();
@@ -189,14 +225,29 @@
    * On a phone a tap opens the item, full screen; on the item a double tap on
    * the words edits it.
    */
-  const pick = $derived(
+  const picked = $derived(
     editing !== undefined
       ? undefined
       : (!width.wide || page.route.id === "/items/[id]") &&
           !marking &&
           surface !== "item"
-        ? () => void goto(itemHref(item.id))
+        ? (how: Picked) => {
+            if (how.toggle || how.range) onselect?.(how);
+            else void goto(itemHref(item.id));
+          }
         : onselect,
+  );
+  /** A tap that ends a hold has already done what the hold did. */
+  const pick = $derived(
+    picked === undefined
+      ? undefined
+      : (how: Picked) => {
+          if (held) {
+            held = false;
+            return;
+          }
+          picked(how);
+        },
   );
   const reach = $derived(
     editing !== undefined
@@ -323,7 +374,10 @@
     onpointerdown={swipeFrom}
     onpointermove={swipeAlong}
     onpointerup={swipeEnd}
-    onpointercancel={() => (swipe = undefined)}
+    onpointercancel={() => {
+      swipe = undefined;
+      letGo();
+    }}
     style:translate={swipe === undefined || swipe.dx === 0
       ? undefined
       : `${String(swipe.dx)}px 0`}
@@ -347,6 +401,27 @@
           ? undefined
           : (event) => pick?.(pickedBy(event))}
       />
+      {#if marking}
+        <span class="mt-2 block" aria-hidden="true">
+          <Icon
+            name={marked ? "circle-check" : "circle"}
+            class="size-6 {marked ? 'text-ink' : 'text-rule'}"
+          />
+        </span>
+      {:else if pointed && width.wide && surface !== "item" && onselect !== undefined}
+        <button
+          type="button"
+          title="Select (space)"
+          aria-label="Select"
+          class="mt-2 block"
+          onclick={(event) => {
+            event.stopPropagation();
+            onselect?.({ toggle: true, range: false });
+          }}
+        >
+          <Icon name="circle" class="size-6 text-rule" />
+        </button>
+      {/if}
     </Rail>
 
     <Body {selected} onpick={pick} onreach={reach}>

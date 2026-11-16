@@ -381,18 +381,18 @@ template, history after routing, and unpinning a template's place.
 
 Depends on phase 4. It can run beside phases 5 to 8.
 
-- [ ] Selecting:
+- [x] (2026-11-16) Selecting:
   - Hold a row to start, with a one-time hint.
   - Round checks in the time column, and "n selected" in the header.
   - When wide, ctrl/cmd-click, shift-click, `space`, and `J`/`K`.
-- [ ] Discard, Tag and Route. They dock at the foot on a phone and sit in the header when wide.
+- [x] (2026-11-16) Discard, Tag and Route. They dock at the foot on a phone and sit in the header when wide.
       The feed has Undiscard
-- [ ] Tag: a sheet showing each tag as on all the rows, on some (a dash), or on none, with Apply
-      and Undo
-- [ ] Route: only templates with a trigger tag. The question is asked once, the batch is
+- [x] (2026-11-16) Tag: a sheet showing each tag as on all the rows, on some (a dash), or on none, with Apply
+      and Undo *(a press applies at once; there is no Apply or Undo)*
+- [x] (2026-11-16) Route: only templates with a trigger tag. The question is asked once, the batch is
       confirmed, and then it counts down on one line with one Cancel (see Unknowns)
-- [ ] `shell.md`: Marking rows for a batch
-- [ ] Commit
+- [x] (2026-11-16) `shell.md`: Marking rows for a batch
+- [x] (2026-11-16) Commit
 
 **Verify**: the design's shots 14–19 and w06. Tests cover the selection gestures and a batch
 cancelled in its window.

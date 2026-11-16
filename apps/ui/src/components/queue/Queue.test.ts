@@ -1957,15 +1957,15 @@ test("a click with mod held marks rows, and esc lets go of them all", async () =
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("three"), { metaKey: true });
 
-  expect(within(head()).getByText("2 notes marked")).toBeDefined();
+  expect(within(head()).getByText("2 selected")).toBeDefined();
   expect(document.querySelectorAll("[data-marked]")).toHaveLength(2);
 
   // In the mode a plain click marks too, rather than starting over.
   await fireEvent.click(stampOf("two"));
-  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+  expect(within(head()).getByText("3 selected")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
   expect(document.querySelectorAll("[data-marked]")).toHaveLength(0);
 });
 
@@ -1977,11 +1977,11 @@ test("space marks the selected row, and J marks on down the list", async () => {
 
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: " " });
-  expect(within(head()).getByText("1 note marked")).toBeDefined();
+  expect(within(head()).getByText("1 selected")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "J" });
   await vi.waitFor(() => {
-    expect(within(head()).getByText("2 notes marked")).toBeDefined();
+    expect(within(head()).getByText("2 selected")).toBeDefined();
   });
 });
 
@@ -1994,7 +1994,7 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.click(
-    within(head()).getByRole("button", { name: "discard" }),
+    within(head()).getByRole("button", { name: "Discard" }),
   );
   const dialog = screen.getByRole("dialog");
   expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
@@ -2013,7 +2013,7 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
       action: { kind: "archive" },
     }),
   );
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
 });
 
 test("backing out of the question sends nothing and keeps the rows marked", async () => {
@@ -2024,14 +2024,14 @@ test("backing out of the question sends nothing and keeps the rows marked", asyn
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
   await fireEvent.click(
-    within(head()).getByRole("button", { name: "discard" }),
+    within(head()).getByRole("button", { name: "Discard" }),
   );
   await fireEvent.click(
     within(screen.getByRole("dialog")).getByRole("button", { name: "back" }),
   );
 
   expect(asked()).not.toContain("POST /v1/batches");
-  expect(within(head()).getByText("1 note marked")).toBeDefined();
+  expect(within(head()).getByText("1 selected")).toBeDefined();
 });
 
 test("unmarking the last row leaves the mode", async () => {
@@ -2042,7 +2042,7 @@ test("unmarking the last row leaves the mode", async () => {
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("one"));
 
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
 });
 
 test("marked rows carry the gutter's bar, and no row is boxed or offered what one row is given", async () => {
@@ -2168,9 +2168,9 @@ test("all marks every row the queue holds", async () => {
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
-  await fireEvent.click(within(head()).getByRole("button", { name: "all" }));
+  await fireEvent.click(within(head()).getByRole("button", { name: "All" }));
 
-  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+  expect(within(head()).getByText("3 selected")).toBeDefined();
 });
 
 test("a trigger tag added on a marked row asks first, naming its template", async () => {
@@ -2342,4 +2342,22 @@ test("a route's row leaves once its window has closed", async () => {
   await vi.waitFor(() => {
     expect(document.querySelector('[data-row="one"]')).toBeNull();
   });
+});
+
+test("on a phone holding a row selects it, and says the hint no more", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Queue);
+  await screen.findByText("one");
+  expect(screen.getByText("Hold a row to select several.")).toBeDefined();
+
+  vi.useFakeTimers();
+  const row = document.querySelector('[data-row="one"]')!;
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(await screen.findByText("1 selected")).toBeDefined();
+  expect(screen.queryByText("Hold a row to select several.")).toBeNull();
 });

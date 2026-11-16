@@ -2266,6 +2266,22 @@ discarded is two visits — which is what it is, two decisions. The pool refuses
 
 ### Marking rows for a batch
 
+*Amended 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md)).*
+The shell says **selected** for marked ([CONTEXT.md](../../CONTEXT.md)). **On a phone, holding a row
+selects it** and starts selecting, said once the first time — `Hold a row to select several.` —
+and a tap then selects more; a tap that ends a hold is not a second press. **When wide**, a round
+circle shows under a row's time on hover, and ctrl/cmd-click, shift-click, `space` and `J`/`K`
+select as before. While selecting, every row shows a round check in its time column, ticked when
+selected. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
+**Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
+at the foot on a phone, in the list's head when wide. **Tag** opens a sheet of every tag the rows
+have or could have, each on all of them (ticked), on some (a dash) or on none; a press puts it on
+every row, or takes one they all carry off them all, and a new tag can be typed. **Route** offers
+only templates with a trigger tag: one that asks asks once, for every note; the batch is then
+confirmed (`route 3 notes with Todo, list Next?`), and counts down on one line with one Cancel,
+which is one `POST /v1/routing/cancel` for the batch.
+
+
 *Added 2026-10-30* ([plan](../plans/batch-processing.md)). On the queue and the feed, many rows
 can be tagged, untagged, discarded or undiscarded at once. A template is applied the way it always
 is, by its trigger tag.

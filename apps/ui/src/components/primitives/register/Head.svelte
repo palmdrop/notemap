@@ -25,12 +25,10 @@
 <div
   data-head
   data-covers={covers ? "" : undefined}
-  class="sticky top-0 z-40 mt-3.5 flex h-day-head items-center justify-end"
+  class="sticky top-bar z-40 -mx-8 flex items-center max-wide:-mx-3.5"
   {@attach stick}
 >
-  <div class="flex items-baseline gap-x-5 bg-paper pl-[1ch]">
-    {@render children()}
-  </div>
+  {@render children()}
 </div>
 
 <style>

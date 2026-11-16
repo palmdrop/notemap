@@ -6,6 +6,7 @@
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { sayLanded } from "$lib/landed";
+  import { heldHint } from "$lib/held-hint.svelte";
   import { onMount, tick, untrack } from "svelte";
 
   import { replaceState } from "$app/navigation";
@@ -511,6 +512,12 @@
 
 <!-- The list stays drawn while the queue is drained, so the first row into it
      and the last row out of it move as any other. -->
+{#if !width.wide && heldHint.due && rows.length > 1 && !marking.on}
+  <p class="-mx-3.5 px-gutter py-2 text-small text-muted">
+    Hold a row to select several.
+  </p>
+{/if}
+
 {#if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
