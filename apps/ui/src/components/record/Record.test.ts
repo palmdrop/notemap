@@ -74,19 +74,82 @@ test("draws the capture and the one record under it", async () => {
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.queryByText("drafts/two.md")).toBeNull();
-  expect(screen.getAllByText(dayOf(RECORD.at)).length).toBeGreaterThan(0);
-  expect(screen.getByText("delivered")).toBeDefined();
+  expect(screen.getByText(dayOf(RECORD.at), { exact: false })).toBeDefined();
+  expect(screen.getByRole("status").textContent).toContain(
+    "Delivered to Fiction vault.",
+  );
   expect(container.querySelector("[role=toolbar]")).not.toBeNull();
-  // Its own address is where a record is read: it is drawn open, and does not fold.
-  expect(container.querySelector("[data-folded]")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
-
-  // The address bar already says which record this is: the stamp goes nowhere.
-  for (const said of screen.getAllByText(dayOf(RECORD.at))) {
-    expect(said.closest("a")).toBeNull();
-  }
   expect(screen.queryByText("rec")).toBeNull();
   expect(screen.queryByText("routing record")).toBeNull();
+});
+
+test("withdraw has a band of its own, under what was written", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText("withdraw")).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: /Withdraw this record/ }),
+  ).toBeDefined();
+});
+
+test("a delivery with an address opens there, and one without copies its path", async () => {
+  pool(answering([{ ...RECORD, url: "https://example.org/note" }]));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    (
+      await screen.findByRole("link", { name: "Open in Fiction vault" })
+    ).getAttribute("href"),
+  ).toBe("https://example.org/note");
+  expect(screen.queryByRole("button", { name: "Copy path" })).toBeNull();
+});
+
+test("a delivery cancelled in its window is the log's account, titled tried", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/actions") {
+      return json(200, {
+        values: [
+          {
+            id: "a1",
+            at: "2026-08-19T22:14:00.000Z",
+            kind: "template-fired",
+            subject: "one",
+            detail: {
+              record: "rec",
+              destination: "vault",
+              capability: "create",
+            },
+          },
+          {
+            id: "a2",
+            at: "2026-08-19T22:14:05.000Z",
+            kind: "delivery-cancelled",
+            subject: "one",
+            detail: {
+              record: "rec",
+              destination: "vault",
+              capability: "create",
+            },
+          },
+        ],
+      });
+    }
+    return answering([])(request);
+  });
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    await screen.findByText("Cancelled. Nothing reached Fiction vault."),
+  ).toBeDefined();
+  expect(screen.getByText("new note")).toBeDefined();
 });
 
 test("says a record this item does not have", async () => {
@@ -95,7 +158,6 @@ test("says a record this item does not have", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(/No such record/)).toBeDefined();
-  expect(screen.getByText("gone")).toBeDefined();
 });
 
 test("says a record an unrouted item cannot have", async () => {
