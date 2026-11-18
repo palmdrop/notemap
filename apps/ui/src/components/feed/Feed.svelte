@@ -16,7 +16,6 @@
   import Row from "$components/item/Row.svelte";
   import Index from "$components/queue/Index.svelte";
   import Body from "$components/primitives/register/Body.svelte";
-  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Day from "$components/primitives/register/Day.svelte";
@@ -323,19 +322,17 @@
 </script>
 
 {#if marking.on}
-  <Head>
-    <Marked
-      marked={rows.filter((row) => marking.has(row.id))}
-      full={marking.full}
-      onbatch={(action) => batch.do(action)}
-      onall={() => {
-        const ids = rows.map((row) => row.id);
-        const last = ids.at(-1);
-        if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
-      }}
-      onclear={() => marking.clear()}
-    />
-  </Head>
+  <Marked
+    marked={rows.filter((row) => marking.has(row.id))}
+    full={marking.full}
+    onbatch={(action) => batch.do(action)}
+    onall={() => {
+      const ids = rows.map((row) => row.id);
+      const last = ids.at(-1);
+      if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
+    }}
+    onclear={() => marking.clear()}
+  />
 {/if}
 
 <FilterPanel

@@ -18,6 +18,7 @@ import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import { quick } from "$lib/quicking.svelte";
 import Feed from "./Feed.svelte";
+import Headed from "./Feed.fixture.svelte";
 
 keyboard();
 
@@ -815,7 +816,7 @@ test("a discard of marked rows says how many are already processed before it is 
     ),
   );
 
-  render(Feed);
+  render(Headed);
   await screen.findByText("fresh");
   for (const said of ["fresh", "filed"]) {
     const row = screen.getByText(said).closest("[data-row]") as HTMLElement;
@@ -829,7 +830,7 @@ test("a discard of marked rows says how many are already processed before it is 
   await fireEvent.click(within(head).getByRole("button", { name: "Discard" }));
 
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
+  expect(within(dialog).getByText("discard 2 items?")).toBeDefined();
   expect(within(dialog).getByText("1 already processed")).toBeDefined();
 });
 
@@ -841,7 +842,7 @@ test("undiscard is offered only where something marked is discarded, and discard
     ),
   );
 
-  render(Feed);
+  render(Headed);
   await screen.findByText("kept");
   const stamp = (said: string) =>
     within(

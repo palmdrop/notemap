@@ -8,6 +8,7 @@
   import { width } from "$lib/breakpoint";
   import { commandOf } from "$lib/command/stack.svelte";
   import { heading } from "$lib/heading.svelte";
+  import { selecting } from "$lib/selecting.svelte";
 
   /**
    * The head of every page: on a phone the menu, the title, and on a list the
@@ -29,6 +30,8 @@
 
   /** A page that draws its own head: a way out, its title, its step, its subject. */
   const own = $derived(list ? undefined : heading.current);
+  /** Rows selected for a batch take the list's head. */
+  const chosen = $derived(list ? selecting.current : undefined);
 
   const search = $derived(list ? commandOf("search") : undefined);
   const filter = $derived(list ? commandOf("filter") : undefined);
@@ -58,11 +61,58 @@
 </script>
 
 <header
+  data-head={chosen !== undefined ? "" : undefined}
   class="sticky top-0 z-30 flex min-h-bar items-center gap-1 border-b border-rule bg-paper pr-gutter {width.wide
     ? 'pl-gutter'
     : 'pl-1'}"
 >
-  {#if takes && field !== undefined}
+  {#if chosen !== undefined}
+    <button
+      type="button"
+      onclick={chosen.clear}
+      title="Clear (Esc)"
+      class="grid min-h-target min-w-target place-items-center {width.wide
+        ? '-ml-3'
+        : ''}"
+    >
+      <Icon name="close" label="Clear the selection" />
+    </button>
+    <h1 class="min-w-0 truncate font-semibold">{chosen.count} selected</h1>
+    <button
+      type="button"
+      onclick={chosen.all}
+      class="ml-2 inline-flex min-h-9 items-center rounded-control border border-off-line bg-off px-3 active:bg-off-down"
+      >All</button
+    >
+    {#if chosen.full !== undefined}
+      <span role="status" class="min-w-0 truncate pl-2 text-small text-muted"
+        >{chosen.full}</span
+      >
+    {/if}
+    {#if width.wide}
+      <div
+        role="toolbar"
+        aria-label="Selected"
+        class="ml-auto flex items-center gap-1"
+      >
+        {#each chosen.deeds as deed (deed.id)}
+          <button
+            type="button"
+            onclick={deed.run}
+            class="inline-flex min-h-10 items-center gap-1.5 rounded-control px-3 {deed.primary ===
+            true
+              ? 'ml-2 border border-ink bg-ink text-paper active:bg-muted'
+              : deed.danger === true
+                ? 'text-danger active:bg-off-down'
+                : 'active:bg-off-down'}"
+          >
+            <Icon name={deed.icon} class="size-5" />
+            {deed.label}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  {:else if takes && field !== undefined}
     <button
       type="button"
       onclick={() => {

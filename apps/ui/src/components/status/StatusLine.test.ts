@@ -933,7 +933,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   await client.drain();
 
   const cancel = await screen.findByRole("button", {
-    name: /^Cancel routing 2 notes/,
+    name: /^Cancel routing 2 items/,
   });
   await fireEvent.click(cancel);
 
@@ -942,7 +942,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   });
   expect(bodies).toEqual([{ records: ["r1", "r2"] }]);
   expect(notices.latest).toMatchObject({
-    what: "0 notes routed",
+    what: "0 items routed",
     why: "2 cancelled",
     href: expect.stringMatching(/^\/log\?batch=/),
   });
@@ -986,7 +986,7 @@ test("a batch that ends is said once, not once per item", async () => {
 
   await vi.waitFor(() => {
     expect(notices.latest).toMatchObject({
-      what: "1 note routed",
+      what: "1 item routed",
       why: "1 refused",
       alarm: true,
     });

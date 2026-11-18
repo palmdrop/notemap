@@ -14,7 +14,7 @@
 
   /**
    * A batch is routed by a template with a trigger tag, or not at all. Its
-   * question is asked once for every note; the batch is then confirmed, and
+   * question is asked once for every item; the batch is then confirmed, and
    * counts down on one line with one Cancel.
    */
   let {
@@ -102,7 +102,7 @@
   }
 </script>
 
-<Sheet title="route {notes(count)}" wide="dialog" {onclose}>
+<Sheet title="Route {notes(count)}" wide="dialog" {onclose}>
   {#if open === undefined}
     <p class="px-gutter pt-3 pb-1 text-small text-muted">
       Only templates with a trigger tag route a batch.
@@ -133,7 +133,7 @@
     <div class="px-gutter py-3"><Asking /></div>
   {:else}
     <p class="px-gutter pt-3 text-small text-muted">
-      {open.name}: {step.label}, once for every note
+      {open.name}: {step.label}, once for every item
     </p>
     <ul class="m-0 list-none p-0">
       {#each offered as value (value)}

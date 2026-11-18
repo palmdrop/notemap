@@ -44,7 +44,7 @@ test("asks with the template's name and says what will not go as asked", () => {
   expect(
     asking({ total: 3, skipped: 1, again: 1 }, TEMPLATE, "Research links"),
   ).toEqual({
-    question: "route 3 notes with Research links?",
+    question: "route 3 items with Research links?",
     notes: [
       "1 already filed by it, and left as they are",
       "1 already processed, and filed again",
@@ -55,7 +55,7 @@ test("asks with the template's name and says what will not go as asked", () => {
 test("asks a discard of one note in the singular, with nothing under it", () => {
   expect(
     asking({ total: 1, skipped: 0, again: 0 }, ARCHIVE, undefined),
-  ).toEqual({ question: "discard 1 note?", notes: [] });
+  ).toEqual({ question: "discard 1 item?", notes: [] });
 });
 
 test("says a batch once, counting each way its items ended", () => {
@@ -72,7 +72,7 @@ test("says a batch once, counting each way its items ended", () => {
   );
 
   expect(raised).toEqual({
-    what: "1 note routed",
+    what: "1 item routed",
     subject: "Research links",
     why: "1 failed, 1 already filed, 1 refused",
     alarm: true,
@@ -87,14 +87,14 @@ test("says a discard that all landed without the accent", () => {
       [{ id: "a", outcome: "archived", item: anItem("a") }],
       [],
     ),
-  ).toEqual({ what: "1 note discarded" });
+  ).toEqual({ what: "1 item discarded" });
 });
 
 test("names where a template's values put the notes", () => {
   expect(
     asking({ total: 2, skipped: 0, again: 0 }, TEMPLATE, "Todo", "heading Next")
       .question,
-  ).toBe("route 2 notes with Todo, heading Next?");
+  ).toBe("route 2 items with Todo, heading Next?");
 });
 
 test("says an ordinary tag by the tag, counting what already carried it", () => {
@@ -109,7 +109,7 @@ test("says an ordinary tag by the tag, counting what already carried it", () => 
       [],
     ),
   ).toEqual({
-    what: "1 note tagged",
+    what: "1 item tagged",
     subject: "reading",
     why: "1 already tagged",
   });
@@ -127,5 +127,5 @@ test("counts an untag by the rows that carried the tag", () => {
       ],
       [],
     ),
-  ).toEqual({ what: "1 note untagged", subject: "abc", why: "2 not tagged" });
+  ).toEqual({ what: "1 item untagged", subject: "abc", why: "2 not tagged" });
 });

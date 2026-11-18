@@ -4,14 +4,16 @@
   import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
   import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import { width } from "$lib/breakpoint";
+  import { selects, type BatchDeed } from "$lib/selecting.svelte";
 
   import BatchRoute from "./BatchRoute.svelte";
   import BatchTags from "./BatchTags.svelte";
 
   /**
    * What the selected rows can be given while any are selected: Discard (or
-   * Undiscard where something selected is discarded), Tag and Route. Docked
-   * at the foot on a phone, in the list's head when wide, under "n selected".
+   * Undiscard where something selected is discarded), Tag and Route. The
+   * head says how many, with × and All; the deeds dock at the foot on a
+   * phone and sit in the head when wide.
    */
   let {
     marked,
@@ -36,61 +38,65 @@
   );
 
   let sheet = $state<"tag" | "route" | undefined>(undefined);
+
+  const deeds = $derived<readonly BatchDeed[]>([
+    ...(discardable
+      ? [
+          {
+            id: "discard",
+            icon: "trash" as const,
+            label: "Discard",
+            danger: true,
+            run: () => onbatch({ kind: "archive" }),
+          },
+        ]
+      : []),
+    ...(undiscardable
+      ? [
+          {
+            id: "undiscard",
+            icon: "undo" as const,
+            label: "Undiscard",
+            run: () => onbatch({ kind: "unarchive" }),
+          },
+        ]
+      : []),
+    { id: "tag", icon: "tag", label: "Tag", run: () => (sheet = "tag") },
+    {
+      id: "route",
+      icon: "route",
+      label: "Route",
+      primary: true,
+      run: () => (sheet = "route"),
+    },
+  ]);
+
+  selects(() => ({
+    count: marked.length,
+    full: full ? `the most one batch takes is ${String(MAX_BATCH)}` : undefined,
+    all: onall,
+    clear: onclear,
+    deeds,
+  }));
 </script>
 
-{#snippet bar()}
-  <ActionBar label="Selected">
-    {#snippet say()}<span class="flex items-center gap-3 text-ink"
-        ><b class="flex-1">{marked.length} selected</b>{#if full}<span
-            role="status"
-            class="text-muted"
-            >the most one batch takes is {String(MAX_BATCH)}</span
-          >{/if}<button
-          type="button"
-          class="underline underline-offset-[0.2em]"
-          onclick={onall}>All</button
-        ><button
-          type="button"
-          class="underline underline-offset-[0.2em]"
-          onclick={onclear}>Clear</button
-        ></span
-      >{/snippet}
-    {#if discardable}
-      <BarAction
-        icon="trash"
-        label="Discard"
-        danger
-        command="discard"
-        onclick={() => onbatch({ kind: "archive" })}
-      />
-    {/if}
-    {#if undiscardable}
-      <BarAction
-        icon="undo"
-        label="Undiscard"
-        command="undiscard"
-        onclick={() => onbatch({ kind: "unarchive" })}
-      />
-    {/if}
-    <BarAction
-      icon="tag"
-      label="Tag"
-      command="tag"
-      onclick={() => (sheet = "tag")}
-    />
-    <BarAction
-      icon="route"
-      label="Route"
-      primary
-      onclick={() => (sheet = "route")}
-    />
-  </ActionBar>
-{/snippet}
-
-{#if width.wide}
-  <div class="w-full">{@render bar()}</div>
-{:else}
-  <div class="fixed inset-x-0 bottom-0 z-30">{@render bar()}</div>
+<!-- How many and the way out are the head's; on a phone the deeds dock at
+     the foot, and when wide they sit in the head beside the count. -->
+{#if !width.wide}
+  <div class="fixed inset-x-0 bottom-0 z-30">
+    <ActionBar label="Selected">
+      {#each deeds as deed (deed.id)}
+        <BarAction
+          icon={deed.icon}
+          label={deed.label}
+          danger={deed.danger}
+          primary={deed.primary}
+          command={deed.id}
+          onclick={deed.run}
+        />
+      {/each}
+    </ActionBar>
+  </div>
 {/if}
 
 {#if sheet === "tag"}

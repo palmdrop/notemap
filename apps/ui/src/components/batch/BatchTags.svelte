@@ -112,7 +112,7 @@
       await send(plan);
       notices.raise({
         what: "Tagged",
-        subject: `${String(items.length)} notes`,
+        subject: `${String(items.length)} items`,
         offer: {
           label: "Undo",
           take: () => {
@@ -144,7 +144,7 @@
   >
     <input
       bind:value={typed}
-      aria-label="A new tag for every selected note"
+      aria-label="A new tag for every selected item"
       placeholder="A new tag"
       class="min-h-9 min-w-0 flex-1 bg-transparent outline-none"
     />

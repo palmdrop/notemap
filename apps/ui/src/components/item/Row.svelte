@@ -403,7 +403,9 @@
       : `${String(swipe.dx)}px 0`}
     class="relative col-span-full grid min-h-row scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
       ? 'touch-pan-y'
-      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {marked
+      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor
+      ? 'outline-1 -outline-offset-1 outline-ink'
+      : ''} {marked
       ? 'bg-chosen shadow-chosen'
       : surface !== 'item' && (selected || lastOpened.id === item.id)
         ? 'bg-picked'

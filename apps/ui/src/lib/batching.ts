@@ -8,7 +8,7 @@ import {
 import type { Raised } from "./notices.svelte";
 
 export function notes(count: number): string {
-  return count === 1 ? "1 note" : `${String(count)} notes`;
+  return count === 1 ? "1 item" : `${String(count)} items`;
 }
 
 /**

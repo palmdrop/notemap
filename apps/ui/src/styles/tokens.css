@@ -36,7 +36,7 @@
      selected for a batch, each stronger than the last. */
   --color-hover: light-dark(#f8f8f8, #141414);
   --color-picked: light-dark(#f1f1f1, #1b1b1b);
-  --color-chosen: light-dark(#e2e2e2, #2c2c2c);
+  --color-chosen: light-dark(#ececec, #262626);
 
   /* The rule, and the + button's fill, the one chip left. */
   --color-rule: light-dark(#a9a9a9, #5e5e5e);

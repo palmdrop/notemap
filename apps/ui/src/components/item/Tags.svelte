@@ -88,7 +88,9 @@
     {offered}
     {addable}
     {fixed}
-    label={onbatch === undefined ? undefined : "Add a tag to every marked note"}
+    label={onbatch === undefined
+      ? undefined
+      : "Add a tag to every selected item"}
     marked={(name) => filter.includes(name)}
     fires={(name) => triggeredBy(name)?.name}
     held={(name) => {

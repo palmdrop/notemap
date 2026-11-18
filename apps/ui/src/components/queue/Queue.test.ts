@@ -1951,7 +1951,7 @@ const head = () =>
 test("a click with mod held marks rows, and esc lets go of them all", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.click(stampOf("one"), { metaKey: true });
@@ -1972,7 +1972,7 @@ test("a click with mod held marks rows, and esc lets go of them all", async () =
 test("space marks the selected row, and J marks on down the list", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "j" });
@@ -1988,7 +1988,7 @@ test("space marks the selected row, and J marks on down the list", async () => {
 test("a discard of the marked rows is asked first, then sent as one batch", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
@@ -1997,7 +1997,7 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
     within(head()).getByRole("button", { name: "Discard" }),
   );
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
+  expect(within(dialog).getByText("discard 2 items?")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
   await fireEvent.click(
@@ -2019,7 +2019,7 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
 test("backing out of the question sends nothing and keeps the rows marked", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
@@ -2037,7 +2037,7 @@ test("backing out of the question sends nothing and keeps the rows marked", asyn
 test("unmarking the last row leaves the mode", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("one"));
@@ -2048,7 +2048,7 @@ test("unmarking the last row leaves the mode", async () => {
 test("marked rows carry the gutter's bar, and no row is boxed or offered what one row is given", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"));
   expect(offered("process")).toBeDefined();
@@ -2069,7 +2069,7 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
 test("while marking, a marked stamp is bold and every other is not", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
@@ -2081,7 +2081,7 @@ test("while marking, a marked stamp is bold and every other is not", async () =>
 test("the cursor keeps its outline on a row it unmarks", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
@@ -2093,14 +2093,14 @@ test("the cursor keeps its outline on a row it unmarks", async () => {
 test("a tag added on a marked row goes on every marked row at once, unasked", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.keyDown(window, { key: "t" });
   const line = screen.getByRole("combobox", {
-    name: "Add a tag to every marked note",
+    name: "Add a tag to every selected item",
   });
   await fireEvent.input(line, { target: { value: "reading" } });
   await fireEvent.keyDown(line, { key: "Enter" });
@@ -2125,7 +2125,7 @@ test("a tag taken off a marked row comes off every marked row", async () => {
     holding(anItem("one", { tags: reading }), anItem("two", { tags: reading })),
   );
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
@@ -2151,7 +2151,7 @@ test("an unmarked row's tags are not controls while rows are marked", async () =
   ];
   pool(holding(anItem("one"), anItem("two", { tags: reading })));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
@@ -2162,7 +2162,7 @@ test("an unmarked row's tags are not controls while rows are marked", async () =
 test("all marks every row the queue holds", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
@@ -2194,20 +2194,20 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
   });
   await client.templates.load();
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.keyDown(window, { key: "t" });
   const line = screen.getByRole("combobox", {
-    name: "Add a tag to every marked note",
+    name: "Add a tag to every selected item",
   });
   await fireEvent.input(line, { target: { value: "route/todo" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
   const asking = await screen.findByRole("dialog");
-  expect(within(asking).getByText("route 2 notes with todo?")).toBeDefined();
+  expect(within(asking).getByText("route 2 items with todo?")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
   await fireEvent.click(within(asking).getByRole("button", { name: "route" }));
@@ -2241,7 +2241,7 @@ test("highlights in each row the words the queue is searched by", async () => {
   const highlights = registering();
   at.path = "/?words=BIKE";
   pool(queued("a bike rack", "a bíke shed"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("a bike rack");
 
   await vi.waitFor(() => {
@@ -2264,7 +2264,7 @@ test("a route in its window keeps its row, counting down with Cancel", async () 
     return json(200, { values: [] });
   });
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   firings.opened({
@@ -2320,7 +2320,7 @@ test("a route's row leaves once its window has closed", async () => {
     return json(200, { values: [] });
   });
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   const record = await client.routing.route("one", {
     destination: "vault",
@@ -2345,7 +2345,7 @@ test("a route's row leaves once its window has closed", async () => {
 test("on a phone holding a row selects it, and says the hint no more", async () => {
   viewport(390);
   pool(queued("one", "two"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   expect(screen.getByText("Hold a row to select several.")).toBeDefined();
 
@@ -2362,7 +2362,7 @@ test("on a phone holding a row selects it, and says the hint no more", async () 
 
 test("a wide touch screen selects by holding a row, as a phone does", async () => {
   pool(queued("one", "two"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   vi.useFakeTimers();
@@ -2377,7 +2377,7 @@ test("a wide touch screen selects by holding a row, as a phone does", async () =
 
 test("a delivery turned down after its window is said in red on the row it came back to", async () => {
   pool(queued("a", "b"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("a");
 
   notices.raise({
@@ -2400,7 +2400,7 @@ test("a capture the pool refused is a row of the queue, kept on this device", as
       ? json(422, { error: { code: "payload-invalid" } })
       : queued("a")(request),
   );
-  render(Queue);
+  render(Listed);
   await screen.findByText("a");
 
   await client.capture({ channel: "web-manual", text: "a thought refused" });
@@ -2418,7 +2418,7 @@ test("a capture the pool refused is a row of the queue, kept on this device", as
 
 test("letting go of the last marked row ends marking with nothing selected", async () => {
   pool(queued("one", "two"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.click(stampOf("one"), { metaKey: true });
@@ -2433,7 +2433,7 @@ test("letting go of the last marked row ends marking with nothing selected", asy
 
 test("when wide, a row under the pointer offers + tag, and taking a tag keeps the queue", async () => {
   pool(queued("one"));
-  render(Queue);
+  render(Listed);
   const words = await screen.findByText("one");
   const row = words.closest("[data-row]") as HTMLElement;
 
@@ -2448,7 +2448,7 @@ test("when wide, a row under the pointer offers + tag, and taking a tag keeps th
 
 test("when wide a row opens its item, and is marked as the one last opened", async () => {
   pool(queued("one", "two"));
-  render(Queue);
+  render(Listed);
   const words = await screen.findByText("one");
 
   await fireEvent.click(words);
@@ -2460,4 +2460,29 @@ test("when wide a row opens its item, and is marked as the one last opened", asy
       "data-last-opened",
     ),
   ).toBe(false);
+});
+
+test("selecting takes the head, × lets go, and on a phone the + gives the foot to the batch", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  expect(screen.getByRole("link", { name: "Capture" })).toBeDefined();
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  expect(within(head()).getByText("1 selected")).toBeDefined();
+  expect(within(head()).getByRole("button", { name: "All" })).toBeDefined();
+  expect(screen.queryByRole("link", { name: "Capture" })).toBeNull();
+  expect(
+    within(screen.getByRole("toolbar", { name: "Selected" })).getByRole(
+      "button",
+      { name: "Route" },
+    ),
+  ).toBeDefined();
+
+  await fireEvent.click(
+    within(head()).getByRole("button", { name: "Clear the selection" }),
+  );
+  expect(screen.queryByText("1 selected")).toBeNull();
 });
