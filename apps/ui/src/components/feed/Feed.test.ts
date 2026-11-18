@@ -98,7 +98,7 @@ test("draws what the pool holds", async () => {
 test.each(["timeline", "index"] as const)(
   "a row captured meanwhile slides in, in the %s",
   async (view) => {
-    rememberView("feed", view);
+    rememberView(view);
     pool(held(anItem("one")));
 
     render(Feed);
@@ -127,16 +127,16 @@ test("the view is chosen in the filter, and v turns it", async () => {
   await fireEvent.keyDown(window, { key: "f" });
   await fireEvent.click(await screen.findByRole("button", { name: "Index" }));
   expect(container.querySelector("[data-rail]")).toBeNull();
-  expect(localStorage.getItem("notemap:view:feed")).toBe("index");
+  expect(localStorage.getItem("notemap:view")).toBe("index");
   await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
 
   await fireEvent.keyDown(window, { key: "v" });
   expect(container.querySelector("[data-rail]")).not.toBeNull();
-  expect(localStorage.getItem("notemap:view:feed")).toBe("timeline");
+  expect(localStorage.getItem("notemap:view")).toBe("timeline");
 });
 
 test("an index line opens into its whole row in place, without sliding", async () => {
-  rememberView("feed", "index");
+  rememberView("index");
   pool(
     held(
       anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),

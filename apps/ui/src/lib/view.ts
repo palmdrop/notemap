@@ -4,9 +4,6 @@
  */
 export type View = "timeline" | "index";
 
-/** The surfaces that have both. The log is a list of actions, not of items. */
-export type Surface = "queue" | "feed";
-
 export const PARAM = "view";
 
 const KEY = "notemap:view";
@@ -19,19 +16,19 @@ function known(said: string | null): View | undefined {
 
 /**
  * The URL first, so a read reloads and travels as the one that was shared; then
- * what this shell was last told; then the timeline, which is what a list is
- * until somebody asks for less of it.
+ * what this shell was last told, one choice for the queue and the feed alike;
+ * then the timeline, which is what a list is until somebody asks for less of it.
  */
-export function viewFor(surface: Surface, url: URL): View {
+export function viewFor(url: URL): View {
   return (
     known(url.searchParams.get(PARAM)) ??
-    known(localStorage.getItem(`${KEY}:${surface}`)) ??
+    known(localStorage.getItem(KEY)) ??
     "timeline"
   );
 }
 
-export function remember(surface: Surface, view: View): void {
-  localStorage.setItem(`${KEY}:${surface}`, view);
+export function remember(view: View): void {
+  localStorage.setItem(KEY, view);
 }
 
 /**

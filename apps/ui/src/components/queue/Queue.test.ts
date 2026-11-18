@@ -335,7 +335,7 @@ test.each(["by day"] as const)(
 test.each(["timeline", "index"] as const)(
   "the first row into a drained queue slides in, and the last one out slides out, in the %s",
   async (view) => {
-    rememberView("queue", view);
+    rememberView(view);
     pool((request) =>
       routeOf(request) === "POST /v1/captures"
         ? taken(request)
@@ -1037,14 +1037,14 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
-  expect(localStorage.getItem("notemap:view:queue")).toBe("index");
+  expect(localStorage.getItem("notemap:view")).toBe("index");
 
   // Read by day, as the rows are: a heading for each day and no gaps.
   expect(container.querySelectorAll("[data-gap]")).toHaveLength(0);
   expect(container.querySelectorAll("[data-day]").length).toBeGreaterThan(0);
 
   cleanup();
-  rememberView("queue", "index");
+  rememberView("index");
   render(Queue);
   await screen.findByText("one");
   await fireEvent.keyDown(window, { key: "f" });
@@ -1074,7 +1074,7 @@ test("v turns the list to the other view, and back", async () => {
 /** The stamp is a button of its own, and a click on it must not reach the line as a second one. */
 test("an index line is selected from its stamp as from anywhere else on it", async () => {
   pool(queued("one"));
-  rememberView("queue", "index");
+  rememberView("index");
 
   const { container } = render(Queue);
   await screen.findByText("one");
@@ -1090,7 +1090,7 @@ test("an index line is selected from its stamp as from anywhere else on it", asy
 /** Selected, an index line is the row the timeline draws, and does what it does. */
 test("the selected index line opens into the whole row, actions and all", async () => {
   pool(queued("one", "two"));
-  rememberView("queue", "index");
+  rememberView("index");
 
   const { container } = render(Queue);
   await screen.findByText("one");
@@ -1765,7 +1765,7 @@ test.each(["timeline", "index"] as const)(
   "by day, the %s's first heading shares the list head's line, and no other does",
   async (view) => {
     viewport(390);
-    rememberView("queue", view);
+    rememberView(view);
     pool(overDays());
 
     const { container } = render(Queue);
@@ -1832,7 +1832,7 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
 
 test("the index reads by day too: headings, the time alone, and no gap", async () => {
   viewport(390);
-  rememberView("queue", "index");
+  rememberView("index");
   pool(overDays());
 
   const { container } = render(Queue);

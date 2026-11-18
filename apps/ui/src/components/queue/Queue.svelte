@@ -92,7 +92,7 @@
   const arrived = page.url.searchParams.get(SELECTED);
 
   /** Going back and forward moves through the views a filter was taken from. */
-  let view = $derived<View>(viewFor(SURFACE, page.url));
+  let view = $derived<View>(viewFor(page.url));
 
   const reading = filtering(
     SURFACE,
@@ -315,7 +315,7 @@
 
   function read(wanted: View) {
     view = wanted;
-    remember(SURFACE, wanted);
+    remember(wanted);
     replaceState(withView(page.url, wanted), {});
   }
 
