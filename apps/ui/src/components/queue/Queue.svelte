@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import { SvelteMap } from "svelte/reactivity";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
   import type { Item as Held } from "@notemap/client";
 
   /**
@@ -146,7 +146,7 @@
   $effect(() => {
     for (const row of $queue.items) seen.set(row.id, row);
   });
-  const asked = new Set<string>();
+  const asked = new SvelteSet<string>();
   $effect(() => {
     for (const firing of firings.open) {
       if (seen.has(firing.item) || asked.has(firing.item)) continue;
