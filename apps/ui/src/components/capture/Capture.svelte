@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { timeOf } from "$lib/stamp";
   import { onDestroy, onMount, untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -79,6 +80,19 @@
   let picker: HTMLInputElement;
   let camera = $state<HTMLInputElement | undefined>(undefined);
   const empty = $derived(chosen.length === 0 && text.trim() === "");
+
+  /**
+   * The box is the head of the queue, so it reads as a row about to be: the
+   * time it would be stamped with now, in the rows' time column.
+   */
+  let now = $state(new Date().toISOString());
+  $effect(() => {
+    if (drawn === "page") return;
+    const ticking = setInterval(() => {
+      now = new Date().toISOString();
+    }, 10_000);
+    return () => clearInterval(ticking);
+  });
   let box = $state<HTMLTextAreaElement | undefined>(undefined);
   let form = $state<HTMLFormElement | undefined>(undefined);
   let chooser = $state<TagSet | undefined>(undefined);
@@ -477,7 +491,15 @@
     class="-mx-8 border-b border-rule has-[.offer]:relative has-[.offer]:z-50 max-wide:-mx-3.5"
   >
     {@render pictured()}
-    {@render field("Write, or attach…", false)}
+    <div class="relative">
+      <span
+        aria-hidden="true"
+        data-now
+        class="pointer-events-none absolute top-3 left-gutter hidden text-time text-muted tabular-nums wide:block"
+        >{timeOf(now)}</span
+      >
+      {@render field("Write, or attach…", false)}
+    </div>
     {@render filed()}
     <div class="flex flex-wrap items-center gap-2 px-gutter pb-3 wide:pl-words">
       <Box icon="attach" disabled={busy} onclick={() => picker.click()}

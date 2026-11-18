@@ -862,3 +862,13 @@ test("a trigger tag says what it will do once the capture is sent", async () => 
     ),
   ).toBeDefined();
 });
+
+test("the box says the time a capture would be stamped with now, in the rows' time column", () => {
+  vi.useFakeTimers({ now: new Date(2026, 10, 18, 9, 41) });
+  const { container } = render(Capture);
+
+  expect(container.querySelector("[data-now]")?.textContent?.trim()).toBe(
+    "09:41",
+  );
+  vi.useRealTimers();
+});
