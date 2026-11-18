@@ -20,6 +20,7 @@
   import { alarming, standingOf } from "$lib/destination-state";
   import { kindIcon, kindName } from "$lib/looks";
   import { reachable } from "$lib/reachable.svelte";
+  import { timeOf } from "$lib/stamp";
 
   import { openHref, newHref, settingsHref } from "./href";
 
@@ -198,7 +199,9 @@
           title={each.name}
           label={each.name}
           line={kindName(each.kind)}
-          end={standing.word}
+          end={pool.yes || pool.at === undefined
+            ? standing.word
+            : `${standing.word}, as of ${timeOf(pool.at)}`}
           endDanger={alarming(standing)}
           muted={each.retired === true}
           href={openHref("destinations", each.id)}

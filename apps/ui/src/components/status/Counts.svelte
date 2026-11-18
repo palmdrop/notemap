@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from "$components/primitives/icon/Icon.svelte";
   import Dot from "$components/primitives/marks/Dot.svelte";
+  import { timeOf } from "$lib/stamp";
 
   /**
    * The line's right: what is true, counted in words, in a fixed order. How
@@ -9,10 +10,13 @@
   let {
     pending,
     reachable,
+    at,
     ontoggle,
   }: {
     pending: number;
     reachable: boolean;
+    /** When the pool last answered, said beside Offline. */
+    at?: string | undefined;
     ontoggle: () => void;
   } = $props();
 </script>
@@ -36,6 +40,8 @@
     class="flex flex-none items-center gap-1.5 whitespace-nowrap"
   >
     <Icon name="cloud-off" class="size-5" />
-    Offline
+    Offline{#if at !== undefined}<span class="text-muted"
+        >, last answered {timeOf(at)}</span
+      >{/if}
   </span>
 {/if}

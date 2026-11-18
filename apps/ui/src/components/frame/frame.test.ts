@@ -36,3 +36,16 @@ test("counts the queue beside its word, and as a rail says it in the icon's labe
     "log",
   );
 });
+
+test("the menu's foot says offline and when the pool last answered on one line", async () => {
+  const { default: Reach } = await import("./Reach.svelte");
+  render(Reach, {
+    reachable: false,
+    at: new Date(2026, 10, 18, 12, 17).toISOString(),
+    who: "no password set",
+  });
+
+  const said = screen.getByRole("status");
+  expect(said.textContent?.trim()).toBe("offline 12:17");
+  expect(said.getAttribute("title")).toBe("offline, last answered 12:17");
+});

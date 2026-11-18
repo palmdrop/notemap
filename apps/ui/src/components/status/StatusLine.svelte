@@ -426,6 +426,11 @@
       <span class="flex-1"></span>
     {/if}
 
-    <Counts pending={waited.length} reachable={pool.yes} ontoggle={toggle} />
+    <Counts
+      pending={waited.length}
+      reachable={pool.yes}
+      at={pool.at}
+      ontoggle={toggle}
+    />
   </div>
 {/if}

@@ -1136,3 +1136,17 @@ test("a refused capture edited puts every file it carried back in the box, by na
   clearDraft();
   vi.unstubAllGlobals();
 });
+
+test("says offline with when the pool last answered", async () => {
+  const { default: Counts } = await import("./Counts.svelte");
+  render(Counts, {
+    pending: 0,
+    reachable: false,
+    at: new Date(2026, 10, 18, 12, 17).toISOString(),
+    ontoggle: () => {},
+  });
+
+  expect(screen.getByRole("status").textContent).toMatch(
+    /Offline\s*, last answered 12:17/,
+  );
+});
