@@ -132,7 +132,9 @@
         : ''}"
     >
       {#if selected === line.item.id}
-        <div class="col-span-full">
+        <!-- The register draws itself to the page's edges, as this list
+             already does: the margin gives back what both would take. -->
+        <div class="col-span-full mx-3.5 wide:mx-8">
           <Register>{@render open(line.item, line.opens)}</Register>
         </div>
       {:else}
@@ -146,10 +148,14 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule {selected ===
+    class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule {cursor ===
     line.item.id
-      ? 'bg-band'
-      : ''}"
+      ? 'outline-1 -outline-offset-1 outline-ink'
+      : ''} {marked?.(line.item.id) === true
+      ? 'bg-chosen shadow-chosen'
+      : selected === line.item.id
+        ? 'bg-picked'
+        : ''}"
     onclick={pickable((how) => onselect(line.item.id, how))}
     onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
