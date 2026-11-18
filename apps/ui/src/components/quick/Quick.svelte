@@ -211,8 +211,10 @@
     <Box
       icon="next"
       onclick={() => {
+        // Closing lets go of the item this sheet was opened for.
+        const href = processHref(id);
         onclose();
-        void goto(processHref(id));
+        void goto(href);
       }}>More options</Box
     >
   </div>

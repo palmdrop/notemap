@@ -78,6 +78,9 @@
   --spacing-bar: 3.5rem;
   /* The least a target is on a phone. */
   --spacing-target: 2.75rem;
+  /* A row's least height: its time and the circle that selects it, so the
+     circle showing never moves the rows below. */
+  --spacing-row: 5.25rem;
   --spacing-icon: 1.625rem;
   --spacing-fab: 4rem;
   --spacing-thumb: 4.5rem;

@@ -360,7 +360,9 @@
       {item}
       {filter}
       {editing}
-      addable={selected || (marked && (cursor || pointed))}
+      addable={selected ||
+        (marked && (cursor || pointed)) ||
+        (pointed && width.wide && !marking && surface !== "item")}
       fixed={marking && !marked}
       onbatch={marked ? onbatch : undefined}
       stacked={false}
@@ -410,14 +412,15 @@
     style:translate={swipe === undefined || swipe.dx === 0
       ? undefined
       : `${String(swipe.dx)}px 0`}
-    class="relative col-span-full grid scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
+    class="relative col-span-full grid min-h-row scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
       ? 'touch-pan-y'
-      : ''} transition-[background-color] duration-(--duration-short) ease-fade {selected &&
-    surface !== 'item'
-      ? 'bg-band'
-      : pointed && width.wide && onprocess !== undefined
-        ? 'bg-tag'
-        : ''}"
+      : ''} transition-[background-color] duration-(--duration-short) ease-fade {marked
+      ? 'bg-tag'
+      : selected && surface !== 'item'
+        ? 'bg-band'
+        : pointed && width.wide && onprocess !== undefined
+          ? 'bg-tag'
+          : ''}"
   >
     <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
       <Stamp

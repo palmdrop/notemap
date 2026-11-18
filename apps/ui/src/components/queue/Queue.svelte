@@ -227,7 +227,10 @@
         how,
         selected,
       );
-      if (marked !== undefined) selected = marked;
+      // Letting go of the last mark ends the mode with nothing selected,
+      // rather than leaving the row it ended on selected with its strip.
+      if (marked !== undefined && !marking.on) deselect();
+      else if (marked !== undefined) selected = marked;
       else if (selected === id) deselect();
       else selected = id;
     });

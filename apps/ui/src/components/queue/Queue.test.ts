@@ -2402,3 +2402,33 @@ test("a capture the pool refused is a row of the queue, kept on this device", as
   await fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
   expect(within(row).getByText("Delete it for good?")).toBeDefined();
 });
+
+test("letting go of the last marked row ends marking with nothing selected", async () => {
+  pool(queued("one", "two"));
+  render(Queue);
+  await screen.findByText("one");
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  expect(document.querySelectorAll("[data-gutter='marked']")).toHaveLength(1);
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  expect(document.querySelectorAll("[data-gutter='marked']")).toHaveLength(0);
+  expect(document.querySelector("[data-foot]")).toBeNull();
+  expect(document.querySelector("[data-rail][data-selected]")).toBeNull();
+  expect(went.to).toEqual([]);
+});
+
+test("when wide, a row under the pointer offers + tag, and taking a tag keeps the queue", async () => {
+  pool(queued("one"));
+  render(Queue);
+  const words = await screen.findByText("one");
+  const row = words.closest("[data-row]") as HTMLElement;
+
+  expect(within(row).queryByRole("button", { name: "Add a tag" })).toBeNull();
+  await fireEvent.pointerEnter(row);
+  await fireEvent.mouseEnter(row);
+  await fireEvent.click(
+    await within(row).findByRole("button", { name: "Add a tag" }),
+  );
+  expect(went.to).toEqual([]);
+});

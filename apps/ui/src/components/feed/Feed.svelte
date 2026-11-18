@@ -116,7 +116,11 @@
         how,
         selected,
       );
-      selected = marked ?? (selected === id ? undefined : id);
+      // Letting go of the last mark ends the mode with nothing selected.
+      selected =
+        marked !== undefined && !marking.on
+          ? undefined
+          : (marked ?? (selected === id ? undefined : id));
     });
   }
 

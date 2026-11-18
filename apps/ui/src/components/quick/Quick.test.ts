@@ -5,6 +5,8 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { client, pool } from "$testing/pool";
 import { firings } from "$lib/firings.svelte";
+import { quick } from "$lib/quicking.svelte";
+import Framed from "./Quick.fixture.svelte";
 import Quick from "./Quick.svelte";
 
 const went = vi.hoisted(() => ({ to: [] as string[] }));
@@ -110,10 +112,13 @@ test("a template that asks opens in place, and its answer routes", async () => {
 
 test("More options leads to the route page", async () => {
   serving();
-  const onclose = vi.fn();
-  render(Quick, { item: "one", onclose });
+  // As the frame draws it: closing lets go of the item before it navigates.
+  quick.open("one");
+  render(Framed);
 
-  await fireEvent.click(screen.getByRole("button", { name: "More options" }));
-  expect(onclose).toHaveBeenCalled();
+  await fireEvent.click(
+    await screen.findByRole("button", { name: "More options" }),
+  );
+  expect(quick.item).toBeUndefined();
   expect(went.to).toEqual(["/items/one/process"]);
 });
