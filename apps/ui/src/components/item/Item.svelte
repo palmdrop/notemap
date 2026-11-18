@@ -81,7 +81,7 @@
   });
 
   // One subject and no selection: the page is the item, so what it offers is
-  // what its own `Actions` draws, built once and published as it stands. No
+  // what its own bar draws, built once and published as it stands. No
   // address — this surface is where `open` would lead.
   const commands = $derived(
     item === undefined
@@ -150,7 +150,6 @@
       surface="item"
       selected
       offline={!pool.yes}
-      {commands}
       pending={undrained.has(item.id)}
       foot={false}
       opens

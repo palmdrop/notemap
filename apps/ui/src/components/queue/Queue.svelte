@@ -507,7 +507,6 @@
     marking={marking.on}
     onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
-    commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
     firing={firings.open.find((firing) => firing.item === row.id)}
     {opens}

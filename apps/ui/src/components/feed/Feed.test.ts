@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
+import { commandOf } from "$lib/command/stack.svelte";
 import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
@@ -147,7 +148,7 @@ test("an index line opens into its whole row in place, without sliding", async (
   await open();
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
   expect(screen.getByText("discarded")).toBeDefined();
-  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
+  expect(commandOf("undiscard")).toBeDefined();
   expect(slid.calls.some((call) => call.still === false)).toBe(false);
 
   await fireEvent.keyDown(window, { key: "Enter" });
@@ -166,7 +167,8 @@ test("says an archived row is discarded, and offers the way back", async () => {
   expect(await screen.findByText("discarded")).toBeDefined();
   await open();
 
-  await fireEvent.click(screen.getByRole("button", { name: "Undiscard" }));
+  const undiscard = commandOf("undiscard");
+  if (undiscard !== undefined && "run" in undiscard) await undiscard.run();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/gone/unarchive");
@@ -427,15 +429,16 @@ test("says nothing was captured only once the pool has answered for the feed", a
   expect(await screen.findByText(NOTHING_CAPTURED)).toBeDefined();
 });
 
-test("opens a row in place, with what the queue's row offers", async () => {
+test("selects a row in place, with what the queue's row offers through the keys", async () => {
   pool(held(anItem("one")));
 
   render(Feed);
   await screen.findByText("one");
   await open();
 
-  expect(screen.getByRole("button", { name: "Route" })).toBeDefined();
-  expect(screen.getByRole("link", { name: "Open" }).getAttribute("href")).toBe(
+  expect(commandOf("process")).toBeDefined();
+  const opening = commandOf("open");
+  expect(opening !== undefined && "href" in opening ? opening.href : "").toBe(
     "/items/one",
   );
 });

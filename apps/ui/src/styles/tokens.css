@@ -32,6 +32,12 @@
   --color-tag-line: light-dark(#d2d2d2, #3d3d3d);
   --color-tag-ink: light-dark(#4a4a4a, #bdbdbd);
 
+  /* A row's tints: under the pointer, opened or selected for the keys, and
+     selected for a batch, each stronger than the last. */
+  --color-hover: light-dark(#f8f8f8, #141414);
+  --color-picked: light-dark(#f1f1f1, #1b1b1b);
+  --color-chosen: light-dark(#e2e2e2, #2c2c2c);
+
   /* The rule, and the + button's fill, the one chip left. */
   --color-rule: light-dark(#a9a9a9, #5e5e5e);
   --color-chip: light-dark(#dedede, #2e2e2e);
@@ -71,9 +77,14 @@
   --radius-control: 0.5rem;
   --radius-tag: 0.3125rem;
 
+  /* A row selected for a batch: an ink edge down its left side, taking no width. */
+  --shadow-chosen: inset 3px 0 0 var(--color-ink);
+
   --spacing-gutter: 0.75rem;
   /* The time column, which holds a row's round check while selecting. */
   --spacing-time: 3.25rem;
+  /* Where a row's words start: the time and a gutter either side of it. */
+  --spacing-words: calc(var(--spacing-time) + 2 * var(--spacing-gutter));
   /* A header, or a bar docked at a page's foot. */
   --spacing-bar: 3.5rem;
   /* The least a target is on a phone. */

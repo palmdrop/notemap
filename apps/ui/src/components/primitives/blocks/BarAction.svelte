@@ -23,6 +23,7 @@
     command,
     href,
     onclick,
+    onrefused,
   }: {
     icon?: IconName;
     label: string;
@@ -35,6 +36,8 @@
     command?: string;
     href?: string;
     onclick?: () => void;
+    /** Pressed while it cannot be taken, for a page that says then what is missing. */
+    onrefused?: () => void;
   } = $props();
 
   const held = $derived(disabled || why !== undefined);
@@ -72,6 +75,7 @@
     {title}
     onclick={() => {
       if (why === undefined) onclick?.();
+      else onrefused?.();
     }}
     class="inline-flex min-w-0 items-center justify-center {look}"
   >

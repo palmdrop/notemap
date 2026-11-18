@@ -76,7 +76,8 @@
     type="button"
     onclick={onopen}
     aria-expanded={opened === true}
-    class="block text-left hover:underline"
+    data-stamp
+    class="block text-left hover:underline focus-visible:outline-none"
   >
     {@render drawn()}
   </button>

@@ -961,10 +961,7 @@ test("draws a tag taken in its own row as taken, at once", async () => {
   await fireEvent.input(line, { target: { value: "seedling" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
-  const word = await screen.findByRole("button", { name: "seedling" });
-  expect(word.getAttribute("aria-pressed")).toBe("true");
-
-  await fireEvent.click(word);
+  await screen.findByRole("button", { name: "remove seedling" });
   await fireEvent.click(
     screen.getByRole("button", { name: "remove seedling" }),
   );
@@ -1658,11 +1655,7 @@ test("a tag taken in the composer stays applied when the route fails", async () 
   });
 
   expect(left()).toBeUndefined();
-  expect(
-    screen
-      .getByRole("button", { name: "seedling" })
-      .getAttribute("aria-pressed"),
-  ).toBe("true");
+  expect(screen.getByRole("button", { name: "remove seedling" })).toBeDefined();
 });
 
 const typing = () =>

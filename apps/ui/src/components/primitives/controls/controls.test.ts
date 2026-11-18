@@ -125,18 +125,19 @@ function tagSet(
     offered: readonly string[];
     fires: (name: string) => string | undefined;
     held: (name: string) => boolean;
+    addable: boolean;
   }> = {},
 ) {
   const added = vi.fn();
   const removed = vi.fn();
-  render(TagSet, {
+  const { container } = render(TagSet, {
     names: [],
     offered: [],
     ...props,
     onadd: added,
     onremove: removed,
   });
-  return { added, removed };
+  return { added, removed, container };
 }
 
 const opened = async () => {
@@ -150,11 +151,15 @@ const typed = (line: HTMLElement, value: string) =>
 const pressed = (line: HTMLElement, key: string) =>
   fireEvent.keyDown(line, { key });
 
-/** A row's words as read, its template beside it after a space that does not break. */
+/** A row's words as a screen reader has them, without what is drawn for the eye alone. */
 const options = () =>
-  screen
-    .queryAllByRole("option")
-    .map((one) => one.textContent?.replace(/\s+/g, " ").trim());
+  screen.queryAllByRole("option").map((one) => {
+    const read = one.cloneNode(true) as HTMLElement;
+    for (const hidden of read.querySelectorAll("[aria-hidden='true']")) {
+      hidden.remove();
+    }
+    return read.textContent?.replace(/\s+/g, " ").trim();
+  });
 
 test("a tag typed is taken on enter, trimmed, and an empty line takes nothing", async () => {
   const { added } = tagSet();
@@ -216,15 +221,15 @@ test("an empty line offers trigger tags apart beneath the rest, and typing mixes
     container.querySelector("[role='listbox'] > [aria-hidden='true']");
   expect(options()).toEqual([
     ...many.slice(0, 8),
-    "route/research → research",
-    "route/journal → journal",
+    "route/research, routes to research",
+    "route/journal, routes to journal",
   ]);
   expect(rule()?.nextElementSibling?.getAttribute("role")).toBe("option");
   expect(rule()?.previousElementSibling?.textContent).toContain("tag-7");
 
   await typed(line, "r");
   expect(rule()).toBeNull();
-  expect(options()[0]).toBe("route/research → research");
+  expect(options()[0]).toBe("route/research, routes to research");
 
   // The walk passes the rule as though it were not there.
   await typed(line, "");
@@ -350,49 +355,25 @@ test("escape and leaving the line put it away and take nothing", async () => {
 });
 
 test("a carried tag is marked #, and the mark is no part of its name", () => {
-  tagSet({ names: ["design"] });
+  const { container } = tagSet({ names: ["design"] });
 
-  const word = screen.getByRole("button", { name: "design" });
+  const word = container.querySelector("[data-tag='design'] > span")!;
   expect(word.textContent?.trim()).toBe("#design");
 });
 
-test("a tag the item carries is removed by pressing it, then its ×", async () => {
+test("where tags can be changed each carries its ×, and pressing it takes the tag off", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 
-  const word = screen.getByRole("button", { name: "notemap" });
-  expect(word.getAttribute("aria-pressed")).toBe("true");
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
-
-  await fireEvent.click(word);
-  expect(removed).not.toHaveBeenCalled();
-  // Selected is bold, the × beside it, so the × has a word it visibly
-  // belongs to.
-  const remove = screen.getByRole("button", { name: "remove notemap" });
-  expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
-  expect(word.parentElement!.contains(remove)).toBe(true);
-  expect(
-    screen
-      .getByRole("button", { name: "design" })
-      .parentElement!.hasAttribute("data-chosen"),
-  ).toBe(false);
-
-  await fireEvent.click(remove);
+  await fireEvent.click(screen.getByRole("button", { name: "remove notemap" }));
   expect(removed).toHaveBeenCalledWith("notemap");
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
+  expect(screen.getByRole("button", { name: "remove design" })).toBeDefined();
 });
 
-/** Its room is held either side whether or not it is selected, so nothing beside it moves. */
-test("a selected tag offers its × as a box joined to it", async () => {
-  tagSet({ names: ["design", "notemap"] });
-  const word = screen.getByRole("button", { name: "design" });
-  const box = word.parentElement!;
+test("where tags cannot be changed they are words, with no ×", () => {
+  tagSet({ names: ["design"], addable: false });
 
-  await fireEvent.click(word);
-
-  const remove = screen.getByRole("button", { name: "remove design" });
-  expect(remove.parentElement).toBe(box);
-  expect(word.classList.contains("rounded-r-none")).toBe(true);
-  expect(remove.classList.contains("rounded-l-none")).toBe(true);
+  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "design" })).toBeNull();
 });
 
 /** The `+` wraps where the line would, so opening the line moves nothing. */
@@ -405,31 +386,6 @@ test("the + holds the place the line opens into", async () => {
   await fireEvent.click(plus);
 
   expect(place.contains(screen.getByRole("combobox"))).toBe(true);
-});
-
-test("pressing it again, esc, or pressing another tag deselects it", async () => {
-  const { removed } = tagSet({ names: ["design", "notemap"] });
-
-  const design = screen.getByRole("button", { name: "design" });
-  const notemap = screen.getByRole("button", { name: "notemap" });
-
-  await fireEvent.click(design);
-  await fireEvent.click(design);
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-
-  await fireEvent.click(design);
-  await fireEvent.keyDown(design, { key: "Escape" });
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-
-  await fireEvent.click(design);
-  await fireEvent.click(notemap);
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-  expect(screen.getByRole("button", { name: "remove notemap" })).toBeDefined();
-
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
-
-  expect(removed).not.toHaveBeenCalled();
 });
 
 test("a trigger tag that filed the item is inert, not a control", async () => {
@@ -475,13 +431,11 @@ test("a trigger tag is marked with the template it applies, carried or offered",
     fires: (name) => (name.startsWith("route/") ? name.slice(6) : undefined),
   });
 
-  expect(
-    screen.getByRole("button", { name: "route/research, routes to research" }),
-  ).toBeDefined();
+  expect(screen.getByText("route/research, routes to research")).toBeDefined();
 
   await opened();
   expect(
-    screen.getByRole("option", { name: /route\/reading.*reading/ }),
+    screen.getByRole("option", { name: "route/reading, routes to reading" }),
   ).toBeDefined();
 });
 

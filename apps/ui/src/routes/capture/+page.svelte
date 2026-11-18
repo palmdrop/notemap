@@ -4,9 +4,22 @@
 
   import Capture from "$components/capture/Capture.svelte";
   import { client } from "$lib/client";
+  import { headed } from "$lib/heading.svelte";
   import { sayLanded } from "$lib/landed";
 
   const queue = client.queue;
+
+  headed(() => ({
+    title: "capture",
+    out: {
+      icon: "close",
+      label: "Close",
+      run: () => {
+        if (history.length > 1) history.back();
+        else void goto(resolve("/"));
+      },
+    },
+  }));
 </script>
 
 <svelte:head>

@@ -77,6 +77,8 @@
   let busy = $state(false);
   let said = $state("");
   let picker: HTMLInputElement;
+  let camera = $state<HTMLInputElement | undefined>(undefined);
+  const empty = $derived(chosen.length === 0 && text.trim() === "");
   let box = $state<HTMLTextAreaElement | undefined>(undefined);
   let form = $state<HTMLFormElement | undefined>(undefined);
   let chooser = $state<TagSet | undefined>(undefined);
@@ -173,8 +175,9 @@
   );
 
   function pick(event: Event) {
-    const picked = [...((event.currentTarget as HTMLInputElement).files ?? [])];
-    picker.value = "";
+    const input = event.currentTarget as HTMLInputElement;
+    const picked = [...(input.files ?? [])];
+    input.value = "";
     add(picked);
   }
 
@@ -337,7 +340,7 @@
     aria-label="What to capture"
     class="block w-full resize-y bg-transparent px-gutter py-3 outline-none {page
       ? 'min-h-[40dvh] flex-1 resize-none'
-      : 'min-h-[88px]'}"></textarea>
+      : 'min-h-[88px] wide:pl-words'}"></textarea>
 {/snippet}
 
 {#snippet tagged()}
@@ -384,6 +387,17 @@
     aria-label="Files to capture"
     class="hidden"
   />
+  {#if drawn === "page"}
+    <input
+      bind:this={camera}
+      type="file"
+      accept="image/*"
+      capture="environment"
+      onchange={pick}
+      aria-label="Take a picture"
+      class="hidden"
+    />
+  {/if}
 {/snippet}
 
 {#if drawn === "page"}
@@ -430,14 +444,21 @@
         disabled={busy}
         onclick={() => picker.click()}
       />
-      <BarAction icon="tag" label="Tag" onclick={() => chooser?.add()} />
       <BarAction
-        icon="capture"
+        icon="camera"
+        label="Camera"
+        disabled={busy}
+        onclick={() => camera?.click()}
+      />
+      <BarAction
+        icon="check"
         label="Save"
         primary
         working={busy}
+        why={empty ? "Write something, or attach a file." : undefined}
         command="capture"
         onclick={() => void capture()}
+        onrefused={() => (said = NOTHING_TO_CAPTURE)}
       />
     </ActionBar>
     {@render picking()}
@@ -458,7 +479,7 @@
     {@render pictured()}
     {@render field("Write, or attach…", false)}
     {@render filed()}
-    <div class="flex flex-wrap items-center gap-2 px-gutter pb-3">
+    <div class="flex flex-wrap items-center gap-2 px-gutter pb-3 wide:pl-words">
       <Box icon="attach" disabled={busy} onclick={() => picker.click()}
         >Attach</Box
       >
@@ -481,7 +502,7 @@
         class="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-ink bg-ink px-3.5 text-paper"
       >
         <Icon name="capture" class="size-[1.125rem]" />
-        capture
+        Capture
       </button>
     </div>
     {@render picking()}

@@ -19,6 +19,7 @@ import { registering, said } from "$testing/highlights";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { firings } from "$lib/firings.svelte";
+import { commandOf } from "$lib/command/stack.svelte";
 import Queue from "./Queue.svelte";
 import Listed from "./Queue.fixture.svelte";
 
@@ -101,9 +102,19 @@ function stamps(expanded: boolean) {
   });
 }
 
+/** What the selected row offers: the keys' commands, there being no strip. */
+const offered = (id: string) => commandOf(id);
+const refused = (id: string) => offered(id)?.refusal !== undefined;
+
+async function run(id: string) {
+  const command = offered(id);
+  if (command !== undefined && "run" in command) await command.run();
+  await tick();
+}
+
 /** Discarding is the quick tier: it acts from the row, at once. */
 async function discard() {
-  await fireEvent.click(screen.getByRole("button", { name: "Discard" }));
+  await run("discard");
 }
 
 /** Where the person had scrolled, as the browser would report it. */
@@ -141,15 +152,12 @@ test("discards with the pool unreachable, and says what it cannot queue", async 
   // Processing happens in the row, so the actions are behind opening it.
   await fireEvent.click(stamps(false)[0]!);
 
-  const disabled = (name: string | RegExp) =>
-    (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
-
   // The door itself never closes: what a decision needs of the pool is said
   // by the surface behind it. On the row, discarding is the one decision that
   // needs nothing of the pool.
-  expect(disabled("Route")).toBe(false);
-  expect(disabled("Done")).toBe(true);
-  expect(disabled("Discard")).toBe(false);
+  expect(refused("process")).toBe(false);
+  expect(refused("manual")).toBe(true);
+  expect(refused("discard")).toBe(false);
 
   await discard();
 
@@ -167,14 +175,12 @@ test("opens one row at a time, in place", async () => {
   await screen.findByText("one");
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "Route" })).toHaveLength(1);
   expect(stamps(true)).toHaveLength(1);
 
   await open(0);
 
   // The second row's stamp, the first one now being expanded.
   expect(stamps(true)).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "Route" })).toHaveLength(1);
 });
 
 /** The queue holds unrouted items, so opening one has nothing to ask about. */
@@ -189,7 +195,7 @@ test("opens a row without asking where an item has never been, and without sayin
 
   await open(0);
 
-  expect(await screen.findByRole("button", { name: "Route" })).toBeDefined();
+  expect(offered("process")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -231,11 +237,11 @@ test("offers the edit on an unprocessed row and not on a processed one", async (
   await screen.findByText("mine");
 
   await open(1);
-  expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
+  expect(offered("edit")).toBeUndefined();
   expect(screen.getByText("revised")).toBeDefined();
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+  expect(offered("edit")).toBeDefined();
 });
 
 test("reads from the end the reader last chose, not the one the queue defaults to", async () => {
@@ -285,7 +291,7 @@ function taken(request: Request) {
 async function capture(said: string) {
   const written = screen.getByLabelText("What to capture");
   await fireEvent.input(written, { target: { value: said } });
-  return fireEvent.click(screen.getByRole("button", { name: "capture" }));
+  return fireEvent.click(screen.getByRole("button", { name: "Capture" }));
 }
 
 /** A row comes and goes by sliding, by day or not: a read is what draws still. */
@@ -514,10 +520,11 @@ test("offers the way to an item without taking the gesture that opens the row", 
 
   // Triage is opening a row in place, and the address is behind that rather
   // than instead of it.
-  expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
+  expect(offered("open")).toBeUndefined();
 
   await open(0);
-  expect(screen.getByRole("link", { name: "Open" }).getAttribute("href")).toBe(
+  const open_ = offered("open");
+  expect(open_ !== undefined && "href" in open_ ? open_.href : "").toBe(
     "/items/one",
   );
   expect(stamps(true)).toHaveLength(1);
@@ -595,7 +602,7 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  await run("manual");
 
   await vi.waitFor(() => {
     expect(notices.shown.map((notice) => notice.what)).toContain(
@@ -714,7 +721,7 @@ test("a discarded row stays where it stood while it is selected, and leaves when
     expect(screen.getByText("discarded")).toBeDefined();
   });
   expect(screen.getByText("one")).toBeDefined();
-  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
+  expect(offered("undiscard")).toBeDefined();
   expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 
@@ -807,19 +814,20 @@ test("draws the box around the selected row and nowhere else", async () => {
   await open(0);
   expect(boxed()).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: "Add a tag" })).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(1);
+  expect(offered("discard")).toBeDefined();
 });
 
-/** The selected row's actions are a strip under its words; an unselected row has none. */
-test("draws the selected row's actions as a strip under it, and no other row's", async () => {
+/** A selected row's actions are the keys' and the hover's Route: no strip under it. */
+test("draws no strip of actions under the selected row", async () => {
   pool(queued("one", "two"));
 
   const { container } = render(Queue);
   await screen.findByText("one");
-  expect(container.querySelectorAll("[data-foot]")).toHaveLength(0);
 
   await open(0);
-  expect(container.querySelectorAll("[data-foot]")).toHaveLength(1);
+  expect(container.querySelectorAll("[data-foot]")).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
+  expect(offered("discard")).toBeDefined();
 });
 
 const LATER = "2026-08-19T10:00:00.000Z";
@@ -955,7 +963,7 @@ test("arrives with the row named on its address selected, and takes the name off
   await vi.waitFor(() => {
     expect(stamps(true)).toHaveLength(1);
   });
-  expect(screen.getAllByRole("button", { name: "Discard" })).toHaveLength(1);
+  expect(offered("discard")).toBeDefined();
   expect(replaced.urls).toEqual(["http://localhost/"]);
 
   // The keys are the row's: the capture field did not take the caret.
@@ -1092,7 +1100,7 @@ test("the selected index line opens into the whole row, actions and all", async 
   await fireEvent.keyDown(window, { key: "j" });
   expect(container.querySelectorAll("[data-row]")).toHaveLength(1);
   expect(container.querySelector("[data-row]")?.textContent).toContain("one");
-  expect(screen.getByRole("button", { name: "Discard" })).toBeDefined();
+  expect(offered("discard")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "e" });
   expect(await screen.findByLabelText("What it says")).toBeTruthy();
@@ -1626,7 +1634,7 @@ test("an edit let go takes a waiting trigger tag with it, and not an ordinary on
   await tick();
 
   expect(waitingTag()).toBeNull();
-  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "remove reading" })).toBeDefined();
   expect(
     asked().filter((request) => request === "POST /v1/items/one/tag"),
   ).toHaveLength(1);
@@ -1677,9 +1685,6 @@ test("a waiting trigger tag comes off unsent, and the edit's own revert takes th
     screen.getAllByTitle("files the item once the edit is saved"),
   ).toHaveLength(2);
 
-  await fireEvent.click(
-    screen.getByRole("button", { name: /^route\/one, files the item/ }),
-  );
   await fireEvent.click(
     screen.getByRole("button", { name: "remove route/one" }),
   );
@@ -2050,8 +2055,7 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   render(Queue);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"));
-  const strip = () => document.querySelector<HTMLElement>("[data-foot]");
-  expect(within(strip()!).getByRole("button", { name: "Route" })).toBeDefined();
+  expect(offered("process")).toBeDefined();
 
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
@@ -2062,7 +2066,6 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   expect(document.querySelectorAll("[data-rail][data-selected]")).toHaveLength(
     0,
   );
-  expect(strip()).toBeNull();
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual([]);
 });
@@ -2131,8 +2134,9 @@ test("a tag taken off a marked row comes off every marked row", async () => {
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
-  await fireEvent.click(screen.getAllByRole("button", { name: "reading" })[0]!);
-  await fireEvent.click(screen.getByRole("button", { name: "remove reading" }));
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "remove reading" })[0]!,
+  );
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/batches");
@@ -2153,11 +2157,9 @@ test("an unmarked row's tags are not controls while rows are marked", async () =
 
   render(Queue);
   await screen.findByText("one");
-  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
-
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
-  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "remove reading" })).toBeNull();
   expect(screen.getByText("reading")).toBeDefined();
 });
 
@@ -2360,6 +2362,21 @@ test("on a phone holding a row selects it, and says the hint no more", async () 
 
   expect(await screen.findByText("1 selected")).toBeDefined();
   expect(screen.queryByText("Hold a row to select several.")).toBeNull();
+});
+
+test("a wide touch screen selects by holding a row, as a phone does", async () => {
+  pool(queued("one", "two"));
+  render(Queue);
+  await screen.findByText("one");
+
+  vi.useFakeTimers();
+  const row = document.querySelector('[data-row="one"]')!;
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(await screen.findByText(/1 selected/)).toBeDefined();
 });
 
 test("a delivery turned down after its window is said in red on the row it came back to", async () => {

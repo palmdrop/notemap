@@ -4,8 +4,8 @@
  * would change.
  */
 const BINDINGS: Record<string, string> = {
-  // An item's own commands: `commandsFor`, drawn by `Actions` where it has a
-  // group and reached by a key on every surface that publishes it.
+  // An item's own commands: `commandsFor`, reached by a key on every surface
+  // that publishes it.
   process: "p",
   manual: "m",
   discard: "D",

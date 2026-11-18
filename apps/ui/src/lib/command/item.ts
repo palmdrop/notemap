@@ -11,7 +11,7 @@ import { DISCARD, MANUAL, refusalFor } from "../processing";
 import { discard, manual } from "../quick";
 import { discardedKey } from "../routing";
 
-import { DECIDE, WORK, type Command } from "./command";
+import type { Command } from "./command";
 
 /**
  * What a surface hands `commandsFor` beyond the item itself. `address` is
@@ -66,7 +66,7 @@ function undiscard(item: Item): void {
  * Every command an item offers: the quick tier that needs no destination, and
  * working with the item beside it. Pure — closing over nothing but what it is
  * given — so a surface can ask what a person could do right now without
- * taking anything, and `Actions` can draw the answer rather than rewire it.
+ * taking anything, and a bar can draw the answer rather than rewire it.
  */
 export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   const offline = at.offline ?? false;
@@ -78,21 +78,18 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     {
       id: "process",
       label: "Route",
-      group: DECIDE,
       primary: true,
       run: at.onprocess,
     },
     {
       id: MANUAL,
       label: "Done",
-      group: DECIDE,
       refusal: refusalFor(MANUAL, item, offline),
       run: () => void manual(item),
     },
     {
       id: DISCARD,
       label: "Discard",
-      group: DECIDE,
       alarm: true,
       refusal: refusalFor(DISCARD, item, offline),
       run: () => discard(item),
@@ -103,7 +100,6 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     commands.push({
       id: "undiscard",
       label: "Undiscard",
-      group: DECIDE,
       run: () => undiscard(item),
     });
   }
@@ -111,7 +107,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   // A routed item is sealed: editing it makes a revision, a capture of its own,
   // and what was routed stays as it was. A discarded one is undiscarded first.
   if (editable(item) || (at.revises === true && item.archived === undefined)) {
-    commands.push({ id: "edit", label: "Edit", group: WORK, run: at.onedit });
+    commands.push({ id: "edit", label: "Edit", run: at.onedit });
   }
 
   // Offered only where the browser has a clipboard to give, and only where
@@ -122,7 +118,6 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     commands.push({
       id: "copy",
       label: "Copy",
-      group: WORK,
       run: () => void copy(item),
     });
   }
@@ -135,10 +130,9 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
       ? {
           id: "open",
           label: "History",
-          group: WORK,
           href: logHref(undefined, { item: item.id }),
         }
-      : { id: "open", label: "Open", group: WORK, href: at.address },
+      : { id: "open", label: "Open", href: at.address },
   );
 
   if (at.tag !== undefined) {

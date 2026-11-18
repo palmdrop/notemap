@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { BatchAction, Item } from "@notemap/client";
 
-  import Actions from "$components/item/Actions.svelte";
   import Edit from "$components/item/Edit.svelte";
   import EditFoot from "$components/item/EditFoot.svelte";
   import { Editing } from "$components/item/editing.svelte";
@@ -16,7 +15,6 @@
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
-  import type { Command } from "$lib/command/command";
   import { goto } from "$app/navigation";
 
   import { itemHref } from "$components/item/href";
@@ -57,7 +55,6 @@
     surface,
     filter = [],
     terms = [],
-    commands,
     pending = false,
     opens = false,
     cached = false,
@@ -84,8 +81,6 @@
     filter?: readonly string[];
     /** The terms the surface is searched by, highlighted where the row's words hold them. */
     terms?: readonly string[];
-    /** The surface's own list for this row, empty where it is not the selected one. */
-    commands: readonly Command[];
     pending?: boolean;
     /** The first row under a heading, laying its top edge on the heading's rule. */
     opens?: boolean;
@@ -192,8 +187,8 @@
   let held = false;
 
   function holdFrom(event: PointerEvent): void {
+    // A finger or a pen has no ctrl and no hover, at any width.
     if (
-      width.wide ||
       event.pointerType === "mouse" ||
       surface === "item" ||
       onselect === undefined
@@ -421,13 +416,12 @@
       : `${String(swipe.dx)}px 0`}
     class="relative col-span-full grid min-h-row scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
       ? 'touch-pan-y'
-      : ''} transition-[background-color] duration-(--duration-short) ease-fade {marked
-      ? 'bg-tag'
-      : selected && surface !== 'item'
-        ? 'bg-band'
-        : (pointed && width.wide && onprocess !== undefined) ||
-            (surface !== 'item' && lastOpened.id === item.id)
-          ? 'bg-tag'
+      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {marked
+      ? 'bg-chosen shadow-chosen'
+      : surface !== 'item' && (selected || lastOpened.id === item.id)
+        ? 'bg-picked'
+        : pointed && width.wide && onprocess !== undefined
+          ? 'bg-hover'
           : ''}"
   >
     <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
@@ -469,7 +463,22 @@
       {/if}
     </Rail>
 
-    <Body {selected} onpick={pick} onreach={reach}>
+    {#snippet routeBeside()}
+      {#if pointed && width.wide && !selected && !marking && reach !== undefined && surface === "queue"}
+        <span transition:fade>
+          <Box icon="route" title="Route (p)" onclick={reach}>Route</Box>
+        </span>
+      {/if}
+    {/snippet}
+
+    <Body
+      {selected}
+      onpick={pick}
+      onreach={reach}
+      aside={surface === "queue" && onprocess !== undefined
+        ? routeBeside
+        : undefined}
+    >
       {#if editing !== undefined}
         <Edit {editing} />
       {:else}
@@ -485,23 +494,13 @@
       </span>
     {/if}
 
-    {#if pointed && width.wide && !selected && !marking && reach !== undefined && surface === "queue"}
-      <span class="absolute top-3 right-gutter" transition:fade>
-        <Box icon="route" title="Route (p)" onclick={reach}>Route</Box>
-      </span>
-    {/if}
-
-    {#if selected && foot}
+    {#if selected && foot && editing !== undefined}
       <div
         data-foot
         class="col-span-full row-start-2 flex min-h-11 items-center border-t border-rule bg-off px-gutter"
         transition:fade
       >
-        {#if editing !== undefined}
-          <EditFoot {editing} />
-        {:else}
-          <Actions {commands} />
-        {/if}
+        <EditFoot {editing} />
       </div>
     {/if}
   </div>

@@ -23,7 +23,7 @@ const empty = json(200, { values: [] });
 async function capture(text: string) {
   const written = screen.getByLabelText("What to capture");
   await fireEvent.input(written, { target: { value: text } });
-  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Capture" }));
   return written as HTMLTextAreaElement;
 }
 
@@ -360,12 +360,8 @@ test("carries the tags chosen in the box on the capture, and clears them with it
     key: "Enter",
   });
 
-  expect(
-    screen.getByRole("button", { name: "research", pressed: true }),
-  ).toBeDefined();
-  expect(
-    screen.getByRole("button", { name: "fresh", pressed: true }),
-  ).toBeDefined();
+  expect(screen.getByRole("button", { name: "remove research" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "remove fresh" })).toBeDefined();
 
   const written = await capture("a classified thought");
 
@@ -401,9 +397,7 @@ test("starts from the draft it last held, words and tags both", () => {
   expect(
     (screen.getByLabelText("What to capture") as HTMLTextAreaElement).value,
   ).toBe("half a thought");
-  expect(
-    screen.getByRole("button", { name: "research", pressed: true }),
-  ).toBeDefined();
+  expect(screen.getByRole("button", { name: "remove research" })).toBeDefined();
 });
 
 test("keeps what is typed and tagged as it goes, and lets go when the capture commits", async () => {
@@ -426,7 +420,7 @@ test("keeps what is typed and tagged as it goes, and lets go when the capture co
     expect(readDraft()).toEqual({ text: "half a thought", tags: ["research"] });
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Capture" }));
   await cleared(written as HTMLTextAreaElement);
 
   expect(readDraft()).toEqual({ text: "", tags: [] });
@@ -658,10 +652,10 @@ test("asks a trigger tag's template for its heading, from the note's own", async
 
   await takeTag("route/todo");
   const line = await screen.findByRole("combobox", { name: "list" });
-  expect(await screen.findByText("## Next")).toBeDefined();
+  expect(await screen.findByText("Next")).toBeDefined();
   expect(decodeURIComponent(asking[0] ?? "")).toContain("given[path]=todo.md");
   // Not on the capture until the value is given.
-  expect(screen.queryByRole("button", { name: /route\/todo/ })).toBeNull();
+  expect(document.querySelector("[data-tag='route/todo']")).toBeNull();
 
   await fireEvent.keyDown(line, { key: "ArrowDown" });
   await fireEvent.keyDown(line, { key: "ArrowDown" });
@@ -718,7 +712,7 @@ test("an empty line with no default keeps asking", async () => {
   await fireEvent.keyDown(line, { key: "Enter" });
 
   expect(screen.getByRole("combobox", { name: "list" })).toBe(line);
-  expect(screen.queryByRole("button", { name: /route\/todo/ })).toBeNull();
+  expect(screen.queryByText(/route\/todo, routes to/)).toBeNull();
 });
 
 test("says what it asks beside the list rather than in it, and the line points at it", async () => {
@@ -742,7 +736,7 @@ test("offers no entry that is only somewhere to look further", async () => {
   await servingTodo(todo());
 
   await takeTag("route/todo");
-  expect(await screen.findByText("## Next")).toBeDefined();
+  expect(await screen.findByText("Next")).toBeDefined();
   expect(screen.queryByText("archive")).toBeNull();
 });
 
@@ -751,7 +745,7 @@ test("a heading typed as the list reads it is the listed one, not a new one", as
 
   await takeTag("route/todo");
   const line = await screen.findByRole("combobox", { name: "list" });
-  expect(await screen.findByText("## Next")).toBeDefined();
+  expect(await screen.findByText("Next")).toBeDefined();
   await fireEvent.input(line, { target: { value: "## Next" } });
   expect(screen.queryByText("+ ## Next")).toBeNull();
   await fireEvent.keyDown(line, { key: "Enter" });
@@ -793,7 +787,7 @@ test("esc steps back to the tags without taking one", async () => {
   expect(
     await screen.findByRole("combobox", { name: "Tag the capture" }),
   ).toBeDefined();
-  expect(screen.queryByRole("button", { name: /route\/todo/ })).toBeNull();
+  expect(document.querySelector("[data-tag='route/todo']")).toBeNull();
 });
 
 test("the capture page keeps a draft across leaving and coming back, says so, and Clear starts over", async () => {
@@ -853,7 +847,7 @@ test("a trigger tag says what it will do once the capture is sent", async () => 
 
   await takeTag("route/todo");
   const line = await screen.findByRole("combobox", { name: "list" });
-  await screen.findByText("## Next");
+  await screen.findByText("Next");
   await fireEvent.keyDown(line, { key: "ArrowDown" });
   await fireEvent.keyDown(line, { key: "ArrowDown" });
   await fireEvent.keyDown(line, { key: "Enter" });

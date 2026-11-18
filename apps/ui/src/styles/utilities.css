@@ -154,6 +154,17 @@
   }
 }
 
+/** The same menu opening upward, clear of a bar docked at the foot. */
+@utility offer-above {
+  top: auto;
+  bottom: 100%;
+
+  @supports (anchor-name: --offer) {
+    top: auto;
+    bottom: anchor(top);
+  }
+}
+
 /** Anything under way: a ring a quarter of it ink, turning. Still where motion is reduced. */
 @utility spinner {
   border: 1.5px solid var(--color-rule);

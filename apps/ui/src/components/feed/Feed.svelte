@@ -390,7 +390,6 @@
     marking={marking.on}
     onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
-    commands={!marking.on && selected === item.id ? commands : []}
     pending={undrained.has(item.id)}
     {opens}
     onselect={(how) => select(item.id, how)}
