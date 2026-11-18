@@ -648,8 +648,9 @@ export function createSqlitePoolStore(
      * otherwise put itself at the top for as long as the backlog reaches back.
      */
     const sourcesInUse = source.query<SourceUseRow, []>(`
-      SELECT source_id, COUNT(*) AS items, MAX(created_at) AS last_captured_at
-      FROM items
+      SELECT source_id, COUNT(*) AS items, MAX(created_at) AS last_captured_at,
+             SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
+      FROM items AS item
       GROUP BY source_id
       ORDER BY last_captured_at DESC, source_id ASC
     `);
@@ -907,6 +908,7 @@ export function createSqlitePoolStore(
         sourcesInUse.all().map((row) => ({
           id: row.source_id as SourceId,
           items: row.items,
+          unprocessed: row.unprocessed,
           lastCapturedAt: toTimestamp(row.last_captured_at),
         })),
 

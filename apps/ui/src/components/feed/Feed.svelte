@@ -343,6 +343,7 @@
   onview={read}
   ontoggle={reading.toggle}
   onclear={reading.clear}
+  shown={rows.length}
 />
 
 {#if batch.asked !== undefined}

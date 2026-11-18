@@ -5211,6 +5211,7 @@ export interface components {
         SourceUse: {
             id: string;
             items: number;
+            unprocessed: number;
             lastCapturedAt: string;
         };
         EditOutcome: {

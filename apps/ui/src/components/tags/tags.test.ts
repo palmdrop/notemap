@@ -192,7 +192,7 @@ test("clears the whole filter from the panel at once", async () => {
 
   render(Queue);
   await fireEvent.keyDown(window, { key: "f" });
-  await fireEvent.click(await screen.findByRole("button", { name: "clear 2" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Reset" }));
 
   expect(went.to).toEqual(["http://localhost/"]);
 });
@@ -343,7 +343,7 @@ test("keeps the caret in the panel's line when the filter is cleared", async () 
   const line = await screen.findByRole("combobox", { name: "Find a tag" });
   await vi.waitFor(() => expect(document.activeElement).toBe(line));
 
-  await fireEvent.click(screen.getByRole("button", { name: "clear 1" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
   expect(document.activeElement).toBe(line);
 });
@@ -362,7 +362,7 @@ test("shuts the sheet on a press on its veil, and on Show", async () => {
 
   await fireEvent.keyDown(window, { key: "f" });
   await screen.findByRole("combobox", { name: "Find a tag" });
-  await fireEvent.click(screen.getByRole("button", { name: "Show" }));
+  await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
   await vi.waitFor(() => {
     expect(screen.queryByRole("combobox", { name: "Find a tag" })).toBeNull();
   });
@@ -435,17 +435,48 @@ test("offers the feed's states, destinations and sources above its tags, and tak
   render(Feed);
   await fireEvent.keyDown(window, { key: "f" });
 
-  const states = await screen.findByRole("listbox", { name: "state" });
+  const states = await screen.findByRole("listbox", { name: "State" });
   expect(
     within(states)
       .getAllByRole("option")
       .map((one) => one.textContent?.trim()),
   ).toEqual(["unprocessed", "routed", "discarded", "revised"]);
-  const sources = await screen.findByRole("listbox", { name: "source" });
+  const sources = await screen.findByRole("listbox", { name: "Source" });
   await within(sources).findByText("memos");
 
   await fireEvent.mouseDown(within(states).getByText("discarded"));
   expect(went.to).toEqual(["http://localhost/feed?state=archived"]);
+});
+
+test("counts a source on the queue by what the queue holds of it, and offers every template's trigger", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/sources")
+      return json(200, {
+        values: [
+          {
+            id: "web",
+            items: 15,
+            unprocessed: 8,
+            lastCapturedAt: "2026-08-17T10:00:00.000Z",
+          },
+        ],
+      });
+    if (route === "GET /v1/templates") return json(200, { values: [RESEARCH] });
+    return json(200, { values: [] });
+  });
+  await client.templates.load().catch(() => undefined);
+
+  render(Queue);
+  await fireEvent.keyDown(window, { key: "f" });
+
+  const sources = await screen.findByRole("listbox", { name: "Source" });
+  const web = await within(sources).findByText("web");
+  expect(web.parentElement?.textContent).toContain("8");
+  expect(web.parentElement?.textContent).not.toContain("15");
+  expect(
+    await screen.findByRole("listbox", { name: "Templates" }),
+  ).toBeDefined();
 });
 
 test("offers the queue no state or destination band", async () => {
@@ -455,8 +486,8 @@ test("offers the queue no state or destination band", async () => {
   await fireEvent.keyDown(window, { key: "f" });
   await screen.findByRole("combobox", { name: "Find a tag" });
 
-  expect(screen.queryByRole("listbox", { name: "state" })).toBeNull();
-  expect(screen.queryByRole("listbox", { name: "destination" })).toBeNull();
+  expect(screen.queryByRole("listbox", { name: "State" })).toBeNull();
+  expect(screen.queryByRole("listbox", { name: "Destination" })).toBeNull();
 });
 
 test("reads the feed through the states on its address, counts them, and says them when emptied", async () => {

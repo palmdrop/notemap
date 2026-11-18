@@ -1115,9 +1115,12 @@ person to remember it.
 when it last captured. It is how a **relay** left running is seen to still be running.
 
 ```json
-{ "values": [ { "id": "memos", "items": 12,
+{ "values": [ { "id": "memos", "items": 12, "unprocessed": 5,
                 "lastCapturedAt": "2026-09-07T11:59:00.000Z" } ] }
 ```
+
+- **`unprocessed` counts the ones the queue holds**, as `GET /v1/tags` does for a tag, so the
+  queue's filter counts a source by its own rows rather than by the whole pool's.
 
 - **Most recently captured first.** Not paginated and not narrowed, on `GET /v1/tags`' own terms:
   the set is small and a client holds the whole of it.

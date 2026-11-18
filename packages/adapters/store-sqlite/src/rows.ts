@@ -65,6 +65,7 @@ export type AssetRow = {
 export type SourceUseRow = {
   readonly source_id: string;
   readonly items: number;
+  readonly unprocessed: number;
   readonly last_captured_at: number;
 };
 

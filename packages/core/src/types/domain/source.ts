@@ -8,5 +8,7 @@ import type { SourceId, Timestamp } from "./ids";
 export type SourceUse = {
   readonly id: SourceId;
   readonly items: number;
+  /** Of those, the ones the queue holds. */
+  readonly unprocessed: number;
   readonly lastCapturedAt: Timestamp;
 };

@@ -2259,9 +2259,15 @@ describe("the sources in use", () => {
       {
         id: SCRATCHPAD,
         items: 2,
+        unprocessed: 2,
         lastCapturedAt: "2026-08-03T11:00:00.000Z",
       },
-      { id: "memos", items: 1, lastCapturedAt: "2026-08-03T10:00:00.000Z" },
+      {
+        id: "memos",
+        items: 1,
+        unprocessed: 1,
+        lastCapturedAt: "2026-08-03T10:00:00.000Z",
+      },
     ]);
   });
 

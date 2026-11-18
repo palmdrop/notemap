@@ -524,11 +524,12 @@
        start of the set's own row where it cannot; the set's container is
        what it is placed against, so callers make that container relative.
        On a phone it opens upward, clear of a bar docked at the foot. Asking
-       for a value, a phone draws it as a sheet across its foot. -->
+       for a value it is the quick route's shape: a sheet across a phone's
+       foot, a dialog in the middle of a wide window, over a veil. -->
   <div
-    class="z-30 {step === undefined
-      ? 'offer max-wide:offer-above'
-      : 'offer max-wide:fixed max-wide:inset-x-0 max-wide:top-auto max-wide:bottom-0'}"
+    class={step === undefined
+      ? "offer z-30 max-wide:offer-above"
+      : "fixed inset-0 z-50 flex items-end justify-center bg-veil wide:items-center"}
     style="position-anchor: {anchor}"
     in:slide|global={{ magnitude: "short" }}
     out:pinned|global={{ magnitude: "short" }}
@@ -537,7 +538,7 @@
       bind:this={panel}
       class="overflow-y-auto border border-rule bg-paper {step === undefined
         ? 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56 rounded-control'
-        : 'mt-1 max-h-[70dvh] w-[26rem] max-w-full rounded-t-control max-wide:w-full max-wide:border-x-0 max-wide:border-b-0'}"
+        : 'max-h-[70dvh] w-full rounded-t-control border-x-0 border-b-0 wide:w-[26rem] wide:rounded-control wide:border'}"
     >
       {#if stepping !== undefined && step !== undefined}
         <!-- The quick sheet's shape: the trigger, the template it applies, and

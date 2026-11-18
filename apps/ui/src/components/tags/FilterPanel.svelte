@@ -36,6 +36,7 @@
     onview,
     ontoggle,
     onclear,
+    shown,
   }: {
     surface: "queue" | "feed";
     filter: Filter;
@@ -44,6 +45,8 @@
     onview?: (view: View) => void;
     ontoggle: (kind: FilterKind, value: string) => void;
     onclear: () => void;
+    /** How many rows the surface draws through the filter, for Show to say. */
+    shown?: number;
   } = $props();
 
   const id = $props.id();
@@ -55,6 +58,7 @@
     `${BOX} ${on ? "border-ink bg-ink pl-2.5 text-paper" : "border-off-line bg-off text-ink"}`;
 
   const inUse = client.tags.inUse;
+  const templates = client.templates.all;
   const destinations = client.destinations.all;
 
   let sources = $state<readonly SourceUse[]>([]);
@@ -85,7 +89,7 @@
   const bands = $derived.by((): readonly Band[] => {
     const state: Band = {
       kind: "states",
-      label: "state",
+      label: "State",
       lines: FILTER_STATES.map((value) => ({
         value,
         said: STATE_WORD[value],
@@ -95,7 +99,7 @@
     const retired = $destinations.filter((one) => one.retired === true);
     const destination: Band = {
       kind: "destinations",
-      label: "destination",
+      label: "Destination",
       lines: withHeld(
         [
           ...live.map((one) => ({ value: one.id, said: one.name })),
@@ -106,12 +110,12 @@
     };
     const source: Band = {
       kind: "sources",
-      label: "source",
+      label: "Source",
       lines: withHeld(
         sources.map((one) => ({
           value: one.id,
           said: one.id,
-          count: one.items,
+          count: surface === "queue" ? one.unprocessed : one.items,
         })),
         filter.sources,
       ),
@@ -144,9 +148,29 @@
       .filter((tag) => !counted.some((use) => use.name === tag))
       .map((name) => ({ name, count: 0 }));
 
-    return [...counted, ...unheld]
-      .filter((use) => use.count > 0 || filter.tags.includes(use.name))
-      .map((use) => ({ ...use, template: triggeredBy(use.name)?.name }));
+    // On the queue every template's trigger is offered, held or not: a
+    // trigger tag files what carries it, so the queue rarely holds one.
+    const triggers =
+      surface === "queue"
+        ? $templates
+            .map((one) => one.triggerTag)
+            .filter(
+              (tag): tag is string =>
+                tag !== undefined &&
+                !counted.some((use) => use.name === tag) &&
+                !unheld.some((use) => use.name === tag),
+            )
+            .map((name) => ({ name, count: 0 }))
+        : [];
+
+    return [...counted, ...unheld, ...triggers]
+      .map((use) => ({ ...use, template: triggeredBy(use.name)?.name }))
+      .filter(
+        (use) =>
+          use.count > 0 ||
+          filter.tags.includes(use.name) ||
+          (surface === "queue" && use.template !== undefined),
+      );
   });
 
   const matched = $derived.by(() => {
@@ -365,19 +389,21 @@
     </div>
     {#snippet foot()}
       <ActionBar at="foot" label="Filter">
-        {#if size > 0}
-          <!-- Taken on `mousedown` with the default prevented, so the caret stays
-               in the line for what is taken next. -->
-          <BarAction
-            icon="undo"
-            label={`clear ${String(size)}`}
-            onclick={() => {
-              line?.focus();
-              onclear();
-            }}
-          />
-        {/if}
-        <BarAction icon="check" label="Show" primary onclick={shut} />
+        <BarAction
+          icon="undo"
+          label="Reset"
+          disabled={size === 0}
+          onclick={() => {
+            line?.focus();
+            onclear();
+          }}
+        />
+        <BarAction
+          icon="check"
+          label={shown === undefined ? "Show" : `Show ${String(shown)}`}
+          primary
+          onclick={shut}
+        />
       </ActionBar>
     {/snippet}
   </Sheet>
