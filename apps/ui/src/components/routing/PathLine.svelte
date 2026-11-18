@@ -23,6 +23,7 @@
     completionOf,
     continuationOf,
     ghostFor,
+    isFolder,
     landedOn,
     levelAt,
     marked,
@@ -38,6 +39,7 @@
     walkStart,
     withTyping,
     type Level,
+    type Row,
     type Refusal,
   } from "$lib/path-line";
 
@@ -58,6 +60,7 @@
     onrelease,
     onforecast,
     claims = true,
+    placeholder,
   }: {
     destination: string;
     capability: string;
@@ -79,6 +82,8 @@
     onforecast?: (word: "create" | "append" | undefined) => void;
     /** Takes the caret when drawn, which a form whose first field is something else does not want. */
     claims?: boolean;
+    /** Said in the empty line: where to look. */
+    placeholder?: string;
   } = $props();
 
   const id = $props.id();
@@ -145,7 +150,19 @@
    * is rather than named off beside the word. Only where there is a forecast:
    * with nothing answered there is nothing to say is missing.
    */
-  const drawn = $derived.by(() => {
+  /**
+   * A note's place is a folder or a note: a picture or a PDF beside them is
+   * nothing a note can be written into, so it is not offered as one.
+   */
+  const placeable = (row: Row): boolean =>
+    said === undefined ||
+    row.made === true ||
+    isFolder(row.entry) ||
+    /\.(md|markdown)$/i.test(row.entry.label);
+
+  const drawn = $derived(drawnRows().filter(placeable));
+
+  function drawnRows(): readonly Row[] {
     if (forecast === undefined) return rowsOf(levels, path);
 
     // Appending, the note's file is one the tree is already drawing, so the
@@ -157,7 +174,7 @@
       pending(path, forecast.making, appending ? undefined : forecast.leaf),
     );
     return appending ? landedOn(rows, path, forecast.leaf) : rows;
-  });
+  }
 
   /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
   const here = $derived(reachable(drawn));
@@ -400,7 +417,9 @@
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 overflow-hidden px-3 py-2.5 whitespace-pre"
     >
-      <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
+      {#if value === "" && placeholder !== undefined}<span class="text-muted"
+          >{placeholder}</span
+        >{/if}<span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
           data-ghost
           class="text-muted">{ghost}</span
         >{/if}

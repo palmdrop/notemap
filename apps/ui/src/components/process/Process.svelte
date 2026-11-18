@@ -1476,7 +1476,7 @@
       {@const template = applied}
       <div
         in:slide
-        class="grid min-h-bar grid-cols-[var(--spacing-icon)_minmax(0,1fr)_auto] items-center gap-3 border-b border-ink px-gutter py-2.5"
+        class="grid min-h-bar grid-cols-[var(--spacing-icon)_minmax(0,1fr)_auto] items-center gap-3 border-b border-rule px-gutter py-2.5"
       >
         <Icon
           name={template === undefined
@@ -1672,6 +1672,7 @@
           {capability}
           field={line.name}
           label={labelFor(line)}
+          placeholder={`Find a folder in ${nameOf(chosen)}`}
           value={args[line.name] ?? ""}
           said={spoken}
           {places}
@@ -1763,7 +1764,7 @@
           bind:value={words}
           aria-label="words"
           rows="6"
-          class="mt-3 w-full resize-y rounded-control border border-ink bg-paper px-3 py-2.5 outline-none"
+          class="mt-3 w-full resize-y rounded-control border border-rule bg-paper px-3 py-2.5 outline-none focus:border-ink"
         ></textarea>
         <div class="mt-2 flex gap-2">
           <Box icon="undo" onclick={keep}>Restore</Box>

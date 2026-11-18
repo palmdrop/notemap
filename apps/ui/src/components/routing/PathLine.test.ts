@@ -833,3 +833,20 @@ test("going to a sibling folder drops the first one's contents until the sibling
   answer?.(json(200, answered([folder("from home", "letters/from home")])));
   expect(await screen.findByText("from home/")).toBeDefined();
 });
+
+test("offers a note's place only folders and notes, never a picture beside them", async () => {
+  serving((scope) =>
+    answered(
+      scope === "projects/notemap"
+        ? [
+            file("readme.md", "projects/notemap/readme.md"),
+            file("pixel.png", "projects/notemap/pixel.png"),
+          ]
+        : (TREE[scope ?? ""] ?? []),
+    ),
+  );
+  draw("projects/notemap/", { text: "a thought" });
+
+  await screen.findByText("readme.md");
+  expect(screen.queryByText("pixel.png")).toBeNull();
+});

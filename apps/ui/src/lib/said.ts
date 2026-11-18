@@ -28,7 +28,6 @@ export const NOTHING_TO_CAPTURE = "nothing to capture";
 
 export const NO_NOTICES = "No notices.";
 
-
 /** What became of an item, in this shell's words: archive is said as discard. */
 export const STATE_WORD: Readonly<Record<FilterState, string>> = {
   unprocessed: "unprocessed",
