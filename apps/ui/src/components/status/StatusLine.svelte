@@ -397,7 +397,7 @@
       if (into instanceof Node && event.currentTarget.contains(into)) return;
       notices.release();
     }}
-    class="sticky bottom-0 z-20 flex min-h-11 items-center gap-x-4 border-t border-rule bg-paper px-gutter pb-[env(safe-area-inset-bottom)] text-small"
+    class="sticky bottom-0 z-20 flex min-h-foot items-center gap-x-4 border-t border-rule bg-paper px-gutter pb-[env(safe-area-inset-bottom)] text-small"
   >
     {#if shut}
       <span class="flex-1"></span>

@@ -483,7 +483,7 @@ test("takes back a decision the person made by hand, and reads the records again
 
   render(Item, { id: "one" });
   await fireEvent.click(await screen.findByRole("button", { name: "by hand" }));
-  const way = await screen.findByRole("button", { name: "undo" });
+  const way = await screen.findByRole("button", { name: "Undo" });
 
   await fireEvent.click(way);
 
@@ -491,7 +491,7 @@ test("takes back a decision the person made by hand, and reads the records again
     expect(asked()).toContain("POST /v1/routing/rec-done/cancel");
   });
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });
 
@@ -571,22 +571,22 @@ test("keeps drawing a record withdrawn here, with the way to reinstate it, thoug
     await screen.findByRole("button", { name: "a destination" }),
   );
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
   const confirm = (
-    await screen.findAllByRole("button", { name: "withdraw" })
+    await screen.findAllByRole("button", { name: "Withdraw" })
   ).at(-1);
   if (confirm === undefined) throw new Error("expected the confirming press");
   await fireEvent.click(confirm);
 
   expect(
-    await screen.findByRole("button", { name: "reinstate" }),
+    await screen.findByRole("button", { name: "Reinstate" }),
   ).toBeDefined();
   // The rail's word is the record as read again from the pool.
   await vi.waitFor(() => {
     expect(screen.queryByText("delivered")).toBeNull();
   });
-  expect(screen.getByRole("button", { name: "reinstate" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Reinstate" })).toBeDefined();
 });
 
 /** A delivery is the pool's; only what the person did by hand is theirs to undo. */
@@ -596,7 +596,7 @@ test("offers no undo on a record the pool delivered", async () => {
   render(Item, { id: "routed" });
   await screen.findByText("drafts");
 
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
 });
 

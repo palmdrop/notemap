@@ -2432,3 +2432,19 @@ test("when wide, a row under the pointer offers + tag, and taking a tag keeps th
   );
   expect(went.to).toEqual([]);
 });
+
+test("when wide a row opens its item, and is marked as the one last opened", async () => {
+  pool(queued("one", "two"));
+  render(Queue);
+  const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+  expect(went.to).toEqual(["/items/one"]);
+  const row = words.closest("[data-row]") as HTMLElement;
+  expect(row.hasAttribute("data-last-opened")).toBe(true);
+  expect(
+    (screen.getByText("two").closest("[data-row]") as HTMLElement).hasAttribute(
+      "data-last-opened",
+    ),
+  ).toBe(false);
+});

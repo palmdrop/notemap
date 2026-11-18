@@ -113,3 +113,20 @@ export function factsOf(decision: {
     ...said,
   ];
 }
+
+/**
+ * A fact read off a record, where only the schema's title is at hand: the
+ * label and value as this shell draws them.
+ */
+export function factWords(
+  label: string,
+  value: string,
+): { label: string; value: string } {
+  if (label === SHAPE_FIELD || label === "as") {
+    return { label: "shape", value: wordFor(SHAPE_FIELD, value) };
+  }
+  if (OWN_ARGUMENTS.includes(label) || label === "if missing") {
+    return { label: "if missing", value: wordFor("folder", value) };
+  }
+  return { label, value };
+}

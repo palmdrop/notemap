@@ -11,7 +11,8 @@
 
   import AttachedLines from "$components/item/AttachedLines.svelte";
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import { factWords } from "$lib/vocabulary";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { templateFromHref } from "$components/settings/href";
   import { argumentsOf } from "$lib/arguments";
@@ -469,8 +470,13 @@
             <span>{did}</span>
           {/if}
           {#if offer !== undefined}
-            <Action alarm onclick={() => void takeBack("cancelled")}
-              >{offer}</Action
+            <button
+              type="button"
+              class="underline underline-offset-[0.2em]"
+              onclick={(event) => {
+                event.stopPropagation();
+                void takeBack("cancelled");
+              }}>Cancel</button
             >
           {/if}
         </div>
@@ -483,13 +489,13 @@
 
     {#if open}
       <div
-        class="max-w-read divide-y divide-ink border border-ink {lead !==
+        class="max-w-read divide-y divide-rule overflow-hidden rounded-control border border-rule {lead !==
           undefined && folds
           ? 'mt-2.5'
           : ''}"
       >
         <div
-          class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 px-3 py-1.5"
+          class="flex flex-wrap justify-between gap-x-[2ch] gap-y-1 bg-tag px-3 py-2"
         >
           <div class="flex min-w-0 flex-wrap gap-x-[0.6ch]">
             {@render name(false)}
@@ -527,7 +533,7 @@
               <AttachedPictures {attachments} picture="max-h-48" />
               {#if body !== undefined}
                 <pre
-                  class="font-text break-words whitespace-pre-wrap">{body}</pre>
+                  class="m-0 font-text break-words whitespace-pre-wrap">{body}</pre>
               {:else if !kept && !byHand}
                 <div>{NOTHING_KEPT}</div>
               {:else if kept && !blind && unreadable === ""}
@@ -542,8 +548,10 @@
             <div class="px-3 py-2.5">
               <div role="status">{unreadable}</div>
               <div class="mt-2">
-                <Action working={reading} onclick={() => void read()}
-                  >read it</Action
+                <Box
+                  icon="refresh"
+                  working={reading}
+                  onclick={() => void read()}>Read it</Box
                 >
               </div>
             </div>
@@ -558,43 +566,44 @@
         {/if}
 
         {#if facts.length > 0}
-          <div
+          <dl
             data-facts
-            class="grid grid-cols-[max-content_1fr] gap-x-[3ch] px-3 py-1.5 max-wide:grid-cols-1"
+            class="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 px-3 py-2.5"
           >
             {#each facts as argument, index (index)}
-              <span class="tracking-caps uppercase">{argument.name}</span>
-              <span class="min-w-0 break-words">{argument.said}</span>
+              {@const fact = factWords(argument.name, argument.said)}
+              <dt class="text-small text-muted">{fact.label}</dt>
+              <dd class="m-0 min-w-0 break-words">{fact.value}</dd>
             {/each}
-          </div>
+          </dl>
         {/if}
 
         {#if footed}
-          <div class="flex items-baseline justify-end px-3 py-1">
-            <div class="flex flex-wrap gap-x-5 max-wide:gap-x-3.5">
-              {#if link !== undefined}
-                <a href={link} rel="noreferrer" class="hover:underline"
-                  >open ↗</a
-                >
-              {/if}
-              {#if savable}
-                <a
-                  href={templateFromHref(record.item, record.id)}
-                  class="hover:underline">save as template</a
-                >
-              {/if}
-              {#if offer !== undefined}
-                <Action alarm onclick={() => void takeBack("cancelled")}
-                  >{offer}</Action
-                >
-              {:else if byHand && said === undefined}
-                <Action onclick={() => void takeBack("undone")}>undo</Action>
-              {:else if withdrawable && !confirming}
-                <Action onclick={() => void askToWithdraw()}>withdraw</Action>
-              {:else if withdrawn && reinstatable}
-                <Action onclick={() => void reinstate()}>reinstate</Action>
-              {/if}
-            </div>
+          <div class="flex flex-wrap items-center justify-end gap-2 px-3 py-2">
+            {#if link !== undefined}
+              <Box icon="link" href={link}>Open</Box>
+            {/if}
+            {#if savable}
+              <Box
+                icon="template"
+                href={templateFromHref(record.item, record.id)}
+                >Save as template</Box
+              >
+            {/if}
+            {#if offer !== undefined}
+              <Box icon="close" onclick={() => void takeBack("cancelled")}
+                >Cancel</Box
+              >
+            {:else if byHand && said === undefined}
+              <Box icon="undo" onclick={() => void takeBack("undone")}>Undo</Box
+              >
+            {:else if withdrawable && !confirming}
+              <Box icon="link-off" danger onclick={() => void askToWithdraw()}
+                >Withdraw</Box
+              >
+            {:else if withdrawn && reinstatable}
+              <Box icon="link" onclick={() => void reinstate()}>Reinstate</Box>
+            {/if}
           </div>
         {/if}
 
@@ -610,9 +619,9 @@
                 >{askingToWithdraw(presence, kind, record.pointer)}</span
               >
             {/if}
-            <div class="flex gap-x-5 max-wide:gap-x-3.5">
-              <Action alarm onclick={() => void withdraw()}>withdraw</Action>
-              <Action onclick={() => (confirming = false)}>keep</Action>
+            <div class="flex gap-2">
+              <Box danger onclick={() => void withdraw()}>Withdraw</Box>
+              <Box onclick={() => (confirming = false)}>Keep</Box>
             </div>
           </div>
         {/if}

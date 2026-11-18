@@ -23,7 +23,7 @@
 <svelte:element
   this={`h${String(level)}`}
   {id}
-  class="flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter font-display text-weekday font-normal lowercase {sticky
+  class="-mt-px flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter font-display text-weekday font-normal lowercase {sticky
     ? 'sticky top-(--sticky-top,0) z-[2]'
     : ''}"
 >

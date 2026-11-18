@@ -13,7 +13,7 @@
 </script>
 
 <div
-  class="mx-auto w-full {fills ? 'flex min-h-0 flex-1 flex-col' : ''} {list
+  class="w-full {fills ? 'flex min-h-0 flex-1 flex-col' : ''} {list
     ? ''
     : 'max-w-measure'}"
 >

@@ -102,6 +102,9 @@
   --spacing-gap-time: 1.75rem;
   /* The status line: one line of the shell's text and its air. */
   --spacing-status: 2.25rem;
+  /* The foot of a column, the status line and the menu's reach alike, so the
+     two line up across the rule between them. */
+  --spacing-foot: 2.75rem;
   /* Each side of a carried tag: room for its `×` to slide into when selected. */
   --spacing-tag: 0.6ch;
   /* The least a tag line is opened at, which the `+` holds before it opens. */

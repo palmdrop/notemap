@@ -55,7 +55,10 @@
   }
 </script>
 
-<div data-batch={id} class="col-span-full grid grid-cols-subgrid">
+<div
+  data-batch={id}
+  class="col-span-full grid grid-cols-subgrid border-b border-rule"
+>
   <Rail {gap}>
     <Stamp {at} dated={false} />
     <div class="mt-2 text-small {alarm ? 'text-danger' : 'text-muted'}">

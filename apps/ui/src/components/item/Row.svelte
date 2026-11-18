@@ -24,6 +24,7 @@
   import { cancelRouting } from "$lib/firing";
   import { firings, left, type Firing } from "$lib/firings.svelte";
   import { NOT_DELIVERED, REJECTED } from "$lib/action-log";
+  import { lastOpened } from "$lib/last-opened.svelte";
   import { notices } from "$lib/notices.svelte";
   import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { became, editable } from "$lib/lineage";
@@ -251,7 +252,10 @@
       : !marking && surface !== "item"
         ? (how: Picked) => {
             if (how.toggle || how.range) onselect?.(how);
-            else void goto(itemHref(item.id));
+            else {
+              lastOpened.set(item.id);
+              void goto(itemHref(item.id));
+            }
           }
         : onselect,
   );
@@ -399,6 +403,9 @@
     data-row={item.id}
     data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
+    data-last-opened={surface !== "item" && lastOpened.id === item.id
+      ? ""
+      : undefined}
     data-headed=""
     onpointerenter={() => (pointed = true)}
     onpointerleave={() => (pointed = false)}
@@ -418,7 +425,8 @@
       ? 'bg-tag'
       : selected && surface !== 'item'
         ? 'bg-band'
-        : pointed && width.wide && onprocess !== undefined
+        : (pointed && width.wide && onprocess !== undefined) ||
+            (surface !== 'item' && lastOpened.id === item.id)
           ? 'bg-tag'
           : ''}"
   >

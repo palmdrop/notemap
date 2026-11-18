@@ -105,6 +105,10 @@
     <h1 class="min-w-0 truncate font-display text-title font-normal">
       {own?.title ?? title}
     </h1>
+    {#if width.wide && own?.under !== undefined && own.under !== ""}
+      <!-- When wide the subject sits in the bar, so the bar keeps the menu's height. -->
+      <span class="min-w-0 truncate pl-2 text-muted">{own.under}</span>
+    {/if}
     {#if own?.aside !== undefined}
       <span class="ml-auto shrink-0 text-small text-muted tabular-nums"
         >{own.aside}</span
@@ -112,7 +116,7 @@
     {/if}
 
     {#if list && width.wide && field !== undefined}
-      <div class="mx-auto w-full max-w-[26rem] min-w-0 px-4">
+      <div class="ml-auto w-full max-w-[22rem] min-w-0 pl-4">
         <Search
           bind:this={box}
           words={field?.words ?? ""}
@@ -124,7 +128,11 @@
     {/if}
 
     {#if list}
-      <div class="-mr-2 ml-auto flex items-center">
+      <div
+        class="-mr-2 flex items-center {width.wide && field !== undefined
+          ? 'ml-2'
+          : 'ml-auto'}"
+      >
         {#if search !== undefined && !width.wide}
           <button
             type="button"
@@ -160,7 +168,7 @@
     {/if}
   {/if}
 </header>
-{#if own?.under !== undefined && own.under !== ""}
+{#if !width.wide && own?.under !== undefined && own.under !== ""}
   <p class="truncate border-b border-rule bg-paper px-gutter py-2.5 text-muted">
     {own.under}
   </p>

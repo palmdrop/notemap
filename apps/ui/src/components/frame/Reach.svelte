@@ -19,7 +19,7 @@
 </script>
 
 {#if compact}
-  <div class="flex justify-center border-t border-rule py-3">
+  <div class="flex h-foot items-center justify-center border-t border-rule">
     <span
       role="status"
       aria-label={reachable ? "online" : "offline"}
@@ -33,7 +33,7 @@
   </div>
 {:else}
   <div
-    class="flex items-center gap-2 border-t border-rule px-gutter py-3 text-small"
+    class="flex h-foot items-center gap-2 border-t border-rule px-gutter text-small"
   >
     {#if reachable}
       <span class="flex items-center gap-1.5 text-muted">

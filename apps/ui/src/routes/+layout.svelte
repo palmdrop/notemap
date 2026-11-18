@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { beforeNavigate, goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
   import Dropping from "$components/dropping/Dropping.svelte";
@@ -10,8 +11,6 @@
   import ItemHead from "$components/item/ItemHead.svelte";
   import Quick from "$components/quick/Quick.svelte";
   import { quick } from "$lib/quicking.svelte";
-  import Feed from "$components/feed/Feed.svelte";
-  import Queue from "$components/queue/Queue.svelte";
   import Menu from "$components/frame/Menu.svelte";
   import Reach from "$components/frame/Reach.svelte";
   import Strip from "$components/frame/Strip.svelte";
@@ -60,24 +59,6 @@
     "/items/[id]/records/[recordId]": "record",
   };
   let drawer = $state(false);
-
-  const feed = client.feed;
-  const queueList = client.queue;
-  /** When wide, an open item is read beside the list it is in. */
-  const beside = $derived.by((): "queue" | "feed" | undefined => {
-    const id = page.params["id"];
-    if (
-      !width.wide ||
-      shut ||
-      page.route.id !== "/items/[id]" ||
-      id === undefined
-    )
-      return undefined;
-    return $feed.items.some((one) => one.id === id) &&
-      !$queueList.items.some((one) => one.id === id)
-      ? "feed"
-      : "queue";
-  });
 
   // Read whenever the pool is in reach and the door is open: a read refused
   // at start would otherwise leave completion offering nothing until a tag
@@ -182,7 +163,11 @@
     >
       <div class="flex min-h-bar items-center border-b border-rule px-gutter">
         {#if width.full}
-          <span class="font-display text-title">notemap</span>
+          <a
+            href={resolve("/")}
+            class="font-display text-title text-ink no-underline hover:no-underline"
+            >notemap</a
+          >
         {/if}
       </div>
       <Menu current={page.url.pathname} queue={$queue} rail={!width.full} />
@@ -200,58 +185,25 @@
     </aside>
   {/if}
 
-  <div
-    class="{fills ? 'h-dvh' : 'min-h-dvh'} min-w-0 {beside === undefined
-      ? 'flex flex-col'
-      : 'grid grid-cols-[minmax(0,28rem)_minmax(0,1fr)]'}"
-  >
-    {#if beside !== undefined}
-      <!-- The list the open item is read in, beside it when wide. -->
-      <section
-        aria-label={beside}
-        class="sticky top-0 flex h-dvh flex-col overflow-y-auto border-r border-rule"
-      >
-        <Header title={beside} list onmenu={() => (drawer = true)} />
-        <div class="flex-1">
-          <Sheet>
-            <Column list>
-              {#if beside === "queue"}
-                <Queue beside />
-              {:else}
-                <Feed />
-              {/if}
-            </Column>
-          </Sheet>
-        </div>
-        <StatusLine {shut} drawn />
-      </section>
+  <div class="{fills ? 'h-dvh' : 'min-h-dvh'} flex min-w-0 flex-col">
+    {#if page.route.id === "/items/[id]" && !shut && page.params["id"] !== undefined}
+      <ItemHead id={page.params["id"]} />
+    {:else}
+      <Header {title} list={list && !shut} onmenu={() => (drawer = true)} />
     {/if}
-    <div
-      class={beside === undefined
-        ? "contents"
-        : "flex min-h-dvh min-w-0 flex-col"}
-    >
-      {#if page.route.id === "/items/[id]" && !shut && page.params["id"] !== undefined}
-        <ItemHead id={page.params["id"]} />
-      {:else}
-        <Header {title} list={list && !shut} onmenu={() => (drawer = true)} />
-      {/if}
-      <Strip />
-      <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
-        <Sheet {fills} bleeds={bleeds && !shut}>
-          <Column {fills} list={list || fills}>
-            {#if shut}
-              <SignIn />
-            {:else if who.known}
-              {@render children()}
-            {/if}
-          </Column>
-        </Sheet>
-      </div>
-      {#if beside === undefined}
-        <StatusLine {shut} drawn={list || shut} />
-      {/if}
+    <Strip />
+    <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
+      <Sheet {fills} bleeds={bleeds && !shut}>
+        <Column {fills} list={list || fills || page.route.id === "/items/[id]"}>
+          {#if shut}
+            <SignIn />
+          {:else if who.known}
+            {@render children()}
+          {/if}
+        </Column>
+      </Sheet>
     </div>
+    <StatusLine {shut} drawn={list || shut} />
   </div>
 </div>
 

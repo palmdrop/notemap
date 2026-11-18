@@ -6,6 +6,7 @@ import type { Action } from "@notemap/client";
 import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool, sentUrls } from "$testing/pool";
+import { commandOf } from "$lib/command/stack.svelte";
 import { log } from "$lib/log.svelte";
 import { NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
@@ -320,7 +321,7 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
   expect(screen.getByText("unreachable").className).toContain("text-danger");
   expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
   // Pending, but what failed is no reservation to call off.
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
 
   await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
   // The failure's own words are the block's body, said in alarm.
@@ -430,7 +431,7 @@ test("narrows to a view's kinds, asking the pool rather than sifting the page", 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
 });
 
-test("offers the views in a panel and says which are being read", async () => {
+test("offers the order and the views in the filter, saying which are being read", async () => {
   pool(held([anAction("one", { kind: "routed" })]));
   render(Log);
   log.reading("newest-first", undefined, [
@@ -442,21 +443,21 @@ test("offers the views in a panel and says which are being read", async () => {
   ]);
   await screen.findByText("routed");
 
-  await fireEvent.click(
-    screen.getByRole("button", { name: /narrow the log to/i }),
-  );
+  const filter = commandOf("filter");
+  expect(filter !== undefined && "count" in filter ? filter.count : 0).toBe(1);
+  if (filter !== undefined && "run" in filter) await filter.run();
 
-  const views = screen.getByRole("listbox", { name: "Views" });
-  const options = within(views).getAllByRole("option");
+  const views = await screen.findByRole("group", { name: "Views" });
+  const options = within(views).getAllByRole("button");
   expect(options.map((one) => one.textContent?.trim())).toEqual([
-    "▸ routing",
+    "routing",
     "captures",
     "classification",
     "pool",
   ]);
-  expect(options[0]?.getAttribute("aria-selected")).toBe("true");
-  expect(options[1]?.getAttribute("aria-selected")).toBe("false");
-  expect(screen.getByRole("button", { name: "everything" })).toBeDefined();
+  expect(options[0]?.getAttribute("aria-pressed")).toBe("true");
+  expect(options[1]?.getAttribute("aria-pressed")).toBe("false");
+  expect(screen.getByRole("button", { name: "Everything" })).toBeDefined();
 });
 
 /**
@@ -707,7 +708,7 @@ test("opens a routed row into the record itself, as its item draws it", async ()
 
   await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
   expect(await screen.findByText("drafts")).toBeDefined();
-  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Open" })).toBeDefined();
   expect(await screen.findByText("nothing kept")).toBeDefined();
   expect(screen.queryByText(/could not be read/)).toBeNull();
 
@@ -768,11 +769,11 @@ test("draws a cancelled delivery as called off", async () => {
 
   // Where it was going, which is no decision made by hand.
   const name = await screen.findByRole("button", { name: "a destination" });
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   await fireEvent.click(name);
   expect(await screen.findByText("called off")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
 
 test("opens a gap where more than half a day passed, and not where less did", async () => {

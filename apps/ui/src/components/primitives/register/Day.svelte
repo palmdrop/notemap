@@ -43,9 +43,7 @@
   data-day={dayOf(at)}
   data-stuck={stuck ? "" : undefined}
   data-leads={leads ? "" : undefined}
-  class="sticky top-bar z-10 col-span-full flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter tabular-nums {leads
-    ? ''
-    : '-mt-px'}"
+  class="sticky top-bar z-10 col-span-full -mt-px flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter tabular-nums"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach stick}
 >

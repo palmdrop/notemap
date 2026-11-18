@@ -9,6 +9,7 @@
   import { factOf, failed, flattened, known, namingIn } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
+  import { described, readingHeld } from "$lib/described.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { following, slide } from "$lib/motion";
   import { CALLED_OFF, UNDONE } from "$lib/said";
@@ -103,6 +104,19 @@
     if (opened) asked = true;
   });
 
+  // A place that is no path — a channel, a board — is named only by the
+  // record's own arguments, which the entry does not carry: such a record is
+  // read at once, so its line names the place rather than an id.
+  $effect(() => {
+    const target = told?.target;
+    if (target?.kind !== "destination" || told?.state !== "delivered") return;
+    void described(target.destination);
+    const reading = readingHeld(target.destination, target.capability);
+    if (reading !== undefined && reading !== "asking" && !reading.pathed) {
+      asked = true;
+    }
+  });
+
   // Kept once asked: closing it would drop the record back to the detail.
   const records = recordsOf(
     () => (told === undefined ? undefined : action.subject),
@@ -147,7 +161,7 @@
   transition:slide={{ fade: true, still: !heard }}
   {@attach heard && following}
 >
-  <div class="col-span-full grid grid-cols-subgrid">
+  <div class="col-span-full grid grid-cols-subgrid border-b border-rule">
     <Rail {gap}>
       <Stamp at={action.at} dated={false} />
       <div class="mt-2 text-small {bad ? 'text-danger' : 'text-muted'}">
