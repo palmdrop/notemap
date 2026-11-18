@@ -93,6 +93,14 @@
 
 <Guard about={editing?.name ?? "a new account"} {changed} />
 
+<FormBar
+  at="head"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void submit()}
+/>
+
 <form onsubmit={submit}>
   <Band>account</Band>
   <label class="block border-b border-rule px-gutter py-3">
@@ -173,4 +181,10 @@
   {/if}
 </form>
 
-<FormBar {missing} {busy} oncancel={done} onsave={() => void submit()} />
+<FormBar
+  at="foot"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void submit()}
+/>

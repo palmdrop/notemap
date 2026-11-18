@@ -898,13 +898,19 @@ test("offers no patterns where every typed field may hold only what is offered",
 });
 
 /** Under the place it is for, not under whatever switches follow it. */
-test("says the patterns under the last field one can be written into", async () => {
+test("offers what a place can be named from, in words, under the last field one can be written into", async () => {
   serving([], { kind: "fits" }, [aDestination()], [CREATE_WITH_SWITCHES]);
 
   render(Templates);
   await go("Add a template");
   const place = await screen.findByLabelText("directory");
-  const vocabulary = screen.getByText(/\{\{captured_at\}\}/);
+  const vocabulary = screen.getByRole("button", { name: "+ date" });
+  expect(screen.queryByText(/\{\{captured_at\}\}/)).toBeNull();
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "+ the item's words" }),
+  );
+  expect((place as HTMLInputElement).value).toBe("{{item}}");
 
   expect(
     place.compareDocumentPosition(vocabulary) &
@@ -1328,9 +1334,9 @@ test("asks for a field each time, under a label, leaving it without a default", 
       .getByRole("button", { name: "ask directory each time" })
       .getAttribute("aria-pressed"),
   ).toBe("true");
-  expect(
-    screen.getByLabelText("directory label").getAttribute("aria-describedby"),
-  ).toBe(screen.getByText("no default").id);
+  expect(screen.getByLabelText("directory").getAttribute("placeholder")).toBe(
+    "no default",
+  );
   await fireEvent.input(await screen.findByLabelText("directory label"), {
     target: { value: "project" },
   });

@@ -132,6 +132,14 @@
 
 <Guard about={editing?.name ?? "a new destination"} {changed} />
 
+<FormBar
+  at="head"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void submit()}
+/>
+
 <form onsubmit={submit} data-settings>
   <Band>destination</Band>
   <label class="block border-b border-rule px-gutter py-3">
@@ -195,4 +203,10 @@
   {/if}
 </form>
 
-<FormBar {missing} {busy} oncancel={done} onsave={() => void submit()} />
+<FormBar
+  at="foot"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void submit()}
+/>

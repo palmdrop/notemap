@@ -63,13 +63,14 @@
 
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
 
+  /** What a place can be named from, in words, and the pattern each puts in. */
   const PATTERNS = [
-    "{{captured_at}}",
-    "{{captured_at:month}}",
-    "{{captured_at:week}}",
-    "{{item}}",
-    "{{source}}",
-  ];
+    { word: "date", pattern: "{{captured_at}}" },
+    { word: "month", pattern: "{{captured_at:month}}" },
+    { word: "week", pattern: "{{captured_at:week}}" },
+    { word: "the item's words", pattern: "{{item}}" },
+    { word: "source", pattern: "{{source}}" },
+  ] as const;
 
   const FOLDERS = [
     { name: "create", word: "Make it", note: "Made when it isn't there." },
@@ -349,6 +350,14 @@
 
 <Guard about={editing?.name ?? "a new template"} {changed} />
 
+<FormBar
+  at="head"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void save()}
+/>
+
 <form
   onsubmit={(event) => {
     event.preventDefault();
@@ -439,17 +448,7 @@
   {#each typeable as field (field.name)}
     <div class="border-b border-rule px-gutter py-3">
       <div class="mb-1.5 flex items-center justify-between gap-3">
-        {#if Object.hasOwn(asked, field.name)}
-          <input
-            bind:value={asked[field.name]}
-            aria-label={`${labelFor(field)} label`}
-            aria-describedby={undefaulted(field)}
-            placeholder={`question, e.g. which ${labelFor(field)}?`}
-            class="min-h-9 min-w-0 flex-1 rounded-control border border-rule bg-paper px-2 text-small outline-none focus:border-ink"
-          />
-        {:else}
-          <span class="text-small">{labelFor(field)}</span>
-        {/if}
+        <span class="text-small">{labelFor(field)}</span>
         {#if askable(field)}
           <span class="flex-none" title={`ask ${labelFor(field)} each time`}>
             <Toggle
@@ -461,6 +460,20 @@
           </span>
         {/if}
       </div>
+      {#if Object.hasOwn(asked, field.name)}
+        <!-- Asked each time: the question it is asked as, then what it is
+             when the question is left unanswered. -->
+        <label class="mb-3 block">
+          <span class="mb-1 block text-small text-muted">asked as</span>
+          <input
+            bind:value={asked[field.name]}
+            aria-label={`${labelFor(field)} label`}
+            placeholder={`which ${labelFor(field)}?`}
+            class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+          />
+        </label>
+        <span class="mb-1 block text-small text-muted">default</span>
+      {/if}
       {#if fixed(field) !== undefined}
         {@const implied =
           (typed[field.name] ?? "") === ""
@@ -509,14 +522,14 @@
           aria-label={labelFor(field)}
           aria-describedby={undefaulted(field)}
           placeholder={Object.hasOwn(asked, field.name)
-            ? undefined
+            ? "no default"
             : field.required
               ? "required"
               : "optional"}
           class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
         />
       {/if}
-      {#if undefaulted(field) !== undefined}
+      {#if undefaulted(field) !== undefined && (fixed(field) !== undefined || field.listable)}
         <!-- Only the template's own value is a default: a destination's setting is not. -->
         <p id={undefaulted(field)} class="mt-1.5 mb-0 text-small text-muted">
           no default
@@ -524,11 +537,21 @@
       {/if}
       <!-- Said once, terse: what each comes out as is the pool's answer. -->
       {#if field.name === patterned}
-        <p class="mt-1.5 mb-0 flex flex-wrap gap-x-[2ch] text-small text-muted">
-          {#each PATTERNS as pattern (pattern)}
-            <span>{pattern}</span>
+        <!-- Named from the item: each word puts its pattern at the end. -->
+        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+          <span class="text-small text-muted">name from</span>
+          {#each PATTERNS as one (one.pattern)}
+            <button
+              type="button"
+              title={one.pattern}
+              onclick={() =>
+                (typed[field.name] =
+                  `${typed[field.name] ?? ""}${one.pattern}`)}
+              class="inline-flex min-h-8 items-center rounded-control border border-off-line bg-off px-2.5 text-small active:bg-off-down"
+              >+ {one.word}</button
+            >
           {/each}
-        </p>
+        </div>
       {/if}
     </div>
   {/each}
@@ -558,4 +581,10 @@
   {/if}
 </form>
 
-<FormBar {missing} {busy} oncancel={done} onsave={() => void save()} />
+<FormBar
+  at="foot"
+  {missing}
+  {busy}
+  oncancel={done}
+  onsave={() => void save()}
+/>
