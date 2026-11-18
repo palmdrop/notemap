@@ -216,7 +216,7 @@ test("says a filtered queue has nothing waiting, never that the queue is drained
   expect(await screen.findByText(/Nothing matches kind\/quote\./)).toBeTruthy();
   expect(screen.queryByText("Queue is empty.")).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "clear filters" }));
+  await fireEvent.click(screen.getByRole("button", { name: /^Clear/ }));
   expect(went.to).toEqual(["http://localhost/"]);
 });
 
@@ -227,7 +227,18 @@ test("says a filtered feed holds nothing tagged, rather than nothing captured", 
   render(Feed);
 
   expect(await screen.findByText(/Nothing matches kind\/quote\./)).toBeTruthy();
-  expect(screen.getByRole("button", { name: "clear filters" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Clear filter" })).toBeTruthy();
+});
+
+test("names the way back for a search alone as clearing the search", async () => {
+  address.path = "/?words=zebra";
+  serving();
+
+  render(Queue);
+
+  expect(
+    await screen.findByRole("button", { name: "Clear search" }),
+  ).toBeTruthy();
 });
 
 test("holds a selected row whose filter tag is taken off until the selection leaves it", async () => {

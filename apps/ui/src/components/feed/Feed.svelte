@@ -445,7 +445,7 @@
           <Prose text={NOTHING_CAPTURED} />
         {:else}
           {nothingMatches($feed.filter, nameOf)}
-          <ClearFilters onclick={reading.clear} />
+          <ClearFilters filter={$feed.filter} onclick={reading.clear} />
         {/if}
       </Body>
     {/if}

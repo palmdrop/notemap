@@ -24,6 +24,6 @@
     {QUEUE_EMPTY}
   {:else}
     {nothingMatches(filter, nameOf)}
-    <ClearFilters onclick={onwhole} />
+    <ClearFilters {filter} onclick={onwhole} />
   {/if}
 </div>

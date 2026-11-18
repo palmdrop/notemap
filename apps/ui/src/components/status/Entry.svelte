@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Box from "$components/primitives/blocks/Box.svelte";
   import { slide } from "$lib/motion";
 
   /**
@@ -35,13 +34,23 @@
     /** More than one thing to do about it, drawn after the offer. */
     actions?: Snippet;
   } = $props();
+
+  const capital = (word: string): string =>
+    word.charAt(0).toUpperCase() + word.slice(1);
 </script>
 
+<!-- Under a heading, a notice says only its time and its words; work still
+     in flight has no time, and takes the whole width. -->
 <li
   transition:slide={{ fade: true }}
-  class="grid grid-cols-[var(--spacing-time)_1fr] gap-x-gutter border-b border-rule px-gutter py-3"
+  class="grid gap-x-gutter border-b border-rule px-gutter py-3 {when ===
+  undefined
+    ? 'grid-cols-1'
+    : 'grid-cols-[var(--spacing-time)_1fr]'}"
 >
-  <span class="text-time text-muted tabular-nums">{when ?? ""}</span>
+  {#if when !== undefined}
+    <span class="text-time text-muted tabular-nums">{when}</span>
+  {/if}
 
   <span class="grid min-w-0 gap-1">
     <span
@@ -67,13 +76,19 @@
     {#if href !== undefined || offer !== undefined || actions !== undefined}
       <span class="mt-1 flex flex-wrap items-center gap-2">
         {#if offer !== undefined}
-          <Box onclick={offer.take}>{offer.label}</Box>
+          <!-- Cancel and Undo are quiet: underlined words, not boxes. -->
+          <button
+            type="button"
+            onclick={offer.take}
+            class="underline underline-offset-[0.2em]"
+            >{capital(offer.label)}</button
+          >
         {/if}
 
         {@render actions?.()}
 
         {#if href !== undefined}
-          <a {href} class="ml-auto underline underline-offset-[0.2em]">open</a>
+          <a {href} class="ml-auto underline underline-offset-[0.2em]">Open</a>
         {/if}
       </span>
     {/if}

@@ -158,7 +158,7 @@
 
     const item = action.subject;
     return {
-      label: "save as template",
+      label: "Save as template",
       take: () => void goto(templateFromHref(item, record)),
     };
   }

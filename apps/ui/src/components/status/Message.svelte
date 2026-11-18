@@ -42,6 +42,6 @@
     class="flex-none underline underline-offset-[0.2em]"
     onclick={() => ontake(notice.id)}
   >
-    {notice.offer.label}
+    {notice.offer.label.charAt(0).toUpperCase() + notice.offer.label.slice(1)}
   </button>
 {/if}

@@ -106,7 +106,7 @@ test("what a notice offers is taken from the line", async () => {
   const put = vi.fn();
 
   notices.raise({ what: "discarded", offer: { label: "undo", take: put } });
-  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
 
   expect(put).toHaveBeenCalledTimes(1);
   await vi.waitFor(() => {
@@ -139,7 +139,7 @@ test("nothing leaves the line while focus is inside it", async () => {
 
   notices.raise({ what: "discarded", offer: { label: "undo", take: vi.fn() } });
   await vi.advanceTimersByTimeAsync(0);
-  const undo = screen.getByRole("button", { name: "undo" });
+  const undo = screen.getByRole("button", { name: "Undo" });
 
   await fireEvent.focusIn(undo);
   await vi.advanceTimersByTimeAsync(60_000);
@@ -170,7 +170,7 @@ test("the panel reads back what the line has let go of", async () => {
   expect(said.textContent).toContain("routed · vault");
   expect(said.textContent).toContain("a thought");
   expect(
-    within(said).getByRole("link", { name: "open" }).getAttribute("href"),
+    within(said).getByRole("link", { name: "Open" }).getAttribute("href"),
   ).toBe("/items/one");
   // Nothing is ever dismissed: a notice goes on its own and is read here.
   expect(within(said).queryByRole("button", { name: "dismiss" })).toBeNull();
@@ -473,7 +473,7 @@ test("says what logged while nobody was asking", async () => {
     const panel = screen.getByRole("list", { name: "said" });
     expect(panel.textContent).toContain("the picker needs a trail");
     expect(
-      within(panel).getByRole("link", { name: "open" }).getAttribute("href"),
+      within(panel).getByRole("link", { name: "Open" }).getAttribute("href"),
     ).toBe("/items/one");
   });
 });
@@ -534,7 +534,7 @@ test("a landing made by hand offers to keep it as a template, and one a template
     ...logged,
   ];
   await vi.advanceTimersByTimeAsync(10_000);
-  expect(notices.latest?.offer?.label).toBe("save as template");
+  expect(notices.latest?.offer?.label).toBe("Save as template");
 
   logged = [
     anAction("3", "routed", {
@@ -1019,12 +1019,12 @@ test("an undo taken elsewhere takes the line's undo away", async () => {
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
-  await screen.findByRole("button", { name: "undo" });
+  await screen.findByRole("button", { name: "Undo" });
 
   notices.settled("record:r1");
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
   expect(screen.getByText("marked manual")).toBeDefined();
 });
@@ -1070,12 +1070,12 @@ test("an undo taken elsewhere leaves the panel too", async () => {
     offer: { label: "undo", take: vi.fn() },
   });
   const panel = await opened();
-  expect(within(panel).getByRole("button", { name: "undo" })).toBeDefined();
+  expect(within(panel).getByRole("button", { name: "Undo" })).toBeDefined();
 
   notices.settled("record:r1");
 
   await vi.waitFor(() => {
-    expect(within(panel).queryByRole("button", { name: "undo" })).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });
 

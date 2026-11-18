@@ -1,6 +1,8 @@
 <script lang="ts">
   import { untrack } from "svelte";
 
+  import Icon from "$components/primitives/icon/Icon.svelte";
+
   /**
    * The words a list is searched by, typed in the header. Settled a moment after
    * the last key, so the list is read once a word is, not at every letter. The
@@ -14,7 +16,7 @@
     placeholder = "search",
     boxed = false,
   }: {
-    /** As the address holds them, which back and `clear filters` move. */
+    /** As the address holds them, which back and Clear move. */
     words: string;
     onsearch: (words: string, push: boolean) => void;
     placeholder?: string;
@@ -56,15 +58,34 @@
   }
 </script>
 
-<input
-  bind:this={field}
-  bind:value={typed}
-  oninput={input}
-  onblur={() => (pushed = false)}
-  type="search"
-  aria-label="search"
-  {placeholder}
-  class="min-h-9 w-full min-w-0 bg-transparent outline-none {boxed
-    ? 'rounded-control border border-rule px-3'
-    : 'border-b border-rule px-2'}"
-/>
+<!-- The browser's own clearing mark is hidden for one in the shell's ink. -->
+<span class="relative flex w-full min-w-0 items-center">
+  <input
+    bind:this={field}
+    bind:value={typed}
+    oninput={input}
+    onblur={() => (pushed = false)}
+    type="search"
+    aria-label="search"
+    {placeholder}
+    class="min-h-9 w-full min-w-0 bg-transparent pr-9 outline-none [&::-webkit-search-cancel-button]:appearance-none {boxed
+      ? 'rounded-control border border-rule pl-3'
+      : 'border-b border-rule pl-2'}"
+  />
+  {#if typed !== ""}
+    <button
+      type="button"
+      aria-label="Clear the search"
+      onclick={() => {
+        clearTimeout(waiting);
+        waiting = undefined;
+        typed = "";
+        onsearch("", true);
+        field?.focus();
+      }}
+      class="absolute right-0 grid size-9 place-items-center text-muted hover:text-ink"
+    >
+      <Icon name="close" class="size-4" />
+    </button>
+  {/if}
+</span>
