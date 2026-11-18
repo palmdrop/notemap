@@ -69,7 +69,7 @@
     aria-label="search"
     {placeholder}
     class="min-h-9 w-full min-w-0 bg-transparent pr-9 outline-none [&::-webkit-search-cancel-button]:appearance-none {boxed
-      ? 'rounded-control border border-rule pl-3'
+      ? 'rounded-control border border-edge pl-3'
       : 'border-b border-rule pl-2'}"
   />
   {#if typed !== ""}

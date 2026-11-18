@@ -84,7 +84,7 @@
         oninput={(event) => onchange(event.currentTarget.value)}
         aria-label={field.name}
         placeholder={placeholder ?? field.placeholder}
-        class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink disabled:text-muted"
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink disabled:text-muted"
       />
     {/if}
     {#if (line ?? field.description) !== undefined}

@@ -373,7 +373,7 @@
       aria-label="name"
       aria-describedby={unnamed ? `${id}-unnamed` : undefined}
       placeholder="what it is called when routing"
-      class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+      class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
     />
     {#if unnamed}
       <span id={`${id}-unnamed`} class="sr-only">a template needs a name</span>
@@ -383,7 +383,7 @@
   <label class="block border-b border-rule px-gutter py-3">
     <span class="mb-1.5 block text-small">trigger tag (optional)</span>
     <span
-      class="flex min-h-11 items-center rounded-control border border-rule bg-paper px-3 focus-within:border-ink"
+      class="flex min-h-11 items-center rounded-control border border-edge bg-paper px-3 focus-within:border-ink"
     >
       <span aria-hidden="true" class="text-muted">#{TRIGGER_NAMESPACE}</span>
       <input
@@ -469,7 +469,7 @@
             bind:value={asked[field.name]}
             aria-label={`${labelFor(field)} label`}
             placeholder={`which ${labelFor(field)}?`}
-            class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+            class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
           />
         </label>
         <span class="mb-1 block text-small text-muted">default</span>
@@ -526,7 +526,7 @@
             : field.required
               ? "required"
               : "optional"}
-          class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+          class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
         />
       {/if}
       {#if undefaulted(field) !== undefined && (fixed(field) !== undefined || field.listable)}

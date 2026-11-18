@@ -77,7 +77,7 @@
     onclick={onopen}
     aria-expanded={opened === true}
     data-stamp
-    class="block text-left hover:underline focus-visible:outline-none"
+    class="relative block text-left before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline focus-visible:outline-none"
   >
     {@render drawn()}
   </button>

@@ -63,7 +63,7 @@
   ></div>
   <section
     transition:rise
-    class="relative w-full max-w-[22rem] rounded-control border border-rule bg-paper p-5"
+    class="relative w-full max-w-[22rem] rounded-control border border-edge bg-paper p-5"
   >
     <h2 id="{id}-title" class="mb-2 font-display text-title font-normal">
       {title}

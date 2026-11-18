@@ -35,7 +35,7 @@
       autocomplete="username"
       name="username"
       aria-label="name"
-      class="min-h-11 rounded-control border border-rule bg-paper px-3 outline-none"
+      class="min-h-11 rounded-control border border-edge bg-paper px-3 outline-none"
     />
   </label>
 
@@ -49,7 +49,7 @@
       name="password"
       aria-label="password"
       autofocus
-      class="min-h-11 rounded-control border border-rule bg-paper px-3 outline-none"
+      class="min-h-11 rounded-control border border-edge bg-paper px-3 outline-none"
     />
   </label>
 

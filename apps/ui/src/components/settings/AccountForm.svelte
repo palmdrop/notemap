@@ -111,7 +111,7 @@
         aria-label="Name"
         required
         placeholder="what destinations call it"
-        class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
       />
     {:else}
       <!-- A destination names an account by this, so changing it is a new account. -->
@@ -145,7 +145,7 @@
         bind:value={typed[field.name]}
         aria-label={field.name}
         placeholder={field.placeholder}
-        class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
       />
     </label>
   {/each}
@@ -159,7 +159,7 @@
       aria-label="Secret"
       required={!keeping}
       placeholder={keeping ? "set — leave blank to keep it" : ""}
-      class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+      class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
     />
   </label>
 

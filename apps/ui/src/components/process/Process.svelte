@@ -1377,7 +1377,7 @@
         bind:value={args[field.name]}
         placeholder={field.required ? "required" : "optional"}
         aria-label={title}
-        class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
       />
     </label>
   {/if}
@@ -1570,7 +1570,7 @@
               }}
               aria-label={title}
               placeholder={offered.length === 0 ? title : `Another ${title}`}
-              class="min-h-11 min-w-0 flex-1 rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+              class="min-h-11 min-w-0 flex-1 rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
             />
           </form>
         {/if}
@@ -1764,7 +1764,7 @@
           bind:value={words}
           aria-label="words"
           rows="6"
-          class="mt-3 w-full resize-y rounded-control border border-rule bg-paper px-3 py-2.5 outline-none focus:border-ink"
+          class="mt-3 w-full resize-y rounded-control border border-edge bg-paper px-3 py-2.5 outline-none focus:border-ink"
         ></textarea>
         <div class="mt-2 flex gap-2">
           <Box icon="undo" onclick={keep}>Restore</Box>

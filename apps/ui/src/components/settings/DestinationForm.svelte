@@ -149,7 +149,7 @@
       aria-label="Name"
       required
       placeholder="what it is called when routing"
-      class="min-h-11 w-full rounded-control border border-rule bg-paper px-3 outline-none focus:border-ink"
+      class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
     />
   </label>
 

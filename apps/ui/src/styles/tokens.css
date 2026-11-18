@@ -22,10 +22,11 @@
      and is rough. */
   --color-ink: light-dark(#000000, #f2f2f2);
   --color-paper: light-dark(#ffffff, #0d0d0d);
-  --color-off: light-dark(#e9e6df, #2b2924);
-  --color-off-line: color-mix(in srgb, var(--color-off), var(--color-ink) 25%);
+  --color-off: light-dark(#e9e6df, #3b362c);
+  /* A control's edge: 3:1 against the page, as a control's boundary must be. */
+  --color-off-line: color-mix(in srgb, var(--color-off), var(--color-ink) 40%);
   --color-off-down: color-mix(in srgb, var(--color-off), var(--color-ink) 8%);
-  --color-band: light-dark(#e4e4e4, #242424);
+  --color-band: light-dark(#e4e4e4, #202020);
 
   /* The box grey: what is under way, and a state's box. */
   --color-tag: light-dark(#f1f1f1, #1b1b1b);
@@ -40,6 +41,8 @@
 
   /* The rule, and the + button's fill, the one chip left. */
   --color-rule: light-dark(#a9a9a9, #5e5e5e);
+  /* A field's edge, darker than a rule: 3:1 against the page. */
+  --color-edge: light-dark(#8a8a8a, #858585);
   --color-chip: light-dark(#dedede, #2e2e2e);
 
   --color-muted: light-dark(#5c5c5c, #a3a3a3);

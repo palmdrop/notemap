@@ -30,7 +30,7 @@
         onclick={() => {
           if (!on) onchoose(one.value);
         }}
-        class="min-h-9 rounded-[calc(var(--radius-control)-0.1875rem)] px-3.5 whitespace-nowrap {on
+        class="min-h-11 rounded-[calc(var(--radius-control)-0.1875rem)] px-3.5 whitespace-nowrap wide:min-h-9 {on
           ? 'bg-ink text-paper disabled:bg-rule disabled:text-ink'
           : 'text-ink active:bg-off-down disabled:text-muted'}"
       >

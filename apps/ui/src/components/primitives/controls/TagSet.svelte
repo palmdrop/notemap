@@ -510,7 +510,7 @@
         onclick={open}
         class="{addable
           ? 'inline-flex'
-          : 'hidden'} relative min-h-6 items-center gap-1 rounded-tag border border-dashed border-rule px-1.5 text-small text-muted before:absolute before:-inset-2.5 before:content-['']"
+          : 'hidden'} relative min-h-6 items-center gap-1 rounded-tag border border-dashed border-edge px-1.5 text-small text-muted before:absolute before:-inset-2.5 before:content-['']"
         ><span aria-hidden="true">+</span> tag</button
       >
     {/if}

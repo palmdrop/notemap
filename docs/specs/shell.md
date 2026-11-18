@@ -3583,6 +3583,11 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
 - **Surfaces.** `paper`, white, for what is read; `ink` on it. `off`, beige, for what can be
   pressed, with `off-line` for its edge and `off-down` for it pressed. `band`, grey, for a heading
   over a group of rows. `rule` for the rule between regions, which is grey and not ink.
+  *Amended 2026-11-18*: `edge` for a field's edge, and `off-line` darkened, both to 3:1 against
+  the page as a control's boundary must be. A row has its own tints, `hover`, `picked` (opened,
+  or selected for the keys) and `chosen` (selected for a batch, with `shadow-chosen`, an ink edge
+  down its left side); a row never takes `band`. Dark's `off` is warmer and lighter than its
+  `band`, so what can be pressed and what heads a group differ there too.
 - **The box grey.** `tag`, `tag-line` and `tag-ink`, for what is under way and for a state's box:
   "Routing by Todo", "On its way", a tag.
 - **Meaning.** `signal`, green, for delivered or available and nothing else. `danger`, red, for
@@ -3591,9 +3596,11 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
 - **Faces.** `font-display`, Syne, for headings, bands and titles. `font-text`, Arimo, for
   everything else.
 - **Sizes, five, by role.** `text-title`, `text-weekday`, `text-body`, `text-time` and
-  `text-small`, each with its line height. `tracking-caps` stays for a label the old views still
+  `text-small`, each with its line height; `text-read` *(2026-11-18)*, a step larger, for an item
+  read on its own. `tracking-caps` stays for a label the old views still
   draw.
-- **Spacing.** `gutter`; `time`, the time column; `bar`, a header or a docked bar; `target`, the
+- **Spacing.** `gutter`; `time`, the time column; `words`, where a row's words start; `bar`, a
+  header or a docked bar; `stuck`, where a held day heading sits, its rule on the header's; `target`, the
   least a target is on a phone; `icon`, `fab` and `thumb`; `menu` and `menu-rail`, the menu as a
   column and as a rail of icons; `panel`, a side panel; `measure`, `read` and `prose`. `radius-control`
   and `radius-tag`.

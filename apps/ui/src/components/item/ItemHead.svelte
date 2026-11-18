@@ -126,7 +126,7 @@
       {#if menu}
         <div
           role="menu"
-          class="absolute top-full right-0 z-40 min-w-44 rounded-control border border-rule bg-paper py-1"
+          class="absolute top-full right-0 z-40 min-w-44 rounded-control border border-edge bg-paper py-1"
         >
           {#each offered as one (one.id)}
             <button
