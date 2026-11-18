@@ -14,7 +14,12 @@
   import { publish } from "$lib/command/stack.svelte";
   import { nameOf } from "$lib/destinations";
   import { aboutItem } from "$lib/excerpt";
-  import { cancelBatch, cancelRouting, recheckFirings } from "$lib/firing";
+  import {
+    cancelBatch,
+    cancelRouting,
+    recheckFirings,
+    reopenFirings,
+  } from "$lib/firing";
   import { firings, type Firing } from "$lib/firings.svelte";
   import { fade } from "$lib/motion";
   import { notices, type Offer } from "$lib/notices.svelte";
@@ -354,6 +359,7 @@
       void hear(since.actions);
     });
     firings.asks(() => client.actions.ask());
+    void reopenFirings();
 
     return () => {
       firings.asks(undefined);

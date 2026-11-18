@@ -1,5 +1,6 @@
 import {
   saidBy,
+  type Action,
   type RoutedRecord,
   type RoutingRecord,
   type RoutingTemplate,
@@ -14,7 +15,8 @@ import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
 import { cancelledKey, keyFor, placeIn, type Reading } from "./routing";
 import { tallying } from "./tallies";
-import { nameOf, triggeredBy } from "./templates";
+import { firingOf } from "./action-log";
+import { heldName, nameOf, triggeredBy } from "./templates";
 
 /**
  * Calls off a pending record and ends its route in flight. Where a trigger tag
@@ -185,6 +187,49 @@ async function windowOf(
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The windows open when this shell started: a reload, or a phone browser
+ * that evicted the page, forgets what it was counting. The log keeps what
+ * opened them, and the records say which are still pending.
+ */
+export async function reopenFirings(): Promise<void> {
+  let actions: readonly Action[];
+  try {
+    const page = await client.actions.read({
+      kinds: ["template-fired", "delivery-held"],
+      order: "newest-first",
+    });
+    actions = Array.isArray(page.values) ? page.values : [];
+  } catch {
+    return;
+  }
+  const now = Date.now();
+  const heard = actions.flatMap((action) => {
+    const found = firingOf(action, {
+      nameOf: destinationName,
+      templateOf: heldName,
+      whereOf,
+      about: itemHref,
+    });
+    if (found === undefined || !("opened" in found)) return [];
+    const until = found.opened.until;
+    return until === undefined || until <= now ? [] : [found.opened];
+  });
+  await Promise.all(
+    heard.map(async (firing) => {
+      try {
+        const records = await client.routing.recordsFor(firing.item);
+        const pending = records.some(
+          (record) => record.id === firing.record && record.state === "pending",
+        );
+        if (pending) firings.opened(firing);
+      } catch {
+        // Out of reach: nothing to count down that could be cancelled.
+      }
+    }),
+  );
 }
 
 /**

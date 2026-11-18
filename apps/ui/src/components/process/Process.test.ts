@@ -2475,7 +2475,7 @@ test("advances to the next item in the queue after a decision, and esc returns s
 
   draw();
   await fireEvent.keyDown(window, { key: "Escape" });
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 
   await fireEvent.keyDown(window, { key: "]" });
   expect(left()).toBe("/items/two/process");
@@ -3126,7 +3126,7 @@ test("esc returns to the queue with the item selected, once the caret is out of 
 
   await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.click(await screen.findByRole("button", { name: "leave" }));
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("esc leaves at once, asking nothing, where nothing was entered", async () => {
@@ -3137,7 +3137,7 @@ test("esc leaves at once, asking nothing, where nothing was entered", async () =
   await fireEvent.keyDown(window, { key: "Escape" });
 
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("esc asks before leaving once a destination was chosen, and leave leaves", async () => {
@@ -3152,7 +3152,7 @@ test("esc asks before leaving once a destination was chosen, and leave leaves", 
   expect(left()).toBeUndefined();
 
   await fireEvent.click(screen.getByRole("button", { name: "leave" }));
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("cancelling the question, with a second esc, returns to the composer intact", async () => {
@@ -3193,7 +3193,7 @@ test("esc leaves at once where the words were opened and left as they were", asy
   await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("a rewrite of the words is a change", async () => {
@@ -3224,7 +3224,7 @@ test("words put back, by restore or by typing them again, are nothing to lose", 
   await choose("Restore");
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("words typed back to what the capture says are nothing to lose", async () => {
@@ -3241,7 +3241,7 @@ test("words typed back to what the capture says are nothing to lose", async () =
   await fireEvent.keyDown(window, { key: "Escape" });
 
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("a destination given back is nothing to lose", async () => {
@@ -3256,7 +3256,7 @@ test("a destination given back is nothing to lose", async () => {
   await fireEvent.keyDown(window, { key: "Escape" });
 
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("words a route carried are nothing to lose after it", async () => {
@@ -3280,7 +3280,7 @@ test("words a route carried are nothing to lose after it", async () => {
   await fireEvent.keyDown(window, { key: "Escape" });
 
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 test("a press outside the question returns to the composer", async () => {
@@ -3350,7 +3350,7 @@ test("a tag added in the composer is not a draft", async () => {
   await fireEvent.keyDown(window, { key: "Escape" });
 
   expect(screen.queryByRole("dialog")).toBeNull();
-  expect(left()).toBe("/?selected=one");
+  expect(left()).toBe("/");
 });
 
 /** One press does one thing: putting a field away is not leaving the surface. */

@@ -1,5 +1,15 @@
-<script lang="ts">
+<script lang="ts" module>
   import { SvelteMap } from "svelte/reactivity";
+  import type { Item as Held } from "@notemap/client";
+
+  /**
+   * What the queue last held of each item, kept across the surface being
+   * drawn again, so a row in its window survives leaving and coming back.
+   */
+  const seen = new SvelteMap<string, Held>();
+</script>
+
+<script lang="ts">
   import { quick } from "$lib/quicking.svelte";
   import { resolve } from "$app/paths";
 
@@ -130,11 +140,31 @@
   /**
    * A route in its window keeps its row, by hand or by trigger tag, until the
    * window closes and the row slides out. The pool has already taken the item
-   * off the queue, so the row is drawn from what this list last held of it.
+   * off the queue, so the row is drawn from what this list last held of it,
+   * or, after a reload, from the item read again.
    */
-  const seen = new SvelteMap<string, Item>();
   $effect(() => {
     for (const row of $queue.items) seen.set(row.id, row);
+  });
+  const asked = new Set<string>();
+  $effect(() => {
+    for (const firing of firings.open) {
+      if (seen.has(firing.item) || asked.has(firing.item)) continue;
+      asked.add(firing.item);
+      void client.item(firing.item).then(
+        ({ item }) => {
+          // Only one whose every record is this window's was queue work: a
+          // route again from the feed is not.
+          const first =
+            item !== undefined &&
+            item.archived === undefined &&
+            (item.routing === undefined ||
+              item.routing.records === item.routing.pending);
+          if (first) seen.set(item.id, item);
+        },
+        () => {},
+      );
+    }
   });
   const inWindow = $derived(
     firings.open

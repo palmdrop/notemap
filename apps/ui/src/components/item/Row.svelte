@@ -368,7 +368,8 @@
     />
   </div>
 
-  {#if finished && routed}
+  <!-- A route takes no room in the queue: its window is said in its own box. -->
+  {#if finished && routed && surface !== "queue"}
     <Routing
       summary={item.routing}
       records={records.all}

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { beforeNavigate, goto } from "$app/navigation";
+  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -29,6 +29,7 @@
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
+  import { within } from "$lib/within.svelte";
 
   import "./layout.css";
 
@@ -38,6 +39,10 @@
   const who = session();
 
   watched();
+
+  afterNavigate(({ from, type }) => {
+    if (type !== "enter" && from !== null) within.note();
+  });
 
   const queue = client.counts.queue;
   const outbox = client.outbox;

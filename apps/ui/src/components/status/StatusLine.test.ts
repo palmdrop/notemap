@@ -852,6 +852,40 @@ test("the log opens a firing and closes it with the landing", async () => {
   expect(notices.latest?.what).toBe("routed");
 });
 
+test("a window open before a reload is counted again, and one that ended is not", async () => {
+  const fired = (id: string, record: string) =>
+    anAction(id, "template-fired", {
+      record,
+      template: "t1",
+      name: "Research links",
+      until: "2099-01-01T00:00:00.000Z",
+    });
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, {
+        values: new URL(request.url).searchParams.has("kind")
+          ? [fired("2", "r1"), fired("1", "r0")]
+          : [],
+      });
+    }
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, {
+        values: [
+          { id: "r1", item: "one", state: "pending" },
+          { id: "r0", item: "one", state: "delivered" },
+        ],
+      });
+    }
+    return quiet();
+  });
+  render(StatusLine);
+
+  await vi.waitFor(() => {
+    expect(firings.open.map((one) => one.record)).toEqual(["r1"]);
+  });
+});
+
 test("more than one firing is counted, and each is cancelled in the panel", async () => {
   pool(quiet);
   render(StatusLine);

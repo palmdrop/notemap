@@ -18,6 +18,7 @@
   import { takenAs } from "$lib/candidate-list";
   import { aboutItem } from "$lib/excerpt";
   import { headed } from "$lib/heading.svelte";
+  import { within } from "$lib/within.svelte";
   import { kindIcon, templateIcon, whereOf } from "$lib/looks";
   import { notices } from "$lib/notices.svelte";
   import { keyFor } from "$lib/routing";
@@ -1253,7 +1254,9 @@
       next = following();
     }
     next ??= following();
-    await goto(next === undefined ? resolve("/") : processHref(next.id));
+    await goto(next === undefined ? resolve("/") : processHref(next.id), {
+      replaceState: true,
+    });
   }
 
   /**
@@ -1268,9 +1271,13 @@
   );
   let confirming = $state(false);
 
-  /** Back to the queue with this item still selected. */
+  /**
+   * Back to where the route began. Opened at its address, there is nowhere
+   * before it, and the queue takes its place.
+   */
   function back(): void {
-    void goto(`${resolve("/")}?selected=${encodeURIComponent(item.id)}`);
+    if (within.yes) history.back();
+    else void goto(resolve("/"), { replaceState: true });
   }
 
   function leave(): void {
