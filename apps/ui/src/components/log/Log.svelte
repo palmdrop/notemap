@@ -74,8 +74,6 @@
 
   $effect(() => () => clearTimeout(fading));
 
-  const HALF_A_DAY = 12 * 60 * 60 * 1000;
-
   const whole = (id: string) => {
     const held = log.whole(id);
     return Array.isArray(held) ? held : undefined;
@@ -90,19 +88,11 @@
     }),
   );
 
-  /** A gap opens where more than half a day passed before a row, in reading order. */
   const rows = $derived(
-    groups.map((row, index) => {
-      const at = (one: (typeof groups)[number]) =>
-        Date.parse(one.kind === "action" ? one.action.at : one.at);
-      const before = groups[index - 1];
-      return {
-        row,
-        key: row.kind === "action" ? row.action.id : `batch:${row.id}`,
-        gap:
-          before !== undefined && Math.abs(at(row) - at(before)) > HALF_A_DAY,
-      };
-    }),
+    groups.map((row) => ({
+      row,
+      key: row.kind === "action" ? row.action.id : `batch:${row.id}`,
+    })),
   );
 
   const templates = client.templates.all;
@@ -163,12 +153,18 @@
 
   /** The rows that open a day, read in the log's order, with the day they open. */
   const heads = $derived.by(() => {
-    const opening = new SvelteMap<string, string>();
+    const opening = new SvelteMap<string, { at: string; count: number }>();
     let day: string | undefined;
+    let head: string | undefined;
     for (const { row, key } of rows) {
       const at = row.kind === "action" ? row.action.at : row.at;
       const today = dayOf(at);
-      if (today !== day) opening.set(key, at);
+      if (today !== day) {
+        opening.set(key, { at, count: 0 });
+        head = key;
+      }
+      const counting = head === undefined ? undefined : opening.get(head);
+      if (counting !== undefined) counting.count += 1;
       day = today;
     }
     return opening;
@@ -244,14 +240,16 @@
       />
     {/each}
 
-    {#each rows as { row, key, gap } (key)}
-      {#if heads.has(key)}
-        <Day at={heads.get(key) ?? ""} />
+    <!-- The band says the day changed, so no gap opens under it. -->
+    {#each rows as { row, key } (key)}
+      {@const head = heads.get(key)}
+      {#if head !== undefined}
+        <Day at={head.at} count={head.count} />
       {/if}
       {#if row.kind === "action"}
-        <LogRow action={row.action} {gap} heard={log.heard(row.action.id)} />
+        <LogRow action={row.action} heard={log.heard(row.action.id)} />
       {:else}
-        <BatchRow id={row.id} at={row.at} entries={row.entries} {gap} />
+        <BatchRow id={row.id} at={row.at} entries={row.entries} />
       {/if}
     {/each}
 

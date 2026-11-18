@@ -29,6 +29,7 @@
     records = [],
     short = false,
     boxed = false,
+    inert = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
@@ -37,6 +38,8 @@
     short?: boolean;
     /** The item's own: a box of rows, each the way into its record. */
     boxed?: boolean;
+    /** What happened rather than what stands: each line a way in, with nothing to take back. */
+    inert?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -288,7 +291,9 @@
             .join(" ")}>{@render single(line)}</a
         >
 
-        {#if line.taken !== undefined}
+        {#if inert}
+          <!-- An entry in the log: what it did, not what can be done now. -->
+        {:else if line.taken !== undefined}
           {@const record = line.taken}
           <button
             type="button"

@@ -5,7 +5,7 @@
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
-  import Block from "$components/record/Block.svelte";
+  import Routing from "$components/item/Routing.svelte";
   import { factOf, failed, flattened, known, namingIn } from "$lib/actions";
   import { client } from "$lib/client";
   import { kindWord } from "$lib/kinds";
@@ -19,17 +19,15 @@
   import Says from "./Says.svelte";
 
   /**
-   * One row of the log on the register: when and what kind in the rail; what
-   * it was about and the one fact the kind carries in the body; and for a
-   * routing kind, the record itself, folded to a line beside what it was about.
+   * One row of the log, in the queue's register: the time in the rail; what
+   * kind and the one fact it carries, what it was about, and for a routing
+   * kind a line saying where it went, which opens the record.
    */
   let {
     action,
-    gap = false,
     heard = false,
   }: {
     action: Action;
-    gap?: boolean;
     /**
      * Arrived from the watcher rather than with a read: it slides in, and grows
      * into what it goes on to hold. What a read brings, and all it goes on to
@@ -44,6 +42,12 @@
   const naming = $derived(namingIn($templates, $destinations));
 
   const bad = $derived(failed(action.kind));
+  /** A manual mark is routed to the person, and reads as what it is. */
+  const kind = $derived(
+    action.kind === "routed" && action.detail["target"] === "user"
+      ? "done"
+      : kindWord(action.kind),
+  );
   const fact = $derived(factOf(action.kind, action.detail, naming));
   const pairs = $derived(known(action.kind) ? [] : flattened(action.detail));
 
@@ -98,11 +102,7 @@
     };
   });
 
-  let opened = $state(false);
   let asked = $state(false);
-  $effect(() => {
-    if (opened) asked = true;
-  });
 
   // A place that is no path — a channel, a board — is named only by the
   // record's own arguments, which the entry does not carry: such a record is
@@ -149,12 +149,6 @@
   {/if}
 {/snippet}
 
-{#snippet factLine()}
-  {#if fact !== undefined}
-    <FactSaid {fact} />
-  {/if}
-{/snippet}
-
 <div
   data-heard={heard ? "" : undefined}
   class="col-span-full grid grid-cols-subgrid"
@@ -162,41 +156,45 @@
   {@attach heard && following}
 >
   <div class="col-span-full grid grid-cols-subgrid border-b border-rule">
-    <Rail {gap}>
+    <Rail>
       <Stamp at={action.at} dated={false} />
-      <div class="mt-2 text-small {bad ? 'text-danger' : 'text-muted'}">
-        {kindWord(action.kind)}
-      </div>
     </Rail>
 
-    <Body {gap}>
-      {#if record !== undefined}
-        <Block
-          {record}
-          {said}
-          alarm={bad}
-          blind={held === undefined && action.kind === "routed"}
-          bind:opened
-          lead={subject}
-          end={fact === undefined ? undefined : factLine}
-        />
-      {:else}
-        <div
-          class="flex items-baseline justify-between gap-x-[3ch] max-wide:flex-col max-wide:items-stretch"
-        >
-          {#if action.subject !== undefined}
-            <span class="min-w-0 truncate">{@render subject()}</span>
-          {:else}
-            <span></span>
+    <Body>
+      <div class="flex min-w-0 flex-col gap-1.5">
+        <!-- What happened, in small capitals, and the one fact it carries at
+             the right: the template, the tag, the channel. -->
+        <div class="flex min-w-0 items-baseline justify-between gap-x-4">
+          <span
+            class="text-small tracking-caps uppercase {bad
+              ? 'text-danger'
+              : 'text-muted'}">{kind}</span
+          >
+          {#if fact !== undefined}
+            <span class="min-w-0 truncate text-small text-muted"
+              ><FactSaid {fact} /></span
+            >
           {/if}
-
-          {@render factLine()}
         </div>
-      {/if}
 
-      {#if pairs.length > 0}
-        <Detail {pairs} failed={bad} />
-      {/if}
+        {#if action.subject !== undefined}
+          <span class="min-w-0 truncate">{@render subject()}</span>
+        {/if}
+
+        <!-- A manual mark says all it has in its kind. -->
+        {#if record !== undefined && record.target.kind !== "user"}
+          <div class="-mt-2 text-small">
+            <Routing summary={undefined} records={[record]} inert />
+          </div>
+        {/if}
+        {#if said !== undefined}
+          <p class="text-small {bad ? 'text-danger' : 'text-muted'}">{said}</p>
+        {/if}
+
+        {#if pairs.length > 0}
+          <Detail {pairs} failed={bad} />
+        {/if}
+      </div>
     </Body>
   </div>
 </div>

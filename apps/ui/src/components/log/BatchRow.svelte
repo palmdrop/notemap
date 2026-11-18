@@ -23,12 +23,10 @@
     id,
     at,
     entries,
-    gap = false,
   }: {
     id: string;
     at: string;
     entries: readonly Action[];
-    gap?: boolean;
   } = $props();
 
   const templates = client.templates.all;
@@ -59,14 +57,16 @@
   data-batch={id}
   class="col-span-full grid grid-cols-subgrid border-b border-rule"
 >
-  <Rail {gap}>
+  <Rail>
     <Stamp {at} dated={false} />
-    <div class="mt-2 text-small {alarm ? 'text-danger' : 'text-muted'}">
-      batch
-    </div>
   </Rail>
 
-  <Body {gap}>
+  <Body>
+    <span
+      class="-mb-1.5 text-small tracking-caps uppercase {alarm
+        ? 'text-danger'
+        : 'text-muted'}">batch</span
+    >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
