@@ -147,7 +147,7 @@ test("an index line opens into its whole row in place, without sliding", async (
 
   await open();
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
-  expect(screen.getByText("discarded")).toBeDefined();
+  expect(screen.getByText("Discarded")).toBeDefined();
   expect(commandOf("undiscard")).toBeDefined();
   expect(slid.calls.some((call) => call.still === false)).toBe(false);
 
@@ -164,7 +164,7 @@ test("says an archived row is discarded, and offers the way back", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("discarded")).toBeDefined();
+  expect(await screen.findByText("Discarded")).toBeDefined();
   await open();
 
   const undiscard = commandOf("undiscard");
@@ -183,7 +183,7 @@ test("keeps tags editable on a finished row", async () => {
   );
 
   render(Feed);
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
@@ -317,7 +317,9 @@ test("marks a revision as one without opening it", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("revision")).toBeDefined();
+  expect(
+    await screen.findByText("Revision of an earlier capture"),
+  ).toBeDefined();
 });
 
 test("reads from the end the reader last chose, not the one the feed defaults to", async () => {
@@ -341,7 +343,7 @@ test("says an archived row is discarded and still pending", async () => {
   );
 
   render(Feed);
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   transport.unreachable(true);
   await open();
 
@@ -353,7 +355,7 @@ test("says an archived row is discarded and still pending", async () => {
   expect(
     await screen.findByRole("img", { name: "waiting to send" }),
   ).toBeDefined();
-  expect(screen.getByText("discarded")).toBeDefined();
+  expect(screen.getByText("Discarded")).toBeDefined();
 });
 
 test("says nothing in the register about a feed the pool has not answered for", async () => {

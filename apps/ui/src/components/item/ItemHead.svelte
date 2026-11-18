@@ -1,6 +1,5 @@
 <script lang="ts">
   import { afterNavigate, goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
@@ -9,6 +8,8 @@
   import { timeOf, weekdayOf } from "$lib/stamp";
 
   import { itemHref } from "./href";
+  import Morph from "./Morph.svelte";
+  import { walkOf } from "./walk.svelte";
 
   /**
    * The item's own header: back on a phone and close when wide, its day and
@@ -19,22 +20,10 @@
 
   const held = $derived(client.held(id));
   const item = $derived($held);
-  const queue = client.queue;
-  const feed = client.feed;
-
-  /** The list it is read in: the queue while it is work, the feed after. */
-  const list = $derived.by(() => {
-    const queued = $queue.items;
-    if (queued.some((one) => one.id === id)) {
-      return { items: queued, home: resolve("/") };
-    }
-    return { items: $feed.items, home: resolve("/feed") };
-  });
-  const at = $derived(list.items.findIndex((one) => one.id === id));
-  const previous = $derived(at > 0 ? list.items[at - 1] : undefined);
-  const next = $derived(
-    at !== -1 && at < list.items.length - 1 ? list.items[at + 1] : undefined,
-  );
+  const walk = walkOf(() => id);
+  const at = $derived(walk.at);
+  const previous = $derived(walk.previous);
+  const next = $derived(walk.next);
 
   let menu = $state(false);
 
@@ -46,7 +35,7 @@
 
   function back(): void {
     if (within) history.back();
-    else void goto(list.home);
+    else void goto(walk.home);
   }
 
   function step(to: { id: string } | undefined): void {
@@ -116,31 +105,12 @@
   <div class="ml-auto flex items-center gap-2">
     {#if at !== -1}
       <span class="text-small text-muted tabular-nums"
-        >{at + 1}/{list.items.length}</span
+        >{at + 1}/{walk.items.length}</span
       >
-      <!-- The morph shape: two halves of one pill, notched where they meet. -->
-      <span
-        class="inline-flex overflow-hidden rounded-full border border-off-line bg-off"
-      >
-        <button
-          type="button"
-          disabled={previous === undefined}
-          title="Previous ([)"
-          onclick={() => step(previous)}
-          class="grid min-h-9 min-w-11 place-items-center border-r border-off-line active:bg-off-down disabled:text-muted"
-        >
-          <Icon name="chevron-left" label="Previous" class="size-5" />
-        </button>
-        <button
-          type="button"
-          disabled={next === undefined}
-          title="Next (])"
-          onclick={() => step(next)}
-          class="grid min-h-9 min-w-11 place-items-center active:bg-off-down disabled:text-muted"
-        >
-          <Icon name="chevron" label="Next" class="size-5" />
-        </button>
-      </span>
+      <Morph
+        onprevious={previous === undefined ? undefined : () => step(previous)}
+        onnext={next === undefined ? undefined : () => step(next)}
+      />
     {/if}
 
     <span class="relative">

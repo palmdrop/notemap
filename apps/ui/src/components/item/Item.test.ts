@@ -248,28 +248,23 @@ test("names the channel a row's routing line went to", async () => {
 });
 
 /** The capture's box, then each record as a row: its stamp is the way into it. */
-test("draws each record as a row under the capture's box, with the way into it", async () => {
+test("draws each record as a row of a box above the words, each the way into it", async () => {
   pool(routed([RECORD, { ...RECORD, id: "rec-2", pointer: "drafts/two.md" }]));
 
   const { container } = render(Item, { id: "routed" });
 
-  await screen.findByText("drafts/two.md");
-  expect(screen.getByText("drafts")).toBeDefined();
-  // The item's actions are its bar, not a selected row's foot.
+  const box = await screen.findByRole("list", { name: "Routing records" });
   expect(container.querySelector("[data-foot]")).toBeNull();
+  expect(container.querySelector("[data-day]")).toBeNull();
 
-  const ways = screen
-    .getAllByRole("link")
-    .map((way) => way.getAttribute("href"))
-    .filter((href) => href?.startsWith("/items/routed/records/"));
+  const ways = [...box.querySelectorAll("a")].map((way) =>
+    way.getAttribute("href"),
+  );
   expect(ways).toEqual([
     "/items/routed/records/rec",
     "/items/routed/records/rec-2",
   ]);
-  // Delivered is said on a row of its own.
-  expect(screen.getAllByText("delivered")).toHaveLength(2);
 });
-
 test("says the records are out of reach while the item still draws", async () => {
   const transport = pool(routed([RECORD]));
   await client.item("routed");
@@ -465,7 +460,7 @@ test("process goes to the surface for it", async () => {
   expect(quick.item).toBe("one");
 });
 
-test("takes back a decision the person made by hand, and reads the records again", async () => {
+test("takes back a decision the person made by hand from its box, and reads the records again", async () => {
   let cancelled = false;
   pool((request: Request) => {
     switch (routeOf(request)) {
@@ -482,10 +477,8 @@ test("takes back a decision the person made by hand, and reads the records again
   });
 
   render(Item, { id: "one" });
-  await fireEvent.click(await screen.findByRole("button", { name: "by hand" }));
-  const way = await screen.findByRole("button", { name: "Undo" });
-
-  await fireEvent.click(way);
+  expect(await screen.findByText("Manual: processed by hand")).toBeDefined();
+  await fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/rec-done/cancel");
@@ -494,32 +487,18 @@ test("takes back a decision the person made by hand, and reads the records again
     expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });
-
-test("draws each record folded, reading nothing it sent until it is opened", async () => {
+test("reads nothing a record sent: what it wrote is on the record's own page", async () => {
   const kept = {
     ...RECORD,
     output: { content: { blob: "abc", mediaType: "text/markdown" } },
   };
   pool(routed([kept, { ...kept, id: "rec-2" }]));
 
-  const { container } = render(Item, { id: "routed" });
-  await screen.findAllByText("drafts");
+  render(Item, { id: "routed" });
+  await screen.findByRole("list", { name: "Routing records" });
 
-  expect(container.querySelectorAll("[data-folded]")).toHaveLength(2);
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
-
-  const [first] = screen.getAllByRole("button", {
-    name: "a destination",
-    expanded: false,
-  });
-  await fireEvent.click(first!);
-  await vi.waitFor(() => {
-    expect(asked()).toContain("GET /v1/routing/rec/output");
-  });
-  expect(asked()).not.toContain("GET /v1/routing/rec-2/output");
-  expect(container.querySelectorAll("[data-folded]")).toHaveLength(1);
 });
-
 const WITHDRAWN = { withdrawnAt: "2026-08-20T09:00:00.000Z" };
 
 test("leaves out a record read withdrawn", async () => {
@@ -546,7 +525,7 @@ test("reads nothing for an item whose every record was withdrawn", async () => {
   expect(asked()).not.toContain("GET /v1/items/left/routing");
 });
 
-test("keeps drawing a record withdrawn here, with the way to reinstate it, though the item reads unrouted", async () => {
+test("keeps drawing a record withdrawn while here, saying so, though the item reads unrouted", async () => {
   let withdrawn = false;
   pool((request: Request) => {
     switch (routeOf(request)) {
@@ -556,39 +535,19 @@ test("keeps drawing a record withdrawn here, with the way to reinstate it, thoug
         return json(200, {
           values: [withdrawn ? { ...RECORD, ...WITHDRAWN } : RECORD],
         });
-      case "GET /v1/routing/rec/presence":
-        return json(200, { kind: "unknown" });
-      case "POST /v1/routing/rec/withdraw":
-        withdrawn = true;
-        return json(200, { ...RECORD, ...WITHDRAWN });
       default:
         return json(200, { values: [] });
     }
   });
 
   render(Item, { id: "routed" });
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "a destination" }),
-  );
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "Withdraw" }),
-  );
-  const confirm = (
-    await screen.findAllByRole("button", { name: "Withdraw" })
-  ).at(-1);
-  if (confirm === undefined) throw new Error("expected the confirming press");
-  await fireEvent.click(confirm);
+  await screen.findByRole("list", { name: "Routing records" });
 
-  expect(
-    await screen.findByRole("button", { name: "Reinstate" }),
-  ).toBeDefined();
-  // The rail's word is the record as read again from the pool.
-  await vi.waitFor(() => {
-    expect(screen.queryByText("delivered")).toBeNull();
-  });
-  expect(screen.getByRole("button", { name: "Reinstate" })).toBeDefined();
+  withdrawn = true;
+  await client.item("routed");
+
+  expect(await screen.findByText("withdrawn")).toBeDefined();
 });
-
 /** A delivery is the pool's; only what the person did by hand is theirs to undo. */
 test("offers no undo on a record the pool delivered", async () => {
   pool(routed([RECORD]));
@@ -703,17 +662,16 @@ test("stands the asking mark under the box while the records are read", async ()
   expect(container.querySelector("[data-asking]")).not.toBeNull();
 
   answer(json(200, { values: [RECORD] }));
-  await screen.findByText("delivered");
+  await screen.findByRole("list", { name: "Routing records" });
   expect(container.querySelector("[data-asking]")).toBeNull();
 });
 
 test("draws the capture with its actions in a bar of their own", async () => {
   pool(holding(saying("linked", "what the link names")));
 
-  const { container } = render(Item, { id: "linked" });
+  render(Item, { id: "linked" });
   await screen.findByText("what the link names");
 
-  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(
     screen
       .getByRole("button", { name: "Discard" })
@@ -721,8 +679,7 @@ test("draws the capture with its actions in a bar of their own", async () => {
       ?.getAttribute("aria-label"),
   ).toBe("Item");
 });
-
-test("reads by day on a narrow screen, as the queue does: headings, the time alone, tags under the capture", async () => {
+test("draws the words without a time column, and the tags after them, each with its ×", async () => {
   viewport(390);
   const at = new Date(2026, 7, 19, 9, 30).toISOString();
   pool((request) => {
@@ -737,36 +694,23 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
           }),
         );
       case "GET /v1/items/routed/routing":
-        return json(200, {
-          values: [
-            { ...RECORD, at: new Date(2026, 7, 20, 8, 5).toISOString() },
-          ],
-        });
+        return json(200, { values: [RECORD] });
       default:
         return json(200, { values: [] });
     }
   });
 
   const { container } = render(Item, { id: "routed" });
-  await screen.findByText("drafts");
+  await screen.findByRole("list", { name: "Routing records" });
 
+  expect(container.querySelector("[data-rail]")).toBeNull();
+  expect(screen.queryByText("09:30")).toBeNull();
+  const remove = screen.getByRole("button", { name: "remove design" });
   expect(
-    [...container.querySelectorAll("[data-day]")].map((day) =>
-      day.getAttribute("data-day"),
-    ),
-  ).toEqual(["2026-08-20"]);
-  expect(screen.getByText("09:30")).toBeDefined();
-  expect(screen.getByText("08:05")).toBeDefined();
-  expect(screen.getByRole("link", { name: "2026-08-20 08:05" })).toBeDefined();
-
-  const tag = screen.getByText("design");
-  expect(tag.closest("[data-body]")).not.toBeNull();
-  expect(
-    screen.getByText("routed").compareDocumentPosition(tag) &
+    screen.getByText("routed").compareDocumentPosition(remove) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
 });
-
 test("a routed item offers Route again, and a discarded one says so with Undiscard", async () => {
   pool(routed([RECORD]));
   const first = render(Item, { id: "routed" });
@@ -809,4 +753,34 @@ test("editing an unrouted item says nothing of revisions", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   await screen.findByLabelText("What it says");
   expect(screen.queryByText(/saving makes a revision/)).toBeNull();
+});
+
+test("Done moves on to the next item in the queue, whose bar says what was done with Undo", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/queue":
+        return json(200, {
+          values: [saying("one", "first"), saying("two", "second")],
+        });
+      case "GET /v1/items/one":
+        return json(200, saying("one", "first"));
+      case "POST /v1/items/one/mark-processed":
+        return json(200, { ...MARKED, item: "one" });
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "one" });
+  await screen.findByText("first");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/queue");
+  });
+  await manual();
+
+  await vi.waitFor(() => {
+    expect(went.to).toEqual(["/items/two"]);
+  });
+  expect(await screen.findByText(/^Done:/)).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
 });

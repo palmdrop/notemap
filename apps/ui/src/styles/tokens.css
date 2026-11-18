@@ -61,6 +61,9 @@
   --text-weekday--line-height: 1.2;
   --text-body: 0.9375rem;
   --text-body--line-height: 1.35;
+  /* An item read on its own: its words a step larger than a row's. */
+  --text-read: 1.125rem;
+  --text-read--line-height: 1.45;
   --text-time: 0.875rem;
   --text-time--line-height: 1.35;
   --text-small: 0.8125rem;

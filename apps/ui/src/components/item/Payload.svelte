@@ -13,8 +13,11 @@
   let {
     item,
     terms = [],
+    whole = false,
   }: {
     item: Item;
+    /** Drawn whole, never cut: the item's own view. */
+    whole?: boolean;
     /** The terms the surface is searched by, highlighted in the words. */
     terms?: readonly string[];
   } = $props();
@@ -25,7 +28,9 @@
 
 <AttachedPictures {attachments} picture="max-h-96" />
 
-{#if text !== ""}
+{#if text !== "" && whole}
+  <Prose {text} {terms} />
+{:else if text !== ""}
   <Clamp>
     <Prose {text} {terms} />
   </Clamp>

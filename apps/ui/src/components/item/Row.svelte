@@ -7,6 +7,7 @@
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
   import Tags from "$components/item/Tags.svelte";
+  import Windowed from "$components/item/Windowed.svelte";
   import Box from "$components/primitives/blocks/Box.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
   import Body from "$components/primitives/register/Body.svelte";
@@ -14,17 +15,15 @@
   import Cached from "$components/primitives/marks/Cached.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
-  import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import Became from "$components/primitives/marks/Became.svelte";
   import { goto } from "$app/navigation";
 
   import { itemHref } from "$components/item/href";
   import { width } from "$lib/breakpoint";
-  import { cancelRouting } from "$lib/firing";
-  import { firings, left, type Firing } from "$lib/firings.svelte";
+  import type { Firing } from "$lib/firings.svelte";
   import { NOT_DELIVERED, REJECTED } from "$lib/action-log";
   import { lastOpened } from "$lib/last-opened.svelte";
   import { notices } from "$lib/notices.svelte";
-  import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { became, editable } from "$lib/lineage";
   import {
     bringIntoView,
@@ -118,14 +117,32 @@
   let row = $state<HTMLElement | undefined>(undefined);
   let tags = $state<Tags | undefined>(undefined);
 
+  /** The row has been on screen, once. */
+  let shown = $state(false);
+
+  function onScreen(element: HTMLElement) {
+    if (surface !== "feed" || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const watching = new IntersectionObserver((seen) => {
+      if (seen.some((one) => one.isIntersecting)) {
+        shown = true;
+        watching.disconnect();
+      }
+    });
+    watching.observe(element);
+    return () => watching.disconnect();
+  }
+
   /** The pointer is over the row, where a marked row offers its `+`. */
   let pointed = $state(false);
 
-  // Only ever for the one row that is selected, and only where the item's
-  // summary says there is something to read: a request per triage at the most.
+  // Only where the item's summary says there is something to read: the
+  // selected row, and on the feed a row once it has been on screen, whose
+  // line keeps the end of the path it went to.
   const records = recordsOf(
     () => (item.routing === undefined ? undefined : item.id),
-    () => routed && selected && !offline,
+    () => routed && !offline && (selected || (surface === "feed" && shown)),
   );
 
   // Every row on the queue is unrouted, and a word saying so on each says
@@ -298,36 +315,9 @@
   });
 </script>
 
-{#snippet windowed(firing: Firing)}
-  {@const seconds = left(firing, firings.now)}
-  <p
-    class="flex items-center gap-2 rounded-tag border border-tag-line bg-tag px-2 py-1 text-small text-tag-ink"
-  >
-    <Spinner />
-    <span class="min-w-0 flex-1"
-      >Routing by <b class="text-ink">{firing.name}</b
-      >{#if firing.where !== undefined}, {firing.where}{/if}</span
-    >
-    {#if seconds !== undefined}
-      <span class="tabular-nums">{seconds}s</span>
-    {/if}
-    {#if !offline}
-      <button
-        type="button"
-        class="underline underline-offset-[0.2em]"
-        aria-label={`Cancel routing ${firing.name}`}
-        onclick={(event) => {
-          event.stopPropagation();
-          void cancelRouting(firing.record, firing.item, firing.name);
-        }}>Cancel</button
-      >
-    {/if}
-  </p>
-{/snippet}
-
 {#snippet facts()}
   {#if firing !== undefined}
-    {@render windowed(firing)}
+    <Windowed {firing} {offline} />
   {:else if turned !== undefined}
     <!-- A delivery turned down after its window: the item is back, and says why. -->
     <p class="mt-2 flex items-start gap-2 text-small text-danger">
@@ -340,13 +330,8 @@
       >
     </p>
   {/if}
-  {#if word === "revision"}
-    <span class="mt-2 block w-max" title="revision">
-      <span aria-hidden="true">[+]</span>
-      <span class="sr-only">revision</span>
-    </span>
-  {:else if word !== undefined}
-    <StateWord {word} />
+  {#if word !== undefined}
+    <Became {word} />
   {/if}
 
   {#if cached}
@@ -397,6 +382,7 @@
   <div
     bind:this={row}
     data-row={item.id}
+    {@attach onScreen}
     data-marked={marked ? "" : undefined}
     data-opens={opens ? "" : undefined}
     data-last-opened={surface !== "item" && lastOpened.id === item.id

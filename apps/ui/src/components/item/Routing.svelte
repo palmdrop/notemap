@@ -28,12 +28,15 @@
     summary,
     records = [],
     short = false,
+    boxed = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
     records?: readonly RoutingRecord[];
     /** Every record on one line, cut where it runs out of room, and nothing to press. */
     short?: boolean;
+    /** The item's own: a box of rows, each the way into its record. */
+    boxed?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -71,6 +74,9 @@
 
   type Line = Went & {
     readonly href?: string;
+    readonly manual?: boolean;
+    /** Withdrawn, where it was. */
+    readonly state?: string;
     readonly taken?: RoutingRecord;
     /** A delivery not landed yet, and what it offers now, as its route in flight does. */
     readonly offers?: {
@@ -105,6 +111,8 @@
             reading,
           ),
           href: recordHref(record.item, record.id),
+          ...(target.kind === "user" ? { manual: true } : {}),
+          ...(record.withdrawnAt === undefined ? {} : { state: "withdrawn" }),
           // A delivery the pool has carried out has happened elsewhere and is
           // withdrawn, never taken back.
           ...(target.kind === "user" ? { taken: record } : offered(record)),
@@ -162,11 +170,16 @@
      saying it has not landed stays at its end. -->
 {#snippet single(line: Line)}
   <span class="flex max-w-full min-w-0 items-baseline gap-x-[0.5ch]">
-    <Icon name="route" class="size-3.5 shrink-0 self-center" />
-    <span class="min-w-0 truncate font-semibold">{line.name}</span>
+    <Icon
+      name={line.manual === true ? "check" : "route"}
+      class="size-3.5 shrink-0 self-center"
+    />
+    <span class="min-w-0 truncate text-ink"
+      >{line.manual === true ? "Done" : line.name}</span
+    >
   </span>
   {#if line.place !== undefined || line.note !== undefined || line.pending === true}
-    <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch]">
+    <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch] text-muted">
       {#if line.place !== undefined}
         <span class="min-w-0 truncate" title={line.title}>{line.place}</span>
       {/if}
@@ -194,7 +207,48 @@
   {@render waits()}
 {/snippet}
 
-{#if short}
+{#if boxed}
+  <!-- Rows only from the records themselves: a summary has nothing to open. -->
+  {#if records.length > 0}
+    <ul
+      aria-label="Routing records"
+      class="divide-y divide-tag-line overflow-hidden rounded-control border border-tag-line bg-tag"
+    >
+      {#each lines as line (line.href ?? line.name)}
+        <li>
+          <a
+            href={line.href}
+            class="flex min-h-target items-center gap-3 px-gutter py-2 text-ink no-underline hover:bg-band hover:no-underline"
+            title={[line.name, line.title ?? line.place, line.note]
+              .filter((part) => part !== undefined)
+              .join(" ")}
+          >
+            <Icon
+              name={line.manual === true ? "check" : "route"}
+              class="size-5 flex-none"
+            />
+            <span class="flex min-w-0 flex-1 items-baseline gap-x-[1ch]">
+              <span class="flex-none"
+                >{line.manual === true ? "Manual" : line.name}</span
+              >
+              {#if line.place !== undefined || line.note !== undefined}
+                <span class="min-w-0 truncate text-muted"
+                  >{line.place ?? line.note}</span
+                >
+              {/if}
+            </span>
+            {#if line.pending === true}
+              <Turning said="pending" />
+            {:else if line.state !== undefined}
+              <span class="flex-none text-small text-muted">{line.state}</span>
+            {/if}
+            <Icon name="chevron" class="size-5 flex-none text-muted" />
+          </a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{:else if short}
   {#if lines.length > 0}
     <div
       class="truncate"
@@ -228,7 +282,7 @@
       <div class="flex items-baseline gap-x-4">
         <a
           href={line.href}
-          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]"
+          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] text-small no-underline hover:underline"
           title={[line.name, line.title ?? line.place, line.note]
             .filter((part) => part !== undefined)
             .join(" ")}>{@render single(line)}</a
@@ -239,14 +293,16 @@
           <button
             type="button"
             onclick={() => void undo(record)}
-            class="shrink-0 hover:underline">undo</button
+            class="shrink-0 text-small underline underline-offset-[0.2em]"
+            >Undo</button
           >
         {:else if line.offers !== undefined}
           {@const { record, label } = line.offers}
           <button
             type="button"
             onclick={() => void cancel(record, line.name)}
-            class="shrink-0 hover:underline">{label}</button
+            class="shrink-0 text-small underline underline-offset-[0.2em]"
+            >{label === "undo" ? "Undo" : "Cancel"}</button
           >
         {/if}
       </div>

@@ -238,7 +238,7 @@ test("offers the edit on an unprocessed row and not on a processed one", async (
 
   await open(1);
   expect(offered("edit")).toBeUndefined();
-  expect(screen.getByText("revised")).toBeDefined();
+  expect(screen.getByText("Revised")).toBeDefined();
 
   await open(0);
   expect(offered("edit")).toBeDefined();
@@ -714,7 +714,7 @@ test("a discarded row stays where it stood while it is selected, and leaves when
   await discard();
 
   await vi.waitFor(() => {
-    expect(screen.getByText("discarded")).toBeDefined();
+    expect(screen.getByText("Discarded")).toBeDefined();
   });
   expect(screen.getByText("one")).toBeDefined();
   expect(offered("undiscard")).toBeDefined();
@@ -744,7 +744,7 @@ test("the queue is not empty while its last row is held", async () => {
   await screen.findByText("one");
   await open(0);
   await discard();
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   expect(screen.queryByText("Queue is empty.")).toBeNull();
 
@@ -768,7 +768,7 @@ test("walking off a held row leaves it behind", async () => {
   await screen.findByText("one");
   await open(0);
   await discard();
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   await fireEvent.keyDown(window, { key: "j" });
   await vi.waitFor(() => {
@@ -932,7 +932,7 @@ test("a decision, then j, then the same decision walks the list", async () => {
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "D" });
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   await fireEvent.keyDown(window, { key: "j" });
   await vi.waitFor(() => {
@@ -1817,7 +1817,7 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
 
   await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "D" });
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   // Held where it stood, its heading with it, until the selection leaves.
   expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
 
