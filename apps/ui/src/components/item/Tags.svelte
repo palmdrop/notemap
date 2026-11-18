@@ -78,7 +78,7 @@
 </script>
 
 <div
-  class="relative flex min-w-0 flex-wrap items-center gap-1 {stacked
+  class="relative flex min-h-6 min-w-0 flex-wrap items-center gap-1 {stacked
     ? 'max-wide:flex-col max-wide:items-start'
     : ''}"
 >
