@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Sections from "$components/settings/Menu.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
 
   import { isCurrent, SURFACES } from "./surfaces";
@@ -13,11 +14,14 @@
     current,
     queue,
     rail = false,
+    sections = false,
     ongo,
   }: {
     current: string;
     queue?: number | undefined;
     rail?: boolean;
+    /** Settings' sections under settings, while it is the page. */
+    sections?: boolean;
     /** Somewhere was chosen: the drawer closes. */
     ongo?: () => void;
   } = $props();
@@ -59,6 +63,11 @@
             {/if}
           {/if}
         </a>
+        <!-- Settings' sections hang under it while it is open, so a section's
+             page takes the window beside the menu rather than a third column. -->
+        {#if !rail && on && surface.label === "settings" && sections}
+          <Sections nested />
+        {/if}
       </li>
     {/each}
   </ul>

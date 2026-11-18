@@ -175,7 +175,12 @@
           >
         {/if}
       </div>
-      <Menu current={page.url.pathname} queue={$queue} rail={!width.full} />
+      <Menu
+        current={page.url.pathname}
+        queue={$queue}
+        rail={!width.full}
+        sections={page.route.id?.startsWith("/settings/") === true}
+      />
       {#if width.full && waiting > 0}
         <p class="px-gutter py-2 text-small">{waiting} waiting to send</p>
       {/if}
