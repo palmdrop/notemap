@@ -128,3 +128,13 @@ So the third row of the table reads: *The item, full screen → the item across 
 menu, its actions at its head.* What the option traded is otherwise unchanged; the cost is that
 walking the list item by item from a desk is Previous and Next on the item, or `[` `]`, rather than
 the list beside it.
+
+## Amendment, 2026-11-18, after the review
+
+Settings at full width were the same three columns the item was moved off: the menu, the sections
+and the page. With the whole menu drawn, the sections now hang under settings in it, and a section
+takes the window beside it; at the rail's widths the sections keep their own column, the rail
+being narrow. A form's Save, at the foot of a long form, was below the fold when wide; a form now
+has its bar at its head when wide, as a destination's page does. The batch's actions sit in the
+header beside the count, as the table already said.
+

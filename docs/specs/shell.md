@@ -4,6 +4,12 @@
 **Last updated**: 2026-11-18
 **Shipped**:
 
+- 2026-11-18 — **The phone-first shell, after its review** ([review](../reviews/phone-first-shell-review-2026-11-18.md)).
+  The item drawn as its own view rather than a selected row; the log's rows in the queue's
+  register; one tag chooser in the blocks register; a selection takes the header; a route's
+  window survives a reload; leaving the route page goes back; no strip under a selected row;
+  a form's Save at its head when wide; settings' sections nested in the menu at full width.
+
 - 2026-11-18 — **The phone-first shell, tuned after use.** An item opens across the window when
   wide; the list marks the row last opened; selecting tints and ticks a row with no gutter, and
   rows hold their height; a row takes a tag in place; the log is filtered and ruled as the lists
@@ -861,10 +867,14 @@ says what is missing** on the line over the bar — `Nothing to capture yet: wri
 attach a file.` — rather than doing nothing. Saving goes back to the queue. **A draft kept by
 closing the page says so** when the page opens again — `Draft kept from last time.` — with
 **Clear**, which starts over. The draft is the same one the box holds, words, tags, the answers its
-trigger tags were given and its files, kept across a reload.
+trigger tags were given and its files, kept across a reload. *(Amended 2026-11-18, after the
+review.)* **The page is closed by ×**, which goes back. Its bar is **Attach**, **Camera** and
+**Save**; Tag is the + tag above it. **Save stays dashed until there is something to send**, and
+pressed then says what is missing.
 
 **At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
-the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **capture**.
+the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **Capture**,
+the field and the controls on the rows' words column (`--spacing-words`) *(2026-11-18)*.
 `mod+⏎` captures from the field.
 
 **At every width, a capture says where it landed**, since the queue reads oldest first by default
@@ -1276,6 +1286,13 @@ day, and a line per item with its time, its first words and its tags.
 
 #### Tags, and a filter
 
+*Amended 2026-11-18, after the review.* The bands are labelled as Order and Tags are
+(State, Destination, Source). **On the queue a source is counted by what the queue holds**
+(`unprocessed` on `GET /v1/sources`), and **every template's trigger is offered** under
+Templates, the queue rarely holding one. The bar is **Reset** and **Show n**, n the rows shown.
+A list that matches nothing offers a box named for what narrows it: Clear search, Clear filter,
+or both.
+
 *Amended 2026-11-13: the filter is a sheet, or a panel at the right when wide, opened by the
 header's filter icon, which counts what the filter holds, or by `f`. It holds, under plain labels,
 the **order** (Oldest first, Newest first; the feed also When captured and When processed), the
@@ -1426,7 +1443,11 @@ already taken the item off the queue, so the row is drawn from what the list las
 its place in the order, with a box-grey line: the spinner, `Routing by **Todo**, list Next`, the
 seconds left, and **Cancel** (not offline). Cancelled, it is work again and stays. When the window
 closes the row **slides out sideways and the rows below close up**; the line goes on saying the
-delivery's next step, `Sending to Vault`, until it lands.
+delivery's next step, `Sending to Vault`, until it lands. *(Amended 2026-11-18, after the
+review.)* **A reload does not lose a window**: on start the shell reads the log for windows still
+open and counts those whose records are pending, so the row, the line and Cancel come back; the
+row is read from the pool where the list never held it. A template's route is said on the line
+by its answers alone, never by a file name it made.
 
 #### The process surface
 
@@ -1464,7 +1485,10 @@ row saying where the route stands (in its window with the seconds to cancel, sen
 the destination, delivered, or rejected in the destination's words), and **and then**: Route it
 somewhere else too, Save this as a template (for a route made by hand), Open the item. The bar is
 **Cancel** while the window is open, and **Next item**. The steps are not entries in history, so
-back after routing leaves for where the route began.
+back after routing leaves for where the route began. *(Amended 2026-11-18, after the review.)*
+**× does the same**: it goes back to where the route began rather than pushing the queue, and
+Next item replaces the routed page in history; opened at its address, × replaces it with the
+queue. Nothing comes back selected.
 
 
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
@@ -2012,6 +2036,15 @@ it takes the window beside the menu** *(amended 2026-11-18; it sat beside the li
 its toolbar at its head. Coming back to the list, the row last opened is marked in the box grey,
 so the reader finds their place; it is not selected and draws no strip.
 
+*Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
+selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
+each the destination, the end of its place and a chevron, opening the record's page; the words
+whole and a step larger (`text-read`); then its tags, each with its ×, and + tag. Opened at its
+address, it reads its list for Previous and Next. **Done and Discard move on** to the next item
+in its list (back to the list after the last), and that item's bar says `Done: …` or
+`Discarded: …` with Undo. A routed or discarded item offers **Route** (again) alone; one state
+box says Discarded with Undiscard, or Manual: processed by hand with Undo.
+
 **Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
 stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
 menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History. Back
@@ -2345,7 +2378,14 @@ select as before. While selecting, every row shows a round check in its time col
 selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; there is no gutter bar,
 the keys' place while selecting being a ruled edge round the row. **Every row is at least
 `--spacing-row` tall**, its time and its circle, so the circle showing on hover moves nothing.
-Letting go of the last selected row ends selecting with nothing selected. When wide, a row under
+Letting go of the last selected row ends selecting with nothing selected. *(Amended 2026-11-18,
+after the review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
+wide having no ctrl and no hover. A row's tints: under the pointer the lightest, opened or
+selected for the keys the box grey, selected for a batch the strongest with an ink edge down its
+left; the keys' place while selecting is an outline round the whole row. **No strip** opens under
+a selected row: its actions are the keys and the hovered Route. **While rows are selected the
+header is the selection's** — × and `n selected` with All, and when wide Discard, Tag and Route
+beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
 the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
 **Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
 at the foot on a phone, in the list's head when wide. **Tag** opens a sheet of every tag the rows
@@ -2431,6 +2471,13 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 ([the log](#the-log)).
 
 ### Tagging
+
+*Amended 2026-11-18, after the review.* **The chooser is drawn in the blocks register**: where a
+tag can be changed each carries its × — no press to select it first — and elsewhere tags are
+words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
+its template's name muted at the right, and a typed name no offer holds says `new`. On a phone
+the offer opens upward, clear of a docked bar. **A trigger tag's question is the quick route's
+shape**: a sheet across a phone's foot, a dialog when wide, its answers rows with a chevron.
 
 Tagging is a **chooser over known names with free entry**, not a bare text field. It sits on the
 row, because it replays from the outbox and is therefore the one processing gesture that survives
@@ -2658,6 +2705,12 @@ operation, with an id, that a person dismisses — and a failed read has neither
 never answered still draws no failure at all.
 
 ### The status line
+
+*Amended 2026-11-18, after the review.* **Offline says when the pool last answered**, on the line
+(`Offline, last answered 12:17`) and at the menu's foot, which keeps one line the status line's
+height; a destination's state read before says `as of` that time. **The notices** say only a time
+and the words, with no empty column for work in flight; their Cancel and Undo are underlined
+words, Open and Save as template capitalised as the line's are.
 
 *(Rewritten 2026-11-13, [ADR 74](../adr/0074-the-status-line-is-at-the-foot-of-the-lists-while-something-is-true.md).
 It was one ruled line fixed under every surface from 2026-09-30,
@@ -3048,6 +3101,16 @@ replaced rather than pushed, as the order is.
 
 ### Settings
 
+*Amended 2026-11-18, after the review.* **With the whole menu drawn (1200px and wider), the
+sections hang under settings in the menu**, in their bands, and a section takes the window beside
+it: two columns, not three. At the rail's widths the sections keep their own column. **A form's
+Cancel and Save are at its head when wide**, so Save is never below the fold; on a phone they dock
+at the foot. A field is labelled in the route's words — place, shape, if missing — or in lowercase
+words (`base URL`), never by its schema name. **A template's asked field** says what it is asked
+as and its default, each a field of its own, and what a place can be named from is offered in
+words (date, month, week, the item's words, source) that put their pattern in. A place drawn in a
+list leaves out anything still to be filled from the item.
+
 *Amended 2026-11-13 ([ADR 75](../adr/0075-a-setting-left-unset-is-drawn-as-its-default.md)).*
 **The menu of sections** is a list of rows, each leading to its section with a chevron on a phone,
 the current one on the band; **when wide** it is a column beside the section, which keeps a readable
@@ -3317,6 +3380,11 @@ back into reach, so what it draws is the pool's current answer rather than whate
 last heard. Choosing the option already chosen sends nothing.
 
 ### The log
+
+*Amended 2026-11-18, after the review.* **A log row is in the queue's register**: the time alone
+in the rail; the kind in small capitals with its one fact at the right; the item's words, plain;
+and for a route, a line like the feed's — the destination and the end of its place — which opens
+the record's page. No outcome column. Each day's band counts its rows, and no gap opens under it.
 
 *Amended 2026-11-18.* **The log's order and views are in its filter**, as the queue's and the
 feed's are: the header's filter opens a sheet on a phone and a panel at the right when wide, the
