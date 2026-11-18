@@ -90,6 +90,8 @@
   --spacing-words: calc(var(--spacing-time) + 2 * var(--spacing-gutter));
   /* A header, or a bar docked at a page's foot. */
   --spacing-bar: 3.5rem;
+  /* Where a stuck heading holds: its top rule on the header's bottom one. */
+  --spacing-stuck: calc(var(--spacing-bar) - 1px);
   /* The least a target is on a phone. */
   --spacing-target: 2.75rem;
   /* A row's least height: its time and the circle that selects it, so the

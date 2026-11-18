@@ -24,15 +24,19 @@
 
   /** Held under the header while its rows scroll beneath it. */
   let stuck = $state(false);
+  let node = $state<HTMLElement | undefined>(undefined);
+  /** Held there under a later day's heading, which is the one to read. */
+  const buried = $derived(stuck && band.shown !== node);
 
-  const stick: Attachment<HTMLElement> = (node) => {
-    const stop = watch(node, (now) => {
+  const stick: Attachment<HTMLElement> = (element) => {
+    node = element;
+    const stop = watch(element, (now) => {
       stuck = now;
-      band.hold(node, now);
+      band.hold(element, now);
     });
     return () => {
       stop();
-      band.hold(node, false);
+      band.hold(element, false);
     };
   };
 </script>
@@ -43,7 +47,9 @@
   data-day={dayOf(at)}
   data-stuck={stuck ? "" : undefined}
   data-leads={leads ? "" : undefined}
-  class="sticky top-bar z-10 col-span-full -mt-px flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter tabular-nums"
+  class="sticky top-stuck z-10 col-span-full -mt-px flex min-h-9 items-center gap-3 border-y border-rule bg-band px-gutter tabular-nums {buried
+    ? 'invisible'
+    : ''}"
   transition:slide={{ fade: true, still: motion?.still ?? true }}
   {@attach stick}
 >
