@@ -889,10 +889,13 @@ button is pressed whether or not the daemon is there — and the box attaches an
 gesture, bytes with no capture behind them being bytes nothing will claim.
 
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
-add to it at the top of it. **The field takes the caret when the queue is drawn**: the surface
+add to it at the top of it. ~~**The field takes the caret when the queue is drawn**: the surface
 exists to be typed into, and a click before the first keystroke is a click nothing asked for.
 *Except on the way back from processing with a row still selected* *(amended 2026-09-14)*: the
-keys are that row's then, and a caret in the field would swallow them.
+keys are that row's then, and a caret in the field would swallow them.~~ *Amended 2026-11-18*:
+**the field takes the caret only when it is pressed**, or reached by `k` from the first row. The
+header's search, filter and notices are icons with keys now, and a caret taken on arrival typed
+`f`, `n` and `j` into the box instead of doing what their tooltips said.
 
 **The box is selected the way a row is** *(2026-09-27)*. It is the head of the queue, and one thing
 is selected at a time, the box or a row: anything in the box taking the focus selects it and lets

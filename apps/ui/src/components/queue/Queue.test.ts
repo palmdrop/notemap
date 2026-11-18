@@ -1003,13 +1003,16 @@ test("back from processing, a row the queue no longer holds is drawn where its o
   ).toBeTruthy();
 });
 
-test("gives the capture field the caret when the queue is simply arrived at", async () => {
+test("leaves the caret out of the capture field on arrival, so the keys are the queue's", async () => {
   pool(queued("one"));
 
   render(Queue);
   await screen.findByText("one");
 
-  expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
+  const field = screen.getByLabelText("What to capture");
+  expect(document.activeElement).not.toBe(field);
+  await fireEvent.keyDown(window, { key: "f" });
+  expect((field as HTMLTextAreaElement).value).toBe("");
 });
 
 /** The index is one line per item, for scanning; the timeline is for reading. */

@@ -450,7 +450,7 @@
 {#if width.wide && !beside}
   <Capture
     bind:this={capture}
-    focus={arrived === null}
+    focus={false}
     selected={atCapture}
     onfocus={captureFocused}
     oncaptured={(item) => sayLanded(item, $queue.order)}
