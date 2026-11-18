@@ -473,6 +473,15 @@ shot beside it in the artifact. `pnpm test:stack` passes.
 
 ---
 
+## Follow-ups
+
+Raised by the developer on 2026-11-18, after the tuning pass; not built here:
+
+- A loading state while a search is being answered.
+- Skeletons or loaders while the queue's contents are first read.
+
+---
+
 ## Testing
 
 ALWAYS CREATE TESTS for the behavior implemented, unless appropriate tests already exist.

@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-16
+**Last updated**: 2026-11-18
 **Shipped**:
+
+- 2026-11-18 — **The phone-first shell, tuned after use.** An item opens across the window when
+  wide; the list marks the row last opened; selecting tints and ticks a row with no gutter, and
+  rows hold their height; a row takes a tag in place; the log is filtered and ruled as the lists
+  are; settings add from their lists; the place picker is a tree of rows; a link's preview is a
+  quiet box; bars and rules line up across the menu and the page. ([plan](../plans/phone-first-shell.md))
 
 - 2026-11-16 — **The phone-first shell** (ADRs 71 to 76): new tokens, faces and icons; a header,
   a drawer, a menu column or rail, and a status line only while something is true; rows by day
@@ -824,8 +830,15 @@ queue.
 **The menu is a column**, always there, from 1200px, holding the same as the drawer; **from 900 to
 1199px it is a rail of icons**, each with its count as a small figure and its word as its label, and
 at its foot a dot for whether the pool answers. The header loses its menu icon. The status line
-runs under the list only. The other pieces' wide forms — the capture box, the item beside the list,
-a toolbar for a docked bar, a panel or a dialog for a sheet — are described with each.
+runs under the list only. The other pieces' wide forms — the capture box, the item across the
+window, a toolbar for a docked bar, a panel or a dialog for a sheet — are described with each.
+
+*Amended 2026-11-18.* **`notemap` at the menu's head** goes to the queue. **The search** sits at the
+right of the header, beside the filter and the notices. **One height for each bar**: the header and
+the menu's head are `--spacing-bar`, the status line and the menu's foot `--spacing-foot`, and a
+page's subject sits in the header's bar when wide rather than on a line of its own. **A band's top
+rule lies on the rule above it**, so no two rules meet as one thick one. **Pages read from the
+left** beside the menu, at their measure, rather than centred in the window.
 
 **The chrome carries what is true of the shell rather than of any item**, and says it on the status
 line ([below](#the-status-line)) while it is true, and in the drawer or the menu: the queue's size,
@@ -1023,7 +1036,9 @@ deleted.` with the cloud-off icon, and **Copy**, **Edit** (which opens it on the
 then the date, then how many rows the day holds in a circle at the end. The band holds under the
 header while its rows scroll beneath it. A row is ruled under, white, and runs the width of its
 pane: on the left a narrow column holding the time alone, at `text-time`; on the right the body,
-holding in order the capture's words, a link's preview (which is not a link), the record lines with
+holding in order the capture's words, a link's preview (which is not a link: a grey box with the
+page's title, a line of its description and its site, its picture beside them where it offers one
+*(2026-11-18)*), the record lines with
 the route icon and the end of the path, the tags, and the state lines in words. **The waiting dot**
 sits in the row's corner while something about the item is waiting to send.
 
@@ -1431,7 +1446,9 @@ has **Next**, and Next is otherwise only on how and place. **A picked template o
 to one row** with its icon, where it files, and **Change**. **How** holds the output (everything
 or attachments only), the action where the kind offers a choice, and every short choice of shape
 as a segmented row, the default drawn as picked. **Place** holds the line or the fields, and the
-folder mode as radio rows only where the place is a new note in a folder.
+folder mode as radio rows only where the place is a new note in a folder. *(2026-11-18)* The line's
+tree is ruled rows, a folder or a note icon beside each name, the one walked to filled, a note to
+be made marked `+`, and the note appended to saying `append here`.
 
 **The check** lists the decision's facts in the one vocabulary — destination, template, action,
 the place, shape, if missing — each opening the step that set it, or scrolling to it when wide. A
@@ -1988,10 +2005,9 @@ leaves it somewhere to land.
 *Redrawn 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
 **Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
-it sits beside the list it is read in**, the queue while it is work and the feed after, and a row
-pressed in that list opens in its place. *(A tap on a row of the full-width list still selects it in
-place when wide, its actions under it; the item opens from its `open`, or from a row beside an
-open item.)*
+it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
+its toolbar at its head. Coming back to the list, the row last opened is marked in the box grey,
+so the reader finds their place; it is not selected and draws no strip.
 
 **Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
 stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
@@ -2204,8 +2220,7 @@ drawn where there is none.
 
 ### Actions
 
-*Amended 2026-11-16.* When wide, a click on a row opens its item beside the list, as a tap does on
-a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
+*Amended 2026-11-16.* When wide, a click on a row opens its item, as a tap does on a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
 selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
 **Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
 right — each naming its key in its title. The rest of this section holds under those words.
@@ -2324,7 +2339,11 @@ selects it** and starts selecting, said once the first time — `Hold a row to s
 and a tap then selects more; a tap that ends a hold is not a second press. **When wide**, a round
 circle shows under a row's time on hover, and ctrl/cmd-click, shift-click, `space` and `J`/`K`
 select as before. While selecting, every row shows a round check in its time column, ticked when
-selected. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
+selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; there is no gutter bar,
+the keys' place while selecting being a ruled edge round the row. **Every row is at least
+`--spacing-row` tall**, its time and its circle, so the circle showing on hover moves nothing.
+Letting go of the last selected row ends selecting with nothing selected. When wide, a row under
+the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
 **Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
 at the foot on a phone, in the list's head when wide. **Tag** opens a sheet of every tag the rows
 have or could have, each on all of them (filled), on some (a dash) or on none; a press puts it on
@@ -3055,7 +3074,11 @@ description under it. Leaving it with changes, by its Cancel or the system's bac
 your changes?** — Keep editing or Lose changes. **Access** draws the session's line, `Signed in.
 This browser holds a session.`, with **Sign out** in it, and each token with **Revoke** inline in
 red. A page's bar is docked at the foot on a phone and is a toolbar at the head of the page when
-wide. What follows is the register this replaced, kept where it still holds.
+wide. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
+destination, Add a template, Add an account, Add a token — with the plus icon, held with its reason
+where it cannot be taken; a page's toolbar at its head when wide is drawn without the bar's beige.
+**Server shows its sources** without being asked. What follows is the register this replaced, kept
+where it still holds.
 
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
@@ -3291,6 +3314,14 @@ back into reach, so what it draws is the pool's current answer rather than whate
 last heard. Choosing the option already chosen sends nothing.
 
 ### The log
+
+*Amended 2026-11-18.* **The log's order and views are in its filter**, as the queue's and the
+feed's are: the header's filter opens a sheet on a phone and a panel at the right when wide, the
+order a segmented row and each view a box that can be on, with **Everything** where any is. Its
+entries are ruled as rows are. **An opened record is drawn in the new register** — the head on the
+box grey, what was written, the facts in the shell's words (shape, if missing), and its ways as
+beige boxes. **A record whose place is no path** — a channel, a board — is read when its entry is
+drawn, the entry carrying no arguments, so its line names the place rather than an id.
 
 *Amended 2026-11-13: the log is read in the new register — a band per day, the time in a narrow
 column, every row ruled under — and its status line is at its foot only while something is true.

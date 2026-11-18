@@ -5,6 +5,8 @@
 ("a wide window's layout is not decided here") and
 [ADR 72](0072-processing-is-a-quick-sheet-and-a-route-in-steps.md) (the route page on a wide
 window).
+Amended 2026-11-18: the item opens across the window beside the menu, not beside its list
+(see [Amendment](#amendment-2026-11-18)).
 **Deciders**: palmdrop, with Claude
 
 ---
@@ -111,3 +113,18 @@ and keep the phone's page in a readable column; they are not drawn twice.
 
 Revisit if the route page's two arrangements drift apart, or if a phone held wide (900px and over)
 turns out to want the phone's forms: then the choice goes by pointer rather than by width.
+
+---
+
+## Amendment, 2026-11-18
+
+Built, the item beside its list was too much at once: the menu, the list and the item side by side,
+three columns for one thing being read. The developer chose to let **the item take the window
+beside the menu** when wide, as it takes the screen on a phone, with its toolbar at its head as
+before. The list keeps the reader's place: coming back to it, the row last opened is marked. The
+route page already took the whole window and is unchanged.
+
+So the third row of the table reads: *The item, full screen → the item across the window beside the
+menu, its actions at its head.* What the option traded is otherwise unchanged; the cost is that
+walking the list item by item from a desk is Previous and Next on the item, or `[` `]`, rather than
+the list beside it.

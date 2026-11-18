@@ -136,7 +136,7 @@ phone's; what changes is a handful of pieces, each with a phone form and a wide 
 |---|---|
 | The drawer | The menu as a column, always there; a rail of icons with counts from 900 to 1199 |
 | The + and the capture page | A box at the top of the queue; Ctrl+Enter captures |
-| The item, full screen | The item beside the list, at every wide width, its actions at its head |
+| The item, full screen | The item across the window beside the menu, its actions at its head *(amended 2026-11-18; it was beside the list)* |
 | A docked bar at a page's foot | A toolbar at the head of the pane it acts on; a route's own foot keeps Route |
 | A bottom sheet | Filter and notices as panels at the right, a quick route as a dialog |
 | Hold to select, swipe to route | Ctrl/cmd-click and shift-click select; Route and the circle on hover |
@@ -148,6 +148,12 @@ phone's; what changes is a handful of pieces, each with a phone form and a wide 
   the end of the queue", Show), as on the phone.
 - **Rows** keep a readable measure, and Route stays beside the words rather than at the window's
   edge. With an item open, the row's Route goes: the pane has its own.
+- **Amended 2026-11-18, after the developer used the built app.** A click on a row opens its item
+  across the window; the row's time selects it in place for the keys. The row last opened is
+  marked when the list is come back to. A row under the pointer offers + tag. Selecting for a
+  batch tints and ticks the row, with no gutter, and every row is tall enough for its circle. The
+  log's order and views are in its filter. A settings section's add is a row at the end of its
+  list. The search sits at the right beside the icons.
 - **The route surface.** The item, whole, on the left, with Discard and Done at its head. On the
   right, every step: where (templates and destinations; once picked, one row with Change), then a
   template's questions or how and place, then the check with the tags and the preview. A step that
