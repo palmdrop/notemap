@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { labelFor } from "$lib/vocabulary";
   import Band from "$components/primitives/blocks/Band.svelte";
   import RadioRows from "$components/primitives/blocks/RadioRows.svelte";
   import Segmented from "$components/primitives/blocks/Segmented.svelte";
@@ -27,7 +28,7 @@
     onchange: (value: string) => void;
   } = $props();
 
-  const named = $derived(label ?? field.title ?? field.name);
+  const named = $derived(label ?? labelFor(field));
   const listed = $derived(field.options ?? field.examples);
   /** A value the daemon no longer declares is carried rather than dropped. */
   const choices = $derived(

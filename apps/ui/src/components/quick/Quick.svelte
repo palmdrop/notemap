@@ -10,7 +10,7 @@
   import { askForTemplate, type Step, type Supplied } from "$lib/asked";
   import { client } from "$lib/client";
   import { takenAs } from "$lib/candidate-list";
-  import { aboutItem } from "$lib/excerpt";
+  import { excerptOf } from "$lib/excerpt";
   import { routedHere } from "$lib/firing";
   import { slide } from "$lib/motion";
   import { templateIcon, whereOf } from "$lib/looks";
@@ -123,7 +123,9 @@
 
 <Sheet title="route" wide="dialog" {onclose}>
   {#if item !== undefined}
-    <p class="truncate px-gutter pt-3 pb-1 text-muted">{aboutItem(item)}</p>
+    <p class="truncate px-gutter pt-3 pb-1 text-muted">
+      {excerptOf(client.says(item)) ?? item.payload.type}
+    </p>
   {/if}
   {#if said !== ""}
     <p role="status" class="px-gutter py-2 text-danger">{said}</p>

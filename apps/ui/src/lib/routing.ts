@@ -5,6 +5,7 @@ import type {
 } from "@notemap/client";
 
 import { OWN_ARGUMENTS } from "./arguments";
+import { SHAPE_FIELD } from "./vocabulary";
 import { fieldsOf, type Field, type PathRole } from "./schema-form";
 
 /**
@@ -147,7 +148,7 @@ export function placeNamed(
 
   let placed = false;
   const said = Object.entries(args)
-    .filter(([name]) => !OWN_ARGUMENTS.includes(name))
+    .filter(([name]) => !OWN_ARGUMENTS.includes(name) && name !== SHAPE_FIELD)
     .filter(([name]) => !settings.includes(name))
     .flatMap(([name, value]): string[] => {
       if (inPath(name)) {
@@ -155,12 +156,25 @@ export function placeNamed(
         placed = true;
         return [path];
       }
-      return typeof value === "string" && value !== ""
-        ? [called?.(name, value) ?? value]
-        : [];
+      const known = typeof value === "string" ? fixed(value) : undefined;
+      return known === undefined || known === ""
+        ? []
+        : [called?.(name, known) ?? known];
     });
 
   return said.length === 0 ? undefined : said.join(", ");
+}
+
+/**
+ * A value still to be filled from the item, `research/{{item}}.md`: what it
+ * will be is not known until the route, so a place says only the folders
+ * fixed before it, `research/`, and nothing where none are.
+ */
+function fixed(value: string): string | undefined {
+  const at = value.indexOf("{{");
+  if (at === -1) return value;
+  const folder = value.lastIndexOf("/", at);
+  return folder <= 0 ? undefined : value.slice(0, folder + 1);
 }
 
 /** A folders field with no leaf names the folder, and ends in `/` to say so. */
@@ -171,9 +185,10 @@ function joined(
 ): string | undefined {
   const part = (field: string | undefined) => {
     const value = field === undefined ? undefined : args[field];
-    return field === undefined || typeof value !== "string" || value === ""
+    const known = typeof value === "string" ? fixed(value) : undefined;
+    return field === undefined || known === undefined || known === ""
       ? undefined
-      : (called?.(field, value) ?? value);
+      : (called?.(field, known) ?? known);
   };
 
   const folders = part(split.folders)?.replace(/\/+$/, "");

@@ -13,7 +13,13 @@ import { client } from "./client";
 import { nameOf as destinationName } from "./destinations";
 import { firings } from "./firings.svelte";
 import { notices } from "./notices.svelte";
-import { cancelledKey, keyFor, placeIn, type Reading } from "./routing";
+import {
+  cancelledKey,
+  keyFor,
+  placeIn,
+  placeShort,
+  type Reading,
+} from "./routing";
 import { tallying } from "./tallies";
 import { firingOf } from "./action-log";
 import { heldName, nameOf, triggeredBy } from "./templates";
@@ -94,8 +100,13 @@ export function routedHere(record: RoutedRecord, reading?: Reading): void {
   const target = record.target;
   if (target.kind !== "destination") return;
 
-  const place = placeIn(record, undefined, reading);
   const applied = record.applied;
+  // A template's route is said by its answers, as a trigger tag's is; one by
+  // hand by the end of the place it named.
+  const place =
+    applied === undefined
+      ? placeIn(record, undefined, reading)
+      : whereOf(applied.template, target.arguments);
   const tag =
     applied === undefined || applied.firedByTag
       ? undefined
@@ -108,7 +119,9 @@ export function routedHere(record: RoutedRecord, reading?: Reading): void {
       record.applied === undefined
         ? destinationName(target.destination)
         : nameOf(record.applied.template),
-    ...(place === undefined ? {} : { where: place }),
+    ...(place === undefined
+      ? {}
+      : { where: applied === undefined ? placeShort(place) : place }),
     until: Date.parse(record.until),
     href: itemHref(record.item),
     ...(tag === undefined ? {} : { recalls: tag }),

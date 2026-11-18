@@ -158,9 +158,7 @@ test("draws each template with its tag, its place and what it last answered", as
   render(Templates);
 
   await screen.findByRole("link", { name: "research" });
-  expect(
-    await screen.findByText("research/{{captured_at}} in Vault"),
-  ).toBeTruthy();
+  expect(await screen.findByText("research/ in Vault")).toBeTruthy();
   await vi.waitFor(() => {
     expect(asked()).toContain(`GET /v1/templates/${RESEARCH}/report`);
   });
@@ -183,9 +181,7 @@ test("draws a place split into folders and a leaf as one path", async () => {
 
   render(Templates);
 
-  expect(
-    await screen.findByText("research/{{captured_at}}.md in Vault"),
-  ).toBeTruthy();
+  expect(await screen.findByText("research/ in Vault")).toBeTruthy();
 });
 
 test("asks each row for its own report, and asks a settled one once", async () => {
@@ -557,8 +553,9 @@ test("draws a board template's place without knowing what a place is", async () 
   render(Templates);
 
   // Every string the arguments hold, in the order the destination declared
-  // them — never a field name this shell had to be told.
-  await screen.findByText(/^reading, \{\{captured_at\}\} in /);
+  // them — never a field name this shell had to be told, nor a pattern still
+  // to be filled.
+  await screen.findByText(/^reading in /);
 });
 
 /**

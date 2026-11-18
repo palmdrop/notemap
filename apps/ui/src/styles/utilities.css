@@ -96,6 +96,15 @@
   /* A line break typed is a line break drawn: CommonMark's soft break folds
      short lines into one paragraph, which nobody who pressed enter meant. */
   & p,
+  & li.task-item {
+    list-style: none;
+    margin-left: -1.25em;
+  }
+  & input.task {
+    margin-right: 0.5em;
+    vertical-align: -0.1em;
+    accent-color: var(--color-ink);
+  }
   & li {
     white-space: pre-line;
   }

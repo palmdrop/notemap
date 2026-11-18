@@ -4212,7 +4212,7 @@ test("attachments only routes the carrier to the folder the line had typed", asy
   await choose(/Attachments only/);
 
   const folder = (await screen.findByRole("combobox", {
-    name: "Folder",
+    name: "folder",
   })) as HTMLInputElement;
   expect(folder.value).toBe("library");
   expect(screen.queryByRole("combobox", { name: "place" })).toBeNull();
@@ -4238,7 +4238,7 @@ test("taking everything gives the line back as it was, in the folder as it stand
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "library/a.md" } });
   await choose(/Attachments only/);
-  await screen.findByRole("combobox", { name: "Folder" });
+  await screen.findByRole("combobox", { name: "folder" });
   await choose("Everything");
 
   const back = (await screen.findByRole("combobox", {
@@ -4358,7 +4358,7 @@ test("attachments only keeps a create template's folder and its folder mode", as
   await choose("Attachments only");
 
   const folder = (await screen.findByRole("combobox", {
-    name: "Folder",
+    name: "folder",
   })) as HTMLInputElement;
   expect(folder.value).toBe("research");
 
@@ -4381,7 +4381,7 @@ test("everything gives a create template back as itself", async () => {
   draw(aPaper());
   await choose("filed");
   await choose("Attachments only");
-  await screen.findByRole("combobox", { name: "Folder" });
+  await screen.findByRole("combobox", { name: "folder" });
   await choose("Everything");
 
   await commit();
@@ -4396,7 +4396,7 @@ const BOARD_CREATE = {
     type: "object",
     required: ["channel"],
     properties: {
-      channel: { type: "string", title: "Channel" },
+      channel: { type: "string", title: "channel" },
     },
   },
 };
@@ -4442,7 +4442,7 @@ test("a capability carrying the attachments alone is not offered for a capture w
   draw();
   await choose(/Board/);
 
-  expect(await screen.findByLabelText("Channel")).toBeDefined();
+  expect(await screen.findByLabelText("channel")).toBeDefined();
   expect(screen.queryByRole("button", { name: "attachments only" })).toBeNull();
   expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
 });

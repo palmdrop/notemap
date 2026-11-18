@@ -113,8 +113,8 @@ test("says it twice where a root is on a mount of its own", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/where the pool and the assets live/);
-  await screen.findByText(/where the mirror lives/);
+  await screen.findByText(/holding the pool and the assets/);
+  await screen.findByText(/holding the mirror/);
   await screen.findByText("210 GB");
 });
 

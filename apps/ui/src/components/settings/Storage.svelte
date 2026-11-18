@@ -146,10 +146,7 @@
 
     return grouped.map(({ bytes, names }) => ({
       bytes,
-      where:
-        grouped.length < 2
-          ? undefined
-          : `where ${listed(names)} ${names.length === 1 ? "lives" : "live"}`,
+      where: grouped.length < 2 ? undefined : `holding ${listed(names)}`,
     }));
   });
 
@@ -323,11 +320,8 @@
 
     <div>
       <Fact name="stats">
-        <button
-          type="button"
-          class="underline underline-offset-[0.2em]"
-          onclick={() => (showStats = !showStats)}
-          >{showStats ? "Hide" : "Show"}</button
+        <Box onclick={() => (showStats = !showStats)}
+          >{showStats ? "Hide" : "Show"}</Box
         >
       </Fact>
 
@@ -344,11 +338,8 @@
       {/if}
 
       <Fact name="paths">
-        <button
-          type="button"
-          class="underline underline-offset-[0.2em]"
-          onclick={() => (showPaths = !showPaths)}
-          >{showPaths ? "Hide" : "Show"}</button
+        <Box onclick={() => (showPaths = !showPaths)}
+          >{showPaths ? "Hide" : "Show"}</Box
         >
       </Fact>
 

@@ -205,7 +205,10 @@
         {#if one.fired.records === 0}
           nothing yet
         {:else}
-          {one.fired.records} times{one.fired.lastAt === undefined
+          {one.fired.records === 1
+            ? "once"
+            : `${String(one.fired.records)} times`}{one.fired.lastAt ===
+          undefined
             ? ""
             : `, last ${one.fired.lastAt.slice(0, 10)}`}
         {/if}

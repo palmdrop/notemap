@@ -242,9 +242,9 @@ test("draws what the delivery was given at the bottom, by the schema's names onc
 
   render(Block, { folds: false, record: KEPT });
 
-  expect(await screen.findByText("Directory")).toBeDefined();
+  expect(await screen.findByText("directory")).toBeDefined();
   expect(screen.getByText("drafts")).toBeDefined();
-  expect(screen.getByText("Filename")).toBeDefined();
+  expect(screen.getByText("filename")).toBeDefined();
   expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
 });
 

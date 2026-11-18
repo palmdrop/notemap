@@ -1671,7 +1671,7 @@
           destination={chosen}
           {capability}
           field={line.name}
-          label={line.title ?? line.name}
+          label={labelFor(line)}
           value={args[line.name] ?? ""}
           said={spoken}
           {places}

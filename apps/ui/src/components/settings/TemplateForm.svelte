@@ -20,7 +20,7 @@
   import { client } from "$lib/client";
   import { headed } from "$lib/heading.svelte";
   import { kindName } from "$lib/looks";
-  import { actionOf, wordFor } from "$lib/vocabulary";
+  import { actionOf, labelFor, wordFor } from "$lib/vocabulary";
 
   import FormBar from "./form/FormBar.svelte";
   import Guard from "./form/Guard.svelte";
@@ -442,22 +442,19 @@
         {#if Object.hasOwn(asked, field.name)}
           <input
             bind:value={asked[field.name]}
-            aria-label={`${field.title ?? field.name} label`}
+            aria-label={`${labelFor(field)} label`}
             aria-describedby={undefaulted(field)}
-            placeholder={`question, e.g. which ${field.title ?? field.name}?`}
+            placeholder={`question, e.g. which ${labelFor(field)}?`}
             class="min-h-9 min-w-0 flex-1 rounded-control border border-rule bg-paper px-2 text-small outline-none focus:border-ink"
           />
         {:else}
-          <span class="text-small">{field.title ?? field.name}</span>
+          <span class="text-small">{labelFor(field)}</span>
         {/if}
         {#if askable(field)}
-          <span
-            class="flex-none"
-            title={`ask ${field.title ?? field.name} each time`}
-          >
+          <span class="flex-none" title={`ask ${labelFor(field)} each time`}>
             <Toggle
               small
-              label={`ask ${field.title ?? field.name} each time`}
+              label={`ask ${labelFor(field)} each time`}
               on={Object.hasOwn(asked, field.name)}
               ontoggle={() => ask(field.name)}>Ask each time</Toggle
             >
@@ -470,7 +467,7 @@
             ? impliedOf(field, inherited)
             : undefined}
         <Segmented
-          label={field.title ?? field.name}
+          label={labelFor(field)}
           value={(typed[field.name] ?? "") === "" ? implied : typed[field.name]}
           options={(fixed(field) ?? []).map((one) => ({
             value: one,
@@ -485,7 +482,7 @@
           {destination}
           {capability}
           field={field.name}
-          label={field.title ?? field.name}
+          label={labelFor(field)}
           value={typed[field.name] ?? ""}
           claims={false}
           onchange={(value) => (typed[field.name] = value)}
@@ -497,7 +494,7 @@
           {destination}
           {capability}
           field={field.name}
-          label={field.title ?? field.name}
+          label={labelFor(field)}
           value={typed[field.name] ?? ""}
           durable
           naming={field.offeredOnly}
@@ -509,7 +506,7 @@
       {:else}
         <input
           bind:value={typed[field.name]}
-          aria-label={field.title ?? field.name}
+          aria-label={labelFor(field)}
           aria-describedby={undefaulted(field)}
           placeholder={Object.hasOwn(asked, field.name)
             ? undefined

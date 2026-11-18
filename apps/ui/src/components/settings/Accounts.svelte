@@ -10,6 +10,7 @@
   import AccountForm from "$components/settings/AccountForm.svelte";
   import Section from "$components/settings/Section.svelte";
   import { client } from "$lib/client";
+  import { kindName } from "$lib/looks";
   import { reachable } from "$lib/reachable.svelte";
 
   import { newHref, openHref, settingsHref } from "./href";
@@ -114,7 +115,7 @@
         {/if}
 
         {#each grouped as group (group.kind)}
-          <Band>{group.kind}</Band>
+          <Band>{kindName(group.kind)}</Band>
           {#each group.accounts as one (keyOf(one))}
             <LinkRow
               title={one.name}

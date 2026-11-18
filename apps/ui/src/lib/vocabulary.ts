@@ -56,11 +56,34 @@ const FOLDER_MODES: Readonly<Record<string, { word: string; line: string }>> = {
   },
 };
 
-/** A field's label as this shell draws it. */
+/** The argument a file destination names its place through. */
+export const PLACE_FIELD = "path";
+
+/**
+ * A field's label as this shell draws it: one word for each argument a route
+ * has, and any other in lowercase words, never as the schema's own name.
+ */
 export function labelFor(field: Pick<Field, "name" | "title">): string {
   if (field.name === SHAPE_FIELD) return "shape";
+  if (field.name === PLACE_FIELD) return "place";
   if (OWN_ARGUMENTS.includes(field.name)) return "if missing";
-  return field.title ?? field.name;
+  return spoken(field.title ?? field.name);
+}
+
+/** `baseUrl` as "base URL", `Folder` as "folder": words, lowercase but for initialisms. */
+function spoken(name: string): string {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .split(" ")
+    .map((word) =>
+      /^(url|id|api|uri)$/i.test(word)
+        ? word.toUpperCase()
+        : /^[A-Z][a-z]/.test(word) || /^[A-Z]$/.test(word)
+          ? word.toLowerCase()
+          : word,
+    )
+    .join(" ");
 }
 
 /** A value as this shell draws it, for the fields whose words it owns. */
@@ -128,5 +151,5 @@ export function factWords(
   if (OWN_ARGUMENTS.includes(label) || label === "if missing") {
     return { label: "if missing", value: wordFor("folder", value) };
   }
-  return { label, value };
+  return { label: spoken(label), value };
 }
