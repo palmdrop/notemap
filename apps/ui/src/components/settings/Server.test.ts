@@ -53,7 +53,7 @@ test("says the daemon is unavailable rather than saying nothing", async () => {
   await screen.findByText(/unavailable/);
 });
 
-test("sources are folded, and shown on request", async () => {
+test("sources are always shown", async () => {
   pool((request) =>
     routeOf(request) === "GET /v1/sources"
       ? json(200, {
@@ -70,12 +70,6 @@ test("sources are folded, and shown on request", async () => {
 
   render(Server);
 
-  expect(screen.queryByText("memos")).toBeNull();
-  await press("Show");
-
   await screen.findByText("memos");
   expect(asked()).toContain("GET /v1/sources");
-
-  await press("Hide");
-  expect(screen.queryByText("memos")).toBeNull();
 });

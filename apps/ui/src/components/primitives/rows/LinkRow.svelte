@@ -105,7 +105,7 @@
   </span>
 {/snippet}
 
-{#if href !== undefined && !disabled}
+{#if href !== undefined && !disabled && why === undefined}
   <a {href} aria-label={label} class="{look} text-ink">{@render inside()}</a>
 {:else}
   <button

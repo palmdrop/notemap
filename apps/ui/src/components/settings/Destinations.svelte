@@ -12,8 +12,6 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
 
-  import PageBar from "$components/primitives/frame/PageBar.svelte";
-  import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import DestinationPage from "$components/settings/Destination.svelte";
   import DestinationForm from "$components/settings/DestinationForm.svelte";
@@ -207,19 +205,18 @@
         />
       {/each}
 
-      <PageBar label="Destinations">
-        <BarAction
-          icon="plus"
-          label="Add a destination"
-          primary
-          why={!pool.yes
-            ? "The pool is out of reach."
-            : kinds.length === 0
-              ? "The pool has said no kinds yet."
-              : undefined}
-          href={newHref("destinations")}
-        />
-      </PageBar>
+      <LinkRow
+        icon="plus"
+        title="Add a destination"
+        label="Add a destination"
+        chevron={false}
+        why={!pool.yes
+          ? "The pool is out of reach."
+          : kinds.length === 0
+            ? "The pool has said no kinds yet."
+            : undefined}
+        href={newHref("destinations")}
+      />
     </div>
   </Section>
 {/if}

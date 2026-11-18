@@ -5,8 +5,6 @@
   import { page } from "$app/state";
 
   import Band from "$components/primitives/blocks/Band.svelte";
-  import BarAction from "$components/primitives/blocks/BarAction.svelte";
-  import PageBar from "$components/primitives/frame/PageBar.svelte";
   import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import Dialog from "$components/primitives/sheets/Dialog.svelte";
   import AccountForm from "$components/settings/AccountForm.svelte";
@@ -142,19 +140,18 @@
         {/if}
       </div>
 
-      <PageBar label="Accounts">
-        <BarAction
-          icon="plus"
-          label="Add an account"
-          primary
-          why={!pool.yes
-            ? "The pool is out of reach."
-            : kinds.length === 0
-              ? "The pool has said no kinds of account."
-              : undefined}
-          href={newHref("accounts")}
-        />
-      </PageBar>
+      <LinkRow
+        icon="plus"
+        title="Add an account"
+        label="Add an account"
+        chevron={false}
+        why={!pool.yes
+          ? "The pool is out of reach."
+          : kinds.length === 0
+            ? "The pool has said no kinds of account."
+            : undefined}
+        href={newHref("accounts")}
+      />
     </div>
   </Section>
 {/if}

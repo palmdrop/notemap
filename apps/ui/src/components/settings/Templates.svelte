@@ -9,8 +9,6 @@
     type RoutingTemplateReport,
   } from "@notemap/client";
 
-  import BarAction from "$components/primitives/blocks/BarAction.svelte";
-  import PageBar from "$components/primitives/frame/PageBar.svelte";
   import Trigger from "$components/primitives/marks/Trigger.svelte";
   import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import Dialog from "$components/primitives/sheets/Dialog.svelte";
@@ -287,19 +285,18 @@
         {/each}
       </div>
 
-      <PageBar label="Templates">
-        <BarAction
-          icon="plus"
-          label="Add a template"
-          primary
-          why={!pool.yes
-            ? "The pool is out of reach."
-            : $destinations.length === 0
-              ? "Add a destination first."
-              : undefined}
-          href={newHref("templates")}
-        />
-      </PageBar>
+      <LinkRow
+        icon="plus"
+        title="Add a template"
+        label="Add a template"
+        chevron={false}
+        why={!pool.yes
+          ? "The pool is out of reach."
+          : $destinations.length === 0
+            ? "Add a destination first."
+            : undefined}
+        href={newHref("templates")}
+      />
     </div>
   </Section>
 {/if}

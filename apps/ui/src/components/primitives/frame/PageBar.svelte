@@ -19,5 +19,5 @@
 <div
   class="max-wide:fixed max-wide:inset-x-0 max-wide:bottom-0 max-wide:z-20 wide:order-first"
 >
-  <ActionBar {label} {say}>{@render children()}</ActionBar>
+  <ActionBar {label} {say} plain>{@render children()}</ActionBar>
 </div>

@@ -64,49 +64,45 @@
 <!-- The height is on the inside, so the rule and the padding add to four lines
      rather than coming out of them. -->
 {#if drawn.kind !== "nothing"}
+  <!-- Not a link: the address in the words is, and a press on the row opens
+       the item, as a press anywhere on it does. -->
   <div class="pt-2" out:slide={{ fade: true }}>
-    <a
-      href={url}
-      rel="noreferrer"
+    <div
       data-unfurl={drawn.kind}
-      class="block max-w-prose border border-ink px-3 py-2 hover:no-underline"
-      target="_blank"
+      class="flex max-w-prose gap-3 overflow-hidden rounded-control border border-tag-line bg-tag px-3 py-2.5"
     >
-      <div
-        class="flex h-[calc(var(--text-body--line-height)*4)] gap-3 overflow-hidden"
-      >
-        <!-- The picture's room is kept whether or not one comes, so the words
-         beside it never move when it does. -->
-        <div class="aspect-square h-full flex-none">
-          {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
-            <img
-              src={drawn.unfurl.image}
-              alt=""
-              loading="lazy"
-              referrerpolicy="no-referrer"
-              {@attach revealed}
-              class="size-full object-cover opacity-0 transition-opacity duration-(--duration-short) ease-fade data-loaded:opacity-100"
-            />
-          {/if}
+      {#if drawn.kind === "read" && drawn.unfurl.image !== undefined}
+        <!-- The picture's room is kept once one is offered, so the words
+             beside it never move when it loads. -->
+        <div class="aspect-square h-12 flex-none overflow-hidden rounded-tag">
+          <img
+            src={drawn.unfurl.image}
+            alt=""
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            {@attach revealed}
+            class="size-full object-cover opacity-0 transition-opacity duration-(--duration-short) ease-fade data-loaded:opacity-100"
+          />
         </div>
-        <div class="min-w-0 flex-1">
-          <div class="truncate">
-            {drawn.kind === "read" ? (drawn.unfurl.siteName ?? host) : host}
+      {/if}
+      <div class="min-w-0 flex-1">
+        {#if drawn.kind === "read"}
+          {#if drawn.unfurl.title !== undefined}
+            <div class="truncate font-semibold">{drawn.unfurl.title}</div>
+          {/if}
+          {#if drawn.unfurl.description !== undefined}
+            <div class="line-clamp-2 text-small break-words">
+              {drawn.unfurl.description}
+            </div>
+          {/if}
+          <div class="truncate text-small text-muted">
+            {drawn.unfurl.siteName ?? host}
           </div>
-          {#if drawn.kind === "read"}
-            {#if drawn.unfurl.title !== undefined}
-              <div class="truncate font-semibold">{drawn.unfurl.title}</div>
-            {/if}
-            {#if drawn.unfurl.description !== undefined}
-              <div class="line-clamp-2 break-words">
-                {drawn.unfurl.description}
-              </div>
-            {/if}
-          {:else}
-            <Asking />
-          {/if}
-        </div>
+        {:else}
+          <div class="truncate text-small text-muted">{host}</div>
+          <Asking />
+        {/if}
       </div>
-    </a>
+    </div>
   </div>
 {/if}

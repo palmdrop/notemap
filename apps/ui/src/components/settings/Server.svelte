@@ -11,7 +11,6 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { since } from "$lib/stamp";
-  import { slide } from "$lib/motion";
 
   const address = $derived(
     import.meta.env.VITE_API_URL ??
@@ -60,7 +59,6 @@
   let sources = $state<readonly SourceUse[]>([]);
   let sourcesAsked = $state(false);
   let sourcesFailed = $state("");
-  let showSources = $state(false);
 
   const sourceSince = (source: SourceUse) => ({
     lead: `${String(source.items)} captured`,
@@ -111,26 +109,16 @@
   </div>
 
   <Section name="sources" sub>
-    {#snippet right()}
-      <button
-        type="button"
-        class="min-h-target underline underline-offset-[0.2em]"
-        onclick={() => (showSources = !showSources)}
-      >
-        {showSources ? "Hide" : "Show"}
-      </button>
-    {/snippet}
+    {#each sources as source (source.id)}
+      <Fact name={source.id}><Lead {...sourceSince(source)} /></Fact>
+    {:else}
+      {#if sourcesAsked && sourcesFailed === ""}
+        <p class="m-0 px-gutter py-3 text-muted">Nothing has captured yet.</p>
+      {/if}
+    {/each}
 
-    {#if showSources}
-      <div transition:slide={{ magnitude: "short" }}>
-        {#each sources as source (source.id)}
-          <Fact name={source.id}><Lead {...sourceSince(source)} /></Fact>
-        {/each}
-
-        {#if sourcesFailed !== ""}
-          <p class="m-0 px-gutter py-3 text-danger">{sourcesFailed}</p>
-        {/if}
-      </div>
+    {#if sourcesFailed !== ""}
+      <p class="m-0 px-gutter py-3 text-danger">{sourcesFailed}</p>
     {/if}
   </Section>
 </Section>

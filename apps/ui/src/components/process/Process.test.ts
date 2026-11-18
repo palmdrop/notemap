@@ -1392,7 +1392,7 @@ test("stores what the person meant, not the word that was drawn", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
   await commit();
 
   await vi.waitFor(async () => {
@@ -1415,7 +1415,7 @@ test("draws no + where the line lands on a note that is there", async () => {
 
   const line = await screen.findByRole("combobox");
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
 
   expect(screen.queryByText("+ decisions.md")).toBeNull();
   // The note's own row instead, marked as the one the line holds.
@@ -1434,7 +1434,7 @@ test("still draws a + for a note that is not there", async () => {
   await fireEvent.input(line, { target: { value: "thoughts.md" } });
 
   expect(await screen.findByText("+ thoughts.md")).toBeDefined();
-  expect(screen.queryByText("[append]")).toBeNull();
+  expect(screen.queryByText("append here")).toBeNull();
 });
 
 /** A reflex `⏎` on a half-typed folder used to make a file of it. */
@@ -1474,7 +1474,7 @@ test("mod-shift-enter writes the free name beside a taken one, and mod-enter rou
 
   const line = (await screen.findByRole("combobox")) as HTMLInputElement;
   await fireEvent.input(line, { target: { value: "decisions.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
   await fireEvent.keyDown(line, {
     key: "Enter",
     shiftKey: true,
@@ -2912,7 +2912,7 @@ test("keeps the field where the line would append to a note that is there", asyn
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "decisions.md" } });
 
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
   expect(screen.getByLabelText("under")).toBeDefined();
 });
 
@@ -4571,7 +4571,7 @@ test("offers the note's own headings once the line names the note", async () => 
   expect(askedForHeadings(transport)).toEqual([]);
 
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
 
   const list = await screen.findByRole("listbox", { name: "under candidates" });
   // Folded until the field is typed into: most decisions leave it empty.
@@ -4602,7 +4602,7 @@ test("keeps the heading typed where the destination cannot answer for it", async
   await choose(/Vault/);
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
 
   await fireEvent.input(screen.getByRole("combobox", { name: "under" }), {
     target: { value: "Later" },
@@ -4624,7 +4624,7 @@ test("offers no frontmatter while the delivery is a task, and sends none", async
   await choose(/Vault/);
   const line = await screen.findByRole("combobox", { name: "place" });
   await fireEvent.input(line, { target: { value: "todo.md" } });
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
 
   await fireEvent.click(
     screen.getByRole("button", { name: /^full/ }) as HTMLElement,

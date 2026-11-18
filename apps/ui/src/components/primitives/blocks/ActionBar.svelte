@@ -14,12 +14,15 @@
     at,
     say,
     label = "Actions",
+    plain = false,
     children,
   }: {
     /** Where it sits, when the width should not decide. */
     at?: "foot" | "head";
     say?: Snippet | undefined;
     label?: string;
+    /** At a page's head, the actions without the bar's beige, as lone boxes are. */
+    plain?: boolean;
     children: Snippet;
   } = $props();
 
@@ -41,7 +44,9 @@
   <div
     role="toolbar"
     aria-label={label}
-    class="flex w-full items-stretch gap-2 bg-off px-gutter {head
+    class="flex w-full items-stretch gap-2 px-gutter {head && plain
+      ? 'bg-paper'
+      : 'bg-off'} {head
       ? 'flex-wrap py-2'
       : 'border-t border-rule pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]'}"
   >

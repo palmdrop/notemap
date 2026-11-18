@@ -2,10 +2,9 @@
   import { saidBy, type MintedToken, type Token } from "@notemap/client";
 
   import Band from "$components/primitives/blocks/Band.svelte";
-  import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import Box from "$components/primitives/blocks/Box.svelte";
-  import PageBar from "$components/primitives/frame/PageBar.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import Section from "$components/settings/Section.svelte";
   import { client } from "$lib/client";
   import { copyable } from "$lib/clipboard";
@@ -212,7 +211,15 @@
           </div>
         {/if}
 
-        {#if addingToken}
+        {#if !addingToken}
+          <LinkRow
+            icon="plus"
+            title="Add a token"
+            label="Add a token"
+            chevron={false}
+            onclick={() => (addingToken = true)}
+          />
+        {:else}
           <form
             onsubmit={mint}
             class="flex flex-wrap items-end gap-2 border-b border-rule px-gutter py-3"
@@ -242,17 +249,5 @@
         {/if}
       {/if}
     </div>
-
-    {#if who.canSignOut}
-      <PageBar label="Access">
-        <BarAction
-          icon="plus"
-          label="Add a token"
-          primary
-          why={addingToken ? "Name it, then Create." : undefined}
-          onclick={() => (addingToken = true)}
-        />
-      </PageBar>
-    {/if}
   </div>
 </Section>

@@ -31,8 +31,8 @@ async function serving(
 
 const unfurls = () => asked().filter((route) => route === "GET /v1/unfurl");
 
-const block = (host: string) =>
-  screen.getByText(host).closest("a") as HTMLAnchorElement;
+const block = (said: string) =>
+  screen.getByText(said).closest("[data-unfurl]") as HTMLElement;
 
 test("draws what a link points at", async () => {
   await serving(true, {
@@ -52,10 +52,9 @@ test("draws what a link points at", async () => {
   await screen.findByText("A post");
   expect(screen.getByText("What it is about")).toBeDefined();
   expect(screen.getByText("A Site")).toBeDefined();
-  const link = screen.getByText("A post").closest("a");
-  expect(link?.getAttribute("href")).toBe("https://a.example/post");
-  expect(link?.getAttribute("rel")).toBe("noreferrer");
-  const image = link?.querySelector("img");
+  // Not a link: the address in the words is.
+  expect(screen.getByText("A post").closest("a")).toBeNull();
+  const image = block("A post").querySelector("img");
   expect(image?.getAttribute("src")).toBe("https://img.example/a.png");
   expect(image?.getAttribute("referrerpolicy")).toBe("no-referrer");
 });
@@ -244,7 +243,7 @@ test("stands the asking mark inside the block while the daemon reads the link", 
   expect(block("A post").querySelector("[data-asking]")).toBeNull();
 });
 
-test("keeps the picture's room whether or not a picture comes", async () => {
+test("keeps no picture's room where the page offers none", async () => {
   await serving(true, {
     "https://a.example/post": () =>
       json(200, {
@@ -257,7 +256,5 @@ test("keeps the picture's room whether or not a picture comes", async () => {
   render(Unfurls, { text: "read https://a.example/post" });
   await screen.findByText("A post");
 
-  const room = block("A post").querySelector(".aspect-square");
-  expect(room).not.toBeNull();
-  expect(room?.querySelector("img")).toBeNull();
+  expect(block("A post").querySelector(".aspect-square")).toBeNull();
 });

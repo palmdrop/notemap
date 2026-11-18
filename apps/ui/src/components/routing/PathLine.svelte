@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import {
     saidBy,
     type CandidateEntry,
@@ -466,12 +467,28 @@
             indent={row.depth}
             ontake={() => take(row.entry)}
           >
-            <!-- Inline-block, so the row's underline stops at the name. -->
-            {row.made === true
-              ? `+ ${textOf(row.entry)}`
-              : textOf(row.entry)}{#if row.held === true}<span
-                class="ml-[1ch] inline-block font-normal">[append]</span
-              >{/if}
+            {@const label = textOf(row.entry)}
+            <span
+              class="-mx-gutter flex min-h-target items-center gap-2 border-b border-rule px-gutter {picked
+                ? 'bg-ink text-paper'
+                : ''}"
+            >
+              <Icon
+                name={label.endsWith("/") ? "folder" : "file"}
+                class="size-5 flex-none"
+              />
+              <span
+                class="min-w-0 truncate {!moved &&
+                (row.onPath || row.made === true || row.held === true)
+                  ? 'font-semibold'
+                  : ''}">{row.made === true ? `+ ${label}` : label}</span
+              >
+              {#if row.held === true}<span
+                  class="ml-auto text-small font-normal {picked
+                    ? ''
+                    : 'text-muted'}">append here</span
+                >{/if}
+            </span>
           </Walked>
         {/each}
       </div>

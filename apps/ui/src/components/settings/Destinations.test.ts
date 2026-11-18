@@ -721,7 +721,7 @@ test("asks again for the kinds once the daemon is reachable", async () => {
     screen.getByRole("button", { name: "Add a destination" });
 
   await vi.waitFor(() =>
-    expect(adding().getAttribute("aria-disabled")).toBe("true"),
+    expect((adding() as HTMLButtonElement).disabled).toBe(true),
   );
 
   serving([]);
