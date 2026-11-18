@@ -42,11 +42,11 @@ test("the menu marks the current section, and leaves the rest plain", () => {
 
   const templates = screen.getByRole("link", { name: /^Templates/ });
   expect(templates.getAttribute("aria-current")).toBe("page");
-  expect(templates.classList.contains("bg-off")).toBe(true);
+  expect(templates.classList.contains("bg-picked")).toBe(true);
 
   const destinations = screen.getByRole("link", { name: /^Destinations/ });
   expect(destinations.getAttribute("aria-current")).toBeNull();
-  expect(destinations.classList.contains("bg-off")).toBe(false);
+  expect(destinations.classList.contains("bg-picked")).toBe(false);
 });
 
 test("on a section, the menu is hidden below `narrow` and the section is not", () => {
@@ -88,4 +88,21 @@ test("`/settings` draws the menu alone below `narrow`, and does not redirect", a
   // would have landed in instead.
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(went.to).toEqual([]);
+});
+
+test("groups the sections under quiet labels, each a row with its icon", () => {
+  render(Menu);
+
+  const labels = screen.getAllByRole("heading", { level: 2 });
+  expect(labels.map((one) => one.textContent?.trim())).toEqual([
+    "Routing",
+    "The pool",
+    "This device",
+  ]);
+  for (const label of labels) {
+    expect(label.className).not.toContain("bg-band");
+  }
+  expect(
+    screen.getByRole("link", { name: /^Access/ }).querySelector("svg"),
+  ).not.toBeNull();
 });

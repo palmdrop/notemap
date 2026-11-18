@@ -105,6 +105,8 @@
   --spacing-thumb: 4.5rem;
   /* The menu, as a column and as a rail of icons. */
   --spacing-menu: 15rem;
+  /* Settings' own list of sections, beside the section when wide. */
+  --spacing-settings: 16rem;
   --spacing-menu-rail: 4rem;
   /* A side panel, when wide. */
   --spacing-panel: 26rem;

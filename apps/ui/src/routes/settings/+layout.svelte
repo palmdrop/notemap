@@ -2,40 +2,30 @@
   import { page } from "$app/state";
 
   import Menu from "$components/settings/Menu.svelte";
-  import { width } from "$lib/breakpoint";
 
   let { children } = $props();
 
-  /** The menu alone, full width — the phone's landing page rather than a rail. */
+  /** The list alone — the phone's landing page; when wide it lands on a section. */
   const atMenu = $derived(page.route.id === "/settings");
-  /** With the whole menu drawn, the sections hang in it, and the page is the rest. */
-  const inMenu = $derived(width.full);
 </script>
 
 <svelte:head>
   <title>Settings | Notemap</title>
 </svelte:head>
 
-{#if inMenu}
-  <div class="max-w-read min-w-0">
-    {#if atMenu}
-      <Menu />
-    {:else}
-      {@render children()}
-    {/if}
-  </div>
-{:else}
+<!-- On a phone the list is a page and a section is pushed over it. When wide,
+     at every width, the list is a column of its own beside the section. -->
+<div
+  class="grid grid-cols-1 wide:grid-cols-[var(--spacing-settings)_minmax(0,var(--spacing-read))]"
+>
   <div
-    class="grid grid-cols-[14rem_minmax(0,var(--spacing-read))] max-wide:grid-cols-1 max-wide:gap-0"
+    class="wide:sticky wide:top-bar wide:min-h-[calc(100dvh-var(--spacing-bar))] wide:self-start wide:border-r wide:border-rule {atMenu
+      ? ''
+      : 'max-wide:hidden'}"
   >
-    <div
-      class="border-r border-rule max-wide:border-r-0
-        {atMenu ? '' : 'max-wide:hidden'}"
-    >
-      <Menu />
-    </div>
-    <div class="min-w-0 {atMenu ? 'max-wide:hidden' : ''}">
-      {@render children()}
-    </div>
+    <Menu />
   </div>
-{/if}
+  <div class="min-w-0 {atMenu ? 'max-wide:hidden' : ''}">
+    {@render children()}
+  </div>
+</div>

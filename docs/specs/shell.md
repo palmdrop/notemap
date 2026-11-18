@@ -874,7 +874,9 @@ pressed then says what is missing.
 
 **At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
 the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **Capture**,
-the field and the controls on the rows' words column (`--spacing-words`) *(2026-11-18)*.
+the field and the controls on the rows' words column (`--spacing-words`) *(2026-11-18)*, and **in
+the time column the time it would be stamped with now**, so the box reads as the row it is about
+to be. The capture page keeps no clock.
 `mod+⏎` captures from the field.
 
 **At every width, a capture says where it landed**, since the queue reads oldest first by default
@@ -2378,8 +2380,10 @@ select as before. While selecting, every row shows a round check in its time col
 selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; there is no gutter bar,
 the keys' place while selecting being a ruled edge round the row. **Every row is at least
 `--spacing-row` tall**, its time and its circle, so the circle showing on hover moves nothing.
-Letting go of the last selected row ends selecting with nothing selected. *(Amended 2026-11-18,
-after the review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
+Letting go of the last selected row ends selecting with nothing selected. **Every row keeps its
+tag line's height**, tags or none, so the + tag a hovered row offers moves nothing. **The view,
+rows or index, is one choice** for the queue and the feed. *(Amended 2026-11-18, after the
+review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
 wide having no ctrl and no hover. A row's tints: under the pointer the lightest, opened or
 selected for the keys the box grey, selected for a batch the strongest with an ink edge down its
 left; the keys' place while selecting is an outline round the whole row. **No strip** opens under
@@ -3101,9 +3105,12 @@ replaced rather than pushed, as the order is.
 
 ### Settings
 
-*Amended 2026-11-18, after the review.* **With the whole menu drawn (1200px and wider), the
-sections hang under settings in the menu**, in their bands, and a section takes the window beside
-it: two columns, not three. At the rail's widths the sections keep their own column. **A form's
+*Amended 2026-11-18, after the review, and again the same day by the developer.* **Settings read
+as a phone's settings do**: one list, each group under a quiet label (Routing, The pool, This
+device) rather than a band, each section a row with its icon, what is worth knowing and a
+chevron. On a phone the list is the page and a section is pushed over it; **when wide, at every
+width, the list is a column of its own** beside the section, the open one marked. *(Nesting the
+sections in the app's menu at full width, tried first, drew settings two ways at two widths.)* **A form's
 Cancel and Save are at its head when wide**, so Save is never below the fold; on a phone they dock
 at the foot. A field is labelled in the route's words — place, shape, if missing — or in lowercase
 words (`base URL`), never by its schema name. **A template's asked field** says what it is asked

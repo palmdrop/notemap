@@ -131,10 +131,12 @@ the list beside it.
 
 ## Amendment, 2026-11-18, after the review
 
-Settings at full width were the same three columns the item was moved off: the menu, the sections
-and the page. With the whole menu drawn, the sections now hang under settings in it, and a section
-takes the window beside it; at the rail's widths the sections keep their own column, the rail
-being narrow. A form's Save, at the foot of a long form, was below the fold when wide; a form now
+Settings at full width were the same three columns the item was moved off. Nesting the sections
+in the menu at full width was tried and reversed the same day: settings were drawn two ways at
+two widths. Settings now read as a phone's do, one list of sections under quiet group labels;
+when wide that list is a column of its own beside the section at every width. Three columns
+here are the menu, a short list and a page, which reads as one place, where the item beside its
+list read as two. A form's Save, at the foot of a long form, was below the fold when wide; a form now
 has its bar at its head when wide, as a destination's page does. The batch's actions sit in the
 header beside the count, as the table already said.
 

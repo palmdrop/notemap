@@ -1,14 +1,24 @@
 import { resolve } from "$app/paths";
 
 export const SECTIONS = [
-  { slug: "destinations", label: "Destinations", group: "routing" },
-  { slug: "templates", label: "Templates", group: "routing" },
-  { slug: "accounts", label: "Accounts", group: "routing" },
-  { slug: "pool", label: "Pool settings", group: "the pool" },
-  { slug: "access", label: "Access", group: "the pool" },
-  { slug: "server", label: "Server", group: "the pool" },
-  { slug: "storage", label: "Storage", group: "the pool" },
-  { slug: "appearance", label: "Appearance", group: "this device" },
+  {
+    slug: "destinations",
+    label: "Destinations",
+    group: "routing",
+    icon: "route",
+  },
+  { slug: "templates", label: "Templates", group: "routing", icon: "template" },
+  { slug: "accounts", label: "Accounts", group: "routing", icon: "link" },
+  { slug: "pool", label: "Pool settings", group: "the pool", icon: "settings" },
+  { slug: "access", label: "Access", group: "the pool", icon: "lock" },
+  { slug: "server", label: "Server", group: "the pool", icon: "cloud" },
+  { slug: "storage", label: "Storage", group: "the pool", icon: "folder" },
+  {
+    slug: "appearance",
+    label: "Appearance",
+    group: "this device",
+    icon: "image",
+  },
 ] as const;
 
 export const GROUPS = ["routing", "the pool", "this device"] as const;

@@ -1,18 +1,17 @@
 <script lang="ts">
   import { page } from "$app/state";
 
-  import Band from "$components/primitives/blocks/Band.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { client } from "$lib/client";
 
   import { GROUPS, SECTIONS, settingsHref, type Section } from "./href";
 
   /**
-   * The menu of sections in bands, each saying the one thing worth knowing
-   * before opening it. Nested, under settings in the app's own menu.
+   * Settings as one list, in the way a phone's settings read: each group
+   * under a quiet label, each section a row with its icon, the one thing
+   * worth knowing before it is opened, and a chevron. The section open now
+   * is marked.
    */
-  let { nested = false }: { nested?: boolean } = $props();
-
   const current = $derived(page.params["section"]);
   const destinations = client.destinations.all;
   const templates = client.templates.all;
@@ -23,32 +22,38 @@
     ),
     templates: String($templates.length),
   });
+
+  const capital = (word: string): string =>
+    word.charAt(0).toUpperCase() + word.slice(1);
 </script>
 
-<nav aria-label="Settings" class="flex flex-col">
+<nav aria-label="Settings" class="flex flex-col pb-4">
   {#each GROUPS as group (group)}
-    {#if nested}
-      <span
-        class="border-b border-rule pt-3 pb-1 pl-[calc(var(--spacing-gutter)*2+var(--spacing-icon))] text-small text-muted"
-        >{group}</span
-      >
-    {:else}
-      <Band level={3}>{group}</Band>
-    {/if}
-    {#each SECTIONS.filter((one) => one.group === group) as one (one.slug)}
-      <a
-        href={settingsHref(one.slug)}
-        aria-current={current === one.slug ? "page" : undefined}
-        class="flex min-h-target items-center justify-between gap-3 border-b border-rule px-gutter text-ink no-underline hover:no-underline {nested
-          ? 'pl-[calc(var(--spacing-gutter)*2+var(--spacing-icon))] text-small'
-          : ''} {current === one.slug ? 'bg-off' : 'active:bg-off-down'}"
-      >
-        <span>{one.label}</span>
-        <span class="flex items-center gap-2 text-small text-muted">
-          {said[one.slug] ?? ""}
-          <Icon name="chevron" class="size-5" />
-        </span>
-      </a>
-    {/each}
+    <h2
+      class="px-gutter pt-5 pb-1.5 text-small font-semibold text-muted wide:px-3"
+    >
+      {capital(group)}
+    </h2>
+    <ul class="m-0 list-none p-0 wide:px-1.5">
+      {#each SECTIONS.filter((one) => one.group === group) as one (one.slug)}
+        <li>
+          <a
+            href={settingsHref(one.slug)}
+            aria-current={current === one.slug ? "page" : undefined}
+            class="flex min-h-12 items-center gap-3 px-gutter text-ink no-underline hover:no-underline wide:rounded-control wide:px-1.5 {current ===
+            one.slug
+              ? 'bg-picked font-semibold'
+              : 'hover:bg-hover active:bg-off-down'}"
+          >
+            <Icon name={one.icon} class="size-icon flex-none" />
+            <span class="flex-1">{one.label}</span>
+            <span class="flex items-center gap-1 text-small text-muted">
+              {said[one.slug] ?? ""}
+              <Icon name="chevron" class="size-5 wide:hidden" />
+            </span>
+          </a>
+        </li>
+      {/each}
+    </ul>
   {/each}
 </nav>
