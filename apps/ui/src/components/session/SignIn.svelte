@@ -1,5 +1,6 @@
 <script lang="ts">
-  import Spinner from "$components/primitives/marks/Spinner.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import PageBar from "$components/primitives/frame/PageBar.svelte";
   import { saidBy } from "@notemap/client";
 
   import { client } from "$lib/client";
@@ -9,8 +10,8 @@
   let sending = $state(false);
   let refused: string | undefined = $state(undefined);
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
+  async function submit(event?: SubmitEvent) {
+    event?.preventDefault();
     if (sending || password === "") return;
 
     sending = true;
@@ -57,16 +58,20 @@
     <p role="alert" class="text-danger">{refused}</p>
   {/if}
 
-  <button
-    type="submit"
-    disabled={password === "" || sending}
-    aria-busy={sending || undefined}
-    class="inline-flex min-h-12 items-center justify-center gap-2 rounded-control border bg-ink px-4 text-paper {password ===
-    ''
-      ? 'border-dashed border-off-line bg-paper text-muted'
-      : 'border-ink'}"
-  >
-    {#if sending}<Spinner />{/if}
-    Sign in
-  </button>
+  <!-- Enter in either field signs in, as the bar's Sign in does. -->
+  <button type="submit" class="sr-only" tabindex="-1" aria-hidden="true"
+  ></button>
 </form>
+
+<!-- The main action in the docked bar, as every page's is: dashed until there
+     is a password to send. -->
+<PageBar label="Sign in">
+  <BarAction
+    icon="next"
+    label="Sign in"
+    primary
+    working={sending}
+    why={password === "" ? "Type the password to sign in." : undefined}
+    onclick={() => void submit()}
+  />
+</PageBar>
