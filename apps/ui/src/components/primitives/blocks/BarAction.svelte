@@ -50,12 +50,12 @@
 
   const look = $derived(
     primary
-      ? `flex-1 flex-row gap-2 rounded-control px-4 ${head ? "max-w-48 min-h-10 ml-auto" : "min-h-12"} ${
+      ? `flex-1 flex-row gap-2 rounded-control px-4 ${head ? "max-w-48 min-h-9 ml-auto" : "min-h-12"} ${
           why !== undefined
             ? "border border-dashed border-off-line bg-paper text-muted"
             : "border border-ink bg-ink text-paper active:bg-muted disabled:opacity-40"
         }`
-      : `rounded-control px-2.5 ${head ? "flex-row gap-1.5 min-h-10" : "flex-col gap-1 min-h-target text-small leading-none"} ${
+      : `rounded-control px-2.5 ${head ? "flex-row gap-1.5 min-h-9" : "flex-col gap-1 min-h-target text-small leading-none"} ${
           why !== undefined ? "text-muted" : danger ? "text-danger" : "text-ink"
         } active:bg-off-down disabled:opacity-40`,
   );

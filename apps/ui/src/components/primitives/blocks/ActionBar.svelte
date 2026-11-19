@@ -6,7 +6,8 @@
   /**
    * The actions of a page, docked at its foot under a rule at every width:
    * where the thumb is on a phone, and out of the way of what is read when
-   * wide.
+   * wide, where it stands the height of the menu's foot so the two rules
+   * are one line.
    * `say` is the ruled line over the bar: why the main action cannot be
    * taken yet, or what the page just did.
    */
@@ -48,7 +49,7 @@
       ? 'bg-paper'
       : 'bg-off'} {head
       ? 'flex-wrap py-2'
-      : 'border-t border-rule pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]'}"
+      : 'border-t border-rule pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] wide:h-foot wide:items-center wide:py-0'}"
   >
     {@render children()}
   </div>
