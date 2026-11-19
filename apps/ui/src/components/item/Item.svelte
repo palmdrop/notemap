@@ -16,7 +16,6 @@
   import Cached from "$components/primitives/marks/Cached.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
-  import { width } from "$lib/breakpoint";
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
@@ -165,6 +164,15 @@
     }
   }
 
+  // A route made here is drawn on its record's line, which is read for it.
+  $effect(() => {
+    const flying = firing;
+    if (flying === undefined) return;
+    untrack(() => {
+      if (!drawn.some((one) => one.id === flying.record)) records.reread();
+    });
+  });
+
   /** What the records box says instead of records, where it has none to say. */
   const aboutRecords = $derived.by(() => {
     if (item?.routing === undefined) return undefined;
@@ -176,42 +184,12 @@
   });
 </script>
 
-{#if item !== undefined && width.wide}
-  <div class="-mx-8">
-    <ItemBar
-      {item}
-      {commands}
-      {editing}
-      onundomanual={marked === undefined ? undefined : () => void undoManual()}
-    />
-  </div>
-{/if}
-
 <div
-  class="-mx-3.5 flex min-h-[calc(100dvh-var(--spacing-bar)-4rem)] flex-col gap-4 px-gutter pt-4 pb-4 wide:-mx-8 wide:min-h-0 wide:px-5"
+  class="-mx-3.5 flex flex-col gap-4 px-gutter pt-4 pb-4 wide:-mx-8 wide:px-5"
 >
   {#if item !== undefined}
+    <!-- Read as a row reads: the words, where it went, then its tags. -->
     <div class="flex max-w-read flex-col gap-4">
-      {#if firing !== undefined}
-        <Windowed {firing} offline={!pool.yes} />
-      {/if}
-
-      <Routing
-        boxed
-        summary={item.routing}
-        records={drawn}
-        onundone={() => records.reread()}
-      />
-      {#if aboutRecords !== undefined}
-        {#if aboutRecords.asking === true}
-          <Asking />
-        {:else if aboutRecords.alarm}
-          <div role="status" class="text-danger">{aboutRecords.said}</div>
-        {:else}
-          <div>{aboutRecords.said}</div>
-        {/if}
-      {/if}
-
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="flex flex-col gap-3 text-read"
@@ -234,16 +212,38 @@
           {/if}
         </p>
       {/if}
-    </div>
 
-    <div class="mt-auto flex max-w-read flex-wrap items-center gap-1">
-      <Tags
-        bind:this={tags}
-        {item}
-        {editing}
-        addable={item.archived === undefined}
-        stacked={false}
+      <!-- A route in its window is said on its record's line; the box only
+           stands in until that record has been read. -->
+      {#if firing !== undefined && !drawn.some((one) => one.id === firing.record)}
+        <Windowed {firing} offline={!pool.yes} />
+      {/if}
+      <Routing
+        boxed
+        summary={item.routing}
+        records={drawn}
+        offline={!pool.yes}
+        onundone={() => records.reread()}
       />
+      {#if aboutRecords !== undefined}
+        {#if aboutRecords.asking === true}
+          <Asking />
+        {:else if aboutRecords.alarm}
+          <div role="status" class="text-danger">{aboutRecords.said}</div>
+        {:else}
+          <div>{aboutRecords.said}</div>
+        {/if}
+      {/if}
+
+      <div class="flex flex-wrap items-center gap-1">
+        <Tags
+          bind:this={tags}
+          {item}
+          {editing}
+          addable={item.archived === undefined}
+          stacked={false}
+        />
+      </div>
     </div>
   {:else if read !== undefined}
     {#if refused !== undefined}
@@ -259,8 +259,10 @@
   {/if}
 </div>
 
-{#if item !== undefined && !width.wide}
-  <div class="sticky bottom-0 z-20 -mx-3.5">
+<!-- Docked at the foot of the item's pane at every width. -->
+{#if item !== undefined}
+  <div aria-hidden="true" class="h-28"></div>
+  <div class="fixed right-0 bottom-0 left-(--pane-left,0) z-20">
     <ItemBar
       {item}
       {commands}

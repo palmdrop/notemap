@@ -11,7 +11,8 @@
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
   import { cancelRouting } from "$lib/firing";
-  import { firings } from "$lib/firings.svelte";
+  import { firings, left } from "$lib/firings.svelte";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
@@ -30,6 +31,7 @@
     short = false,
     boxed = false,
     inert = false,
+    offline = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
@@ -40,6 +42,8 @@
     boxed?: boolean;
     /** What happened rather than what stands: each line a way in, with nothing to take back. */
     inert?: boolean;
+    /** Cancelling needs the pool, so out of reach nothing offers it. */
+    offline?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -77,6 +81,7 @@
 
   type Line = Went & {
     readonly href?: string;
+    readonly record?: string;
     readonly manual?: boolean;
     /** Withdrawn, where it was. */
     readonly state?: string;
@@ -114,6 +119,7 @@
             reading,
           ),
           href: recordHref(record.item, record.id),
+          record: record.id,
           ...(target.kind === "user" ? { manual: true } : {}),
           ...(record.withdrawnAt === undefined ? {} : { state: "withdrawn" }),
           // A delivery the pool has carried out has happened elsewhere and is
@@ -218,18 +224,33 @@
       class="divide-y divide-tag-line overflow-hidden rounded-control border border-tag-line bg-tag"
     >
       {#each lines as line (line.href ?? line.name)}
-        <li>
+        {@const flying = firings.open.find((one) => one.record === line.record)}
+        {@const seconds =
+          flying === undefined ? undefined : left(flying, firings.now)}
+        <!-- A route still in its window says so on its own line: the
+             spinner, the seconds left and Cancel, then the plain line once
+             it has landed. -->
+        <li class="flex items-center">
           <a
             href={line.href}
-            class="flex min-h-target items-center gap-3 px-gutter py-2 text-ink no-underline hover:bg-band hover:no-underline"
+            class="flex min-h-target min-w-0 flex-1 items-center gap-3 py-2 pl-gutter text-ink no-underline hover:bg-band hover:no-underline {flying ===
+              undefined || line.offers === undefined
+              ? 'pr-gutter'
+              : 'pr-2'}"
             title={[line.name, line.title ?? line.place, line.note]
               .filter((part) => part !== undefined)
               .join(" ")}
           >
-            <Icon
-              name={line.manual === true ? "check" : "route"}
-              class="size-5 flex-none"
-            />
+            {#if flying !== undefined}
+              <span class="grid size-5 flex-none place-items-center"
+                ><Spinner /></span
+              >
+            {:else}
+              <Icon
+                name={line.manual === true ? "check" : "route"}
+                class="size-5 flex-none"
+              />
+            {/if}
             <span class="flex min-w-0 flex-1 items-baseline gap-x-[1ch]">
               <span class="flex-none"
                 >{line.manual === true ? "Manual" : line.name}</span
@@ -240,13 +261,31 @@
                 >
               {/if}
             </span>
-            {#if line.pending === true}
+            {#if flying !== undefined}
+              <span class="flex-none text-small text-muted tabular-nums"
+                >{seconds === undefined
+                  ? `Sending to ${flying.to ?? line.name}`
+                  : `${String(seconds)}s`}</span
+              >
+            {:else if line.pending === true}
               <Turning said="pending" />
             {:else if line.state !== undefined}
               <span class="flex-none text-small text-muted">{line.state}</span>
             {/if}
-            <Icon name="chevron" class="size-5 flex-none text-muted" />
+            {#if flying === undefined || line.offers === undefined}
+              <Icon name="chevron" class="size-5 flex-none text-muted" />
+            {/if}
           </a>
+          {#if flying !== undefined && line.offers !== undefined && !offline}
+            {@const { record } = line.offers}
+            <button
+              type="button"
+              aria-label={`Cancel routing ${flying.name}`}
+              onclick={() => void cancel(record, flying.name)}
+              class="flex-none px-gutter py-2 underline underline-offset-[0.2em]"
+              >Cancel</button
+            >
+          {/if}
         </li>
       {/each}
     </ul>

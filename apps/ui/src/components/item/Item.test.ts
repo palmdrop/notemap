@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { Item as Held } from "@notemap/client";
@@ -783,4 +789,25 @@ test("Done moves on to the next item in the queue, whose bar says what was done 
   });
   expect(await screen.findByText(/^Done:/)).toBeDefined();
   expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
+});
+
+test("a route in its window is said on its record's line, with Cancel, and after the words", async () => {
+  const { firings } = await import("$lib/firings.svelte");
+  pool(routed([{ ...RECORD, state: "pending" }]));
+  firings.opened({
+    record: "rec",
+    item: "routed",
+    name: "Vault",
+    until: Date.now() + 20_000,
+  });
+
+  render(Item, { id: "routed" });
+
+  const box = await screen.findByRole("list", { name: "Routing records" });
+  expect(
+    within(box).getByRole("button", { name: "Cancel routing Vault" }),
+  ).toBeDefined();
+  expect(within(box).getByText(/^\d+s$/)).toBeDefined();
+  expect(screen.queryByText(/Routing by/)).toBeNull();
+  firings.closed("rec");
 });

@@ -6,14 +6,13 @@
   import Box from "$components/primitives/blocks/Box.svelte";
   import type { Command } from "$lib/command/command";
   import { editable } from "$lib/lineage";
-  import { width } from "$lib/breakpoint";
   import { notices } from "$lib/notices.svelte";
 
   import type { Editing } from "./editing.svelte";
 
   /**
-   * The item's actions: Discard, Done and Route, docked at the foot on a
-   * phone and at the head of its pane when wide. While editing they are
+   * The item's actions: Discard, Done and Route, docked at the foot of the
+   * item's pane at every width. While editing they are
    * Attach, Cancel and Save. What a press just did is said on the line over
    * the bar, with Undo, rather than in a toast; a state that has a way back
    * keeps it in its box.
@@ -92,7 +91,7 @@
   {/if}
 {/snippet}
 
-{#if !width.wide}{@render state()}{/if}
+{@render state()}
 
 {#if editing !== undefined}
   <ActionBar label="Editing">
@@ -170,5 +169,3 @@
     />
   </ActionBar>
 {/if}
-
-{#if width.wide}{@render state()}{/if}
