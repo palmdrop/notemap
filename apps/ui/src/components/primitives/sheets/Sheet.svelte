@@ -30,9 +30,14 @@
 
   const form = $derived(width.wide ? wide : "sheet");
 
+  // Focused without scrolling: the panel is still off the edge as it slides
+  // in, and the dialog scrolling to the focus is what made it overshoot and
+  // jump back.
   function modal(dialog: HTMLDialogElement): () => void {
     dialog.showModal();
-    dialog.querySelector<HTMLElement>("section")?.focus();
+    dialog
+      .querySelector<HTMLElement>("section")
+      ?.focus({ preventScroll: true });
     return () => {
       if (dialog.open) dialog.close();
     };
@@ -71,7 +76,7 @@
     close();
   }}
   onclose={close}
-  class="fixed inset-0 m-0 size-full max-h-none max-w-none bg-transparent p-0 text-ink backdrop:bg-transparent"
+  class="fixed inset-0 m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-transparent"
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

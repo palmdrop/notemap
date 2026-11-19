@@ -211,7 +211,7 @@
       .then((read) => (sources = read))
       .catch(() => undefined);
     await tick();
-    line?.focus();
+    line?.focus({ preventScroll: true });
   }
 
   function shut(): void {
