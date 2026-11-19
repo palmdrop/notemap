@@ -35,7 +35,7 @@
     <Menu />
   </div>
   <div
-    class="min-w-0 wide:[--pane-left:calc(var(--menu-left)+var(--spacing-settings))] wide:[&_.px-gutter:not([role=toolbar])]:pr-[max(var(--spacing-gutter),calc(100%-var(--spacing-read)-var(--spacing-gutter)))] {atMenu
+    class="min-w-0 wide:measured wide:[--pane-left:calc(var(--menu-left)+var(--spacing-settings))] {atMenu
       ? 'max-wide:hidden'
       : ''}"
   >

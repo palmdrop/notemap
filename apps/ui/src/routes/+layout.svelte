@@ -217,7 +217,8 @@
           list={list ||
             fills ||
             page.route.id === "/items/[id]" ||
-            page.route.id?.startsWith("/settings") === true}
+            page.route.id?.startsWith("/settings") === true ||
+            page.route.id === "/items/[id]/records/[recordId]"}
         >
           {#if shut}
             <SignIn />

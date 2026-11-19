@@ -1298,7 +1298,7 @@ day, and a line per item with its time, its first words and its tags.
 (`unprocessed` on `GET /v1/sources`), and **every template's trigger is offered** under
 Templates, the queue rarely holding one. The bar is **Reset** and **Show n**, n the rows shown.
 A list that matches nothing offers a box named for what narrows it: Clear search, Clear filter,
-or both.
+or both, centred under the box with room above it *(2026-11-19)*.
 
 *Amended 2026-11-13: the filter is a sheet, or a panel at the right when wide, opened by the
 header's filter icon, which counts what the filter holds, or by `f`. It holds, under plain labels,
@@ -3427,7 +3427,8 @@ Read by one item it is headed **this item**, by one batch **this batch**, each b
 capture or the batch said beside it and **All of the log** as a box. A batch is still one row that
 opens in place.*
 
-**A record's own page** *(2026-11-13, amended 2026-11-16)* is headed `record`, with back and the
+**A record's own page** *(2026-11-13, amended 2026-11-16; 2026-11-19: when wide its rows run to
+the window's edge, as settings' do, what is in them kept to the reading measure)* is headed `record`, with back and the
 item's words under it. A box says where it stands: **Delivered to Vault.** in green, a pending one
 grey with a spinner and its window's words, **Withdrawn at 16:31.** grey. Its facts are in the one
 vocabulary — destination, the place, template, action, shape, if missing, decided — and under the

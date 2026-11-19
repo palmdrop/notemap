@@ -163,6 +163,20 @@
   }
 }
 
+/**
+ * A page whose rows run to the window's edge, as the log's do, with what is in
+ * each row kept to the reading measure: a row's own right padding grows with
+ * the room past the measure. Settings and a record's page.
+ */
+@utility measured {
+  & .px-gutter:not([role="toolbar"]) {
+    padding-right: max(
+      var(--spacing-gutter),
+      calc(100% - var(--spacing-read) - var(--spacing-gutter))
+    );
+  }
+}
+
 /** The same menu opening upward, clear of a bar docked at the foot. */
 @utility offer-above {
   top: auto;
