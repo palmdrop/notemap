@@ -18,13 +18,13 @@
 
 <div aria-label="Today" role="group" class="grid grid-cols-2 gap-3 p-gutter">
   <div
-    class="flex aspect-square flex-col justify-between rounded-control bg-tag p-3"
+    class="flex min-h-26 flex-col justify-between rounded-control bg-tag p-3"
   >
     <span class="text-small text-tag-ink">{month}</span>
     <span class="font-display text-figure tabular-nums">{now.getDate()}</span>
   </div>
   <div
-    class="flex aspect-square flex-col justify-between rounded-control bg-tag p-3"
+    class="flex min-h-26 flex-col justify-between rounded-control bg-tag p-3"
   >
     <span class="text-small text-tag-ink">Captured today</span>
     <span class="font-display text-figure tabular-nums">{$captured ?? "–"}</span
