@@ -49,3 +49,12 @@ test("the menu's foot says offline and when the pool last answered on one line",
   expect(said.textContent?.trim()).toBe("offline 12:17");
   expect(said.getAttribute("title")).toBe("offline, last answered 12:17");
 });
+
+test("the menu's squares say today's date and how much was captured today", async () => {
+  const { default: Glance } = await import("./Glance.svelte");
+  render(Glance);
+
+  const today = screen.getByRole("group", { name: "Today" });
+  expect(today.textContent).toContain(String(new Date().getDate()));
+  expect(today.textContent).toContain("Captured today");
+});

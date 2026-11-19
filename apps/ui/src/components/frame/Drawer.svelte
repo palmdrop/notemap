@@ -3,6 +3,7 @@
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { fade, fromSide } from "$lib/motion";
 
+  import Glance from "./Glance.svelte";
   import Menu from "./Menu.svelte";
   import Reach from "./Reach.svelte";
 
@@ -30,7 +31,9 @@
 
   function modal(dialog: HTMLDialogElement): () => void {
     dialog.showModal();
-    dialog.querySelector<HTMLElement>("[aria-current=page]")?.focus();
+    dialog
+      .querySelector<HTMLElement>("[aria-current=page]")
+      ?.focus({ preventScroll: true });
     return () => {
       if (dialog.open) dialog.close();
     };
@@ -52,7 +55,7 @@
     close();
   }}
   onclose={close}
-  class="fixed inset-0 m-0 size-full max-h-none max-w-none bg-transparent p-0 text-ink backdrop:bg-transparent"
+  class="fixed inset-0 m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-transparent"
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -74,6 +77,7 @@
       </button>
     </header>
     <Menu {current} {queue} ongo={close} />
+    <Glance />
     {#if waiting > 0}
       <p class="flex items-center gap-2 px-gutter py-2 text-small">
         <Dot said="waiting to send" />

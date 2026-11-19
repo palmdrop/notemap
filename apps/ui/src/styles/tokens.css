@@ -71,6 +71,9 @@
   --text-time--line-height: 1.35;
   --text-small: 0.8125rem;
   --text-small--line-height: 1.3;
+  /* A figure read at a glance: the day of the month, today's captures. */
+  --text-figure: 3.5rem;
+  --text-figure--line-height: 1;
   /* A count on an icon. */
   --text-badge: 0.6875rem;
   --text-badge--line-height: 1;
