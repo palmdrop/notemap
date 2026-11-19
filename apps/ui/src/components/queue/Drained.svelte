@@ -19,7 +19,10 @@
   } = $props();
 </script>
 
-<div>
+<!-- Centred under the box, with room above, as a list with nothing in it reads. -->
+<div
+  class="flex flex-col items-center px-gutter pt-12 pb-6 text-center text-muted"
+>
   {#if isWhole(filter)}
     {QUEUE_EMPTY}
   {:else}

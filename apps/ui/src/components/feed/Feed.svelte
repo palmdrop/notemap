@@ -439,15 +439,20 @@
     {/if}
 
     {#if bare}
-      <Rail>feed</Rail>
-      <Body>
-        {#if isWhole($feed.filter)}
+      {#if isWhole($feed.filter)}
+        <Rail>feed</Rail>
+        <Body>
           <Prose text={NOTHING_CAPTURED} />
-        {:else}
+        </Body>
+      {:else}
+        <!-- Centred, with room above, as the queue's is. -->
+        <div
+          class="col-span-full flex flex-col items-center px-gutter pt-12 pb-6 text-center text-muted"
+        >
           {nothingMatches($feed.filter, nameOf)}
           <ClearFilters filter={$feed.filter} onclick={reading.clear} />
-        {/if}
-      </Body>
+        </div>
+      {/if}
     {/if}
 
     {#each headed as one (one.key)}
