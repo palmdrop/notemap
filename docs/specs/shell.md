@@ -2396,8 +2396,9 @@ tag line's height**, tags or none, so the + tag a hovered row offers moves nothi
 rows or index, is one choice** for the queue and the feed. *(Amended 2026-11-18, after the
 review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
 wide having no ctrl and no hover. A row's tints: under the pointer the lightest, opened or
-selected for the keys the box grey, selected for a batch the strongest with an ink edge down its
-left; the keys' place while selecting is an outline round the whole row. **No strip** opens under
+selected for the keys the box grey, selected for a batch the strongest, with its tick and nothing
+more *(2026-11-19: the ink edge went)*; the keys' place while selecting is an outline round the
+whole row, drawn only while the keys are what is being used. **No strip** opens under
 a selected row: its actions are the keys and the hovered Route. **While rows are selected the
 header is the selection's** — × and `n selected` with All, and when wide Discard, Tag and Route
 beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
@@ -3679,8 +3680,7 @@ family, a Tailwind palette colour, or any of the roles the shell used to have an
   over a group of rows. `rule` for the rule between regions, which is grey and not ink.
   *Amended 2026-11-18*: `edge` for a field's edge, and `off-line` darkened, both to 3:1 against
   the page as a control's boundary must be. A row has its own tints, `hover`, `picked` (opened,
-  or selected for the keys) and `chosen` (selected for a batch, with `shadow-chosen`, an ink edge
-  down its left side); a row never takes `band`. Dark's `off` is warmer and lighter than its
+  or selected for the keys) and `chosen` (selected for a batch); a row never takes `band`. Dark's `off` is warmer and lighter than its
   `band`, so what can be pressed and what heads a group differ there too.
 - **The box grey.** `tag`, `tag-line` and `tag-ink`, for what is under way and for a state's box:
   "Routing by Todo", "On its way", a tag.

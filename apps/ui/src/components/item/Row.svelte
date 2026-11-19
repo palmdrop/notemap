@@ -23,6 +23,7 @@
   import type { Firing } from "$lib/firings.svelte";
   import { NOT_DELIVERED, REJECTED } from "$lib/action-log";
   import { lastOpened } from "$lib/last-opened.svelte";
+  import { modality } from "$lib/modality.svelte";
   import { notices } from "$lib/notices.svelte";
   import { became, editable } from "$lib/lineage";
   import {
@@ -403,10 +404,11 @@
       : `${String(swipe.dx)}px 0`}
     class="relative col-span-full grid min-h-row scroll-mt-day-head grid-cols-subgrid border-b border-rule {swipes
       ? 'touch-pan-y'
-      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor
+      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
+    modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
       : ''} {marked
-      ? 'bg-chosen shadow-chosen'
+      ? 'bg-chosen'
       : surface !== 'item' && (selected || lastOpened.id === item.id)
         ? 'bg-picked'
         : pointed && width.wide && onprocess !== undefined

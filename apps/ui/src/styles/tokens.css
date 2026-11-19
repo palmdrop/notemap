@@ -86,9 +86,6 @@
   --radius-control: 0.5rem;
   --radius-tag: 0.3125rem;
 
-  /* A row selected for a batch: an ink edge down its left side, taking no width. */
-  --shadow-chosen: inset 3px 0 0 var(--color-ink);
-
   --spacing-gutter: 0.75rem;
   /* The time column, which holds a row's round check while selecting. */
   --spacing-time: 3.25rem;

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { modality } from "$lib/modality.svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
   import type { Snippet } from "svelte";
 
@@ -149,10 +150,10 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule {cursor ===
-    line.item.id
+      line.item.id && modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
       : ''} {marked?.(line.item.id) === true
-      ? 'bg-chosen shadow-chosen'
+      ? 'bg-chosen'
       : selected === line.item.id
         ? 'bg-picked'
         : ''}"
