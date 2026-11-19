@@ -184,12 +184,12 @@
   });
 </script>
 
-<div class="-mx-3.5 flex flex-col gap-4 pt-4 pb-4 wide:-mx-8">
+<div
+  class="-mx-3.5 flex flex-col gap-4 px-gutter pt-4 pb-4 wide:-mx-8 wide:px-5"
+>
   {#if item !== undefined}
-    <!-- Read as a row reads: the words, where it went, then its tags. The
-         words and the tags keep a reading measure; where it went is ruled to
-         the pane's edges. -->
-    <div class="flex max-w-read flex-col gap-4 px-gutter">
+    <!-- Read as a row reads: the words, where it went, then its tags. -->
+    <div class="flex max-w-read flex-col gap-4">
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="flex flex-col gap-3 text-read"
@@ -218,15 +218,13 @@
       {#if firing !== undefined && !drawn.some((one) => one.id === firing.record)}
         <Windowed {firing} offline={!pool.yes} />
       {/if}
-    </div>
-    <Routing
-      boxed
-      summary={item.routing}
-      records={drawn}
-      offline={!pool.yes}
-      onundone={() => records.reread()}
-    />
-    <div class="flex max-w-read flex-col gap-4 px-gutter">
+      <Routing
+        boxed
+        summary={item.routing}
+        records={drawn}
+        offline={!pool.yes}
+        onundone={() => records.reread()}
+      />
       {#if aboutRecords !== undefined}
         {#if aboutRecords.asking === true}
           <Asking />

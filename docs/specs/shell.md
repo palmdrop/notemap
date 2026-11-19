@@ -2056,9 +2056,7 @@ box says Discarded with Undiscard, or Manual: processed by hand with Undo.
 it went, then its tags, the top of it being only what was captured. **A route in its window is said
 on its record's line** — a spinner in place of the route icon, the seconds left and **Cancel** —
 which becomes the plain line once it lands; the window's box stands in only until the record has
-been read. *(2026-11-19)* **Where it went is ruled to the pane's edges**, as settings' rows are,
-white rather than the box grey, each line's words kept to the reading measure; the words and the
-tags above and below it keep that measure too, all on the bar's left edge.
+been read.
 
 **Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
 stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
@@ -3144,9 +3142,8 @@ the default again after that pins it. **Save is "Save"**, and until there is som
 line over it says what is missing: `Name it to save.`, `Pick a kind to save.`, `Fill in root to
 save.`, `Pick a destination to save.`, `Give it a secret to save.` **A pool with no password** says so in Access, and how to set one where the daemon
 runs: nothing sets a password over HTTP. **Sign in** is a page of its own under the header `sign
-in`: a name and a password in ruled boxes, and **Sign in** as the main action in the docked bar,
-as every page's is *(2026-11-19; it stood alone under the fields)*, dashed until a password is
-typed; a password that is not accepted is said in red above it.
+in`: a name and a password in ruled boxes, and **Sign in** as the main action, dashed until a
+password is typed; a password that is not accepted is said in red above it.
 
 *Amended 2026-11-16.* **The menu is in bands**, routing (Destinations, Templates, Accounts), the
 pool (Pool settings, Access, Server, Storage) and this device (Appearance), each row saying the one
@@ -3755,8 +3752,7 @@ where it has one:
 - **An action bar** (`blocks/ActionBar`, `blocks/BarAction`) is beige and docked at a page's foot
   under a rule. The main action is a wide filled block in ink; the others are an icon over a word,
   with no box. When wide it stays at the foot of the pane it acts on *(amended 2026-11-19; it was
-  a toolbar at the head)*, the height of the menu's foot (`--spacing-foot`) so their rules are one
-  line, each action an icon beside its word and the main one at the right, and a
+  a toolbar at the head)*, each action an icon beside its word and the main one at the right, and a
   button with a key says it in its tooltip ("Done (m)"). The route page's item has its Discard and
   Done at its foot, level with Route at the foot of the steps.
 - **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
