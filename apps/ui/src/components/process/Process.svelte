@@ -1839,23 +1839,6 @@
       aria-label="item"
       class="flex min-h-0 flex-col overflow-auto border-r border-rule"
     >
-      {#if routedNow === undefined}
-        <ActionBar at="head" label="Item">
-          <BarAction
-            icon="trash"
-            label="Discard"
-            danger
-            why={unusable[DISCARD]}
-            onclick={() => void choose(DISCARD)}
-          />
-          <BarAction
-            icon="check"
-            label="Done"
-            why={unusable[MANUAL]}
-            onclick={() => void choose(MANUAL)}
-          />
-        </ActionBar>
-      {/if}
       <div class="px-gutter py-5">
         <div class="mb-2 text-small text-muted">
           <Stamp at={item.createdAt} inline />
@@ -1887,6 +1870,27 @@
         </div>
         <AttachedLines {attachments} ruled={shownWords !== ""} />
         <Unfurls text={shownWords} />
+      </div>
+      <!-- Discard and Done at the foot of the item, level with Route at
+           the foot of the steps. -->
+      <div class="mt-auto">
+        {#if routedNow === undefined}
+          <ActionBar at="foot" label="Item">
+            <BarAction
+              icon="trash"
+              label="Discard"
+              danger
+              why={unusable[DISCARD]}
+              onclick={() => void choose(DISCARD)}
+            />
+            <BarAction
+              icon="check"
+              label="Done"
+              why={unusable[MANUAL]}
+              onclick={() => void choose(MANUAL)}
+            />
+          </ActionBar>
+        {/if}
       </div>
     </section>
   {/if}

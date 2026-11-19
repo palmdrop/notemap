@@ -350,14 +350,6 @@
 
 <Guard about={editing?.name ?? "a new template"} {changed} />
 
-<FormBar
-  at="head"
-  {missing}
-  {busy}
-  oncancel={done}
-  onsave={() => void save()}
-/>
-
 <form
   onsubmit={(event) => {
     event.preventDefault();
@@ -581,10 +573,4 @@
   {/if}
 </form>
 
-<FormBar
-  at="foot"
-  {missing}
-  {busy}
-  oncancel={done}
-  onsave={() => void save()}
-/>
+<FormBar {missing} {busy} oncancel={done} onsave={() => void save()} />

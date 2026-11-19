@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import { width } from "$lib/breakpoint";
   import { fade } from "$lib/motion";
 
   /**
-   * The actions of a page. On a phone, docked at its foot under a rule, where
-   * the thumb is; when wide, a toolbar at the head of the pane it acts on.
+   * The actions of a page, docked at its foot under a rule at every width:
+   * where the thumb is on a phone, and out of the way of what is read when
+   * wide.
    * `say` is the ruled line over the bar: why the main action cannot be
    * taken yet, or what the page just did.
    */
@@ -26,7 +26,7 @@
     children: Snippet;
   } = $props();
 
-  const head = $derived((at ?? (width.wide ? "head" : "foot")) === "head");
+  const head = $derived(at === "head");
 </script>
 
 <div

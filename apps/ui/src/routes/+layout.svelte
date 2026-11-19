@@ -194,7 +194,16 @@
     </aside>
   {/if}
 
-  <div class="{fills ? 'h-dvh' : 'min-h-dvh'} flex min-w-0 flex-col">
+  <!-- Where the page's pane starts, for a bar docked at its foot. -->
+  <div
+    class="{fills ? 'h-dvh' : 'min-h-dvh'} flex min-w-0 flex-col"
+    style:--menu-left={menued
+      ? width.full
+        ? "var(--spacing-menu)"
+        : "var(--spacing-menu-rail)"
+      : "0px"}
+    style:--pane-left="var(--menu-left)"
+  >
     {#if page.route.id === "/items/[id]" && !shut && page.params["id"] !== undefined}
       <ItemHead id={page.params["id"]} />
     {:else}
@@ -203,7 +212,13 @@
     <Strip />
     <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
       <Sheet {fills} bleeds={bleeds && !shut}>
-        <Column {fills} list={list || fills || page.route.id === "/items/[id]"}>
+        <Column
+          {fills}
+          list={list ||
+            fills ||
+            page.route.id === "/items/[id]" ||
+            page.route.id?.startsWith("/settings") === true}
+        >
           {#if shut}
             <SignIn />
           {:else if who.known}

@@ -140,3 +140,13 @@ list read as two. A form's Save, at the foot of a long form, was below the fold 
 has its bar at its head when wide, as a destination's page does. The batch's actions sit in the
 header beside the count, as the table already said.
 
+## Amendment, 2026-11-19
+
+The table's fourth row is reversed: *A docked bar at a page's foot → a toolbar at the head of the
+pane it acts on* became *the same bar, docked at the foot of its pane at every width.* Built, the
+head toolbars stacked under the header on every page — the item, a destination, every form — and
+the developer found it busy: two bars over what was being read. A bar held at the pane's foot keeps
+Save in view on a long form, which was the reason the forms' bar had moved to the head the day
+before, and leaves the top of a page to its content. Many desktop apps dock their actions so. The
+cost is the reach from the top of a tall window to its foot, which keys answer for the item.
+

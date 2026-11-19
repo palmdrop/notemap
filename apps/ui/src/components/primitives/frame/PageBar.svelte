@@ -4,9 +4,10 @@
   import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
 
   /**
-   * A page's own bar. On a phone, docked at the foot of the screen, with room
-   * kept under the page so its last row is never under it; when wide, a
-   * toolbar at the head of the page, which sets it first in its column.
+   * A page's own bar, docked at the foot of the pane it acts on at every
+   * width, with room kept under the page so its last row is never under it.
+   * `--pane-left` is where the pane starts: the menu's edge, and settings'
+   * list's.
    */
   let {
     label,
@@ -15,9 +16,7 @@
   }: { label: string; say?: Snippet | undefined; children: Snippet } = $props();
 </script>
 
-<div aria-hidden="true" class="h-28 wide:hidden"></div>
-<div
-  class="max-wide:fixed max-wide:inset-x-0 max-wide:bottom-0 max-wide:z-20 wide:order-first"
->
-  <ActionBar {label} {say} plain>{@render children()}</ActionBar>
+<div aria-hidden="true" class="h-28"></div>
+<div class="fixed right-0 bottom-0 left-(--pane-left,0) z-20">
+  <ActionBar {label} {say}>{@render children()}</ActionBar>
 </div>

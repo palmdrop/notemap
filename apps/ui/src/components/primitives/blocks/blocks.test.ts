@@ -61,7 +61,7 @@ test("a main action that cannot be taken yet stays in its place, and the line ov
   expect(onpress).not.toHaveBeenCalled();
 });
 
-test("on a phone the bar docks at the foot, and when wide it is a toolbar at the head that names its keys", () => {
+test("the bar docks at the foot at every width, and when wide it names its keys", () => {
   viewport(390);
   const { unmount } = render(Pieces);
   expect(
@@ -80,7 +80,7 @@ test("on a phone the bar docks at the foot, and when wide it is a toolbar at the
     screen.getByRole("toolbar", { name: "Actions" }).parentElement?.dataset[
       "bar"
     ],
-  ).toBe("head");
+  ).toBe("foot");
   expect(
     screen.getByRole("button", { name: "Done" }).getAttribute("title"),
   ).toBe("Done (m)");
@@ -138,4 +138,18 @@ test("a dialog answers with the way chosen, keeps things as they are first, and 
     new Event("cancel", { cancelable: true }),
   );
   expect(onanswer).toHaveBeenLastCalledWith(undefined);
+});
+
+test("a band is the grey heading, and under settings a quiet label under a rule", async () => {
+  const { default: Banded } = await import("./Band.fixture.svelte");
+  const { unmount } = render(Banded);
+  expect(screen.getByRole("heading", { name: "where" }).className).toContain(
+    "bg-band",
+  );
+  unmount();
+
+  render(Banded, { quiet: true });
+  const quiet = screen.getByRole("heading", { name: "where" });
+  expect(quiet.className).not.toContain("bg-band");
+  expect(quiet.className).toContain("text-muted");
 });
