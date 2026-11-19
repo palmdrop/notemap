@@ -38,8 +38,8 @@
           title={rail ? surface.label : undefined}
           onclick={() => ongo?.()}
           class="relative flex items-center border-b border-rule no-underline hover:no-underline {on
-            ? 'bg-band'
-            : 'active:bg-off-down'} {rail
+            ? 'bg-picked'
+            : 'hover:bg-hover active:bg-off-down'} {rail
             ? 'min-h-11 justify-center'
             : 'min-h-11 gap-gutter px-gutter'}"
         >

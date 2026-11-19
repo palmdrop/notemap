@@ -841,7 +841,8 @@ queue.
 1199px it is a rail of icons**, each with its count as a small figure and its word as its label, and
 at its foot a dot for whether the pool answers. The header loses its menu icon. The status line
 runs under the list only. The other pieces' wide forms — the capture box, the item across the
-window, a toolbar for a docked bar, a panel or a dialog for a sheet — are described with each.
+window, a panel or a dialog for a sheet — are described with each. A docked bar stays docked at
+the foot of its pane at every width *(2026-11-19)*.
 
 *Amended 2026-11-18.* **`notemap` at the menu's head** goes to the queue. **The search** sits at the
 right of the header, beside the filter and the notices. **One height for each bar**: the header and
@@ -2039,7 +2040,7 @@ leaves it somewhere to land.
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
 **Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
 it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
-its toolbar at its head. Coming back to the list, the row last opened is marked in the box grey,
+its bar at its foot. Coming back to the list, the row last opened is marked in the box grey,
 so the reader finds their place; it is not selected and draws no strip.
 
 *Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
@@ -2051,13 +2052,19 @@ in its list (back to the list after the last), and that item's bar says `Done: �
 `Discarded: …` with Undo. A routed or discarded item offers **Route** (again) alone; one state
 box says Discarded with Undiscard, or Manual: processed by hand with Undo.
 
+*Amended 2026-11-19, by the developer.* **The item reads as a row reads**: its words, then where
+it went, then its tags, the top of it being only what was captured. **A route in its window is said
+on its record's line** — a spinner in place of the route icon, the seconds left and **Cancel** —
+which becomes the plain line once it lands; the window's box stands in only until the record has
+been read.
+
 **Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
 stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
 menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History. Back
 returns where the item was opened from; reached by a link, it goes to the item's list.
 
-**Its bar** is Discard, Done and Route, docked at its foot on a phone and a toolbar at the head of
-its pane when wide. A routed item, sealed, offers **Route again**. What a press just did is said on
+**Its bar** is Discard, Done and Route, docked at the foot of its pane at every width *(amended
+2026-11-19; it was a toolbar at the head when wide)*. A routed item, sealed, offers **Route again**. What a press just did is said on
 the ruled line over the bar, with Undo. **Discarded** is a grey state box with **Undiscard**, and
 **Manual: processed by hand** a box of its own; the Undo of a manual mark is in its record.
 
@@ -3154,8 +3161,12 @@ plain labels for single fields, a short choice a segmented row and a long one ra
 description under it. Leaving it with changes, by its Cancel or the system's back, asks **lose
 your changes?** — Keep editing or Lose changes. **Access** draws the session's line, `Signed in.
 This browser holds a session.`, with **Sign out** in it, and each token with **Revoke** inline in
-red. A page's bar is docked at the foot on a phone and is a toolbar at the head of the page when
-wide. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
+red. A page's bar is docked at the foot of the section's pane at every width *(amended
+2026-11-19)*. **When wide the section runs to the window's edge**, its rules full width as the
+log's are, and what is in each row kept to a readable measure. **Settings head their groups with
+quiet labels** — small, grey, under a rule — rather than the grey band, which is the lists' day
+heading. The app's menu marks the current surface in the `picked` tint, so the grey band means only
+a heading. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
 destination, Add a template, Add an account, Add a token — with the plus icon, held with its reason
 where it cannot be taken; a page's toolbar at its head when wide is drawn without the bar's beige.
 **Server shows its sources** without being asked. What follows is the register this replaced, kept
@@ -3740,8 +3751,10 @@ where it has one:
 
 - **An action bar** (`blocks/ActionBar`, `blocks/BarAction`) is beige and docked at a page's foot
   under a rule. The main action is a wide filled block in ink; the others are an icon over a word,
-  with no box. When wide it is a toolbar at the head of the pane it acts on, each action an icon
-  beside its word, and a button with a key says it in its tooltip ("Done (m)").
+  with no box. When wide it stays at the foot of the pane it acts on *(amended 2026-11-19; it was
+  a toolbar at the head)*, each action an icon beside its word and the main one at the right, and a
+  button with a key says it in its tooltip ("Done (m)"). The route page's item has its Discard and
+  Done at its foot, level with Route at the foot of the steps.
 - **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
   the bar says why ("Pick a destination to save."). Pressing it does nothing.
 - **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled.
