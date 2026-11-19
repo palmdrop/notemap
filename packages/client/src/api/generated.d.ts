@@ -1139,11 +1139,14 @@ export interface paths {
         };
         /**
          * Count what the pool holds
-         * @description How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.
+         * @description How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer. With `since`, `captured` is every item captured at or after it: a client asks from its own midnight to say what was captured today.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description An ISO 8601 instant. Anything that is not one is refused with `422 bad-since`. */
+                    since?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1157,6 +1160,23 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["Counts"];
+                    };
+                };
+                /** @description `since` is not an instant. */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @description The refusal's kind, with its facts beside it. */
+                            error: {
+                                /** @enum {string} */
+                                code: "bad-since";
+                            } & {
+                                [key: string]: unknown;
+                            };
+                        };
                     };
                 };
             };
@@ -5134,6 +5154,7 @@ export interface components {
         };
         Counts: {
             queue: number;
+            captured?: number;
         };
         Storage: {
             pool: {

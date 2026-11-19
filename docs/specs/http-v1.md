@@ -860,8 +860,13 @@ second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editabl
 `GET /v1/counts` — how much the pool holds, counted rather than paged.
 
 ```json
-{ "queue": 14 }
+{ "queue": 14, "captured": 3 }
 ```
+
+- **`since` adds `captured`** *(2026-11-19)*: every item captured at or after that instant, by
+  capture time, wherever it has gone since. A shell asks from its own midnight to say what was
+  captured today; the day is the device's, so the pool is told the instant rather than a date.
+  Anything that is not an instant is refused with `422 bad-since`.
 
 - **`queue` is every item `GET /v1/queue` would answer**, counted by the same rule, so the count and
   the pages cannot disagree about what is unprocessed.

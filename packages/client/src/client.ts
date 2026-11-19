@@ -840,7 +840,11 @@ export function createClient(config: ClientConfig): Client {
 
     tags,
 
-    counts: { queue: counts.queue, load: counts.load },
+    counts: {
+      queue: counts.queue,
+      capturedToday: counts.capturedToday,
+      load: counts.load,
+    },
 
     actions,
 

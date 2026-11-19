@@ -618,6 +618,9 @@ export function createSqlitePoolStore(
     const queueCount = source.query<{ count: number }, []>(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
+    const capturedSince = source.query<{ count: number }, [number]>(
+      `SELECT COUNT(*) AS count FROM items WHERE created_at >= ?`,
+    );
     // `saved` is the registry against itself: the sum over every asset less the
     // sum over the blobs they name, each counted once. It is not the blob
     // store's total — that also holds the outputs routing records name, which
@@ -1026,8 +1029,11 @@ export function createSqlitePoolStore(
         filter?: SurfaceFilter,
       ): Promise<Slice<Item>> => byKey(page, filter, ARCHIVED),
 
-      counts: async (): Promise<Counts> => ({
+      counts: async (since?: Timestamp): Promise<Counts> => ({
         queue: queueCount.get()?.count ?? 0,
+        ...(since === undefined
+          ? {}
+          : { captured: capturedSince.get(toMillis(since))?.count ?? 0 }),
       }),
 
       assetsHeld: async (): Promise<AssetsHeld> =>

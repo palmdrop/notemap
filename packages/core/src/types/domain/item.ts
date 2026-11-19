@@ -50,6 +50,8 @@ export type TagUse = {
 export type Counts = {
   /** Every item the queue holds. */
   readonly queue: number;
+  /** Every item captured at or after the time asked about, where one was. */
+  readonly captured?: number;
 };
 
 /** What core submits to be written. Excludes every field the store owns or derives. */
