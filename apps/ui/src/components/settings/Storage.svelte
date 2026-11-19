@@ -9,7 +9,6 @@
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { sizeOf } from "$lib/attachments";
-  import { slide } from "$lib/motion";
 
   const pool = reachable();
 
@@ -19,8 +18,6 @@
   let reclaiming = $state(false);
   let took = $state<Reclaimed | undefined>(undefined);
   let asked = $state(false);
-  let showStats = $state(false);
-  let showPaths = $state(false);
 
   /**
    * Which look the answers belong to. A walk outstanding when the section
@@ -318,40 +315,25 @@
       </div>
     {/if}
 
-    <div>
-      <Fact name="stats">
-        <Box onclick={() => (showStats = !showStats)}
-          >{showStats ? "Hide" : "Show"}</Box
-        >
-      </Fact>
+    <!-- How the pool is kept rather than how much it holds: always there, set
+         under a quiet label and in the small size, so it reads as detail
+         beneath the sizes rather than more of them. -->
+    <div class="mt-6 border-t border-rule text-small">
+      <h3 class="px-gutter pt-4 pb-1 font-semibold text-muted">Stats</h3>
+      {#each stats as [name, line] (name)}
+        <Fact {name}>{line}</Fact>
+      {:else}
+        <Fact name="">
+          <Asking />
+        </Fact>
+      {/each}
 
-      {#if showStats}
-        <div transition:slide={{ magnitude: "short" }}>
-          {#each stats as [name, line] (name)}
-            <Fact {name}>{line}</Fact>
-          {:else}
-            <Fact name="">
-              <Asking />
-            </Fact>
-          {/each}
-        </div>
-      {/if}
-
-      <Fact name="paths">
-        <Box onclick={() => (showPaths = !showPaths)}
-          >{showPaths ? "Hide" : "Show"}</Box
-        >
-      </Fact>
-
-      {#if showPaths}
-        <div transition:slide={{ magnitude: "short" }}>
-          {#each paths as [name, path] (name)}
-            <Fact {name}>
-              <span class="block break-all">{path}</span>
-            </Fact>
-          {/each}
-        </div>
-      {/if}
+      <h3 class="px-gutter pt-4 pb-1 font-semibold text-muted">Paths</h3>
+      {#each paths as [name, path] (name)}
+        <Fact {name}>
+          <span class="block break-all">{path}</span>
+        </Fact>
+      {/each}
 
       {#if held.deployment !== undefined}
         <Fact name="deployment">

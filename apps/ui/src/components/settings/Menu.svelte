@@ -29,18 +29,16 @@
 
 <nav aria-label="Settings" class="flex flex-col pb-4">
   {#each GROUPS as group (group)}
-    <h2
-      class="px-gutter pt-5 pb-1.5 text-small font-semibold text-muted wide:px-3"
-    >
+    <h2 class="px-gutter pt-5 pb-1.5 text-small font-semibold text-muted">
       {capital(group)}
     </h2>
-    <ul class="m-0 list-none p-0 wide:px-1.5">
+    <ul class="m-0 list-none p-0">
       {#each SECTIONS.filter((one) => one.group === group) as one (one.slug)}
         <li>
           <a
             href={settingsHref(one.slug)}
             aria-current={current === one.slug ? "page" : undefined}
-            class="flex min-h-12 items-center gap-3 px-gutter text-ink no-underline hover:no-underline wide:rounded-control wide:px-1.5 {current ===
+            class="flex min-h-12 items-center gap-3 px-gutter text-ink no-underline hover:no-underline {current ===
             one.slug
               ? 'bg-picked font-semibold'
               : 'hover:bg-hover active:bg-off-down'}"

@@ -829,6 +829,10 @@ until its own header is drawn.
 left over a veil: `queue`, `feed`, `log` and `settings`, each an icon and a word, the current one on
 the band, the queue with how much it holds. Under them, how much is waiting to send, and at its foot
 whether the pool answers — `online`, or `offline, last answered 12:31` in ink — and who this is.
+*(Amended 2026-11-19, by the developer, to see how it reads.)* **Under the surfaces, two squares**
+in the box grey: today's date (the month, and the day in a large figure) and how much was captured
+today, counted by the pool from this device's midnight. In the drawer and the menu column, not on
+the rail.
 **The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
 queue.
 
@@ -3104,6 +3108,10 @@ replaced rather than pushed, as the order is.
   that day.
 
 ### Settings
+
+*(2026-11-19)* The open section is marked square, its tint running to the column's edges. **Storage
+draws its stats and its paths always**, under quiet labels and in the small size, apart from the
+sizes above them.
 
 *Amended 2026-11-18, after the review, and again the same day by the developer.* **Settings read
 as a phone's settings do**: one list, each group under a quiet label (Routing, The pool, This
