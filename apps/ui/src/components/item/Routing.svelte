@@ -219,9 +219,11 @@
 {#if boxed}
   <!-- Rows only from the records themselves: a summary has nothing to open. -->
   {#if records.length > 0}
+    <!-- Ruled to the pane's edges, as settings' rows are, what is in each
+         kept to the reading measure. -->
     <ul
       aria-label="Routing records"
-      class="divide-y divide-tag-line overflow-hidden rounded-control border border-tag-line bg-tag"
+      class="divide-y divide-rule border-y border-rule"
     >
       {#each lines as line (line.href ?? line.name)}
         {@const flying = firings.open.find((one) => one.record === line.record)}
@@ -230,12 +232,17 @@
         <!-- A route still in its window says so on its own line: the
              spinner, the seconds left and Cancel, then the plain line once
              it has landed. -->
-        <li class="flex items-center">
+        <li
+          class="flex items-center {flying !== undefined &&
+          line.offers !== undefined
+            ? 'pr-[max(0px,calc(100%-var(--spacing-read)-2*var(--spacing-gutter)))]'
+            : ''}"
+        >
           <a
             href={line.href}
-            class="flex min-h-target min-w-0 flex-1 items-center gap-3 py-2 pl-gutter text-ink no-underline hover:bg-band hover:no-underline {flying ===
+            class="flex min-h-target min-w-0 flex-1 items-center gap-3 py-2 pl-gutter text-ink no-underline hover:bg-hover hover:no-underline {flying ===
               undefined || line.offers === undefined
-              ? 'pr-gutter'
+              ? 'pr-[max(var(--spacing-gutter),calc(100%-var(--spacing-read)-var(--spacing-gutter)))]'
               : 'pr-2'}"
             title={[line.name, line.title ?? line.place, line.note]
               .filter((part) => part !== undefined)
