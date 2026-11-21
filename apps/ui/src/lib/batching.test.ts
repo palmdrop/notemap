@@ -45,8 +45,8 @@ test("asks with the template's name and says what will not go as asked", () => {
     asking({ total: 3, skipped: 1, again: 1 }, TEMPLATE, "Research links"),
   ).toEqual({
     question: "Route 3 items?",
+    by: { name: "Research links" },
     notes: [
-      "With Research links.",
       "1 already filed by it, and left as they are.",
       "1 already processed, and filed again.",
     ],
@@ -94,8 +94,8 @@ test("says a discard that all landed without the accent", () => {
 test("names where a template's values put the notes", () => {
   expect(
     asking({ total: 2, skipped: 0, again: 0 }, TEMPLATE, "Todo", "heading Next")
-      .notes,
-  ).toEqual(["With Todo, heading Next."]);
+      .by,
+  ).toEqual({ name: "Todo", where: "heading Next" });
 });
 
 test("says an ordinary tag by the tag, counting what already carried it", () => {

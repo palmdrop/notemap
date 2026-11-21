@@ -43,26 +43,27 @@ export function counted(
 }
 
 /**
- * The confirm step's question, and the lines under it: the template a route
- * goes by, then what it will not do as asked. Only a batch that processes is asked about: a discard, or a
- * tag that applies a template, named here with where its values put the items.
+ * The confirm step's question, the template a route goes by with where its
+ * values put the items, and the lines that say what it will not do as asked.
+ * Only a batch that processes is asked about: a discard, or a tag that
+ * applies a template.
  */
 export function asking(
   count: Counted,
   action: BatchAction,
   name: string | undefined,
   where?: string,
-): { readonly question: string; readonly notes: readonly string[] } {
+): {
+  readonly question: string;
+  readonly by?: { readonly name: string; readonly where?: string };
+  readonly notes: readonly string[];
+} {
   const archive = action.kind === "archive";
   const question = archive
     ? `Discard ${notes(count.total)}?`
     : `Route ${notes(count.total)}?`;
 
-  const said: string[] = archive
-    ? []
-    : [
-        `With ${name ?? "a template"}${where === undefined ? "" : `, ${where}`}.`,
-      ];
+  const said: string[] = [];
   if (count.skipped > 0) {
     said.push(
       archive
@@ -77,7 +78,16 @@ export function asking(
         : `${String(count.again)} already processed, and filed again.`,
     );
   }
-  return { question, notes: said };
+  return archive
+    ? { question, notes: said }
+    : {
+        question,
+        by: {
+          name: name ?? "a template",
+          ...(where === undefined ? {} : { where }),
+        },
+        notes: said,
+      };
 }
 
 /** How each record a batch reserved ended, as the log said. */

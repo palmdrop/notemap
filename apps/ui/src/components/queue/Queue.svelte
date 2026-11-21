@@ -497,6 +497,7 @@
   {@const asked = batch.asked}
   <Confirming
     question={asked.question}
+    by={asked.by}
     notes={asked.notes}
     verb={asked.action.kind === "archive" ? "Discard" : "Route"}
     alarm={asked.action.kind === "archive"}

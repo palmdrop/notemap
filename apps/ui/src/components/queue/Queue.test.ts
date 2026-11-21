@@ -2211,7 +2211,9 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
 
   const asking = await screen.findByRole("dialog");
   expect(within(asking).getByText("Route 2 items?")).toBeDefined();
-  expect(within(asking).getByText("With todo.")).toBeDefined();
+  expect(
+    within(asking).getByText("todo", { selector: "strong" }),
+  ).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
   await fireEvent.click(within(asking).getByRole("button", { name: "Route" }));
