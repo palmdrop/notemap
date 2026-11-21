@@ -2000,11 +2000,11 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
     within(head()).getByRole("button", { name: "Discard" }),
   );
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 items?")).toBeDefined();
+  expect(within(dialog).getByText("Discard 2 items?")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
   await fireEvent.click(
-    within(dialog).getByRole("button", { name: "discard" }),
+    within(dialog).getByRole("button", { name: "Discard" }),
   );
 
   await vi.waitFor(() => {
@@ -2030,7 +2030,7 @@ test("backing out of the question sends nothing and keeps the rows marked", asyn
     within(head()).getByRole("button", { name: "Discard" }),
   );
   await fireEvent.click(
-    within(screen.getByRole("dialog")).getByRole("button", { name: "back" }),
+    within(screen.getByRole("dialog")).getByRole("button", { name: "Back" }),
   );
 
   expect(asked()).not.toContain("POST /v1/batches");
@@ -2210,10 +2210,11 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
   await fireEvent.keyDown(line, { key: "Enter" });
 
   const asking = await screen.findByRole("dialog");
-  expect(within(asking).getByText("route 2 items with todo?")).toBeDefined();
+  expect(within(asking).getByText("Route 2 items?")).toBeDefined();
+  expect(within(asking).getByText("With todo.")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
-  await fireEvent.click(within(asking).getByRole("button", { name: "route" }));
+  await fireEvent.click(within(asking).getByRole("button", { name: "Route" }));
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/batches");
   });

@@ -2410,7 +2410,9 @@ every row, again takes it off them all, and a new tag can be typed. Nothing is s
 **Apply** *(2026-11-16)*: each change goes only to the rows it changes, and the line says `Tagged`
 with **Undo**, which puts every row's tags back as they were. **Route** offers
 only templates with a trigger tag: one that asks asks once, for every note; the batch is then
-confirmed (`route 3 notes with Todo, list Next?`), and counts down on one line with one Cancel,
+confirmed (`Route 3 notes?`, then `With Todo, list Next.` and what will not go as asked, with
+**Back** and **Route**, in the dialog every other question is asked in *(2026-11-21)*), and counts
+down on one line with one Cancel,
 which is one `POST /v1/routing/cancel` for the batch.
 
 

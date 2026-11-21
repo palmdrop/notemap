@@ -498,7 +498,7 @@
   <Confirming
     question={asked.question}
     notes={asked.notes}
-    verb={asked.action.kind === "archive" ? "discard" : "route"}
+    verb={asked.action.kind === "archive" ? "Discard" : "Route"}
     alarm={asked.action.kind === "archive"}
     onanswer={(go) => void batch.answer(go)}
   />

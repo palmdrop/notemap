@@ -43,8 +43,8 @@ export function counted(
 }
 
 /**
- * The confirm step's question, and the lines under it that say what it will
- * not do as asked. Only a batch that processes is asked about: a discard, or a
+ * The confirm step's question, and the lines under it: the template a route
+ * goes by, then what it will not do as asked. Only a batch that processes is asked about: a discard, or a
  * tag that applies a template, named here with where its values put the items.
  */
 export function asking(
@@ -55,24 +55,26 @@ export function asking(
 ): { readonly question: string; readonly notes: readonly string[] } {
   const archive = action.kind === "archive";
   const question = archive
-    ? `discard ${notes(count.total)}?`
-    : `route ${notes(count.total)} with ${name ?? "a template"}${
-        where === undefined ? "" : `, ${where}`
-      }?`;
+    ? `Discard ${notes(count.total)}?`
+    : `Route ${notes(count.total)}?`;
 
-  const said: string[] = [];
+  const said: string[] = archive
+    ? []
+    : [
+        `With ${name ?? "a template"}${where === undefined ? "" : `, ${where}`}.`,
+      ];
   if (count.skipped > 0) {
     said.push(
       archive
-        ? `${String(count.skipped)} already discarded, and left as they are`
-        : `${String(count.skipped)} already filed by it, and left as they are`,
+        ? `${String(count.skipped)} already discarded, and left as they are.`
+        : `${String(count.skipped)} already filed by it, and left as they are.`,
     );
   }
   if (count.again > 0) {
     said.push(
       archive
-        ? `${String(count.again)} already processed`
-        : `${String(count.again)} already processed, and filed again`,
+        ? `${String(count.again)} already processed.`
+        : `${String(count.again)} already processed, and filed again.`,
     );
   }
   return { question, notes: said };

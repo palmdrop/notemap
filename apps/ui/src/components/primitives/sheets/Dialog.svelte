@@ -22,7 +22,7 @@
       kind?: "primary" | "danger";
     }[];
     onanswer: (value: T | undefined) => void;
-    children: Snippet;
+    children?: Snippet;
   } = $props();
 
   const id = $props.id();
@@ -68,7 +68,7 @@
     <h2 id="{id}-title" class="mb-2 font-display text-title font-normal">
       {title}
     </h2>
-    <div id="{id}-about" class="leading-[1.45]">{@render children()}</div>
+    <div id="{id}-about" class="leading-[1.45]">{@render children?.()}</div>
     <div class="mt-5 flex flex-wrap justify-end gap-2">
       {#each ways as way, at (way.label)}
         <button

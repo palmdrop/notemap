@@ -830,8 +830,8 @@ test("a discard of marked rows says how many are already processed before it is 
   await fireEvent.click(within(head).getByRole("button", { name: "Discard" }));
 
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 items?")).toBeDefined();
-  expect(within(dialog).getByText("1 already processed")).toBeDefined();
+  expect(within(dialog).getByText("Discard 2 items?")).toBeDefined();
+  expect(within(dialog).getByText("1 already processed.")).toBeDefined();
 });
 
 test("undiscard is offered only where something marked is discarded, and discard only where something is not", async () => {
