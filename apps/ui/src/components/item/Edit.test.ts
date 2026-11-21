@@ -220,8 +220,12 @@ test("holds a picked file and leaves no bytes behind where the edit is never sav
   await screen.findByText("second.png");
 
   await fireEvent.click(screen.getByRole("button", { name: "close" }));
-  const dialog = await screen.findByRole("dialog", { name: "Unsaved changes" });
-  await fireEvent.click(within(dialog).getByRole("button", { name: "revert" }));
+  const dialog = await screen.findByRole("dialog", {
+    name: "lose your changes?",
+  });
+  await fireEvent.click(
+    within(dialog).getByRole("button", { name: "Lose changes" }),
+  );
 
   expect(closed).toHaveBeenCalled();
   expect(heldBlobs()).toEqual([]);

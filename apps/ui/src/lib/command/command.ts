@@ -1,9 +1,3 @@
-/** The two tiers `Actions` draws a command in, and nothing else. */
-export type Group = "decide" | "work";
-
-export const DECIDE: Group = "decide";
-export const WORK: Group = "work";
-
 type Doable = {
   readonly run: () => void | Promise<void>;
 };
@@ -17,17 +11,22 @@ type Goes = {
  * registered anywhere: an id a binding names, a word a person reads, the
  * deed, and why it cannot be taken. `run` or `href`, never both — `open` and
  * `history` are places rather than deeds, so a key on one is a `goto`.
- * `primary`, `alarm` and `group` are how the shell draws it, held here so a
+ * `primary` and `alarm` are how the shell draws it, held here so a
  * button and a key never learn two different answers.
  */
 export type Command = {
   readonly id: string;
   readonly label: string;
-  /** Which tier `Actions` draws it in, absent where its control is its own — the row's `+`. */
-  readonly group?: Group;
   readonly primary?: boolean;
   readonly alarm?: boolean;
   readonly refusal?: string;
+  /** What a surface is searched by, for the header to draw the line that searches it. */
+  readonly field?: {
+    readonly words: string;
+    readonly onsearch: (words: string, push: boolean) => void;
+  };
+  /** How many of it there are, drawn beside its icon: the tags a filter holds. */
+  readonly count?: number;
   /** Fires even while a field has the caret: a route, and an edit's `save`. */
   readonly whileWriting?: boolean;
 } & (Doable | Goes);

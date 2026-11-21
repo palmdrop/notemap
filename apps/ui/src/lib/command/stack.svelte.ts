@@ -39,3 +39,12 @@ export function publish(get: Getter, { atop = false } = {}): void {
 export function published(): readonly Getter[] {
   return layers.map((layer) => layer.get);
 }
+
+/** The top-most live command with this id, for a control that stands for it elsewhere: the header's icons. */
+export function commandOf(id: string): Command | undefined {
+  for (const layer of [...layers].reverse()) {
+    const found = layer.get().find((command) => command.id === id);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}

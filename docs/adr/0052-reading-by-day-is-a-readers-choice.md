@@ -1,7 +1,8 @@
 # 52. Reading by day is a reader's choice, and the register has two layouts
 
 **Date**: 2026-09-29
-**Status**: Accepted. Amends [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
+**Status**: Superseded by [ADR 73](0073-the-register-is-read-by-day-and-the-rail-goes.md).
+Was: Accepted. Amends [ADR 46](0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)
 on one driver, "one layout, 375px first, both columns". Everything else in ADR 46 stands.
 **Deciders**: palmdrop, with Claude
 

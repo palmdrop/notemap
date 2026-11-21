@@ -19,7 +19,12 @@ afterEach(async () => {
 const MEMOS = "memos";
 
 type Answer = {
-  values: { id: string; items: number; lastCapturedAt: string }[];
+  values: {
+    id: string;
+    items: number;
+    unprocessed: number;
+    lastCapturedAt: string;
+  }[];
 };
 
 async function sources(app: Hono<AppEnv>): Promise<Answer> {
@@ -53,8 +58,18 @@ describe("GET /v1/sources", () => {
 
     expect(await sources(app)).toEqual({
       values: [
-        { id: WEB, items: 2, lastCapturedAt: "2026-08-08T11:00:00.000Z" },
-        { id: MEMOS, items: 1, lastCapturedAt: "2026-08-08T10:00:00.000Z" },
+        {
+          id: WEB,
+          items: 2,
+          unprocessed: 2,
+          lastCapturedAt: "2026-08-08T11:00:00.000Z",
+        },
+        {
+          id: MEMOS,
+          items: 1,
+          unprocessed: 1,
+          lastCapturedAt: "2026-08-08T10:00:00.000Z",
+        },
       ],
     });
   });

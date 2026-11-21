@@ -4,8 +4,6 @@
   let { children }: { children: Snippet } = $props();
 </script>
 
-<div
-  class="col-start-2 pt-6 pl-gutter max-narrow:col-span-full max-narrow:pl-0"
->
+<div class="col-span-full px-gutter pt-4 pb-6">
   {@render children()}
 </div>

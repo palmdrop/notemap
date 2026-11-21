@@ -17,9 +17,9 @@
 
   const look = $derived(
     inverted
-      ? `px-1.5 text-ground ${failed ? "bg-alarm" : "bg-ink"}`
+      ? `px-1.5 text-paper ${failed ? "bg-danger" : "bg-ink"}`
       : failed
-        ? "text-alarm"
+        ? "text-danger"
         : "",
   );
 </script>

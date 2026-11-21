@@ -5,7 +5,7 @@
  */
 @utility inverted {
   background: var(--color-ink);
-  color: var(--color-ground);
+  color: var(--color-paper);
   padding-inline: 0.375rem;
   margin-inline: -0.375rem;
 }
@@ -64,7 +64,7 @@
     margin: 0;
   }
   & > * + * {
-    margin-top: var(--text-shell--line-height);
+    margin-top: var(--text-body--line-height);
   }
   & h1,
   & h2,
@@ -98,6 +98,15 @@
   & p,
   & li {
     white-space: pre-line;
+  }
+  & li.task-item {
+    list-style: none;
+    margin-left: -1.25em;
+  }
+  & input.task {
+    margin-right: 0.5em;
+    vertical-align: -0.1em;
+    accent-color: var(--color-ink);
   }
   & pre {
     white-space: pre-wrap;
@@ -151,5 +160,42 @@
     top: anchor(bottom);
     left: anchor(left);
     position-try-fallbacks: flip-inline;
+  }
+}
+
+/**
+ * A page whose rows run to the window's edge, as the log's do, with what is in
+ * each row kept to the reading measure: a row's own right padding grows with
+ * the room past the measure. Settings and a record's page.
+ */
+@utility measured {
+  & .px-gutter:not([role="toolbar"]) {
+    padding-right: max(
+      var(--spacing-gutter),
+      calc(100% - var(--spacing-read) - var(--spacing-gutter))
+    );
+  }
+}
+
+/** The same menu opening upward, clear of a bar docked at the foot. */
+@utility offer-above {
+  top: auto;
+  bottom: 100%;
+
+  @supports (anchor-name: --offer) {
+    top: auto;
+    bottom: anchor(top);
+  }
+}
+
+/** Anything under way: a ring a quarter of it ink, turning. Still where motion is reduced. */
+@utility spinner {
+  border: 1.5px solid var(--color-rule);
+  border-top-color: var(--color-ink);
+  border-radius: 50%;
+  animation: var(--animate-turning);
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }

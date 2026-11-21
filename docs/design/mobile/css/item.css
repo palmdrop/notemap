@@ -1,0 +1,428 @@
+.item-view {
+  position: fixed;
+  inset: 0 0 var(--keyboard, 0px);
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.item-view[hidden] {
+  display: none;
+}
+
+.iv-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: var(--bar);
+  padding: 0 0.25rem;
+  border-bottom: var(--rule);
+}
+
+.iv-when {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.iv-when .weekday {
+  font-family: var(--face-display);
+  font-style: var(--display-style);
+  font-size: var(--size-weekday);
+  text-transform: lowercase;
+}
+
+.iv-time {
+  font-size: var(--size-body);
+}
+
+.iv-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 0.25rem;
+  font-size: var(--size-small);
+}
+
+.iv-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem var(--gutter) 9.5rem;
+  touch-action: pan-y;
+}
+
+.iv-text {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.iv-pictures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.iv-pictures:empty,
+.iv-files:empty,
+.iv-files[hidden],
+.iv-routes[hidden] {
+  display: none;
+}
+
+.iv-files {
+  margin-bottom: 1rem;
+}
+
+.iv-routes {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 1px solid var(--tag-line);
+  border-radius: var(--radius-control);
+  background: var(--tag);
+  font-size: var(--size-small);
+  list-style: none;
+}
+
+.iv-routes li + li {
+  border-top: 1px solid var(--tag-line);
+}
+
+.iv-routes:has(.abandoned) {
+  border-color: var(--danger);
+}
+
+.route-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.route-row .i {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.route-row b {
+  font-weight: 400;
+}
+
+.route-row .place {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.route-row .go {
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted);
+}
+
+.route-row.abandoned,
+.route-row.abandoned .place {
+  color: var(--danger);
+}
+
+.route-row.abandoned {
+  align-items: flex-start;
+}
+
+.route-row .what {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.route-row .what small {
+  font-size: var(--size-small);
+}
+
+.route-row.abandoned .go {
+  align-self: center;
+}
+
+.route-row.withdrawn b,
+.route-row.withdrawn .place {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.iv-pictures:empty {
+  display: none;
+}
+
+.iv-pictures button {
+  padding: 0;
+  border: var(--rule);
+  background: none;
+  cursor: zoom-in;
+}
+
+.iv-pictures button:only-child {
+  grid-column: 1 / -1;
+}
+
+.iv-pictures img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.iv-pictures button:only-child img {
+  aspect-ratio: auto;
+}
+
+.iv-actions,
+.iv-edit-foot {
+  position: absolute;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+}
+
+/* What the item view just did is said on a ruled line over its bar, as the status line says it
+   under the queue: no toast. */
+.strip.iv-strip {
+  position: static;
+  min-height: var(--line);
+  padding: 0 var(--gutter);
+  overflow: visible;
+  border-top: var(--rule);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--size-small);
+  animation: none;
+}
+
+.strip.iv-strip::after {
+  display: none;
+}
+
+.strip.iv-strip .pill {
+  min-height: var(--line);
+  padding: 0 0 0 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.strip.iv-strip .pill .i {
+  display: none;
+}
+
+.strip.iv-strip[hidden] {
+  display: none;
+}
+
+.iv-strip b {
+  display: inline-block;
+  max-width: 11rem;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.iv-more {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0.25rem;
+  z-index: 2;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.25rem 0;
+  border: var(--rule);
+  border-radius: var(--radius-control);
+  background: var(--paper);
+  list-style: none;
+}
+
+.menu[hidden] {
+  display: none;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--band);
+}
+
+.menu .i {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.iv-edit {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  padding: 0.75rem;
+  border: var(--rule);
+  border-radius: var(--radius-control);
+  outline: none;
+  resize: none;
+  font: inherit;
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+.iv-edit[hidden],
+.iv-actions[hidden],
+.iv-edit-foot[hidden] {
+  display: none;
+}
+
+
+.iv-tags {
+  position: relative;
+  z-index: 1;
+}
+
+.iv-tags .tag.add {
+  background: var(--paper);
+}
+
+.iv-pictures[hidden] {
+  display: none;
+}
+
+.iv-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--tag-line);
+  border-radius: var(--radius-control);
+  background: var(--tag);
+  font-size: var(--size-small);
+}
+
+.iv-status[hidden] {
+  display: none;
+}
+
+.iv-status > span:not(.spinner, .pending-dot) {
+  flex: 1;
+}
+
+.iv-status .i {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.iv-status .pill {
+  min-height: 2rem;
+}
+
+.iv-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.iv-extra:empty {
+  display: none;
+}
+
+.iv-status .quiet {
+  margin-block: -0.5rem;
+}
+
+.iv-offline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--tag-line);
+  border-radius: var(--radius-control);
+  background: var(--tag);
+  font-size: var(--size-small);
+}
+
+.iv-offline .i {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.tag.locked .lock {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-left: 0.125rem;
+  color: var(--muted);
+}
+
+.iv-revision {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: var(--size-small);
+}
+
+/* Small marks, full-size targets: the hit area reaches past what is drawn. */
+.iv-steps .morph.mini > .pill::before,
+.tag-list .tag button::before,
+.tag.add::before {
+  content: "";
+  position: absolute;
+  inset: -0.5rem -0.25rem;
+}
+
+.tag-list .tag button,
+.tag.add {
+  position: relative;
+}
+
+html:has(.item-view:not([hidden])) #quick {
+  z-index: 9;
+}
+
+html:has(.item-view:not([hidden])) .veil {
+  z-index: 8;
+}
+
+.iv-status.refused {
+  border-color: var(--danger);
+  color: var(--danger);
+}

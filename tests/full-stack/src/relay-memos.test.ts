@@ -337,7 +337,9 @@ describe("the memos relay, over a real daemon", () => {
     const response = await where.read("/v1/sources");
     expect(response.status).toBe(200);
     expect((await response.json()) as unknown).toEqual({
-      values: [{ id: SOURCE, items: 2, lastCapturedAt: WRITTEN }],
+      values: [
+        { id: SOURCE, items: 2, unprocessed: 2, lastCapturedAt: WRITTEN },
+      ],
     });
   });
 

@@ -39,7 +39,7 @@
 {:else if read !== undefined}
   <div class="pt-8">
     {#if refused !== undefined}
-      <div role="status" class="text-alarm">{refused}</div>
+      <div role="status" class="text-danger">{refused}</div>
     {:else if read.failure !== undefined}
       <div>{NO_ITEM_OFFLINE}</div>
     {:else}

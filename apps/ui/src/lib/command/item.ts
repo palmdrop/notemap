@@ -11,7 +11,7 @@ import { DISCARD, MANUAL, refusalFor } from "../processing";
 import { discard, manual } from "../quick";
 import { discardedKey } from "../routing";
 
-import { DECIDE, WORK, type Command } from "./command";
+import type { Command } from "./command";
 
 /**
  * What a surface hands `commandsFor` beyond the item itself. `address` is
@@ -25,6 +25,8 @@ export type Surroundings = {
   readonly onprocess: () => void;
   readonly onedit: () => void;
   readonly tag?: () => void;
+  /** The surface edits a sealed item by revising it: the item's own and the feed, never the queue. */
+  readonly revises?: boolean;
 };
 
 /**
@@ -64,7 +66,7 @@ function undiscard(item: Item): void {
  * Every command an item offers: the quick tier that needs no destination, and
  * working with the item beside it. Pure — closing over nothing but what it is
  * given — so a surface can ask what a person could do right now without
- * taking anything, and `Actions` can draw the answer rather than rewire it.
+ * taking anything, and a bar can draw the answer rather than rewire it.
  */
 export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   const offline = at.offline ?? false;
@@ -75,22 +77,19 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     // say, not this row's.
     {
       id: "process",
-      label: "process",
-      group: DECIDE,
+      label: "Route",
       primary: true,
       run: at.onprocess,
     },
     {
       id: MANUAL,
-      label: "manual",
-      group: DECIDE,
+      label: "Done",
       refusal: refusalFor(MANUAL, item, offline),
       run: () => void manual(item),
     },
     {
       id: DISCARD,
-      label: "discard",
-      group: DECIDE,
+      label: "Discard",
       alarm: true,
       refusal: refusalFor(DISCARD, item, offline),
       run: () => discard(item),
@@ -100,16 +99,15 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   if (item.archived !== undefined) {
     commands.push({
       id: "undiscard",
-      label: "undiscard",
-      group: DECIDE,
+      label: "Undiscard",
       run: () => undiscard(item),
     });
   }
 
-  // A processed item is not this row's to rewrite: editing it would append a
-  // revision, which the queue is not where to do.
-  if (editable(item)) {
-    commands.push({ id: "edit", label: "edit", group: WORK, run: at.onedit });
+  // A routed item is sealed: editing it makes a revision, a capture of its own,
+  // and what was routed stays as it was. A discarded one is undiscarded first.
+  if (editable(item) || (at.revises === true && item.archived === undefined)) {
+    commands.push({ id: "edit", label: "Edit", run: at.onedit });
   }
 
   // Offered only where the browser has a clipboard to give, and only where
@@ -119,8 +117,7 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
   if (copyable() && holds !== "") {
     commands.push({
       id: "copy",
-      label: "copy",
-      group: WORK,
+      label: "Copy",
       run: () => void copy(item),
     });
   }
@@ -132,15 +129,14 @@ export function commandsFor(item: Item, at: Surroundings): readonly Command[] {
     at.address === undefined
       ? {
           id: "open",
-          label: "history",
-          group: WORK,
+          label: "History",
           href: logHref(undefined, { item: item.id }),
         }
-      : { id: "open", label: "open", group: WORK, href: at.address },
+      : { id: "open", label: "Open", href: at.address },
   );
 
   if (at.tag !== undefined) {
-    commands.push({ id: "tag", label: "tag", run: at.tag });
+    commands.push({ id: "tag", label: "Tag", run: at.tag });
   }
 
   return commands;

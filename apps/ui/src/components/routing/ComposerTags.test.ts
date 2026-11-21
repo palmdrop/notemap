@@ -48,7 +48,8 @@ function draw(
   });
 }
 
-const word = (name: string) => screen.getByRole("button", { name });
+const word = (name: string) =>
+  screen.getByRole("button", { name: `remove ${name}` });
 
 const opened = async () => {
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
@@ -59,8 +60,8 @@ test("draws what is applied as pressed words, and offers the rest beneath the li
   await serving(["reading", "seedling"]);
   draw(["seedling"]);
 
-  expect(word("seedling").getAttribute("aria-pressed")).toBe("true");
-  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+  expect(word("seedling")).toBeDefined();
+  expect(screen.queryByRole("button", { name: "remove reading" })).toBeNull();
 
   await opened();
   expect(screen.getByRole("option", { name: "reading" })).toBeDefined();
@@ -79,12 +80,11 @@ test("a tag taken here reaches the pool", async () => {
   });
 });
 
-test("a tag taken back is removed by pressing it, then its ×", async () => {
+test("a tag taken back is removed by its ×", async () => {
   await serving(["reading"]);
   draw(["reading"]);
 
   await fireEvent.click(word("reading"));
-  await fireEvent.click(screen.getByRole("button", { name: "remove reading" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/untag");
@@ -132,7 +132,9 @@ test("takes the template of a trigger tag typed in, and tags nothing", async () 
   const line = await opened();
   await fireEvent.input(line, { target: { value: "route/research" } });
   expect(
-    screen.getByRole("option", { name: /^\+ route\/research\s*→ research$/ }),
+    screen.getByRole("option", {
+      name: "+ route/research, routes to research",
+    }),
   ).toBeDefined();
   await fireEvent.keyDown(line, { key: "Enter" });
 

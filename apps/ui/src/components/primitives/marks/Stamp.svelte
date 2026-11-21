@@ -31,7 +31,7 @@
 {#snippet written()}
   {#if dated}
     <span
-      class="flex tabular-nums {inline ? '' : 'max-narrow:flex-col'} {weight ??
+      class="flex tabular-nums {inline ? '' : 'max-wide:flex-col'} {weight ??
         ''}"
     >
       <!-- Bold on a selected index line, which must not widen the column: each
@@ -44,7 +44,7 @@
       >
       <span
         aria-hidden="true"
-        class="w-[1ch] shrink-0 font-normal {inline ? '' : 'max-narrow:hidden'}"
+        class="w-[1ch] shrink-0 font-normal {inline ? '' : 'max-wide:hidden'}"
       ></span>
       <span data-word={timeOf(at)} class="steady-weight whitespace-nowrap"
         >{timeOf(at)}</span
@@ -59,8 +59,8 @@
     <time
       datetime={at}
       data-word={timeOf(at)}
-      class="steady-weight whitespace-nowrap tabular-nums {weight ??
-        (inline ? '' : 'font-semibold')}">{timeOf(at)}</time
+      class="steady-weight whitespace-nowrap tabular-nums {weight ?? ''}"
+      >{timeOf(at)}</time
     >
   {/if}
 {/snippet}
@@ -76,7 +76,8 @@
     type="button"
     onclick={onopen}
     aria-expanded={opened === true}
-    class="block text-left hover:underline"
+    data-stamp
+    class="relative block text-left before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] hover:underline focus-visible:outline-none"
   >
     {@render drawn()}
   </button>

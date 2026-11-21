@@ -34,7 +34,7 @@
 {/snippet}
 
 {#if href === undefined}
-  <span class="underline">{@render words()}</span>
+  <span>{@render words()}</span>
 {:else}
-  <a {href} class="underline">{@render words()}</a>
+  <a {href} class="text-ink no-underline hover:underline">{@render words()}</a>
 {/if}

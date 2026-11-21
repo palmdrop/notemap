@@ -8,4 +8,7 @@
   <title>Item records | Notemap</title>
 </svelte:head>
 
-<Record item={data.id} record={data.record} />
+<!-- Its rows run to the window's edge, what is in them kept to the measure. -->
+<div class="wide:measured">
+  <Record item={data.id} record={data.record} />
+</div>

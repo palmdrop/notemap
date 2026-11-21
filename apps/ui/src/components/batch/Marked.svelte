@@ -1,13 +1,19 @@
 <script lang="ts">
   import { MAX_BATCH, type BatchAction, type Item } from "@notemap/client";
 
-  import Action from "$components/primitives/controls/Action.svelte";
-  import { notes } from "$lib/batching";
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import { width } from "$lib/breakpoint";
+  import { selects, type BatchDeed } from "$lib/selecting.svelte";
+
+  import BatchRoute from "./BatchRoute.svelte";
+  import BatchTags from "./BatchTags.svelte";
 
   /**
-   * What the rows marked for a batch can be given, held in the list's head
-   * while any are marked. `discard` is offered where something marked is not
-   * discarded, `undiscard` where something is. Tags are changed on the rows.
+   * What the selected rows can be given while any are selected: Discard (or
+   * Undiscard where something selected is discarded), Tag and Route. The
+   * head says how many, with × and All; the deeds dock at the foot on a
+   * phone and sit in the head when wide.
    */
   let {
     marked,
@@ -17,7 +23,7 @@
     onclear,
   }: {
     marked: readonly Item[];
-    /** As many as one batch takes: nothing more is marked. */
+    /** As many as one batch takes: nothing more is selected. */
     full?: boolean;
     onbatch: (action: BatchAction) => void;
     onall: () => void;
@@ -30,20 +36,75 @@
   const undiscardable = $derived(
     marked.some((item) => item.archived !== undefined),
   );
+
+  let sheet = $state<"tag" | "route" | undefined>(undefined);
+
+  const deeds = $derived<readonly BatchDeed[]>([
+    ...(discardable
+      ? [
+          {
+            id: "discard",
+            icon: "trash" as const,
+            label: "Discard",
+            danger: true,
+            run: () => onbatch({ kind: "archive" }),
+          },
+        ]
+      : []),
+    ...(undiscardable
+      ? [
+          {
+            id: "undiscard",
+            icon: "undo" as const,
+            label: "Undiscard",
+            run: () => onbatch({ kind: "unarchive" }),
+          },
+        ]
+      : []),
+    { id: "tag", icon: "tag", label: "Tag", run: () => (sheet = "tag") },
+    {
+      id: "route",
+      icon: "route",
+      label: "Route",
+      primary: true,
+      run: () => (sheet = "route"),
+    },
+  ]);
+
+  selects(() => ({
+    count: marked.length,
+    full: full ? `the most one batch takes is ${String(MAX_BATCH)}` : undefined,
+    all: onall,
+    clear: onclear,
+    deeds,
+  }));
 </script>
 
-<span class="whitespace-nowrap">{notes(marked.length)} marked</span>
-{#if full}
-  <span role="status" class="whitespace-nowrap text-inert"
-    >the most one batch takes is {String(MAX_BATCH)}</span
-  >
+<!-- How many and the way out are the head's; on a phone the deeds dock at
+     the foot, and when wide they sit in the head beside the count. -->
+{#if !width.wide}
+  <div class="fixed inset-x-0 bottom-0 z-30">
+    <ActionBar label="Selected">
+      {#each deeds as deed (deed.id)}
+        <BarAction
+          icon={deed.icon}
+          label={deed.label}
+          danger={deed.danger}
+          primary={deed.primary}
+          command={deed.id}
+          onclick={deed.run}
+        />
+      {/each}
+    </ActionBar>
+  </div>
 {/if}
 
-{#if discardable}
-  <Action alarm onclick={() => onbatch({ kind: "archive" })}>discard</Action>
+{#if sheet === "tag"}
+  <BatchTags {marked} onclose={() => (sheet = undefined)} />
+{:else if sheet === "route"}
+  <BatchRoute
+    count={marked.length}
+    {onbatch}
+    onclose={() => (sheet = undefined)}
+  />
 {/if}
-{#if undiscardable}
-  <Action onclick={() => onbatch({ kind: "unarchive" })}>undiscard</Action>
-{/if}
-<Action onclick={onall}>all</Action>
-<Action onclick={onclear}>clear</Action>

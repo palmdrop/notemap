@@ -4,7 +4,7 @@ import type { Filter, FilterState } from "@notemap/client";
 
 export const NOTHING_CAPTURED = "Nothing captured yet.";
 
-export const NO_MORE_OFFLINE = "offline; more when the daemon answers";
+export const NO_MORE_OFFLINE = "The rest is with the pool, out of reach.";
 
 export const NO_ITEM_OFFLINE = "offline; this item when the daemon answers";
 
@@ -27,8 +27,6 @@ export const QUEUE_EMPTY = "Queue is empty.";
 export const NOTHING_TO_CAPTURE = "nothing to capture";
 
 export const NO_NOTICES = "No notices.";
-
-export const CLEAR_FILTERS = "clear filters";
 
 /** What became of an item, in this shell's words: archive is said as discard. */
 export const STATE_WORD: Readonly<Record<FilterState, string>> = {

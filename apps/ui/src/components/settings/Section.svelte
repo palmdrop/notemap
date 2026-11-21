@@ -1,13 +1,17 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
 
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import { width } from "$lib/breakpoint";
+  import { headed } from "$lib/heading.svelte";
+
   /**
-   * A section's head: bold capitals on a rule. `sub` is the same, lower down a
-   * section, for the second-level headings — access tokens under access, sources
-   * under server. Below `narrow` the top-level head also carries the way back to
-   * the menu, since the menu is not drawn there.
+   * A section's page. Its name is the page's title, with the way back to the
+   * menu on a phone, where the menu is not drawn beside it. `sub` is a group
+   * of rows inside a section, under a band.
    */
   let {
     name,
@@ -17,30 +21,30 @@
   }: {
     name: string;
     sub?: boolean;
-    /** The one place a sub-head carries a control: `sources`' `show`/`hide`. */
     right?: Snippet;
     children: Snippet;
   } = $props();
+
+  headed(() =>
+    sub
+      ? undefined
+      : {
+          title: name,
+          ...(width.wide
+            ? {}
+            : {
+                out: {
+                  icon: "back" as const,
+                  label: "Settings",
+                  run: () => void goto(resolve("/settings")),
+                },
+              }),
+        },
+  );
 </script>
 
-{#if !sub}
-  <a
-    href={resolve("/settings")}
-    class="mb-2 hidden hover:underline max-narrow:block"
-  >
-    ← settings
-  </a>
+{#if sub}
+  <Band level={3} end={right}>{name}</Band>
 {/if}
-
-<div
-  class="flex items-baseline justify-between gap-x-[2ch] border-b border-ink pb-2 {sub
-    ? 'mt-9'
-    : ''}"
->
-  <span class="font-semibold tracking-caps uppercase">{name}</span>
-  {#if right !== undefined}
-    {@render right()}
-  {/if}
-</div>
 
 {@render children()}

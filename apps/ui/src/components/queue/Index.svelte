@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { modality } from "$lib/modality.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import type { Snippet } from "svelte";
 
   import type { Item } from "@notemap/client";
@@ -28,11 +30,10 @@
   let {
     items,
     selected,
-    byDay = false,
+    byDay = true,
     dayAt,
     leads = false,
     motion,
-    slim = false,
     open,
     marked,
     marking = false,
@@ -49,8 +50,6 @@
     leads?: boolean;
     /** Whether the list's latest change is one a read brought; absent, nothing moves. */
     motion?: { readonly still: boolean };
-    /** The register the opened row is drawn on holds a time and nothing more. */
-    slim?: boolean;
     /** The selected item as a whole row. */
     open: Snippet<[Item, boolean]>;
     /** Whether a line is marked for a batch. */
@@ -110,7 +109,12 @@
 </script>
 
 {#snippet heading(line: Extract<Line, { kind: "day" }>)}
-  <Day at={line.at} leads={leads && line.key === lines[0]?.key} {motion} />
+  <Day
+    at={line.at}
+    count={line.count}
+    leads={leads && line.key === lines[0]?.key}
+    {motion}
+  />
 {/snippet}
 
 {#snippet entry(line: Extract<Line, { kind: "line" }>)}
@@ -129,8 +133,10 @@
         : ''}"
     >
       {#if selected === line.item.id}
-        <div class="col-span-full">
-          <Register {slim}>{@render open(line.item, line.opens)}</Register>
+        <!-- The register draws itself to the page's edges, as this list
+             already does: the margin gives back what both would take. -->
+        <div class="col-span-full mx-3.5 wide:mx-8">
+          <Register>{@render open(line.item, line.opens)}</Register>
         </div>
       {:else}
         {@render said(line)}
@@ -143,12 +149,19 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="relative col-span-full grid grid-cols-subgrid"
+    class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule {cursor ===
+      line.item.id && modality.keys
+      ? 'outline-1 -outline-offset-1 outline-ink'
+      : ''} {marked?.(line.item.id) === true
+      ? 'bg-chosen'
+      : selected === line.item.id
+        ? 'bg-picked'
+        : ''}"
     onclick={pickable((how) => onselect(line.item.id, how))}
     onmousedown={unselecting}
     ondblclick={doubled(() => onprocess(line.item.id))}
   >
-    <span class="absolute inset-y-0 -left-3 max-narrow:-left-2">
+    <span class="absolute inset-y-0 left-0">
       <Gutter
         marked={marked?.(line.item.id) ?? false}
         cursor={cursor === line.item.id}
@@ -156,7 +169,7 @@
     </span>
     <span
       bind:this={stamps[line.item.id]}
-      class="scroll-mt-day-head whitespace-nowrap"
+      class="scroll-mt-day-head py-2 pl-gutter text-time whitespace-nowrap"
     >
       <Stamp
         at={line.item.createdAt}
@@ -167,23 +180,22 @@
         inline
       />
     </span>
-    <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+    <span class="min-w-0 overflow-hidden py-2 text-ellipsis whitespace-nowrap">
       {line.said}
     </span>
-    <span class="text-right whitespace-nowrap max-narrow:hidden">
-      <span class="inline-flex gap-x-[1ch]">
+    <span class="py-2 pr-gutter text-right whitespace-nowrap max-wide:hidden">
+      <span class="inline-flex gap-1">
         {#each line.tags as tag (tag.name)}
           {@const said =
             tag.fires && tag.name.startsWith(TRIGGER_NAMESPACE)
               ? tag.name.slice(TRIGGER_NAMESPACE.length)
               : tag.name}
           <span
-            data-word={said}
-            class="steady-weight {tag.fires
-              ? 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'
-              : ''}"
+            class="inline-flex min-h-6 items-center gap-1 rounded-tag border border-tag-line bg-tag px-1.5 text-small text-tag-ink"
           >
-            {said}
+            {#if tag.fires}<Icon name="route" class="size-3.5" />{:else}<span
+                aria-hidden="true">#</span
+              >{/if}{said}
           </span>
         {/each}
       </span>
@@ -192,7 +204,7 @@
 {/snippet}
 
 <div
-  class="grid grid-cols-[max-content_1fr_max-content] gap-x-6 max-narrow:grid-cols-[max-content_1fr]"
+  class="-mx-3.5 grid grid-cols-[max-content_1fr_max-content] gap-x-4 max-wide:grid-cols-[max-content_1fr] wide:-mx-8"
 >
   {#each lines as line (line.key)}
     <!-- Not an `{#if}`: that would be the block the transitions belong to,

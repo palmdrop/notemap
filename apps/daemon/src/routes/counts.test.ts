@@ -38,4 +38,23 @@ describe("GET /v1/counts", () => {
 
     expect(await counts(app)).toEqual({ queue: 1 });
   });
+
+  it("counts what was captured since a time, and refuses one that is not a time", async () => {
+    const app = serving();
+    await captureMany(app, 2);
+
+    const since = await app.request(
+      `/v1/counts?since=${encodeURIComponent("2000-01-01T00:00:00.000Z")}`,
+    );
+    expect(await since.json()).toEqual({ queue: 2, captured: 2 });
+
+    const later = await app.request(
+      `/v1/counts?since=${encodeURIComponent("2999-01-01T00:00:00.000Z")}`,
+    );
+    expect(await later.json()).toEqual({ queue: 2, captured: 0 });
+
+    const bad = await app.request("/v1/counts?since=yesterday");
+    expect(bad.status).toBe(422);
+    expect(await bad.json()).toMatchObject({ error: { code: "bad-since" } });
+  });
 });

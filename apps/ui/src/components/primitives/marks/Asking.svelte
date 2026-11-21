@@ -11,8 +11,10 @@
 
   import { ASKING, slowToAnswer } from "$lib/said";
 
+  import Spinner from "./Spinner.svelte";
+
   /**
-   * Three squares stepping, for a request the shell holds no answer to yet.
+   * The spinner, for a request the shell holds no answer to yet.
    * It takes its line from the start, hidden, so appearing moves nothing.
    * `subject` names what is being asked when that is worth knowing: past
    * `slow`, the mark says it is slow to answer.
@@ -48,18 +50,7 @@
   data-asking={shown ? "shown" : "hidden"}
   class="inline-flex items-center gap-[1ch] {shown ? '' : 'invisible'}"
 >
-  <span class="inline-flex gap-1" aria-hidden="true">
-    {#each [0, 1, 2] as beat (beat)}
-      <span
-        class="size-1.5 animate-step border border-current motion-reduce:animate-none {beat ===
-        1
-          ? '[animation-delay:var(--duration-step)]'
-          : beat === 2
-            ? '[animation-delay:calc(var(--duration-step)*2)]'
-            : ''}"
-      ></span>
-    {/each}
-  </span>
+  <Spinner />
   {#if said === undefined}
     <span class="sr-only">{ASKING}</span>
   {:else}

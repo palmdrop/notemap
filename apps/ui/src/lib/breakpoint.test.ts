@@ -1,15 +1,23 @@
 import { expect, test } from "vitest";
 
 import { viewport } from "$testing/dom";
-import { narrow } from "./breakpoint";
+import { full, wide } from "./breakpoint";
 
-test("is narrow below the token's 44rem, and not at or above it", () => {
+test("is wide from the token's 900px, and not below it", () => {
   viewport(1024);
-  expect(narrow()).toBe(false);
+  expect(wide()).toBe(true);
 
-  viewport(704);
-  expect(narrow()).toBe(false);
+  viewport(900);
+  expect(wide()).toBe(true);
 
-  viewport(703);
-  expect(narrow()).toBe(true);
+  viewport(899);
+  expect(wide()).toBe(false);
+});
+
+test("is full from 1200px, where the menu is a column", () => {
+  viewport(1200);
+  expect(full()).toBe(true);
+
+  viewport(1199);
+  expect(full()).toBe(false);
 });

@@ -860,8 +860,13 @@ second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editabl
 `GET /v1/counts` — how much the pool holds, counted rather than paged.
 
 ```json
-{ "queue": 14 }
+{ "queue": 14, "captured": 3 }
 ```
+
+- **`since` adds `captured`** *(2026-11-19)*: every item captured at or after that instant, by
+  capture time, wherever it has gone since. A shell asks from its own midnight to say what was
+  captured today; the day is the device's, so the pool is told the instant rather than a date.
+  Anything that is not an instant is refused with `422 bad-since`.
 
 - **`queue` is every item `GET /v1/queue` would answer**, counted by the same rule, so the count and
   the pages cannot disagree about what is unprocessed.
@@ -1115,9 +1120,12 @@ person to remember it.
 when it last captured. It is how a **relay** left running is seen to still be running.
 
 ```json
-{ "values": [ { "id": "memos", "items": 12,
+{ "values": [ { "id": "memos", "items": 12, "unprocessed": 5,
                 "lastCapturedAt": "2026-09-07T11:59:00.000Z" } ] }
 ```
+
+- **`unprocessed` counts the ones the queue holds**, as `GET /v1/tags` does for a tag, so the
+  queue's filter counts a source by its own rows rather than by the whole pool's.
 
 - **Most recently captured first.** Not paginated and not narrowed, on `GET /v1/tags`' own terms:
   the set is small and a client holds the whole of it.

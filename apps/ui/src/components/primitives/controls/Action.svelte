@@ -37,8 +37,8 @@
 
   const look = $derived(
     `hover:underline disabled:no-underline ${
-      working ? "" : "disabled:text-inert"
-    } ${primary ? "font-semibold" : ""} ${alarm ? "text-alarm" : ""}`,
+      working ? "" : "disabled:text-muted"
+    } ${primary ? "font-semibold" : ""} ${alarm ? "text-danger" : ""}`,
   );
 </script>
 
@@ -54,7 +54,7 @@
     <Working {working}>{@render children()}</Working>
   </button>
 {:else if disabled}
-  <span aria-disabled="true" {title} class="text-inert">
+  <span aria-disabled="true" {title} class="text-muted">
     {@render children()}
   </span>
 {:else}

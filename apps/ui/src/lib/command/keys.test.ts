@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, test } from "vitest";
 
-import { activates, chord, writing } from "./keys";
+import { activates, chord, spoken, writing } from "./keys";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", init);
@@ -76,5 +76,17 @@ describe("whether the browser will click what has the focus", () => {
     expect(
       activates(aimed({ key: "Enter" }, document.createElement("div"))),
     ).toBe(false);
+  });
+});
+
+describe("a chord as a tooltip says it", () => {
+  test.each([
+    ["mod+enter", "Ctrl+Enter"],
+    ["escape", "Esc"],
+    [" ", "Space"],
+    ["D", "D"],
+    ["shift+tab", "Shift+tab"],
+  ])("%j is %j", (held, said) => {
+    expect(spoken(held)).toBe(said);
   });
 });

@@ -5,22 +5,22 @@ import { remember, viewFor, withView } from "./view";
 const at = (query = "") => new URL(`http://localhost/${query}`);
 
 test("a list is a timeline until somebody asks for the index", () => {
-  expect(viewFor("queue", at())).toBe("timeline");
-  expect(viewFor("queue", at("?view=index"))).toBe("index");
+  expect(viewFor(at())).toBe("timeline");
+  expect(viewFor(at("?view=index"))).toBe("index");
 });
 
-test("remembers each surface on its own", () => {
-  remember("queue", "index");
+test("remembers one view for the queue and the feed alike", () => {
+  remember("index");
 
-  expect(viewFor("queue", at())).toBe("index");
-  expect(viewFor("feed", at())).toBe("timeline");
+  expect(viewFor(at())).toBe("index");
+  expect(viewFor(new URL("http://localhost/feed"))).toBe("index");
 });
 
 test("takes the URL over what was remembered, and falls through a view that is not one", () => {
-  remember("queue", "index");
+  remember("index");
 
-  expect(viewFor("queue", at("?view=timeline"))).toBe("timeline");
-  expect(viewFor("queue", at("?view=sideways"))).toBe("index");
+  expect(viewFor(at("?view=timeline"))).toBe("timeline");
+  expect(viewFor(at("?view=sideways"))).toBe("index");
 });
 
 test("names the index on the URL and takes it off again for the timeline", () => {

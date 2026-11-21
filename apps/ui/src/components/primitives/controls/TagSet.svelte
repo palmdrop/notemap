@@ -1,10 +1,11 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import type { Ask, Supplied } from "$lib/asked";
   import { completed, narrowed, takenAs } from "$lib/candidate-list";
-  import { drawOut, fade, grow, pinned, slide, unfold } from "$lib/motion";
+  import { drawOut, grow, pinned, slide, unfold } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
@@ -84,8 +85,6 @@
   let draft = $state("");
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
-  /** A carried tag pressed to select it, so its `×` is drawn. */
-  let chosen = $state<string | undefined>(undefined);
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
@@ -94,7 +93,6 @@
 
   function open(): void {
     adding = true;
-    chosen = undefined;
   }
 
   function close(): void {
@@ -134,12 +132,6 @@
         // A destination that cannot answer leaves the field typed.
       },
     );
-  });
-
-  // The row is the only caller that toggles this, and a `×` left on a row
-  // nobody is on is a control nobody asked for.
-  $effect(() => {
-    if (!addable) chosen = undefined;
   });
 
   const entries = $derived<readonly CandidateEntry[]>(
@@ -251,8 +243,11 @@
   );
 
   /** How a trigger tag is drawn, in the chooser and on the row alike. */
-  const TRIGGER =
-    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+  const TRIGGER = "inline-flex items-center gap-1";
+
+  /** A tag on a row or an item: a small box of the box grey. */
+  const CHIP =
+    "inline-flex min-h-6 items-center rounded-tag border border-tag-line bg-tag px-1.5 text-small text-tag-ink";
 
   const WAITING = "files the item once the edit is saved";
 
@@ -337,11 +332,6 @@
       stepping.at === 0 ? undefined : { ...stepping, at: stepping.at - 1 };
   }
 
-  /** Pressing a carried tag selects it, or clears the selection where it already was. */
-  function press(name: string): void {
-    chosen = chosen === name ? undefined : name;
-  }
-
   function walk(step: 1 | -1): void {
     if (rows.length === 0) return;
     at =
@@ -399,17 +389,19 @@
 </script>
 
 <!-- A carried tag is marked `#`, which is how it reads as a tag beside prose
-     in the same face and size; the mark is not part of its name. Bold when
-     selected, holding its width so nothing beside it moves. -->
-{#snippet said(word: string)}
-  <span class="steady-weight" data-word={`#${word}`}
-    ><span><span aria-hidden="true">#</span><span>{word}</span></span></span
+     in the same face and size; the mark is not part of its name. A trigger
+     tag is the route icon and the name after `route/`: the namespace is not a
+     decision. -->
+{#snippet said(word: string, triggered = false)}
+  <span class="inline-flex items-center {triggered ? 'gap-1' : ''}"
+    >{#if triggered}<Icon name="route" class="size-3.5" />{:else}<span
+        aria-hidden="true">#</span
+      >{/if}<span>{word}</span></span
   >
 {/snippet}
 
-<!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
-     the style says which words file, and the namespace is not a decision. The
-     offer below keeps the whole name, being what is typed against. -->
+<!-- Where tags can be changed every one carries its ×; elsewhere they are
+     words, and pressing one is pressing what it sits on. -->
 {#each names as name (name)}
   {@const fired = fires?.(name)}
   {@const filed = held?.(name) === true}
@@ -420,71 +412,53 @@
   <span
     class="whitespace-nowrap"
     data-marked={filtered ? "" : undefined}
+    data-tag={name}
     transition:unfold={{ fade: true }}
   >
-    {#if inert}
-      <span
-        title={filed
-          ? "filed the item — cancel the routing to take it off"
+    <span
+      title={filed
+        ? "filed the item — cancel the routing to take it off"
+        : pending
+          ? WAITING
           : undefined}
-        aria-label={fired === undefined
-          ? undefined
-          : `${name}, routes to ${fired}`}
-        class="px-tag {fired === undefined ? '' : TRIGGER} {filtered
-          ? 'underline'
-          : ''}"
-      >
-        {@render said(fired === undefined ? name : trigger(name))}
-      </span>
-    {:else}
-      <!-- Room on both sides, always: selected, the word steps left by one
-           side's room and the `×` takes the two, so nothing beside it moves. -->
-      <span
-        class="relative inline-block px-tag"
-        data-chosen={chosen === name ? "" : undefined}
-      >
+      class="{CHIP} {filtered || filed ? 'border-ink' : ''} {pending
+        ? 'text-muted'
+        : ''}"
+    >
+      {#if fired === undefined && !pending}
+        {@render said(name)}
+      {:else}
+        <span aria-hidden="true"
+          >{@render said(
+            fired === undefined ? name : trigger(name),
+            fired !== undefined,
+          )}</span
+        ><span class="sr-only"
+          >{[
+            name,
+            fired === undefined ? undefined : `routes to ${fired}`,
+            pending ? WAITING : undefined,
+          ]
+            .filter((part) => part !== undefined)
+            .join(", ")}</span
+        >
+      {/if}
+      {#if filed}
+        <Icon name="lock" class="ml-1 size-3.5" />
+      {:else if addable && !inert}
         <button
           type="button"
-          aria-pressed="true"
-          onclick={() => press(name)}
-          onkeydown={(event) => {
-            if (event.key === "Escape" && chosen === name) {
-              event.stopPropagation();
-              chosen = undefined;
-            }
+          aria-label={`remove ${name}`}
+          onclick={(event) => {
+            event.stopPropagation();
+            onremove(name);
           }}
-          aria-label={fired === undefined && !pending
-            ? undefined
-            : [
-                name,
-                fired === undefined ? undefined : `routes to ${fired}`,
-                pending ? WAITING : undefined,
-              ]
-                .filter((part) => part !== undefined)
-                .join(", ")}
-          title={pending ? WAITING : undefined}
-          class="transition-transform duration-(--duration-short) ease-(--ease-motion) {chosen ===
-          name
-            ? '-translate-x-(--spacing-tag) font-semibold'
-            : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
-            ? 'underline'
-            : ''} {pending ? 'text-inert' : ''}"
+          class="relative -mr-1 ml-1 grid place-items-center text-muted before:absolute before:-inset-2.5 before:content-[''] hover:text-ink"
         >
-          {@render said(fired === undefined ? name : trigger(name))}
-        </button>{#if chosen === name}<button
-            type="button"
-            aria-label={`remove ${name}`}
-            onclick={() => {
-              chosen = undefined;
-              onremove(name);
-            }}
-            class="absolute right-0 hover:underline"
-            transition:fade
-          >
-            ×
-          </button>{/if}
-      </span>
-    {/if}
+          <Icon name="close" class="size-3.5" />
+        </button>
+      {/if}
+    </span>
     {#if where !== undefined}<span class="pr-tag">{where}</span>{/if}
   </span>
 {/each}
@@ -495,7 +469,10 @@
      from the place rather than the line, which is gone before the offer has
      finished closing. -->
 <span
-  class="h-(--text-shell--line-height) min-w-tag-line flex-1 self-start pl-tag"
+  class="h-(--text-body--line-height) min-w-tag-line flex-1 self-start {names.length >
+  0
+    ? 'pl-tag'
+    : ''}"
 >
   <span class="block h-full" style="anchor-name: {anchor}">
     {#if adding}
@@ -531,7 +508,10 @@
         tabindex={addable ? undefined : -1}
         disabled={!addable}
         onclick={open}
-        class="hover:underline {addable ? '' : 'invisible'}">+</button
+        class="{addable
+          ? 'inline-flex'
+          : 'hidden'} relative min-h-6 items-center gap-1 rounded-tag border border-dashed border-edge px-1.5 text-small text-muted before:absolute before:-inset-2.5 before:content-['']"
+        ><span aria-hidden="true">+</span> tag</button
       >
     {/if}
   </span>
@@ -543,44 +523,57 @@
   <!-- Hung from the line where the browser can tie it there, and from the
        start of the set's own row where it cannot; the set's container is
        what it is placed against, so callers make that container relative.
-       Outside the line's own block, so the line goes the moment it closes
-       while the offer slides shut where it stood. -->
-  <!-- Asking for a value, a narrow screen draws the panel as a sheet across
-       its foot rather than hung from a line it may not have room beside. -->
+       On a phone it opens upward, clear of a bar docked at the foot. Asking
+       for a value it is the quick route's shape: a sheet across a phone's
+       foot, a dialog in the middle of a wide window, over a veil. -->
   <div
-    class="offer z-30 {step === undefined
-      ? ''
-      : 'max-narrow:fixed max-narrow:inset-x-0 max-narrow:top-auto max-narrow:bottom-0'}"
+    class={step === undefined
+      ? "offer z-30 max-wide:offer-above"
+      : "fixed inset-0 z-50 flex items-end justify-center bg-veil wide:items-center"}
     style="position-anchor: {anchor}"
     in:slide|global={{ magnitude: "short" }}
     out:pinned|global={{ magnitude: "short" }}
   >
     <div
       bind:this={panel}
-      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1 {step ===
-      undefined
-        ? ''
-        : 'max-narrow:w-full'}"
+      class="overflow-y-auto border border-rule bg-paper {step === undefined
+        ? 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56 rounded-control'
+        : 'max-h-[70dvh] w-full rounded-t-control border-x-0 border-b-0 wide:w-[26rem] wide:rounded-control wide:border'}"
     >
       {#if stepping !== undefined && step !== undefined}
-        <!-- What is being asked, and for which template, since the line holds
-             only the value. -->
-        <div
-          id="{id}-step"
-          class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
-        >
-          <span class={TRIGGER}>{trigger(stepping.tag)}</span>
-          → {stepping.ask.template},
-          <span class="font-semibold">{step.label}</span>
-          {#if step.default !== undefined}
-            <span>default {step.default}</span>
-          {/if}
+        <!-- The quick sheet's shape: the trigger, the template it applies, and
+             what it asks. Closing it leaves the tag off. -->
+        <div id="{id}-step">
+          <div
+            class="flex min-h-bar items-center justify-between gap-3 border-b border-rule pl-gutter"
+          >
+            <span
+              class="inline-flex items-center gap-2 font-display text-title lowercase"
+              ><Icon name="route" />{trigger(stepping.tag)}</span
+            >
+            <button
+              type="button"
+              aria-label="Leave the tag off"
+              onmousedown={(event) => event.preventDefault()}
+              onclick={close}
+              class="grid min-h-target min-w-target place-items-center"
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <div class="border-b border-rule px-gutter py-3">
+            <span class="block">{stepping.ask.template}</span>
+            <small class="block text-small text-muted"
+              >{step.label}{#if step.default !== undefined}, default {step.default}{/if}</small
+            >
+          </div>
         </div>
       {/if}
       <div
         id="{id}-tags"
         role="listbox"
         aria-label={step === undefined ? "Tags in use" : step.label}
+        class="divide-y divide-rule"
       >
         {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
           {@const on = at === index}
@@ -588,7 +581,7 @@
           {#if row.apart}
             <div
               aria-hidden="true"
-              class="-mx-2.5 my-1 border-t border-ink"
+              class="h-2 border-b border-rule bg-band"
             ></div>
           {/if}
           <Walked
@@ -600,12 +593,39 @@
                 ? take(row.label)
                 : give(row.value ?? row.label)}
           >
-            {#if row.fresh}
-              + {row.label}
-            {:else}
-              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-              >
-            {/if}{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
+            <span
+              class="flex min-h-target items-center justify-between gap-3 px-gutter {on
+                ? 'bg-off'
+                : ''}"
+            >
+              {#if step !== undefined}
+                <span
+                  >{row.fresh
+                    ? `+ ${row.value ?? row.label}`
+                    : (row.value ?? row.label)}</span
+                >
+                <Icon name="chevron" class="size-5 flex-none" />
+              {:else if fired !== undefined}
+                <span aria-hidden="true" class={TRIGGER}
+                  >{#if row.fresh}+&nbsp;{/if}<Icon
+                    name="route"
+                    class="size-4"
+                  />{trigger(row.label)}</span
+                ><span aria-hidden="true" class="text-small text-muted"
+                  >{fired}</span
+                ><span class="sr-only"
+                  >{row.fresh ? "+ " : ""}{row.label}, routes to {fired}</span
+                >
+              {:else}
+                <span
+                  >{#if row.fresh}+&nbsp;{/if}<span aria-hidden="true">#</span
+                  >{row.label}</span
+                >{#if row.fresh}<span
+                    aria-hidden="true"
+                    class="text-small text-muted">new</span
+                  >{/if}
+              {/if}
+            </span>
           </Walked>
         {/each}
       </div>

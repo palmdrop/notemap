@@ -18,11 +18,11 @@
   }
 
   body {
-    background: var(--color-ground);
+    background: var(--color-paper);
     color: var(--color-ink);
-    font-family: var(--font-shell);
-    font-size: var(--text-shell);
-    line-height: var(--text-shell--line-height);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
     text-wrap: pretty;
     -webkit-font-smoothing: antialiased;
   }
@@ -38,6 +38,11 @@
 
   ::highlight(search) {
     text-shadow: var(--text-shadow-bold);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
   }
 
   /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */

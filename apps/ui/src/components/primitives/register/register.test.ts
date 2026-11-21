@@ -6,13 +6,9 @@ import { NO_MORE_OFFLINE } from "$lib/said";
 import Day from "./Day.svelte";
 import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
-import HeadFixture from "./Head.fixture.svelte";
 
-/**
- * The box is the selection: the rail takes the head and the left edge, the
- * body the head and the right edge, and nothing else about either cell changes.
- */
-test("a selected row's cells draw the box, and an unselected row's draw none", () => {
+/** The row draws the selection, as a band behind both cells; the cells say only that they are in it. */
+test("a selected row's cells say so, and draw no box of their own", () => {
   const { container, rerender } = render(Fixture, { selected: false });
   const cells = () => [...container.querySelectorAll("[data-selected]")];
 
@@ -21,10 +17,8 @@ test("a selected row's cells draw the box, and an unselected row's draw none", (
   void rerender({ selected: true });
   expect(cells()).toHaveLength(2);
   const [rail, body] = cells() as HTMLElement[];
-  expect(rail?.className).toContain("border-l");
-  expect(rail?.className).toContain("border-t");
-  expect(body?.className).toContain("border-r");
-  expect(body?.className).toContain("border-t");
+  expect(rail?.className).not.toContain("border");
+  expect(body?.className).not.toContain("border");
 });
 
 test("a whole cell selects the row it belongs to", async () => {
@@ -56,12 +50,12 @@ test("the foot offers the next page, or says why it cannot", async () => {
     onmore: more,
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Load more" }));
   expect(more).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 
   void rerender({ loading: true, offline: false, failed: false, onmore: more });
-  expect(screen.getByRole("button", { name: /load more/ })).toHaveProperty(
+  expect(screen.getByRole("button", { name: /Load more/ })).toHaveProperty(
     "disabled",
     true,
   );
@@ -139,7 +133,7 @@ test("a read that failed is not asked for again by scrolling", async () => {
   expect(more).toHaveBeenCalledTimes(1);
 
   // A press is how it is asked for again.
-  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Load more" }));
   expect(more).toHaveBeenCalledTimes(2);
 });
 
@@ -160,14 +154,13 @@ test("the first page read is the mark alone, there being nothing yet to have mor
   expect(document.querySelector("[data-asking]")).not.toBeNull();
 });
 
-test("the foot keeps its width while it loads", () => {
-  render(More, { ...reading, loading: true, onmore: vi.fn() });
+test("the foot says how much is shown, and turns while it loads", () => {
+  render(More, { ...reading, loading: true, shown: 25, onmore: vi.fn() });
 
-  const button = screen.getByRole("button", { name: /load more/ });
+  const button = screen.getByRole("button", { name: /Load more/ });
   expect(button.getAttribute("aria-busy")).toBe("true");
-  // The label and the mark share one cell, so the wider of them sets the width.
-  expect(button.textContent).toContain("load more");
-  expect(button.querySelector("[data-asking]")).not.toBeNull();
+  expect(button.querySelector("[data-spinner]")).not.toBeNull();
+  expect(screen.getByText("25 shown")).toBeTruthy();
 });
 
 /** Where the heading would be drawn, as the browser would lay it out. */
@@ -206,35 +199,4 @@ test("a day's heading spans the screen once it reaches the top, and not before",
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);
   });
-});
-
-test("the list head covers what scrolls under it once it reaches the top", async () => {
-  laidAt(300);
-  const { container } = render(HeadFixture);
-  const head = () => container.querySelector("[data-head]")!;
-
-  await vi.waitFor(() => {
-    expect(head().hasAttribute("data-covers")).toBe(false);
-  });
-
-  laidAt(0);
-  await fireEvent.scroll(window);
-  await vi.waitFor(() => {
-    expect(head().hasAttribute("data-covers")).toBe(true);
-  });
-});
-
-/** By day the heading in the band is the date beside the head's controls. */
-test("the list head lets a day heading in the band show through", async () => {
-  laidAt(0);
-  const { container } = render(HeadFixture, { dated: true });
-
-  await vi.waitFor(() => {
-    expect(
-      container.querySelector("[data-day]")?.hasAttribute("data-stuck"),
-    ).toBe(true);
-  });
-  expect(
-    container.querySelector("[data-head]")?.hasAttribute("data-covers"),
-  ).toBe(false);
 });

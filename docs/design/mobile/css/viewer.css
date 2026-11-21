@@ -1,0 +1,49 @@
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #fff;
+  touch-action: pan-y;
+}
+
+.viewer[hidden] {
+  display: none;
+}
+
+.viewer img {
+  max-width: 100%;
+  max-height: calc(100% - 2 * var(--bar));
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.viewer-head {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--bar);
+  padding: 0 var(--gutter) 0 0.25rem;
+}
+
+.viewer .step {
+  position: absolute;
+  bottom: 0.75rem;
+}
+
+.viewer .prev {
+  left: 0.75rem;
+}
+
+.viewer .next {
+  right: 0.75rem;
+}
+
+.viewer .step[hidden] {
+  display: none;
+}

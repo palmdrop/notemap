@@ -74,18 +74,82 @@ test("draws the capture and the one record under it", async () => {
   expect(await screen.findByText("Fiction vault")).toBeDefined();
   expect(await screen.findByText("drafts/note.md")).toBeDefined();
   expect(screen.queryByText("drafts/two.md")).toBeNull();
-  expect(screen.getByText(dayOf(RECORD.at))).toBeDefined();
-  expect(screen.getByText("delivered")).toBeDefined();
-  expect(container.querySelector("[data-foot]")).not.toBeNull();
-  // Its own address is where a record is read: it is drawn open, and does not fold.
-  expect(container.querySelector("[data-folded]")).toBeNull();
-  expect(screen.queryByRole("button", { name: "Fiction vault" })).toBeNull();
-  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
-
-  // The address bar already says which record this is: the stamp goes nowhere.
-  expect(screen.getByText(dayOf(RECORD.at)).closest("a")).toBeNull();
+  expect(screen.getByText(dayOf(RECORD.at), { exact: false })).toBeDefined();
+  expect(screen.getByRole("status").textContent).toContain(
+    "Delivered to Fiction vault.",
+  );
+  expect(container.querySelector("[role=toolbar]")).not.toBeNull();
   expect(screen.queryByText("rec")).toBeNull();
   expect(screen.queryByText("routing record")).toBeNull();
+});
+
+test("withdraw has a band of its own, under what was written", async () => {
+  pool(answering());
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(await screen.findByText("withdraw")).toBeDefined();
+  expect(
+    screen.getByRole("button", { name: /Withdraw this record/ }),
+  ).toBeDefined();
+});
+
+test("a delivery with an address opens there, and one without copies its path", async () => {
+  pool(answering([{ ...RECORD, url: "https://example.org/note" }]));
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    (
+      await screen.findByRole("link", { name: "Open in Fiction vault" })
+    ).getAttribute("href"),
+  ).toBe("https://example.org/note");
+  expect(screen.queryByRole("button", { name: "Copy path" })).toBeNull();
+});
+
+test("a delivery cancelled in its window is the log's account, titled tried", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/actions") {
+      return json(200, {
+        values: [
+          {
+            id: "a1",
+            at: "2026-08-19T22:14:00.000Z",
+            kind: "template-fired",
+            subject: "one",
+            detail: {
+              record: "rec",
+              destination: "vault",
+              capability: "create",
+            },
+          },
+          {
+            id: "a2",
+            at: "2026-08-19T22:14:05.000Z",
+            kind: "delivery-cancelled",
+            subject: "one",
+            detail: {
+              record: "rec",
+              destination: "vault",
+              capability: "create",
+            },
+          },
+        ],
+      });
+    }
+    return answering([])(request);
+  });
+  await client.destinations.load();
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    await screen.findByText("Cancelled. Nothing reached Fiction vault."),
+  ).toBeDefined();
+  expect(screen.getByText("new note")).toBeDefined();
 });
 
 test("says a record this item does not have", async () => {
@@ -94,7 +158,6 @@ test("says a record this item does not have", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(/No such record/)).toBeDefined();
-  expect(screen.getByText("gone")).toBeDefined();
 });
 
 test("says a record an unrouted item cannot have", async () => {
@@ -118,7 +181,7 @@ test("says records are out of reach while the item still draws", async () => {
   render(Record, { item: "one", record: "rec" });
 
   expect(await screen.findByText(NO_RECORDS_OFFLINE)).toBeDefined();
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Item" })).toBeDefined();
 });
 
 test("drops what one record sent when another is drawn", async () => {
@@ -137,4 +200,18 @@ test("drops what one record sent when another is drawn", async () => {
 
   expect(await screen.findByText("# rec-2")).toBeDefined();
   expect(screen.queryByText("# rec")).toBeNull();
+});
+
+test("a record's bar leads to its item, offers a route made by hand as a template, and copies a path where there is one", async () => {
+  pool(answering());
+  await client.item("one");
+
+  render(Record, { item: "one", record: "rec" });
+
+  expect(
+    (await screen.findByRole("link", { name: "Item" })).getAttribute("href"),
+  ).toBe("/items/one");
+  expect(
+    await screen.findByRole("link", { name: "Save as template" }),
+  ).toBeDefined();
 });

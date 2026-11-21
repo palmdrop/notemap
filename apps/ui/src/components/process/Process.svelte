@@ -1,5 +1,35 @@
 <script lang="ts">
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import { width } from "$lib/breakpoint";
   import { onMount, tick, untrack } from "svelte";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import RadioRows from "$components/primitives/blocks/RadioRows.svelte";
+  import Segmented from "$components/primitives/blocks/Segmented.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
+  import Asks from "$components/primitives/rows/Asks.svelte";
+  import Facts from "$components/primitives/rows/Facts.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import { itemHref } from "$components/item/href";
+  import { templateFromHref } from "$components/settings/href";
+  import { askForTemplate, type Step as Question } from "$lib/asked";
+  import { takenAs } from "$lib/candidate-list";
+  import { aboutItem } from "$lib/excerpt";
+  import { headed } from "$lib/heading.svelte";
+  import { within } from "$lib/within.svelte";
+  import { kindIcon, templateIcon, whereOf } from "$lib/looks";
+  import { notices } from "$lib/notices.svelte";
+  import { keyFor } from "$lib/routing";
+  import { templatable } from "$lib/template-draft";
+  import {
+    actionOf,
+    labelFor,
+    lineFor,
+    wordFor,
+    type Fact,
+  } from "$lib/vocabulary";
 
   import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
@@ -23,16 +53,13 @@
   import ComposerTags from "$components/routing/ComposerTags.svelte";
   import DestinationLine from "$components/routing/DestinationLine.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
-  import Option from "$components/primitives/composer/Option.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Working from "$components/primitives/controls/Working.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Stamp from "$components/primitives/marks/Stamp.svelte";
+  import { rise, slide } from "$lib/motion";
   import Unfurls from "$components/unfurl/Unfurls.svelte";
   import AttachedLines from "$components/item/AttachedLines.svelte";
   import AttachedPictures from "$components/item/AttachedPictures.svelte";
   import Routing from "$components/item/Routing.svelte";
-  import Lead from "$components/primitives/text/Lead.svelte";
   import { processHref } from "$components/item/href";
   import { OWN_ARGUMENTS, sameArguments } from "$lib/arguments";
   import { folderIn, withFolder } from "$lib/output";
@@ -54,7 +81,7 @@
   import { reachable } from "$lib/reachable.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { cancelRouting, routedHere } from "$lib/firing";
-  import { firings, offerOf } from "$lib/firings.svelte";
+  import { firings, left, offerOf, phaseOf } from "$lib/firings.svelte";
   import { placeNamed, readingOf } from "$lib/routing";
   import { leafOf, type Said } from "$lib/forecast";
   import {
@@ -68,13 +95,9 @@
     valuesFrom,
   } from "$lib/schema-form";
   import { whenOf } from "$lib/when";
-  import { rise } from "$lib/motion";
 
-  import Band from "./Band.svelte";
   import Discarding from "./Discarding.svelte";
-  import Entry from "./Entry.svelte";
   import Preview from "./Preview.svelte";
-  import Section from "./Section.svelte";
 
   /** What the typed line drives: the capability that decides at delivery. */
   const CREATE_OR_APPEND = "create-or-append";
@@ -380,7 +403,6 @@
   const askedSettled = $derived(
     askedFields.every((one) => (args[one.name] ?? "").trim() !== ""),
   );
-  let askedBox = $state<HTMLElement | undefined>(undefined);
 
   /** The arguments without what the template asks, which are the only ones taking it may change. */
   function fixedOf(
@@ -390,6 +412,148 @@
       Object.entries(values).filter(([name]) => !(name in asking)),
     );
   }
+
+  /**
+   * On a phone the steps come one at a time: where, then a template's
+   * questions, or how and the place where a template does not fix them, then
+   * the check. When wide every step is on the one surface.
+   */
+  type StepName = "where" | "how" | "place" | "check" | `ask:${string}`;
+  const PICK_FIRST = "Pick a destination, and where in it, to route.";
+  const NOTHING_PICKED = "Pick a template or a destination first.";
+
+  /** A choice of a few that shapes what is written, rather than where. */
+  const isHow = (one: (typeof fields)[number]): boolean =>
+    one.options !== undefined &&
+    !one.listable &&
+    one.path === undefined &&
+    !OWN_ARGUMENTS.includes(one.name) &&
+    !(one.name in asking);
+  const howFields = $derived(placing ? fields.filter(isHow) : []);
+  const hasHow = $derived(
+    placing && (offersOutput || chooses || howFields.length > 0),
+  );
+
+  /** A template's place stands until it is changed for one route. */
+  const templated = $derived(applied !== undefined && !placing);
+
+  const stepped = $derived.by((): readonly StepName[] => {
+    if (templated) {
+      return [
+        "where",
+        ...askedFields.map((one): StepName => `ask:${one.name}`),
+        "check",
+      ];
+    }
+    if (chosen === undefined) return ["where", "how", "place", "check"];
+    return ["where", ...(hasHow ? (["how"] as const) : []), "place", "check"];
+  });
+  let stepAt = $state(0);
+  $effect(() => {
+    if (stepAt > stepped.length - 1) stepAt = stepped.length - 1;
+  });
+  const step = $derived(stepped[Math.min(stepAt, stepped.length - 1)]);
+  const onPhone = $derived(!width.wide);
+  const shows = (name: StepName): boolean => !onPhone || step === name;
+
+  const STEP_WORDS: Record<string, string> = {
+    where: "where",
+    how: "how",
+    place: "place",
+    check: "check",
+  };
+  const stepWord = $derived(
+    step === undefined ? "" : (STEP_WORDS[step] ?? "question"),
+  );
+
+  /** Goes to a step: on a phone it takes the screen, when wide it is scrolled to. */
+  async function goTo(name: StepName): Promise<void> {
+    await tick();
+    const at = stepped.indexOf(name);
+    if (onPhone) {
+      if (at !== -1) stepAt = at;
+      return;
+    }
+    document
+      .getElementById(`step-${name}`)
+      ?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  /** A place a template fixed, changed for this one route, which then goes by hand. */
+  async function unpin(): Promise<void> {
+    placing = true;
+    opened.place = true;
+    await goTo("place");
+  }
+
+  // A destination or a template picked is the where answered: on to the next.
+  let pickedBefore: string | undefined;
+  $effect(() => {
+    const now = chosen ?? applied?.id;
+    if (now !== undefined && now !== pickedBefore && step === "where") {
+      stepAt = Math.min(1, stepped.length - 1);
+    }
+    pickedBefore = now;
+  });
+
+  /**
+   * What the template asks, as questions with their answers: a closed list,
+   * what the destination holds, or a typed answer.
+   */
+  let questions = $state<readonly Question[]>([]);
+  let answers = $state<Record<string, readonly string[] | undefined>>({});
+  let typedAnswer = $state<Record<string, string>>({});
+
+  $effect(() => {
+    const template = applied;
+    questions = [];
+    answers = {};
+    if (template === undefined) return;
+    void askForTemplate(template).then((asking) => {
+      if (applied?.id === template.id) questions = asking?.steps ?? [];
+    });
+  });
+
+  $effect(() => {
+    for (const question of questions) {
+      if (question.field in answers) continue;
+      if (question.closed !== undefined) {
+        answers = { ...answers, [question.field]: question.closed };
+      } else if (question.listed === undefined) {
+        answers = { ...answers, [question.field]: [] };
+      } else {
+        answers = { ...answers, [question.field]: undefined };
+        const field = question.field;
+        void question
+          .listed(untrack(() => $state.snapshot(args)))
+          .then((entries) => {
+            answers = {
+              ...answers,
+              [field]: entries.map((entry) => takenAs(entry)),
+            };
+          })
+          .catch(() => (answers = { ...answers, [field]: [] }));
+      }
+    }
+  });
+
+  /** An answer taken: on a phone it moves on, when wide it is picked and stays. */
+  function answer(field: string, value: string): void {
+    args = { ...args, [field]: value };
+    if (onPhone) stepAt = Math.min(stepAt + 1, stepped.length - 1);
+  }
+
+  /** Why Route cannot be pressed yet, said over the bar. */
+  const WHY_NOT = $derived.by(() => {
+    const unanswered = askedFields.find(
+      (one) => (args[one.name] ?? "").trim() === "",
+    );
+    if (unanswered !== undefined) {
+      const label = asking[unanswered.name]?.label ?? labelFor(unanswered);
+      return `Answer “${label}” to route.`;
+    }
+    return PICK_FIRST;
+  });
 
   const ready = $derived(
     chosen !== undefined && capability !== undefined && askedSettled,
@@ -420,6 +584,22 @@
         ),
   );
 
+  /** Notemap's own folder mode, asked only where the place is a new note in a folder. */
+  const folderMode = $derived(
+    lined &&
+      forecast === "create" &&
+      placeOf(args[LINE_FIELD] ?? "").directory !== ""
+      ? fields.find((one) => OWN_ARGUMENTS.includes(one.name))
+      : undefined,
+  );
+
+  /** What the place step asks beside the line, or every field where there is no line. */
+  const placeFields = $derived(
+    (lined ? beside : fields).filter(
+      (one) => !isHow(one) && !OWN_ARGUMENTS.includes(one.name),
+    ),
+  );
+
   /** Whether every argument the capability requires has a value: what a preview waits for. */
   const settledArguments = $derived(
     fields
@@ -444,14 +624,6 @@
     return path === undefined ? undefined : `${nameOf(chosen)} / ${path}`;
   });
 
-  /** The place a taken template resolved to, read the way a record's row reads it. */
-  const settled = $derived(
-    lined && !(LINE_FIELD in asking)
-      ? (args[LINE_FIELD] ?? "")
-      : (placeNamed(fixedOf(valuesFrom(fields, args)), undefined, reading) ??
-          ""),
-  );
-
   function placeFor(value: string): string {
     const { directory } = placeOf(value);
     const filename = leafOf(value, spoken);
@@ -460,6 +632,7 @@
 
   /** A wrong choice is not a reason to leave the surface. */
   function release(): void {
+    routedNow = undefined;
     applied = undefined;
     resolved = undefined;
     chosen = undefined;
@@ -475,6 +648,7 @@
     answeredFor = undefined;
     placing = true;
     before = undefined;
+    stepAt = 0;
   }
 
   /** Serialised because a keystroke changes a field of `args` rather than `args`. */
@@ -677,6 +851,7 @@
     if (assetsOnly) return;
     words ??= captured;
     editing = true;
+    if (onPhone) void goTo("check");
   }
 
   function done(): void {
@@ -789,11 +964,6 @@
       // describe itself has said so on its own line, and leaves nothing applied.
       if (chosen !== undefined) {
         placing = false;
-        // What it asks for is the one thing left to decide, so the caret goes there.
-        if (Object.keys(one.asked ?? {}).length > 0) {
-          await tick();
-          askedBox?.querySelector<HTMLElement>("input, button")?.focus();
-        }
       } else {
         applied = undefined;
         resolved = undefined;
@@ -892,9 +1062,15 @@
       classify(record);
       made = record;
       routedHere(record, reading);
+      const after = {
+        record,
+        to: nameOf(chosen),
+        facts: checkFacts.map(({ label, value }) => ({ label, value })),
+      };
       // The surface stays, cleared: an item may go to more than one place,
-      // and `next →` is what moves on.
+      // and Next item is what moves on.
       release();
+      routedNow = after;
       wordsSent = words;
       records.reread();
     } catch (error) {
@@ -903,6 +1079,134 @@
       busy = false;
     }
   }
+
+  /**
+   * The check: every fact of the decision, each opening the step that set it.
+   * A place the template fixed says so and is changed for this route alone.
+   */
+  const checkFacts = $derived.by((): Fact[] => {
+    if (chosen === undefined) return [];
+    const values = valuesFrom(fields, args);
+    const facts: Fact[] = [
+      {
+        label: "destination",
+        value: nameOf(chosen),
+        open: () => void goTo("where"),
+      },
+    ];
+    if (templated && applied !== undefined) {
+      facts.push({
+        label: "template",
+        value: applied.name,
+        open: () => void goTo("where"),
+      });
+    }
+    if (capability !== undefined) {
+      facts.push({
+        label: "action",
+        value: actionOf(capability, forecast),
+        ...(hasHow ? { open: () => void goTo("how") } : {}),
+      });
+    }
+    for (const field of fields) {
+      const held =
+        field.name === LINE_FIELD && lined
+          ? (values[field.name] ?? "")
+          : values[field.name];
+      if (held === undefined || held === null) continue;
+      if (held === "" && !(field.name === LINE_FIELD && lined)) continue;
+      const raw = typeof held === "string" ? held : JSON.stringify(held);
+      const value =
+        field.name === LINE_FIELD && lined
+          ? placeFor(raw)
+          : wordFor(field.name, raw);
+      const label = labelFor(field);
+      if (templated && applied !== undefined) {
+        if (field.name in asking) {
+          facts.push({
+            label,
+            value,
+            open: () => void goTo(`ask:${field.name}`),
+          });
+        } else if (isHow(field) || OWN_ARGUMENTS.includes(field.name)) {
+          facts.push({ label, value });
+        } else {
+          facts.push({
+            label,
+            value,
+            line: `set by ${applied.name}; change it for this route`,
+            open: () => void unpin(),
+            opens: `Change ${label} for this route`,
+          });
+        }
+        continue;
+      }
+      if (OWN_ARGUMENTS.includes(field.name) && lined && !folderMode) continue;
+      facts.push({
+        label,
+        value,
+        open: () => void goTo(isHow(field) ? "how" : "place"),
+      });
+    }
+    return facts;
+  });
+
+  /**
+   * The route just made, drawn in the check's place: what it holds, where it
+   * stands, and what to do next. Replaced by the next decision.
+   */
+  let routedNow = $state<
+    { record: RoutedRecord; to: string; facts: readonly Fact[] } | undefined
+  >(undefined);
+
+  /** Where the route just made stands: in its window, sent, landed, or turned down. */
+  const routedState = $derived.by(() => {
+    if (routedNow === undefined) return undefined;
+    const { record, to } = routedNow;
+    const landed = records.all.find((one) => one.id === record.id);
+    if (landed?.state === "delivered") {
+      return { tone: "good" as const, said: `Delivered to ${to}` };
+    }
+    const turned = notices.history.find(
+      (one) => one.key === keyFor(record.id) && one.alarm === true,
+    );
+    if (turned !== undefined) {
+      return { tone: "danger" as const, said: turned.what };
+    }
+    const flying = firings.open.find((one) => one.record === record.id);
+    if (flying === undefined) {
+      return { tone: "plain" as const, said: `Sending to ${to}` };
+    }
+    const phase = phaseOf(flying, firings.now);
+    const seconds = left(flying, firings.now);
+    return {
+      tone: "under" as const,
+      said:
+        phase === "window"
+          ? `Routing to ${to}${seconds === undefined ? "" : `, ${String(seconds)}s to cancel`}`
+          : phase === "sending"
+            ? `Sending to ${to}`
+            : `Waiting for ${to}`,
+    };
+  });
+
+  /** Only a route made by hand is worth saving as one. */
+  const savable = $derived(
+    routedNow !== undefined &&
+      routedNow.record.applied === undefined &&
+      templatable(routedNow.record, $destinations),
+  );
+
+  headed(() => ({
+    title: routedNow === undefined ? "route" : "routed",
+    out: { icon: "close", label: "Close", run: leave },
+    ...(onPhone && routedNow === undefined
+      ? {
+          aside: `${stepWord}  ${String(stepAt + 1)} of ${String(stepped.length)}`,
+        }
+      : {}),
+    ...(onPhone ? { under: aboutItem(item) } : {}),
+  }));
 
   /**
    * The queue in its current order, which is what the surface walks. Kept as
@@ -950,7 +1254,9 @@
       next = following();
     }
     next ??= following();
-    await goto(next === undefined ? resolve("/") : processHref(next.id));
+    await goto(next === undefined ? resolve("/") : processHref(next.id), {
+      replaceState: true,
+    });
   }
 
   /**
@@ -965,9 +1271,13 @@
   );
   let confirming = $state(false);
 
-  /** Back to the queue with this item still selected. */
+  /**
+   * Back to where the route began. Opened at its address, there is nowhere
+   * before it, and the queue takes its place.
+   */
   function back(): void {
-    void goto(`${resolve("/")}?selected=${encodeURIComponent(item.id)}`);
+    if (within.yes) history.back();
+    else void goto(resolve("/"), { replaceState: true });
   }
 
   function leave(): void {
@@ -1026,280 +1336,343 @@
 {/if}
 
 {#snippet control(field: (typeof fields)[number])}
-  {@const title = field.title ?? field.name}
+  {@const title = labelFor(field)}
   {#if field.listable && chosen !== undefined && capability !== undefined}
     {@const Browser = browserFor(field)}
-    <Browser
-      destination={chosen}
-      {capability}
-      field={field.name}
-      label={title}
-      value={args[field.name] ?? ""}
-      said={field.name === LINE_FIELD ? spoken : undefined}
-      given={givenFor(field, args)}
-      offeredOnly={field.offeredOnly}
-      onchange={(value) => (args = { ...args, [field.name]: value })}
-      onrelease={release}
-    />
+    <div class="border-b border-rule px-gutter py-3">
+      <Browser
+        destination={chosen}
+        {capability}
+        field={field.name}
+        label={title}
+        value={args[field.name] ?? ""}
+        said={field.name === LINE_FIELD ? spoken : undefined}
+        given={givenFor(field, args)}
+        offeredOnly={field.offeredOnly}
+        onchange={(value) => (args = { ...args, [field.name]: value })}
+        onrelease={release}
+      />
+    </div>
   {:else if field.options !== undefined}
-    <!-- Chosen rather than typed: these values *are* the field, and taking the
-         one already taken clears it, since absent is a value here too — except
-         where the field is required, and absent is nothing the pool takes. -->
+    <!-- A long choice is rows; one left unset is drawn as what it comes out as. -->
     {@const implied =
       (args[field.name] ?? "") === "" ? impliedOf(field, inherited) : undefined}
-    <div>
-      {#each field.options as one (one)}
-        <Option
-          label={labelOf(field, one)}
-          chosen={args[field.name] === one}
-          implied={implied === one}
-          onchoose={() =>
-            (args = {
-              ...args,
-              [field.name]:
-                args[field.name] === one && !field.required ? "" : one,
-            })}
-        />
-      {/each}
-    </div>
-  {:else}
-    <input
-      bind:value={args[field.name]}
-      placeholder={field.required ? "required" : "optional"}
-      aria-label={title}
-      class="w-full border-b border-ink px-2 py-0.5 outline-none"
+    <Band level={3}>{title}</Band>
+    <RadioRows
+      label={title}
+      value={(args[field.name] ?? "") === "" ? implied : args[field.name]}
+      options={field.options.map((one) => ({
+        value: one,
+        word: wordFor(field.name, labelOf(field, one)),
+        ...(lineFor(field.name, one) === undefined
+          ? {}
+          : { line: lineFor(field.name, one) }),
+      }))}
+      onchoose={(one) => (args = { ...args, [field.name]: one })}
     />
+  {:else}
+    <label class="block border-b border-rule px-gutter py-3">
+      <span class="mb-1.5 block text-small">{title}</span>
+      <input
+        bind:value={args[field.name]}
+        placeholder={field.required ? "required" : "optional"}
+        aria-label={title}
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+      />
+    </label>
   {/if}
 {/snippet}
 
-{#snippet labelled(name: string, field: (typeof fields)[number])}
-  <div
-    class="mt-3 grid grid-cols-[9rem_1fr] items-baseline max-narrow:grid-cols-1"
-  >
-    <span class="tracking-caps uppercase">{name}</span>
-    <div class="min-w-0">{@render control(field)}</div>
-  </div>
+{#snippet stepHead(name: string)}
+  {#if !onPhone}
+    <h2
+      class="m-0 border-b border-rule px-gutter pt-5 pb-3 font-display text-title font-normal lowercase"
+    >
+      {name}
+    </h2>
+  {/if}
 {/snippet}
 
-<!-- The bar, then a frame whose head and foot are fixed and whose middle
-     scrolls: two columns from `wide` up, stacked below. -->
-<div
-  in:rise
-  class="mx-auto flex min-h-0 w-full max-w-read flex-1 flex-col wide:grid wide:max-w-none wide:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] wide:grid-rows-[1fr_auto]"
->
-  <div
-    class="flex max-h-[40%] flex-none flex-col border-b border-ink pt-5 pb-4 max-narrow:max-h-[34%] max-narrow:pt-3.5 max-narrow:pb-3 wide:row-span-2 wide:max-h-none wide:border-r wide:border-b-0 wide:pr-8 wide:pb-5"
+{#snippet waiting()}
+  <p class="m-0 px-gutter py-3 text-muted">{NOTHING_PICKED}</p>
+{/snippet}
+
+{#snippet where()}
+  <section
+    id="step-where"
+    data-step="where"
+    aria-label="where"
+    class={shows("where") ? "" : "hidden"}
   >
-    <div class="mb-2 flex items-baseline justify-between gap-x-[2ch]">
-      <Stamp at={item.createdAt} inline />
-      {#if !editing && !assetsOnly}
-        <button
-          type="button"
-          onclick={edit}
-          title="edit the words this delivery carries"
-          class="hover:underline">edit</button
-        >
-      {/if}
-    </div>
-
-    {#if summary !== undefined}
-      <div class="-mt-1 mb-2 min-w-0">
-        <div class="flex items-baseline gap-x-4">
-          <div class="min-w-0">
-            <Routing {summary} records={records.all} short />
-          </div>
-          {#if takeable !== undefined}
-            {@const { record, offer } = takeable}
-            <button
-              type="button"
-              class="shrink-0 hover:underline"
-              onclick={() => void takeBack(record)}>{offer}</button
-            >
-          {/if}
-        </div>
-      </div>
-    {/if}
-
-    <div class="flex-none">
-      <AttachedPictures {attachments} picture="max-h-64" />
-    </div>
-
-    {#if editing && !assetsOnly}
-      <textarea
-        bind:this={typing}
-        bind:value={words}
-        aria-label="words"
-        class="min-h-0 w-full flex-1 resize-none border border-ink bg-transparent px-3 py-2.5 outline-none"
-      ></textarea>
-      <div class="mt-2 flex justify-between">
-        <button type="button" onclick={keep} class="hover:underline">
-          restore
-        </button>
-        <button
-          type="button"
-          onclick={done}
-          class="font-semibold hover:underline"
-        >
-          done
-        </button>
-      </div>
-      <div class="mt-2 flex-none">
-        <AttachedLines {attachments} ruled />
-      </div>
-    {:else}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="min-h-0 max-w-prose overflow-auto break-words whitespace-pre-wrap"
-        ondblclick={edit}
-      >
-        {shownWords}
-      </div>
-      <div class="flex-none">
-        <AttachedLines {attachments} ruled={shownWords !== ""} />
-      </div>
-      <Unfurls text={shownWords} />
-    {/if}
-  </div>
-
-  <div class="min-h-0 min-w-0 flex-1 overflow-auto wide:pt-2 wide:pl-8">
-    <Section name="destination" open ontoggle={() => undefined}>
-      {#if chosen === undefined}
+    {@render stepHead("where")}
+    {#if chosen === undefined && applied === undefined}
+      <div class="border-b border-rule px-gutter py-3">
         <DestinationLine
           destinations={[...$templates, ...offeredDestinations, ...HAND]}
           {unusable}
+          focus={!onPhone}
           ontake={(id) => void taken(id)}
           ontyped={(text) => (typed = text)}
         />
+      </div>
 
-        <div id="destination-bands">
-          {#if templatesShown.length > 0}
-            <Band name="templates">
-              {#each templatesShown as one (one.id)}
-                <Entry
-                  label={one.name}
-                  why={unusable[one.id]}
-                  hit={hit === one.id}
-                  onchoose={() => void take(one)}
-                />
-              {/each}
-            </Band>
-          {/if}
-
-          {#if destinationsShown.length > 0}
-            <Band name="destinations">
-              {#each destinationsShown as one (one.id)}
-                <Entry
-                  label={one.name}
-                  why={unusable[one.id]}
-                  hit={hit === one.id}
-                  onchoose={() => void choose(one.id)}
-                />
-              {/each}
-            </Band>
-          {/if}
-
-          <!-- What the shell invents: `manual` is a destination the pool records
-             and never lists, `discard` is not a destination at all. -->
-          {#if handShown.length > 0}
-            <Band name="otherwise">
-              {#each handShown as one (one.id)}
-                <Entry
-                  label={one.name}
-                  aside={one.id === MANUAL ? "processed by hand" : undefined}
-                  alarm={one.id === DISCARD}
-                  why={unusable[one.id]}
-                  hit={hit === one.id}
-                  onchoose={() => void choose(one.id)}
-                />
-              {/each}
-            </Band>
-          {/if}
-        </div>
-      {:else}
-        <div class="flex items-baseline justify-between gap-x-[2ch]">
-          <span class="flex min-w-0 flex-wrap items-baseline gap-x-[2ch]">
-            <span class="font-semibold">
-              {applied?.name ?? nameOf(chosen)}
-            </span>
-            {#if usedBefore !== undefined}
-              <span><Lead {...usedBefore} /></span>
-            {/if}
-          </span>
-          <button type="button" onclick={release} class="hover:underline">
-            change
-          </button>
-        </div>
-
-        {#if chooses && placing}
-          {#each capabilities as one (one.name)}
-            <Option
+      <div id="destination-bands">
+        {#if templatesShown.length > 0}
+          <Band>templates</Band>
+          {#each templatesShown as one (one.id)}
+            <LinkRow
+              icon={templateIcon(
+                one,
+                $destinations.find((each) => each.id === one.destination)?.kind,
+              )}
+              title={one.name}
               label={one.name}
-              chosen={capability === one.name}
-              onchoose={() => {
-                capability = one.name;
-                args = {};
-              }}
+              line={whereOf(one)}
+              why={unusable[one.id]}
+              strong={hit === one.id}
+              onclick={() => void take(one)}
+            >
+              {#snippet badge()}
+                {#if Object.keys(one.asked ?? {}).length > 0}<Asks />{/if}
+              {/snippet}
+            </LinkRow>
+          {/each}
+        {/if}
+
+        {#if destinationsShown.length > 0}
+          <Band>destinations</Band>
+          {#each destinationsShown as one (one.id)}
+            <LinkRow
+              icon={kindIcon(one.kind)}
+              title={one.name}
+              label={one.name}
+              why={unusable[one.id]}
+              strong={hit === one.id}
+              onclick={() => void choose(one.id)}
             />
           {/each}
         {/if}
-      {/if}
-    </Section>
 
-    {#if offersOutput}
-      <Section name="output" open ontoggle={() => undefined}>
-        <div class="flex flex-wrap gap-x-[2ch]">
-          <Option
-            label="everything"
-            chosen={!assetsOnly}
-            onchoose={() => output(false)}
-          />
-          <Option
-            label="attachments only"
-            chosen={assetsOnly}
-            onchoose={() => output(true)}
-          />
-        </div>
-      </Section>
-    {/if}
-
-    <Section
-      name="place"
-      open={opened.place}
-      ontoggle={() => (opened.place = !opened.place)}
-    >
-      {#if chosen === undefined && applied !== undefined}
-        <Asking />
-      {:else if chosen !== undefined && described === undefined}
-        <Asking subject={nameOf(chosen)} />
-      {:else if chosen !== undefined && !placing}
-        <div class="flex items-baseline justify-between gap-x-[2ch]">
-          <span class="min-w-0 break-words">{settled}</span>
-          <button
-            type="button"
-            aria-label="edit place"
-            onclick={() => (placing = true)}
-            class="hover:underline"
-          >
-            edit
-          </button>
-        </div>
-        {#if askedFields.length > 0}
-          <!-- What the template asks each time, open beside what it fixed. -->
-          <div bind:this={askedBox}>
-            {#each askedFields as field (field.name)}
-              {@render labelled(
-                asking[field.name]?.label ?? field.title ?? field.name,
-                field,
+        <!-- What the shell invents: `manual` is a destination the pool records
+             and never lists, `discard` is not a destination at all. -->
+        {#if handShown.length > 0 && onPhone}
+          <Band>other</Band>
+          {#each handShown as one (one.id)}
+            <LinkRow
+              icon={one.id === DISCARD ? "trash" : "check"}
+              title={one.id === DISCARD ? "Discard" : "Done"}
+              label={one.id === DISCARD ? "Discard" : "Done"}
+              line={one.id === MANUAL ? "Manual: processed by hand" : undefined}
+              danger={one.id === DISCARD}
+              chevron={false}
+              why={unusable[one.id]}
+              strong={hit === one.id}
+              onclick={() => void choose(one.id)}
+            />
+          {/each}
+        {/if}
+      </div>
+    {:else}
+      {@const template = applied}
+      <div
+        in:slide
+        class="grid min-h-bar grid-cols-[var(--spacing-icon)_minmax(0,1fr)_auto] items-center gap-3 border-b border-rule px-gutter py-2.5"
+      >
+        <Icon
+          name={template === undefined
+            ? kindIcon($destinations.find((each) => each.id === chosen)?.kind)
+            : templateIcon(
+                template,
+                $destinations.find((each) => each.id === template.destination)
+                  ?.kind,
               )}
-            {/each}
+        />
+        <span class="min-w-0">
+          <span class="block font-semibold">
+            {template?.name ?? (chosen === undefined ? "" : nameOf(chosen))}
+          </span>
+          <small class="block truncate text-small text-muted">
+            {#if template !== undefined}
+              template: {whereOf(template)}
+            {:else}
+              destination{#if usedBefore !== undefined},
+                {usedBefore.lead}{#if usedBefore.rest !== undefined},
+                  {usedBefore.rest}{/if}{/if}
+            {/if}
+          </small>
+        </span>
+        <button
+          type="button"
+          aria-label="change"
+          onclick={release}
+          class="min-h-target px-1 underline underline-offset-[0.2em]"
+        >
+          Change
+        </button>
+      </div>
+      {#if chosen === undefined}
+        <div class="px-gutter py-3"><Asking /></div>
+      {/if}
+    {/if}
+  </section>
+{/snippet}
+
+{#snippet questionsOf()}
+  {#each askedFields as field (field.name)}
+    {@const question = questions.find((one) => one.field === field.name)}
+    {@const offered = answers[field.name]}
+    {@const title = asking[field.name]?.label ?? labelFor(field)}
+    <section
+      id="step-ask:{field.name}"
+      data-step="ask"
+      class={shows(`ask:${field.name}`) ? "" : "hidden"}
+    >
+      <Band>{title}</Band>
+      {#if question === undefined || offered === undefined}
+        <div class="px-gutter py-3"><Asking /></div>
+      {:else}
+        {#if onPhone}
+          {#each offered as value (value)}
+            <LinkRow
+              title={value}
+              label={value}
+              strong={args[field.name] === value}
+              onclick={() => answer(field.name, value)}
+            />
+          {/each}
+        {:else if offered.length > 0}
+          <RadioRows
+            label={title}
+            value={args[field.name]}
+            options={offered.map((value) => ({ value, word: value }))}
+            onchoose={(value) => answer(field.name, value)}
+          />
+        {/if}
+        {#if question.closed === undefined}
+          <form
+            class="flex items-center gap-2 border-b border-rule px-gutter py-3"
+            onsubmit={(event) => {
+              event.preventDefault();
+              const said = (typedAnswer[field.name] ?? "").trim();
+              if (said !== "") answer(field.name, said);
+            }}
+          >
+            <input
+              value={typedAnswer[field.name] ?? ""}
+              oninput={(event) => {
+                const typedNow = event.currentTarget.value;
+                typedAnswer = { ...typedAnswer, [field.name]: typedNow };
+                args = { ...args, [field.name]: typedNow.trim() };
+              }}
+              {@attach (input) => {
+                if (!onPhone && field.name === askedFields[0]?.name)
+                  input.focus();
+              }}
+              aria-label={title}
+              placeholder={offered.length === 0 ? title : `Another ${title}`}
+              class="min-h-11 min-w-0 flex-1 rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+            />
+          </form>
+        {/if}
+      {/if}
+    </section>
+  {/each}
+{/snippet}
+
+{#snippet how()}
+  {#if hasHow || (!onPhone && !templated && chosen === undefined)}
+    <section
+      id="step-how"
+      data-step="how"
+      aria-label="how"
+      class={shows("how") ? "" : "hidden"}
+    >
+      {@render stepHead("how")}
+      {#if chosen === undefined}
+        {@render waiting()}
+      {:else}
+        {#if offersOutput}
+          <div class="border-b border-rule px-gutter py-3">
+            <span class="mb-2 block font-display text-weekday lowercase"
+              >output</span
+            >
+            <Segmented
+              label="output"
+              value={assetsOnly ? "assets" : "everything"}
+              options={[
+                { value: "everything", word: "Everything" },
+                { value: "assets", word: "Attachments only" },
+              ]}
+              onchoose={(one) => output(one === "assets")}
+            />
           </div>
         {/if}
-      {:else if lined && line !== undefined && chosen !== undefined && capability !== undefined}
+        {#if chooses}
+          <div class="border-b border-rule px-gutter py-3">
+            <span class="mb-2 block font-display text-weekday lowercase"
+              >action</span
+            >
+            <Segmented
+              label="action"
+              value={capability}
+              options={capabilities.map((one) => ({
+                value: one.name,
+                word: actionOf(one.name),
+              }))}
+              onchoose={(one) => {
+                capability = one;
+                args = {};
+              }}
+            />
+          </div>
+        {/if}
+        {#each howFields as field (field.name)}
+          {@const implied =
+            (args[field.name] ?? "") === ""
+              ? impliedOf(field, inherited)
+              : undefined}
+          <div class="border-b border-rule px-gutter py-3">
+            <span class="mb-2 block font-display text-weekday lowercase"
+              >{labelFor(field)}</span
+            >
+            <Segmented
+              label={labelFor(field)}
+              value={(args[field.name] ?? "") === ""
+                ? implied
+                : args[field.name]}
+              options={(field.options ?? []).map((one) => ({
+                value: one,
+                word: wordFor(field.name, labelOf(field, one)),
+              }))}
+              onchoose={(one) => (args = { ...args, [field.name]: one })}
+            />
+          </div>
+        {/each}
+      {/if}
+    </section>
+  {/if}
+{/snippet}
+
+{#snippet place()}
+  <section
+    id="step-place"
+    data-step="place"
+    aria-label="place"
+    class={shows("place") ? "" : "hidden"}
+  >
+    {@render stepHead("place")}
+    {#if chosen === undefined}
+      {@render waiting()}
+    {:else if described === undefined}
+      <div class="px-gutter py-3"><Asking subject={nameOf(chosen)} /></div>
+    {:else if lined && line !== undefined && capability !== undefined}
+      <div class="border-b border-rule px-gutter py-3">
         <PathLine
           destination={chosen}
           {capability}
           field={line.name}
-          label={line.title ?? line.name}
+          label={labelFor(line)}
+          placeholder={`Find a folder in ${nameOf(chosen)}`}
           value={args[line.name] ?? ""}
           said={spoken}
           {places}
@@ -1307,37 +1680,67 @@
           onrelease={release}
           onforecast={(word) => (forecast = word)}
         />
-
-        {#each beside as field (field.name)}
-          {@render labelled(field.title ?? field.name, field)}
-        {/each}
-      {:else if chosen !== undefined}
-        <!-- A field's own `description` is a sentence written for a schema and
-             is not drawn here: what a field means is its label and its control. -->
-        {#each fields as field, at (field.name)}
-          {#if at === 0}
-            {@render control(field)}
-          {:else}
-            {@render labelled(field.title ?? field.name, field)}
-          {/if}
-        {/each}
+      </div>
+      {#each placeFields as field (field.name)}
+        {@render control(field)}
+      {/each}
+      {#if folderMode !== undefined}
+        {@const mode = folderMode}
+        {@const implied =
+          (args[mode.name] ?? "") === ""
+            ? impliedOf(mode, inherited)
+            : undefined}
+        <Band level={3}>if the folder is missing</Band>
+        <RadioRows
+          label="if the folder is missing"
+          value={(args[mode.name] ?? "") === "" ? implied : args[mode.name]}
+          options={(mode.options ?? []).map((one) => ({
+            value: one,
+            word: wordFor(mode.name, one),
+            ...(lineFor(mode.name, one) === undefined
+              ? {}
+              : { line: lineFor(mode.name, one) }),
+          }))}
+          onchoose={(one) => (args = { ...args, [mode.name]: one })}
+        />
       {/if}
-    </Section>
+    {:else}
+      {#each placeFields as field (field.name)}
+        {@render control(field)}
+      {/each}
+    {/if}
+  </section>
+{/snippet}
 
-    <Section name="tags" open ontoggle={() => undefined}>
+{#snippet check()}
+  <section
+    id="step-check"
+    data-step="check"
+    aria-label="check"
+    class={shows("check") ? "" : "hidden"}
+  >
+    {@render stepHead("check")}
+    {#if chosen === undefined && !onPhone}
+      {@render waiting()}
+    {:else}
+      <Facts facts={checkFacts} />
+    {/if}
+
+    <Band>tags</Band>
+    <div class="px-gutter py-3">
       <ComposerTags
         item={item.id}
         names={tags}
         templates={summary?.templates ?? []}
         ontemplate={(template) => void take(template)}
       />
-    </Section>
+      <p class="mt-2 mb-0 text-small text-muted">
+        The item's own tags: a change here is a change to the item.
+      </p>
+    </div>
 
-    <Section
-      name="preview"
-      open={opened.preview || shown !== undefined || pending}
-      ontoggle={() => (opened.preview = !opened.preview)}
-    >
+    <Band>as it will be written</Band>
+    <div class="px-gutter py-3">
       {#if shown !== undefined || pending}
         <Preview
           {shown}
@@ -1347,42 +1750,240 @@
           subject={chosen === undefined ? undefined : nameOf(chosen)}
         />
       {:else if previewFailed !== ""}
-        <span role="status" class="text-alarm">{previewFailed}</span>
+        <p role="status" class="m-0 text-danger">{previewFailed}</p>
+      {:else}
+        <p class="m-0 text-muted">
+          {chosen === undefined
+            ? NOTHING_PICKED
+            : "Shown once the place is settled."}
+        </p>
       {/if}
-    </Section>
+      {#if editing && !assetsOnly}
+        <textarea
+          bind:this={typing}
+          bind:value={words}
+          aria-label="words"
+          rows="6"
+          class="mt-3 w-full resize-y rounded-control border border-edge bg-paper px-3 py-2.5 outline-none focus:border-ink"
+        ></textarea>
+        <div class="mt-2 flex gap-2">
+          <Box icon="undo" onclick={keep}>Restore</Box>
+          <Box icon="check" onclick={done}>Use these words</Box>
+        </div>
+      {:else if !assetsOnly}
+        <div class="mt-2">
+          <Box
+            icon="edit"
+            title="Edit the words this route carries"
+            onclick={edit}>Edit</Box
+          >
+        </div>
+      {/if}
+    </div>
 
     {#if said !== ""}
-      <div role="status" class="mt-3 text-alarm">{said}</div>
+      <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
     {/if}
-  </div>
+  </section>
+{/snippet}
 
-  <div
-    class="flex h-12 flex-none items-center justify-between border-t border-ink wide:ml-8"
-  >
-    <div class="flex gap-x-6 max-narrow:gap-x-4">
-      <Action
-        disabled={around.previous === undefined}
-        onclick={() => walk(around.previous)}
+{#snippet routedView(routed: NonNullable<typeof routedNow>)}
+  <div in:rise>
+    <Facts facts={routed.facts} />
+    {#if routedState !== undefined}
+      <div
+        role="status"
+        class="grid grid-cols-[6.5rem_minmax(0,1fr)] items-baseline gap-x-3 border-b border-rule px-gutter py-3 {routedState.tone ===
+        'good'
+          ? 'bg-signal'
+          : 'bg-tag'}"
       >
-        ← previous
-      </Action>
-      <Action
-        disabled={around.next === undefined}
-        onclick={() => walk(around.next)}
-      >
-        next →
-      </Action>
-    </div>
-    <button
-      type="button"
-      disabled={!ready || busy}
-      aria-busy={busy || undefined}
-      onclick={() => void send()}
-      class="inverted h-8 px-5 font-semibold {busy
-        ? ''
-        : 'disabled:bg-transparent disabled:text-inert'}"
-    >
-      <Working working={busy}>route</Working>
-    </button>
+        <span class="text-small">state</span>
+        <span
+          class="flex min-w-0 items-center gap-2 {routedState.tone === 'danger'
+            ? 'text-danger'
+            : ''}"
+        >
+          {#if routedState.tone === "under"}<Spinner />{/if}
+          {routedState.said}
+        </span>
+      </div>
+    {/if}
+    <Band>and then</Band>
+    <LinkRow
+      icon="route"
+      title="Route it somewhere else too"
+      onclick={() => {
+        routedNow = undefined;
+        stepAt = 0;
+      }}
+    />
+    {#if savable}
+      <LinkRow
+        icon="template"
+        title="Save this as a template"
+        href={templateFromHref(item.id, routed.record.id)}
+      />
+    {/if}
+    <LinkRow icon="file" title="Open the item" href={itemHref(item.id)} />
   </div>
+{/snippet}
+
+<div
+  in:rise
+  class="flex min-h-0 w-full flex-1 flex-col wide:grid wide:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+>
+  {#if !onPhone}
+    <!-- The item, whole, beside every step. -->
+    <section
+      aria-label="item"
+      class="flex min-h-0 flex-col overflow-auto border-r border-rule"
+    >
+      <div class="px-gutter py-5">
+        <div class="mb-2 text-small text-muted">
+          <Stamp at={item.createdAt} inline />
+        </div>
+
+        {#if summary !== undefined}
+          <div class="mb-2 flex min-w-0 items-baseline gap-x-4">
+            <div class="min-w-0">
+              <Routing {summary} records={records.all} short />
+            </div>
+            {#if takeable !== undefined}
+              {@const { record, offer } = takeable}
+              <button
+                type="button"
+                class="shrink-0 underline underline-offset-[0.2em]"
+                onclick={() => void takeBack(record)}>{offer}</button
+              >
+            {/if}
+          </div>
+        {/if}
+
+        <AttachedPictures {attachments} picture="max-h-64" />
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="max-w-prose break-words whitespace-pre-wrap"
+          ondblclick={edit}
+        >
+          {shownWords}
+        </div>
+        <AttachedLines {attachments} ruled={shownWords !== ""} />
+        <Unfurls text={shownWords} />
+      </div>
+      <!-- Discard and Done at the foot of the item, level with Route at
+           the foot of the steps. -->
+      <div class="mt-auto">
+        {#if routedNow === undefined}
+          <ActionBar at="foot" label="Item">
+            <BarAction
+              icon="trash"
+              label="Discard"
+              danger
+              why={unusable[DISCARD]}
+              onclick={() => void choose(DISCARD)}
+            />
+            <BarAction
+              icon="check"
+              label="Done"
+              why={unusable[MANUAL]}
+              onclick={() => void choose(MANUAL)}
+            />
+          </ActionBar>
+        {/if}
+      </div>
+    </section>
+  {/if}
+
+  <section aria-label="steps" class="flex min-h-0 flex-1 flex-col">
+    <div class="min-h-0 flex-1 overflow-auto">
+      {#if routedNow !== undefined}
+        {@render routedView(routedNow)}
+      {:else}
+        {#key onPhone ? step : "all"}
+          <div in:rise>
+            {@render where()}
+            {#if templated}
+              {@render questionsOf()}
+            {:else}
+              {@render how()}
+              {@render place()}
+            {/if}
+            {@render check()}
+          </div>
+        {/key}
+      {/if}
+    </div>
+
+    <div class="flex-none">
+      {#if routedNow !== undefined}
+        <ActionBar at="foot" label="Routed">
+          {#if takeable !== undefined}
+            {@const { record } = takeable}
+            <BarAction
+              icon="close"
+              label="Cancel"
+              onclick={() => void takeBack(record)}
+            />
+          {/if}
+          <BarAction
+            icon="next"
+            label="Next item"
+            primary
+            command="next"
+            onclick={() => void advance()}
+          />
+        </ActionBar>
+      {:else if onPhone}
+        <ActionBar at="foot" label="Route">
+          {#snippet say()}{#if step === "check" && !ready && !busy}{WHY_NOT}{/if}{/snippet}
+          <BarAction
+            icon="back"
+            label="Back"
+            disabled={stepAt === 0}
+            onclick={() => (stepAt = Math.max(0, stepAt - 1))}
+          />
+          {#if step === "check"}
+            <BarAction
+              icon="route"
+              label="Route"
+              primary
+              working={busy}
+              why={!ready && !busy ? WHY_NOT : undefined}
+              command="route"
+              onclick={() => void send()}
+            />
+          {:else if step === "how" || step === "place" || (step?.startsWith("ask:") === true && (typedAnswer[step.slice(4)] ?? "").trim() !== "")}
+            <BarAction
+              icon="next"
+              label="Next"
+              primary
+              disabled={chosen === undefined}
+              onclick={() => {
+                if (step?.startsWith("ask:") === true) {
+                  const field = step.slice(4);
+                  answer(field, (typedAnswer[field] ?? "").trim());
+                  return;
+                }
+                stepAt = Math.min(stepped.length - 1, stepAt + 1);
+              }}
+            />
+          {/if}
+        </ActionBar>
+      {:else}
+        <ActionBar at="foot" label="Route">
+          {#snippet say()}{#if !ready && !busy}{WHY_NOT}{/if}{/snippet}
+          <BarAction
+            icon="route"
+            label="Route"
+            primary
+            working={busy}
+            why={!ready && !busy ? WHY_NOT : undefined}
+            command="route"
+            onclick={() => void send()}
+          />
+        </ActionBar>
+      {/if}
+    </div>
+  </section>
 </div>

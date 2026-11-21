@@ -37,7 +37,7 @@ test("asks again on request, out of the probe's own turn", async () => {
   await screen.findByText(/available/);
   const before = probes(transport).length;
 
-  await press("check again");
+  await press("Check again");
 
   await vi.waitFor(() =>
     expect(probes(transport).length).toBeGreaterThan(before),
@@ -53,7 +53,7 @@ test("says the daemon is unavailable rather than saying nothing", async () => {
   await screen.findByText(/unavailable/);
 });
 
-test("sources are folded, and shown on request", async () => {
+test("sources are always shown", async () => {
   pool((request) =>
     routeOf(request) === "GET /v1/sources"
       ? json(200, {
@@ -70,12 +70,6 @@ test("sources are folded, and shown on request", async () => {
 
   render(Server);
 
-  expect(screen.queryByText("memos")).toBeNull();
-  await press("show");
-
   await screen.findByText("memos");
   expect(asked()).toContain("GET /v1/sources");
-
-  await press("hide");
-  expect(screen.queryByText("memos")).toBeNull();
 });

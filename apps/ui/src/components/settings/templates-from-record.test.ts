@@ -126,7 +126,7 @@ test("saving creates a template and lets go of the address", async () => {
         .value,
     ).toBe("ideas/"),
   );
-  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(async () =>
     expect(await sent()).toContainEqual({
@@ -164,6 +164,6 @@ test("says so plainly where the record is not one to save, and draws the section
       "That routing record cannot be saved as a template.",
     ),
   ).toBeTruthy();
-  expect(screen.getByRole("button", { name: "+ add a template" })).toBeTruthy();
+  expect(screen.getByText("Add a template")).toBeTruthy();
   expect(screen.queryByRole("textbox", { name: "name" })).toBeNull();
 });

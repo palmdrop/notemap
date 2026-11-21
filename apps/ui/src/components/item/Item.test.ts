@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { Item as Held } from "@notemap/client";
@@ -8,6 +14,7 @@ import Queue from "$components/queue/Queue.svelte";
 import { asked, client, pool } from "$testing/pool";
 import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
+import { quick } from "$lib/quicking.svelte";
 import { remember } from "$lib/order";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
@@ -22,14 +29,15 @@ vi.mock("$app/navigation", () => ({
 
 /** Both act when taken, from the item's own actions: no second step and no commit. */
 async function manual() {
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
 }
 
 async function discard() {
-  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Discard" }));
 }
 
 afterEach(() => {
+  quick.close();
   notices.clear();
   went.to = [];
 });
@@ -246,29 +254,23 @@ test("names the channel a row's routing line went to", async () => {
 });
 
 /** The capture's box, then each record as a row: its stamp is the way into it. */
-test("draws each record as a row under the capture's box, with the way into it", async () => {
+test("draws each record as a row of a box above the words, each the way into it", async () => {
   pool(routed([RECORD, { ...RECORD, id: "rec-2", pointer: "drafts/two.md" }]));
 
   const { container } = render(Item, { id: "routed" });
 
-  await screen.findByText("drafts/two.md");
-  expect(screen.getByText("drafts")).toBeDefined();
-  // The box's foot is the edge between the two regions; a rule under it read as a double.
-  expect(container.querySelector("[data-foot]")).not.toBeNull();
-  expect(container.querySelector(".border-t.col-span-full")).toBeNull();
+  const box = await screen.findByRole("list", { name: "Routing records" });
+  expect(container.querySelector("[data-foot]")).toBeNull();
+  expect(container.querySelector("[data-day]")).toBeNull();
 
-  const ways = screen
-    .getAllByRole("link")
-    .map((way) => way.getAttribute("href"))
-    .filter((href) => href?.startsWith("/items/routed/records/"));
+  const ways = [...box.querySelectorAll("a")].map((way) =>
+    way.getAttribute("href"),
+  );
   expect(ways).toEqual([
     "/items/routed/records/rec",
     "/items/routed/records/rec-2",
   ]);
-  // Delivered is said on a row of its own.
-  expect(screen.getAllByText("delivered")).toHaveLength(2);
 });
-
 test("says the records are out of reach while the item still draws", async () => {
   const transport = pool(routed([RECORD]));
   await client.item("routed");
@@ -459,12 +461,12 @@ test("process goes to the surface for it", async () => {
   render(Item, { id: "one" });
   await screen.findByText("still here");
 
-  await fireEvent.click(screen.getByRole("button", { name: "process" }));
+  await fireEvent.click(screen.getByRole("button", { name: /^Route/ }));
 
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 });
 
-test("takes back a decision the person made by hand, and reads the records again", async () => {
+test("takes back a decision the person made by hand from its box, and reads the records again", async () => {
   let cancelled = false;
   pool((request: Request) => {
     switch (routeOf(request)) {
@@ -481,44 +483,28 @@ test("takes back a decision the person made by hand, and reads the records again
   });
 
   render(Item, { id: "one" });
-  await fireEvent.click(await screen.findByRole("button", { name: "by hand" }));
-  const way = await screen.findByRole("button", { name: "undo" });
-
-  await fireEvent.click(way);
+  expect(await screen.findByText("Manual: processed by hand")).toBeDefined();
+  await fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/rec-done/cancel");
   });
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });
-
-test("draws each record folded, reading nothing it sent until it is opened", async () => {
+test("reads nothing a record sent: what it wrote is on the record's own page", async () => {
   const kept = {
     ...RECORD,
     output: { content: { blob: "abc", mediaType: "text/markdown" } },
   };
   pool(routed([kept, { ...kept, id: "rec-2" }]));
 
-  const { container } = render(Item, { id: "routed" });
-  await screen.findAllByText("drafts");
+  render(Item, { id: "routed" });
+  await screen.findByRole("list", { name: "Routing records" });
 
-  expect(container.querySelectorAll("[data-folded]")).toHaveLength(2);
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
-
-  const [first] = screen.getAllByRole("button", {
-    name: "a destination",
-    expanded: false,
-  });
-  await fireEvent.click(first!);
-  await vi.waitFor(() => {
-    expect(asked()).toContain("GET /v1/routing/rec/output");
-  });
-  expect(asked()).not.toContain("GET /v1/routing/rec-2/output");
-  expect(container.querySelectorAll("[data-folded]")).toHaveLength(1);
 });
-
 const WITHDRAWN = { withdrawnAt: "2026-08-20T09:00:00.000Z" };
 
 test("leaves out a record read withdrawn", async () => {
@@ -545,7 +531,7 @@ test("reads nothing for an item whose every record was withdrawn", async () => {
   expect(asked()).not.toContain("GET /v1/items/left/routing");
 });
 
-test("keeps drawing a record withdrawn here, with the way to reinstate it, though the item reads unrouted", async () => {
+test("keeps drawing a record withdrawn while here, saying so, though the item reads unrouted", async () => {
   let withdrawn = false;
   pool((request: Request) => {
     switch (routeOf(request)) {
@@ -555,39 +541,19 @@ test("keeps drawing a record withdrawn here, with the way to reinstate it, thoug
         return json(200, {
           values: [withdrawn ? { ...RECORD, ...WITHDRAWN } : RECORD],
         });
-      case "GET /v1/routing/rec/presence":
-        return json(200, { kind: "unknown" });
-      case "POST /v1/routing/rec/withdraw":
-        withdrawn = true;
-        return json(200, { ...RECORD, ...WITHDRAWN });
       default:
         return json(200, { values: [] });
     }
   });
 
   render(Item, { id: "routed" });
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "a destination" }),
-  );
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
-  );
-  const confirm = (
-    await screen.findAllByRole("button", { name: "withdraw" })
-  ).at(-1);
-  if (confirm === undefined) throw new Error("expected the confirming press");
-  await fireEvent.click(confirm);
+  await screen.findByRole("list", { name: "Routing records" });
 
-  expect(
-    await screen.findByRole("button", { name: "reinstate" }),
-  ).toBeDefined();
-  // The rail's word is the record as read again from the pool.
-  await vi.waitFor(() => {
-    expect(screen.queryByText("delivered")).toBeNull();
-  });
-  expect(screen.getByRole("button", { name: "reinstate" })).toBeDefined();
+  withdrawn = true;
+  await client.item("routed");
+
+  expect(await screen.findByText("withdrawn")).toBeDefined();
 });
-
 /** A delivery is the pool's; only what the person did by hand is theirs to undo. */
 test("offers no undo on a record the pool delivered", async () => {
   pool(routed([RECORD]));
@@ -595,7 +561,7 @@ test("offers no undo on a record the pool delivered", async () => {
   render(Item, { id: "routed" });
   await screen.findByText("drafts");
 
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
 });
 
@@ -613,7 +579,7 @@ test("takes the item's own commands from the keyboard, the tag chooser with them
   expect(await screen.findByLabelText("Add a tag")).toBeTruthy();
 
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/linked/process"]);
+  expect(quick.item).toBe("linked");
 });
 
 /** An edit offers the item's tags and nothing that decides it, until it is closed. */
@@ -625,8 +591,8 @@ test("while the item is edited only its tags are reached", async () => {
 
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
-  expect(screen.getByRole("button", { name: "save" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: /^Route/ })).toBeNull();
+  expect(screen.getByRole("button", { name: "Save" })).toBeDefined();
 
   field.blur();
   await fireEvent.keyDown(window, { key: "p" });
@@ -637,7 +603,7 @@ test("while the item is edited only its tags are reached", async () => {
 
   await fireEvent.keyDown(window, { key: "Escape" });
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/linked/process"]);
+  expect(quick.item).toBe("linked");
 });
 
 /** The same order as on a row: the field, then the editable shape, and no more. */
@@ -702,24 +668,24 @@ test("stands the asking mark under the box while the records are read", async ()
   expect(container.querySelector("[data-asking]")).not.toBeNull();
 
   answer(json(200, { values: [RECORD] }));
-  await screen.findByText("delivered");
+  await screen.findByRole("list", { name: "Routing records" });
   expect(container.querySelector("[data-asking]")).toBeNull();
 });
 
-test("draws the capture as the queue's selected row does: a box with its actions as the foot", async () => {
+test("draws the capture with its actions in a bar of their own", async () => {
   pool(holding(saying("linked", "what the link names")));
 
-  const { container } = render(Item, { id: "linked" });
+  render(Item, { id: "linked" });
   await screen.findByText("what the link names");
 
-  // The rail and the body both draw the box's edges, as a selected row's do.
-  expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(
-    screen.getByRole("button", { name: "discard" }).closest("[data-foot]"),
-  ).not.toBeNull();
+    screen
+      .getByRole("button", { name: "Discard" })
+      .closest("[role=toolbar]")
+      ?.getAttribute("aria-label"),
+  ).toBe("Item");
 });
-
-test("reads by day on a narrow screen, as the queue does: headings, the time alone, tags under the capture", async () => {
+test("draws the words without a time column, and the tags after them, each with its ×", async () => {
   viewport(390);
   const at = new Date(2026, 7, 19, 9, 30).toISOString();
   pool((request) => {
@@ -734,32 +700,114 @@ test("reads by day on a narrow screen, as the queue does: headings, the time alo
           }),
         );
       case "GET /v1/items/routed/routing":
-        return json(200, {
-          values: [
-            { ...RECORD, at: new Date(2026, 7, 20, 8, 5).toISOString() },
-          ],
-        });
+        return json(200, { values: [RECORD] });
       default:
         return json(200, { values: [] });
     }
   });
 
   const { container } = render(Item, { id: "routed" });
-  await screen.findByText("drafts");
+  await screen.findByRole("list", { name: "Routing records" });
 
+  expect(container.querySelector("[data-rail]")).toBeNull();
+  expect(screen.queryByText("09:30")).toBeNull();
+  const remove = screen.getByRole("button", { name: "remove design" });
   expect(
-    [...container.querySelectorAll("[data-day]")].map((day) =>
-      day.getAttribute("data-day"),
-    ),
-  ).toEqual(["2026-08-19", "2026-08-20"]);
-  expect(screen.getByText("09:30")).toBeDefined();
-  expect(screen.getByText("08:05")).toBeDefined();
-  expect(screen.getByRole("link", { name: "2026-08-20 08:05" })).toBeDefined();
-
-  const tag = screen.getByText("design");
-  expect(tag.closest("[data-body]")).not.toBeNull();
-  expect(
-    screen.getByText("routed").compareDocumentPosition(tag) &
+    screen.getByText("routed").compareDocumentPosition(remove) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+});
+test("a routed item offers Route again, and a discarded one says so with Undiscard", async () => {
+  pool(routed([RECORD]));
+  const first = render(Item, { id: "routed" });
+  expect(
+    await screen.findByRole("button", { name: "Route again" }),
+  ).toBeDefined();
+  first.unmount();
+
+  pool(
+    holding(
+      saying("gone", "thrown out", {
+        archived: { at: "2026-08-20T10:00:00.000Z", by: { kind: "person" } },
+      }),
+    ),
+  );
+  render(Item, { id: "gone" });
+  expect(await screen.findByText("Discarded")).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undiscard" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
+});
+
+/** The feed's items are sealed: editing one says what saving it does. */
+test("editing a routed item says that saving makes a revision", async () => {
+  pool(holding(saying("routed", "what was filed", ROUTED)));
+
+  render(Item, { id: "routed" });
+  await screen.findByText("what was filed");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  await screen.findByLabelText("What it says");
+  expect(screen.getByText(/saving makes a revision/)).toBeDefined();
+});
+
+test("editing an unrouted item says nothing of revisions", async () => {
+  pool(holding(saying("linked", "what the link names")));
+
+  render(Item, { id: "linked" });
+  await screen.findByText("what the link names");
+
+  await fireEvent.keyDown(window, { key: "e" });
+  await screen.findByLabelText("What it says");
+  expect(screen.queryByText(/saving makes a revision/)).toBeNull();
+});
+
+test("Done moves on to the next item in the queue, whose bar says what was done with Undo", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/queue":
+        return json(200, {
+          values: [saying("one", "first"), saying("two", "second")],
+        });
+      case "GET /v1/items/one":
+        return json(200, saying("one", "first"));
+      case "POST /v1/items/one/mark-processed":
+        return json(200, { ...MARKED, item: "one" });
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "one" });
+  await screen.findByText("first");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/queue");
+  });
+  await manual();
+
+  await vi.waitFor(() => {
+    expect(went.to).toEqual(["/items/two"]);
+  });
+  expect(await screen.findByText(/^Done:/)).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
+});
+
+test("a route in its window is said on its record's line, with Cancel, and after the words", async () => {
+  const { firings } = await import("$lib/firings.svelte");
+  pool(routed([{ ...RECORD, state: "pending" }]));
+  firings.opened({
+    record: "rec",
+    item: "routed",
+    name: "Vault",
+    until: Date.now() + 20_000,
+  });
+
+  render(Item, { id: "routed" });
+
+  const box = await screen.findByRole("list", { name: "Routing records" });
+  expect(
+    within(box).getByRole("button", { name: "Cancel routing Vault" }),
+  ).toBeDefined();
+  expect(within(box).getByText(/^\d+s$/)).toBeDefined();
+  expect(screen.queryByText(/Routing by/)).toBeNull();
+  firings.closed("rec");
 });

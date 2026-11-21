@@ -1,10 +1,15 @@
 <script lang="ts">
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import Segmented from "$components/primitives/blocks/Segmented.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import { headed } from "$lib/heading.svelte";
+
+  import FormBar from "./form/FormBar.svelte";
+  import Guard from "./form/Guard.svelte";
   import { untrack } from "svelte";
 
   import { saidBy, type Account, type AccountKind } from "@notemap/client";
 
-  import Option from "$components/primitives/composer/Option.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
   import { client } from "$lib/client";
   import { fieldsOf, typedFrom, valuesFrom } from "$lib/schema-form";
 
@@ -13,16 +18,16 @@
     editing,
     disabled,
     done,
+    onremove,
   }: {
     kinds: readonly AccountKind[];
+    /** A stored account can be removed, from a band of its own. */
+    onremove?: () => void;
     /** A config account is edited by storing a copy, which from then on is the one used. */
     editing?: Account;
     disabled: boolean;
     done: () => void;
   } = $props();
-
-  const FIELD =
-    "w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none";
 
   let name = $state(untrack(() => editing?.name ?? ""));
   let typed = $state(untrack(() => typedFrom(editing?.fields)));
@@ -40,9 +45,33 @@
   /** Only a stored account has a secret to keep; anything else is a new record. */
   const keeping = $derived(editing?.from === "stored");
 
-  async function submit(event: SubmitEvent) {
-    event.preventDefault();
-    if (chosen === undefined) return;
+  const begun = untrack(() => JSON.stringify([name, typed]));
+  let saved = false;
+  const changed = (): boolean =>
+    !saved && (secret !== "" || JSON.stringify([name, typed]) !== begun);
+
+  /** Why it cannot be saved yet, said over Save. */
+  const missing = $derived(
+    disabled
+      ? "The pool is out of reach."
+      : name.trim() === ""
+        ? "Name it to save."
+        : chosen === undefined
+          ? "Pick a kind to save."
+          : !keeping && secret === ""
+            ? "Give it a secret to save."
+            : undefined,
+  );
+
+  headed(() => ({
+    title: editing === undefined ? "new account" : "edit account",
+    out: { icon: "close", label: "Cancel", run: done },
+    ...(editing === undefined ? {} : { under: editing.name }),
+  }));
+
+  async function submit(event?: SubmitEvent) {
+    event?.preventDefault();
+    if (chosen === undefined || missing !== undefined || busy) return;
 
     busy = true;
     said = "";
@@ -52,6 +81,7 @@
         ...(secret === "" ? {} : { secret }),
       });
       secret = "";
+      saved = true;
       done();
     } catch (error) {
       said = saidBy(error);
@@ -61,73 +91,86 @@
   }
 </script>
 
-<form
-  onsubmit={submit}
-  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
->
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
-  {#if editing === undefined}
-    <input bind:value={name} aria-label="Name" required class={FIELD} />
-  {:else}
-    <!-- A destination names an account by this, so changing it is a new account. -->
-    <span>{editing.name}</span>
-  {/if}
+<Guard about={editing?.name ?? "a new account"} {changed} />
 
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">kind</span>
-  {#if editing === undefined}
-    <div class="flex flex-wrap gap-x-[2ch]">
-      {#each kinds as one (one.name)}
-        <Option
-          label={one.name}
-          chosen={chosen === one.name}
-          onchoose={() => {
-            chosen = one.name;
-            typed = {};
-          }}
-        />
-      {/each}
-    </div>
-  {:else}
-    <span>{editing.kind}</span>
-  {/if}
+<form onsubmit={submit}>
+  <Band>account</Band>
+  <label class="block border-b border-rule px-gutter py-3">
+    <span class="mb-1.5 block text-small">name</span>
+    {#if editing === undefined}
+      <input
+        bind:value={name}
+        aria-label="Name"
+        required
+        placeholder="what destinations call it"
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+      />
+    {:else}
+      <!-- A destination names an account by this, so changing it is a new account. -->
+      <span class="block">{editing.name}</span>
+    {/if}
+  </label>
 
-  {#each fields as field (field.name)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">
-      {field.name}{field.required ? "" : " (optional)"}
-    </span>
-    <input
-      bind:value={typed[field.name]}
-      aria-label={field.name}
-      placeholder={field.placeholder}
-      class={FIELD}
-    />
-  {/each}
-
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">secret</span>
-  <input
-    type="password"
-    autocomplete="new-password"
-    bind:value={secret}
-    aria-label="Secret"
-    required={!keeping}
-    placeholder={keeping ? "set — leave blank to keep it" : ""}
-    class={FIELD}
-  />
-
-  <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
-  >
-    <Action onclick={done}>cancel</Action>
-    <span class="inverted">
-      <Action submit {disabled} working={busy}>
-        {editing === undefined ? "create" : "save"}
-      </Action>
-    </span>
+  <div class="border-b border-rule px-gutter py-3">
+    <span class="mb-1.5 block text-small">kind</span>
+    {#if editing === undefined}
+      <Segmented
+        label="kind"
+        value={chosen}
+        options={kinds.map((one) => ({ value: one.name, word: one.name }))}
+        onchoose={(one) => {
+          chosen = one;
+          typed = {};
+        }}
+      />
+    {:else}
+      <span class="block">{editing.kind}</span>
+    {/if}
   </div>
 
+  {#each fields as field (field.name)}
+    <label class="block border-b border-rule px-gutter py-3">
+      <span class="mb-1.5 block text-small"
+        >{field.name}{field.required ? "" : " (optional)"}</span
+      >
+      <input
+        bind:value={typed[field.name]}
+        aria-label={field.name}
+        placeholder={field.placeholder}
+        class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+      />
+    </label>
+  {/each}
+
+  <label class="block border-b border-rule px-gutter py-3">
+    <span class="mb-1.5 block text-small">secret</span>
+    <input
+      type="password"
+      autocomplete="new-password"
+      bind:value={secret}
+      aria-label="Secret"
+      required={!keeping}
+      placeholder={keeping ? "set — leave blank to keep it" : ""}
+      class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+    />
+  </label>
+
+  {#if onremove !== undefined}
+    <Band>remove</Band>
+    <LinkRow
+      icon="trash"
+      title="Remove…"
+      line="A destination that names it can no longer sign in."
+      danger
+      chevron={false}
+      {disabled}
+      onclick={onremove}
+    />
+  {/if}
+
   {#if said !== ""}
-    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
-      {said}
-    </p>
+    <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
   {/if}
 </form>
+
+<FormBar {missing} {busy} oncancel={done} onsave={() => void submit()} />

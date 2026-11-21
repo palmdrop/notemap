@@ -161,9 +161,6 @@ beforeEach(async () => {
   viewport(1024);
   sessionStorage.clear();
   localStorage.clear();
-  // Imported here rather than above: it reads storage as it loads, and this
-  // file loads before the page's storage is in place.
-  (await import("$lib/rows.svelte")).forgetRows();
   // Held for the life of a page, which in a suite is the life of the run: one
   // case's channels would otherwise be drawn under the next one's destination.
   // Both caches, since clearing the store behind one does not empty the map

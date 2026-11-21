@@ -129,10 +129,9 @@ export function alignedTo(
  * shows its siblings, which is what makes the tree *shown* rather than walked;
  * only the level the caret is in is filtered by what is being typed.
  *
- * `unmade` is the typed tail that is not there yet, from `pending`, and it goes
- * in where the trail runs out rather than after the whole tree: the walk keeps
- * emitting shallower siblings as it unwinds, so a `+ folder/` appended past all
- * of them reads as sitting inside the last root folder drawn.
+ * `unmade` is the typed tail that is not there yet, from `pending`, and it
+ * leads the level where the trail runs out, so the proposal is the first row
+ * read there rather than the last, under its own folder.
  */
 export function rowsOf(
   levels: readonly Level[],
@@ -153,13 +152,14 @@ export function rowsOf(
       : level.entries;
     const onward = path.complete[depth];
 
+    // What the route will make leads its level, where it is read first.
+    if (depth === into) rows.push(...unmade);
+
     for (const entry of entries) {
       const onPath = !deepest && entry.label === onward;
       rows.push({ entry, depth, onPath });
       if (onPath) walk(depth + 1);
     }
-
-    if (depth === into) rows.push(...unmade);
   };
 
   walk(0);

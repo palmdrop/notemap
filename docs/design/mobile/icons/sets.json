@@ -1,0 +1,108 @@
+{
+  "mdi-light": {
+    "label": "Material Design Light",
+    "licence": "Open Font License",
+    "author": "Pictogrammers",
+    "url": "https://github.com/Templarian/MaterialDesignLight",
+    "missing": [
+      "hand"
+    ]
+  },
+  "ph-light": {
+    "label": "Phosphor Light",
+    "licence": "MIT",
+    "author": "Phosphor Icons",
+    "url": "https://github.com/phosphor-icons/core",
+    "missing": []
+  },
+  "ph-thin": {
+    "label": "Phosphor Thin",
+    "licence": "MIT",
+    "author": "Phosphor Icons",
+    "url": "https://github.com/phosphor-icons/core",
+    "missing": []
+  },
+  "lucide": {
+    "label": "Lucide",
+    "licence": "ISC",
+    "author": "Lucide Contributors",
+    "url": "https://github.com/lucide-icons/lucide",
+    "missing": []
+  },
+  "tabler": {
+    "label": "Tabler",
+    "licence": "MIT",
+    "author": "Paweł Kuna",
+    "url": "https://github.com/tabler/tabler-icons",
+    "missing": []
+  },
+  "iconoir": {
+    "label": "Iconoir",
+    "licence": "MIT",
+    "author": "Luca Burgio",
+    "url": "https://github.com/iconoir-icons/iconoir",
+    "missing": [
+      "hand",
+      "feed"
+    ]
+  },
+  "pixelarticons": {
+    "label": "Pixelarticons",
+    "licence": "MIT",
+    "author": "Gerrit Halfmann",
+    "url": "https://github.com/halfmage/pixelarticons",
+    "missing": []
+  },
+  "pixel": {
+    "label": "Pixel Icon Library",
+    "licence": "CC BY 4.0",
+    "author": "HackerNoon",
+    "url": "https://github.com/hackernoon/pixel-icon-library",
+    "missing": [
+      "hand",
+      "route",
+      "undo",
+      "file"
+    ]
+  },
+  "pepicons-print": {
+    "label": "Pepicons Print",
+    "licence": "CC BY 4.0",
+    "author": "CyCraft",
+    "url": "https://github.com/CyCraft/pepicons",
+    "missing": [
+      "undo",
+      "capture",
+      "feed"
+    ]
+  },
+  "pepicons-pencil": {
+    "label": "Pepicons Pencil",
+    "licence": "CC BY 4.0",
+    "author": "CyCraft",
+    "url": "https://github.com/CyCraft/pepicons",
+    "missing": [
+      "undo",
+      "capture",
+      "feed"
+    ]
+  },
+  "carbon": {
+    "label": "Carbon",
+    "licence": "Apache 2.0",
+    "author": "IBM",
+    "url": "https://github.com/carbon-design-system/carbon/tree/main/packages/icons",
+    "missing": [
+      "hand"
+    ]
+  },
+  "notemap": {
+    "label": "Carbon, with Tabler's route",
+    "licence": "Carbon: Apache 2.0; Tabler: MIT",
+    "author": "IBM, Paweł Kuna",
+    "url": "https://github.com/carbon-design-system/carbon/tree/main/packages/icons",
+    "missing": [
+      "hand"
+    ]
+  }
+}

@@ -37,8 +37,7 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
     found:
       /\b(?:duration|delay)-(?:\d|\[)|\b(?:ease|animate)-(?:in|out|linear|spin|ping|pulse|bounce|\[)|\b(?:duration|delay):\s*\d|(?:transition|animation)(?:-duration|-delay|-timing-function)?\s*:(?![^;]*var\()[^;{]*(?:\d(?:ms|s)\b|cubic-bezier\(|steps\()/,
   },
-  // Roles the shell used to have. One face at one size, and no muted ink,
-  // no green and no accent — each of these is a name for something retired.
+  // Roles the shell used to have, each a name for something retired.
   ...[
     "font-mono",
     "font-prose",
@@ -47,8 +46,12 @@ const FORBIDDEN: readonly { what: string; found: RegExp }[] = [
     "text-ink-muted",
     "text-good",
     "text-accent",
-    "text-paper",
-    "bg-paper",
+    "font-shell",
+    "text-shell",
+    "bg-ground",
+    "text-ground",
+    "text-alarm",
+    "text-inert",
   ].map((name) => ({
     what: `the retired class \`${name}\``,
     found: new RegExp(`(?<![\\w-])${name}(?![\\w-])`),

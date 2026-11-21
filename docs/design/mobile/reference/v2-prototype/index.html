@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta name="theme-color" content="#ffffff" />
+<title>notemap, round 2: prototype</title>
+<link rel="stylesheet" href="./tokens.css" />
+<link rel="stylesheet" href="./phone.css" />
+<style>
+  /* The prototype's own: the screen follows the visual viewport so the bars ride above a
+     keyboard, sideways drags pass to the script, and what is dragged follows the finger. */
+  .screen { height: var(--vh, 100dvh); }
+  .swipe { touch-action: pan-y; }
+  .slide { transition: transform var(--beat) var(--ease); }
+  .dragging .slide, .dragging .row { transition: none; }
+  .swipe-wrap .row { transition: transform var(--beat) var(--ease); touch-action: pan-y; }
+  .swipe-wrap .under { opacity: 0; }
+  a, button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  textarea, input { font: inherit; color: inherit; background: none; border: 0; outline: 0; width: 100%; resize: none; padding: 0; }
+  textarea.text { min-height: 160px; height: 100%; }
+  .opt { text-align: left; }
+  .field:has(input) { padding: 0 var(--s3); }
+  .field input { display: block; height: 46px; }
+  .token button { width: 44px; height: 44px; margin: -4px -4px -4px -8px; }
+  .snack { animation: rise var(--beat) var(--ease); }
+  @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="screen" id="app"></div>
+<script src="./icons.js"></script>
+<script src="./proto.js"></script>
+</body>
+</html>

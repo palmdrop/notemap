@@ -83,6 +83,20 @@ test("offers edit on an unprocessed item and not on a processed one", () => {
   expect(ids(processed)).not.toContain("edit");
 });
 
+test("offers edit on a processed item where the surface revises, and never on a discarded one", () => {
+  const routed = anItem("one", {
+    routing: { records: 1, pending: 0, to: [], templates: [] },
+  });
+  const revising = (item: typeof routed) =>
+    commandsFor(item, { ...at, revises: true }).map((command) => command.id);
+  expect(revising(routed)).toContain("edit");
+
+  const discarded = anItem("one", {
+    archived: { archivedAt: "2026-11-01T10:00:00.000Z" },
+  });
+  expect(revising(discarded)).not.toContain("edit");
+});
+
 test("offers copy only with a clipboard and something for it to take", () => {
   expect(ids()).not.toContain("copy");
 
@@ -101,13 +115,13 @@ test("goes to the address it is given, and to the log where it has none", () => 
   const open = commandsFor(item, { ...at, address: "/items/one" }).find(
     (c) => c.id === "open",
   );
-  expect(open?.label).toBe("open");
+  expect(open?.label).toBe("Open");
   expect(open !== undefined && "href" in open ? open.href : undefined).toBe(
     "/items/one",
   );
 
   const history = commandsFor(item, at).find((c) => c.id === "open");
-  expect(history?.label).toBe("history");
+  expect(history?.label).toBe("History");
   expect(
     history !== undefined && "href" in history ? history.href : undefined,
   ).toBe("/log?item=one");

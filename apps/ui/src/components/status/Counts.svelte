@@ -1,24 +1,22 @@
 <script lang="ts">
-  import { resolve } from "$app/paths";
-
-  import { PANEL } from "./panel";
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import Dot from "$components/primitives/marks/Dot.svelte";
+  import { timeOf } from "$lib/stamp";
 
   /**
-   * The right of the status line, each drawn only while it is true: what this
-   * device holds, how much the queue holds, and `offline` while the pool does
-   * not answer. Below `narrow` the words go and a number and a mark stay.
+   * The line's right: what is true, counted in words, in a fixed order. How
+   * much is waiting to send, then Offline, said in ink: it is not a failure.
    */
   let {
     pending,
-    queue,
     reachable,
-    expanded,
+    at,
     ontoggle,
   }: {
     pending: number;
-    queue?: number;
     reachable: boolean;
-    expanded: boolean;
+    /** When the pool last answered, said beside Offline. */
+    at?: string | undefined;
     ontoggle: () => void;
   } = $props();
 </script>
@@ -26,29 +24,24 @@
 {#if pending > 0}
   <button
     type="button"
-    class="flex-none whitespace-nowrap tabular-nums"
-    aria-label={`${String(pending)} pending`}
-    aria-expanded={expanded}
-    aria-controls={PANEL}
+    class="flex flex-none items-center gap-2 whitespace-nowrap text-muted tabular-nums"
+    aria-label={`${String(pending)} waiting`}
     onclick={ontoggle}
   >
-    <span class="max-narrow:hidden">{pending} pending</span>
-    <span class="narrow:hidden"
-      ><span class="text-glyph">◐</span> {pending}</span
-    >
+    <Dot said="waiting to send" />
+    {pending} waiting
   </button>
-{/if}
-
-{#if queue !== undefined}
-  <a
-    href={resolve("/")}
-    class="flex-none whitespace-nowrap tabular-nums max-narrow:hidden"
-  >
-    {queue} in queue
-  </a>
 {/if}
 
 <!-- Nothing while the pool answers, which is the ordinary state and says nothing. -->
 {#if !reachable}
-  <span role="status" class="flex-none whitespace-nowrap">offline</span>
+  <span
+    role="status"
+    class="flex flex-none items-center gap-1.5 whitespace-nowrap"
+  >
+    <Icon name="cloud-off" class="size-5" />
+    Offline{#if at !== undefined}<span class="text-muted"
+        >, last answered {timeOf(at)}</span
+      >{/if}
+  </span>
 {/if}

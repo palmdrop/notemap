@@ -12,7 +12,7 @@ vi.mock("$app/paths", () => ({
 }));
 
 vi.mock("$app/state", () => ({
-  page: { url: new URL("http://localhost/"), route: { id: "/" } },
+  page: { url: new URL("http://localhost/"), route: { id: "/" }, params: {} },
 }));
 
 const children = createRawSnippet(() => ({
@@ -29,17 +29,15 @@ test("a shut door draws the login, and typing a password makes it signable", asy
 
   render(Layout, { children });
 
-  const button = (await screen.findByRole("button", {
-    name: /sign in/i,
-  })) as HTMLButtonElement;
-  expect(button.disabled).toBe(true);
+  const button = await screen.findByRole("button", { name: /sign in/i });
+  expect(button.getAttribute("aria-disabled")).toBe("true");
   expect(screen.queryByText("the surface")).toBeNull();
 
   await fireEvent.input(screen.getByLabelText("password", { exact: false }), {
     target: { value: "correct horse battery staple" },
   });
 
-  expect(button.disabled).toBe(false);
+  expect(button.getAttribute("aria-disabled")).toBeNull();
 });
 
 test("signing in through the shell reaches the daemon and draws the surface", async () => {

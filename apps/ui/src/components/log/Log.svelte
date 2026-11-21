@@ -1,4 +1,9 @@
 <script lang="ts">
+  import { SvelteMap } from "svelte/reactivity";
+
+  import Day from "$components/primitives/register/Day.svelte";
+  import { dayOf } from "$lib/stamp";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import { onMount, tick, untrack } from "svelte";
 
   import type { Action } from "@notemap/client";
@@ -69,8 +74,6 @@
 
   $effect(() => () => clearTimeout(fading));
 
-  const HALF_A_DAY = 12 * 60 * 60 * 1000;
-
   const whole = (id: string) => {
     const held = log.whole(id);
     return Array.isArray(held) ? held : undefined;
@@ -85,19 +88,11 @@
     }),
   );
 
-  /** A gap opens where more than half a day passed before a row, in reading order. */
   const rows = $derived(
-    groups.map((row, index) => {
-      const at = (one: (typeof groups)[number]) =>
-        Date.parse(one.kind === "action" ? one.action.at : one.at);
-      const before = groups[index - 1];
-      return {
-        row,
-        key: row.kind === "action" ? row.action.id : `batch:${row.id}`,
-        gap:
-          before !== undefined && Math.abs(at(row) - at(before)) > HALF_A_DAY,
-      };
-    }),
+    groups.map((row) => ({
+      row,
+      key: row.kind === "action" ? row.action.id : `batch:${row.id}`,
+    })),
   );
 
   const templates = client.templates.all;
@@ -155,27 +150,51 @@
 
     return () => held.unsubscribe();
   });
+
+  /** The rows that open a day, read in the log's order, with the day they open. */
+  const heads = $derived.by(() => {
+    const opening = new SvelteMap<string, { at: string; count: number }>();
+    let day: string | undefined;
+    let head: string | undefined;
+    for (const { row, key } of rows) {
+      const at = row.kind === "action" ? row.action.at : row.at;
+      const today = dayOf(at);
+      if (today !== day) {
+        opening.set(key, { at, count: 0 });
+        head = key;
+      }
+      const counting = head === undefined ? undefined : opening.get(head);
+      if (counting !== undefined) counting.count += 1;
+      day = today;
+    }
+    return opening;
+  });
 </script>
 
 {#if log.item !== undefined}
   <!-- History: the log narrowed to one item, said above the head. -->
-  <p class="pt-5">
-    <span class="font-semibold tracking-caps uppercase">history</span>
+  <p
+    class="-mx-3.5 flex flex-wrap items-center gap-3 border-b border-rule px-gutter py-3 wide:-mx-8"
+  >
+    <span class="font-display text-weekday lowercase">this item</span>
     <Says id={log.item} href={itemHref(log.item)} />
-    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
-      >all of the log</a
+    <span class="ml-auto"
+      ><Box href={logHref(log.order, { kinds: log.kinds })}>All of the log</Box
+      ></span
     >
   </p>
 {/if}
 
 {#if log.batch !== undefined}
   <!-- The log narrowed to one batch, said above the head as history is. -->
-  <p class="pt-5">
-    <span class="font-semibold tracking-caps uppercase">batch</span>
+  <p
+    class="-mx-3.5 flex flex-wrap items-center gap-3 border-b border-rule px-gutter py-3 wide:-mx-8"
+  >
+    <span class="font-display text-weekday lowercase">this batch</span>
     {#if said === undefined && (read === "asking" || log.loading)}
       <Asking />
     {:else if said !== undefined}
-      <span class={said.alarm === true ? "text-alarm" : ""}>
+      <span class={said.alarm === true ? "text-danger" : ""}>
         {said.what}
         {#if said.subject !== undefined}
           <span class="font-semibold">{said.subject}</span>
@@ -188,8 +207,9 @@
     {#if read === "failed"}
       <span class="ml-[2ch]">{NOT_ALL_READ}</span>
     {/if}
-    <a href={logHref(log.order, { kinds: log.kinds })} class="ml-[2ch]"
-      >all of the log</a
+    <span class="ml-auto"
+      ><Box href={logHref(log.order, { kinds: log.kinds })}>All of the log</Box
+      ></span
     >
   </p>
 {/if}
@@ -220,11 +240,16 @@
       />
     {/each}
 
-    {#each rows as { row, key, gap } (key)}
+    <!-- The band says the day changed, so no gap opens under it. -->
+    {#each rows as { row, key } (key)}
+      {@const head = heads.get(key)}
+      {#if head !== undefined}
+        <Day at={head.at} count={head.count} />
+      {/if}
       {#if row.kind === "action"}
-        <LogRow action={row.action} {gap} heard={log.heard(row.action.id)} />
+        <LogRow action={row.action} heard={log.heard(row.action.id)} />
       {:else}
-        <BatchRow id={row.id} at={row.at} entries={row.entries} {gap} />
+        <BatchRow id={row.id} at={row.at} entries={row.entries} />
       {/if}
     {/each}
 

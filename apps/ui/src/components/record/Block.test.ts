@@ -131,7 +131,7 @@ test("reads as a file: destination, place, what was done, and the template", asy
   ).toBe("https://vault.example/drafts/note.md");
   expect(screen.getByText("created")).toBeDefined();
   expect(screen.getByText("via Research")).toBeDefined();
-  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Open" })).toBeDefined();
 
   // Nothing of the old page's words, and no id.
   for (const gone of [
@@ -155,7 +155,7 @@ test("draws what was sent exactly as it was sent, and the note beneath", async (
   const sent = await screen.findByText(/# a thought/);
   expect(sent.tagName).toBe("PRE");
   // The one face, not the browser's monospace.
-  expect(sent.className).toContain("font-shell");
+  expect(sent.className).toContain("font-text");
   expect(sent.textContent).toBe(NOTE);
   expect(screen.queryByRole("heading")).toBeNull();
   expect(screen.queryByRole("button", { name: "raw" })).toBeNull();
@@ -201,7 +201,7 @@ test("an open record reads what was sent on arrival, once", async () => {
   expect(
     asked().filter((route) => route === "GET /v1/routing/rec/output"),
   ).toHaveLength(1);
-  expect(screen.queryByRole("button", { name: "read it" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Read it" })).toBeNull();
 });
 
 test("asks for nothing where the record kept no copy, and says so", async () => {
@@ -227,7 +227,7 @@ test("says why what was sent could not be read, and does not ask again on its ow
   render(Block, { folds: false, record: KEPT });
 
   expect(await screen.findByText(/could not be read/)).toBeDefined();
-  const again = await screen.findByRole("button", { name: "read it" });
+  const again = await screen.findByRole("button", { name: "Read it" });
   expect(
     asked().filter((route) => route === "GET /v1/routing/rec/output"),
   ).toHaveLength(1);
@@ -242,9 +242,9 @@ test("draws what the delivery was given at the bottom, by the schema's names onc
 
   render(Block, { folds: false, record: KEPT });
 
-  expect(await screen.findByText("Directory")).toBeDefined();
+  expect(await screen.findByText("directory")).toBeDefined();
   expect(screen.getByText("drafts")).toBeDefined();
-  expect(screen.getByText("Filename")).toBeDefined();
+  expect(screen.getByText("filename")).toBeDefined();
   expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
 });
 
@@ -271,12 +271,12 @@ test("a pending record says so and offers cancel, and nothing else does", async 
 
   expect(await screen.findByText(NOT_YET_DELIVERED)).toBeDefined();
   expect(screen.queryByText(NOTHING_KEPT)).toBeNull();
-  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 
   await rerender({ record: RECORD });
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
 
 test("a pending record's head reads its folders and leaf as one path", async () => {
@@ -299,7 +299,7 @@ test("cancelling calls the record off, says so in the corner, and tells the surf
     onundone: undone,
   });
 
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/rec/cancel");
@@ -325,7 +325,7 @@ test("a decision made by hand reads as one, with its note, and offers undo", asy
   expect(await screen.findByText("by hand")).toBeDefined();
   expect(screen.getByText("marked processed")).toBeDefined();
   expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
   // Nothing was sent, so nothing says nothing was kept.
   expect(screen.queryByText(NOTHING_KEPT)).toBeNull();
   expect(screen.queryByRole("button", { name: "arguments" })).toBeNull();
@@ -434,7 +434,7 @@ test("leaves the place as text where the url is not one to follow", async () => 
   });
 
   expect((await screen.findByText("drafts/note.md")).closest("a")).toBeNull();
-  expect(screen.queryByRole("link", { name: "open ↗" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
 });
 
 test("says a capability it has never heard of by its name", async () => {
@@ -569,7 +569,7 @@ test("folded, reads as one line: where it went and what was done, and nothing re
   for (const gone of ["via Research", "the two pictures were not carried"]) {
     expect(screen.queryByText(gone)).toBeNull();
   }
-  expect(screen.queryByRole("link", { name: "open ↗" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
   expect(screen.queryByText("Directory")).toBeNull();
   expect(document.querySelectorAll("img")).toHaveLength(0);
   expect(outputAsked()).toHaveLength(0);
@@ -584,7 +584,7 @@ test("opens into the block, reading what was sent once however often it is opene
   await fireEvent.click(opener());
   expect(await screen.findByText(/# a thought/)).toBeDefined();
   expect(screen.getByText("via Research")).toBeDefined();
-  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
+  expect(screen.getByRole("link", { name: "Open" })).toBeDefined();
 
   await fireEvent.click(
     screen.getByRole("button", { name: "Fiction vault", expanded: true }),
@@ -610,11 +610,11 @@ test("a folded pending record offers cancel on its line, and says nothing else",
 
   render(Block, { record: { ...RECORD, state: "pending" } });
 
-  expect(await screen.findByRole("button", { name: "cancel" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Cancel" })).toBeDefined();
   expect(screen.queryByText(NOT_YET_DELIVERED)).toBeNull();
 });
 
-test("a pending record in its window offers undo, and nothing once the window closes", async () => {
+test("a pending record in its window offers cancel, and nothing once the window closes", async () => {
   await named();
   firings.opened({
     record: RECORD.id,
@@ -626,7 +626,7 @@ test("a pending record in its window offers undo, and nothing once the window cl
   const { unmount } = render(Block, {
     record: { ...RECORD, state: "pending" },
   });
-  expect(await screen.findByRole("button", { name: "undo" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Cancel" })).toBeDefined();
   unmount();
 
   firings.clear();
@@ -657,11 +657,11 @@ test("a folded decision made by hand keeps its note and its undo for when it is 
   const name = await screen.findByRole("button", { name: "by hand" });
   expect(screen.getByText("marked processed")).toBeDefined();
   expect(screen.queryByText("pasted into the fiction-a vault")).toBeNull();
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 
   await fireEvent.click(name);
   expect(screen.getByText("pasted into the fiction-a vault")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
 });
 
 test("with a lead, the line stays above the opened block and says what it is given to say", async () => {
@@ -721,7 +721,7 @@ test("a cancel refused from the folded line says why under it", async () => {
   const undone = vi.fn();
 
   render(Block, { record: { ...RECORD, state: "pending" }, onundone: undone });
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
 
   expect(await screen.findByRole("status")).toBeDefined();
   expect(opener()).toBeDefined();
@@ -777,7 +777,7 @@ test("a delivered record offers withdraw, and asks first, saying the file is sti
   render(Block, { folds: false, record: RECORD });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
 
   expect(
@@ -794,7 +794,7 @@ test("asks plainly where the destination could not say", async () => {
   render(Block, { folds: false, record: RECORD });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
 
   expect(await screen.findByText("Withdraw?")).toBeTruthy();
@@ -805,11 +805,11 @@ test("keeping it sends nothing and puts the offer back", async () => {
   render(Block, { folds: false, record: RECORD });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
-  await fireEvent.click(await screen.findByRole("button", { name: "keep" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Keep" }));
 
-  expect(await screen.findByRole("button", { name: "withdraw" })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: "Withdraw" })).toBeTruthy();
   expect(asked()).not.toContain("POST /v1/routing/rec/withdraw");
 });
 
@@ -819,10 +819,10 @@ test("withdrawing marks the record, tells the surface, and offers reinstate here
   render(Block, { folds: false, record: RECORD, onundone: undone });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
   await screen.findByText(/still there/);
-  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  const confirm = screen.getAllByRole("button", { name: "Withdraw" }).at(-1);
   if (confirm === undefined) throw new Error("expected the confirming press");
   await fireEvent.click(confirm);
 
@@ -833,12 +833,12 @@ test("withdrawing marks the record, tells the surface, and offers reinstate here
   expect(undone).toHaveBeenCalled();
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "reinstate" }),
+    await screen.findByRole("button", { name: "Reinstate" }),
   );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/routing/rec/reinstate");
   });
-  expect(await screen.findByRole("button", { name: "withdraw" })).toBeTruthy();
+  expect(await screen.findByRole("button", { name: "Withdraw" })).toBeTruthy();
 });
 
 test("stops offering reinstate once an edit begins", async () => {
@@ -846,18 +846,18 @@ test("stops offering reinstate once an edit begins", async () => {
   const { rerender } = render(Block, { folds: false, record: RECORD });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
   await screen.findByText(/still there/);
-  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  const confirm = screen.getAllByRole("button", { name: "Withdraw" }).at(-1);
   if (confirm === undefined) throw new Error("expected the confirming press");
   await fireEvent.click(confirm);
-  await screen.findByRole("button", { name: "reinstate" });
+  await screen.findByRole("button", { name: "Reinstate" });
 
   await rerender({ folds: false, record: RECORD, editing: true });
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Reinstate" })).toBeNull();
   });
 });
 
@@ -866,13 +866,13 @@ test("follows the record it is handed again once that agrees with what was done 
   const { rerender } = render(Block, { folds: false, record: RECORD });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "withdraw" }),
+    await screen.findByRole("button", { name: "Withdraw" }),
   );
   await screen.findByText(/still there/);
-  const confirm = screen.getAllByRole("button", { name: "withdraw" }).at(-1);
+  const confirm = screen.getAllByRole("button", { name: "Withdraw" }).at(-1);
   if (confirm === undefined) throw new Error("expected the confirming press");
   await fireEvent.click(confirm);
-  await screen.findByRole("button", { name: "reinstate" });
+  await screen.findByRole("button", { name: "Reinstate" });
 
   await rerender({
     folds: false,
@@ -894,8 +894,8 @@ test("a record read withdrawn offers neither withdraw nor reinstate", async () =
   });
 
   expect(await screen.findByText("withdrawn")).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "withdraw" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "reinstate" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Withdraw" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Reinstate" })).toBeNull();
 });
 
 test("a decision made by hand offers to be saved as a template, at its own address", async () => {
@@ -903,7 +903,7 @@ test("a decision made by hand offers to be saved as a template, at its own addre
 
   render(Block, { folds: false, record: RECORD });
 
-  const offer = await screen.findByRole("link", { name: "save as template" });
+  const offer = await screen.findByRole("link", { name: "Save as template" });
   expect(offer.getAttribute("href")).toBe(
     "/settings/templates?item=one&record=rec",
   );
@@ -920,7 +920,7 @@ test("offers no template where there is nothing to save one from", async () => {
   ]) {
     const { unmount } = render(Block, { folds: false, record });
     await screen.findAllByText(/created|marked processed/);
-    expect(screen.queryByRole("link", { name: "save as template" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Save as template" })).toBeNull();
     unmount();
   }
 });

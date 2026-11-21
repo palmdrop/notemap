@@ -244,7 +244,7 @@
   <div
     role="status"
     transition:fade
-    class="pointer-events-none fixed inset-3 z-100 flex items-center justify-center border border-ink bg-ground/85 p-6 text-center"
+    class="pointer-events-none fixed inset-3 z-100 flex items-center justify-center border border-ink bg-paper/85 p-6 text-center"
   >
     <p class="max-w-[40ch] wrap-anywhere">
       {#if to === undefined}

@@ -292,6 +292,9 @@ export const PARAMETER_STATUS = {
   "bad-position": 422,
 } as const;
 
+/** The counts' one parameter: a time that is not one. */
+export const SINCE_STATUS = { "bad-since": 422 } as const;
+
 /** The log's own parameter, which no surface takes. */
 export const KIND_FILTER_STATUS = { "bad-kind": 422 } as const;
 
@@ -364,6 +367,7 @@ export const AUTH_STATUS = {
 const DAEMON_STATUS = {
   ...BODY_STATUS,
   ...PARAMETER_STATUS,
+  ...SINCE_STATUS,
   ...KIND_FILTER_STATUS,
   ...TAG_FILTER_STATUS,
   ...WORDS_FILTER_STATUS,

@@ -69,8 +69,7 @@ test("nothing can be sent until a password is typed", () => {
 
   render(SignIn);
 
-  expect(
-    (screen.getByRole("button", { name: /sign in/i }) as HTMLButtonElement)
-      .disabled,
-  ).toBe(true);
+  const signIn = screen.getByRole("button", { name: /sign in/i });
+  expect(signIn.getAttribute("aria-disabled")).toBe("true");
+  expect(signIn.getAttribute("title")).toBe("Type the password to sign in.");
 });

@@ -78,8 +78,8 @@
 </script>
 
 <div
-  class="relative -ml-tag flex min-w-0 flex-wrap items-baseline {stacked
-    ? 'max-narrow:flex-col max-narrow:items-start'
+  class="relative flex min-h-6 min-w-0 flex-wrap items-center gap-1 {stacked
+    ? 'max-wide:flex-col max-wide:items-start'
     : ''}"
 >
   <TagSet
@@ -88,7 +88,9 @@
     {offered}
     {addable}
     {fixed}
-    label={onbatch === undefined ? undefined : "Add a tag to every marked note"}
+    label={onbatch === undefined
+      ? undefined
+      : "Add a tag to every selected item"}
     marked={(name) => filter.includes(name)}
     fires={(name) => triggeredBy(name)?.name}
     held={(name) => {

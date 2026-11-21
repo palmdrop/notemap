@@ -337,7 +337,7 @@ export interface PoolReads {
   feed(page: FeedPage, filter?: FeedFilter): Promise<Slice<Item>>;
   queue(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
   archived(page: OrderedPage, filter?: SurfaceFilter): Promise<Slice<Item>>;
-  counts(): Promise<Counts>;
+  counts(since?: Timestamp): Promise<Counts>;
 
   /**
    * Ordered most used first, then by name, so a completion list needs no sort.

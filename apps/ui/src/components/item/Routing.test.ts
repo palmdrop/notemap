@@ -122,7 +122,7 @@ test("offers cancel on a record not yet delivered, and nothing on one that was",
     records: [{ ...PENDING, state: "delivered" }],
   });
   await screen.findByRole("link");
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   unmount();
 
   render(Routing, {
@@ -130,7 +130,7 @@ test("offers cancel on a record not yet delivered, and nothing on one that was",
     records: [PENDING],
     onundone: () => (undone += 1),
   });
-  await fireEvent.click(await screen.findByRole("button", { name: "cancel" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
 
   await vi.waitFor(() => expect(undone).toBe(1));
   expect(sentTo(transport).map(routeOf)).toContain(
@@ -139,7 +139,7 @@ test("offers cancel on a record not yet delivered, and nothing on one that was",
 });
 
 /** What the row offers is what the route in flight offers, read from the same firing. */
-test("offers undo in the window, nothing from its edge while it is attempted, and cancel once retrying", async () => {
+test("offers cancel in the window, nothing from its edge while it is attempted, and cancel once retrying", async () => {
   vi.useFakeTimers();
   vi.setSystemTime(Date.parse("2026-08-19T22:14:00.000Z"));
   pool(() => json(200, { values: [] }));
@@ -148,18 +148,18 @@ test("offers undo in the window, nothing from its edge while it is attempted, an
 
   render(Routing, { summary: undefined, records: [PENDING] });
   await vi.advanceTimersByTimeAsync(0);
-  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDefined();
 
   // The second the window closes: never `cancel` on the way to nothing.
   await vi.advanceTimersByTimeAsync(4_000);
-  expect(screen.getByRole("button", { name: "undo" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDefined();
   await vi.advanceTimersByTimeAsync(1_000);
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
 
   firings.retrying("rec");
   await vi.advanceTimersByTimeAsync(0);
-  expect(screen.getByRole("button", { name: "cancel" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeDefined();
 
   // Landed, it is read again; until then the row offers nothing.
   firings.closed("rec");

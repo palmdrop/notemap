@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import {
     saidBy,
     type RoutingRecord,
@@ -10,7 +11,8 @@
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
   import { cancelRouting } from "$lib/firing";
-  import { firings } from "$lib/firings.svelte";
+  import { firings, left } from "$lib/firings.svelte";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
   import { notices } from "$lib/notices.svelte";
@@ -27,12 +29,21 @@
     summary,
     records = [],
     short = false,
+    boxed = false,
+    inert = false,
+    offline = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
     records?: readonly RoutingRecord[];
     /** Every record on one line, cut where it runs out of room, and nothing to press. */
     short?: boolean;
+    /** The item's own: a box of rows, each the way into its record. */
+    boxed?: boolean;
+    /** What happened rather than what stands: each line a way in, with nothing to take back. */
+    inert?: boolean;
+    /** Cancelling needs the pool, so out of reach nothing offers it. */
+    offline?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -70,6 +81,10 @@
 
   type Line = Went & {
     readonly href?: string;
+    readonly record?: string;
+    readonly manual?: boolean;
+    /** Withdrawn, where it was. */
+    readonly state?: string;
     readonly taken?: RoutingRecord;
     /** A delivery not landed yet, and what it offers now, as its route in flight does. */
     readonly offers?: {
@@ -104,6 +119,9 @@
             reading,
           ),
           href: recordHref(record.item, record.id),
+          record: record.id,
+          ...(target.kind === "user" ? { manual: true } : {}),
+          ...(record.withdrawnAt === undefined ? {} : { state: "withdrawn" }),
           // A delivery the pool has carried out has happened elsewhere and is
           // withdrawn, never taken back.
           ...(target.kind === "user" ? { taken: record } : offered(record)),
@@ -161,11 +179,16 @@
      saying it has not landed stays at its end. -->
 {#snippet single(line: Line)}
   <span class="flex max-w-full min-w-0 items-baseline gap-x-[0.5ch]">
-    <span aria-hidden="true" class="shrink-0">→</span>
-    <span class="min-w-0 truncate font-semibold">{line.name}</span>
+    <Icon
+      name={line.manual === true ? "check" : "route"}
+      class="size-3.5 shrink-0 self-center"
+    />
+    <span class="min-w-0 truncate text-ink"
+      >{line.manual === true ? "Done" : line.name}</span
+    >
   </span>
   {#if line.place !== undefined || line.note !== undefined || line.pending === true}
-    <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch]">
+    <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch] text-muted">
       {#if line.place !== undefined}
         <span class="min-w-0 truncate" title={line.title}>{line.place}</span>
       {/if}
@@ -186,14 +209,88 @@
 {/snippet}
 
 {#snippet joined()}
-  <span aria-hidden="true">→</span>
+  <Icon name="route" class="inline size-3.5 align-[-0.125em]" />
   {#each lines as line, at (at)}{@render went(line)}{at < lines.length - 1
       ? ", "
       : ""}{/each}
   {@render waits()}
 {/snippet}
 
-{#if short}
+{#if boxed}
+  <!-- Rows only from the records themselves: a summary has nothing to open. -->
+  {#if records.length > 0}
+    <ul
+      aria-label="Routing records"
+      class="divide-y divide-tag-line overflow-hidden rounded-control border border-tag-line bg-tag"
+    >
+      {#each lines as line (line.href ?? line.name)}
+        {@const flying = firings.open.find((one) => one.record === line.record)}
+        {@const seconds =
+          flying === undefined ? undefined : left(flying, firings.now)}
+        <!-- A route still in its window says so on its own line: the
+             spinner, the seconds left and Cancel, then the plain line once
+             it has landed. -->
+        <li class="flex items-center">
+          <a
+            href={line.href}
+            class="flex min-h-target min-w-0 flex-1 items-center gap-3 py-2 pl-gutter text-ink no-underline hover:bg-band hover:no-underline {flying ===
+              undefined || line.offers === undefined
+              ? 'pr-gutter'
+              : 'pr-2'}"
+            title={[line.name, line.title ?? line.place, line.note]
+              .filter((part) => part !== undefined)
+              .join(" ")}
+          >
+            {#if flying !== undefined}
+              <span class="grid size-5 flex-none place-items-center"
+                ><Spinner /></span
+              >
+            {:else}
+              <Icon
+                name={line.manual === true ? "check" : "route"}
+                class="size-5 flex-none"
+              />
+            {/if}
+            <span class="flex min-w-0 flex-1 items-baseline gap-x-[1ch]">
+              <span class="flex-none"
+                >{line.manual === true ? "Manual" : line.name}</span
+              >
+              {#if line.place !== undefined || line.note !== undefined}
+                <span class="min-w-0 truncate text-muted"
+                  >{line.place ?? line.note}</span
+                >
+              {/if}
+            </span>
+            {#if flying !== undefined}
+              <span class="flex-none text-small text-muted tabular-nums"
+                >{seconds === undefined
+                  ? `Sending to ${flying.to ?? line.name}`
+                  : `${String(seconds)}s`}</span
+              >
+            {:else if line.pending === true}
+              <Turning said="pending" />
+            {:else if line.state !== undefined}
+              <span class="flex-none text-small text-muted">{line.state}</span>
+            {/if}
+            {#if flying === undefined || line.offers === undefined}
+              <Icon name="chevron" class="size-5 flex-none text-muted" />
+            {/if}
+          </a>
+          {#if flying !== undefined && line.offers !== undefined && !offline}
+            {@const { record } = line.offers}
+            <button
+              type="button"
+              aria-label={`Cancel routing ${flying.name}`}
+              onclick={() => void cancel(record, flying.name)}
+              class="flex-none px-gutter py-2 underline underline-offset-[0.2em]"
+              >Cancel</button
+            >
+          {/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{:else if short}
   {#if lines.length > 0}
     <div
       class="truncate"
@@ -209,7 +306,7 @@
     title={lines.map((line) => line.name).join(", ")}
   >
     <span class="flex min-w-0 items-baseline gap-x-[0.5ch]">
-      <span aria-hidden="true" class="shrink-0">→</span>
+      <Icon name="route" class="size-3.5 shrink-0 self-center" />
       <span class="min-w-0 truncate"
         >{#each lines as line, at (at)}{@render went(line)}{at <
           lines.length - 1
@@ -227,32 +324,36 @@
       <div class="flex items-baseline gap-x-4">
         <a
           href={line.href}
-          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch]"
+          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] text-small no-underline hover:underline"
           title={[line.name, line.title ?? line.place, line.note]
             .filter((part) => part !== undefined)
             .join(" ")}>{@render single(line)}</a
         >
 
-        {#if line.taken !== undefined}
+        {#if inert}
+          <!-- An entry in the log: what it did, not what can be done now. -->
+        {:else if line.taken !== undefined}
           {@const record = line.taken}
           <button
             type="button"
             onclick={() => void undo(record)}
-            class="shrink-0 hover:underline">undo</button
+            class="shrink-0 text-small underline underline-offset-[0.2em]"
+            >Undo</button
           >
         {:else if line.offers !== undefined}
           {@const { record, label } = line.offers}
           <button
             type="button"
             onclick={() => void cancel(record, line.name)}
-            class="shrink-0 hover:underline">{label}</button
+            class="shrink-0 text-small underline underline-offset-[0.2em]"
+            >{label === "undo" ? "Undo" : "Cancel"}</button
           >
         {/if}
       </div>
     {/each}
 
     {#if said !== ""}
-      <div role="status" class="mt-1 text-alarm">{said}</div>
+      <div role="status" class="mt-1 text-danger">{said}</div>
     {/if}
   </div>
 {/if}

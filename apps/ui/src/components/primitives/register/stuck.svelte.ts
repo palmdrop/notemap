@@ -54,10 +54,23 @@ export function watch(
 
 const dating = new SvelteSet<HTMLElement>();
 
-/** The day headings in the band, which the list head lets show through it. */
+/** The day headings held in the band at the top. */
 export const band = {
-  get dated(): boolean {
-    return dating.size > 0;
+  /**
+   * The heading the band shows: the last of those held there. One that went
+   * before it is under it, and is hidden rather than left to show at an edge.
+   */
+  get shown(): HTMLElement | undefined {
+    let last: HTMLElement | undefined;
+    for (const node of dating) {
+      if (
+        last === undefined ||
+        last.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING
+      ) {
+        last = node;
+      }
+    }
+    return last;
   },
   hold(node: HTMLElement, stuck: boolean): void {
     if (stuck) dating.add(node);

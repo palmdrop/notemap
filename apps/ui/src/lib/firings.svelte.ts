@@ -16,6 +16,8 @@ export type Firing = {
   readonly batch?: string;
   /** The pool could not reach the destination and will try again, so it can be called off between attempts. */
   readonly retrying?: boolean;
+  /** The destination's name, for saying it is being sent there or waited for. */
+  readonly to?: string;
   /** The trigger tag this shell put on the item beside the decision, taken back with it while unsent. */
   readonly recalls?: string;
 };
@@ -82,18 +84,26 @@ export function left(firing: Firing, at: number): number | undefined {
 }
 
 /**
- * What a route in flight offers now. Inside its window, `undo`. Once the window
- * has closed the delivery is being attempted, and a cancel would be refused, so
- * nothing until the pool says it will try again; then `cancel`. A window the
- * shell was never told of may still be open, so it is offered `cancel`.
+ * Which of its three steps a route in flight is on. In its window, counting
+ * down; being attempted, once the window has closed, with nothing to offer;
+ * retrying, once the pool has said it will try again. A window the shell was
+ * never told of may still be open, so it is drawn as one.
  */
-export function offerOf(
-  firing: Firing,
-  at: number,
-): "undo" | "cancel" | undefined {
-  if (firing.until === undefined) return "cancel";
-  if (left(firing, at) !== undefined) return "undo";
-  return firing.retrying === true ? "cancel" : undefined;
+export type Phase = "window" | "sending" | "retrying";
+
+export function phaseOf(firing: Firing, at: number): Phase {
+  if (firing.retrying === true) return "retrying";
+  if (firing.until === undefined) return "window";
+  return left(firing, at) !== undefined ? "window" : "sending";
+}
+
+/**
+ * What a route in flight offers now: `cancel` in its window and while the pool
+ * retries it, and nothing while the delivery is being attempted, when a cancel
+ * would be refused.
+ */
+export function offerOf(firing: Firing, at: number): "cancel" | undefined {
+  return phaseOf(firing, at) === "sending" ? undefined : "cancel";
 }
 
 /**
@@ -145,7 +155,7 @@ export const firings = {
    * shell never heard of one: a reservation from before it, which the pool may
    * be retrying.
    */
-  offer(record: string): "undo" | "cancel" | undefined {
+  offer(record: string): "cancel" | undefined {
     if (closed.has(record)) return undefined;
     const flying = open.find((one) => one.record === record);
     return flying === undefined ? "cancel" : offerOf(flying, now);

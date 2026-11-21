@@ -71,6 +71,31 @@ function headline(
   return at === undefined ? { what: lead } : { what: lead, subject: at };
 }
 
+/**
+ * A delivery the destination turned down, and the item back in the queue:
+ * "Rejected by Vault", with the destination's own words for why.
+ */
+export const REJECTED = "Rejected by";
+
+/** One the pool gave up on after trying again. */
+export const NOT_DELIVERED = "Not delivered to";
+
+function rejected(
+  at: string | undefined,
+  told: string | undefined,
+  code: string | undefined,
+  record: string | undefined,
+): { readonly what: string; readonly subject: string; readonly why?: string } {
+  return {
+    what: REJECTED,
+    subject: at ?? "the destination",
+    ...joined([
+      told ?? code,
+      record === undefined ? undefined : "back in the queue",
+    ]),
+  };
+}
+
 function joined(parts: readonly (string | undefined)[]): { why?: string } {
   const kept = parts.filter((part) => part !== undefined);
   return kept.length === 0 ? {} : { why: kept.join(", ") };
@@ -172,6 +197,9 @@ export function firingOf(
             ? undefined
             : said.nameOf?.(destination)) ??
           "a destination",
+        ...(destination === undefined || said.nameOf === undefined
+          ? {}
+          : { to: said.nameOf(destination) }),
         href: said.about(action.subject),
         ...(until === undefined ? {} : { until: Date.parse(until) }),
       },
@@ -180,6 +208,7 @@ export function firingOf(
   if (action.kind !== "template-fired") return undefined;
 
   const values = detail["arguments"];
+  const target = stringAt(detail, "destination");
   const where =
     template === undefined || typeof values !== "object" || values === null
       ? undefined
@@ -193,6 +222,9 @@ export function firingOf(
         stringAt(detail, "name") ??
         "a template",
       ...(where === undefined ? {} : { where }),
+      ...(target === undefined || said.nameOf === undefined
+        ? {}
+        : { to: said.nameOf(target) }),
       href: said.about(action.subject),
       ...(until === undefined ? {} : { until: Date.parse(until) }),
       ...(action.batch === undefined ? {} : { batch: action.batch }),
@@ -289,15 +321,22 @@ export function noticeOf(
    */
   if (action.kind === "delivery-failed") {
     const again = retried(action.kind, detail);
+    if (!again) {
+      return {
+        ...rejected(at, told, code, record),
+        ...where,
+        alarm: true,
+        ...(record === undefined ? {} : { strip: true }),
+        ...runOf(record),
+        ...(record === undefined ? {} : { key: `failed:${record}` }),
+      };
+    }
     return {
-      ...headline(again ? "retrying" : "routing failed", told, at),
-      ...joined([
-        at,
-        code,
-        again || record === undefined ? undefined : "back in the queue",
-      ]),
+      ...headline("retrying", told, at),
+      ...joined([at, code]),
       ...where,
       ...(again ? {} : { alarm: true }),
+      ...(again || record === undefined ? {} : { strip: true }),
       ...runOf(record),
       ...(record === undefined ? {} : { key: `failed:${record}` }),
     };
@@ -312,18 +351,16 @@ export function noticeOf(
   if (action.kind === "work-abandoned") {
     const work = stringAt(detail, "work") ?? "work";
     return {
-      ...headline(
-        record === undefined ? `${work} failed` : "routing failed",
-        told,
-        at,
-      ),
-      ...joined([
-        at,
-        code,
-        record === undefined ? undefined : "back in the queue",
-      ]),
+      ...(record === undefined
+        ? { ...headline(`${work} failed`, told, at), ...joined([at, code]) }
+        : {
+            what: NOT_DELIVERED,
+            subject: at ?? "the destination",
+            ...joined([told ?? code, "back in the queue"]),
+          }),
       ...where,
       alarm: true,
+      ...(record === undefined ? {} : { strip: true }),
       ...runOf(record),
       key: `abandoned:${record ?? action.id}`,
     };
