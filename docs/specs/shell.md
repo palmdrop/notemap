@@ -1022,11 +1022,12 @@ nor even listed, whole. A file that cannot be read is named on the status line, 
 that drop is attached.
 
 **What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
-more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
+more, or more bytes, open a dialog — the one dialog every question is asked in — titled *Attach these files?*, saying how many files, how
 much in all and to what, the first five by name and size, how many more, and how many hidden
 ones were left out. The count, the size and each name are bold, and nothing else is, so `and 12
-more` never reads as a file; a capture being edited is named in quotes, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
-`cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
+more` never reads as a file; a capture being edited is named in quotes, with **Cancel** and **Attach**, **Cancel**
+taking the focus, since what is asked about may have arrived by accident *(2026-11-23)*. `esc`, the backdrop and
+**Cancel** attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
 drop made while a folder is being read waits its turn. Where what would take the
 files closed while they were asked about, nothing is attached and the status line says so. Where
 nothing is asked, the hidden files a folder left out are said on the status line.
@@ -1302,7 +1303,9 @@ or both, centred under the box with room above it *(2026-11-19)*.
 
 *Amended 2026-11-13: the filter is a sheet, or a panel at the right when wide, opened by the
 header's filter icon, which counts what the filter holds, or by `f`. It holds, under plain labels,
-the **order** (Oldest first, Newest first; the feed also When captured and When processed), the
+the **order** (Oldest first, Newest first; the feed also When captured and When processed — held
+while the list is read again, and greyed only once that read has taken longer than 400 ms, so a
+press elsewhere in the panel does not flash it *(2026-11-23)*), the
 **view** (Rows or Index), the feed's bands for what became of an item, its destination and its
 source, then the **tags** — each a box that can be on, filled and ticked when on, with its count —
 found by typing into a line, and the trigger tags apart under **Templates**, each the route icon
@@ -1664,8 +1667,9 @@ folder taken otherwise, so `seeded/new` becomes `seeded/` and then empty — and
 is it the field's own, as it is while a composition is under way. **Leaving the surface asks first
 where something was entered** since it opened or last routed: a destination or template chosen, or
 the words rewritten, and with them any argument, since a destination chosen is already a decision
-begun. It asks *go back to the queue?*: `leave`, in the alarm, goes and drops what was entered;
-`stay`, `esc` or a press outside returns with everything as it was. Nothing entered leaves at once.
+begun. It asks *Go back to the queue?* in the one dialog every question is asked in *(2026-11-23)*:
+**Leave**, in the alarm, goes and drops what was entered; **Stay**, `esc` or a press outside
+returns with everything as it was. Nothing entered leaves at once.
 Tags are not part of it, being applied to the pool when taken.
 
 **The surface opens with the pool out of reach.** A surface that refused to would be a queue that

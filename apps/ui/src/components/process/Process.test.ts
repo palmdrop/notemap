@@ -3125,7 +3125,7 @@ test("esc returns to the queue with the item selected, once the caret is out of 
   expect(document.activeElement).not.toBe(directory);
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await fireEvent.click(await screen.findByRole("button", { name: "leave" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Leave" }));
   expect(left()).toBe("/");
 });
 
@@ -3151,7 +3151,7 @@ test("esc asks before leaving once a destination was chosen, and leave leaves", 
   expect(screen.getByRole("dialog")).toBeDefined();
   expect(left()).toBeUndefined();
 
-  await fireEvent.click(screen.getByRole("button", { name: "leave" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Leave" }));
   expect(left()).toBe("/");
 });
 
@@ -3177,7 +3177,7 @@ test("cancelling the question, with a second esc, returns to the composer intact
   );
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await fireEvent.click(screen.getByRole("button", { name: "stay" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Stay" }));
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(left()).toBeUndefined();
 });
@@ -3290,7 +3290,9 @@ test("a press outside the question returns to the composer", async () => {
   await described();
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  await fireEvent.click(screen.getByRole("dialog"));
+  await fireEvent.click(
+    screen.getByRole("dialog").querySelector<HTMLElement>(".bg-veil")!,
+  );
 
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(left()).toBeUndefined();
