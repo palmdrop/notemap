@@ -118,10 +118,19 @@ test("will not turn around while a read is still walking", async () => {
   // Nothing is walking until something asks, which the surface does on mount.
   void transport;
   await turn("newest");
+  await vi.waitFor(() =>
+    expect(control.getAttribute("aria-disabled")).toBe("true"),
+  );
+  expect(control.disabled).toBe(false);
+
+  // Greyed only once the read has walked long enough to be seen walking.
   await vi.waitFor(() => expect(control.disabled).toBe(true));
 
   release();
-  await vi.waitFor(() => expect(control.disabled).toBe(false));
+  await vi.waitFor(() =>
+    expect(control.getAttribute("aria-disabled")).toBeNull(),
+  );
+  expect(control.disabled).toBe(false);
 });
 
 test.each([

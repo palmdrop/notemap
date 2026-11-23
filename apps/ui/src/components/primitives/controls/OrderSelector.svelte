@@ -3,6 +3,8 @@
 
   import Segmented from "$components/primitives/blocks/Segmented.svelte";
 
+  const SLOW = 400;
+
   /**
    * Held while a read is walking: the surface cannot turn around until that one
    * lands, and a control showing an order the surface is not in would lie.
@@ -23,6 +25,17 @@
     onchoose: (order: Order, by: Key) => void;
   } = $props();
 
+  /** Greyed only once a read has walked long enough to be seen walking. */
+  let slow = $state(false);
+  $effect(() => {
+    if (!reading) {
+      slow = false;
+      return;
+    }
+    const timer = setTimeout(() => (slow = true), SLOW);
+    return () => clearTimeout(timer);
+  });
+
   const ENDS: readonly { value: Order; word: string }[] = [
     { value: "oldest-first", word: "Oldest first" },
     { value: "newest-first", word: "Newest first" },
@@ -39,7 +52,8 @@
     label="Order"
     value={order}
     options={ENDS}
-    disabled={reading}
+    held={reading}
+    disabled={slow}
     onchoose={(end) => onchoose(end, keyed ? by : "capture")}
   />
   {#if keyed}
@@ -47,7 +61,8 @@
       label="Ordered by"
       value={by}
       options={KEYS}
-      disabled={reading}
+      held={reading}
+      disabled={slow}
       onchoose={(key) => onchoose(order, key)}
     />
   {/if}
