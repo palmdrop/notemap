@@ -1466,7 +1466,7 @@ by its answers alone, never by a file name it made.
 process surface is **the route page**, reached from the quick route's More options. **Below 900px
 its steps come one at a time** — where (templates, then destinations), how where the destination
 offers a choice of output, the place where a template does not fix it, then the check (the tags
-and the preview) — each under a band, with a bar docked at the foot: **Back**, and **Next**, or
+and the preview, under the band **body**, since it can be edited *(2026-11-23)*) — each under a band, with a bar docked at the foot: **Back**, and **Next**, or
 **Route** at the check, dashed with the reason above it until there is something to send. Picking
 where moves on by itself. **At 900px and wider it is one surface**: the item, whole, on the left
 with **Discard** and **Done** at its head, and every step at once on the right under its own
@@ -1687,7 +1687,9 @@ kind still draws). Typing filters the entries at the deepest settled scope, `/` 
 completes the segment under the caret as far as the matches agree — and **does nothing where there
 is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
-that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
+that ends in one pops the whole segment rather than one character of it *(and for the pointer, since
+2026-11-23: the folders the line runs through are named above it, the destination first, each a
+press back up to that level, and a × at the line's end empties it)*, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
 press landing on the first or last row of the level the caret is in; where that level drew
 nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
@@ -1824,9 +1826,12 @@ taking one fills the field with the heading's own words. Changing the note asks 
 the browser keeps between asks is keyed on what it was given, so one note's headings are never
 drawn for another's. A destination that cannot answer leaves the field typed, as any browse does.
 Such a field never takes the caret when it is drawn: the field it depends on comes first and is
-where the caret belongs. **Its list is drawn only while it has the caret** *(amended 2026-10-16;
-it kept a floor of several rows, under a field most decisions leave empty)*, so the line beneath
-it is all it takes until it is typed into. The template form does the same.
+where the caret belongs. ~~Its list is drawn only while it has the caret~~ *(amended 2026-10-16,
+reversed 2026-11-23: an empty line under the place read as nothing to choose from)* **Its list is
+drawn as soon as there is an answer**, the note's headings in view without a press. The line is a
+field drawn as the place's is, with a placeholder (`Under a heading (optional)`, or the schema's own),
+a × that clears what was typed, and **Back** and **Use …** as boxes beneath it while a level is
+browsed into. The template form does the same.
 
 **A shape is chosen beside the place** *(2026-10-14,
 [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md))*. The markdown kinds'
@@ -3126,6 +3131,11 @@ replaced rather than pushed, as the order is.
 *(2026-11-19)* The open section is marked square, its tint running to the column's edges. **Storage
 draws its stats and its paths always**, under quiet labels and in the small size, apart from the
 sizes above them.
+
+*Amended 2026-11-23.* **A settings page's head says where it is.** When wide, the levels above
+it lead its title as links, each followed by a chevron: `settings › destinations › Vault`, and a
+form's `settings › destinations › Vault › edit destination`. On a phone the head stays a back
+arrow and the title alone, since a whole trail does not fit.
 
 *Amended 2026-11-18, after the review, and again the same day by the developer.* **Settings read
 as a phone's settings do**: one list, each group under a quiet label (Routing, The pool, This

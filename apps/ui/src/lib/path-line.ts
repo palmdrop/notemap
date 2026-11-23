@@ -315,6 +315,12 @@ export function popped(value: string): string {
   return head === "" ? "" : `${head}/`;
 }
 
+/** The folder `depth` levels down the path, as a line: none is the destination's root. */
+export function upTo(value: string, depth: number): string {
+  const head = parsePath(value).complete.slice(0, depth).join("/");
+  return head === "" ? "" : `${head}/`;
+}
+
 /**
  * What `esc` leaves: the half-typed name if there is one, and otherwise the
  * last folder taken.

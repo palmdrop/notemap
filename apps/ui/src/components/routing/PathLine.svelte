@@ -36,6 +36,7 @@
     scopesAlong,
     steppedBack,
     textOf,
+    upTo,
     walkStart,
     withTyping,
     type Level,
@@ -406,8 +407,31 @@
 </script>
 
 <div>
+  {#if path.complete.length > 0}
+    <!-- Where the line stands, each level a way back to it. -->
+    <nav
+      aria-label="Folders along {label}"
+      class="mb-1.5 -ml-1.5 flex flex-wrap items-center text-small text-muted"
+    >
+      {#each [nameOf(destination), ...path.complete] as level, depth (depth)}
+        {#if depth > 0}<Icon name="chevron" class="size-3.5" />{/if}
+        <button
+          type="button"
+          onclick={() => {
+            onchange(upTo(value, depth));
+            input?.focus();
+          }}
+          class="min-h-8 rounded-control px-1.5 hover:bg-hover hover:text-ink"
+          >{level}</button
+        >
+      {/each}
+    </nav>
+  {/if}
   <div
-    class="relative min-h-11 rounded-control border border-rule bg-tag px-3 py-2.5 focus-within:border-ink"
+    class="relative min-h-11 rounded-control border border-rule bg-tag py-2.5 pl-3 focus-within:border-ink {value ===
+    ''
+      ? 'pr-3'
+      : 'pr-11'}"
   >
     <!-- The input's own text is transparent and this is what is read, so the
          completion offered can be drawn after what was typed. Alignment is
@@ -415,7 +439,10 @@
     <div
       bind:this={shown}
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden px-3 py-2.5 whitespace-pre"
+      class="pointer-events-none absolute inset-0 overflow-hidden py-2.5 pl-3 whitespace-pre {value ===
+      ''
+        ? 'pr-3'
+        : 'pr-11'}"
     >
       {#if value === "" && placeholder !== undefined}<span class="text-muted"
           >{placeholder}</span
@@ -447,6 +474,18 @@
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
+    {#if value !== ""}
+      <button
+        type="button"
+        onclick={() => {
+          onchange("");
+          input?.focus();
+        }}
+        class="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted hover:text-ink"
+      >
+        <Icon name="close" label="Clear {label}" class="size-4" />
+      </button>
+    {/if}
   </div>
 
   {#if refusal !== undefined}

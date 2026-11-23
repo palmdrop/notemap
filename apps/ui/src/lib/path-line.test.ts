@@ -15,6 +15,7 @@ import {
   pathOf,
   pending,
   popped,
+  upTo,
   steppedBack,
   reachable,
   rowsOf,
@@ -788,4 +789,10 @@ describe("alignedTo", () => {
     const levels = [level(""), level("projects")];
     expect(alignedTo(levels, [""])).toEqual([level("")]);
   });
+});
+
+test("goes up to a folder along the path, or to the root", () => {
+  expect(upTo("projects/notemap/todo.md", 1)).toBe("projects/");
+  expect(upTo("projects/notemap/todo.md", 2)).toBe("projects/notemap/");
+  expect(upTo("projects/notemap/", 0)).toBe("");
 });

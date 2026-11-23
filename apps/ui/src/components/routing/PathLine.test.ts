@@ -850,3 +850,35 @@ test("offers a note's place only folders and notes, never a picture beside them"
   await screen.findByText("readme.md");
   expect(screen.queryByText("pixel.png")).toBeNull();
 });
+
+test("names the folders along the line, each a way back up to it", async () => {
+  servingTree();
+  const line = draw("projects/notemap/readme.md");
+
+  const along = await screen.findByRole("navigation", {
+    name: "Folders along where",
+  });
+  await fireEvent.click(
+    [...along.querySelectorAll("button")].find(
+      (one) => one.textContent === "projects",
+    )!,
+  );
+  expect(line.value()).toBe("projects/");
+
+  await fireEvent.click(along.querySelectorAll("button")[0]!);
+  expect(line.value()).toBe("");
+  expect(
+    screen.queryByRole("navigation", { name: "Folders along where" }),
+  ).toBeNull();
+});
+
+test("clears the line with its ×, which only a line holding something has", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+  await screen.findByText("notes/");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Clear where" }));
+
+  expect(line.value()).toBe("");
+  expect(screen.queryByRole("button", { name: "Clear where" })).toBeNull();
+});
