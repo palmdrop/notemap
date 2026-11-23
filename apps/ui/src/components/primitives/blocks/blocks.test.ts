@@ -21,6 +21,31 @@ test("a segmented choice fills the chosen part, and choosing it again does nothi
   expect(oldest.getAttribute("aria-pressed")).toBe("false");
 });
 
+test("a segmented choice's fill stands under the chosen part, and moves to the next one chosen", async () => {
+  // jsdom lays nothing out: each part says where it is from its label.
+  const at = vi
+    .spyOn(HTMLElement.prototype, "offsetLeft", "get")
+    .mockImplementation(function (this: HTMLElement) {
+      return this.textContent?.includes("Newest") === true ? 120 : 4;
+    });
+  const wide = vi
+    .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+    .mockReturnValue(110);
+  render(Pieces, { onpress: vi.fn() });
+
+  const group = screen.getByRole("group", { name: "Order" });
+  const fill = () =>
+    group.querySelector<HTMLElement>(':scope > [aria-hidden="true"]')!;
+  expect(fill().style.left).toBe("4px");
+  expect(fill().style.width).toBe("110px");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Newest first" }));
+  expect(fill().style.left).toBe("120px");
+
+  at.mockRestore();
+  wide.mockRestore();
+});
+
 test("boxes that can all be on are each ticked when on", async () => {
   render(Pieces);
 

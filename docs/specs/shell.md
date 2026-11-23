@@ -3824,7 +3824,11 @@ still under `prefers-reduced-motion`. The transitions the pieces share are in `l
 `fromFoot`, a sheet rising its whole height; `fromSide`, a panel or the drawer coming in from its
 side; `fade`, the veil behind a sheet or a dialog, the line over a bar; `rise`, a dialog; and
 `leave`, a row going out sideways while the rows below close up behind it, half the time each.
-**What a read brought never moves** *(2026-09-25)*: a page, a re-read, a turned order, the pool's
+**A control fades into its state** *(2026-11-23)*: every button, link and option — chosen, taken,
+pressed, hovered, the page being read — changes colour over the short duration rather than
+snapping, a selected row's tint and a filter's box with it; and **a segmented choice's fill slides**
+from the part it stood under to the one chosen, arriving where it is first drawn rather than
+sliding there. **What a read brought never moves** *(2026-09-25)*: a page, a re-read, a turned order, the pool's
 first answer over the cache. Only a change moves — a decision let go, a capture, an item heard
 about, a row processed elsewhere — so the reader's eye goes to the one thing that changed.
 

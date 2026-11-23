@@ -45,6 +45,25 @@
     outline-offset: 2px;
   }
 
+  /* A control changing state fades into it rather than snapping: chosen,
+     taken, pressed, hovered. A piece with motion of its own says so with a
+     utility, which outranks this. */
+  :where(
+    button,
+    a,
+    [role="option"],
+    [role="radio"],
+    [role="checkbox"],
+    [aria-pressed],
+    [aria-current],
+    [aria-selected]
+  ) {
+    transition-property:
+      color, background-color, border-color, outline-color, opacity;
+    transition-duration: var(--duration-short);
+    transition-timing-function: var(--ease-fade);
+  }
+
   /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */
   button:not(:disabled) {
     cursor: pointer;

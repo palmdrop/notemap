@@ -149,7 +149,7 @@
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule {cursor ===
+    class="relative col-span-full grid cursor-pointer grid-cols-subgrid border-b border-rule transition-[background-color] duration-(--duration-short) ease-fade {cursor ===
       line.item.id && modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
       : ''} {marked?.(line.item.id) === true

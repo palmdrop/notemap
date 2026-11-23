@@ -53,7 +53,7 @@
   const TRIGGER = "inline-flex items-center gap-1";
   /** An option drawn as a box that can be on, beside the others. */
   const BOX =
-    "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-control border px-3.5";
+    "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-control border px-3.5 transition-colors duration-(--duration-short) ease-fade";
   const boxed = (on: boolean): string =>
     `${BOX} ${on ? "border-ink bg-ink pl-2.5 text-paper" : "border-off-line bg-off text-ink"}`;
 
