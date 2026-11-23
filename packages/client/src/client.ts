@@ -24,7 +24,7 @@ import { createUnfurl } from "./unfurl/unfurl";
 import { createTemplates } from "./templates/templates";
 import { createOutbox, LEASE_MS } from "./outbox/outbox";
 import { sendOperation } from "./outbox/registry";
-import type { OperationId } from "./outbox/operations";
+import { classifies, type OperationId } from "./outbox/operations";
 import { editing, undrained, waiting } from "./outbox/undrained";
 import { reachability } from "./pool/reachability";
 import type { Transport } from "./ports/transport";
@@ -462,7 +462,7 @@ export function createClient(config: ClientConfig): Client {
         { api, bytes: (asset) => store.readBlob(asset) },
         operation,
       );
-      classified ||= operation.kind === "tag" || operation.kind === "untag";
+      classified ||= classifies(operation);
       sent = true;
       return landed;
     },

@@ -980,7 +980,8 @@ no row ever claims an arrival that did not happen — which is the direction to 
 survives the pool going out of reach **and the session ending**. It is not an outbox operation and it is
 not a vocabulary: classification drains offline as it always did, and a tag nobody has used yet is
 written by typing it. The list is read again once classification reaches the pool — a tag or an
-untag, since either changes what is in use — **once per drain rather than once per operation**, so a
+untag, and a capture, an edit or a batch that carries one *(2026-11-23)*, since any of them changes
+what is in use — **once per drain rather than once per operation**, so a
 backlog of eight tags asks one question. The pool having just answered is what says it is reachable.
 A list held from before the pool counted unprocessed carriers is read back with each tag's items
 standing in for them, the most there can be, so the queue still offers the tag until the pool is

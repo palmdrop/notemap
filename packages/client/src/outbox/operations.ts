@@ -59,6 +59,25 @@ export type Operation =
 
 export type OperationKind = Operation["kind"];
 
+/** Whether landing it may change which tags are in use. */
+export function classifies(operation: Operation): boolean {
+  switch (operation.kind) {
+    case "tag":
+    case "untag":
+      return true;
+    case "capture":
+      return (operation.envelope.tags?.length ?? 0) > 0;
+    case "edit":
+      return (operation.tags?.length ?? 0) > 0;
+    case "batch":
+      return (
+        operation.action.kind === "tag" || operation.action.kind === "untag"
+      );
+    default:
+      return false;
+  }
+}
+
 /**
  * `unreachable` keeps its optimistic state and drains again; `refused` has been
  * rolled back and is held only so the shell can say what the pool said.
