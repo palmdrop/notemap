@@ -5,7 +5,8 @@
     type DestinationCandidates,
   } from "@notemap/client";
 
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
@@ -43,6 +44,7 @@
     capability,
     field,
     label,
+    placeholder,
     value,
     durable = false,
     naming = false,
@@ -56,6 +58,8 @@
     capability: string;
     field: string;
     label: string;
+    /** Drawn in the empty line. */
+    placeholder?: string;
     /** What the field already holds, which is also what narrows the list. */
     value: string;
     /**
@@ -113,7 +117,6 @@
   let loading = $state(false);
   let refusal = $state<string | undefined>(undefined);
   let input = $state<HTMLInputElement | undefined>(undefined);
-  let focused = $state(false);
 
   /** Where `↑↓` stands, and whether it has been used since the list last changed. */
   let at = $state(0);
@@ -190,12 +193,6 @@
   );
 
   const rest = $derived(matching.length - shown.length);
-
-  /**
-   * A field that depends on another is one most decisions leave empty, so its
-   * list is drawn only while it is being typed into.
-   */
-  const folded = $derived(given !== undefined && !focused);
 
   // The place is what a composer with a destination in its chrome is for, so
   // the caret is here rather than waiting to be clicked into — unless this
@@ -542,15 +539,16 @@
   );
 </script>
 
-<!-- Pressing a row or an action keeps the caret in the field, so a folded
-     list stays open under the press. -->
+<!-- Pressing a row or an action keeps the caret in the field. -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   onmousedown={(event) => {
     if (event.target !== input) event.preventDefault();
   }}
 >
-  <div class="border-b border-ink px-2 py-0.5">
+  <div
+    class="relative flex min-h-11 items-center rounded-control border border-rule bg-tag focus-within:border-ink"
+  >
     <input
       bind:this={input}
       value={text}
@@ -559,11 +557,7 @@
         filter = undefined;
         typedIn(event.currentTarget.value);
       }}
-      onfocus={() => (focused = true)}
-      onblur={() => {
-        focused = false;
-        settle();
-      }}
+      onblur={settle}
       {onkeydown}
       spellcheck="false"
       autocapitalize="off"
@@ -571,23 +565,29 @@
       aria-label={label}
       role="combobox"
       aria-autocomplete="list"
-      aria-expanded={!folded && shown.length > 0}
+      aria-expanded={shown.length > 0}
       aria-controls="{id}-entries"
       aria-activedescendant={active}
-      class="w-full bg-transparent caret-ink outline-none"
+      {placeholder}
+      class="min-w-0 flex-1 bg-transparent px-3 py-2.5 caret-ink outline-none placeholder:text-muted"
     />
+    {#if here === undefined && text !== ""}
+      <button
+        type="button"
+        onclick={clear}
+        class="grid min-h-11 min-w-11 shrink-0 place-items-center text-muted hover:text-ink"
+      >
+        <Icon name="close" label="Clear" class="size-4" />
+      </button>
+    {/if}
   </div>
 
-  {#if !folded && here !== undefined}
-    <div class="mt-2.5 flex items-baseline gap-3">
-      <Action onclick={back}>back</Action>
+  {#if here !== undefined}
+    <div class="mt-2.5 flex flex-wrap items-center gap-2">
+      <Box icon="back" onclick={back}>Back</Box>
       {#if here.value !== undefined}
-        <Action onclick={take}>use {here.label}</Action>
+        <Box icon="check" onclick={take}>Use {here.label}</Box>
       {/if}
-    </div>
-  {:else if !folded && text !== ""}
-    <div class="mt-2.5 flex items-baseline gap-3">
-      <Action onclick={clear}>clear</Action>
     </div>
   {/if}
 
@@ -597,11 +597,9 @@
         id="{id}-entries"
         role="listbox"
         aria-label="{label} candidates"
-        class={folded || bare ? "" : "mt-2.5"}
+        class={bare ? "" : "mt-2.5"}
       >
-        {#if folded}
-          <!-- Empty rather than gone: the field's `aria-controls` names it. -->
-        {:else if loading}
+        {#if loading}
           <p><Asking subject={nameOf(destination)} /></p>
         {:else if refusal !== undefined && entries.length === 0}
           <p>{refusal}</p>
@@ -620,22 +618,38 @@
                 takenAs(entry, keeps) === value}
               ontake={() => open(entry)}
             >
-              {entry.scope !== undefined ? `${entry.label}/` : entry.label}
+              <span
+                class="-mx-gutter flex min-h-target items-center gap-2 border-b border-rule px-gutter {picked
+                  ? 'bg-ink text-paper'
+                  : ''}"
+              >
+                {#if entry.scope !== undefined}<Icon
+                    name="folder"
+                    class="size-5 flex-none"
+                  />{/if}
+                <span class="min-w-0 truncate"
+                  >{entry.scope !== undefined
+                    ? `${entry.label}/`
+                    : entry.label}</span
+                >
+              </span>
             </Walked>
           {/each}
 
           {#if rest > 0}
             <!-- The handful is a sample, not the answer: typing narrows it, and
                this asks for the whole of what was already fetched. -->
-            <Action onclick={() => (expanded = true)}>{rest} more</Action>
+            <div class="mt-2">
+              <Box onclick={() => (expanded = true)}>{rest} more</Box>
+            </div>
           {/if}
           {#if shown.length === 0 && entries.length > 0}
-            <p>nothing here matches</p>
+            <p class="text-muted">Nothing here matches.</p>
           {/if}
           {#if truncated && expanded}
             <!-- The destination held more than it answered, which is its own
                limit rather than this one. -->
-            <p>and more than it answered</p>
+            <p class="text-muted">And more than it answered.</p>
           {/if}
         {/if}
       </div>

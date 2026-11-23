@@ -1089,7 +1089,7 @@ test("browses a field that can be asked about, and takes the scope stood in", as
   await choose(/Vault/);
 
   await entry("inbox/");
-  await choose(/use inbox/);
+  await choose(/Use inbox/);
 
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
     "inbox",
@@ -1223,12 +1223,12 @@ test("empties a field browsed to and then left, from the top and only there", as
   await choose(/Vault/);
   await screen.findByText("inbox/");
 
-  expect(screen.queryByRole("button", { name: "clear" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
 
   await entry("inbox/");
-  await choose(/use inbox/);
-  await choose("back");
-  await choose("clear");
+  await choose(/Use inbox/);
+  await choose("Back");
+  await choose("Clear");
 
   expect((screen.getByLabelText("directory") as HTMLInputElement).value).toBe(
     "",
@@ -1284,7 +1284,7 @@ test("drops an answer for a scope it has already left", async () => {
 
   // Descend into an answer that hangs, then leave before it lands.
   await entry("inbox/");
-  await choose("back");
+  await choose("Back");
   await screen.findByText("inbox/");
 
   release();
@@ -2209,7 +2209,7 @@ test("says so where nothing typed matches, rather than drawing nothing", async (
 
   await fireEvent.input(field, { target: { value: "zzz" } });
 
-  expect(await screen.findByText("nothing here matches")).toBeDefined();
+  expect(await screen.findByText("Nothing here matches.")).toBeDefined();
 });
 
 /** Backspacing out of an empty field gives the destination back, as the line does. */
@@ -4569,11 +4569,10 @@ test("offers the note's own headings once the line names the note", async () => 
   await screen.findByText("append here");
 
   const list = await screen.findByRole("listbox", { name: "under candidates" });
-  // Folded until the field is typed into: most decisions leave it empty.
-  expect(within(list).queryByText("## Templates")).toBeNull();
+  // Listed without being asked for: the note's headings are what there is to pick.
+  expect(await within(list).findByText("## Templates")).toBeDefined();
   screen.getByRole("combobox", { name: "under" }).focus();
   await entry("## Templates");
-  expect(within(list).getByText("## Templates")).toBeDefined();
   expect(askedForHeadings(transport).at(-1)?.get("given[path]")).toBe(
     "todo.md",
   );

@@ -1345,6 +1345,8 @@
         {capability}
         field={field.name}
         label={title}
+        placeholder={field.placeholder ??
+          `${field.name === "heading" ? "Under a heading" : `Pick the ${title}`}${field.required ? "" : " (optional)"}`}
         value={args[field.name] ?? ""}
         said={field.name === LINE_FIELD ? spoken : undefined}
         given={givenFor(field, args)}
@@ -1739,7 +1741,7 @@
       </p>
     </div>
 
-    <Band>as it will be written</Band>
+    <Band>body</Band>
     <div class="px-gutter py-3">
       {#if shown !== undefined || pending}
         <Preview
