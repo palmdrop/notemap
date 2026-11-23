@@ -146,6 +146,15 @@
     () => routed && !offline && (selected || (surface === "feed" && shown)),
   );
 
+  /** Read now or once it is on screen: either way, what they will say has its room. */
+  const awaiting = $derived(
+    item.routing !== undefined &&
+      routed &&
+      !offline &&
+      (selected || surface === "feed") &&
+      !records.settled,
+  );
+
   // Every row on the queue is unrouted, and a word saying so on each says
   // nothing; one held from an earlier read that the pool no longer counts as
   // work still wears what became of it.
@@ -359,6 +368,7 @@
     <Routing
       summary={item.routing}
       records={records.all}
+      {awaiting}
       onundone={() => records.reread()}
     />
   {/if}

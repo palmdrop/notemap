@@ -551,7 +551,8 @@
 
 <!-- The list stays drawn while the queue is drained, so the first row into it
      and the last row out of it move as any other. -->
-{#if !width.wide && heldHint.due && rows.length > 1 && !marking.on}
+<!-- Said over the skeleton too, so the first page does not land under it. -->
+{#if !width.wide && heldHint.due && (rows.length > 1 || ($queue.loading && rows.length === 0)) && !marking.on}
   <p class="-mx-3.5 px-gutter py-2 text-small text-muted">
     Hold a row to select several.
   </p>
@@ -591,6 +592,7 @@
     <More
       loading={$queue.loading}
       first={rows.length === 0}
+      view="lines"
       shown={rows.length}
       offline={!pool.yes}
       failed={$queue.failure !== undefined}

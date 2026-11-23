@@ -629,7 +629,7 @@ test("esc leaves the editable shape the item page draws", async () => {
   expect(went.to).toEqual([]);
 });
 
-test("stands the asking mark where the item will be, before the pool has said anything", async () => {
+test("stands a skeleton where the item will be, before the pool has said anything", async () => {
   let answer!: (response: Response) => void;
   pool((request) =>
     routeOf(request) === "GET /v1/items/linked"
@@ -641,7 +641,7 @@ test("stands the asking mark where the item will be, before the pool has said an
   await vi.waitFor(() => {
     expect(asked()).toContain("GET /v1/items/linked");
   });
-  expect(container.querySelector("[data-asking]")).not.toBeNull();
+  expect(container.querySelector("[data-skeleton='item']")).not.toBeNull();
 
   answer(json(200, saying("linked", "what the link names")));
   expect(await screen.findByText("what the link names")).toBeDefined();

@@ -56,7 +56,7 @@ test("keeps a record to two lines, the mark at the end of the place", async () =
   const mark = screen.getByRole("img", { name: "pending" });
   const line = screen.getByRole("link");
 
-  expect(line.className).toContain("flex-wrap");
+  expect(line.className).toContain("flex-col");
   expect(line.children).toHaveLength(2);
   const [destination, rest] = [...line.children];
   expect(destination?.textContent).toContain("a destination");
@@ -165,4 +165,25 @@ test("offers cancel in the window, nothing from its edge while it is attempted, 
   firings.closed("rec");
   await vi.advanceTimersByTimeAsync(0);
   expect(screen.queryByRole("button", { name: /undo|cancel/ })).toBeNull();
+});
+
+test("a summary drawn while the records are read holds each destination's place with a skeleton", () => {
+  pool(() => json(200, { values: [] }));
+  const summary = {
+    records: 2,
+    pending: 0,
+    to: [
+      { kind: "destination" as const, destination: "vault-1" },
+      { kind: "user" as const },
+    ],
+    templates: [],
+  };
+
+  const { container, unmount } = render(Routing, { summary, awaiting: true });
+  expect(container.querySelectorAll("[data-skeleton='place']")).toHaveLength(1);
+  expect(container.textContent).toContain("Done");
+  unmount();
+
+  const settled = render(Routing, { summary });
+  expect(settled.container.querySelector("[data-skeleton='place']")).toBeNull();
 });

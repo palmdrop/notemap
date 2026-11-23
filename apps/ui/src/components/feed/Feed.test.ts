@@ -283,11 +283,11 @@ test("says where a routed row went, without asking for its records", async () =>
   await client.destinations.load();
   render(Feed);
 
-  // One of the two records has not been carried out: the line says so, and
-  // no word over it repeats what the line says.
+  // One of the two records has not been carried out: the lines say so, and
+  // no word over them repeats what the lines say.
   const waiting = await screen.findByRole("img", { name: "1 pending" });
-  expect(waiting.closest("div")?.textContent?.replace(/\s+/g, " ")).toContain(
-    "Fiction, manual",
+  expect(waiting.closest(".mt-2")?.textContent?.replace(/\s+/g, " ")).toMatch(
+    /Fiction.*Done/,
   );
   expect(screen.queryByText("retrying")).toBeNull();
   expect(screen.queryByText("routed")).toBeNull();

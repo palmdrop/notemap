@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
 
   import Box from "$components/primitives/blocks/Box.svelte";
-  import Asking from "$components/primitives/marks/Asking.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Foot from "$components/primitives/register/Foot.svelte";
   import { NO_MORE_OFFLINE } from "$lib/said";
 
@@ -12,6 +12,7 @@
     failed,
     first = false,
     shown,
+    view = "rows",
     onmore,
   }: {
     loading: boolean;
@@ -22,14 +23,16 @@
     first?: boolean;
     /** How many rows are drawn: the pool's pages carry no total, so only this is said. */
     shown?: number;
+    /** How the list draws, for the skeleton standing in for its first page. */
+    view?: "rows" | "lines";
     onmore: () => void;
   } = $props();
 
-  let foot = $state<HTMLElement | undefined>(undefined);
+  let foot = $state<HTMLElement | null>(null);
   let near = $state(false);
 
   $effect(() => {
-    if (foot === undefined || typeof IntersectionObserver === "undefined") {
+    if (foot === null || typeof IntersectionObserver === "undefined") {
       return;
     }
 
@@ -49,20 +52,22 @@
   });
 </script>
 
-<Foot>
-  <div
-    bind:this={foot}
-    class="flex items-center justify-between gap-3 text-small text-muted"
-  >
-    {#if shown !== undefined && shown > 0}
-      <span class="tabular-nums">{shown} shown</span>
-    {/if}
-    {#if offline}
-      <span>{NO_MORE_OFFLINE}</span>
-    {:else if first && loading}
-      <Asking />
-    {:else}
-      <Box working={loading} onclick={onmore}>Load more</Box>
-    {/if}
-  </div>
-</Foot>
+{#if first && loading && !offline}
+  <Skeleton shape={view} />
+{:else}
+  <Foot>
+    <div
+      bind:this={foot}
+      class="flex items-center justify-between gap-3 text-small text-muted"
+    >
+      {#if shown !== undefined && shown > 0}
+        <span class="tabular-nums">{shown} shown</span>
+      {/if}
+      {#if offline}
+        <span>{NO_MORE_OFFLINE}</span>
+      {:else}
+        <Box working={loading} onclick={onmore}>Load more</Box>
+      {/if}
+    </div>
+  </Foot>
+{/if}

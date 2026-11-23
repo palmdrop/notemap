@@ -159,6 +159,23 @@
       rotate: 1turn;
     }
   }
+
+  /* A skeleton is drawn after the asking mark's 250ms, as the mark is, and
+     breathes while it waits. */
+  --animate-appearing: appear var(--duration-short) var(--ease-fade) 250ms both;
+  --animate-breathing: breathe 1.4s var(--ease-fade) infinite alternate;
+
+  @keyframes appear {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes breathe {
+    to {
+      opacity: 0.45;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

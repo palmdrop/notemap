@@ -427,6 +427,7 @@
     <More
       loading={$feed.loading}
       first={rows.length === 0}
+      view="lines"
       shown={rows.length}
       offline={!pool.yes}
       failed={$feed.failure !== undefined}

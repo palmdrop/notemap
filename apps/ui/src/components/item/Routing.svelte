@@ -12,6 +12,7 @@
   import { described, readingHeld } from "$lib/described.svelte";
   import { cancelRouting } from "$lib/firing";
   import { firings, left } from "$lib/firings.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Spinner from "$components/primitives/marks/Spinner.svelte";
   import { nameFor } from "$lib/names.svelte";
   import { resolve } from "$lib/naming";
@@ -32,6 +33,7 @@
     boxed = false,
     inert = false,
     offline = false,
+    awaiting = false,
     onundone,
   }: {
     summary: RoutingSummary | undefined;
@@ -44,6 +46,12 @@
     inert?: boolean;
     /** Cancelling needs the pool, so out of reach nothing offers it. */
     offline?: boolean;
+    /**
+     * The records are being read: the summary is drawn in their lines' shape,
+     * the place each will name held by a skeleton, so their landing moves
+     * nothing.
+     */
+    awaiting?: boolean;
     /** A cancelled record leaves what was read of them out of date. */
     onundone?: () => void;
   } = $props();
@@ -85,6 +93,8 @@
     readonly manual?: boolean;
     /** Withdrawn, where it was. */
     readonly state?: string;
+    /** Where in the destination is still being read, and a skeleton holds its room. */
+    readonly sketched?: boolean;
     readonly taken?: RoutingRecord;
     /** A delivery not landed yet, and what it offers now, as its route in flight does. */
     readonly offers?: {
@@ -120,6 +130,7 @@
           ),
           href: recordHref(record.item, record.id),
           record: record.id,
+          ...(reading === "asking" ? { sketched: true } : {}),
           ...(target.kind === "user" ? { manual: true } : {}),
           ...(record.withdrawnAt === undefined ? {} : { state: "withdrawn" }),
           // A delivery the pool has carried out has happened elsewhere and is
@@ -142,10 +153,29 @@
 
   const summarized = $derived(records.length === 0 && summary !== undefined);
 
+  /** The summary's lines in a record's shape: where each went, without where in it. */
+  const sketched = $derived<readonly Line[]>(
+    summary === undefined
+      ? []
+      : summary.to.map((went) =>
+          went.kind === "destination"
+            ? { name: nameOf(went.destination), sketched: awaiting }
+            : { name: "manual", manual: true },
+        ),
+  );
+
   /** A summary counts what has not landed without saying which, so its mark ends the line. */
   const waiting = $derived(
     summarized && summary !== undefined ? summary.pending : 0,
   );
+
+  /**
+   * A record's line: on a phone the place under the destination, always; when
+   * wide beside it, cut. Either way the same height whatever the place says,
+   * and whether it is said yet.
+   */
+  const LINE =
+    "flex min-w-0 flex-col items-start gap-x-[1ch] text-small wide:flex-row wide:items-baseline";
 
   async function cancel(record: RoutingRecord, name: string) {
     await cancelRouting(record.id, record.item, name);
@@ -187,10 +217,12 @@
       >{line.manual === true ? "Done" : line.name}</span
     >
   </span>
-  {#if line.place !== undefined || line.note !== undefined || line.pending === true}
+  {#if line.place !== undefined || line.note !== undefined || line.pending === true || line.sketched === true}
     <span class="flex max-w-full min-w-0 items-baseline gap-x-[1ch] text-muted">
       {#if line.place !== undefined}
         <span class="min-w-0 truncate" title={line.title}>{line.place}</span>
+      {:else if line.sketched === true}
+        <Skeleton shape="place" />
       {/if}
       {#if line.note !== undefined}
         <span class="min-w-0 truncate">{line.note}</span>
@@ -300,23 +332,17 @@
     </div>
   {/if}
 {:else if summarized}
-  <!-- A summary names where without what, so it is one line, as a short one is. -->
-  <div
-    class="mt-2 flex items-baseline gap-x-[1ch]"
-    title={lines.map((line) => line.name).join(", ")}
-  >
-    <span class="flex min-w-0 items-baseline gap-x-[0.5ch]">
-      <Icon name="route" class="size-3.5 shrink-0 self-center" />
-      <span class="min-w-0 truncate"
-        >{#each lines as line, at (at)}{@render went(line)}{at <
-          lines.length - 1
-            ? ", "
-            : ""}{/each}</span
-      >
-    </span>
-    {#if waiting > 0}
-      <span class="shrink-0">{@render waits()}</span>
-    {/if}
+  <!-- A summary names where without what: a record's line without its
+       place, which a skeleton holds while the records are read. -->
+  <div class="mt-2">
+    {#each sketched as line, at (at)}
+      <div class="flex items-baseline gap-x-4">
+        <span class={LINE}>{@render single(line)}</span>
+        {#if at === sketched.length - 1 && waiting > 0}
+          <span class="shrink-0 text-small">{@render waits()}</span>
+        {/if}
+      </div>
+    {/each}
   </div>
 {:else if lines.length > 0 || said !== ""}
   <div class="mt-2">
@@ -324,7 +350,7 @@
       <div class="flex items-baseline gap-x-4">
         <a
           href={line.href}
-          class="flex min-w-0 flex-wrap items-baseline gap-x-[1ch] text-small no-underline hover:underline"
+          class="{LINE} no-underline hover:underline"
           title={[line.name, line.title ?? line.place, line.note]
             .filter((part) => part !== undefined)
             .join(" ")}>{@render single(line)}</a

@@ -15,6 +15,7 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Cached from "$components/primitives/marks/Cached.svelte";
   import Pending from "$components/primitives/marks/Pending.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
@@ -255,7 +256,7 @@
       <Prose text={NO_SUCH_ITEM} />
     {/if}
   {:else}
-    <Asking />
+    <Skeleton shape="item" />
   {/if}
 </div>
 

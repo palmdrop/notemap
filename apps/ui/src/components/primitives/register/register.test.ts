@@ -147,11 +147,54 @@ test("the foot asks for nothing while offline", async () => {
   expect(more).not.toHaveBeenCalled();
 });
 
-test("the first page read is the mark alone, there being nothing yet to have more of", () => {
-  render(More, { ...reading, loading: true, first: true, onmore: vi.fn() });
+test("the first page read is a skeleton of the list's view, there being nothing yet to have more of", () => {
+  const { unmount } = render(More, {
+    ...reading,
+    loading: true,
+    first: true,
+    onmore: vi.fn(),
+  });
 
   expect(screen.queryByRole("button")).toBeNull();
-  expect(document.querySelector("[data-asking]")).not.toBeNull();
+  expect(document.querySelector("[data-skeleton='rows']")).not.toBeNull();
+  unmount();
+
+  render(More, {
+    ...reading,
+    loading: true,
+    first: true,
+    view: "lines",
+    onmore: vi.fn(),
+  });
+  expect(document.querySelector("[data-skeleton='lines']")).not.toBeNull();
+});
+
+test("the foot is watched whenever it is drawn, and not while a skeleton stands in for it", async () => {
+  const watched: Element[] = [];
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      observe(target: Element) {
+        if (!(target instanceof Element)) throw new TypeError("not an element");
+        watched.push(target);
+      }
+      disconnect() {}
+    },
+  );
+  const { rerender } = render(More, {
+    ...reading,
+    loading: false,
+    first: true,
+    onmore: vi.fn(),
+  });
+  expect(watched).toHaveLength(1);
+
+  await rerender({ ...reading, loading: true, first: true, onmore: vi.fn() });
+  expect(document.querySelector("[data-skeleton]")).not.toBeNull();
+
+  await rerender({ ...reading, loading: false, first: false, onmore: vi.fn() });
+  expect(watched).toHaveLength(2);
+  vi.unstubAllGlobals();
 });
 
 test("the foot says how much is shown, and turns while it loads", () => {

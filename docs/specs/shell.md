@@ -1206,8 +1206,12 @@ a long path does not wrap the line into several — the full place is still in t
 arrow, the destination and the turning mark could each end up on a line of its own)*: the arrow
 and the destination are one unit and the place with the mark after it another, and the line breaks
 between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
-the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
-it. **A held row's line for a record not yet delivered ends in what its route in flight offers**
+the mark always ends the place. **On a phone the place is always on the second line, and when wide
+always beside the destination, cut** *(2026-11-23; it went under only where it did not fit, so a
+place read late, or named after it was read, changed the row's height)*. **A summary is drawn in
+the records' shape** *(2026-11-23; it was one line in the body's size, `→ **Vault**, manual`)*: a
+line per place it went, `manual` as `✓ Done`, the place held by a skeleton while the records are
+read, its turning mark ending the last line. **A held row's line for a record not yet delivered ends in what its route in flight offers**
 *(2026-11-01; amended 2026-11-03, when it always said `cancel`)*, on the queue and the feed alike, as
 a mark by hand's ends in `undo`: `undo` inside the window, nothing while the delivery is attempted,
 and `cancel` once the pool is retrying it — read from the same route in flight the status line
@@ -2393,8 +2397,8 @@ discarded is two visits — which is what it is, two decisions. The pool refuses
 
 *Amended 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md)).*
 The shell says **selected** for marked ([CONTEXT.md](../../CONTEXT.md)). **On a phone, holding a row
-selects it** and starts selecting, said once the first time — `Hold a row to select several.` —
-and a tap then selects more; a tap that ends a hold is not a second press. **When wide**, a round
+selects it** and starts selecting, said once the first time — `Hold a row to select several.`, over
+the skeleton too while the first page is read, so the rows do not land under it — and a tap then selects more; a tap that ends a hold is not a second press. **When wide**, a round
 circle shows under a row's time on hover, and ctrl/cmd-click, shift-click, `space` and `J`/`K`
 select as before. While selecting, every row shows a round check in its time column, ticked when
 selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; there is no gutter bar,
@@ -2711,12 +2715,21 @@ is keeping the reader waiting. Settings' `asking`, `asking now` and `checking`, 
 in`, and the pool settings' `reading…` all became the mark.
 
 Where a region is waiting rather than an action, the mark stands on the first line its answer will
-take: a list read cold draws it in the foot's place, where `load more` would have been, and no
-`load more` beside it, there being nothing yet to have more of; an item read cold, in the body
-column where the capture will be; an item's routing records, under the capture's box, where the first
+take: an item's routing records, under the capture's box, where the first
 record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
 line's tree, where its first row will be. A browse or a tree already drawn is
 not marked while it is asked again, being what the last answer said and exactly as useful.
+
+**Where there is nothing at all to draw, a skeleton is drawn instead** *(2026-11-23, superseding
+[No skeletons](#prior-decisions), 2026-09-25)*: grey bars in the shape of what will come, after the
+mark's own 250ms, fading in and breathing while they wait, still under `prefers-reduced-motion`.
+**A list read cold** — the queue, the feed or the log with no page held — draws a day band and six
+rows in the register, or eight lines in the index, where `load more` would have been, and no `load
+more`, there being nothing yet to have more of. **An item read cold** draws three lines of words
+and two tags in the body column. **A record's line drawn before its place is known** — from the
+summary while the records are read, or before the destination has said how its arguments read —
+holds the place with a bar of its own width, so the place landing moves nothing. Where the cache
+holds anything, it is drawn, and no skeleton is.
 
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
@@ -3873,7 +3886,7 @@ redrawn keep their structure in the new tokens until their phase of
   sending another; and **the question in the row's own foot**, which arrives on a row the person
   may have scrolled far from.
 
-- **No skeletons, and no grey to draw one.** *2026-09-25.* A placeholder shaped like a typical
+- **No skeletons, and no grey to draw one.** *2026-09-25; superseded 2026-11-23, below.* A placeholder shaped like a typical
   answer was weighed for the waits the asking mark now covers, with a grey admitted to fill it.
   Declined: the cache draws the queue, the feed and an item before the pool answers, so an empty
   surface is a cold cache or a question the cache never holds — a description, a preview, a
@@ -3882,6 +3895,15 @@ redrawn keep their structure in the new tokens until their phase of
   when the answer replaces it, which is what it was for. And grey went on 2026-09-14 for reasons a
   rarely-seen state does not outweigh. What a skeleton is for, where it is right, the shell already
   has without one: the unfurl block's fixed four lines, and the preview's five.
+
+- **Skeletons where there is nothing to draw.** *2026-11-23, superseding the above.* Measured on
+  a production build, the surfaces did settle: a list read cold went from the mark's one line to
+  its rows in a jump, the log's foot stood and then folded, and every routed row on the feed grew a
+  line as its records came, one row at a time, over the network. The earlier reasoning held where
+  the cache answers, so nothing changes there; what it did not weigh was a phone on a slow link,
+  where the cold read is the first thing seen and the records are never cached. The grey it lacked
+  is the box grey now in use. A skeleton guessing wrong still moves the page, so it guesses only
+  shapes that do not vary: the register's rows below the head, and a place's one line.
 
 - **A held row is released by selection, not by a clock.** *2026-09-08; retired 2026-09-14: the
   queue holds no processed row now that processing is a surface which moves on to the next item,
