@@ -2417,8 +2417,8 @@ at the foot on a phone, in the list's head when wide. **Tag** opens a sheet with
 the caret in it and the offer always beneath it, and under those the tags the rows carry, the most
 carried first *(2026-11-23, replacing a sheet of toggles sent on Apply, 2026-11-16)*. Leaving the
 field moves nothing, so the tags stay where they were pressed; `esc` empties the field, and on an
-empty one closes the
-sheet: a tag typed or picked goes on every row at once, and its ×
+empty one closes the sheet. The offer keeps the order it opened in, and a tag taken off stays in it
+to be put back: a tag typed or picked goes on every row at once, and its ×
 takes it off every one, as a row's own tags do. A tag on only some of the rows is drawn dashed with
 how many (`2/5`), and a press puts it on the rest. Trigger tags are left to **Route**. **Done**
 closes the sheet. **Route** offers

@@ -89,3 +89,16 @@ test("a batch is routed only by a template with a trigger tag, as that tag", asy
   await fireEvent.click(screen.getByRole("button", { name: /To the vault/ }));
   expect(onbatch).toHaveBeenCalledWith({ kind: "tag", tag: "route/vault" });
 });
+
+test("a tag taken off every row stays offered, to be put back", async () => {
+  pool(() => json(200, { values: [] }));
+  const props = { onbatch: vi.fn(), onclose: vi.fn() };
+  const { rerender } = render(BatchTags, {
+    ...props,
+    marked: [tagged("one", "home"), tagged("two", "home")],
+  });
+  expect(screen.queryByRole("option", { name: /home/ })).toBeNull();
+
+  await rerender({ ...props, marked: [tagged("one"), tagged("two")] });
+  expect(screen.getByRole("option", { name: /home/ })).toBeDefined();
+});

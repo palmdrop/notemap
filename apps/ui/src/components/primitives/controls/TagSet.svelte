@@ -102,7 +102,7 @@
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
-    if (field) line?.focus();
+    if (field) line?.focus({ preventScroll: true });
     else open();
   }
 
@@ -259,6 +259,13 @@
     void rows;
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
+
+  // A field's offer stands in the flow and changes height instead: sliding
+  // out, it would keep drawing the rows it no longer has.
+  const hung = (node: Element) =>
+    field ? {} : slide(node, { magnitude: "short" });
+  const unhung = (node: HTMLElement) =>
+    field ? {} : pinned(node, { magnitude: "short" });
 
   /** Names the line's place for the offer to hang from, one per set on the page. */
   const anchor = `--tags-${id.replace(/[^\w-]/g, "")}`;
@@ -586,8 +593,8 @@
           ? "mb-2 basis-full"
           : "offer z-30 max-wide:offer-above"}
       style="position-anchor: {anchor}"
-      in:slide|global={{ magnitude: "short" }}
-      out:pinned|global={{ magnitude: "short" }}
+      in:hung|global
+      out:unhung|global
     >
       <div
         bind:this={panel}

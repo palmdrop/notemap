@@ -48,7 +48,18 @@
   const names = $derived(counted.map(([name]) => name));
 
   const inUse = client.tags.inUse;
-  const offered = $derived($inUse.map((use) => use.name).filter(ordinary));
+
+  /**
+   * Every tag offered since the sheet opened, in the order first offered: a
+   * tag taken off stays offered to be put back, and the offer does not
+   * reorder under the pointer as the tags in use are read again.
+   */
+  let known: string[] = [];
+  const offered = $derived.by(() => {
+    const now = [...$inUse.map((use) => use.name), ...names].filter(ordinary);
+    known = [...known, ...now.filter((name) => !known.includes(name))];
+    return known;
+  });
 
   function partly(name: string): string | undefined {
     const on = counted.find(([one]) => one === name)?.[1] ?? 0;
