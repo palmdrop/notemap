@@ -57,7 +57,7 @@
   let known: string[] = [];
   const offered = $derived.by(() => {
     const now = [...$inUse.map((use) => use.name), ...names].filter(ordinary);
-    known = [...known, ...now.filter((name) => !known.includes(name))];
+    known = [...new Set([...known, ...now])];
     return known;
   });
 

@@ -90,8 +90,15 @@ test("a batch is routed only by a template with a trigger tag, as that tag", asy
   expect(onbatch).toHaveBeenCalledWith({ kind: "tag", tag: "route/vault" });
 });
 
-test("a tag taken off every row stays offered, to be put back", async () => {
-  pool(() => json(200, { values: [] }));
+test("a tag taken off every row stays offered, to be put back, and once", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/tags"
+      ? json(200, {
+          values: [{ name: "home", items: 2, unprocessed: 2 }],
+        })
+      : json(200, { values: [] }),
+  );
+  await client.tags.load();
   const props = { onbatch: vi.fn(), onclose: vi.fn() };
   const { rerender } = render(BatchTags, {
     ...props,
@@ -100,5 +107,5 @@ test("a tag taken off every row stays offered, to be put back", async () => {
   expect(screen.queryByRole("option", { name: /home/ })).toBeNull();
 
   await rerender({ ...props, marked: [tagged("one"), tagged("two")] });
-  expect(screen.getByRole("option", { name: /home/ })).toBeDefined();
+  expect(screen.getAllByRole("option", { name: /home/ })).toHaveLength(1);
 });
