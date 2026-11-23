@@ -2413,9 +2413,11 @@ header is the selection's** — × and `n selected` with All, and when wide Disc
 beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
 the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
 **Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
-at the foot on a phone, in the list's head when wide. **Tag** opens a sheet holding the tags the rows carry, the most carried first, and the line a
-row's tags are added through, open, its offer drawn beneath it *(2026-11-23, replacing a sheet of
-toggles sent on Apply, 2026-11-16)*: a tag typed or picked goes on every row at once, and its ×
+at the foot on a phone, in the list's head when wide. **Tag** opens a sheet with **a field at its head**, `# Add a tag`, drawn as the place field is,
+the caret in it and the offer always beneath it, and under those the tags the rows carry, the most
+carried first *(2026-11-23, replacing a sheet of toggles sent on Apply, 2026-11-16)*. Leaving the
+field moves nothing, so the tags stay where they were pressed; `esc` on an empty field closes the
+sheet: a tag typed or picked goes on every row at once, and its ×
 takes it off every one, as a row's own tags do. A tag on only some of the rows is drawn dashed with
 how many (`2/5`), and a press puts it on the rest. Trigger tags are left to **Route**. **Done**
 closes the sheet. **Route** offers
@@ -2506,6 +2508,8 @@ words. The offer is a ruled box of 44px rows; a trigger tag is the route icon an
 its template's name muted at the right, and a typed name no offer holds says `new`. On a phone
 the offer opens upward, clear of a docked bar. **A trigger tag's question is the quick route's
 shape**: a sheet across a phone's foot, a dialog when wide, its answers rows with a chevron.
+*(2026-11-23; it was an underline across the row.)* **The line `+ tag` opens is a box of a tag's
+size**, ruled in ink, where the `+ tag` stood.
 
 Tagging is a **chooser over known names with free entry**, not a bare text field. It sits on the
 row, because it replays from the outbox and is therefore the one processing gesture that survives

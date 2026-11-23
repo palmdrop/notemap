@@ -126,6 +126,7 @@ function tagSet(
     fires: (name: string) => string | undefined;
     held: (name: string) => boolean;
     addable: boolean;
+    field: boolean;
   }> = {},
 ) {
   const added = vi.fn();
@@ -491,6 +492,46 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
  * against it. The place outlives the line, which is gone the moment it
  * closes while the offer is still sliding shut beneath it.
  */
+test("as a field, the line stands over the tags and stays, its offer with it, and takes one tag after another", async () => {
+  const { added, container } = tagSet({
+    field: true,
+    names: ["home"],
+    offered: ["reading", "research"],
+  });
+
+  const line = screen.getByRole("combobox", { name: "Add a tag" });
+  const chip = container.querySelector("[data-tag='home']")!;
+  expect(
+    line.compareDocumentPosition(chip) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(options()).toEqual(["reading", "research"]);
+
+  await typed(line, "rea");
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("reading");
+  expect(screen.getByRole("combobox", { name: "Add a tag" })).toBe(line);
+  expect((line as HTMLInputElement).value).toBe("");
+
+  await fireEvent.blur(line);
+  expect(screen.getByRole("listbox", { name: "Tags in use" })).toBeDefined();
+});
+
+test("as a field, esc on an empty line is left to what holds it", async () => {
+  tagSet({ field: true });
+  const line = screen.getByRole("combobox", { name: "Add a tag" });
+  const outside = vi.fn();
+  document.addEventListener("keydown", outside);
+
+  await typed(line, "re");
+  await pressed(line, "Escape");
+  expect((line as HTMLInputElement).value).toBe("");
+  expect(outside).not.toHaveBeenCalled();
+
+  await pressed(line, "Escape");
+  expect(outside).toHaveBeenCalledTimes(1);
+  document.removeEventListener("keydown", outside);
+});
+
 test("the offer hangs from the line's place, which outlives the line", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();

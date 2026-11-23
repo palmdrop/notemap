@@ -67,7 +67,7 @@
       {names}
       {offered}
       {partly}
-      inline
+      field
       label="Add a tag to every selected item"
       onadd={(tag) => onbatch({ kind: "tag", tag })}
       onremove={(tag) => onbatch({ kind: "untag", tag })}
