@@ -2416,7 +2416,8 @@ the pointer offers **+ tag**, so a tag is added without leaving the list. **The 
 at the foot on a phone, in the list's head when wide. **Tag** opens a sheet with **a field at its head**, `# Add a tag`, drawn as the place field is,
 the caret in it and the offer always beneath it, and under those the tags the rows carry, the most
 carried first *(2026-11-23, replacing a sheet of toggles sent on Apply, 2026-11-16)*. Leaving the
-field moves nothing, so the tags stay where they were pressed; `esc` on an empty field closes the
+field moves nothing, so the tags stay where they were pressed; `esc` empties the field, and on an
+empty one closes the
 sheet: a tag typed or picked goes on every row at once, and its ×
 takes it off every one, as a row's own tags do. A tag on only some of the rows is drawn dashed with
 how many (`2/5`), and a press puts it on the rest. Trigger tags are left to **Route**. **Done**

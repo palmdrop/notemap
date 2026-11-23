@@ -523,11 +523,12 @@ test("as a field, esc on an empty line is left to what holds it", async () => {
   document.addEventListener("keydown", outside);
 
   await typed(line, "re");
-  await pressed(line, "Escape");
+  // A sheet's dialog closes on the key's default, not on hearing it.
+  expect(await pressed(line, "Escape")).toBe(false);
   expect((line as HTMLInputElement).value).toBe("");
   expect(outside).not.toHaveBeenCalled();
 
-  await pressed(line, "Escape");
+  expect(await pressed(line, "Escape")).toBe(true);
   expect(outside).toHaveBeenCalledTimes(1);
   document.removeEventListener("keydown", outside);
 });

@@ -408,8 +408,10 @@
       // what holds it.
       if (field && stepping === undefined && draft === "") return;
       // Putting this away is what the key did here, so nothing above it — a
-      // composer stepping back, a row closing — also acts on the one press.
+      // composer stepping back, a row closing, a sheet's dialog — also acts
+      // on the one press.
       event.stopPropagation();
+      event.preventDefault();
       if (stepping !== undefined) stepBack();
       else done();
     }
