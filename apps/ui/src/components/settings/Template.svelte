@@ -15,7 +15,7 @@
   import { reportSaid } from "$lib/template-state";
   import { actionOf, labelFor, wordFor } from "$lib/vocabulary";
 
-  import { editHref, openHref, settingsHref } from "./href";
+  import { editHref, openHref, settingsHref, trailTo } from "./href";
   import { carriesAssets } from "$lib/capability";
   import { argumentsOf } from "$lib/arguments";
   import { askedOf } from "$lib/asked";
@@ -105,6 +105,7 @@
 
   headed(() => ({
     title: one.name,
+    trail: trailTo("templates"),
     out: {
       icon: "back",
       label: "Templates",

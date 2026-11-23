@@ -8,6 +8,8 @@
   import { width } from "$lib/breakpoint";
   import { headed } from "$lib/heading.svelte";
 
+  import { trailTo } from "./href";
+
   /**
    * A section's page. Its name is the page's title, with the way back to the
    * menu on a phone, where the menu is not drawn beside it. `sub` is a group
@@ -30,6 +32,7 @@
       ? undefined
       : {
           title: name,
+          trail: trailTo(),
           ...(width.wide
             ? {}
             : {

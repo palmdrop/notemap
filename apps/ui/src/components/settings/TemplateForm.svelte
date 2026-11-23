@@ -19,6 +19,7 @@
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
   import { headed } from "$lib/heading.svelte";
+  import { trailTo } from "./href";
   import { kindName } from "$lib/looks";
   import { actionOf, labelFor, wordFor } from "$lib/vocabulary";
 
@@ -343,8 +344,8 @@
 
   headed(() => ({
     title: editing === undefined ? "new template" : "edit template",
+    trail: trailTo("templates", editing),
     out: { icon: "close", label: "Cancel", run: done },
-    ...(editing === undefined ? {} : { under: editing.name }),
   }));
 </script>
 

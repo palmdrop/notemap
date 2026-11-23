@@ -152,6 +152,18 @@
         <Icon name="menu" label="Menu" />
       </button>
     {/if}
+    {#if width.wide && own?.trail !== undefined && own.trail.length > 0}
+      <nav aria-label="Breadcrumb" class="flex shrink-0 items-center">
+        {#each own.trail as crumb (crumb.href)}
+          <a
+            href={crumb.href}
+            class="font-display text-title text-muted no-underline hover:text-ink hover:no-underline"
+            >{crumb.label}</a
+          >
+          <Icon name="chevron" class="mx-1 size-4 text-muted" />
+        {/each}
+      </nav>
+    {/if}
     <h1 class="min-w-0 truncate font-display text-title font-normal">
       {own?.title ?? title}
     </h1>

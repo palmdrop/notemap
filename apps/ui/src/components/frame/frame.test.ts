@@ -58,3 +58,30 @@ test("the menu's squares say today's date and how much was captured today", asyn
   expect(today.textContent).toContain(String(new Date().getDate()));
   expect(today.textContent).toContain("Captured today");
 });
+
+test("a page's levels above it lead its title as links when wide", async () => {
+  const { default: Headed } = await import("./Header.fixture.svelte");
+  render(Headed, {
+    heading: {
+      title: "Vault",
+      trail: [
+        { label: "settings", href: "/settings" },
+        { label: "destinations", href: "/settings/destinations" },
+      ],
+    },
+  });
+
+  const trail = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  expect(
+    [...trail.querySelectorAll("a")].map((one) => [
+      one.textContent,
+      one.getAttribute("href"),
+    ]),
+  ).toEqual([
+    ["settings", "/settings"],
+    ["destinations", "/settings/destinations"],
+  ]);
+  expect(screen.getByRole("heading", { level: 1 }).textContent?.trim()).toBe(
+    "Vault",
+  );
+});

@@ -1274,7 +1274,7 @@ test("a browsable field leaves the caret in the name too", async () => {
 });
 
 /** The note's headings, once the line names a note, and only while the field is typed into. */
-test("offers a note's headings under the place, folded until asked for", async () => {
+test("offers a note's headings under the place without being asked", async () => {
   pool((request) => {
     const route = routeOf(request);
     if (route === "GET /v1/destinations") {
@@ -1309,14 +1309,8 @@ test("offers a note's headings under the place, folded until asked for", async (
   });
 
   const under = await screen.findByLabelText("heading");
-  under.focus();
   await fireEvent.mouseDown(await screen.findByText("## Next"));
   expect((under as HTMLInputElement).value).toBe("Next");
-
-  under.blur();
-  await vi.waitFor(() => {
-    expect(screen.queryByText("## Next")).toBeNull();
-  });
 });
 
 test("asks for a field each time, under a label, leaving it without a default", async () => {

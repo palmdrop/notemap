@@ -3,6 +3,7 @@
   import Segmented from "$components/primitives/blocks/Segmented.svelte";
   import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import { headed } from "$lib/heading.svelte";
+  import { trailTo } from "./href";
 
   import FormBar from "./form/FormBar.svelte";
   import Guard from "./form/Guard.svelte";
@@ -65,6 +66,7 @@
 
   headed(() => ({
     title: editing === undefined ? "new account" : "edit account",
+    trail: trailTo("accounts"),
     out: { icon: "close", label: "Cancel", run: done },
     ...(editing === undefined ? {} : { under: editing.name }),
   }));

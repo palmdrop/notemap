@@ -5,6 +5,8 @@
  */
 export type Heading = {
   readonly title: string;
+  /** The levels above it, outermost first: crumbs before the title when wide. */
+  readonly trail?: readonly { readonly label: string; readonly href: string }[];
   /** Close leaves something under way, back goes up a level. None, and the menu stands. */
   readonly out?: {
     readonly icon: "close" | "back";

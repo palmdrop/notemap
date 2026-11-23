@@ -21,7 +21,7 @@
   import { since } from "$lib/stamp";
   import { actionOf, type Fact } from "$lib/vocabulary";
 
-  import { editHref, openHref, settingsHref } from "./href";
+  import { editHref, openHref, settingsHref, trailTo } from "./href";
 
   /**
    * One destination on a page of its own: where it stands, what it can do and
@@ -115,6 +115,7 @@
 
   headed(() => ({
     title: one.name,
+    trail: trailTo("destinations"),
     out: {
       icon: "back",
       label: "Destinations",

@@ -53,3 +53,20 @@ export function templateFromHref(item: string, record: string): string {
   const query = new URLSearchParams({ item, record });
   return `${settingsHref("templates")}?${query}`;
 }
+
+/** The levels above a settings page, for its head, in the head's lowercase: settings, its section, the one open. */
+export function trailTo(
+  section?: Section,
+  one?: { readonly name: string; readonly id: string },
+): { label: string; href: string }[] {
+  const found = SECTIONS.find((each) => each.slug === section);
+  return [
+    { label: "settings", href: resolve("/settings") },
+    ...(found === undefined
+      ? []
+      : [{ label: found.label.toLowerCase(), href: settingsHref(found.slug) }]),
+    ...(found === undefined || one === undefined
+      ? []
+      : [{ label: one.name, href: openHref(found.slug, one.id) }]),
+  ];
+}

@@ -11,6 +11,7 @@
   import Segmented from "$components/primitives/blocks/Segmented.svelte";
   import { client } from "$lib/client";
   import { headed } from "$lib/heading.svelte";
+  import { trailTo } from "./href";
   import { kindName } from "$lib/looks";
   import { isFamiliarRoot } from "$lib/roots";
   import FormBar from "./form/FormBar.svelte";
@@ -103,8 +104,8 @@
 
   headed(() => ({
     title: editing === undefined ? "new destination" : "edit destination",
+    trail: trailTo("destinations", editing),
     out: { icon: "close", label: "Cancel", run: done },
-    ...(editing === undefined ? {} : { under: editing.name }),
   }));
 
   async function submit(event?: SubmitEvent) {
