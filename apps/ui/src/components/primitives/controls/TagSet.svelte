@@ -35,6 +35,8 @@
     marked,
     ask,
     besides,
+    partly,
+    inline = false,
     addable = true,
     label = "Add a tag",
     onadd,
@@ -68,6 +70,13 @@
     ask?: (name: string) => Promise<Ask | undefined> | undefined;
     /** Said after a carried tag: where the values it was given put the item. */
     besides?: (name: string) => string | undefined;
+    /**
+     * A tag on only some of what the set stands for, said as how many of how
+     * many (`2/5`): drawn dashed, and pressing it puts it on the rest.
+     */
+    partly?: (name: string) => string | undefined;
+    /** The offer drawn in the flow under the line, for a set in a sheet that clips what hangs over it. */
+    inline?: boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
     /** What the `+` and the line are called, where two sets share a page. */
@@ -409,6 +418,7 @@
   {@const filtered = marked?.(name) === true}
   {@const pending = waiting?.(name) === true}
   {@const where = besides?.(name)}
+  {@const some = partly?.(name)}
   <span
     class="whitespace-nowrap"
     data-marked={filtered ? "" : undefined}
@@ -423,9 +433,19 @@
           : undefined}
       class="{CHIP} {filtered || filed ? 'border-ink' : ''} {pending
         ? 'text-muted'
-        : ''}"
+        : ''} {some === undefined ? '' : 'border-dashed bg-transparent'}"
     >
-      {#if fired === undefined && !pending}
+      {#if some !== undefined}
+        <button
+          type="button"
+          aria-label="put {name} on every one, on {some} now"
+          onclick={() => onadd(name)}
+          class="inline-flex items-center gap-1"
+          >{@render said(name)}<span class="text-muted tabular-nums"
+            >{some}</span
+          ></button
+        >
+      {:else if fired === undefined && !pending}
         {@render said(name)}
       {:else}
         <span aria-hidden="true"
@@ -527,9 +547,11 @@
        for a value it is the quick route's shape: a sheet across a phone's
        foot, a dialog in the middle of a wide window, over a veil. -->
   <div
-    class={step === undefined
-      ? "offer z-30 max-wide:offer-above"
-      : "fixed inset-0 z-50 flex items-end justify-center bg-veil wide:items-center"}
+    class={step !== undefined
+      ? "fixed inset-0 z-50 flex items-end justify-center bg-veil wide:items-center"
+      : inline
+        ? "mt-2 basis-full"
+        : "offer z-30 max-wide:offer-above"}
     style="position-anchor: {anchor}"
     in:slide|global={{ magnitude: "short" }}
     out:pinned|global={{ magnitude: "short" }}
@@ -537,7 +559,9 @@
     <div
       bind:this={panel}
       class="overflow-y-auto border border-rule bg-paper {step === undefined
-        ? 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56 rounded-control'
+        ? inline
+          ? 'max-h-72 w-full rounded-control'
+          : 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56 rounded-control'
         : 'max-h-[70dvh] w-full rounded-t-control border-x-0 border-b-0 wide:w-[26rem] wide:rounded-control wide:border'}"
     >
       {#if stepping !== undefined && step !== undefined}

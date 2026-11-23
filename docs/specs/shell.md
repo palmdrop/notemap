@@ -2413,11 +2413,12 @@ header is the selection's** — × and `n selected` with All, and when wide Disc
 beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
 the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
 **Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
-at the foot on a phone, in the list's head when wide. **Tag** opens a sheet of every tag the rows
-have or could have, each on all of them (filled), on some (a dash) or on none; a press puts it on
-every row, again takes it off them all, and a new tag can be typed. Nothing is sent until
-**Apply** *(2026-11-16)*: each change goes only to the rows it changes, and the line says `Tagged`
-with **Undo**, which puts every row's tags back as they were. **Route** offers
+at the foot on a phone, in the list's head when wide. **Tag** opens a sheet holding the tags the rows carry, the most carried first, and the line a
+row's tags are added through, open, its offer drawn beneath it *(2026-11-23, replacing a sheet of
+toggles sent on Apply, 2026-11-16)*: a tag typed or picked goes on every row at once, and its ×
+takes it off every one, as a row's own tags do. A tag on only some of the rows is drawn dashed with
+how many (`2/5`), and a press puts it on the rest. Trigger tags are left to **Route**. **Done**
+closes the sheet. **Route** offers
 only templates with a trigger tag: one that asks asks once, for every note; the batch is then
 confirmed (`Route 3 notes?`, then `With Todo, list Next.` with the template's name in bold, and
 what will not go as asked, with **Back** and **Route**, in the dialog every other question is asked
