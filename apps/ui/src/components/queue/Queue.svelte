@@ -466,13 +466,13 @@
     oncaptured={(item) => sayLanded(item, $queue.order)}
   />
 {:else if !width.wide && !marking.on}
-  <!-- Clear of the status line, a few pixels between, and there when the
-       line is gone too. Selecting, the foot is the batch's. -->
+  <!-- At the foot, and lifted clear of the status line while it is drawn.
+       Selecting, the foot is the batch's. -->
   <a
     href={resolve("/capture")}
     aria-label="Capture"
     title="Capture"
-    class="fixed right-4 bottom-[calc(2.75rem+0.5rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down"
+    class="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
   >
     <Icon name="plus" class="size-10" />
   </a>
