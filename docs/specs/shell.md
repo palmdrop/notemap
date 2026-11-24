@@ -1166,7 +1166,8 @@ recorded takes its bytes with it. A save asked for from the leaving dialog and n
 question unanswered: the edit stays where it is, and nothing goes on towards wherever the person
 was leaving. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
-opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
+opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25;
+since 2026-11-24 when wide only)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
 nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
@@ -1291,7 +1292,10 @@ the reader's choice under Appearance, `auto`, `by day` or `rail`; the choice wen
 
 **Each day is headed once**, before its first row in whichever order the list is read, and the
 heading comes and goes with the rows it heads: the last row of a day leaving takes the heading
-with it. A row walked to by `j`/`k` stops clear of it. **The row keeps only its time**, the heading
+with it. A row walked to by `j`/`k` stops clear of it and of the header above it *(2026-11-24; it
+allowed for the heading alone, from before the header was held)*. **A heading held under a later
+one is hidden** rather than left to show at an edge: held is where its sticky top puts it, under
+the header. **The row keeps only its time**, the heading
 having said the day; the stamp still names the whole instant to assistive technology. **The first
 row of a day lays its top edge on the heading's rule.** The index reads by day too: a heading per
 day, and a line per item with its time, its first words and its tags.
@@ -2415,7 +2419,9 @@ selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; ther
 the keys' place while selecting being a ruled edge round the row. **Every row is at least
 `--spacing-row` tall**, its time and its circle, so the circle showing on hover moves nothing.
 Letting go of the last selected row ends selecting with nothing selected. **Every row keeps its
-tag line's height**, tags or none, so the + tag a hovered row offers moves nothing. **The view,
+tag line's height when wide**, tags or none, so the + tag a hovered row offers moves nothing. **On
+a phone a row with no tags draws no tag line** *(2026-11-24)*: nothing hovers there, and a tag is
+added on the item's own page or in a batch's sheet, so the line would only ever be empty. **The view,
 rows or index, is one choice** for the queue and the feed. *(Amended 2026-11-18, after the
 review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
 wide having no ctrl and no hover. A row's tints: under the pointer the lightest, opened or

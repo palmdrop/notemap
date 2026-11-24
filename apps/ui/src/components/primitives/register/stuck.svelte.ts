@@ -4,7 +4,12 @@ import { on } from "svelte/events";
 type Watched = {
   readonly node: HTMLElement;
   readonly tell: (stuck: boolean) => void;
+  /** Where it holds: its sticky `top`, read again when the window is resized. */
+  at: number;
 };
+
+const holdsAt = (node: HTMLElement): number =>
+  Number.parseFloat(getComputedStyle(node).top) || 0;
 
 const watched: Watched[] = [];
 let queued = false;
@@ -16,9 +21,9 @@ let stop: (() => void) | undefined;
  */
 function measure(): void {
   queued = false;
-  for (const { node, tell } of watched) {
-    const at = node.getBoundingClientRect();
-    tell(at.top < at.height && at.bottom > 0);
+  for (const { node, tell, at } of watched) {
+    const box = node.getBoundingClientRect();
+    tell(box.top < at + 1 && box.bottom > at);
   }
 }
 
@@ -33,11 +38,14 @@ export function watch(
   node: HTMLElement,
   tell: (stuck: boolean) => void,
 ): () => void {
-  const one = { node, tell };
+  const one = { node, tell, at: holdsAt(node) };
   watched.push(one);
   if (stop === undefined) {
     const scrolled = on(window, "scroll", soon, { passive: true });
-    const resized = on(window, "resize", soon);
+    const resized = on(window, "resize", () => {
+      for (const each of watched) each.at = holdsAt(each.node);
+      soon();
+    });
     stop = () => {
       scrolled();
       resized();

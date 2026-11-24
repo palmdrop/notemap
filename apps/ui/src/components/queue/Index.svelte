@@ -169,7 +169,7 @@
     </span>
     <span
       bind:this={stamps[line.item.id]}
-      class="scroll-mt-day-head py-2 pl-gutter text-time whitespace-nowrap"
+      class="scroll-mt-held py-2 pl-gutter text-time whitespace-nowrap"
     >
       <Stamp
         at={line.item.createdAt}

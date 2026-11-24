@@ -115,14 +115,11 @@
   --spacing-read: 40rem;
   --spacing-prose: 38rem;
 
-  /* The old register's, until its rows are drawn by day. */
-  --spacing-rail: 11rem;
-  --spacing-rail-narrow: 5.75rem;
-  --spacing-rail-time: 3.25rem;
-  --spacing-day-head: 2.25rem;
+  /* What the header and a day's band hold over the top of a list, which a
+     row brought into view stops clear of. */
+  --spacing-held: calc(var(--spacing-stuck) + 2.25rem);
+  /* The air a row's time takes after a gap in the day. */
   --spacing-gap-time: 1.75rem;
-  /* The status line: one line of the shell's text and its air. */
-  --spacing-status: 2.25rem;
   /* The foot of a column, the status line and the menu's reach alike, so the
      two line up across the rule between them. */
   --spacing-foot: 2.75rem;

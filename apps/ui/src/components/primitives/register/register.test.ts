@@ -230,14 +230,28 @@ test("a day's heading spans the screen once it reaches the top, and not before",
     expect(heading().hasAttribute("data-stuck")).toBe(true);
   });
 
-  // Arriving under the one held there is reaching the top too.
+  // Arriving under the one held there is not yet holding: that one still shows.
   laidAt(30);
+  await fireEvent.scroll(window);
+  await vi.waitFor(() => {
+    expect(heading().hasAttribute("data-stuck")).toBe(false);
+  });
+});
+
+test("a day's heading holds where its sticky top puts it, under the header", async () => {
+  laidAt(300);
+  const { container } = render(Day, { at: "2026-09-13T07:02:00.000Z" });
+  const heading = () => container.querySelector<HTMLElement>("[data-day]")!;
+  heading().style.top = "55px";
+  await fireEvent(window, new Event("resize"));
+
+  laidAt(55);
   await fireEvent.scroll(window);
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(true);
   });
 
-  laidAt(37);
+  laidAt(0);
   await fireEvent.scroll(window);
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);
