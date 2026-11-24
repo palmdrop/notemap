@@ -92,7 +92,7 @@
 </script>
 
 <!-- The capture's own place, edited where it is read: the foot that saves it
-     is the row's, drawn by `EditFoot` in place of the actions. -->
+     is the row's, drawn by `EditBar` in place of the actions. -->
 {#if pictures.length > 0}
   <!-- Ruled off from the words only while pictures lie past the edge they share. -->
   <div

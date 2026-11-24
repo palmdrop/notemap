@@ -1335,7 +1335,7 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   await fireEvent.input(field, { target: { value: "rewritten" } });
   field.blur();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   await fireEvent.click(
     within(dialog()!).getByRole("button", { name: "Lose changes" }),
@@ -1473,7 +1473,7 @@ test("an edit left unchanged closes without asking", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
   await fireEvent.input(field, { target: { value: "rewritten" } });
-  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  await fireEvent.input(field, { target: { value: "one" } });
   field.blur();
 
   await fireEvent.keyDown(window, { key: "j" });
@@ -1494,7 +1494,6 @@ test("while a row is edited only its tags are reached", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
   expect(screen.queryByRole("button", { name: "Route" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
 
   field.blur();
   await fireEvent.keyDown(window, { key: "D" });
@@ -1623,7 +1622,7 @@ test("an edit let go takes a waiting trigger tag with it, and not an ordinary on
   await tick();
   expect(waitingTag()).not.toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   await fireEvent.click(
     within(dialog()!).getByRole("button", { name: "Lose changes" }),
@@ -1655,7 +1654,7 @@ test("a waiting trigger tag alone asks before the edit is left, and saving it se
   await tagWith("route/research");
   await tick();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   expect(dialog()).not.toBeNull();
 
@@ -1690,7 +1689,9 @@ test("a waiting trigger tag comes off unsent, and the edit's own revert takes th
     screen.getAllByTitle("files the item once the edit is saved"),
   ).toHaveLength(1);
 
-  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove route/two" }),
+  );
   await tick();
   expect(waitingTag()).toBeNull();
   expect(screen.queryByLabelText("What it says")).not.toBeNull();

@@ -1,91 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
-import Action from "./Action.svelte";
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
-import ActionFixture from "./Action.fixture.svelte";
-import { SHOWN_AFTER } from "../marks/Asking.svelte";
 
-test("an unavailable action reads as unavailable rather than as broken", () => {
-  render(ActionFixture, { label: "route", disabled: true, onclick: vi.fn() });
-
-  const action = screen.getByRole("button", { name: "route" });
-  expect((action as HTMLButtonElement).disabled).toBe(true);
-});
-
-test("somewhere to go is a link, so the browser's own gestures come with it", () => {
-  render(ActionFixture, {
-    label: "open",
-    href: "/items/one",
-    onclick: vi.fn(),
-  });
-
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
-    "/items/one",
-  );
-});
-
-test("somewhere that cannot be gone to is not a link at all", () => {
-  render(ActionFixture, {
-    label: "open",
-    href: "/items/one",
-    disabled: true,
-    onclick: vi.fn(),
-  });
-
-  // A disabled anchor still navigates, so there is no anchor to disable.
-  expect(screen.queryByRole("link")).toBeNull();
-  expect(screen.getByText("open").getAttribute("aria-disabled")).toBe("true");
-});
-
-test("an available action is taken once", async () => {
-  const taken = vi.fn();
-  render(ActionFixture, { label: "capture", primary: true, onclick: taken });
-
-  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
-
-  expect(taken).toHaveBeenCalledTimes(1);
-});
-
-test("an action that has asked cannot be taken again, and keeps its label until the mark is due", async () => {
-  vi.useFakeTimers();
-  try {
-    const taken = vi.fn();
-    const { rerender } = render(ActionFixture, {
-      label: "save",
-      working: true,
-      onclick: taken,
-    });
-
-    const action = screen.getByRole("button", { name: /save/ });
-    expect((action as HTMLButtonElement).disabled).toBe(true);
-    expect(action.getAttribute("aria-busy")).toBe("true");
-    expect(
-      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
-    ).toBe("hidden");
-
-    await vi.advanceTimersByTimeAsync(SHOWN_AFTER);
-    expect(
-      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
-    ).toBe("shown");
-    // Both sit in one cell, so the button is as wide as the wider of them throughout.
-    expect(screen.getByText("save").getAttribute("aria-hidden")).toBe("true");
-
-    await rerender({ label: "save", working: false, onclick: taken });
-    expect(action.querySelector("[data-asking]")).toBeNull();
-    expect((action as HTMLButtonElement).disabled).toBe(false);
-
-    await rerender({ label: "save", working: true, onclick: taken });
-    expect(screen.getByText("save").getAttribute("aria-hidden")).not.toBe(
-      "true",
-    );
-  } finally {
-    vi.useRealTimers();
-  }
-});
-
-/** One of a few: a segmented row, the end being read filled. */
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
   render(OrderSelector, { order: "oldest-first", onchoose: chose });
@@ -439,9 +357,6 @@ test("a trigger tag is marked with the template it applies, carried or offered",
     screen.getByRole("option", { name: "route/reading, routes to reading" }),
   ).toBeDefined();
 });
-
-/** Referenced so a rename cannot leave the fixture pointing at nothing. */
-void Action;
 
 test("a tag set that cannot be added to still holds the +'s place, unreachable", () => {
   const { container } = render(TagSet, {

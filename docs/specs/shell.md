@@ -1108,9 +1108,9 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear.
 **`edit` rewrites the capture where it is read** *(amended 2026-09-27; it drew a second ruled box
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
-for `close`, `revert` and `attach` on the left and a bold `save` on the right**, `revert` drawn only
-while the edit holds something the item does not say — words, an attachment, or a trigger tag waiting
-for the save — sliding in beside `close` as it appears. **No decision is reached while it is
+for the item's editing bar: Attach and Cancel, and Save at the right** *(2026-11-24; it was `close`,
+`revert` and `attach` in words with a bold `save`, `revert` drawn while the edit held a change)*. The
+row's bar and the item's are one bar. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
 the tags are: `+`, `×` and `t` work as
 on any selected row, a tag being an outbox operation of its own and not part of the edit. **A
@@ -4145,8 +4145,7 @@ redrawn keep their structure in the new tokens until their phase of
 - A template whose destination was deleted is drawn in `where` with that as its reason, not removed.
 - A disabled destination is not offered on the process surface; a template filing to one is drawn
   with `its destination is disabled`.
-- A row being edited offers `close`, `attach` and `save` in its foot, and `revert` once it holds a
-  change; no key reaches a decision, `enter` included, and its tags stay taken on and off.
+- A row being edited offers Attach, Cancel and Save in its foot, the item's editing bar; no key reaches a decision, `enter` included, and its tags stay taken on and off.
 - Leaving an edit with changes by any way at all asks in a dialog naming the capture; `save` and
   `revert` answer and go on the way the leaving was asked, `esc` goes back into the field with the
   caret in it, and an unchanged edit closes silently.

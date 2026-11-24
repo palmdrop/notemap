@@ -5,12 +5,12 @@
   import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import Box from "$components/primitives/blocks/Box.svelte";
   import type { Command } from "$lib/command/command";
-  import { editable } from "$lib/lineage";
   import { notices } from "$lib/notices.svelte";
   import { trail } from "$lib/trail.svelte";
 
   import { itemHref } from "./href";
 
+  import EditBar from "./EditBar.svelte";
   import type { Editing } from "./editing.svelte";
 
   /**
@@ -32,8 +32,6 @@
     /** Takes the manual mark back, where the item has one standing. */
     onundomanual?: () => void;
   } = $props();
-
-  let picker = $state<HTMLInputElement | undefined>(undefined);
 
   const by = (id: string): Command | undefined =>
     commands.find((command) => command.id === id);
@@ -68,12 +66,6 @@
 
   const capital = (word: string): string =>
     word.charAt(0).toUpperCase() + word.slice(1);
-
-  function pick(event: Event): void {
-    const files = [...((event.currentTarget as HTMLInputElement).files ?? [])];
-    if (picker !== undefined) picker.value = "";
-    if (files.length > 0) editing?.pick(files);
-  }
 </script>
 
 {#snippet state()}
@@ -101,38 +93,7 @@
 {@render state()}
 
 {#if editing !== undefined}
-  <ActionBar label="Editing">
-    {#snippet say()}{#if !editable(item)}Sealed: saving makes a revision, and
-        what was routed stays as it was.{/if}{/snippet}
-    <BarAction
-      icon="attach"
-      label="Attach"
-      disabled={editing.busy}
-      onclick={() => picker?.click()}
-    />
-    <BarAction
-      icon="close"
-      label="Cancel"
-      command="close"
-      onclick={() => editing?.close()}
-    />
-    <BarAction
-      icon="check"
-      label="Save"
-      primary
-      working={editing.busy}
-      command="save"
-      onclick={() => void editing?.save()}
-    />
-  </ActionBar>
-  <input
-    bind:this={picker}
-    type="file"
-    multiple
-    onchange={pick}
-    aria-label="Files to carry"
-    class="hidden"
-  />
+  <EditBar {item} {editing} />
 {:else}
   <ActionBar label="Item">
     {#snippet say()}{#if said !== undefined}<span

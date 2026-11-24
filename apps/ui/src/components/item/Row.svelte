@@ -2,7 +2,7 @@
   import type { BatchAction, Item } from "@notemap/client";
 
   import Edit from "$components/item/Edit.svelte";
-  import EditFoot from "$components/item/EditFoot.svelte";
+  import EditBar from "$components/item/EditBar.svelte";
   import { Editing } from "$components/item/editing.svelte";
   import Payload from "$components/item/Payload.svelte";
   import Routing from "$components/item/Routing.svelte";
@@ -498,12 +498,8 @@
     {/if}
 
     {#if selected && foot && editing !== undefined}
-      <div
-        data-foot
-        class="col-span-full row-start-2 flex min-h-11 items-center border-t border-rule bg-off px-gutter"
-        transition:fade
-      >
-        <EditFoot {editing} />
+      <div data-foot class="col-span-full row-start-2" transition:fade>
+        <EditBar {item} {editing} />
       </div>
     {/if}
   </div>
