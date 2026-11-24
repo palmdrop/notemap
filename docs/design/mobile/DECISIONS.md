@@ -66,7 +66,7 @@ them; what is left open, and what the plan has to carry into the notemap repo, i
   a template fixes can be changed for one route, which then carries on by hand. The check edits
   the item's tags. The rewrite for one route is "Edit", under the preview. Routing replaces the
   check in history: back leaves for where the route began, and only Cancel, inside the window,
-  steps back. Done and Discard on the route page say so on the queue's line, with Undo.
+  steps back. *(Amended 2026-11-24: the manual decision says Manual, not Done, throughout.)* Manual and Discard on the route page say so on the queue's line, with Undo.
 - **One vocabulary** for a route, on the route page, a template and a record: action (new note,
   append, new block) and shape (raw, list, task).
 - **Derived file names** follow ADR 68: a slug cut at a word near 40, and a taken one takes the
@@ -136,8 +136,8 @@ phone's; what changes is a handful of pieces, each with a phone form and a wide 
 |---|---|
 | The drawer | The menu as a column, always there; a rail of icons with counts from 900 to 1199 |
 | The + and the capture page | A box at the top of the queue; Ctrl+Enter captures |
-| The item, full screen | The item across the window beside the menu, its actions at its head *(amended 2026-11-18; it was beside the list)* |
-| A docked bar at a page's foot | A toolbar at the head of the pane it acts on; a route's own foot keeps Route |
+| The item, full screen | The item across the window beside the menu, its actions docked at its foot *(amended 2026-11-18; it was beside the list. Amended 2026-11-19: its actions were at its head)* |
+| A docked bar at a page's foot | At the foot of the pane it acts on, the height of the menu's foot *(amended 2026-11-19; it was a toolbar at the head)*; a route's own foot keeps Route |
 | A bottom sheet | Filter and notices as panels at the right, a quick route as a dialog |
 | Hold to select, swipe to route | Ctrl/cmd-click and shift-click select; Route and the circle on hover |
 | The batch bar | The batch's actions in the head, beside the count |
@@ -154,16 +154,16 @@ phone's; what changes is a handful of pieces, each with a phone form and a wide 
   batch tints and ticks the row, with no gutter, and every row is tall enough for its circle. The
   log's order and views are in its filter. A settings section's add is a row at the end of its
   list. The search sits at the right beside the icons.
-- **The route surface.** The item, whole, on the left, with Discard and Done at its head. On the
+- **The route surface.** The item, whole, on the left, with Discard and Manual at its foot. On the
   right, every step: where (templates and destinations; once picked, one row with Change), then a
   template's questions or how and place, then the check with the tags and the preview. A step that
   waits on an earlier one says so in a line ("Pick a template or a destination first."). A
   template's answers are radio rows: picked, not moved on from. Route sits at the foot of the
   steps, dashed with the reason above it until everything is answered. After routing the right
-  side is the routed state, as on the phone, and the item's Discard and Done go.
-- **Keys** are the shell's own, as `bindings.ts` has them: `j` `k` and the arrows walk the rows,
-  and with an item open they open the next; Enter opens; `esc` closes; `p` routes (the quick
-  dialog); `m` done; `D` discard; `e` edit; `t` tag; `[` `]` step the opened item; `space`
+  side is the routed state, as on the phone, and the item's Discard and Manual go.
+- **Keys** are the shell's own, as `bindings.ts` has them: `j` `k` walk the rows, and with an item
+  open they open the next; Enter selects the first row, and on a selected one opens the quick
+  route; `esc` closes; `p` routes (the quick dialog); `m` manual; `D` discard; `e` edit; `t` tag; `[` `]` step the opened item; `space`
   selects, `J` `K` select as they walk; `/` search; `f` filter; `n` notices; `k` on the first row
   goes up into the box. A button with a key says it in its tooltip.
 - **The status line** runs under the list only.
