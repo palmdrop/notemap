@@ -1,7 +1,7 @@
 # Review: PR #130, the phone-first shell as it stands
 
 **Date**: 2026-11-24
-**Status**: Resolved, but #12
+**Status**: Resolved
 **Scope**: `git diff origin/main...agent/mobile-first-rethink` at 011b85a3 (96 commits, 501 files):
 `apps/ui/src`, the small daemon/client/core/store changes behind it, `CONTEXT.md`, `docs/specs/`
 **Plan**: `docs/plans/phone-first-shell.md` (Done), `docs/plans/mobile-first-rethink.md` (In progress),
@@ -350,8 +350,10 @@ Nothing went missing silently. The deliberate removals are: revert in the item's
 
 ## Resolution (2026-11-24)
 
-Everything above is fixed on the branch except **#12**, which is left for a design conversation
-because splitting the route page decides a module's shape.
+Everything above is fixed on the branch. **#12**, at the developer's word: the route page's state
+is five modules by concern (`decision`, `steps`, `previewing`, `choosing`, `sending`), each step is
+a component of its own, and `Process.svelte` composes them in 371 lines. Its 179 tests pass
+unchanged.
 
 - **#1, #2, #13**: one `lib/trail` replaces both "came from inside the shell" mechanisms. Previous,
   Next, `[` and `]` are history entries, so back walks them as the developer expected. Close goes
