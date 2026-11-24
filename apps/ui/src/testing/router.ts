@@ -6,14 +6,19 @@ import { address } from "./address.svelte";
  * Mock it with `vi.mock("$app/navigation", () => import("$testing/router"))`
  * beside `$app/state`, and call `follow()` once per test file.
  */
-export function goto(to: string | URL): Promise<void> {
+export function goto(
+  to: string | URL,
+  options?: { state?: App.PageState },
+): Promise<void> {
   const url = new URL(String(to), "http://localhost");
   address.path = `${url.pathname}${url.search}`;
+  address.state = options?.state ?? {};
   return Promise.resolve();
 }
 
-export function replaceState(to: string | URL): void {
-  void goto(to);
+export function replaceState(to: string | URL, state: App.PageState): void {
+  if (String(to) !== "") void goto(to);
+  address.state = state;
 }
 
 export function pushState(to: string | URL): void {

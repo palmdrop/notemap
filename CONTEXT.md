@@ -357,9 +357,9 @@ item, so a routing record still pending delivery counts, and an item whose deliv
 resurfaces in the queue, as does one whose only delivered records are **withdrawn**. Marking an item processed by hand is routing whose destination is the
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
 nothing. Every **sealed** item is processed, and nearly every processed one is sealed.
-_Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
-it is what the button that ends the `manual` step says, a verb beside `route` rather than a word for
-what an item now is.
+_Avoid_: done, handled, cleared. The button that takes the decision says **Manual** too, beside
+**Route** and **Discard**: what it does is route the item to the person, which *done* does not
+say.
 
 **Sealed**:
 Said of an item whose capture can no longer be edited in place, so an edit of it makes a

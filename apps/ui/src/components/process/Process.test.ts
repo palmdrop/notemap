@@ -2482,7 +2482,7 @@ test("advances to the next item in the queue after a decision, and esc returns s
   await fireEvent.keyDown(window, { key: "[" });
   expect(left()).toBe("/items/two/process");
 
-  await choose("Done");
+  await choose("Manual");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2503,7 +2503,7 @@ test("advances to the row after this one, not the top of the queue", async () =>
   await client.enter("queue");
 
   draw();
-  await choose("Done");
+  await choose("Manual");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2524,7 +2524,7 @@ test("goes to the first queued item after deciding one that was not on the queue
   await client.enter("queue");
 
   draw();
-  await choose("Done");
+  await choose("Manual");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/zero/process");
   });
@@ -2561,7 +2561,7 @@ test("reads the next page before returning to a queue that has more", async () =
   await client.enter("queue");
 
   draw();
-  await choose("Done");
+  await choose("Manual");
   await vi.waitFor(() => {
     expect(left()).toBe("/items/two/process");
   });
@@ -2581,7 +2581,7 @@ test("returns to the queue when nothing is left", async () => {
   await client.enter("queue");
 
   draw();
-  await choose("Done");
+  await choose("Manual");
   await vi.waitFor(() => {
     expect(left()).toBe("/");
   });
@@ -2944,7 +2944,7 @@ test("offers manual and discard below the destinations", async () => {
   draw();
 
   await screen.findByRole("button", { name: /Vault/ });
-  await screen.findByRole("button", { name: "Done" });
+  await screen.findByRole("button", { name: "Manual" });
   await screen.findByRole("button", { name: "Discard" });
 });
 
@@ -3038,7 +3038,7 @@ test("an entry that cannot apply stays in the list and says why", async () => {
   );
 
   const discard = await screen.findByRole("button", { name: "Discard" });
-  const manual = await screen.findByRole("button", { name: "Done" });
+  const manual = await screen.findByRole("button", { name: "Manual" });
 
   expect(held(discard)).toBe(true);
   expect(discard.getAttribute("title")).toContain("already discarded");
@@ -3052,7 +3052,7 @@ test("manual marks processed at once, says so with an undo, and advances", async
   const transport = serving([aDestination()]);
   draw();
 
-  await choose("Done");
+  await choose("Manual");
 
   await vi.waitFor(() => {
     expect(left()).toBe("/");
@@ -3062,7 +3062,7 @@ test("manual marks processed at once, says so with an undo, and advances", async
   );
   expect(await marked?.json()).toEqual({});
   expect(screen.queryByLabelText("where it went")).toBeNull();
-  expect(notices.shown.at(-1)?.what).toBe("marked manual");
+  expect(notices.shown.at(-1)?.what).toBe("manual");
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
 
@@ -3077,7 +3077,7 @@ test("with the pool out of reach the composer opens and discards", async () => {
   draw();
 
   const vault = await screen.findByRole("button", { name: /Vault/ });
-  const manual = await screen.findByRole("button", { name: "Done" });
+  const manual = await screen.findByRole("button", { name: "Manual" });
   expect((vault as HTMLButtonElement).disabled).toBe(true);
   expect(vault.textContent).toContain("pool out of reach");
   expect(held(manual)).toBe(true);

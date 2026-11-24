@@ -1015,7 +1015,7 @@ test("an undo taken elsewhere takes the line's undo away", async () => {
   render(StatusLine);
 
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
@@ -1026,7 +1026,7 @@ test("an undo taken elsewhere takes the line's undo away", async () => {
   await vi.waitFor(() => {
     expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
-  expect(screen.getByText("marked manual")).toBeDefined();
+  expect(screen.getByText("manual")).toBeDefined();
 });
 
 test("a decision taken back on another device takes the line's undo away", async () => {
@@ -1043,7 +1043,7 @@ test("a decision taken back on another device takes the line's undo away", async
 
   notices.hold();
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
@@ -1055,7 +1055,7 @@ test("a decision taken back on another device takes the line's undo away", async
   await vi.advanceTimersByTimeAsync(10_000);
 
   expect(
-    notices.shown.find((notice) => notice.what === "marked manual")?.offer,
+    notices.shown.find((notice) => notice.what === "manual")?.offer,
   ).toBeUndefined();
 });
 
@@ -1065,7 +1065,7 @@ test("an undo taken elsewhere leaves the panel too", async () => {
   render(StatusLine);
 
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });

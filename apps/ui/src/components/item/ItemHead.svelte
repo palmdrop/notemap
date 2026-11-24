@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
+  import { untrack } from "svelte";
+  import { goto } from "$app/navigation";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { client } from "$lib/client";
   import { commandOf, publish } from "$lib/command/stack.svelte";
   import { timeOf, weekdayOf } from "$lib/stamp";
+  import { trail } from "$lib/trail.svelte";
 
   import { itemHref } from "./href";
   import Morph from "./Morph.svelte";
@@ -26,20 +28,53 @@
   const next = $derived(walk.next);
 
   let menu = $state(false);
+  let holder = $state<HTMLElement | null>(null);
+  let opener = $state<HTMLButtonElement | null>(null);
 
-  /** Whether the item was reached from inside the shell, so going back stays in it. */
-  let within = false;
-  afterNavigate(({ from, type }) => {
-    if (type !== "enter" && from !== null) within = true;
+  $effect(() => {
+    void id;
+    untrack(() => (menu = false));
   });
 
+  $effect(() => {
+    if (menu) holder?.querySelector<HTMLElement>("[role=menuitem]")?.focus();
+  });
+
+  function shut(): void {
+    menu = false;
+    opener?.focus();
+  }
+
+  /** The menu takes the keys while it is open: Esc closes it rather than the item. */
+  function keys(event: KeyboardEvent): void {
+    const items = [
+      ...(holder?.querySelectorAll<HTMLElement>("[role=menuitem]") ?? []),
+    ];
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    if (event.key === "Escape") shut();
+    else if (event.key === "ArrowDown") items[(at + 1) % items.length]?.focus();
+    else if (event.key === "ArrowUp")
+      items[(at - 1 + items.length) % items.length]?.focus();
+    else if (event.key === "Tab") menu = false;
+    else return;
+    if (event.key !== "Tab") event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function outside(event: PointerEvent): void {
+    if (
+      menu &&
+      !(holder?.parentElement?.contains(event.target as Node) ?? false)
+    )
+      menu = false;
+  }
+
   function back(): void {
-    if (within) history.back();
-    else void goto(walk.home);
+    trail.leave(walk.home);
   }
 
   function step(to: { id: string } | undefined): void {
-    if (to !== undefined) void goto(itemHref(to.id), { replaceState: true });
+    if (to !== undefined) void trail.step(itemHref(to.id));
   }
 
   publish(() => [
@@ -79,13 +114,15 @@
   }
 </script>
 
+<svelte:window onpointerdown={outside} />
+
 <header
   class="sticky top-0 z-30 flex min-h-bar items-center gap-2 border-b border-rule bg-paper pr-1 pl-1"
 >
   <button
     type="button"
     onclick={back}
-    title="Back (Esc)"
+    title={width.wide ? "Close (Esc)" : "Back (Esc)"}
     class="grid min-h-target min-w-target place-items-center"
   >
     <Icon
@@ -115,6 +152,7 @@
 
     <span class="relative">
       <button
+        bind:this={opener}
         type="button"
         aria-expanded={menu}
         aria-haspopup="menu"
@@ -125,7 +163,10 @@
       </button>
       {#if menu}
         <div
+          bind:this={holder}
           role="menu"
+          tabindex="-1"
+          onkeydown={keys}
           class="absolute top-full right-0 z-40 min-w-44 rounded-control border border-edge bg-paper py-1"
         >
           {#each offered as one (one.id)}

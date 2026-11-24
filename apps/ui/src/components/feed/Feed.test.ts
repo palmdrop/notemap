@@ -287,7 +287,7 @@ test("says where a routed row went, without asking for its records", async () =>
   // no word over them repeats what the lines say.
   const waiting = await screen.findByRole("img", { name: "1 pending" });
   expect(waiting.closest(".mt-2")?.textContent?.replace(/\s+/g, " ")).toMatch(
-    /Fiction.*Done/,
+    /Fiction.*Manual/,
   );
   expect(screen.queryByText("retrying")).toBeNull();
   expect(screen.queryByText("routed")).toBeNull();

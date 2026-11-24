@@ -95,7 +95,7 @@ test("the bar docks at the foot at every width, and when wide it names its keys"
     ],
   ).toBe("foot");
   expect(
-    screen.getByRole("button", { name: "Done" }).getAttribute("title"),
+    screen.getByRole("button", { name: "Manual" }).getAttribute("title"),
   ).toBeNull();
   unmount();
 
@@ -107,8 +107,8 @@ test("the bar docks at the foot at every width, and when wide it names its keys"
     ],
   ).toBe("foot");
   expect(
-    screen.getByRole("button", { name: "Done" }).getAttribute("title"),
-  ).toBe("Done (m)");
+    screen.getByRole("button", { name: "Manual" }).getAttribute("title"),
+  ).toBe("Manual (m)");
   expect(
     screen.getByRole("button", { name: "Discard" }).getAttribute("title"),
   ).toBe("Discard (D)");

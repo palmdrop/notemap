@@ -1210,7 +1210,7 @@ the mark always ends the place. **On a phone the place is always on the second l
 always beside the destination, cut** *(2026-11-23; it went under only where it did not fit, so a
 place read late, or named after it was read, changed the row's height)*. **A summary is drawn in
 the records' shape** *(2026-11-23; it was one line in the body's size, `→ **Vault**, manual`)*: a
-line per place it went, `manual` as `✓ Done`, the place held by a skeleton while the records are
+line per place it went, `manual` as `✓ Manual` *(2026-11-24; `✓ Done` for a day)*, the place held by a skeleton while the records are
 read, its turning mark ending the last line. **A held row's line for a record not yet delivered ends in what its route in flight offers**
 *(2026-11-01; amended 2026-11-03, when it always said `cancel`)*, on the queue and the feed alike, as
 a mark by hand's ends in `undo`: `undo` inside the window, nothing while the delivery is attempted,
@@ -1502,7 +1502,9 @@ somewhere else too, Save this as a template (for a route made by hand), Open the
 back after routing leaves for where the route began. *(Amended 2026-11-18, after the review.)*
 **× does the same**: it goes back to where the route began rather than pushing the queue, and
 Next item replaces the routed page in history; opened at its address, × replaces it with the
-queue. Nothing comes back selected.
+queue. Nothing comes back selected. *(Amended 2026-11-24.)* `[` and `]` are entries of their own,
+as Previous and Next on the item are, and × goes back past every one of them to where the route
+began, not to the item stepped from.
 
 
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
@@ -2060,9 +2062,11 @@ so the reader finds their place; it is not selected and draws no strip.
 selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
 each the destination, the end of its place and a chevron, opening the record's page; the words
 whole and a step larger (`text-read`); then its tags, each with its ×, and + tag. Opened at its
-address, it reads its list for Previous and Next. **Done and Discard move on** to the next item
-in its list (back to the list after the last), and that item's bar says `Done: …` or
-`Discarded: …` with Undo. A routed or discarded item offers **Route** (again) alone; one state
+address, it reads its list for Previous and Next. **Manual and Discard move on** to the next item
+in its list (back to the list after the last), and that item's bar says `Manual: …` or
+`Discarded: …` with Undo. Where to is settled before the decision is sent, since a discard takes
+the item off its list at once. The bar says only what moved it there: a notice about any other
+item is left to the status line and the bell. A routed or discarded item offers **Route** (again) alone; one state
 box says Discarded with Undiscard, or Manual: processed by hand with Undo.
 
 *Amended 2026-11-19, by the developer.* **The item reads as a row reads**: its words, then where
@@ -2073,10 +2077,16 @@ been read.
 
 **Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
 stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
-menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History. Back
-returns where the item was opened from; reached by a link, it goes to the item's list.
+menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History; it
+takes the focus as it opens, `↑` `↓` walk it, and `esc` or a press outside closes it rather than
+the item. Back returns where the item was opened from; reached by a link, it goes to the item's
+list. **Each step of Previous and Next is an entry in history** *(2026-11-24; a step replaced the
+entry, so the system's back gesture left for the list)*, so the system's back walks back through
+the items stepped through, and back or close goes back past all of them at once to where the walk
+began. A decision moving on replaces its entry, as a step taken by the decision rather than by
+the person.
 
-**Its bar** is Discard, Done and Route, docked at the foot of its pane at every width *(amended
+**Its bar** is Discard, Manual and Route, docked at the foot of its pane at every width *(amended
 2026-11-19; it was a toolbar at the head when wide)*. A routed item, sealed, offers **Route again**. What a press just did is said on
 the ruled line over the bar, with Undo. **Discarded** is a grey state box with **Undiscard**, and
 **Manual: processed by hand** a box of its own; the Undo of a manual mark is in its record.
@@ -3789,8 +3799,8 @@ where it has one:
   under a rule. The main action is a wide filled block in ink; the others are an icon over a word,
   with no box. When wide it stays at the foot of the pane it acts on *(amended 2026-11-19; it was
   a toolbar at the head)*, each action an icon beside its word and the main one at the right, and a
-  button with a key says it in its tooltip ("Done (m)"). The route page's item has its Discard and
-  Done at its foot, level with Route at the foot of the steps.
+  button with a key says it in its tooltip ("Manual (m)"). The route page's item has its Discard and
+  Manual at its foot, level with Route at the foot of the steps.
 - **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
   the bar says why ("Pick a destination to save."). Pressing it does nothing.
 - **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled.

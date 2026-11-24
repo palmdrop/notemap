@@ -2,7 +2,6 @@
   import { quick } from "$lib/quicking.svelte";
   import { untrack } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
-  import { goto } from "$app/navigation";
   import { saidBy, type ItemState } from "@notemap/client";
 
   import Edit from "$components/item/Edit.svelte";
@@ -26,6 +25,7 @@
   import { pending } from "$lib/pending.svelte";
   import { doubled } from "$lib/pick";
   import { reachable } from "$lib/reachable.svelte";
+  import { trail } from "$lib/trail.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
   import { undrainedSince } from "$lib/undrained-since";
@@ -36,7 +36,7 @@
   /**
    * The item read on its own: a route in its window, where it went as a box
    * of rows each opening its record, the words whole, its tags, and its
-   * actions in a bar. Done and Discard move on to the next item in its list,
+   * actions in a bar. Manual and Discard move on to the next item in its list,
    * whose bar then says what was done, with Undo.
    */
   let { id }: { id: string } = $props();
@@ -99,12 +99,19 @@
     }
   }
 
-  /** On to the next item in its list, or back to the list where it was the last. */
-  function moveOn(): void {
+  /**
+   * On to the next item in its list, or back to the list where it was the
+   * last. Where to is settled before the decision is sent: a discard takes the
+   * item off its list at once, and the list would no longer say what was next.
+   */
+  function moveOn(): () => void {
     const next = walk.next;
-    void goto(next === undefined ? walk.home : itemHref(next.id), {
-      replaceState: true,
-    });
+    const home = walk.home;
+    const left = id;
+    return () =>
+      void trail.moveOn(next === undefined ? home : itemHref(next.id), {
+        left,
+      });
   }
 
   // One subject and no selection: the page is the item, so what it offers is
@@ -123,8 +130,9 @@
         ? {
             ...command,
             run: async () => {
+              const onward = moveOn();
               await command.run();
-              moveOn();
+              onward();
             },
           }
         : command,

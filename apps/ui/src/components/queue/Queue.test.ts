@@ -601,9 +601,7 @@ test("a row that leaves the queue says where it went", async () => {
   await run("manual");
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain(
-      "marked manual",
-    );
+    expect(notices.shown.map((notice) => notice.what)).toContain("manual");
   });
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });

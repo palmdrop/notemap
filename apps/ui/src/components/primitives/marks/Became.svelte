@@ -14,7 +14,7 @@
     discarded: "Discarded",
     revised: "Revised",
     revision: "Revision of an earlier capture",
-    manual: "Done",
+    manual: "Manual",
   };
 </script>
 

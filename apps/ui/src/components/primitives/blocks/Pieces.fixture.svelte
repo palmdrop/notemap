@@ -119,7 +119,7 @@
   />
   <BarAction
     icon="check"
-    label="Done"
+    label="Manual"
     command="manual"
     onclick={() => onpress("done")}
   />

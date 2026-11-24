@@ -3,6 +3,7 @@
  * and forward would. Stands in for `$app/state`, and is read reactively.
  */
 let path = $state("/");
+let state = $state<App.PageState>({});
 
 export const address = {
   get path() {
@@ -10,6 +11,12 @@ export const address = {
   },
   set path(to: string) {
     path = to;
+  },
+  get state(): App.PageState {
+    return state;
+  },
+  set state(to: App.PageState) {
+    state = to;
   },
 };
 
@@ -19,5 +26,8 @@ export const page = {
   },
   get route() {
     return { id: path.startsWith("/feed") ? "/feed" : "/" };
+  },
+  get state(): App.PageState {
+    return state;
   },
 };

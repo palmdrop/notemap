@@ -214,7 +214,7 @@
       class="size-3.5 shrink-0 self-center"
     />
     <span class="min-w-0 truncate text-ink"
-      >{line.manual === true ? "Done" : line.name}</span
+      >{line.manual === true ? "Manual" : line.name}</span
     >
   </span>
   {#if line.place !== undefined || line.note !== undefined || line.pending === true || line.sketched === true}

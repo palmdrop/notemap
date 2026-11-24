@@ -5,6 +5,7 @@ import {
   screen,
   within,
 } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { afterEach, expect, test, vi } from "vitest";
 
 import type { Item as Held } from "@notemap/client";
@@ -16,6 +17,7 @@ import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
 import { quick } from "$lib/quicking.svelte";
 import { remember } from "$lib/order";
+import { address } from "$testing/address.svelte";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
 import Item from "./Item.svelte";
 
@@ -23,13 +25,21 @@ keyboard();
 
 /** Leaving the surface needs a router, and there is none outside the app. */
 const went = vi.hoisted(() => ({ to: [] as string[] }));
-vi.mock("$app/navigation", () => ({
-  goto: (url: string) => void went.to.push(url),
-}));
+vi.mock("$app/navigation", async () => {
+  const router = await import("$testing/router");
+  return {
+    ...router,
+    goto: (url: string, options?: { state?: App.PageState }) => {
+      went.to.push(url);
+      return router.goto(url, options);
+    },
+  };
+});
+vi.mock("$app/state", () => import("$testing/address.svelte"));
 
 /** Both act when taken, from the item's own actions: no second step and no commit. */
 async function manual() {
-  await fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Manual" }));
 }
 
 async function discard() {
@@ -40,6 +50,7 @@ afterEach(() => {
   quick.close();
   notices.clear();
   went.to = [];
+  address.state = {};
 });
 
 /** The words a capture holds, kept apart from the id it is reached by. */
@@ -384,7 +395,7 @@ test("says only what offers a way back in the corner about the item it is drawin
   await vi.waitFor(() => {
     expect(notices.shown.map((notice) => notice.what).sort()).toEqual([
       "discarded",
-      "marked manual",
+      "manual",
     ]);
   });
   expect(notices.shown.every((notice) => notice.offer?.label === "undo")).toBe(
@@ -761,7 +772,7 @@ test("editing an unrouted item says nothing of revisions", async () => {
   expect(screen.queryByText(/saving makes a revision/)).toBeNull();
 });
 
-test("Done moves on to the next item in the queue, whose bar says what was done with Undo", async () => {
+test("Manual moves on to the next item in the queue, whose bar says what was done with Undo", async () => {
   pool((request) => {
     switch (routeOf(request)) {
       case "GET /v1/queue":
@@ -787,8 +798,53 @@ test("Done moves on to the next item in the queue, whose bar says what was done 
   await vi.waitFor(() => {
     expect(went.to).toEqual(["/items/two"]);
   });
-  expect(await screen.findByText(/^Done:/)).toBeDefined();
-  expect(screen.getByRole("button", { name: "Undo" })).toBeDefined();
+  expect(await screen.findByRole("button", { name: "Undo" })).toBeDefined();
+  expect(screen.getByText(/first/, { selector: "b" })).toBeDefined();
+});
+
+test("Discard moves on to the next item in the queue, though it leaves the queue at once", async () => {
+  pool((request) => {
+    switch (routeOf(request)) {
+      case "GET /v1/queue":
+        return json(200, {
+          values: [saying("one", "first"), saying("two", "second")],
+        });
+      case "GET /v1/items/one":
+        return json(200, saying("one", "first"));
+      default:
+        return json(200, { values: [] });
+    }
+  });
+
+  render(Item, { id: "one" });
+  await screen.findByText("first");
+  await vi.waitFor(() => {
+    expect(asked()).toContain("GET /v1/queue");
+  });
+  await discard();
+
+  await vi.waitFor(() => {
+    expect(went.to).toEqual(["/items/two"]);
+  });
+  expect(await screen.findByRole("button", { name: "Undo" })).toBeDefined();
+  expect(screen.getByText(/first/, { selector: "b" })).toBeDefined();
+});
+
+test("the bar says nothing of a notice about another item", async () => {
+  pool(acting(saying("one", "still here")));
+  render(Item, { id: "one" });
+  await screen.findByText("still here");
+
+  notices.raise({
+    what: "discarded",
+    about: "elsewhere",
+    href: "/items/other",
+    offer: { label: "undo", take: vi.fn() },
+  });
+  address.state = { left: "another" };
+  await tick();
+
+  expect(screen.queryByText("elsewhere")).toBeNull();
 });
 
 test("a route in its window is said on its record's line, with Cancel, and after the words", async () => {

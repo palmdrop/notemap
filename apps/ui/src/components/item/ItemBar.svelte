@@ -7,11 +7,14 @@
   import type { Command } from "$lib/command/command";
   import { editable } from "$lib/lineage";
   import { notices } from "$lib/notices.svelte";
+  import { trail } from "$lib/trail.svelte";
+
+  import { itemHref } from "./href";
 
   import type { Editing } from "./editing.svelte";
 
   /**
-   * The item's actions: Discard, Done and Route, docked at the foot of the
+   * The item's actions: Discard, Manual and Route, docked at the foot of the
    * item's pane at every width. While editing they are
    * Attach, Cancel and Save. What a press just did is said on the line over
    * the bar, with Undo, rather than in a toast; a state that has a way back
@@ -46,19 +49,23 @@
   );
   /** The feed's items are sealed; routing one again is a second decision. */
   const routed = $derived(item.routing !== undefined);
-  /** Done and Discard are for work: a routed, marked or discarded item is past them. */
+  /** Manual and Discard are for work: a routed, marked or discarded item is past them. */
   const settled = $derived(discarded || routed);
 
-  /** What a press just did, while the line still says it: Done or Discard, with Undo. */
+  /**
+   * What the decision that moved here did to the item it moved on from, while
+   * the line still says it: Manual or Discard, with Undo.
+   */
   const said = $derived.by(() => {
+    const left = trail.left;
     const latest = notices.latest;
-    return latest?.offer !== undefined ? latest : undefined;
+    return left !== undefined &&
+      latest?.offer !== undefined &&
+      latest.href === itemHref(left)
+      ? latest
+      : undefined;
   });
 
-  const WORDS: Readonly<Record<string, string>> = {
-    discarded: "Discarded",
-    "marked manual": "Done",
-  };
   const capital = (word: string): string =>
     word.charAt(0).toUpperCase() + word.slice(1);
 
@@ -131,10 +138,9 @@
     {#snippet say()}{#if said !== undefined}<span
           class="flex items-center gap-3 text-ink"
           ><span class="min-w-0 flex-1 truncate"
-            >{WORDS[said.what] ??
-              capital(
-                said.what,
-              )}{#if (said.about ?? said.subject) !== undefined}:
+            >{capital(
+              said.what,
+            )}{#if (said.about ?? said.subject) !== undefined}:
               <b>{said.about ?? said.subject}</b>{/if}</span
           ><button
             type="button"
@@ -154,7 +160,7 @@
       />
       <BarAction
         icon="check"
-        label="Done"
+        label="Manual"
         command="manual"
         disabled={by("manual")?.refusal !== undefined}
         onclick={() => run("manual")}

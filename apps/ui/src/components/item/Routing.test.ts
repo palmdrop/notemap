@@ -181,7 +181,7 @@ test("a summary drawn while the records are read holds each destination's place 
 
   const { container, unmount } = render(Routing, { summary, awaiting: true });
   expect(container.querySelectorAll("[data-skeleton='place']")).toHaveLength(1);
-  expect(container.textContent).toContain("Done");
+  expect(container.textContent).toContain("Manual");
   unmount();
 
   const settled = render(Routing, { summary });

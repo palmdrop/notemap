@@ -30,7 +30,7 @@
   import { notices } from "$lib/notices.svelte";
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
-  import { within } from "$lib/within.svelte";
+  import { arrived } from "$lib/trail.svelte";
 
   import "./layout.css";
 
@@ -42,7 +42,7 @@
   watched();
 
   afterNavigate(({ from, type }) => {
-    if (type !== "enter" && from !== null) within.note();
+    arrived(type !== "enter" && from !== null);
   });
 
   const queue = client.counts.queue;

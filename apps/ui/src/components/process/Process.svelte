@@ -18,7 +18,7 @@
   import { takenAs } from "$lib/candidate-list";
   import { aboutItem } from "$lib/excerpt";
   import { headed } from "$lib/heading.svelte";
-  import { within } from "$lib/within.svelte";
+  import { trail } from "$lib/trail.svelte";
   import { kindIcon, templateIcon, whereOf } from "$lib/looks";
   import { notices } from "$lib/notices.svelte";
   import { keyFor } from "$lib/routing";
@@ -31,7 +31,6 @@
     type Fact,
   } from "$lib/vocabulary";
 
-  import { goto } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -1254,9 +1253,9 @@
       next = following();
     }
     next ??= following();
-    await goto(next === undefined ? resolve("/") : processHref(next.id), {
-      replaceState: true,
-    });
+    await trail.moveOn(
+      next === undefined ? resolve("/") : processHref(next.id),
+    );
   }
 
   /**
@@ -1276,8 +1275,7 @@
    * before it, and the queue takes its place.
    */
   function back(): void {
-    if (within.yes) history.back();
-    else void goto(resolve("/"), { replaceState: true });
+    trail.leave(resolve("/"));
   }
 
   function leave(): void {
@@ -1286,7 +1284,7 @@
   }
 
   function walk(to: Item | undefined): void {
-    if (to !== undefined) void goto(processHref(to.id));
+    if (to !== undefined) void trail.step(processHref(to.id));
   }
 
   // Routing is the one command that fires with the caret in a field: the
@@ -1462,9 +1460,9 @@
           {#each handShown as one (one.id)}
             <LinkRow
               icon={one.id === DISCARD ? "trash" : "check"}
-              title={one.id === DISCARD ? "Discard" : "Done"}
-              label={one.id === DISCARD ? "Discard" : "Done"}
-              line={one.id === MANUAL ? "Manual: processed by hand" : undefined}
+              title={one.id === DISCARD ? "Discard" : "Manual"}
+              label={one.id === DISCARD ? "Discard" : "Manual"}
+              line={one.id === MANUAL ? "Processed by hand" : undefined}
               danger={one.id === DISCARD}
               chevron={false}
               why={unusable[one.id]}
@@ -1873,7 +1871,7 @@
         <AttachedLines {attachments} ruled={shownWords !== ""} />
         <Unfurls text={shownWords} />
       </div>
-      <!-- Discard and Done at the foot of the item, level with Route at
+      <!-- Discard and Manual at the foot of the item, level with Route at
            the foot of the steps. -->
       <div class="mt-auto">
         {#if routedNow === undefined}
@@ -1887,7 +1885,7 @@
             />
             <BarAction
               icon="check"
-              label="Done"
+              label="Manual"
               why={unusable[MANUAL]}
               onclick={() => void choose(MANUAL)}
             />
