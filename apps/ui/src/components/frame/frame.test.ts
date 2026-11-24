@@ -1,7 +1,19 @@
-import { render, screen } from "@testing-library/svelte";
-import { expect, test } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/svelte";
+import { afterEach, expect, test, vi } from "vitest";
 
+import { notices } from "$lib/notices.svelte";
+import { viewport } from "$testing/dom";
+
+import Drawer from "./Drawer.svelte";
+import Listed from "./Header.list.fixture.svelte";
 import Menu from "./Menu.svelte";
+import { searching } from "./searching.svelte";
+import Strip from "./Strip.svelte";
+
+afterEach(() => {
+  notices.clear();
+  searching.close();
+});
 
 test("marks the surface being read, and only that one", () => {
   render(Menu, { current: "/feed" });
@@ -84,4 +96,84 @@ test("a page's levels above it lead its title as links when wide", async () => {
   expect(screen.getByRole("heading", { level: 1 }).textContent?.trim()).toBe(
     "Vault",
   );
+});
+
+test("the strip says a late refusal once in red, and goes with its × or its Show", async () => {
+  render(Strip);
+  notices.raise({
+    what: "rejected by",
+    subject: "Vault",
+    href: "/items/one",
+    strip: true,
+    alarm: true,
+  });
+
+  const strip = await screen.findByRole("alert");
+  expect(strip.textContent).toContain("Vault");
+  await fireEvent.click(screen.getByRole("link", { name: "Show" }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  notices.raise({ what: "rejected by", subject: "Vault", strip: true });
+  await screen.findByRole("alert");
+  await fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+test("the drawer says what waits to send, and closes once by its × or esc", async () => {
+  const onclose = vi.fn();
+  render(Drawer, {
+    current: "/",
+    queue: 3,
+    waiting: 2,
+    reachable: true,
+    at: undefined,
+    who: "signed in",
+    onclose,
+  });
+
+  expect(screen.getByText("2 waiting to send")).toBeDefined();
+  await fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  await fireEvent(
+    screen.getByRole("dialog", { name: "Menu" }),
+    new Event("cancel"),
+  );
+  expect(onclose).toHaveBeenCalledTimes(1);
+});
+
+test("a list's head counts what its filter holds, and on a phone search takes the head", async () => {
+  viewport(390);
+  const onfilter = vi.fn();
+  render(Listed, { filtered: 2, onfilter });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Filter, 2 on" }));
+  expect(onfilter).toHaveBeenCalled();
+
+  await fireEvent.click(screen.getByRole("button", { name: "Search" }));
+  expect(
+    await screen.findByRole("button", { name: "Close search" }),
+  ).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Menu" })).toBeNull();
+});
+
+test("rows selected for a batch take the head: how many, All and a way out", async () => {
+  viewport(390);
+  const all = vi.fn();
+  const clear = vi.fn();
+  render(Listed, {
+    chosen: { count: 3, full: undefined, all, clear, deeds: [] },
+  });
+
+  expect(
+    (await screen.findByRole("heading", { level: 1 })).textContent,
+  ).toContain("3 selected");
+  await fireEvent.click(screen.getByRole("button", { name: "All" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Clear the selection" }),
+  );
+  expect(all).toHaveBeenCalled();
+  expect(clear).toHaveBeenCalled();
 });
