@@ -1,11 +1,22 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import type { Ask, Supplied } from "$lib/asked";
   import { completed, narrowed, takenAs } from "$lib/candidate-list";
-  import { drawOut, grow, pinned, slide, unfold } from "$lib/motion";
+  import { width } from "$lib/breakpoint";
+  import {
+    drawOut,
+    fade,
+    fromFoot,
+    grow,
+    pinned,
+    rise,
+    slide,
+    unfold,
+  } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
@@ -99,6 +110,13 @@
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
   let line = $state<HTMLInputElement | null>(null);
+  // On a phone the line goes to the top of the view, so the offer has the room
+  // under it down to the keyboard.
+  $effect(() => {
+    if (adding && !field && !width.wide) {
+      line?.scrollIntoView({ block: "start" });
+    }
+  });
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
@@ -116,14 +134,22 @@
     stepping = undefined;
   }
 
+  /** The question put away unanswered: the tag stays off. */
+  function leaveOff(): void {
+    if (field) done();
+    else close();
+  }
+
   /** A tag taken: the line is put away, or as a field emptied for the next. */
   function done(): void {
     if (!field) {
       close();
       return;
     }
+    const asked = stepping !== undefined;
     draft = "";
     stepping = undefined;
+    if (asked) void tick().then(() => line?.focus({ preventScroll: true }));
   }
 
   /** A trigger tag taken, and the values it is being given before it lands. */
@@ -266,6 +292,7 @@
     field ? {} : slide(node, { magnitude: "short" });
   const unhung = (node: HTMLElement) =>
     field ? {} : pinned(node, { magnitude: "short" });
+  const asking = (node: Element) => (width.wide ? rise(node) : fromFoot(node));
 
   /** Names the line's place for the offer to hang from, one per set on the page. */
   const anchor = `--tags-${id.replace(/[^\w-]/g, "")}`;
@@ -362,6 +389,9 @@
     draft = "";
     stepping =
       stepping.at === 0 ? undefined : { ...stepping, at: stepping.at - 1 };
+    if (stepping === undefined) {
+      void tick().then(() => line?.focus({ preventScroll: true }));
+    }
   }
 
   function walk(step: 1 | -1): void {
@@ -519,21 +549,19 @@
     bind:this={line}
     autofocus={!field}
     bind:value={draft}
-    onblur={field ? undefined : close}
+    onblur={field || stepping !== undefined ? undefined : close}
+    inert={step !== undefined}
     {onkeydown}
     spellcheck="false"
     autocapitalize="off"
     autocomplete="off"
-    aria-label={step === undefined ? label : step.label}
-    placeholder={step?.default ?? (field ? "Add a tag" : "")}
+    aria-label={label}
+    placeholder={field ? "Add a tag" : ""}
     role="combobox"
     aria-autocomplete="list"
     aria-expanded={(adding || field) && rows.length > 0}
     aria-controls="{id}-tags"
-    aria-activedescendant={active}
-    aria-describedby={stepping !== undefined && step !== undefined
-      ? `${id}-step`
-      : undefined}
+    aria-activedescendant={step === undefined ? active : undefined}
     class={classes}
     in:drawOut
   />
@@ -576,123 +604,156 @@
   </span>
 {/snippet}
 
+{#snippet listbox()}
+  <div
+    id="{id}-tags"
+    role="listbox"
+    aria-label={step === undefined ? "Tags in use" : step.label}
+    class="divide-y divide-rule"
+  >
+    {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+      {@const on = at === index}
+      {@const fired = step !== undefined ? undefined : fires?.(row.label)}
+      {#if row.apart}
+        <div aria-hidden="true" class="h-2 border-b border-rule bg-band"></div>
+      {/if}
+      <Walked
+        id={on ? `${id}-tag-${index}` : undefined}
+        {on}
+        onhover={() => (at = index)}
+        ontake={() =>
+          step === undefined ? take(row.label) : give(row.value ?? row.label)}
+      >
+        <span
+          class="flex min-h-target items-center justify-between gap-3 px-gutter {on
+            ? 'bg-off'
+            : ''}"
+        >
+          {#if step !== undefined}
+            <span
+              >{row.fresh
+                ? `+ ${row.value ?? row.label}`
+                : (row.value ?? row.label)}</span
+            >
+            <Icon name="chevron" class="size-5 flex-none" />
+          {:else if fired !== undefined}
+            <span aria-hidden="true" class={TRIGGER}
+              >{#if row.fresh}+&nbsp;{/if}<Icon
+                name="route"
+                class="size-4"
+              />{trigger(row.label)}</span
+            ><span aria-hidden="true" class="text-small text-muted"
+              >{fired}</span
+            ><span class="sr-only"
+              >{row.fresh ? "+ " : ""}{row.label}, routes to {fired}</span
+            >
+          {:else}
+            <span
+              >{#if row.fresh}+&nbsp;{/if}<span aria-hidden="true">#</span
+              >{row.label}</span
+            >{#if row.fresh}<span
+                aria-hidden="true"
+                class="text-small text-muted">new</span
+              >{/if}
+          {/if}
+        </span>
+      </Walked>
+    {/each}
+  </div>
+{/snippet}
+
 {#snippet offer()}
-  {#if (adding || field) && (rows.length > 0 || step !== undefined)}
+  {#if stepping !== undefined && step !== undefined}
+    <!-- Asking for a value it is the quick route's shape: a sheet across a
+       phone's foot, a dialog in the middle of a wide window, over a veil, with
+       a field of its own for a typed answer. Closing it leaves the tag off. -->
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="{id}-step-title"
+      class="fixed inset-x-0 top-[var(--visible-top,0px)] z-50 flex h-[var(--visible-height,100dvh)] items-end justify-center wide:items-center"
+    >
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="absolute inset-0 bg-veil"
+        transition:fade|global
+        onmousedown={(event) => {
+          event.preventDefault();
+          leaveOff();
+        }}
+      ></div>
+      <div
+        bind:this={panel}
+        transition:asking|global
+        class="relative max-h-[70%] w-full overflow-y-auto rounded-t-control border-t border-rule bg-paper wide:w-[26rem] wide:rounded-control wide:border"
+      >
+        <div id="{id}-step">
+          <div
+            class="flex min-h-bar items-center justify-between gap-3 border-b border-rule pl-gutter"
+          >
+            <span
+              id="{id}-step-title"
+              class="inline-flex items-center gap-2 font-display text-title lowercase"
+              ><Icon name="route" />{trigger(stepping.tag)}</span
+            >
+            <button
+              type="button"
+              aria-label="Leave the tag off"
+              onmousedown={(event) => event.preventDefault()}
+              onclick={leaveOff}
+              class="grid min-h-target min-w-target place-items-center"
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <div class="px-gutter py-3">
+            <span class="block">{stepping.ask.template}</span>
+            <small class="block text-small text-muted"
+              >{step.label}{#if step.default !== undefined}, default {step.default}{/if}</small
+            >
+          </div>
+        </div>
+        <div class="border-b border-rule px-gutter pb-3">
+          <input
+            {@attach (node) => node.focus({ preventScroll: true })}
+            bind:value={draft}
+            {onkeydown}
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            aria-label={step.label}
+            placeholder={step.default ?? ""}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={rows.length > 0}
+            aria-controls="{id}-tags"
+            aria-activedescendant={active}
+            aria-describedby="{id}-step"
+            class="min-h-11 w-full rounded-control border border-rule bg-tag px-3 caret-ink outline-none placeholder:text-muted focus:border-ink"
+          />
+        </div>
+        {@render listbox()}
+      </div>
+    </div>
+  {:else if (adding || field) && rows.length > 0}
     <!-- Rows taken on `mousedown` with the default prevented, so taking one
        never blurs the line out from under the click. -->
     <!-- Hung from the line where the browser can tie it there, and from the
        start of the set's own row where it cannot; the set's container is
-       what it is placed against, so callers make that container relative.
-       On a phone it opens upward, clear of a bar docked at the foot. Asking
-       for a value it is the quick route's shape: a sheet across a phone's
-       foot, a dialog in the middle of a wide window, over a veil. -->
+       what it is placed against, so callers make that container relative. -->
     <div
-      class={step !== undefined
-        ? "fixed inset-0 z-50 flex items-end justify-center bg-veil wide:items-center"
-        : field
-          ? "mb-2 basis-full"
-          : "offer z-30 max-wide:offer-above"}
+      class={field ? "mb-2 basis-full" : "offer z-30"}
       style="position-anchor: {anchor}"
       in:hung|global
       out:unhung|global
     >
       <div
         bind:this={panel}
-        class="overflow-y-auto border border-rule bg-paper {step === undefined
-          ? field
-            ? 'max-h-72 w-full rounded-control'
-            : 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56 rounded-control'
-          : 'max-h-[70dvh] w-full rounded-t-control border-x-0 border-b-0 wide:w-[26rem] wide:rounded-control wide:border'}"
+        class="overflow-y-auto rounded-control border border-rule bg-paper {field
+          ? 'max-h-72 w-full'
+          : 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56'}"
       >
-        {#if stepping !== undefined && step !== undefined}
-          <!-- The quick sheet's shape: the trigger, the template it applies, and
-             what it asks. Closing it leaves the tag off. -->
-          <div id="{id}-step">
-            <div
-              class="flex min-h-bar items-center justify-between gap-3 border-b border-rule pl-gutter"
-            >
-              <span
-                class="inline-flex items-center gap-2 font-display text-title lowercase"
-                ><Icon name="route" />{trigger(stepping.tag)}</span
-              >
-              <button
-                type="button"
-                aria-label="Leave the tag off"
-                onmousedown={(event) => event.preventDefault()}
-                onclick={close}
-                class="grid min-h-target min-w-target place-items-center"
-              >
-                <Icon name="close" />
-              </button>
-            </div>
-            <div class="border-b border-rule px-gutter py-3">
-              <span class="block">{stepping.ask.template}</span>
-              <small class="block text-small text-muted"
-                >{step.label}{#if step.default !== undefined}, default {step.default}{/if}</small
-              >
-            </div>
-          </div>
-        {/if}
-        <div
-          id="{id}-tags"
-          role="listbox"
-          aria-label={step === undefined ? "Tags in use" : step.label}
-          class="divide-y divide-rule"
-        >
-          {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-            {@const on = at === index}
-            {@const fired = step !== undefined ? undefined : fires?.(row.label)}
-            {#if row.apart}
-              <div
-                aria-hidden="true"
-                class="h-2 border-b border-rule bg-band"
-              ></div>
-            {/if}
-            <Walked
-              id={on ? `${id}-tag-${index}` : undefined}
-              {on}
-              onhover={() => (at = index)}
-              ontake={() =>
-                step === undefined
-                  ? take(row.label)
-                  : give(row.value ?? row.label)}
-            >
-              <span
-                class="flex min-h-target items-center justify-between gap-3 px-gutter {on
-                  ? 'bg-off'
-                  : ''}"
-              >
-                {#if step !== undefined}
-                  <span
-                    >{row.fresh
-                      ? `+ ${row.value ?? row.label}`
-                      : (row.value ?? row.label)}</span
-                  >
-                  <Icon name="chevron" class="size-5 flex-none" />
-                {:else if fired !== undefined}
-                  <span aria-hidden="true" class={TRIGGER}
-                    >{#if row.fresh}+&nbsp;{/if}<Icon
-                      name="route"
-                      class="size-4"
-                    />{trigger(row.label)}</span
-                  ><span aria-hidden="true" class="text-small text-muted"
-                    >{fired}</span
-                  ><span class="sr-only"
-                    >{row.fresh ? "+ " : ""}{row.label}, routes to {fired}</span
-                  >
-                {:else}
-                  <span
-                    >{#if row.fresh}+&nbsp;{/if}<span aria-hidden="true">#</span
-                    >{row.label}</span
-                  >{#if row.fresh}<span
-                      aria-hidden="true"
-                      class="text-small text-muted">new</span
-                    >{/if}
-                {/if}
-              </span>
-            </Walked>
-          {/each}
-        </div>
+        {@render listbox()}
       </div>
     </div>
   {/if}

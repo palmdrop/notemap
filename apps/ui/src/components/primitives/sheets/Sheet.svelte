@@ -52,7 +52,7 @@
 
   const placed = $derived(
     form === "sheet"
-      ? "inset-x-0 bottom-0 max-h-[85dvh] border-t"
+      ? "inset-x-0 bottom-0 max-h-[85%] border-t"
       : form === "panel"
         ? "inset-y-0 right-0 w-[min(var(--spacing-panel),100vw)] border-l"
         : "top-[12vh] left-1/2 max-h-[76vh] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 rounded-[0.75rem] border",
@@ -76,7 +76,7 @@
     close();
   }}
   onclose={close}
-  class="fixed inset-0 m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-transparent"
+  class="fixed inset-x-0 top-[var(--visible-top,0px)] m-0 h-[var(--visible-height,100dvh)] max-h-none w-full max-w-none overflow-hidden bg-transparent p-0 text-ink backdrop:bg-transparent"
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

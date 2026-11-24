@@ -52,7 +52,7 @@
     answer(undefined);
   }}
   onclose={() => answer(undefined)}
-  class="fixed inset-0 m-0 grid size-full max-h-none max-w-none place-items-center bg-transparent p-gutter text-ink backdrop:bg-transparent"
+  class="fixed inset-x-0 top-[var(--visible-top,0px)] m-0 grid h-[var(--visible-height,100dvh)] max-h-none w-full max-w-none place-items-center bg-transparent p-gutter text-ink backdrop:bg-transparent"
 >
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

@@ -894,8 +894,8 @@ what will happen when the capture is sent: `Routes by **Todo**, list Next once i
 *(Amended 2026-11-16.)* The question is asked in the quick sheet's shape, here and on the item:
 a sheet at the foot on a phone, or a panel by the tag line when wide, headed with the trigger's
 name and a close that leaves the tag off, then the template's row, then the answers ruled, each
-ending in **Route** on the last question and a chevron before it. The tag line keeps its keys:
-`↑↓` walk the answers and `⏎` takes one.
+ending in **Route** on the last question and a chevron before it. The question's own field keeps
+the tag line's keys: `↑↓` walk the answers and `⏎` takes one.
 
 What follows from 2026-09-14 still holds of the box, and of the page where it says so.
 
@@ -2526,9 +2526,16 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 *Amended 2026-11-18, after the review.* **The chooser is drawn in the blocks register**: where a
 tag can be changed each carries its × — no press to select it first — and elsewhere tags are
 words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
-its template's name muted at the right, and a typed name no offer holds says `new`. On a phone
-the offer opens upward, clear of a docked bar. **A trigger tag's question is the quick route's
-shape**: a sheet across a phone's foot, a dialog when wide, its answers rows with a chevron.
+its template's name muted at the right, and a typed name no offer holds says `new`. **The offer
+opens downward at every width** *(2026-11-24; on a phone it opened upward, over the words the tag
+was for)*, and on a phone the line is first scrolled to the top of the view, so the offer has the
+room under it down to the keyboard. **A trigger tag's question is the quick route's shape**: a
+sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
+**The question has a field of its own** under what it asks, which takes the caret, since the tag
+line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The
+sheet slides back down to the foot as it closes, its veil fading, whether it was answered, closed,
+or the veil pressed. **A sheet stands on the keyboard**: held to the part of the page that can be
+seen, it rises with the keyboard and stays put while the browser pans the page under it.
 *(2026-11-23; it was an underline across the row.)* **The line `+ tag` opens is a box of a tag's
 size**, ruled in ink, where the `+ tag` stood.
 

@@ -842,6 +842,17 @@ test("closing a trigger tag's question leaves the tag off", async () => {
   expect(readDraft().tags).toEqual([]);
 });
 
+test("a trigger tag's question is a dialog whose own field takes the caret", async () => {
+  await servingTodo(todo());
+
+  await takeTag("route/todo");
+  const asked = await screen.findByRole("combobox", { name: "list" });
+  expect(screen.getByRole("dialog", { name: "todo" }).contains(asked)).toBe(
+    true,
+  );
+  expect(document.activeElement).toBe(asked);
+});
+
 test("a trigger tag says what it will do once the capture is sent", async () => {
   await servingTodo(todo());
 

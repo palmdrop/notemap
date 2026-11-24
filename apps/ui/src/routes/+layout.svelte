@@ -31,6 +31,7 @@
   import { reachable, watched } from "$lib/reachable.svelte";
   import { session } from "$lib/session.svelte";
   import { arrived } from "$lib/trail.svelte";
+  import { watchVisible } from "$lib/visible";
 
   import "./layout.css";
 
@@ -40,6 +41,8 @@
   const who = session();
 
   watched();
+
+  $effect(() => watchVisible());
 
   afterNavigate(({ from, type }) => {
     arrived(type !== "enter" && from !== null);
