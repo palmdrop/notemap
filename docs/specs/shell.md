@@ -1,8 +1,25 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-18
+**Last updated**: 2026-11-24
 **Shipped**:
+
+- 2026-11-24 — **The phone-first shell, after its second review**
+  ([review](../reviews/mobile-first-rethink-pr-130-2026-11-24.md)). Previous and Next are entries in
+  history and back walks them; Discard moves on; the manual decision says **Manual** again; a row's
+  edit has the item's bar; rows walked to clear the header; no empty tag line on a phone; a trigger
+  tag's question has its own field and the tag offer opens downward; sheets stand on the keyboard;
+  settings' menu has a foot; the old register's pieces and tokens go.
+
+- 2026-11-23 — **Settling, and skeletons.** Skeletons where nothing is cached (superseding "no
+  skeletons"); a routed row's line holds its shape while records are read; the bold face preloaded;
+  the tag line a box of a tag's size; the batch's tag sheet with its field at the head; the place
+  line naming its folders; a heading field listing its headings at once.
+
+- 2026-11-19 — **Bars at the foot, and two squares.** A docked bar stays at the foot of its pane at
+  every width; the item reads as a row does, a route's window on its record's line; settings and a
+  record's page run to the window's edge at a readable measure; the date and what was captured today
+  under the menu.
 
 - 2026-11-18 — **The phone-first shell, after its review** ([review](../reviews/phone-first-shell-review-2026-11-18.md)).
   The item drawn as its own view rather than a selected row; the log's rows in the queue's
@@ -1068,9 +1085,10 @@ name after `route/`**, everywhere — a row, the item, the filter, the offer —
 never small caps *(2026-11-13; bold small caps from 2026-09-14)*. The `+ tag` that adds one is a
 dashed box.
 
-**A selected row** — by a click, or walked to by `j` and `k` — is drawn on the band, its actions as
-a beige strip under its words. *(Until the item view is redrawn, a tap selects the row rather than
-opening the item.)* **When wide**, a row under the pointer turns the box grey and offers **Route**
+**A selected row** — by its time when wide, or walked to by `j` and `k` — is tinted `picked`, with
+a ruled edge while the keys are on it; its actions are the item's, and nothing is drawn under it
+*(amended 2026-11-24, to say what was built on 2026-11-18: it was drawn on the band with a beige
+strip of actions, and a tap selected it rather than opening the item)*. **When wide**, a row under the pointer turns the box grey and offers **Route**
 beside its words, at a readable measure rather than at the window's edge.
 
 **Processing starts in the row.** The queue is one scrollable list a person works freely
@@ -1093,7 +1111,8 @@ off by pressing them, and the stamp, which is the accessible way to select it.
 **Under the text, a block per link** *(2026-09-24)* — what each link points at, as
 [Content](#content) describes, outside the clamp so a long note's cue does not hide them.
 
-**A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
+**A trigger tag is drawn as the name after `route/`, in bold small caps** *(until 2026-11-13: since,
+the route icon and the name)* — `journal`, not
 `route/journal → journal`. The style is what says the word files the item; the namespace is not a
 decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
 typed against, with the template it fires beside it after an arrow: `route/journal → journal`.
@@ -1249,7 +1268,9 @@ one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filte
 list to the other view *(2026-10-01)*. The selected row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
-button reaches, on either surface, and a control that is not drawn has no key either. On the queue
+button reaches, on either surface. *(Amended 2026-11-24.)* A row no longer draws its actions — they
+are the item's — so its keys reach what the item's bar and ⋯ menu draw rather than anything on the
+row; a command with a refusal has no key. On the queue
 the capture box is the row above the first ([above](#capture-is-the-head-of-the-queue)): `k` off
 the first row goes into its field, and `j` from the box is the first row.
 
@@ -1257,9 +1278,10 @@ the first row goes into its field, and `j` from the box is the first row.
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is
 guarded, the status line's `undo` being what makes the rest cheap to take back.
 
-**The index is a second view of the same list**, chosen in the list head as the order is —
-`timeline ▾` or `index ▾` *(amended 2026-10-01; it was `timeline` and `index` at the head's left, the
-current one bold)* — and carried on the URL as `view=index`,
+**The index is a second view of the same list**, chosen in the filter beside the order *(amended
+2026-11-24, to say what was built on 2026-11-16; from 2026-10-01 it was `timeline ▾` or `index ▾`
+in the list head, and before that `timeline` and `index` at the head's left, the current one
+bold)* — and carried on the URL as `view=index`,
 remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
 the first words cut at a word with `…`, the tags at the right, dropped below the narrow
 breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
@@ -1549,7 +1571,7 @@ the item is never changed, words nobody changed carry nothing, and wanting the f
 wanting the row's `edit`.
 
 **The middle is ruled sections**, each a label column and a content column, the label in bold
-capitals; below `narrow` the label stacks over the content. In order: `destination`, `output`
+capitals; below `wide` the label stacks over the content. In order: `destination`, `output`
 where it is drawn, `place`, `tags`, `preview`. **`place` and `preview` are drawn collapsed** — the label alone, opened by a
 press or when the flow reaches them — except where they already hold something: a preview that has
 answered draws open. **`tags` is always open** *(amended 2026-09-27; it was collapsed on an item
@@ -2587,7 +2609,7 @@ one beneath the eight, ruled off from them, since a tag that files the item is n
 ones that say what it is. Typed into, the rule goes and each match takes its place by how it
 matched. The rule is not a row: the walk passes it as though it were not there. **Opened near the
 end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
-`narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
+`wide` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
 end ran off the side of the screen)*. *Amended 2026-10-01*: the browser holds it there. It is
 **anchored to the line**, so it follows the line as tags taken beside it push the line along or
 onto a row of its own, rather than being measured once and left where the line used to be; and
@@ -2679,7 +2701,7 @@ line; with no default an empty line stays and asks again. `esc` steps back a fie
 the tags; leaving the line takes nothing. **The tag lands with its values once the last is
 given**, as one operation, which is the same whether it drains now or tomorrow. The destination is
 asked to describe itself for at most two seconds first, and one that does not answer leaves every
-field typed. **Below `narrow` the panel is a sheet across the foot of the screen** while it asks.
+field typed. **Below `wide` the panel is a sheet across the foot of the screen** while it asks.
 
 **A trigger tag carried with values says them after it** — `route/todo` then `list Next`, label
 then value, a value left out reading as the default it will take — wherever the tag has not yet
@@ -3188,8 +3210,8 @@ device) rather than a band, each section a row with its icon, what is worth know
 chevron. On a phone the list is the page and a section is pushed over it; **when wide, at every
 width, the list is a column of its own** beside the section, the open one marked. *(Nesting the
 sections in the app's menu at full width, tried first, drew settings two ways at two widths.)* **A form's
-Cancel and Save are at its head when wide**, so Save is never below the fold; on a phone they dock
-at the foot. A field is labelled in the route's words — place, shape, if missing — or in lowercase
+Cancel and Save dock at the foot of the section's pane** at every width *(amended 2026-11-24, to
+say what was built on 2026-11-19: they were at its head when wide)*. A field is labelled in the route's words — place, shape, if missing — or in lowercase
 words (`base URL`), never by its schema name. **A template's asked field** says what it is asked
 as and its default, each a field of its own, and what a place can be named from is offered in
 words (date, month, week, the item's words, source) that put their pattern in. A place drawn in a
@@ -3233,7 +3255,8 @@ quiet labels** — small, grey, under a rule — rather than the grey band, whic
 heading. The app's menu marks the current surface in the `picked` tint, so the grey band means only
 a heading. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
 destination, Add a template, Add an account, Add a token — with the plus icon, held with its reason
-where it cannot be taken; a page's toolbar at its head when wide is drawn without the bar's beige.
+where it cannot be taken. *(A page's toolbar at its head when wide, drawn without the bar's beige,
+went with the head on 2026-11-19.)*
 **Server shows its sources** without being asked. What follows is the register this replaced, kept
 where it still holds.
 
@@ -3241,7 +3264,7 @@ Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../pl
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
 access | server | storage | appearance | pool}`; `/settings` itself redirects to `destinations` from
-`--breakpoint-narrow` up.
+`--breakpoint-wide` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
 head instead. One component draws both; there is no second design for the phone. It has no lede and
@@ -3250,7 +3273,7 @@ the page. A section's heading is bold capitals over a rule; a sub-head, for each
 accounts, **access tokens** under access and **sources** under server, is the same, lower down.
 
 **A row's facts are the process surface's grid** — `9rem` uppercase labels beside their values,
-stacked below `--breakpoint-narrow` — so a destination, a template and a field read the same way
+stacked below `--breakpoint-wide` — so a destination, a template and a field read the same way
 this shell already reads a decision being made. **No mark is drawn except `+` on an add and `↗` on a
 link that leaves the app.** `●/○` for offered and retired, `✓/⚠` for reached and refused, `↻` for
 asking, `✎` and `×` for edit and delete are all words now, at the row's right; only what a person has
@@ -3310,8 +3333,8 @@ and the button reads `use it anyway`, both unchanged from when they were drawn a
 of a grid.
 
 **Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
-template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
-after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG`,
+template — name, destination, its trigger tag as the queue draws one (the route icon and the name
+after `route/` since 2026-11-13; bold small-caps of it before), the place it files to, and what it last answered — and, opened, the facts `TAG`,
 `DESTINATION`, `ACTION` and `PLACE` — `OUTPUT attachments only` in place of `ACTION` for a template that
 places the attachments alone *(2026-10-08)* — then **one fact per setting the template takes for its deliveries**
 — `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING` and
@@ -3371,8 +3394,8 @@ end of the sentence beside it.
 out of the probe's own turn, and `API reference ↗`. Nothing is pressed to find out whether the
 daemon answers, unchanged from 2026-09-02: the client probes on its own and every answered request
 settles the same mark. `daemon` is not said anywhere; `log` is not offered here either — the bar
-already carries it. **Sources**, folded under its sub-head with `show`/`hide`, is otherwise
-unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
+already carries it. **Sources**, folded under its sub-head with `show`/`hide` until 2026-11-18 and
+always shown since, is otherwise unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
 comes back into reach and held nowhere.
 
 **Storage** sits under Server *(added 2026-10-12,
@@ -3386,7 +3409,7 @@ database say nothing there, holding bytes and nothing else, and no filler is inv
 them.
 
 **A figure beside its row rather than under it was tried first and does not survive a narrow
-window.** A third column for it is squeezed to nothing well before the shell's own `narrow` breaks,
+window.** A third column for it is squeezed to nothing well before the shell's own `wide` breaks,
 because settings draws into a column the menu has already taken from — so these are two facts in
 sequence, not two columns to compare down. **Nothing separates two figures on a line**, because no
 line carries two: `in` joins them where both belong to one row, and the `·` the first attempt
@@ -3397,7 +3420,8 @@ is left where it took it are the two figures a person reads as a pair, and a rul
 them off from the rows they are a sum of. The total counts the daemon's own database, because what
 notemap has taken on this machine is what the section's name asks.
 
-**The paths fold away behind `PATHS show`**, on `sources`' own terms — they are reference material a
+**The paths folded away behind `PATHS show`** until 2026-11-19, when they came to be always shown,
+on `sources`' own terms — they are reference material a
 person wants once, not a figure anyone scans, and four absolute paths at full width were most of
 what the section looked like. **`FREE` is said once per figure, not once per root**: the three roots
 default to siblings under one volume, and repeating `52 GB` three times says nothing three times. A
@@ -3543,14 +3567,14 @@ a quote, a list item, a task box — and its emphasis, code marks and link targe
 `## Inbox` reads `Inbox` and a rule is passed over. A capture with no words is named by what it is — `image` — and one the pool no longer
 holds says `purged`; where the pool cannot be reached it is `a capture`. The words are
 a link to the item, at the body's left; the fact is at its right, and stacks under the words below
-`narrow`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
+`wide`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
 item, and a row of the log offers nothing about narrowing.
 
 **A routing kind is the record's line** *(amended 2026-10-22; the row drew the whole block under
 the capture's words)*. The body is the capture's words, `→`, then the folded record — the
 destination bold and the place — with what was done at the right where the kind has no fact of its
 own; `delivery-failed` and `delivery-cancelled` keep theirs there. The words give way before the
-destination does, since where it went is what the line is for, and below `narrow` they take a line
+destination does, since where it went is what the line is for, and below `wide` they take a line
 of their own, the record's under them. **Opened, the line stays** as the
 row's heading and the block is drawn under it: **the record itself**, read with the item's records
 on opening *(amended 2026-10-23; the block was built from the action alone and drew no arguments,
@@ -4126,7 +4150,7 @@ redrawn keep their structure in the new tokens until their phase of
 - The status line is on every surface: it says the newest live notice in a few words, `N pending`
   while this device holds unsent work, the queue's count once the pool has answered, and whether
   the pool answers; `notices` counts, in the accent, what went wrong since the panel was last
-  opened. Below `narrow` its counts are numbers and marks.
+  opened. Below `wide` its counts are numbers and marks.
 - A delivery the pool will retry reads `retrying: …` without the accent; one that ended reads
   `routing failed: …` in the destination's own words, and its code and place are in the panel.
 - The panel opens on a press or `n`, closes on `esc` or a press outside, lists this session's

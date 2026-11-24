@@ -1,9 +1,10 @@
 # Mobile-first rethink
 
 **Date**: 2026-10-30
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-11-24 — its goal, the follow-up plans, was met by
+[phone-first-shell](phone-first-shell.md).
 
 ---
 

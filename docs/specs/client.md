@@ -1,8 +1,13 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-13
+**Last updated**: 2026-11-24
 **Shipped**:
+
+- 2026-11-23 — **The tags in use are read again after a capture, an edit or a batch that carries
+  one**, not only after a tag or an untag. ([plan](../plans/phone-first-shell.md))
+- 2026-11-19 — **`client.counts.capturedToday`** says how much was captured since this device's
+  midnight, read with the queue's count. ([plan](../plans/phone-first-shell.md))
 
 - 2026-11-12 — **The log can be read by batch**, in pages of 500. ([plan](../plans/batch-in-the-log.md))
 - 2026-11-01 — **A surface can be read through words**, matched over the cache by the same fold
@@ -573,6 +578,11 @@ processed — routed or archived — which the pool decides, not the scroll.
   *(2026-10-01; the client also read on a return, and a shell's own read made it two)*. The read after a drain happens **inside** the drain, as the tag read does: an
   answer is evidence of reach, and a return it causes rides the drain rather than starting one.
   What this client has not sent is not counted, being the outbox's to say.
+- **How much was captured today is read with it** *(added 2026-11-19)*. The read asks
+  `GET /v1/counts?since=` this device's midnight, and `counts.capturedToday` holds the answer's
+  `captured` on the same terms as the queue's count: `undefined` until answered, kept while the pool
+  is out of reach, never persisted. The day is the device's, so the pool is told the instant. A
+  shell reads it again when its own day turns.
 
 ### A filtered surface
 

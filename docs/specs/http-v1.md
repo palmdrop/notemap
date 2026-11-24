@@ -2,8 +2,14 @@
 
 **Status**: Draft — capture, feed, assets, the action log, the queue, the archive, classification,
 editing, destinations, routing to one, pool settings, unfurling, storage and health are settled; the rest is stub
-**Last updated**: 2026-11-12
+**Last updated**: 2026-11-24
 **Shipped**:
+
+- 2026-11-19 — **`GET /v1/counts?since=` adds `captured`**, every capture from that instant on,
+  revisions not counted (2026-11-24); anything that is not an instant is `422 bad-since`.
+  ([plan](../plans/phone-first-shell.md))
+- 2026-11-18 — **A row of `GET /v1/sources` carries `unprocessed`**, so the queue's filter counts a
+  source by its own rows rather than by the whole pool's. ([plan](../plans/phone-first-shell.md))
 
 - 2026-11-12 — **`batch` narrows `GET /v1/actions` to one batch's entries**, unvalidated, and
   `next` carries it. ([plan](../plans/batch-in-the-log.md))
