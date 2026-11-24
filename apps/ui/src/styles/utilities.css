@@ -169,7 +169,7 @@
  * the room past the measure. Settings and a record's page.
  */
 @utility measured {
-  & .px-gutter:not([role="toolbar"]) {
+  & .px-gutter {
     padding-right: max(
       var(--spacing-gutter),
       calc(100% - var(--spacing-read) - var(--spacing-gutter))

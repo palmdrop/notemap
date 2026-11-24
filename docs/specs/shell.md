@@ -3222,7 +3222,10 @@ your changes?** — Keep editing or Lose changes. **Access** draws the session's
 This browser holds a session.`, with **Sign out** in it, and each token with **Revoke** inline in
 red. A page's bar is docked at the foot of the section's pane at every width *(amended
 2026-11-19)*. **When wide the section runs to the window's edge**, its rules full width as the
-log's are, and what is in each row kept to a readable measure. **Settings head their groups with
+log's are, and what is in each row kept to a readable measure, the bar's actions with it: Save
+ends where the fields do *(2026-11-24; it stood at the window's edge)*. **The menu of sections has
+a foot when wide**, empty, ruled and the foot's height, so the app menu's foot, it and the
+section's bar are one line across the window *(2026-11-24)*. **Settings head their groups with
 quiet labels** — small, grey, under a rule — rather than the grey band, which is the lists' day
 heading. The app's menu marks the current surface in the `picked` tint, so the grey band means only
 a heading. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
@@ -3780,7 +3783,9 @@ else.
 **Dark is rough** *(2026-11-13)*. Every colour role is a `light-dark()` pair, and dark is each
 role inverted: ink and paper swap, beige, the band and the box grey go dark, the red and the green
 are lifted to read on black. It is there so every view works in it, and it is not designed beyond
-that; the developer gives feedback on it once it is built.
+that; the developer gives feedback on it once it is built. *(2026-11-24, after that feedback.)*
+Dark's beige is lifted and warmed and its band lightened, so what can be pressed and a heading do
+not read as one grey.
 
 **Which palette is on is the reader's**, chosen in settings under *Appearance*: `auto`, `light`
 or `dark`. `auto` is the browser's own answer and the default, because it is the only one that can

@@ -28,11 +28,17 @@
   class="grid grid-cols-1 wide:grid-cols-[var(--spacing-settings)_minmax(0,1fr)]"
 >
   <div
-    class="wide:sticky wide:top-bar wide:min-h-[calc(100dvh-var(--spacing-bar))] wide:self-start wide:border-r wide:border-rule {atMenu
+    class="wide:sticky wide:top-bar wide:flex wide:min-h-[calc(100dvh-var(--spacing-bar))] wide:flex-col wide:self-start wide:border-r wide:border-rule {atMenu
       ? ''
       : 'max-wide:hidden'}"
   >
     <Menu />
+    <!-- The column's foot, level with the menu's and the section's bar, so
+         the three read as one line across the window. -->
+    <div
+      aria-hidden="true"
+      class="mt-auto h-foot border-t border-rule max-wide:hidden"
+    ></div>
   </div>
   <div
     class="min-w-0 wide:measured wide:[--pane-left:calc(var(--menu-left)+var(--spacing-settings))] {atMenu
