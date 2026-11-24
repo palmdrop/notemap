@@ -16,7 +16,6 @@
   /** Every piece in each of its states, for the tests and for a scratch page's shots. */
   let {
     why,
-    at,
     sheet = false,
     sheetForm = "panel",
     dialog = false,
@@ -25,7 +24,6 @@
     onclose = () => {},
   }: {
     why?: string;
-    at?: "foot" | "head";
     sheet?: boolean;
     sheetForm?: "panel" | "dialog";
     dialog?: boolean;
@@ -108,7 +106,7 @@
   }}
 />
 
-<ActionBar {at}>
+<ActionBar>
   {#snippet say()}{#if why !== undefined}{why}{/if}{/snippet}
   <BarAction
     icon="trash"
@@ -149,7 +147,7 @@
   >
     <p class="p-gutter">What the sheet holds.</p>
     {#snippet foot()}
-      <ActionBar at="foot">
+      <ActionBar>
         <BarAction icon="undo" label="Reset" />
         <BarAction icon="check" label="Show 13" primary />
       </ActionBar>

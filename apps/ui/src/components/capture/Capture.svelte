@@ -444,7 +444,7 @@
     <div class="flex flex-col gap-2 px-gutter pb-3">
       {@render tagged()}
     </div>
-    <ActionBar at="foot" label="Capture">
+    <ActionBar label="Capture">
       {#snippet say()}{#if said !== ""}<span
             role="status"
             class={said === NOTHING_TO_CAPTURE ? "" : "text-danger"}

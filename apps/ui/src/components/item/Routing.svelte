@@ -7,7 +7,6 @@
   } from "@notemap/client";
 
   import { recordHref } from "$components/item/href";
-  import Turning from "$components/primitives/marks/Turning.svelte";
   import { client } from "$lib/client";
   import { described, readingHeld } from "$lib/described.svelte";
   import { cancelRouting } from "$lib/firing";
@@ -96,11 +95,8 @@
     /** Where in the destination is still being read, and a skeleton holds its room. */
     readonly sketched?: boolean;
     readonly taken?: RoutingRecord;
-    /** A delivery not landed yet, and what it offers now, as its route in flight does. */
-    readonly offers?: {
-      readonly record: RoutingRecord;
-      readonly label: "undo" | "cancel";
-    };
+    /** A delivery not landed yet, while its route in flight can still be cancelled. */
+    readonly offers?: RoutingRecord;
   };
 
   /** One line per record, which is what a summary is: the whole of it is read elsewhere. */
@@ -147,8 +143,7 @@
 
   function offered(record: RoutingRecord): Pick<Line, "offers"> {
     if (record.state !== "pending") return {};
-    const label = firings.offer(record.id);
-    return label === undefined ? {} : { offers: { record, label } };
+    return firings.offer(record.id) === undefined ? {} : { offers: record };
   }
 
   const summarized = $derived(records.length === 0 && summary !== undefined);
@@ -201,7 +196,7 @@
       >{line.place}</span
     >{/if}{#if line.note !== undefined}<span class="ml-[1ch]">{line.note}</span
     >{/if}{#if line.pending === true}<span class="ml-[1ch]"
-      ><Turning said="pending" /></span
+      ><Spinner said="pending" /></span
     >{/if}{/snippet}
 
 <!-- Two lines at the most, however narrow the rail: where the place does not
@@ -228,7 +223,7 @@
         <span class="min-w-0 truncate">{line.note}</span>
       {/if}
       {#if line.pending === true}
-        <span class="shrink-0"><Turning said="pending" /></span>
+        <span class="shrink-0"><Spinner said="pending" /></span>
       {/if}
     </span>
   {/if}
@@ -236,7 +231,7 @@
 
 {#snippet waits()}
   {#if waiting > 0}
-    <Turning said={`${String(waiting)} pending`} />
+    <Spinner said={`${String(waiting)} pending`} />
   {/if}
 {/snippet}
 
@@ -300,7 +295,7 @@
                   : `${String(seconds)}s`}</span
               >
             {:else if line.pending === true}
-              <Turning said="pending" />
+              <Spinner said="pending" />
             {:else if line.state !== undefined}
               <span class="flex-none text-small text-muted">{line.state}</span>
             {/if}
@@ -309,7 +304,7 @@
             {/if}
           </a>
           {#if flying !== undefined && line.offers !== undefined && !offline}
-            {@const { record } = line.offers}
+            {@const record = line.offers}
             <button
               type="button"
               aria-label={`Cancel routing ${flying.name}`}
@@ -367,12 +362,12 @@
             >Undo</button
           >
         {:else if line.offers !== undefined}
-          {@const { record, label } = line.offers}
+          {@const record = line.offers}
           <button
             type="button"
             onclick={() => void cancel(record, line.name)}
             class="shrink-0 text-small underline underline-offset-[0.2em]"
-            >{label === "undo" ? "Undo" : "Cancel"}</button
+            >Cancel</button
           >
         {/if}
       </div>

@@ -1875,7 +1875,7 @@
            the foot of the steps. -->
       <div class="mt-auto">
         {#if routedNow === undefined}
-          <ActionBar at="foot" label="Item">
+          <ActionBar label="Item">
             <BarAction
               icon="trash"
               label="Discard"
@@ -1917,7 +1917,7 @@
 
     <div class="flex-none">
       {#if routedNow !== undefined}
-        <ActionBar at="foot" label="Routed">
+        <ActionBar label="Routed">
           {#if takeable !== undefined}
             {@const { record } = takeable}
             <BarAction
@@ -1935,7 +1935,7 @@
           />
         </ActionBar>
       {:else if onPhone}
-        <ActionBar at="foot" label="Route">
+        <ActionBar label="Route">
           {#snippet say()}{#if step === "check" && !ready && !busy}{WHY_NOT}{/if}{/snippet}
           <BarAction
             icon="back"
@@ -1971,7 +1971,7 @@
           {/if}
         </ActionBar>
       {:else}
-        <ActionBar at="foot" label="Route">
+        <ActionBar label="Route">
           {#snippet say()}{#if !ready && !busy}{WHY_NOT}{/if}{/snippet}
           <BarAction
             icon="route"

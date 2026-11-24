@@ -388,7 +388,7 @@
       </section>
     </div>
     {#snippet foot()}
-      <ActionBar at="foot" label="Filter">
+      <ActionBar label="Filter">
         <BarAction
           icon="undo"
           label="Reset"

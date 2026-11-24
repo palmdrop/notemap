@@ -89,7 +89,7 @@
     all. × takes a tag off all of them.
   </p>
   {#snippet foot()}
-    <ActionBar at="foot" label="Tag">
+    <ActionBar label="Tag">
       <BarAction icon="check" label="Done" primary onclick={onclose} />
     </ActionBar>
   {/snippet}
