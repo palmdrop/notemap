@@ -619,7 +619,8 @@ export function createSqlitePoolStore(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
     const capturedSince = source.query<{ count: number }, [number]>(
-      `SELECT COUNT(*) AS count FROM items WHERE created_at >= ?`,
+      `SELECT COUNT(*) AS count FROM items
+       WHERE created_at >= ? AND revision_of IS NULL`,
     );
     // `saved` is the registry against itself: the sum over every asset less the
     // sum over the blobs they name, each counted once. It is not the blob

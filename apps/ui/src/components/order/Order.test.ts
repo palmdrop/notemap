@@ -10,7 +10,7 @@ import Order from "./Order.svelte";
 /** One of a few, a segmented row: the end not being read is pressed. */
 async function turn(word: "newest" | "oldest") {
   await fireEvent.click(
-    screen.getByRole("button", {
+    screen.getByRole("radio", {
       name: word === "newest" ? "Newest first" : "Oldest first",
     }),
   );
@@ -111,7 +111,7 @@ test("will not turn around while a read is still walking", async () => {
   const transport = serving("queue", () => held);
 
   render(Order);
-  const control = screen.getByRole("button", {
+  const control = screen.getByRole("radio", {
     name: "Oldest first",
   }) as HTMLButtonElement;
 

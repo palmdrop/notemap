@@ -66,7 +66,7 @@
 {/snippet}
 
 {#snippet drawn()}
-  {@render written()}{#if marked}<span class="sr-only">, marked</span>{/if}
+  {@render written()}{#if marked}<span class="sr-only">, selected</span>{/if}
 {/snippet}
 
 {#if onopen === undefined}

@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { client, pool } from "$testing/pool";
+import { online } from "$testing/dom";
 import { firings } from "$lib/firings.svelte";
 import { quick } from "$lib/quicking.svelte";
 import Framed from "./Quick.fixture.svelte";
@@ -17,6 +18,7 @@ vi.mock("$app/navigation", () => ({
 afterEach(() => {
   went.to = [];
   firings.clear();
+  online(true);
 });
 
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
@@ -101,7 +103,7 @@ test("a template that asks opens in place, and its answer routes", async () => {
   await fireEvent.click(await screen.findByRole("button", { name: /^Todo/ }));
   const field = await screen.findByLabelText("list");
   await fireEvent.input(field, { target: { value: "Next" } });
-  await fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Route" }));
 
   await vi.waitFor(() => expect(routed).toHaveLength(1));
   expect(routed[0]).toEqual({
@@ -121,4 +123,34 @@ test("More options leads to the route page", async () => {
   );
   expect(quick.item).toBeUndefined();
   expect(went.to).toEqual(["/items/one/process"]);
+});
+
+test("with no templates it says where routing is instead", async () => {
+  pool((request) =>
+    routeOf(request) === "GET /v1/items/one"
+      ? json(200, anItem("one"))
+      : json(200, { values: [] }),
+  );
+  await client.templates.load();
+  render(Quick, { item: "one", onclose: vi.fn() });
+
+  expect(
+    await screen.findByText(
+      "No templates yet. More options picks a destination.",
+    ),
+  ).toBeDefined();
+});
+
+test("out of reach, it says so and its templates cannot be taken", async () => {
+  serving();
+  await client.destinations.load();
+  await client.templates.load();
+  render(Quick, { item: "one", onclose: vi.fn() });
+  const vault = await screen.findByRole("button", { name: /To the vault/ });
+  online(false);
+
+  await vi.waitFor(() => {
+    expect((vault as HTMLButtonElement).disabled).toBe(true);
+  });
+  expect(screen.getByText(/The pool is out of reach/)).toBeDefined();
 });

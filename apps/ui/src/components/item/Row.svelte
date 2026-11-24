@@ -437,8 +437,8 @@
         onopen={onselect === undefined
           ? undefined
           : (event) =>
-              // When wide the time selects the row in place, for the keys
-              // and the strip; anywhere else on it opens the item beside.
+              // When wide the time selects the row in place, for the keys;
+              // anywhere else on it opens the item beside.
               width.wide
                 ? onselect?.(pickedBy(event))
                 : pick?.(pickedBy(event))}

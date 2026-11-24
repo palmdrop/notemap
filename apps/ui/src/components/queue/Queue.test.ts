@@ -1031,7 +1031,7 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "f" });
-  await fireEvent.click(await screen.findByRole("button", { name: "Index" }));
+  await fireEvent.click(await screen.findByRole("radio", { name: "Index" }));
   await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
@@ -1047,8 +1047,8 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   await screen.findByText("one");
   await fireEvent.keyDown(window, { key: "f" });
   expect(
-    (await screen.findByRole("button", { name: "Index" })).getAttribute(
-      "aria-pressed",
+    (await screen.findByRole("radio", { name: "Index" })).getAttribute(
+      "aria-checked",
     ),
   ).toBe("true");
 });

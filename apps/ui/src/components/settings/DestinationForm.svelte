@@ -139,7 +139,7 @@
     <span class="mb-1.5 block text-small">name</span>
     <input
       bind:value={name}
-      aria-label="Name"
+      aria-label="name"
       required
       placeholder="what it is called when routing"
       class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"

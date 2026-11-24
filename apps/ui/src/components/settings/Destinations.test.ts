@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
@@ -82,8 +82,15 @@ async function open(name: string) {
 const go = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("link", { name }));
 
+/** A button, or one part of a segmented choice. */
 const press = async (name: string | RegExp) =>
-  fireEvent.click(await screen.findByRole("button", { name }));
+  fireEvent.click(
+    await waitFor(
+      () =>
+        screen.queryByRole("radio", { name }) ??
+        screen.getByRole("button", { name }),
+    ),
+  );
 
 test("lists what the pool holds, each saying where it stands", async () => {
   serving(
@@ -300,7 +307,7 @@ test("adds one from the kind's own schema", async () => {
   await go("Add a destination");
 
   // The fields are the kind's, not this component's.
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {
@@ -378,7 +385,7 @@ test("shows an optional field's placeholder while it is empty, and sends nothing
   const root = await screen.findByRole("textbox", { name: "root" });
   expect(root.getAttribute("placeholder")).toBe("/path/to/vault");
 
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Vault" },
   });
   await press("Save");
@@ -415,8 +422,8 @@ test("offers the accounts the daemon declares, rather than a box to type one int
   render(Destinations);
   await go("Add a destination");
 
-  await screen.findByRole("button", { name: "home" });
-  expect(screen.getByRole("button", { name: "work" })).toBeDefined();
+  await screen.findByRole("radio", { name: "home" });
+  expect(screen.getByRole("radio", { name: "work" })).toBeDefined();
 
   // A daemon declaring no accounts must not trap a person behind an empty list.
   expect(screen.getByLabelText("root").tagName).toBe("INPUT");
@@ -451,9 +458,9 @@ test("chooses a setting the schema fixes, rather than typing it from memory", as
 
   // Unset, the kind's default is drawn as the picked option; there is no
   // "default (none)" of its own.
-  const none = await screen.findByRole("button", { name: "none" });
-  expect(none.getAttribute("aria-pressed")).toBe("true");
-  expect(screen.getByRole("button", { name: "full" })).toBeDefined();
+  const none = await screen.findByRole("radio", { name: "none" });
+  expect(none.getAttribute("aria-checked")).toBe("true");
+  expect(screen.getByRole("radio", { name: "full" })).toBeDefined();
   expect(screen.queryByRole("button", { name: /^default/ })).toBeNull();
 });
 
@@ -482,11 +489,11 @@ test("chooses a boolean setting as yes or no, drawing the default as picked and 
   await go("Add a destination");
 
   expect(
-    (await screen.findByRole("button", { name: "no" })).getAttribute(
-      "aria-pressed",
+    (await screen.findByRole("radio", { name: "no" })).getAttribute(
+      "aria-checked",
     ),
   ).toBe("true");
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {
@@ -532,7 +539,7 @@ test("hides a setting the others make meaningless", async () => {
 
   render(Destinations);
   await go("Add a destination");
-  await screen.findByRole("button", { name: "no" });
+  await screen.findByRole("radio", { name: "no" });
 
   expect(screen.queryByText(/^extra/)).toBeNull();
   await press("yes");
@@ -570,7 +577,7 @@ test("checks a root nothing has used before, and writes nothing until confirmed"
   render(Destinations);
   await go("Add a destination");
 
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {
@@ -592,7 +599,7 @@ test("asks nothing for a root already under one notemap holds", async () => {
   await screen.findByRole("link", { name: "Vault" });
   await go("Add a destination");
 
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {
@@ -659,12 +666,12 @@ test("the edit form is a page of its own, and Cancel goes back to the destinatio
   await open("Vault");
   await go("Edit");
 
-  const form = await screen.findByRole("textbox", { name: "Name" });
+  const form = await screen.findByRole("textbox", { name: "name" });
   expect(screen.queryByRole("button", { name: /^Delete…/ })).toBeNull();
   expect((form as HTMLInputElement).value).toBe("Vault");
 
   await press("Cancel");
-  expect(screen.queryByRole("textbox", { name: "Name" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "name" })).toBeNull();
   expect(await screen.findByRole("button", { name: /^Delete…/ })).toBeDefined();
 });
 
@@ -744,7 +751,7 @@ test("Save says what is missing until there is something to save", async () => {
     screen.getByRole("button", { name: "Save" }).getAttribute("aria-disabled"),
   ).toBe("true");
 
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   expect(await screen.findByText(/^Fill in root to save\.$/)).toBeDefined();
@@ -772,7 +779,7 @@ test("a default picked again after another is pinned, not unset", async () => {
   render(Destinations);
   await go("Add a destination");
 
-  await fireEvent.input(screen.getByLabelText("Name"), {
+  await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: "Second brain" },
   });
   await fireEvent.input(screen.getByLabelText("root"), {

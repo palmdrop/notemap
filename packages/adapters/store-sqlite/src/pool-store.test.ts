@@ -1194,6 +1194,23 @@ describe("the queue and the archive", () => {
     });
   });
 
+  it("counts no revision as a capture, though it is an item of its own", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 2);
+    await appendCapture(
+      p,
+      revisionOf(capture({ id: "item-0" }), {
+        id: "revision",
+        text: "reworded",
+        at: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    expect(
+      (await p.counts("2026-08-03T09:00:00.000Z" as Timestamp)).captured,
+    ).toBe(2);
+  });
+
   it("shows an item something was revised from on neither surface", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });

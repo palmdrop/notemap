@@ -46,8 +46,8 @@
     oncaptured,
   }: {
     /**
-     * Whether the field takes the caret when the queue is drawn. Not on the way
-     * back from processing with a row still selected: the keys are the row's then.
+     * Whether the field takes the caret as it is drawn: the page's does, and the
+     * queue's box leaves the keys to the rows.
      */
     focus?: boolean;
     /** The box is the queue's head, and selected as a row is: one of them at a time. */

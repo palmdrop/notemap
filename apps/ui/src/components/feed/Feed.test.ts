@@ -125,7 +125,7 @@ test("the view is chosen in the filter, and v turns it", async () => {
   expect(container.querySelector("[data-rail]")).not.toBeNull();
 
   await fireEvent.keyDown(window, { key: "f" });
-  await fireEvent.click(await screen.findByRole("button", { name: "Index" }));
+  await fireEvent.click(await screen.findByRole("radio", { name: "Index" }));
   expect(container.querySelector("[data-rail]")).toBeNull();
   expect(localStorage.getItem("notemap:view")).toBe("index");
   await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));

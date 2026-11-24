@@ -33,7 +33,7 @@
   onclick={ontoggle}
   class="inline-flex items-center gap-1.5 rounded-control border {small
     ? 'min-h-8 px-3 text-small'
-    : 'min-h-9 px-3.5'} {on
+    : 'min-h-11 px-3.5 wide:min-h-9'} {on
     ? 'border-ink bg-ink pl-2.5 text-paper'
     : 'border-off-line bg-off text-ink active:bg-off-down'} disabled:opacity-60"
 >

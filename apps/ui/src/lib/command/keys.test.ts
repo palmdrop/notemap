@@ -85,7 +85,7 @@ describe("a chord as a tooltip says it", () => {
     ["escape", "Esc"],
     [" ", "Space"],
     ["D", "D"],
-    ["shift+tab", "Shift+tab"],
+    ["shift+tab", "Shift+Tab"],
   ])("%j is %j", (held, said) => {
     expect(spoken(held)).toBe(said);
   });

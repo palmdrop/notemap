@@ -121,7 +121,7 @@ test("creates one from its kind's schema, the secret sent once and never shown",
   render(Accounts);
   await go("Add an account");
 
-  await fireEvent.input(await screen.findByLabelText("Name"), {
+  await fireEvent.input(await screen.findByLabelText("name"), {
     target: { value: "nextcloud" },
   });
   const baseUrl = screen.getByLabelText("baseUrl");
@@ -132,7 +132,7 @@ test("creates one from its kind's schema, the secret sent once and never shown",
   await fireEvent.input(screen.getByLabelText("username"), {
     target: { value: FIELDS.username },
   });
-  const secret = screen.getByLabelText("Secret") as HTMLInputElement;
+  const secret = screen.getByLabelText("secret") as HTMLInputElement;
   expect(secret.type).toBe("password");
   await fireEvent.input(secret, { target: { value: "app-password" } });
   await press("Save");
@@ -152,7 +152,7 @@ test("leaves the held secret alone when an edit leaves the field blank", async (
   render(Accounts);
   await go("nextcloud");
 
-  const secret = (await screen.findByLabelText("Secret")) as HTMLInputElement;
+  const secret = (await screen.findByLabelText("secret")) as HTMLInputElement;
   expect(secret.value).toBe("");
   expect(secret.required).toBe(false);
   await fireEvent.input(screen.getByLabelText("username"), {
@@ -177,7 +177,7 @@ test("edits a config account by storing a copy, which needs a secret of its own"
   expect(
     ((await screen.findByLabelText("username")) as HTMLInputElement).value,
   ).toBe("alice");
-  expect((screen.getByLabelText("Secret") as HTMLInputElement).required).toBe(
+  expect((screen.getByLabelText("secret") as HTMLInputElement).required).toBe(
     true,
   );
 });

@@ -137,6 +137,7 @@ const open = async (name: string | RegExp) => {
   const found = await vi.waitFor(
     () =>
       screen.queryByRole("link", { name }) ??
+      screen.queryByRole("radio", { name }) ??
       screen.getByRole("button", { name }),
   );
   return fireEvent.click(found);
@@ -448,8 +449,8 @@ test("a field the schema fixes is chosen rather than typed", async () => {
   await go("Add a template");
 
   // The values the capability declared, offered; and no box to mistype one in.
-  expect(await screen.findByRole("button", { name: "reading" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "done" })).toBeTruthy();
+  expect(await screen.findByRole("radio", { name: "reading" })).toBeTruthy();
+  expect(screen.getByRole("radio", { name: "done" })).toBeTruthy();
   expect(screen.queryByRole("textbox", { name: "column" })).toBeNull();
 
   // A field the schema leaves open is still typed, patterns and all.
@@ -462,7 +463,7 @@ test("a capability with no folders is offered no folder mode", async () => {
   render(Templates);
   await go("Add a template");
 
-  await screen.findByRole("button", { name: "reading" });
+  await screen.findByRole("radio", { name: "reading" });
   expect(screen.queryByRole("button", { name: /^establish/ })).toBeNull();
   expect(screen.queryByText("if missing")).toBeNull();
 });
@@ -916,7 +917,7 @@ test("offers what a place can be named from, in words, under the last field one 
     place.compareDocumentPosition(vocabulary) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  const frontmatter = screen.getByRole("button", { name: "full" });
+  const frontmatter = screen.getByRole("radio", { name: "full" });
   expect(
     vocabulary.compareDocumentPosition(frontmatter) &
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -937,8 +938,8 @@ test("marks what an argument inherits, and offers what that makes meaningful", a
   await screen.findByLabelText("directory");
 
   // What it inherits is drawn as picked, with no mark of its own.
-  const full = await screen.findByRole("button", { name: "full" });
-  expect(full.getAttribute("aria-pressed")).toBe("true");
+  const full = await screen.findByRole("radio", { name: "full" });
+  expect(full.getAttribute("aria-checked")).toBe("true");
   expect(screen.getByText("trigger tags")).toBeTruthy();
 });
 
@@ -956,14 +957,14 @@ test("hides a conditional argument and saves nothing for it", async () => {
   });
 
   expect(screen.queryByText("trigger tags")).toBeNull();
-  const [hashtagsYes] = screen.getAllByRole("button", { name: /^yes/ });
+  const [hashtagsYes] = screen.getAllByRole("radio", { name: /^yes/ });
   await fireEvent.click(hashtagsYes as HTMLElement);
   expect(await screen.findByText("trigger tags")).toBeTruthy();
 
-  const [, triggerYes] = screen.getAllByRole("button", { name: /^yes/ });
+  const [, triggerYes] = screen.getAllByRole("radio", { name: /^yes/ });
   await fireEvent.click(triggerYes as HTMLElement);
   // Turning the switch off again takes the argument it made meaningful with it.
-  const [hashtagsNo] = screen.getAllByRole("button", { name: "no" });
+  const [hashtagsNo] = screen.getAllByRole("radio", { name: "no" });
   await fireEvent.click(hashtagsNo as HTMLElement);
   expect(screen.queryByText("trigger tags")).toBeNull();
   await open("Save");
@@ -1024,15 +1025,15 @@ test("offers the attachments alone under output, not under action", async () => 
   render(Templates);
   await go("Add a template");
 
-  const everything = await screen.findByRole("button", { name: "Everything" });
-  expect(everything.getAttribute("aria-pressed")).toBe("true");
+  const everything = await screen.findByRole("radio", { name: "Everything" });
+  expect(everything.getAttribute("aria-checked")).toBe("true");
   // The carrier is offered under output alone, never as an action.
-  expect(screen.getByRole("button", { name: "new note" })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "attachments only" })).toBeNull();
+  expect(screen.getByRole("radio", { name: "new note" })).toBeTruthy();
+  expect(screen.queryByRole("radio", { name: "attachments only" })).toBeNull();
 
   await open("Attachments only");
   expect(screen.queryByText("action")).toBeNull();
-  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "new note" })).toBeNull();
 });
 
 test("saves a template that places the attachments alone", async () => {
@@ -1086,8 +1087,8 @@ test("everything gives back the action held before attachments only", async () =
   await open("Attachments only");
   await open("Everything");
 
-  const append = await screen.findByRole("button", { name: "append" });
-  expect(append.getAttribute("aria-pressed")).toBe("true");
+  const append = await screen.findByRole("radio", { name: "append" });
+  expect(append.getAttribute("aria-checked")).toBe("true");
 });
 
 test("a kind with no other capability draws no output", async () => {
@@ -1096,8 +1097,8 @@ test("a kind with no other capability draws no output", async () => {
   render(Templates);
   await go("Add a template");
 
-  await screen.findByRole("button", { name: "attachments only" });
-  expect(screen.queryByRole("button", { name: "Everything" })).toBeNull();
+  await screen.findByRole("radio", { name: "attachments only" });
+  expect(screen.queryByRole("radio", { name: "Everything" })).toBeNull();
 });
 
 test("an opened template placing the attachments alone says so under output", async () => {

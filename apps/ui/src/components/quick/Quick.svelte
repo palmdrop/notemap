@@ -13,6 +13,7 @@
   import { excerptOf } from "$lib/excerpt";
   import { routedHere } from "$lib/firing";
   import { slide } from "$lib/motion";
+  import { reachable } from "$lib/reachable.svelte";
   import { templateIcon, whereOf } from "$lib/looks";
 
   /**
@@ -25,6 +26,7 @@
 
   const held = $derived(client.held(id));
   const item = $derived($held);
+  const pool = reachable();
   const templates = client.templates.all;
   const destinations = client.destinations.all;
 
@@ -129,6 +131,15 @@
   {/if}
   {#if said !== ""}
     <p role="status" class="px-gutter py-2 text-danger">{said}</p>
+  {:else if !pool.yes}
+    <p role="status" class="px-gutter py-2 text-muted">
+      The pool is out of reach, so nothing can be routed from here until it
+      answers.
+    </p>
+  {:else if usable.length === 0}
+    <p class="px-gutter py-2 text-muted">
+      No templates yet. More options picks a destination.
+    </p>
   {/if}
   <ul class="m-0 list-none p-0">
     {#each usable as template (template.id)}
@@ -137,7 +148,7 @@
       <li class="border-b border-rule">
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !pool.yes}
           aria-expanded={asks ? expanded : undefined}
           onclick={() => void choose(template)}
           class="grid min-h-bar w-full grid-cols-[var(--spacing-icon)_1fr_auto] items-center gap-3 px-gutter py-2 text-left"
@@ -200,7 +211,11 @@
                 />
                 <Box
                   disabled={typed.trim() === "" || busy}
-                  onclick={() => void answer(template, typed.trim())}>Next</Box
+                  onclick={() => void answer(template, typed.trim())}
+                  >{steps?.filter((one) => given[one.field] === undefined)
+                    .length === 1
+                    ? "Route"
+                    : "Next"}</Box
                 >
               </form>
             {/if}

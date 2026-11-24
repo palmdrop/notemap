@@ -102,7 +102,7 @@
     {#if editing === undefined}
       <input
         bind:value={name}
-        aria-label="Name"
+        aria-label="name"
         required
         placeholder="what destinations call it"
         class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
@@ -150,7 +150,7 @@
       type="password"
       autocomplete="new-password"
       bind:value={secret}
-      aria-label="Secret"
+      aria-label="secret"
       required={!keeping}
       placeholder={keeping ? "set — leave blank to keep it" : ""}
       class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"

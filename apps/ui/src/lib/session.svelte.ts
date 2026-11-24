@@ -53,7 +53,6 @@ export function session() {
     get shut() {
       return held.known && held.required && !held.signedIn;
     },
-    /** Only where there is a door to come back out of. */
     /** Who this is, as the drawer says it: nobody where the pool asks no one. */
     get who(): string {
       if (!held.required) return "no password set";
@@ -62,6 +61,7 @@ export function session() {
         ? `signed in with ${held.as.name ?? "a token"}`
         : "signed in";
     },
+    /** Only where there is a door to come back out of. */
     get canSignOut() {
       return held.required && held.signedIn && held.as?.kind === "session";
     },

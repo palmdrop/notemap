@@ -9,7 +9,14 @@
 
   let now = $state(new Date());
   $effect(() => {
-    const ticking = setInterval(() => (now = new Date()), 60_000);
+    const ticking = setInterval(() => {
+      const then = now;
+      now = new Date();
+      // A new day is a new count: the one held is yesterday's.
+      if (now.toDateString() !== then.toDateString()) {
+        void client.counts.load().catch(() => undefined);
+      }
+    }, 60_000);
     return () => clearInterval(ticking);
   });
 

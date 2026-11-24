@@ -214,5 +214,5 @@
   font-style: normal;
   font-weight: 400;
   font-display: block;
-  src: url("/fonts/syne/Syne-Regular.ttf") format("truetype");
+  src: url("/fonts/syne/syne-latin-400-normal.woff2") format("woff2");
 }

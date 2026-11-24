@@ -6,7 +6,7 @@
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import { batchSaid, byKind, namesIn } from "$lib/batch-log";
-  import { notes } from "$lib/batching";
+  import { itemCount } from "$lib/batching";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { pickable } from "$lib/pick";
@@ -39,7 +39,7 @@
     return (
       batchSaid(counted, $batches.get(id), namesIn($templates)) ??
       byKind(counted) ?? {
-        what: notes(new Set(entries.map((one) => one.subject)).size),
+        what: itemCount(new Set(entries.map((one) => one.subject)).size),
       }
     );
   });

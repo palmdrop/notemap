@@ -21,8 +21,7 @@
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it — bold —
-   * and again on the `×` that appears beside it. `+` opens a line with the pool's offer in a
+   * of tags, each taken off by its `×` where tags can be changed. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks

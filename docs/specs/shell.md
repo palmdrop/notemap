@@ -1445,8 +1445,10 @@ an icon for what it files into (a note for one that appends, a folder, a cloud, 
 and where it files — `todo.md in Vault`. **A template that asks nothing routes on its Route.** One
 that asks ([ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
 opens in place and asks it: the destination's answers as rows, which move on as they are tapped,
-the last of them routing, and a line for a typed answer with Next. **More options** leads to the
-route page, `/items/{id}/process`.
+the last of them routing, and a line for a typed answer with Next, which says **Route** on the last
+question. **More options** leads to the route page, `/items/{id}/process`. *(2026-11-24.)* With no
+templates it says `No templates yet. More options picks a destination.`; with the pool out of reach
+it says so, and its templates stay drawn and cannot be pressed.
 
 **It is reached** from the item's Route, from a row's Route under the pointer when wide, by **a
 swipe left on a row** on a phone — the row following the finger, and a swipe that starts within
@@ -1677,7 +1679,8 @@ folder taken otherwise, so `seeded/new` becomes `seeded/` and then empty — and
 is it the field's own, as it is while a composition is under way. **Leaving the surface asks first
 where something was entered** since it opened or last routed: a destination or template chosen, or
 the words rewritten, and with them any argument, since a destination chosen is already a decision
-begun. It asks *Go back to the queue?* in the one dialog every question is asked in *(2026-11-23)*:
+begun. It asks *Leave without routing?* in the one dialog every question is asked in *(2026-11-23;
+since 2026-11-24 in those words, since it may have begun from the feed or an item)*:
 **Leave**, in the alarm, goes and drops what was entered; **Stay**, `esc` or a press outside
 returns with everything as it was. Nothing entered leaves at once.
 Tags are not part of it, being applied to the pool when taken.
@@ -3821,7 +3824,9 @@ where it has one:
   Manual at its foot, level with Route at the foot of the steps.
 - **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
   the bar says why ("Pick a destination to save."). Pressing it does nothing.
-- **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled.
+- **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled. It is
+  a radio group: one part in the tab order, the arrows moving the choice *(2026-11-24)*. Every
+  box, toggle and dialog way is 44px tall on a phone and 36px when wide.
   **Choices that can all be on** are boxes of their own (`blocks/Toggle`), filled and ticked when
   on. **A long choice** is radio rows (`blocks/RadioRows`), each with a line saying what it does
   where it needs one.

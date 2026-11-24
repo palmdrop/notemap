@@ -147,11 +147,6 @@
   $effect(() => onforecast?.(forecast?.word));
 
   /**
-   * The typed tail that is not there yet, drawn under the deepest folder that
-   * is rather than named off beside the word. Only where there is a forecast:
-   * with nothing answered there is nothing to say is missing.
-   */
-  /**
    * A note's place is a folder or a note: a picture or a PDF beside them is
    * nothing a note can be written into, so it is not offered as one.
    */

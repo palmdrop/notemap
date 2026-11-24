@@ -8,17 +8,31 @@ test("a segmented choice fills the chosen part, and choosing it again does nothi
   const onpress = vi.fn();
   render(Pieces, { onpress });
 
-  const oldest = screen.getByRole("button", { name: "Oldest first" });
-  const newest = screen.getByRole("button", { name: "Newest first" });
-  expect(oldest.getAttribute("aria-pressed")).toBe("true");
+  const oldest = screen.getByRole("radio", { name: "Oldest first" });
+  const newest = screen.getByRole("radio", { name: "Newest first" });
+  expect(oldest.getAttribute("aria-checked")).toBe("true");
 
   await fireEvent.click(oldest);
   expect(onpress).not.toHaveBeenCalled();
 
   await fireEvent.click(newest);
   expect(onpress).toHaveBeenCalledWith("newest");
-  expect(newest.getAttribute("aria-pressed")).toBe("true");
-  expect(oldest.getAttribute("aria-pressed")).toBe("false");
+  expect(newest.getAttribute("aria-checked")).toBe("true");
+  expect(oldest.getAttribute("aria-checked")).toBe("false");
+});
+
+test("a segmented choice is a radio group: one part in the tab order, the arrows moving the choice", async () => {
+  const onpress = vi.fn();
+  render(Pieces, { onpress });
+
+  const oldest = screen.getByRole("radio", { name: "Oldest first" });
+  const newest = screen.getByRole("radio", { name: "Newest first" });
+  expect(oldest.tabIndex).toBe(0);
+  expect(newest.tabIndex).toBe(-1);
+
+  await fireEvent.keyDown(oldest, { key: "ArrowRight" });
+  expect(onpress).toHaveBeenCalledWith("newest");
+  expect(document.activeElement).toBe(newest);
 });
 
 test("a segmented choice's fill stands under the chosen part, and moves to the next one chosen", async () => {
@@ -33,13 +47,13 @@ test("a segmented choice's fill stands under the chosen part, and moves to the n
     .mockReturnValue(110);
   render(Pieces, { onpress: vi.fn() });
 
-  const group = screen.getByRole("group", { name: "Order" });
+  const group = screen.getByRole("radiogroup", { name: "Order" });
   const fill = () =>
     group.querySelector<HTMLElement>(':scope > [aria-hidden="true"]')!;
   expect(fill().style.left).toBe("4px");
   expect(fill().style.width).toBe("110px");
 
-  await fireEvent.click(screen.getByRole("button", { name: "Newest first" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "Newest first" }));
   expect(fill().style.left).toBe("120px");
 
   at.mockRestore();

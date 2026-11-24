@@ -73,6 +73,10 @@ export function spoken(held: string): string {
   if (held === " ") return SAID[" "]!;
   return held
     .split("+")
-    .map((part) => SAID[part] ?? part)
+    .map(
+      (part) =>
+        SAID[part] ??
+        (part.length > 1 ? part.charAt(0).toUpperCase() + part.slice(1) : part),
+    )
     .join("+");
 }

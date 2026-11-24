@@ -1,6 +1,6 @@
 <script lang="ts">
   import Spinner from "$components/primitives/marks/Spinner.svelte";
-  import { notes } from "$lib/batching";
+  import { itemCount } from "$lib/batching";
   import { left, offerOf, phaseOf, type Firing } from "$lib/firings.svelte";
 
   /**
@@ -96,14 +96,14 @@
   >
     <Spinner />
     <span class="min-w-0 truncate"
-      >Routing {notes(open.length)} by <b>{name}</b></span
+      >Routing {itemCount(open.length)} by <b>{name}</b></span
     >
     {#if soonest !== undefined}
       <span class="flex-none text-muted tabular-nums">{soonest}s</span>
     {/if}
   </button>
   {#if open.some((firing) => offerOf(firing, now) !== undefined)}
-    {@render cancel(`Cancel routing ${notes(open.length)} by ${name}`, () =>
+    {@render cancel(`Cancel routing ${itemCount(open.length)} by ${name}`, () =>
       oncancelbatch(batch),
     )}
   {/if}

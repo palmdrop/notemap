@@ -75,7 +75,7 @@
           type="button"
           data-way={at}
           onclick={() => answer(way.value)}
-          class="inline-flex min-h-9 items-center rounded-control border px-3.5 whitespace-nowrap {way.kind ===
+          class="inline-flex min-h-11 items-center rounded-control border px-3.5 whitespace-nowrap wide:min-h-9 {way.kind ===
           'primary'
             ? 'border-ink bg-ink text-paper'
             : way.kind === 'danger'

@@ -46,6 +46,24 @@
     return () => cancelAnimationFrame(frame);
   });
 
+  /** The arrows move the choice along the row, as a radio group's do. */
+  function keys(event: KeyboardEvent): void {
+    const step =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? 1
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (step === 0 || disabled || held) return;
+    event.preventDefault();
+    const at = options.findIndex((one) => one.value === value);
+    const next =
+      options[(Math.max(at, 0) + step + options.length) % options.length];
+    if (next === undefined) return;
+    onchoose(next.value);
+    parts[next.value]?.focus();
+  }
+
   $effect(() => {
     if (group === undefined || typeof ResizeObserver === "undefined") return;
     const watching = new ResizeObserver(place);
@@ -56,8 +74,10 @@
 
 <div class="max-w-full [scrollbar-width:none] overflow-x-auto">
   <div
-    role="group"
+    role="radiogroup"
     aria-label={label}
+    tabindex="-1"
+    onkeydown={keys}
     bind:this={group}
     class="relative inline-flex flex-nowrap gap-[0.1875rem] rounded-control border border-off-line bg-off p-[0.1875rem]"
   >
@@ -77,7 +97,9 @@
       {@const on = one.value === value}
       <button
         type="button"
-        aria-pressed={on}
+        role="radio"
+        aria-checked={on}
+        tabindex={on || (value === undefined && one === options[0]) ? 0 : -1}
         {disabled}
         aria-disabled={held || undefined}
         onclick={() => {

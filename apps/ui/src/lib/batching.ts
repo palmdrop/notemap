@@ -7,7 +7,7 @@ import {
 
 import type { Raised } from "./notices.svelte";
 
-export function notes(count: number): string {
+export function itemCount(count: number): string {
   return count === 1 ? "1 item" : `${String(count)} items`;
 }
 
@@ -60,8 +60,8 @@ export function asking(
 } {
   const archive = action.kind === "archive";
   const question = archive
-    ? `Discard ${notes(count.total)}?`
-    : `Route ${notes(count.total)}?`;
+    ? `Discard ${itemCount(count.total)}?`
+    : `Route ${itemCount(count.total)}?`;
 
   const said: string[] = [];
   if (count.skipped > 0) {
@@ -161,7 +161,7 @@ export function resultOf<
       : undefined;
 
   return {
-    what: `${notes(changed)} ${words.done}`,
+    what: `${itemCount(changed)} ${words.done}`,
     ...(subject === undefined ? {} : { subject }),
     ...(why === "" ? {} : { why }),
     ...(failed + refused > 0 ? { alarm: true } : {}),

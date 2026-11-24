@@ -864,7 +864,8 @@ second key is no longer buying anything ([ADR 21](../adr/0021-an-item-is-editabl
 ```
 
 - **`since` adds `captured`** *(2026-11-19)*: every item captured at or after that instant, by
-  capture time, wherever it has gone since. A shell asks from its own midnight to say what was
+  capture time, wherever it has gone since. A revision is not a capture and is not counted
+  *(2026-11-24; it was, so editing three routed items read as three captures)*. A shell asks from its own midnight to say what was
   captured today; the day is the device's, so the pool is told the instant rather than a date.
   Anything that is not an instant is refused with `422 bad-since`.
 

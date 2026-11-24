@@ -6,7 +6,7 @@
 </script>
 
 <Dialog
-  title="Go back to the queue?"
+  title="Leave without routing?"
   ways={[
     { label: "Stay", value: false },
     { label: "Leave", value: true, kind: "danger" },

@@ -81,7 +81,7 @@
     <button
       type="button"
       onclick={chosen.all}
-      class="ml-2 inline-flex min-h-9 items-center rounded-control border border-off-line bg-off px-3 active:bg-off-down"
+      class="ml-2 inline-flex min-h-11 items-center rounded-control border border-off-line bg-off px-3 active:bg-off-down wide:min-h-9"
       >All</button
     >
     {#if chosen.full !== undefined}

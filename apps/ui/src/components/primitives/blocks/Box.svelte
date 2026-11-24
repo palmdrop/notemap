@@ -30,7 +30,7 @@
   } = $props();
 
   const look = $derived(
-    `inline-flex min-h-9 items-center gap-1.5 rounded-control border border-off-line bg-off px-3.5 whitespace-nowrap active:bg-off-down disabled:text-muted disabled:opacity-60 ${
+    `inline-flex min-h-11 items-center wide:min-h-9 gap-1.5 rounded-control border border-off-line bg-off px-3.5 whitespace-nowrap active:bg-off-down disabled:text-muted disabled:opacity-60 ${
       danger ? "text-danger" : "text-ink"
     }`,
   );

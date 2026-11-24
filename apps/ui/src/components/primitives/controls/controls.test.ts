@@ -8,10 +8,10 @@ test("the order selector reports which end the reader wants to start from", asyn
   const chose = vi.fn();
   render(OrderSelector, { order: "oldest-first", onchoose: chose });
 
-  const oldest = screen.getByRole("button", { name: "Oldest first" });
-  expect(oldest.getAttribute("aria-pressed")).toBe("true");
+  const oldest = screen.getByRole("radio", { name: "Oldest first" });
+  expect(oldest.getAttribute("aria-checked")).toBe("true");
 
-  await fireEvent.click(screen.getByRole("button", { name: "Newest first" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "Newest first" }));
   expect(chose).toHaveBeenCalledWith("newest-first", "capture");
 });
 
@@ -26,14 +26,14 @@ test("offers the feed the key as well as the end", async () => {
 
   expect(
     screen
-      .getByRole("button", { name: "When processed" })
-      .getAttribute("aria-pressed"),
+      .getByRole("radio", { name: "When processed" })
+      .getAttribute("aria-checked"),
   ).toBe("true");
 
-  await fireEvent.click(screen.getByRole("button", { name: "Oldest first" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "Oldest first" }));
   expect(chose).toHaveBeenCalledWith("oldest-first", "processed");
 
-  await fireEvent.click(screen.getByRole("button", { name: "When captured" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "When captured" }));
   expect(chose).toHaveBeenCalledWith("newest-first", "capture");
 });
 

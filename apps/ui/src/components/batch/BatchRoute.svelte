@@ -7,7 +7,7 @@
   import Sheet from "$components/primitives/sheets/Sheet.svelte";
   import { askForTemplate, type Step } from "$lib/asked";
   import { takenAs } from "$lib/candidate-list";
-  import { notes } from "$lib/batching";
+  import { itemCount } from "$lib/batching";
   import { client } from "$lib/client";
   import { nameOf } from "$lib/destinations";
   import { placeOf } from "$lib/templates";
@@ -102,7 +102,7 @@
   }
 </script>
 
-<Sheet title="Route {notes(count)}" wide="dialog" {onclose}>
+<Sheet title="Route {itemCount(count)}" wide="dialog" {onclose}>
   {#if open === undefined}
     <p class="px-gutter pt-3 pb-1 text-small text-muted">
       Only templates with a trigger tag route a batch.

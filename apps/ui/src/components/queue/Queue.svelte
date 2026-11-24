@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+  import { SvelteMap } from "svelte/reactivity";
   import type { Item as Held } from "@notemap/client";
 
   /**
@@ -7,6 +7,9 @@
    * drawn again, so a row in its window survives leaving and coming back.
    */
   const seen = new SvelteMap<string, Held>();
+
+  /** More than a session's windows, and the oldest let go past it. */
+  const REMEMBERED = 500;
 </script>
 
 <script lang="ts">
@@ -132,11 +135,6 @@
   const heldRow = $derived(client.held(selected ?? ""));
 
   /**
-   * A decision takes the selected row off the queue, and the row stays drawn
-   * where it stood until the selection leaves it: the decision can be looked
-   * at, and taken back from the row, after it is made.
-   */
-  /**
    * A route in its window keeps its row, by hand or by trigger tag, until the
    * window closes and the row slides out. The pool has already taken the item
    * off the queue, so the row is drawn from what this list last held of it,
@@ -144,24 +142,36 @@
    */
   $effect(() => {
     for (const row of $queue.items) seen.set(row.id, row);
+    untrack(() => {
+      for (const id of seen.keys()) {
+        if (seen.size <= REMEMBERED) break;
+        seen.delete(id);
+      }
+    });
   });
-  const asked = new SvelteSet<string>();
+  /** Items read for a window, once each; one whose read failed is asked again. */
+  const asked: Record<string, true> = {};
   $effect(() => {
     for (const firing of firings.open) {
-      if (seen.has(firing.item) || asked.has(firing.item)) continue;
-      asked.add(firing.item);
+      if (untrack(() => seen.has(firing.item)) || asked[firing.item]) continue;
+      asked[firing.item] = true;
       void client.item(firing.item).then(
         ({ item }) => {
+          if (item === undefined) {
+            delete asked[firing.item];
+            return;
+          }
           // Only one whose every record is this window's was queue work: a
           // route again from the feed is not.
           const first =
-            item !== undefined &&
             item.archived === undefined &&
             (item.routing === undefined ||
               item.routing.records === item.routing.pending);
           if (first) seen.set(item.id, item);
         },
-        () => {},
+        () => {
+          delete asked[firing.item];
+        },
       );
     }
   });

@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
 
   import Order from "$components/order/Order.svelte";
-  import Icon from "$components/primitives/icon/Icon.svelte";
+  import Toggle from "$components/primitives/blocks/Toggle.svelte";
   import Sheet from "$components/primitives/sheets/Sheet.svelte";
   import { publish } from "$lib/command/stack.svelte";
   import { log } from "$lib/log.svelte";
@@ -37,9 +37,6 @@
       },
     },
   ]);
-
-  const BOX =
-    "inline-flex min-h-9 items-center gap-1.5 rounded-control border px-3.5";
 </script>
 
 {#if open}
@@ -52,17 +49,10 @@
       <h3 class="mb-2">Views</h3>
       <div class="flex flex-wrap gap-2" role="group" aria-label="Views">
         {#each VIEWS as view (view.name)}
-          {@const on = taken.includes(view)}
-          <button
-            type="button"
-            aria-pressed={on}
-            onclick={() => read(toggled(log.kinds, view))}
-            class="{BOX} {on
-              ? 'border-ink bg-ink pl-2.5 text-paper'
-              : 'border-off-line bg-off text-ink active:bg-off-down'}"
+          <Toggle
+            on={taken.includes(view)}
+            ontoggle={() => read(toggled(log.kinds, view))}>{view.name}</Toggle
           >
-            {#if on}<Icon name="check" class="size-4" />{/if}{view.name}
-          </button>
         {/each}
       </div>
       {#if log.kinds !== undefined}

@@ -4,6 +4,7 @@ import {
   render,
   screen,
   within,
+  waitFor,
 } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
@@ -327,8 +328,15 @@ function draw(item = aCapture()) {
   return render(Process, { props: { item } });
 }
 
+/** A button, or one part of a segmented choice. */
 const choose = async (name: string | RegExp) =>
-  fireEvent.click(await screen.findByRole("button", { name }));
+  fireEvent.click(
+    await waitFor(
+      () =>
+        screen.queryByRole("radio", { name }) ??
+        screen.getByRole("button", { name }),
+    ),
+  );
 
 /**
  * A row in a browse, taken the way the typed line's tree is taken: `mousedown`
@@ -514,15 +522,15 @@ test("a template's summary hides the capability choice until edit", async () => 
   await choose("research");
 
   await screen.findByRole("button", { name: /for this route$/ });
-  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "new note" })).toBeNull();
 
   await fireEvent.click(
     screen.getByRole("button", { name: /for this route$/ }),
   );
 
   expect(
-    (await screen.findByRole("button", { name: "new note" })).getAttribute(
-      "aria-pressed",
+    (await screen.findByRole("radio", { name: "new note" })).getAttribute(
+      "aria-checked",
     ),
   ).toBe("true");
 });
@@ -1529,13 +1537,13 @@ test("offers a conditional argument only once the others make it mean something"
   const how = () => within(section("how"));
   expect(how().queryByText("trigger tags")).toBeNull();
 
-  const [hashtagsYes] = how().getAllByRole("button", { name: "yes" });
+  const [hashtagsYes] = how().getAllByRole("radio", { name: "yes" });
   await fireEvent.click(hashtagsYes as HTMLElement);
   expect(await how().findByText("trigger tags")).toBeDefined();
 
-  const [, triggerYes] = how().getAllByRole("button", { name: "yes" });
+  const [, triggerYes] = how().getAllByRole("radio", { name: "yes" });
   await fireEvent.click(triggerYes as HTMLElement);
-  const [hashtagsNo] = how().getAllByRole("button", { name: "no" });
+  const [hashtagsNo] = how().getAllByRole("radio", { name: "no" });
   await fireEvent.click(hashtagsNo as HTMLElement);
   expect(how().queryByText("trigger tags")).toBeNull();
 
@@ -1561,8 +1569,8 @@ test("judges a conditional argument against what the destination's settings impl
 
   expect(await screen.findByText("trigger tags")).toBeDefined();
   // Left unset, the default is drawn as the one picked.
-  const full = screen.getByRole("button", { name: "full" });
-  expect(full.getAttribute("aria-pressed")).toBe("true");
+  const full = screen.getByRole("radio", { name: "full" });
+  expect(full.getAttribute("aria-checked")).toBe("true");
 });
 
 async function pickingFrontmatter(taken: readonly string[]) {
@@ -1846,7 +1854,7 @@ test("the kind that draws the line settles what to do, with no do step", async (
 
   expect(await screen.findByRole("combobox", { name: "place" })).toBeDefined();
   expect(
-    screen.queryByRole("button", { name: "new note or append" }),
+    screen.queryByRole("radio", { name: "new note or append" }),
   ).toBeNull();
 });
 
@@ -1862,7 +1870,7 @@ test("a kind that can do one thing settles it, with no do step", async () => {
   await choose(/Vault/);
 
   expect(await screen.findByLabelText("directory")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "new note" })).toBeNull();
 });
 
 /**
@@ -2231,8 +2239,8 @@ test("a kind that draws the browser chooses among two", async () => {
   draw();
   await choose(/Vault/);
 
-  expect(await screen.findByRole("button", { name: "new note" })).toBeDefined();
-  expect(screen.getByRole("button", { name: "append" })).toBeDefined();
+  expect(await screen.findByRole("radio", { name: "new note" })).toBeDefined();
+  expect(screen.getByRole("radio", { name: "append" })).toBeDefined();
   // Nothing is picked for you, so no field is drawn until one is.
   expect(screen.queryByLabelText("directory")).toBeNull();
 
@@ -4187,10 +4195,10 @@ test("offers attachments only where the item has attachments and the destination
   await choose(/Vault/);
 
   expect(
-    await screen.findByRole("button", { name: /Attachments only/ }),
+    await screen.findByRole("radio", { name: /Attachments only/ }),
   ).toBeDefined();
-  const everything = screen.getByRole("button", { name: "Everything" });
-  expect(everything.getAttribute("aria-pressed")).toBe("true");
+  const everything = screen.getByRole("radio", { name: "Everything" });
+  expect(everything.getAttribute("aria-checked")).toBe("true");
 });
 
 test("does not offer attachments only for a capture with none", async () => {
@@ -4200,7 +4208,7 @@ test("does not offer attachments only for a capture with none", async () => {
   await choose(/Vault/);
   await screen.findByRole("combobox", { name: "place" });
 
-  expect(screen.queryByRole("button", { name: /Attachments only/ })).toBeNull();
+  expect(screen.queryByRole("radio", { name: /Attachments only/ })).toBeNull();
 });
 
 test("attachments only routes the carrier to the folder the line had typed", async () => {
@@ -4338,7 +4346,7 @@ test("a rewrite made before taking an attachments-only template is neither drawn
     target: { value: "rewritten" },
   });
   await choose("library");
-  await screen.findByRole("button", { name: "Attachments only" });
+  await screen.findByRole("radio", { name: "Attachments only" });
 
   expect(screen.queryByLabelText("words")).toBeNull();
   expect(screen.queryByText("rewritten")).toBeNull();
@@ -4426,12 +4434,10 @@ test("a kind that settles nothing offers both capabilities for a capture with at
   draw(aPaper());
   await choose(/Board/);
 
-  expect(await screen.findByRole("button", { name: "new note" })).toBeDefined();
-  expect(
-    screen.getByRole("button", { name: "attachments only" }),
-  ).toBeDefined();
+  expect(await screen.findByRole("radio", { name: "new note" })).toBeDefined();
+  expect(screen.getByRole("radio", { name: "attachments only" })).toBeDefined();
   // The switch belongs to a kind that settles one; this one asks instead.
-  expect(screen.queryByRole("button", { name: /Attachments only/ })).toBeNull();
+  expect(screen.queryByRole("radio", { name: /Attachments only/ })).toBeNull();
 });
 
 /**
@@ -4445,8 +4451,8 @@ test("a capability carrying the attachments alone is not offered for a capture w
   await choose(/Board/);
 
   expect(await screen.findByLabelText("channel")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "attachments only" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "new note" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "attachments only" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "new note" })).toBeNull();
 });
 
 /**
@@ -4621,12 +4627,12 @@ test("offers no frontmatter while the delivery is a task, and sends none", async
   await screen.findByText("append here");
 
   await fireEvent.click(
-    screen.getByRole("button", { name: /^full/ }) as HTMLElement,
+    screen.getByRole("radio", { name: /^full/ }) as HTMLElement,
   );
-  await fireEvent.click(screen.getByRole("button", { name: "task" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "task" }));
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: /^full/ })).toBeNull();
+    expect(screen.queryByRole("radio", { name: /^full/ })).toBeNull();
   });
 
   await commit();

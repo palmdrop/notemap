@@ -9,13 +9,14 @@ import { expect, test } from "vitest";
 
 import Appearance from "./Appearance.svelte";
 
-const group = (name: string) => within(screen.getByRole("group", { name }));
+const group = (name: string) =>
+  within(screen.getByRole("radiogroup", { name }));
 const option = (name: string, among = "Theme") =>
-  group(among).getByRole("button", { name });
+  group(among).getByRole("radio", { name });
 const chosen = (among = "Theme") =>
   group(among)
-    .getAllByRole("button")
-    .find((one) => one.getAttribute("aria-pressed") === "true")
+    .getAllByRole("radio")
+    .find((one) => one.getAttribute("aria-checked") === "true")
     ?.textContent?.trim();
 const wearing = () => document.documentElement.dataset["theme"];
 
