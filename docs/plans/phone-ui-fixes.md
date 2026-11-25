@@ -56,21 +56,22 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 - [x] `show()` focuses the Find a tag line only when the panel is opened from the keys. A tap
       focuses the sheet, as the sheet already does on open.
 - [x] Test: opened by a pointer, the line is not focused. Opened by `f`, it is.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 2: tags on the capture page and in an edit (depends on nothing)
 
-- [ ] Reproduce at 390×844 with the visual viewport cut to keyboard height: the line pushed out
+- [x] Reproduce at 390×844 with the visual viewport cut to keyboard height: the line pushed out
       of view, the offer taller than the room, the page growing after a tag.
-- [ ] A field's offer on a phone opens above its line, capped to the room between the view's top
-      and the line. When wide it stays below.
-- [ ] The capture page fills the view exactly, and the field gives up height to the tags rather
+- [x] The tag offer on a phone opens on whichever side of its line has more room, held to that
+      room. When wide it stays below. _(It was the non-field offer, `.offer`, that both pages use;
+      the line's scroll to the top of the view is gone.)_
+- [x] The capture page fills the view exactly, and the field gives up height to the tags rather
       than the page scrolling.
-- [ ] Spec: amend "Capture is the head of the queue" and "Tagging" with where a field's offer
-      opens on a phone.
-- [ ] Headless Chromium check: with the keyboard simulated, the line and the bar stay in view, and
+- [x] Spec: amend "Capture is the head of the queue" and "Tagging" with where the offer opens
+      on a phone.
+- [x] Headless Chromium check: with the keyboard simulated, the line and the bar stay in view, and
       the offer sits whole between them.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 3: swipes show what they uncover, and swipe right (depends on nothing)
 

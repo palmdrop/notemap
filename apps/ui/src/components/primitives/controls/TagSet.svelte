@@ -109,13 +109,6 @@
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
   let line = $state<HTMLInputElement | null>(null);
-  // On a phone the line goes to the top of the view, so the offer has the room
-  // under it down to the keyboard.
-  $effect(() => {
-    if (adding && !field && !width.wide) {
-      line?.scrollIntoView({ block: "start" });
-    }
-  });
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
@@ -761,7 +754,7 @@
         bind:this={panel}
         class="overflow-y-auto rounded-control border border-rule bg-paper {field
           ? 'max-h-72 w-full'
-          : 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56'}"
+          : 'my-1 max-h-72 min-h-0 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56'}"
       >
         {@render listbox()}
       </div>

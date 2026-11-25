@@ -126,8 +126,10 @@
             : "notemap")),
   );
 
-  /** The one surface that is a frame rather than a page, and takes the window when wide. */
-  const fills = $derived(page.route.id === "/items/[id]/process");
+  /** The one surface that takes the window when wide. */
+  const takesWindow = $derived(page.route.id === "/items/[id]/process");
+  /** Frames rather than pages: head and foot held, the middle scrolling. */
+  const fills = $derived(takesWindow || page.route.id === "/capture");
 
   /** Pages drawn edge to edge in ruled rows, their own padding inside them. */
   const BLEEDS = new Set([
@@ -138,7 +140,7 @@
   ]);
   const bleeds = $derived(BLEEDS.has(page.route.id ?? ""));
   /** The menu column, when wide, everywhere but a route being made. */
-  const menued = $derived(width.wide && !shut && !fills);
+  const menued = $derived(width.wide && !shut && !takesWindow);
 
   // Signing out is the pool's work leaving with it. A failure about a
   // delivery nobody can now look up would outlive the session that raised it.

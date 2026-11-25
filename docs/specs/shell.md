@@ -898,7 +898,9 @@ closing the page says so** when the page opens again — `Draft kept from last t
 trigger tags were given and its files, kept across a reload. *(Amended 2026-11-18, after the
 review.)* **The page is closed by ×**, which goes back. Its bar is **Attach**, **Camera** and
 **Save**; Tag is the + tag above it. **Save stays dashed until there is something to send**, and
-pressed then says what is missing.
+pressed then says what is missing. **The page is the view's height and no more** *(2026-11-25)*:
+the header and the bar hold still, the field gives up height to its tags and files, and what does
+not fit scrolls between them.
 
 **At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
 the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **Capture**,
@@ -2560,9 +2562,10 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 tag can be changed each carries its × — no press to select it first — and elsewhere tags are
 words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
 its template's name muted at the right, and a typed name no offer holds says `new`. **The offer
-opens downward at every width** *(2026-11-24; on a phone it opened upward, over the words the tag
-was for)*, and on a phone the line is first scrolled to the top of the view, so the offer has the
-room under it down to the keyboard. **A trigger tag's question is the quick route's shape**: a
+opens downward when wide; on a phone it opens on whichever side of the line has more room, held to
+that room**, and nothing scrolls under it *(amended 2026-11-25: it opened downward at every width,
+the line first scrolled to the top of the view, which on a device took the line out of view under
+the keyboard; before 2026-11-24 it opened upward always, over the words the tag was for)*. **A trigger tag's question is the quick route's shape**: a
 sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
 **The question has a field of its own** under what it asks, which takes the caret, since the tag
 line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The
