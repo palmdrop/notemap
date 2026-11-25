@@ -3,6 +3,7 @@ import { updated } from "$app/state";
 
 import { heldFiles } from "$lib/draft";
 import { leave, unsaved } from "$lib/leaving.svelte";
+import { notices } from "$lib/notices.svelte";
 
 export function registerWorker(): void {
   if (dev || !("serviceWorker" in navigator)) return;
@@ -43,6 +44,18 @@ export function loadInstead(
   return move.to.url;
 }
 
+/**
+ * Reloads into the newer build, once an edit with changes is settled. Held
+ * attachments have nowhere to ask about them, so the reload waits for them to
+ * be captured or put back, and says so.
+ */
 export function reload(): void {
+  if (heldFiles().length > 0) {
+    notices.raise({
+      what: "the reload waits for the attachments held: capture or remove them",
+      key: "new-version-waits",
+    });
+    return;
+  }
   leave(() => location.reload());
 }

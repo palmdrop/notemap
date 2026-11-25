@@ -44,6 +44,7 @@
     form: drawn = "box",
     onfocus,
     oncaptured,
+    told,
   }: {
     /**
      * Whether the field takes the caret as it is drawn: the page's does, and the
@@ -61,6 +62,8 @@
     onfocus?: () => void;
     /** Sent, with the item it made: for saying where it landed. */
     oncaptured?: (item: string) => void;
+    /** What the page has to say over the bar, where the box itself has nothing to: what a share added. */
+    told?: { readonly words: string; readonly alarm?: boolean };
   } = $props();
 
   // Read where the box is drawn, so coming back from another surface restores
@@ -451,6 +454,9 @@
             >{said === NOTHING_TO_CAPTURE
               ? "Nothing to capture yet: write something, or attach a file."
               : said}</span
+          >{:else if told !== undefined}<span
+            role="status"
+            class={told.alarm === true ? "text-danger" : ""}>{told.words}</span
           >{/if}{/snippet}
       <BarAction
         icon="attach"

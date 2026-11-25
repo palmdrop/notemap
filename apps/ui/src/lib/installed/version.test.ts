@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { holdFiles } from "$lib/draft";
 import { opened } from "$lib/leaving.svelte";
+import { notices } from "$lib/notices.svelte";
 
-import { loadInstead, reload } from "./version.svelte";
+import { loadInstead, reload } from "./version";
 
 vi.mock("$app/state", () => ({
   updated: { current: false, check: () => Promise.resolve(false) },
@@ -25,6 +26,7 @@ function changed(): () => void {
 
 afterEach(() => {
   holdFiles([]);
+  notices.clear();
   vi.unstubAllGlobals();
 });
 
@@ -63,6 +65,17 @@ describe("reloading for a newer build", () => {
     reload();
 
     expect(reloaded).toHaveBeenCalledOnce();
+  });
+
+  it("waits, and says why, while attachments are held that were not captured", () => {
+    const reloaded = vi.fn();
+    vi.stubGlobal("location", { reload: reloaded });
+    holdFiles([new File(["x"], "photo.jpg")]);
+
+    reload();
+
+    expect(reloaded).not.toHaveBeenCalled();
+    expect(notices.shown.at(-1)?.what).toMatch(/waits for the attachments/);
   });
 
   it("asks first where an edit has changes", () => {

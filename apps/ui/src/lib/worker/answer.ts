@@ -4,9 +4,10 @@ export const SHARED_TO = "/capture";
 /**
  * What the worker does with a request: a file it keeps, a page drawn from the
  * shell it keeps when the daemon cannot answer, a share to hold for the
- * capture page, or the network as if there were no worker at all.
+ * capture page, a file of an earlier build that a page drawn from it still
+ * asks for, or the network as if there were no worker at all.
  */
-export type Answer = "kept" | "shell" | "share" | "network";
+export type Answer = "kept" | "shell" | "share" | "older" | "network";
 
 export type Asked = {
   readonly method: string;
@@ -32,7 +33,8 @@ export function answerFor(
   // A page is asked of the daemon first, kept or not, or a newer build could
   // never reach it.
   if (asked.mode === "navigate") return "shell";
-  return kept.has(url.pathname) ? "kept" : "network";
+  if (kept.has(url.pathname)) return "kept";
+  return url.pathname.startsWith("/_app/immutable/") ? "older" : "network";
 }
 
 /**

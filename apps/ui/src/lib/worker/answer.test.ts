@@ -80,6 +80,16 @@ describe("what the worker answers", () => {
     ).toBe("share");
   });
 
+  it("looks for a file of an earlier build among what earlier builds kept", () => {
+    expect(
+      answerFor(
+        asked({ path: "/_app/immutable/nodes/2.old.js" }),
+        ORIGIN,
+        KEPT,
+      ),
+    ).toBe("older");
+  });
+
   it("leaves anything else to the network", () => {
     expect(answerFor(asked({ path: "/_app/version.json" }), ORIGIN, KEPT)).toBe(
       "network",

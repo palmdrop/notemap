@@ -4,10 +4,12 @@ import { describe, expect, it } from "vitest";
 
 import { holding, posted as form } from "$testing/shares";
 
-import { holdShare, takeShares } from "./held";
+import { fold, holdShare, readShares, STALE } from "./held";
+
+const NOW = 10 * STALE;
 
 describe("a share held for the capture page", () => {
-  it("is taken as its words", async () => {
+  it("is read as its words", async () => {
     const cache = holding();
     await holdShare(
       form({ text: "read this", url: "https://example.org" }),
@@ -15,13 +17,13 @@ describe("a share held for the capture page", () => {
       "1",
     );
 
-    const taken = await takeShares(cache);
+    const [share] = await readShares(cache, NOW);
 
-    expect(taken.words).toEqual(["read this\nhttps://example.org"]);
-    expect(taken.files).toEqual([]);
+    expect(share?.words).toBe("read this\nhttps://example.org");
+    expect(share?.files).toEqual([]);
   });
 
-  it("is taken with its files, named and typed as they came, in order", async () => {
+  it("is read with its files, named and typed as they came, in order", async () => {
     const cache = holding();
     await holdShare(
       form({}, [
@@ -32,9 +34,9 @@ describe("a share held for the capture page", () => {
       "1",
     );
 
-    const { words, files } = await takeShares(cache);
+    const [share] = await readShares(cache, NOW);
+    const files = share?.files.map((one) => one.file) ?? [];
 
-    expect(words).toEqual([]);
     expect(files.map((file) => [file.name, file.type])).toEqual([
       ["a photo.jpg", "image/jpeg"],
       ["notes.pdf", "application/pdf"],
@@ -50,10 +52,10 @@ describe("a share held for the capture page", () => {
       "1",
     );
 
-    expect((await takeShares(cache)).files).toEqual([]);
+    expect((await readShares(cache, NOW))[0]?.files).toEqual([]);
   });
 
-  it("is let go of once taken", async () => {
+  it("is not let go of by being read", async () => {
     const cache = holding();
     await holdShare(
       form({ text: "once" }, [new NodeFile(["x"], "x.txt")]),
@@ -61,28 +63,77 @@ describe("a share held for the capture page", () => {
       "1",
     );
 
-    await takeShares(cache);
+    await readShares(cache, NOW);
 
-    expect(cache.size()).toBe(0);
-    expect(await takeShares(cache)).toEqual({ words: [], files: [] });
+    expect(cache.size()).toBe(2);
   });
 
-  it("takes every share held, oldest first", async () => {
+  it("once folded, is read with its files and without its words", async () => {
+    const cache = holding();
+    await holdShare(
+      form({ text: "once" }, [new NodeFile(["x"], "x.txt")]),
+      cache,
+      "1",
+    );
+
+    await fold(cache, "1");
+    const [share] = await readShares(cache, NOW);
+
+    expect(share?.words).toBeUndefined();
+    expect(share?.files.map((one) => one.file.name)).toEqual(["x.txt"]);
+  });
+
+  it("once folded with no file left, is let go of", async () => {
+    const cache = holding();
+    await holdShare(form({ text: "once" }), cache, "1");
+
+    await fold(cache, "1");
+
+    expect(await readShares(cache, NOW)).toEqual([]);
+    expect(cache.size()).toBe(0);
+  });
+
+  it("reads every share held, oldest first", async () => {
     const cache = holding();
     await holdShare(form({ text: "second" }), cache, "2000-b");
     await holdShare(form({ text: "first" }), cache, "1000-a");
 
-    expect((await takeShares(cache)).words).toEqual(["first", "second"]);
+    expect((await readShares(cache, NOW)).map((one) => one.words)).toEqual([
+      "first",
+      "second",
+    ]);
   });
 
   it("leaves a share whose words have not arrived for the next time", async () => {
     const cache = holding();
     await cache.put(
-      "/__shared/1/file/0",
+      `/__shared/${String(NOW - 1000)}-a/file/0`,
       new Response("bytes", { headers: { "x-name": "late.txt" } }),
     );
 
-    expect(await takeShares(cache)).toEqual({ words: [], files: [] });
+    expect(await readShares(cache, NOW)).toEqual([]);
+    expect(cache.size()).toBe(1);
+  });
+
+  it("lets go of a share whose words never arrived", async () => {
+    const cache = holding();
+    await cache.put(
+      `/__shared/${String(NOW - STALE - 1)}-a/file/0`,
+      new Response("bytes", { headers: { "x-name": "late.txt" } }),
+    );
+
+    expect(await readShares(cache, NOW)).toEqual([]);
+    expect(cache.size()).toBe(0);
+  });
+
+  it("lets go of a share it cannot read, and reads the ones after it", async () => {
+    const cache = holding();
+    await cache.put("/__shared/1000-a/words", new Response("not json"));
+    await holdShare(form({ text: "after" }), cache, "2000-b");
+
+    const read = await readShares(cache, NOW);
+
+    expect(read.map((one) => one.words)).toEqual(["after"]);
     expect(cache.size()).toBe(1);
   });
 });

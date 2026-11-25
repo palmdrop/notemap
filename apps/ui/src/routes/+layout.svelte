@@ -37,7 +37,7 @@
     registerWorker,
     reload,
     watchVersion,
-  } from "$lib/worker/version.svelte";
+  } from "$lib/installed/version";
 
   import "./layout.css";
 
@@ -67,8 +67,12 @@
     );
   });
 
+  /** A move back or forward the browser has already made, which then loads the newer build where it went. */
+  let loadOnArrival = false;
+
   afterNavigate(({ from, type }) => {
     arrived(type !== "enter" && from !== null);
+    if (loadOnArrival) location.reload();
   });
 
   const queue = client.counts.queue;
@@ -156,7 +160,13 @@
       // A newer build is served: this move loads it, rather than moving
       // within the old one.
       const instead = loadInstead(updated.current, navigation);
-      if (instead !== undefined) location.href = instead.href;
+      if (instead === undefined) return;
+      if (navigation.type === "popstate") {
+        loadOnArrival = true;
+      } else {
+        navigation.cancel();
+        location.assign(instead.href);
+      }
       return;
     }
     navigation.cancel();

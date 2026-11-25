@@ -7,12 +7,6 @@ const ROOT = "/__shared/";
 
 export type Holding = Pick<Cache, "put" | "keys" | "match" | "delete">;
 
-export type Taken = {
-  /** One text per share, oldest first. */
-  readonly words: readonly string[];
-  readonly files: readonly File[];
-};
-
 /** What a share posts, read the way the worker reads it. */
 export type Posted = Pick<FormData, "get" | "getAll">;
 
@@ -61,6 +55,7 @@ export async function holdShare(
 type Part = {
   readonly request: Request;
   readonly id: string;
+  readonly kind: "words" | "folded" | "file";
   readonly file?: number;
 };
 
@@ -69,57 +64,98 @@ function partOf(request: Request): Part | undefined {
   if (!path.startsWith(ROOT)) return undefined;
   const [id, kind, at] = path.slice(ROOT.length).split("/");
   if (id === undefined || id === "") return undefined;
-  if (kind === "words") return { request, id };
+  if (kind === "words" || kind === "folded") return { request, id, kind };
   if (kind === "file" && at !== undefined) {
-    return { request, id, file: Number(at) };
+    return { request, id, kind, file: Number(at) };
   }
   return undefined;
 }
 
+/** How long a share may sit with files and no words before it is taken as one that never finished. */
+export const STALE = 24 * 60 * 60 * 1000;
+
+/** A file a share brought, and where it is kept until the draft lets go of it. */
+export type SharedFile = { readonly file: File; readonly at: string };
+
+export type Share = {
+  readonly id: string;
+  /** Its words while they are not yet in the draft; absent once folded in. */
+  readonly words?: string;
+  readonly files: readonly SharedFile[];
+};
+
+function bornAt(id: string): number {
+  return Number(id.split("-")[0]);
+}
+
+async function letGo(from: Holding, parts: readonly Part[]): Promise<void> {
+  for (const part of parts) await from.delete(part.request);
+}
+
 /**
- * Every share held whole, oldest first, and lets go of each one taken. A share
- * whose words are not written yet is still arriving, and is left for the next
- * time.
+ * Every share held whole, oldest first, without letting go of any: its words
+ * go once they are in the draft, its files once the draft no longer holds
+ * them. A share whose words are not written yet is still arriving and is left,
+ * unless it has been arriving for a day; one that cannot be read, or that is
+ * folded in with no file left, is let go of here.
  */
-export async function takeShares(from: Holding): Promise<Taken> {
+export async function readShares(
+  from: Holding,
+  now: number = Date.now(),
+): Promise<readonly Share[]> {
   const parts = (await from.keys())
     .map(partOf)
     .filter((part): part is Part => part !== undefined);
-  const whole = [
-    ...new Set(
-      parts.filter((part) => part.file === undefined).map((part) => part.id),
-    ),
-  ].sort();
+  const ids = [...new Set(parts.map((part) => part.id))].sort();
 
-  const words: string[] = [];
-  const files: File[] = [];
-
-  for (const id of whole) {
+  const shares: Share[] = [];
+  for (const id of ids) {
     const mine = parts.filter((part) => part.id === id);
-    const said = mine.find((part) => part.file === undefined);
+    const said = mine.find((part) => part.kind === "words");
+    const folded = mine.some((part) => part.kind === "folded");
     const held = mine
-      .filter((part) => part.file !== undefined)
+      .filter((part) => part.kind === "file")
       .sort((a, b) => (a.file ?? 0) - (b.file ?? 0));
 
-    if (said !== undefined) {
-      const response = await from.match(said.request);
-      const text =
-        response === undefined
-          ? ""
-          : wordsOf((await response.json()) as Shared);
-      if (text !== "") words.push(text);
+    if (said === undefined && !folded) {
+      if (now - bornAt(id) > STALE) await letGo(from, mine);
+      continue;
+    }
+    if (said === undefined && held.length === 0) {
+      await letGo(from, mine);
+      continue;
     }
 
-    for (const part of held) {
-      const response = await from.match(part.request);
-      if (response === undefined) continue;
-      const type = response.headers.get("content-type") ?? "";
-      const name = decodeURIComponent(response.headers.get("x-name") ?? "");
-      files.push(new File([await response.arrayBuffer()], name, { type }));
+    try {
+      let words: string | undefined;
+      if (said !== undefined) {
+        const response = await from.match(said.request);
+        words =
+          response === undefined
+            ? ""
+            : wordsOf((await response.json()) as Shared);
+      }
+      const files: SharedFile[] = [];
+      for (const part of held) {
+        const response = await from.match(part.request);
+        if (response === undefined) continue;
+        const type = response.headers.get("content-type") ?? "";
+        const name = decodeURIComponent(response.headers.get("x-name") ?? "");
+        files.push({
+          file: new File([await response.arrayBuffer()], name, { type }),
+          at: part.request.url,
+        });
+      }
+      shares.push(words === undefined ? { id, files } : { id, words, files });
+    } catch {
+      await letGo(from, mine);
     }
-
-    for (const part of mine) await from.delete(part.request);
   }
+  return shares;
+}
 
-  return { words, files };
+/** Marks a share's words as in the draft, so they are never added twice. */
+export async function fold(from: Holding, id: string): Promise<void> {
+  await from.put(`${ROOT}${id}/folded`, new Response(null));
+  await from.delete(`${ROOT}${id}/words`);
 }
