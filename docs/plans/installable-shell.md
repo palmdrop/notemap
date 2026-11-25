@@ -199,10 +199,37 @@ Depends on: nothing. Can go anywhere after phase 1.
 - [x] End to end in headless Chromium against a scratch daemon on loopback: the worker controls the
       page, a multipart share lands in the draft with its file and `?shared` stripped, a second
       share follows the first, `/feed` opens with the daemon stopped and says offline, `/v1` passes
-      through, and a rebuilt daemon is said as `new version` with Reload and loaded on the next move. _(2026-11-25)_
+      through, and a rebuilt daemon is said as `new version` with Reload and loaded on the next move. _(2026-11-25; the
+      offline check only looked for the word `offline` and missed that nothing under the header was drawn)_
 - [ ] Hand the developer the on-device checklist: install, offline start, share text, share photos,
       new version under an open edit, back through a sheet.
 - [ ] Commit.
+
+### Phase 9: flight mode, and the review
+
+Found on the device and in [the review](../reviews/installable-shell-pr-131-2026-11-25.md).
+
+- [x] Flight mode draws nothing under the header: the session is never known with no pool to ask.
+      The last answer is kept on the device and used where the pool cannot be reached. _(2026-11-25)_
+- [x] Shares are read, not taken: words let go of once in the draft, files once the draft lets go
+      of them, so a shared file outlives the page. A share that cannot be read is dropped; one whose
+      words never arrived is swept after a day. _(2026-11-25; review 1, 2, 7, 13)_
+- [x] The worker's share path refuses a post that is not a page, and still reaches the capture page
+      when the share cannot be held; the page says what arrived, or that it could not, over its bar, since the status line is not
+      drawn there. _(2026-11-25; review 4, 7)_
+- [x] Reload waits for held attachments and says so. _(2026-11-25; review 3)_
+- [x] Back or forward to a newer build loads in place, without a step added; a link cancels the old
+      router's move. _(2026-11-25; review 5)_
+- [x] A new build keeps the build before it, and answers its files from there. _(2026-11-25; review 6)_
+- [x] The navigation wait covers the head only. _(2026-11-25; review 9)_
+- [x] The page-side version code moves to `lib/installed/version.ts`; the worker's answers stay in
+      `lib/worker/`. _(2026-11-25; review 10)_
+- [x] `share` in `CONTEXT.md`; security.md's sign-out claim narrowed. _(2026-11-25; review 8, 11)_
+- [x] Tests for the worker's page and share, and the capture page's share notices. _(2026-11-25; review 12)_
+- [ ] The placeholder icon is replaced. _(the developer's, before merge; review 14)_
+- [x] End to end in headless Chromium, flight mode emulated: a cold start draws the cached queue, the
+      capture page captures, the capture is held, and it reaches the pool once the network is back. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 ---
 

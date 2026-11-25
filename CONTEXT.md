@@ -44,11 +44,19 @@ _Avoid_: original, raw note
 
 **Draft**:
 What a capture box holds before its capture commits — the words and the tags, kept across a
-reload, and the attachments, kept in memory and so only across the box being drawn again. Kept by
+reload, and the attachments, kept in memory and so only across the box being drawn again, except a **share**'s
+files, which the device keeps until they are sent or removed. Kept by
 the shell, on the device, and never sent: the pool has no draft. Cleared when the capture
 commits, kept when it fails. The Raycast form keeps one too, across launches, and keeps no
 attachments: its process ends with the form.
 _Avoid_: unsaved, pending *(the outbox's word, for a capture that has committed and not landed)*
+
+**Share**:
+What another app hands the installed shell through the system's share sheet — words, a link, files
+— and the act of handing it. Held on the device by the service worker and added to the end of the
+**draft**, never captured by arriving: a share becomes a capture only when the person sends it. Its
+files stay held until that capture is sent or they leave the draft.
+_Avoid_: import, incoming, shared item *(it is not an item until captured)*
 
 **Source**:
 The channel a capture came in through — a shell, a watched folder, a polled inbox, one watched

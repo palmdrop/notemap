@@ -3773,7 +3773,13 @@ be reached over HTTPS for a browser to offer it.
 **It opens without the daemon.** A service worker keeps the shell's own files: the build, the faces,
 the icons and the manifest. A page asked for while the daemon does not answer is drawn from those,
 and what it shows is the client's store, with the status line saying `offline`, as it would for a
-daemon that went away while the shell was open. The worker keeps nothing the pool says. `/v1` and
+daemon that went away while the shell was open. **Who is signed in is the last answer the pool gave
+this device** *(amended 2026-11-25)*: kept on the device, it is what a start with no pool to ask
+draws from — the queue the store holds, the capture page, and captures held to send — where without
+it nothing under the header was drawn at all. With nothing kept, the shell waits, as before. The
+pool's own answer replaces it whenever it comes. **A build being replaced keeps its files** until
+the one after: a page still drawn from it asks for what it has not loaded yet, and offline nothing
+else could answer. The worker keeps nothing the pool says. `/v1` and
 `/docs` go to the network, or fail, as they would without it. So an image not captured on this
 device does not show offline.
 
@@ -3781,14 +3787,23 @@ device does not show offline.
 once the shell is installed. Text, a link or files shared from another app open the capture page,
 with what was shared **added to the end of the draft**, as a capture put back is: words after a
 blank line, files after the files already held. Nothing is overwritten and nothing is captured. The
-person sees what arrived and captures it, or not. The capture's source is the shell's own; the share
+person sees what arrived and captures it, or not, and the line over its bar says `Added what was shared,
+at the end.` **A shared file is kept on the device until the capture carrying it is sent**, removed
+from the draft, or the draft is cleared *(2026-11-25)*: the draft's own attachments are memory and go
+with the page, and a share is a page load — the next share, or Android closing the app behind
+another, would otherwise lose the last one's files. A share that cannot be held still opens the
+capture page, which says `Could not take what was shared.` over its bar. **Only a page shares**: a post to the
+share target from a frame inside another site is refused, as it could only be one nobody saw. The capture's source is the shell's own; the share
 sheet delivered the words and did not write them. A share that repeats itself, a link given both as
 the text and as the url, or a title that is the text, adds each part once.
 
 **A new version is offered, not forced.** The shell looks for a newer build of itself when it comes
 back into view. When there is one, the status line says `new version` and offers **Reload**. The
 shell does not reload on its own while anything is unsaved: the next move to another page that has
-nothing to lose loads the new version instead of moving within the old one.
+nothing to lose loads the new version instead of moving within the old one; back or forward loads it
+where it went, without a step added to history. **Reload waits for attachments held** and says so —
+`the reload waits for the attachments held: capture or remove them` — and asks first about an edit
+with changes.
 
 **Back closes what is open before it leaves.** On Android, back and the back gesture close the
 innermost sheet, dialog or drawer, and the page stays where it was. With nothing open, back walks

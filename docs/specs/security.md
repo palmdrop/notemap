@@ -751,11 +751,25 @@ Said plainly, because an absence reads as an oversight otherwise:
 by the daemon from its own origin, carrying the same cookie. It reaches `/v1` the way a tab does.
 
 - **The service worker keeps the shell's files and nothing of the pool's.** It passes `/v1`, `/docs`
-  and every other origin through untouched, so nothing it holds outlives a sign-out or bypasses the
-  door. The manifest, the icons and the worker itself are open, as the shell's other files are.
-- **A share is held on the device until the page takes it.** The worker keeps what another app
-  shared, in the browser's own storage for this origin, only until the capture page reads it into
-  the draft. Nothing goes to the pool until the person captures it.
+  and every other origin through untouched, so nothing of the pool's it holds outlives a sign-out or
+  bypasses the door. What is shared into it, like the draft, is the device's and does
+  *(amended 2026-11-25)*. The manifest, the icons and the worker itself are open, as the shell's other files are.
+- **A share is held on the device until it is captured or let go of.** The worker keeps what was
+  shared in the browser's own storage for this origin: its words until they are in the draft, its
+  files until the capture carrying them is sent, or they are removed, or the draft is cleared. Nothing
+  goes to the pool until the person captures it.
+- **The share target is a door any site can knock on** *(2026-11-25)*. It is recognised by method
+  and path, so a form on any page that posts to `/capture` is taken by the worker; `SameSite` plays
+  no part, since the post never reaches the daemon. What such a post can do is add words and files
+  to the end of the draft, never capture them. Defended: a post that is not a page — a frame inside
+  another site, where nobody would see it arrive — is refused, and one that is says
+  `Added what was shared, at the end.` when it lands. Undefended: a site that sends the person to the
+  app with a top-level post adds to the draft in plain view, and its size is bounded only by the
+  browser's quota for the origin.
+- **Who is signed in is kept on the device, as the last answer the pool gave** *(2026-11-25)*. It
+  is not a credential: it decides only whether a start with no pool to ask draws from the store the
+  device already holds, and the cookie still decides what the pool answers. A sign-out, or a session
+  found lapsed, replaces it and drops the store as it always has.
 - **Installing on Android passes the manifest through Google.** Chrome mints a *WebAPK* through
   Google's servers to register an installed app with the system, which is what puts it in the share
   sheet. The shell's name, icons, address and share target go there. Pool material does not. A
