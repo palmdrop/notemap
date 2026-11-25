@@ -17,6 +17,7 @@
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import type { View } from "$lib/view";
   import { client } from "$lib/client";
+  import { width } from "$lib/breakpoint";
   import { modality } from "$lib/modality.svelte";
   import { narrowed } from "$lib/candidate-list";
   import type { FilterKind } from "$lib/filter";
@@ -202,8 +203,8 @@
   const marked = $derived(at === undefined ? undefined : walked[at]);
 
   /**
-   * Opens the panel. Opened from the keys the line takes what is typed; on a
-   * tap it is left alone, or a phone would raise its keyboard over the panel.
+   * Opens the panel, the line taking what is typed. Not on a phone tapped
+   * open, which would raise its keyboard over the panel.
    */
   export async function show(): Promise<void> {
     open = true;
@@ -215,7 +216,7 @@
       .then((read) => (sources = read))
       .catch(() => undefined);
     await tick();
-    if (modality.keys) line?.focus({ preventScroll: true });
+    if (modality.keys || width.wide) line?.focus({ preventScroll: true });
   }
 
   function shut(): void {

@@ -6,7 +6,7 @@ import { anItem, json, routeOf } from "@notemap/client/testing";
 
 import { client, pool, sentUrls } from "$testing/pool";
 import { address } from "$testing/address.svelte";
-import { keyboard } from "$testing/dom";
+import { keyboard, viewport } from "$testing/dom";
 import { commandOf } from "$lib/command/stack.svelte";
 import Feed from "$components/feed/Feed.svelte";
 import Queue from "$components/queue/Queue.svelte";
@@ -26,6 +26,7 @@ afterEach(() => {
   went.to = [];
   replaced.urls = [];
   address.path = "/";
+  viewport(1024);
   localStorage.clear();
 });
 
@@ -533,7 +534,8 @@ test("leaves a state on the queue's address out of what it reads", async () => {
   expect(asked?.searchParams.getAll("source")).toEqual(["memos"]);
 });
 
-test("opened by a tap, the filter sheet leaves its tag line alone, so a phone raises no keyboard", async () => {
+test("opened by a tap on a phone, the filter sheet leaves its tag line alone, so no keyboard rises", async () => {
+  viewport(390);
   serving({ tags: [{ name: "kind/quote", items: 2, unprocessed: 1 }] });
 
   render(Queue);
@@ -548,10 +550,26 @@ test("opened by a tap, the filter sheet leaves its tag line alone, so a phone ra
 });
 
 test("opened by f, the filter sheet's tag line takes what is typed", async () => {
+  viewport(390);
   serving({ tags: [{ name: "kind/quote", items: 2, unprocessed: 1 }] });
 
   render(Queue);
   await fireEvent.keyDown(window, { key: "f" });
+  await screen.findByText("kind/quote");
+
+  expect(document.activeElement).toBe(
+    screen.getByRole("combobox", { name: "Find a tag" }),
+  );
+});
+
+test("clicked open when wide, the filter sheet's tag line takes what is typed", async () => {
+  viewport(1280);
+  serving({ tags: [{ name: "kind/quote", items: 2, unprocessed: 1 }] });
+
+  render(Queue);
+  await fireEvent.pointerDown(window);
+  const filter = commandOf("filter");
+  if (filter !== undefined && "run" in filter) filter.run();
   await screen.findByText("kind/quote");
 
   expect(document.activeElement).toBe(

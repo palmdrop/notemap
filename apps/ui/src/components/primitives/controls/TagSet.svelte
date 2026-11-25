@@ -109,6 +109,16 @@
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
   let line = $state<HTMLInputElement | null>(null);
+  const flips = () =>
+    typeof CSS !== "undefined" &&
+    CSS.supports("position-try-order", "most-height");
+  // Where the offer cannot choose its roomier side, on a phone the line goes
+  // to the top of the view, so the offer has the room under it.
+  $effect(() => {
+    if (adding && !field && !width.wide && !flips()) {
+      line?.scrollIntoView({ block: "start" });
+    }
+  });
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {

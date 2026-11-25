@@ -14,14 +14,15 @@
 
 <script lang="ts">
   import { quick } from "$lib/quicking.svelte";
-  import { hand } from "$lib/hand.svelte";
+  import { handedness } from "$lib/handedness.svelte";
+  import { swiped } from "$lib/swiped.svelte";
   import { resolve } from "$app/paths";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { sayLanded } from "$lib/landed";
   import { heldHint } from "$lib/held-hint.svelte";
-  import { onMount, tick, untrack } from "svelte";
+  import { onDestroy, onMount, tick, untrack } from "svelte";
 
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
@@ -238,6 +239,9 @@
     if (place === undefined) return;
     selected = rows[Math.min(place, rows.length - 1)]?.id;
   });
+
+  // Left without a scroll, a row stood open would be found open on return.
+  onDestroy(swiped.shut);
 
   onMount(() => {
     // Read once: the address is put back so a reload does not reselect it.
@@ -473,7 +477,7 @@
     href={resolve("/capture")}
     aria-label="Capture"
     title="Capture"
-    class="fixed {hand.choice === 'left'
+    class="fixed {handedness.choice === 'left'
       ? 'left-4'
       : 'right-4'} bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
   >

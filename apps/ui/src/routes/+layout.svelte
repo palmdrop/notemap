@@ -259,7 +259,7 @@
         <Column
           {fills}
           list={list ||
-            fills ||
+            takesWindow ||
             page.route.id === "/items/[id]" ||
             page.route.id?.startsWith("/settings") === true ||
             page.route.id === "/items/[id]/records/[recordId]"}

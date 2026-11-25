@@ -1368,8 +1368,8 @@ the feed's taking more than tags: [below](#a-filter-by-state-destination-and-sou
 the same day: a filter of several tags meant going back and forth between it and the list once per
 tag.
 
-- **It opens a panel with a line to find a tag in**, the caret on it when opened from the keys
-  — opened by a tap, nothing takes the caret, so a phone keeps its keyboard down *(2026-11-25)* —
+- **It opens a panel with a line to find a tag in**, the caret on it — except on a phone opened
+  by a tap, where nothing takes the caret, so the keyboard stays down *(2026-11-25)* —
   and every tag beneath with
   how many items on this surface carry it: the queue counts the unprocessed ones, the feed every
   one, as the pool counts them. Typing narrows the list as completion does. `f` opens it from
@@ -1499,7 +1499,9 @@ the row, turning ink once the swipe has gone far enough to open it.
 
 **A queue row swiped right stands open on Manual and Discard** *(2026-11-25)*, two buttons behind
 it, Discard in red. A tap on either acts at once, with `undo` on the status line as from the item;
-a tap on the row, a scroll, or a swipe of another row puts it back and opens nothing. Buttons rather
+a tap on the row or on another, a scroll, a swipe of another row, holding the row to select it,
+or leaving the queue puts it back and opens nothing; from an open row a drag left only puts it
+back, never as far as the route. Buttons rather
 than a second, longer swipe: two actions told apart by how far a finger went are taken by mistake.
 The feed swipes left only, its rows not all still to be decided.
 `process` is the quick route's command now; the route page is reached through it.
@@ -2586,7 +2588,11 @@ its template's name muted at the right, and a typed name no offer holds says `ne
 opens downward when wide; on a phone it opens on whichever side of the line has more room, held to
 that room**, and nothing scrolls under it *(amended 2026-11-25: it opened downward at every width,
 the line first scrolled to the top of the view, which on a device took the line out of view under
-the keyboard; before 2026-11-24 it opened upward always, over the words the tag was for)*. **A trigger tag's question is the quick route's shape**: a
+the keyboard; before 2026-11-24 it opened upward always, over the words the tag was for)*. With the
+keyboard up the roomier side is nearly always above, so on the capture page and in an edit the
+offer covers the words while a tag is chosen: what was given up on 2026-11-24 comes back, as the
+price of the line staying in sight. A browser that cannot choose the side (one without
+`position-try-order`) keeps the older way: the line scrolls to the top and the offer opens beneath. **A trigger tag's question is the quick route's shape**: a
 sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
 **The question has a field of its own** under what it asks, which takes the caret, since the tag
 line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The

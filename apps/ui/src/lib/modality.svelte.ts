@@ -1,5 +1,11 @@
 let keys = $state(false);
-let watching = false;
+
+// Listening from the start, so the key that opens something is already seen
+// by the time that something asks which way it was opened.
+if (typeof window !== "undefined") {
+  window.addEventListener("keydown", () => (keys = true), true);
+  window.addEventListener("pointerdown", () => (keys = false), true);
+}
 
 /**
  * Whether the last thing the person did was a key rather than the pointer:
@@ -8,11 +14,6 @@ let watching = false;
  */
 export const modality = {
   get keys(): boolean {
-    if (!watching && typeof window !== "undefined") {
-      watching = true;
-      window.addEventListener("keydown", () => (keys = true), true);
-      window.addEventListener("pointerdown", () => (keys = false), true);
-    }
     return keys;
   },
 };

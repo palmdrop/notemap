@@ -3,7 +3,8 @@
 
   /**
    * `fills` makes the sheet the viewport rather than a page that scrolls: the
-   * process surface keeps its head and foot in place and scrolls its middle.
+   * process surface and the capture page keep their head and foot in place
+   * and scroll their middle.
    */
   let {
     fills = false,

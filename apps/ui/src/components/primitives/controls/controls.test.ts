@@ -470,3 +470,43 @@ test("the offer hangs from the line's place, which outlives the line", async () 
   expect(place.isConnected).toBe(true);
   expect(place.getAttribute("style")).toContain(`anchor-name: ${named}`);
 });
+
+test("on a phone whose offer cannot choose its side, the line goes to the top to give it room", async () => {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: 390,
+  });
+  vi.stubGlobal("CSS", { supports: () => false });
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+  tagSet({ offered: ["reading"] });
+
+  await opened();
+  expect(scrolled).toHaveBeenCalledWith({ block: "start" });
+
+  vi.unstubAllGlobals();
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: 1024,
+  });
+});
+
+test("on a phone whose offer chooses its roomier side, the line stays where it is", async () => {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: 390,
+  });
+  vi.stubGlobal("CSS", { supports: () => true });
+  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
+  scrolled.mockClear();
+  tagSet({ offered: ["reading"] });
+
+  await opened();
+  expect(scrolled).not.toHaveBeenCalled();
+
+  vi.unstubAllGlobals();
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: 1024,
+  });
+});

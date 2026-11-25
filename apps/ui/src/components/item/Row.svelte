@@ -217,7 +217,7 @@
   const offset = $derived(swipe?.dx ?? (shelved ? SHELF : 0));
 
   /** The row last opened from this list, marked as the reader's place and not as a selection. */
-  const lastSeen = $derived(
+  const isLastOpened = $derived(
     surface !== "item" && !selected && !marked && lastOpened.id === item.id,
   );
 
@@ -248,6 +248,7 @@
     holding = setTimeout(() => {
       held = true;
       swipe = undefined;
+      swiped.shut();
       onselect?.({ toggle: true, range: false });
       noteHeld();
     }, HOLD);
@@ -258,12 +259,16 @@
     holding = undefined;
   }
 
+  /** A tap on one row while another stands open only puts that one back. */
+  let swallowing = false;
+
   function swipeFrom(event: PointerEvent): void {
     holdFrom(event);
     if (!swipes || event.pointerType === "mouse") return;
+    swallowing = swiped.id !== undefined && !shelved;
+    if (swallowing) swiped.shut();
     const x = event.clientX;
     if (x < EDGE || x > window.innerWidth - EDGE) return;
-    if (!shelved) swiped.shut();
     const base = shelved ? SHELF : 0;
     swipe = { from: x, base, dx: base };
   }
@@ -274,7 +279,11 @@
     if (Math.abs(moved) > 10) letGo();
     swipe = {
       ...swipe,
-      dx: Math.min(shelves ? SHELF : 0, swipe.base + moved),
+      // From an open row a drag left only puts it back.
+      dx: Math.max(
+        swipe.base > 0 ? 0 : -Infinity,
+        Math.min(shelves ? SHELF : 0, swipe.base + moved),
+      ),
     };
   }
 
@@ -492,10 +501,11 @@
       letGo();
     }}
     onclickcapture={(event) => {
-      if (!shelved) return;
-      // A tap on a row standing open puts it back, and opens nothing.
+      if (!shelved && !swallowing) return;
+      // A tap while a row stands open puts it back, and opens nothing.
       event.stopPropagation();
       event.preventDefault();
+      swallowing = false;
       swiped.shut();
     }}
     style:translate={offset === 0 ? undefined : `${String(offset)}px 0`}
@@ -506,7 +516,7 @@
       : 'transition-[background-color]'} duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
     modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
-      : ''} {lastSeen
+      : ''} {isLastOpened
       ? "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-ink before:content-['']"
       : ''} {marked
       ? 'bg-chosen'

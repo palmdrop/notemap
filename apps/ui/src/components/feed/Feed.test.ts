@@ -861,3 +861,20 @@ test("undiscard is offered only where something marked is discarded, and discard
   await fireEvent.click(stamp("gone"), { metaKey: true });
   expect([offers("Discard"), offers("Undiscard")]).toEqual([true, false]);
 });
+
+test("on a phone a feed row swiped right stands open on nothing: Manual and Discard are the queue's", async () => {
+  viewport(390);
+  pool(held(anItem("one")));
+  render(Feed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 100 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 250 });
+
+  expect(
+    row.parentElement?.querySelector('[data-uncovered="by-hand"]'),
+  ).toBeNull();
+  expect((row as HTMLElement).style.translate).toBe("");
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 250 });
+});
