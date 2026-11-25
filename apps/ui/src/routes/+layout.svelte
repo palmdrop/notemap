@@ -13,6 +13,7 @@
   import { quick } from "$lib/quicking.svelte";
   import Menu from "$components/frame/Menu.svelte";
   import Glance from "$components/frame/Glance.svelte";
+  import Going from "$components/frame/Going.svelte";
   import Reach from "$components/frame/Reach.svelte";
   import Strip from "$components/frame/Strip.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
@@ -38,6 +39,7 @@
     reload,
     watchVersion,
   } from "$lib/installed/version";
+  import { preloadSurfaces } from "$lib/preload";
 
   import "./layout.css";
 
@@ -49,6 +51,7 @@
   watched();
 
   $effect(() => watchVisible());
+  $effect(preloadSurfaces);
 
   $effect(() => {
     registerWorker();
@@ -294,3 +297,4 @@
 
 <Dropping />
 <Sprite />
+<Going />

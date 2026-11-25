@@ -14,6 +14,7 @@ vi.mock("$app/paths", () => ({
 vi.mock("$app/state", () => ({
   page: { url: new URL("http://localhost/"), route: { id: "/" }, params: {} },
   updated: { current: false, check: () => Promise.resolve(false) },
+  navigating: { to: null },
 }));
 
 const children = createRawSnippet(() => ({

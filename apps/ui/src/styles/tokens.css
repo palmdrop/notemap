@@ -173,6 +173,18 @@
       opacity: 0.45;
     }
   }
+
+  /* A page under way: a third of a line running along the top. */
+  --animate-going: going 1.1s var(--ease-fade) infinite;
+
+  @keyframes going {
+    from {
+      translate: -100% 0;
+    }
+    to {
+      translate: 300% 0;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
