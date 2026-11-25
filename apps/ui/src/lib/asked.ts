@@ -110,7 +110,14 @@ const DESCRIBING = 2_000;
  */
 export async function askFor(tag: string): Promise<Ask | undefined> {
   const template = triggeredBy(tag);
-  if (template === undefined || template.asked === undefined) return undefined;
+  return template === undefined ? undefined : askForTemplate(template);
+}
+
+/** What a template asks each time it is applied, however it is applied: the quick sheet, or its trigger tag. */
+export async function askForTemplate(
+  template: RoutingTemplate,
+): Promise<Ask | undefined> {
+  if (template.asked === undefined) return undefined;
   if (Object.keys(template.asked).length === 0) return undefined;
 
   await Promise.race([

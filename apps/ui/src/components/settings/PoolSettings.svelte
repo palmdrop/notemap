@@ -1,9 +1,8 @@
 <script lang="ts">
   import { saidBy } from "@notemap/client";
 
-  import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Option from "$components/primitives/composer/Option.svelte";
+  import Segmented from "$components/primitives/blocks/Segmented.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
@@ -50,7 +49,7 @@
   {#if $settings === undefined}
     <!-- Not a guess: a cold client, or one that has not yet reached the pool,
          has no answer to draw as either yes or no. -->
-    <p role="status" class="mt-4">
+    <p role="status" class="m-0 px-gutter py-4">
       {#if pool.yes}
         <Asking />
       {:else}
@@ -59,40 +58,33 @@
     </p>
   {:else}
     {#if !pool.yes}
-      <p role="status" class="mt-4">
-        Pool settings can be read but not changed.
+      <p role="status" class="m-0 px-gutter py-3 text-small text-muted">
+        The pool is out of reach. Pool settings can be read but not changed.
       </p>
     {/if}
 
+    <p class="m-0 px-gutter pt-3 text-small text-muted">
+      Kept by the pool, for every device.
+    </p>
     {#each $settings as setting (setting.name)}
-      <Fact name={poolSettingLabel(setting.name)}>
-        {#if pool.yes}
-          <span
-            class="flex flex-wrap gap-x-[2ch]"
-            role="group"
-            aria-label={poolSettingLabel(setting.name)}
-          >
-            <Option
-              label="yes"
-              chosen={setting.value}
-              working={changing[setting.name] === true}
-              onchoose={() => void change(setting.name, true, setting.value)}
-            />
-            <Option
-              label="no"
-              chosen={!setting.value}
-              working={changing[setting.name] === false}
-              onchoose={() => void change(setting.name, false, setting.value)}
-            />
-          </span>
-        {:else}
-          <span>{setting.value ? "yes" : "no"}</span>
-        {/if}
-      </Fact>
+      <div class="border-b border-rule px-gutter py-3">
+        <span class="mb-1.5 block">{poolSettingLabel(setting.name)}</span>
+        <Segmented
+          label={poolSettingLabel(setting.name)}
+          value={setting.value ? "yes" : "no"}
+          disabled={!pool.yes || changing[setting.name] !== undefined}
+          options={[
+            { value: "yes", word: "yes" },
+            { value: "no", word: "no" },
+          ]}
+          onchoose={(one) =>
+            void change(setting.name, one === "yes", setting.value)}
+        />
+      </div>
     {/each}
   {/if}
 
   {#if said !== ""}
-    <p role="status" class="mt-4 text-alarm">{said}</p>
+    <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
   {/if}
 </Section>

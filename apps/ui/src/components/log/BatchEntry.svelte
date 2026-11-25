@@ -31,11 +31,11 @@
   class="col-span-full grid grid-cols-subgrid items-baseline"
 >
   <Stamp at={action.at} dated={dayOf(action.at) !== day} inline />
-  <span class="tracking-caps uppercase {bad ? 'text-alarm' : ''}">
+  <span class="tracking-caps uppercase {bad ? 'text-danger' : ''}">
     {kindWord(action.kind)}
   </span>
   <span
-    class="flex min-w-0 items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
+    class="flex min-w-0 items-baseline justify-between gap-x-[3ch] max-wide:flex-col max-wide:items-stretch"
   >
     <span class="min-w-0 truncate">
       {#if action.subject !== undefined}

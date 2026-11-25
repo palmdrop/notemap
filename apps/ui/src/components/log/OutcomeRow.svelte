@@ -24,20 +24,20 @@
 
 <div class="col-span-full grid grid-cols-subgrid">
   <Rail>
-    <div class="tracking-caps uppercase {alarm ? 'text-alarm' : ''}">
+    <div class="tracking-caps uppercase {alarm ? 'text-danger' : ''}">
       {word}
     </div>
   </Rail>
 
   <Body>
     <div
-      class="flex items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
+      class="flex items-baseline justify-between gap-x-[3ch] max-wide:flex-col max-wide:items-stretch"
     >
       <span class="min-w-0 truncate">
         <Says id={subject} href={itemHref(subject)} />
       </span>
       {#if fact !== undefined}
-        <span class="shrink-0 {alarm ? 'text-alarm' : ''}">{fact}</span>
+        <span class="shrink-0 {alarm ? 'text-danger' : ''}">{fact}</span>
       {/if}
     </div>
   </Body>

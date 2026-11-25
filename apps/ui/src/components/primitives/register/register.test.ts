@@ -6,13 +6,9 @@ import { NO_MORE_OFFLINE } from "$lib/said";
 import Day from "./Day.svelte";
 import More from "./More.svelte";
 import Fixture from "./Register.fixture.svelte";
-import HeadFixture from "./Head.fixture.svelte";
 
-/**
- * The box is the selection: the rail takes the head and the left edge, the
- * body the head and the right edge, and nothing else about either cell changes.
- */
-test("a selected row's cells draw the box, and an unselected row's draw none", () => {
+/** The row draws the selection, as a band behind both cells; the cells say only that they are in it. */
+test("a selected row's cells say so, and draw no box of their own", () => {
   const { container, rerender } = render(Fixture, { selected: false });
   const cells = () => [...container.querySelectorAll("[data-selected]")];
 
@@ -21,10 +17,8 @@ test("a selected row's cells draw the box, and an unselected row's draw none", (
   void rerender({ selected: true });
   expect(cells()).toHaveLength(2);
   const [rail, body] = cells() as HTMLElement[];
-  expect(rail?.className).toContain("border-l");
-  expect(rail?.className).toContain("border-t");
-  expect(body?.className).toContain("border-r");
-  expect(body?.className).toContain("border-t");
+  expect(rail?.className).not.toContain("border");
+  expect(body?.className).not.toContain("border");
 });
 
 test("a whole cell selects the row it belongs to", async () => {
@@ -56,12 +50,12 @@ test("the foot offers the next page, or says why it cannot", async () => {
     onmore: more,
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Load more" }));
   expect(more).toHaveBeenCalledTimes(1);
   expect(screen.queryByText(NO_MORE_OFFLINE)).toBeNull();
 
   void rerender({ loading: true, offline: false, failed: false, onmore: more });
-  expect(screen.getByRole("button", { name: /load more/ })).toHaveProperty(
+  expect(screen.getByRole("button", { name: /Load more/ })).toHaveProperty(
     "disabled",
     true,
   );
@@ -139,7 +133,7 @@ test("a read that failed is not asked for again by scrolling", async () => {
   expect(more).toHaveBeenCalledTimes(1);
 
   // A press is how it is asked for again.
-  await fireEvent.click(screen.getByRole("button", { name: "load more" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Load more" }));
   expect(more).toHaveBeenCalledTimes(2);
 });
 
@@ -153,21 +147,63 @@ test("the foot asks for nothing while offline", async () => {
   expect(more).not.toHaveBeenCalled();
 });
 
-test("the first page read is the mark alone, there being nothing yet to have more of", () => {
-  render(More, { ...reading, loading: true, first: true, onmore: vi.fn() });
+test("the first page read is a skeleton of the list's view, there being nothing yet to have more of", () => {
+  const { unmount } = render(More, {
+    ...reading,
+    loading: true,
+    first: true,
+    onmore: vi.fn(),
+  });
 
   expect(screen.queryByRole("button")).toBeNull();
-  expect(document.querySelector("[data-asking]")).not.toBeNull();
+  expect(document.querySelector("[data-skeleton='rows']")).not.toBeNull();
+  unmount();
+
+  render(More, {
+    ...reading,
+    loading: true,
+    first: true,
+    view: "lines",
+    onmore: vi.fn(),
+  });
+  expect(document.querySelector("[data-skeleton='lines']")).not.toBeNull();
 });
 
-test("the foot keeps its width while it loads", () => {
-  render(More, { ...reading, loading: true, onmore: vi.fn() });
+test("the foot is watched whenever it is drawn, and not while a skeleton stands in for it", async () => {
+  const watched: Element[] = [];
+  vi.stubGlobal(
+    "IntersectionObserver",
+    class {
+      observe(target: Element) {
+        if (!(target instanceof Element)) throw new TypeError("not an element");
+        watched.push(target);
+      }
+      disconnect() {}
+    },
+  );
+  const { rerender } = render(More, {
+    ...reading,
+    loading: false,
+    first: true,
+    onmore: vi.fn(),
+  });
+  expect(watched).toHaveLength(1);
 
-  const button = screen.getByRole("button", { name: /load more/ });
+  await rerender({ ...reading, loading: true, first: true, onmore: vi.fn() });
+  expect(document.querySelector("[data-skeleton]")).not.toBeNull();
+
+  await rerender({ ...reading, loading: false, first: false, onmore: vi.fn() });
+  expect(watched).toHaveLength(2);
+  vi.unstubAllGlobals();
+});
+
+test("the foot says how much is shown, and turns while it loads", () => {
+  render(More, { ...reading, loading: true, shown: 25, onmore: vi.fn() });
+
+  const button = screen.getByRole("button", { name: /Load more/ });
   expect(button.getAttribute("aria-busy")).toBe("true");
-  // The label and the mark share one cell, so the wider of them sets the width.
-  expect(button.textContent).toContain("load more");
-  expect(button.querySelector("[data-asking]")).not.toBeNull();
+  expect(button.querySelector("[data-spinner]")).not.toBeNull();
+  expect(screen.getByText("25 shown")).toBeTruthy();
 });
 
 /** Where the heading would be drawn, as the browser would lay it out. */
@@ -194,47 +230,30 @@ test("a day's heading spans the screen once it reaches the top, and not before",
     expect(heading().hasAttribute("data-stuck")).toBe(true);
   });
 
-  // Arriving under the one held there is reaching the top too.
+  // Arriving under the one held there is not yet holding: that one still shows.
   laidAt(30);
-  await fireEvent.scroll(window);
-  await vi.waitFor(() => {
-    expect(heading().hasAttribute("data-stuck")).toBe(true);
-  });
-
-  laidAt(37);
   await fireEvent.scroll(window);
   await vi.waitFor(() => {
     expect(heading().hasAttribute("data-stuck")).toBe(false);
   });
 });
 
-test("the list head covers what scrolls under it once it reaches the top", async () => {
+test("a day's heading holds where its sticky top puts it, under the header", async () => {
   laidAt(300);
-  const { container } = render(HeadFixture);
-  const head = () => container.querySelector("[data-head]")!;
+  const { container } = render(Day, { at: "2026-09-13T07:02:00.000Z" });
+  const heading = () => container.querySelector<HTMLElement>("[data-day]")!;
+  heading().style.top = "55px";
+  await fireEvent(window, new Event("resize"));
 
+  laidAt(55);
+  await fireEvent.scroll(window);
   await vi.waitFor(() => {
-    expect(head().hasAttribute("data-covers")).toBe(false);
+    expect(heading().hasAttribute("data-stuck")).toBe(true);
   });
 
   laidAt(0);
   await fireEvent.scroll(window);
   await vi.waitFor(() => {
-    expect(head().hasAttribute("data-covers")).toBe(true);
+    expect(heading().hasAttribute("data-stuck")).toBe(false);
   });
-});
-
-/** By day the heading in the band is the date beside the head's controls. */
-test("the list head lets a day heading in the band show through", async () => {
-  laidAt(0);
-  const { container } = render(HeadFixture, { dated: true });
-
-  await vi.waitFor(() => {
-    expect(
-      container.querySelector("[data-day]")?.hasAttribute("data-stuck"),
-    ).toBe(true);
-  });
-  expect(
-    container.querySelector("[data-head]")?.hasAttribute("data-covers"),
-  ).toBe(false);
 });

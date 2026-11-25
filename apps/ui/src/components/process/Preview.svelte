@@ -82,10 +82,10 @@
   });
 </script>
 
-<div class="border border-ink px-3 py-2">
+<div class="rounded-control border border-tag-line bg-tag px-3 py-2">
   {#if place !== undefined || (asking && shown !== undefined)}
     <div
-      class="mb-2 flex items-baseline justify-between gap-x-[2ch] border-b border-ink pb-2"
+      class="mb-2 flex items-baseline justify-between gap-x-[2ch] border-b border-tag-line pb-2"
     >
       <span class="min-w-0 font-semibold break-words">{place ?? ""}</span>
       {#if asking && shown !== undefined}
@@ -93,7 +93,7 @@
       {/if}
     </div>
   {/if}
-  <div class="min-h-[calc(var(--text-shell--line-height)*5)]">
+  <div class="min-h-[calc(var(--text-body--line-height)*5)]">
     {#if shown === undefined}
       {#if asking}
         <Asking {subject} />
@@ -103,7 +103,7 @@
       {#if !blank}
         <pre
           bind:this={written}
-          class="font-shell break-words whitespace-pre-wrap">{drawn}</pre>
+          class="font-text break-words whitespace-pre-wrap">{drawn}</pre>
       {/if}
       <AttachedLines {attachments} ruled={!blank} />
       {#if shown.kind === "previewed" && shown.note !== undefined}
@@ -123,7 +123,7 @@
         </div>
       {/if}
     {:else if said !== undefined}
-      <span role="status" class={shown.kind === "rejected" ? "text-alarm" : ""}
+      <span role="status" class={shown.kind === "rejected" ? "text-danger" : ""}
         >{said}</span
       >
     {/if}

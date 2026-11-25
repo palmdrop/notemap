@@ -833,6 +833,10 @@
           "queue": {
             "type": "integer",
             "minimum": 0
+          },
+          "captured": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
@@ -1163,6 +1167,10 @@
             "type": "integer",
             "exclusiveMinimum": 0
           },
+          "unprocessed": {
+            "type": "integer",
+            "minimum": 0
+          },
           "lastCapturedAt": {
             "type": "string"
           }
@@ -1170,6 +1178,7 @@
         "required": [
           "id",
           "items",
+          "unprocessed",
           "lastCapturedAt"
         ]
       },
@@ -4744,7 +4753,20 @@
     "/v1/counts": {
       "get": {
         "summary": "Count what the pool holds",
-        "description": "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.",
+        "description": "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer. With `since`, `captured` is every item captured at or after it: a client asks from its own midnight to say what was captured today.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "An ISO 8601 instant. Anything that is not one is refused with `422 bad-since`.",
+              "example": "2026-11-18T23:00:00.000Z"
+            },
+            "required": false,
+            "description": "An ISO 8601 instant. Anything that is not one is refused with `422 bad-since`.",
+            "name": "since",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "The counts.",
@@ -4752,6 +4774,37 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Counts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`since` is not an instant.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "bad-since"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ],
+                      "additionalProperties": {},
+                      "description": "The refusal's kind, with its facts beside it."
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }

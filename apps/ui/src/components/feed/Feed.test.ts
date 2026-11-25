@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/svelte";
 import { afterEach, expect, test, vi } from "vitest";
+import { commandOf } from "$lib/command/stack.svelte";
 import { tick } from "svelte";
 
 import { anItem, json, routeOf } from "@notemap/client/testing";
@@ -15,7 +16,9 @@ import { keyboard, online, viewport } from "$testing/dom";
 import { remember, rememberKey } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
+import { quick } from "$lib/quicking.svelte";
 import Feed from "./Feed.svelte";
+import Headed from "./Feed.fixture.svelte";
 
 keyboard();
 
@@ -59,6 +62,7 @@ function stamps(expanded: boolean) {
 }
 
 afterEach(() => {
+  quick.close();
   slid.calls = [];
   went.to = [];
   localStorage.clear();
@@ -94,7 +98,7 @@ test("draws what the pool holds", async () => {
 test.each(["timeline", "index"] as const)(
   "a row captured meanwhile slides in, in the %s",
   async (view) => {
-    rememberView("feed", view);
+    rememberView(view);
     pool(held(anItem("one")));
 
     render(Feed);
@@ -113,25 +117,26 @@ test.each(["timeline", "index"] as const)(
   },
 );
 
-test("the view is chosen in the head, and v turns it", async () => {
+test("the view is chosen in the filter, and v turns it", async () => {
   pool(held(anItem("one")));
 
   const { container } = render(Feed);
   await screen.findByText("one");
   expect(container.querySelector("[data-rail]")).not.toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "View" }));
-  await fireEvent.click(screen.getByRole("button", { name: "index" }));
+  await fireEvent.keyDown(window, { key: "f" });
+  await fireEvent.click(await screen.findByRole("radio", { name: "Index" }));
   expect(container.querySelector("[data-rail]")).toBeNull();
-  expect(localStorage.getItem("notemap:view:feed")).toBe("index");
+  expect(localStorage.getItem("notemap:view")).toBe("index");
+  await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
 
   await fireEvent.keyDown(window, { key: "v" });
   expect(container.querySelector("[data-rail]")).not.toBeNull();
-  expect(localStorage.getItem("notemap:view:feed")).toBe("timeline");
+  expect(localStorage.getItem("notemap:view")).toBe("timeline");
 });
 
 test("an index line opens into its whole row in place, without sliding", async () => {
-  rememberView("feed", "index");
+  rememberView("index");
   pool(
     held(
       anItem("gone", { archived: { archivedAt: "2026-08-17T07:15:00.000Z" } }),
@@ -143,12 +148,12 @@ test("an index line opens into its whole row in place, without sliding", async (
 
   await open();
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
-  expect(screen.getByText("discarded")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(screen.getByText("Discarded")).toBeDefined();
+  expect(commandOf("undiscard")).toBeDefined();
   expect(slid.calls.some((call) => call.still === false)).toBe(false);
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/gone/process"]);
+  expect(quick.item).toBe("gone");
 });
 
 test("says an archived row is discarded, and offers the way back", async () => {
@@ -160,10 +165,11 @@ test("says an archived row is discarded, and offers the way back", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("discarded")).toBeDefined();
+  expect(await screen.findByText("Discarded")).toBeDefined();
   await open();
 
-  await fireEvent.click(screen.getByRole("button", { name: "undiscard" }));
+  const undiscard = commandOf("undiscard");
+  if (undiscard !== undefined && "run" in undiscard) await undiscard.run();
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/gone/unarchive");
@@ -178,7 +184,7 @@ test("keeps tags editable on a finished row", async () => {
   );
 
   render(Feed);
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   await open();
 
   await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
@@ -277,11 +283,11 @@ test("says where a routed row went, without asking for its records", async () =>
   await client.destinations.load();
   render(Feed);
 
-  // One of the two records has not been carried out: the line says so, and
-  // no word over it repeats what the line says.
+  // One of the two records has not been carried out: the lines say so, and
+  // no word over them repeats what the lines say.
   const waiting = await screen.findByRole("img", { name: "1 pending" });
-  expect(waiting.closest("div")?.textContent?.replace(/\s+/g, " ")).toContain(
-    "Fiction, manual",
+  expect(waiting.closest(".mt-2")?.textContent?.replace(/\s+/g, " ")).toMatch(
+    /Fiction.*Manual/,
   );
   expect(screen.queryByText("retrying")).toBeNull();
   expect(screen.queryByText("routed")).toBeNull();
@@ -312,7 +318,9 @@ test("marks a revision as one without opening it", async () => {
 
   render(Feed);
 
-  expect(await screen.findByText("revision")).toBeDefined();
+  expect(
+    await screen.findByText("Revision of an earlier capture"),
+  ).toBeDefined();
 });
 
 test("reads from the end the reader last chose, not the one the feed defaults to", async () => {
@@ -336,7 +344,7 @@ test("says an archived row is discarded and still pending", async () => {
   );
 
   render(Feed);
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   transport.unreachable(true);
   await open();
 
@@ -345,8 +353,10 @@ test("says an archived row is discarded and still pending", async () => {
   await fireEvent.input(field, { target: { value: "reading" } });
   await fireEvent.keyDown(field, { key: "Enter" });
 
-  expect(await screen.findByRole("img", { name: "pending" })).toBeDefined();
-  expect(screen.getByText("discarded")).toBeDefined();
+  expect(
+    await screen.findByRole("img", { name: "waiting to send" }),
+  ).toBeDefined();
+  expect(screen.getByText("Discarded")).toBeDefined();
 });
 
 test("says nothing in the register about a feed the pool has not answered for", async () => {
@@ -368,14 +378,14 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   render(Feed);
   expect(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   ).toBeDefined();
 
   transport.unreachable(true);
   await client.loadFeed();
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 });
 
 test("says nothing in the foot of a feed read to the end", async () => {
@@ -383,7 +393,7 @@ test("says nothing in the foot of a feed read to the end", async () => {
 
   render(Feed);
   await screen.findByText("one");
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 
   // There is no next page to be denied, so being out of reach costs nothing.
   online(false);
@@ -422,15 +432,16 @@ test("says nothing was captured only once the pool has answered for the feed", a
   expect(await screen.findByText(NOTHING_CAPTURED)).toBeDefined();
 });
 
-test("opens a row in place, with what the queue's row offers", async () => {
+test("selects a row in place, with what the queue's row offers through the keys", async () => {
   pool(held(anItem("one")));
 
   render(Feed);
   await screen.findByText("one");
   await open();
 
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+  expect(commandOf("process")).toBeDefined();
+  const opening = commandOf("open");
+  expect(opening !== undefined && "href" in opening ? opening.href : "").toBe(
     "/items/one",
   );
 });
@@ -551,9 +562,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(went.to).toEqual(["/items/one/process"]);
-  // The second click of a double is not a toggle: select, nothing, go.
-  expect(stamps(true)).toHaveLength(1);
+  expect(quick.item).toBe("one");
+  // When wide a click opens the item beside the list; the second click of a
+  // double is not a second opening.
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 test("puts the view back where the reader left it to read one item", async () => {
@@ -584,7 +596,7 @@ test("walks the rows with j and k, and processes the one selected", async () => 
 
   await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "p" });
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 
   await fireEvent.keyDown(window, { key: "Escape" });
   expect(stamps(true)).toHaveLength(0);
@@ -609,7 +621,7 @@ test("j past the last row held reads the next page and steps into it", async () 
   await vi.waitFor(async () => {
     went.to = [];
     await fireEvent.keyDown(window, { key: "p" });
-    expect(went.to).toEqual(["/items/two/process"]);
+    expect(quick.item).toBe("two");
   });
 });
 
@@ -648,7 +660,7 @@ test("j past the last row while its next page is read steps once it lands", asyn
   await vi.waitFor(async () => {
     went.to = [];
     await fireEvent.keyDown(window, { key: "p" });
-    expect(went.to).toEqual(["/items/two/process"]);
+    expect(quick.item).toBe("two");
   });
 });
 
@@ -804,7 +816,7 @@ test("a discard of marked rows says how many are already processed before it is 
     ),
   );
 
-  render(Feed);
+  render(Headed);
   await screen.findByText("fresh");
   for (const said of ["fresh", "filed"]) {
     const row = screen.getByText(said).closest("[data-row]") as HTMLElement;
@@ -815,11 +827,11 @@ test("a discard of marked rows says how many are already processed before it is 
   }
 
   const head = document.querySelector("[data-head]") as HTMLElement;
-  await fireEvent.click(within(head).getByRole("button", { name: "discard" }));
+  await fireEvent.click(within(head).getByRole("button", { name: "Discard" }));
 
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
-  expect(within(dialog).getByText("1 already processed")).toBeDefined();
+  expect(within(dialog).getByText("Discard 2 items?")).toBeDefined();
+  expect(within(dialog).getByText("1 already processed.")).toBeDefined();
 });
 
 test("undiscard is offered only where something marked is discarded, and discard only where something is not", async () => {
@@ -830,7 +842,7 @@ test("undiscard is offered only where something marked is discarded, and discard
     ),
   );
 
-  render(Feed);
+  render(Headed);
   await screen.findByText("kept");
   const stamp = (said: string) =>
     within(
@@ -841,11 +853,11 @@ test("undiscard is offered only where something marked is discarded, and discard
     within(head()).queryByRole("button", { name }) !== null;
 
   await fireEvent.click(stamp("gone"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([false, true]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([false, true]);
 
   await fireEvent.click(stamp("kept"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([true, true]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([true, true]);
 
   await fireEvent.click(stamp("gone"), { metaKey: true });
-  expect([offers("discard"), offers("undiscard")]).toEqual([true, false]);
+  expect([offers("Discard"), offers("Undiscard")]).toEqual([true, false]);
 });

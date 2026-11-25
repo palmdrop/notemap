@@ -6,7 +6,7 @@
   import Body from "$components/primitives/register/Body.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import { batchSaid, byKind, namesIn } from "$lib/batch-log";
-  import { notes } from "$lib/batching";
+  import { itemCount } from "$lib/batching";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { pickable } from "$lib/pick";
@@ -23,12 +23,10 @@
     id,
     at,
     entries,
-    gap = false,
   }: {
     id: string;
     at: string;
     entries: readonly Action[];
-    gap?: boolean;
   } = $props();
 
   const templates = client.templates.all;
@@ -41,7 +39,7 @@
     return (
       batchSaid(counted, $batches.get(id), namesIn($templates)) ??
       byKind(counted) ?? {
-        what: notes(new Set(entries.map((one) => one.subject)).size),
+        what: itemCount(new Set(entries.map((one) => one.subject)).size),
       }
     );
   });
@@ -55,19 +53,24 @@
   }
 </script>
 
-<div data-batch={id} class="col-span-full grid grid-cols-subgrid">
-  <Rail {gap}>
-    <Stamp {at} />
-    <div class="mt-2 tracking-caps uppercase {alarm ? 'text-alarm' : ''}">
-      batch
-    </div>
+<div
+  data-batch={id}
+  class="col-span-full grid grid-cols-subgrid border-b border-rule"
+>
+  <Rail>
+    <Stamp {at} dated={false} />
   </Rail>
 
-  <Body {gap}>
+  <Body>
+    <span
+      class="-mb-1.5 text-small tracking-caps uppercase {alarm
+        ? 'text-danger'
+        : 'text-muted'}">batch</span
+    >
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="flex cursor-pointer items-baseline justify-between gap-x-[3ch] max-narrow:flex-col max-narrow:items-stretch"
+      class="flex cursor-pointer items-baseline justify-between gap-x-[3ch] max-wide:flex-col max-wide:items-stretch"
       onclick={pickable(toggle)}
     >
       <span class="min-w-0 truncate">
@@ -91,7 +94,7 @@
       </span>
 
       {#if said.why !== undefined}
-        <span class="shrink-0 {alarm ? 'text-alarm' : ''}">{said.why}</span>
+        <span class="shrink-0 {alarm ? 'text-danger' : ''}">{said.why}</span>
       {/if}
     </div>
 

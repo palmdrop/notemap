@@ -263,11 +263,9 @@ test("asks before attaching more than a few files, naming the first of them", as
   await drop(document.body, files);
 
   const dialog = await screen.findByRole("dialog", {
-    name: "Attach these files",
+    name: "Attach these files?",
   });
-  expect(dialog.textContent).toContain(
-    "attach 7 files, 7 bytes, to the capture",
-  );
+  expect(dialog.textContent).toContain("7 files, 7 bytes, to the capture");
   // What the files are is bold, and what is said of them is not.
   expect(within(dialog).getByText("7 files").tagName).toBe("STRONG");
   expect(within(dialog).getByText("7 bytes").tagName).toBe("STRONG");
@@ -281,7 +279,7 @@ test("asks before attaching more than a few files, naming the first of them", as
   expect(dialog.textContent).toContain("and 2 more");
   expect(take).not.toHaveBeenCalled();
 
-  await fireEvent.click(within(dialog).getByRole("button", { name: "attach" }));
+  await fireEvent.click(within(dialog).getByRole("button", { name: "Attach" }));
   await vi.waitFor(() => {
     expect(take).toHaveBeenCalledWith(files);
   });
@@ -297,9 +295,9 @@ test("asks before attaching one file that is large, and attaches nothing on canc
   await drop(document.body, [large]);
 
   const dialog = await screen.findByRole("dialog");
-  expect(dialog.textContent).toContain("attach 1 file, 40 MB, to the capture");
+  expect(dialog.textContent).toContain("1 file, 40 MB, to the capture");
 
-  await fireEvent.click(within(dialog).getByRole("button", { name: "cancel" }));
+  await fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
   await vi.waitFor(() => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -322,7 +320,7 @@ test("nothing arrives while a dialog is open, and nothing says it would", async 
   expect(late.defaultPrevented).toBe(true);
   await paste(document.body, ["Files"], [shot]);
 
-  await fireEvent.click(within(dialog).getByRole("button", { name: "cancel" }));
+  await fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
   await vi.waitFor(() => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -375,7 +373,7 @@ test("says so where what would take them closed while they were asked about", as
   const dialog = await screen.findByRole("dialog");
   stop();
 
-  await fireEvent.click(within(dialog).getByRole("button", { name: "attach" }));
+  await fireEvent.click(within(dialog).getByRole("button", { name: "Attach" }));
   await vi.waitFor(() => {
     expect(notices.latest?.what).toBe(
       "09:12: some words was closed, nothing attached",

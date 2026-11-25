@@ -618,6 +618,10 @@ export function createSqlitePoolStore(
     const queueCount = source.query<{ count: number }, []>(
       `SELECT COUNT(*) AS count FROM items AS item WHERE ${QUEUED}`,
     );
+    const capturedSince = source.query<{ count: number }, [number]>(
+      `SELECT COUNT(*) AS count FROM items
+       WHERE created_at >= ? AND revision_of IS NULL`,
+    );
     // `saved` is the registry against itself: the sum over every asset less the
     // sum over the blobs they name, each counted once. It is not the blob
     // store's total — that also holds the outputs routing records name, which
@@ -648,8 +652,9 @@ export function createSqlitePoolStore(
      * otherwise put itself at the top for as long as the backlog reaches back.
      */
     const sourcesInUse = source.query<SourceUseRow, []>(`
-      SELECT source_id, COUNT(*) AS items, MAX(created_at) AS last_captured_at
-      FROM items
+      SELECT source_id, COUNT(*) AS items, MAX(created_at) AS last_captured_at,
+             SUM(CASE WHEN ${QUEUED} THEN 1 ELSE 0 END) AS unprocessed
+      FROM items AS item
       GROUP BY source_id
       ORDER BY last_captured_at DESC, source_id ASC
     `);
@@ -907,6 +912,7 @@ export function createSqlitePoolStore(
         sourcesInUse.all().map((row) => ({
           id: row.source_id as SourceId,
           items: row.items,
+          unprocessed: row.unprocessed,
           lastCapturedAt: toTimestamp(row.last_captured_at),
         })),
 
@@ -1024,8 +1030,11 @@ export function createSqlitePoolStore(
         filter?: SurfaceFilter,
       ): Promise<Slice<Item>> => byKey(page, filter, ARCHIVED),
 
-      counts: async (): Promise<Counts> => ({
+      counts: async (since?: Timestamp): Promise<Counts> => ({
         queue: queueCount.get()?.count ?? 0,
+        ...(since === undefined
+          ? {}
+          : { captured: capturedSince.get(toMillis(since))?.count ?? 0 }),
       }),
 
       assetsHeld: async (): Promise<AssetsHeld> =>

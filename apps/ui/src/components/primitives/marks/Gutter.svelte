@@ -13,14 +13,12 @@
 </script>
 
 {#if marked || cursor}
+  <!-- Marked rows are tinted and ticked by the row itself, and the row draws
+       the keys' place as a ruled edge. Nothing here takes width. -->
   <span
     data-gutter={marked ? "marked" : "cursor"}
     data-cursor={cursor ? "" : undefined}
     aria-hidden="true"
-    class="pointer-events-none absolute inset-y-0 left-0 w-1 border border-ink {marked
-      ? 'bg-ink'
-      : ''} {marked && cursor
-      ? 'outline outline-1 outline-offset-1 outline-ink'
-      : ''}"
+    class="pointer-events-none absolute inset-0"
   ></span>
 {/if}

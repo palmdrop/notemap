@@ -15,66 +15,123 @@
   --max-width-*: initial;
   --ease-*: initial;
   --animate-*: initial;
+  --radius-*: initial;
 
-  /* Two colours and one red. Dark is the inversion: ground and ink swap, the
-     red stays. */
-  --color-ground: light-dark(#ffffff, #000000);
-  --color-ink: light-dark(#000000, #ffffff);
-  --color-alarm: #d40000;
+  /* Three surfaces. White with a rule is what is read; beige is what can be
+     pressed; a grey band heads a group of rows. Dark is each role inverted,
+     and is rough. */
+  --color-ink: light-dark(#000000, #f2f2f2);
+  --color-paper: light-dark(#ffffff, #0d0d0d);
+  --color-off: light-dark(#e9e6df, #4a4231);
+  /* A control's edge: 3:1 against the page, as a control's boundary must be. */
+  --color-off-line: color-mix(in srgb, var(--color-off), var(--color-ink) 40%);
+  --color-off-down: color-mix(in srgb, var(--color-off), var(--color-ink) 8%);
+  --color-band: light-dark(#e4e4e4, #252525);
 
-  /* The one grey, admitted only for a control that cannot be taken. */
-  --color-inert: #808080;
+  /* The box grey: what is under way, and a state's box. */
+  --color-tag: light-dark(#f1f1f1, #1b1b1b);
+  --color-tag-line: light-dark(#d2d2d2, #3d3d3d);
+  --color-tag-ink: light-dark(#4a4a4a, #bdbdbd);
 
-  --font-shell:
-    "Bricolage Grotesque", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --default-font-family: var(--font-shell);
+  /* A row's tints: under the pointer, opened or selected for the keys, and
+     selected for a batch, each stronger than the last. */
+  --color-hover: light-dark(#f8f8f8, #141414);
+  --color-picked: light-dark(#f1f1f1, #1b1b1b);
+  --color-chosen: light-dark(#ececec, #2c2c2c);
 
-  --text-shell: 0.9375rem;
-  --text-shell--line-height: 1.375rem;
+  /* The rule, and the + button's fill, the one chip left. */
+  --color-rule: light-dark(#a9a9a9, #5e5e5e);
+  /* A field's edge, darker than a rule: 3:1 against the page. */
+  --color-edge: light-dark(#8a8a8a, #858585);
+  --color-chip: light-dark(#dedede, #2e2e2e);
 
-  /* The bar's status mark, which is a glyph and not a word: at the shell's
-     size a filled circle reads as a button. */
-  --text-glyph: 0.6875rem;
-  --text-glyph--line-height: 1.375rem;
+  --color-muted: light-dark(#5c5c5c, #a3a3a3);
+  /* Failed, rejected or destructive. */
+  --color-danger: light-dark(#c4231b, #ff6a5e);
+  /* Delivered or available, and nothing else. */
+  --color-signal: light-dark(#e1f2a6, #34410f);
+  /* The same, as a mark rather than a fill: the pool answering. */
+  --color-signal-ink: light-dark(#2f8a3b, #6cc779);
+  --color-veil: light-dark(rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.6));
+
+  --font-display: "Syne", serif;
+  --font-text: "Arimo", Arial, "Liberation Sans", sans-serif;
+  --default-font-family: var(--font-text);
+
+  --text-title: 1.5rem;
+  --text-title--line-height: 1.2;
+  --text-weekday: 1.125rem;
+  --text-weekday--line-height: 1.2;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.35;
+  /* An item read on its own: its words a step larger than a row's. */
+  --text-read: 1.125rem;
+  --text-read--line-height: 1.45;
+  --text-time: 0.875rem;
+  --text-time--line-height: 1.35;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.3;
+  /* A figure read at a glance: the day of the month, today's captures. */
+  --text-figure: 3.5rem;
+  --text-figure--line-height: 1;
+  /* A count on an icon. */
+  --text-badge: 0.6875rem;
+  --text-badge--line-height: 1;
 
   --tracking-caps: 0.08em;
 
   /* Bold drawn as a shadow, for where a weight cannot be set: a highlight. */
   --text-shadow-bold: 0.025em 0 currentColor, -0.025em 0 currentColor;
 
-  --spacing-rail: 11rem;
-  --spacing-rail-narrow: 5.75rem;
-  --spacing-rail-time: 3.25rem;
-  --spacing-day-head: 2.25rem;
-  --spacing-gutter: 1.5rem;
-  --spacing-measure: 72rem;
-  --spacing-read: 44rem;
+  --radius-control: 0.5rem;
+  --radius-tag: 0.3125rem;
+
+  --spacing-gutter: 0.75rem;
+  /* The time column, which holds a row's round check while selecting. */
+  --spacing-time: 3.25rem;
+  /* Where a row's words start: the time and a gutter either side of it. */
+  --spacing-words: calc(var(--spacing-time) + 2 * var(--spacing-gutter));
+  /* A header, or a bar docked at a page's foot. */
+  --spacing-bar: 3.5rem;
+  /* Where a stuck heading holds: its top rule on the header's bottom one. */
+  --spacing-stuck: calc(var(--spacing-bar) - 1px);
+  /* The least a target is on a phone. */
+  --spacing-target: 2.75rem;
+  /* A row's least height: its time and the circle that selects it, so the
+     circle showing never moves the rows below. */
+  --spacing-row: 5.25rem;
+  --spacing-icon: 1.625rem;
+  --spacing-fab: 4rem;
+  --spacing-thumb: 4.5rem;
+  /* The menu, as a column and as a rail of icons. */
+  --spacing-menu: 15rem;
+  /* Settings' own list of sections, beside the section when wide. */
+  --spacing-settings: 16rem;
+  --spacing-menu-rail: 4rem;
+  /* A side panel, when wide. */
+  --spacing-panel: 26rem;
+  /* A row's readable measure when wide, and a page's. */
+  --spacing-measure: 48rem;
+  --spacing-read: 40rem;
   --spacing-prose: 38rem;
+
+  /* What the header and a day's band hold over the top of a list, which a
+     row brought into view stops clear of. */
+  --spacing-held: calc(var(--spacing-stuck) + 2.25rem);
+  /* The air a row's time takes after a gap in the day. */
   --spacing-gap-time: 1.75rem;
-  /* The status line: one line of the shell's text and its air. */
-  --spacing-status: 2.25rem;
-  /* The notices panel, hung from the status line where there is room. */
-  --spacing-panel: 28rem;
+  /* The foot of a column, the status line and the menu's reach alike, so the
+     two line up across the rule between them. */
+  --spacing-foot: 2.75rem;
   /* Each side of a carried tag: room for its `×` to slide into when selected. */
   --spacing-tag: 0.6ch;
   /* The least a tag line is opened at, which the `+` holds before it opens. */
   --spacing-tag-line: 3ch;
 
-  --breakpoint-narrow: 44rem;
-  --breakpoint-wide: 64rem;
-}
-
-/* Every size is in `rem`, so the root's size scales the whole shell as a
-   browser's zoom would: the reader's own size at 350px and below, a quarter
-   more at 500px, half as much again at 1200px and above, and straight lines
-   between. Breakpoints stay where they are, a media query's `rem` being the
-   browser's and not the root's. */
-:root {
-  font-size: clamp(100%, 0.41667rem + 2.66667vw, 125%);
-
-  @media (width >= 500px) {
-    font-size: clamp(125%, 1.07143rem + 0.57143vw, 150%);
-  }
+  /* Below `wide` is the phone's form of every piece. From `full` the menu is
+     a column rather than a rail of icons. */
+  --breakpoint-wide: 900px;
+  --breakpoint-full: 1200px;
 }
 
 /* Motion, named by magnitude rather than role: it is the one scale here whose
@@ -84,42 +141,36 @@
 @theme static {
   --duration-short: 150ms;
   --duration-long: 220ms;
-  /* One square of the asking mark's loop. */
-  --duration-step: 300ms;
+  /* One turn of the spinner, for anything under way. */
+  --duration-turn: 900ms;
   --ease-motion: cubic-bezier(0.2, 0, 0, 1);
   /* What changes in place rather than travelling — a fade, a colour, a weight.
      Even at both ends: on `motion`'s curve a fade is most of the way there in
      its first frames and reads as a snap on the way in. */
   --ease-fade: cubic-bezier(0.4, 0, 0.6, 1);
 
-  --animate-step: step calc(var(--duration-step) * 3) steps(1, end) infinite;
-  /* The pending mark: a quarter going round a square, a step a beat. */
-  --animate-turn: turn calc(var(--duration-step) * 4) steps(1, end) infinite;
+  --animate-turning: spin var(--duration-turn) linear infinite;
 
-  @keyframes step {
-    0% {
-      background-color: currentColor;
-    }
-    33.333% {
-      background-color: transparent;
-    }
-    100% {
-      background-color: transparent;
+  @keyframes spin {
+    to {
+      rotate: 1turn;
     }
   }
 
-  @keyframes turn {
-    0% {
-      translate: 0 0;
+  /* A skeleton is drawn after the asking mark's 250ms, as the mark is, and
+     breathes while it waits. */
+  --animate-appearing: appear var(--duration-short) var(--ease-fade) 250ms both;
+  --animate-breathing: breathe 1.4s var(--ease-fade) infinite alternate;
+
+  @keyframes appear {
+    from {
+      opacity: 0;
     }
-    25% {
-      translate: 100% 0;
-    }
-    50% {
-      translate: 100% 100%;
-    }
-    75% {
-      translate: 0 100%;
+  }
+
+  @keyframes breathe {
+    to {
+      opacity: 0.45;
     }
   }
 }
@@ -128,17 +179,40 @@
   :root {
     --duration-short: 0ms;
     --duration-long: 0ms;
-    --duration-step: 0ms;
+    --duration-turn: 0ms;
   }
 }
 
-/* Served by the daemon beside the app, so it is exactly as offline as the app. */
+/* Served beside the app, so they are exactly as offline as the app. Asked for
+   in the page's head and blocking: swapping would lay every line out twice. */
 @font-face {
-  font-family: "Bricolage Grotesque";
+  font-family: "Arimo";
   font-style: normal;
-  font-weight: 400 600;
-  /* Served from the same origin as the page and asked for in its head, so it
-     is here before first paint; swapping would lay every line out twice. */
+  font-weight: 400;
   font-display: block;
-  src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
+  src: url("/fonts/arimo/arimo-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Arimo";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("/fonts/arimo/arimo-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Arimo";
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+  src: url("/fonts/arimo/arimo-latin-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Syne";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("/fonts/syne/syne-latin-400-normal.woff2") format("woff2");
 }

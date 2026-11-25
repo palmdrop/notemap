@@ -52,7 +52,7 @@ test("draws a batch as one row, counted as its notice counts it, and asks for th
   log.reading("newest-first", undefined);
 
   const count = await screen.findByRole("button", {
-    name: /3 notes tagged reading/,
+    name: /3 items tagged reading/,
   });
   expect(count.getAttribute("aria-expanded")).toBe("false");
   expect(screen.getAllByText("batch")).toHaveLength(1);
@@ -71,7 +71,7 @@ test("opens to every entry the batch wrote, the walk's and the rest", async () =
   log.reading("newest-first", undefined);
 
   const count = await screen.findByRole("button", {
-    name: /2 notes tagged/,
+    name: /2 items tagged/,
   });
   await fireEvent.click(count);
 
@@ -102,7 +102,7 @@ test("joins what arrives to the batch it belongs to", async () => {
   pool(logged(b1, { b1 }));
   render(Log);
   log.reading("newest-first", undefined);
-  await screen.findByRole("button", { name: /1 note tagged/ });
+  await screen.findByRole("button", { name: /1 item tagged/ });
 
   log.arrived([
     anAction("a2", {
@@ -113,7 +113,7 @@ test("joins what arrives to the batch it belongs to", async () => {
   ]);
 
   expect(
-    await screen.findByRole("button", { name: /2 notes tagged/ }),
+    await screen.findByRole("button", { name: /2 items tagged/ }),
   ).toBeDefined();
   expect(screen.getAllByText("batch")).toHaveLength(1);
 });
@@ -147,12 +147,12 @@ test("reads one batch with what this client was told of the items it refused and
   render(Log);
   log.reading("newest-first", undefined, undefined, id);
 
-  const head = await screen.findByText(/1 note tagged/);
+  const head = await screen.findByText(/1 item tagged/);
   expect(head.closest("p")?.textContent).toContain(
     "1 already tagged, 1 refused",
   );
   expect(
-    within(head.closest("p")!).getByRole("link", { name: "all of the log" }),
+    within(head.closest("p")!).getByRole("link", { name: "All of the log" }),
   ).toBeDefined();
   expect(screen.getByText("refused")).toBeDefined();
   expect(screen.getByText("no-such-item")).toBeDefined();
@@ -182,7 +182,7 @@ test("stops asking over a batch the pool has no entry for", async () => {
   log.reading("newest-first", undefined, undefined, "nowhere");
 
   await vi.waitFor(() => expect(log.loading).toBe(false));
-  const head = screen.getByText("all of the log").closest("p")!;
+  const head = screen.getByText("All of the log").closest("p")!;
   await vi.waitFor(() =>
     expect(head.querySelector("[role=status]")).toBeNull(),
   );
@@ -201,6 +201,6 @@ test("says a batch it could not read whole was not all read", async () => {
 
   expect(await screen.findByText("not all of it read")).toBeDefined();
   expect(
-    screen.getByRole("button", { name: /1 note tagged reading/ }),
+    screen.getByRole("button", { name: /1 item tagged reading/ }),
   ).toBeDefined();
 });

@@ -69,7 +69,7 @@ test("offers no way out of a daemon that asks for nothing", async () => {
 
   render(Access);
 
-  expect(await screen.findByText(/no password is set/i)).toBeDefined();
+  expect(await screen.findByText(/No password/)).toBeDefined();
   expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
 });
 
@@ -160,7 +160,7 @@ test("a minted token is shown once, and not again", async () => {
 
   render(Access);
 
-  await fireEvent.click(await settled(/\+ add a token/));
+  await fireEvent.click(await settled(/Add a token/));
   await fireEvent.input(screen.getByLabelText("name"), {
     target: { value: HELD.name },
   });

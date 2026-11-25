@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en" data-frame="phone">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>notemap design: log</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/queue.css" />
+    <link rel="stylesheet" href="css/drawer.css" />
+    <link rel="stylesheet" href="css/sheet.css" />
+    <link rel="stylesheet" href="css/viewer.css" />
+    <link rel="stylesheet" href="css/item.css" />
+    <link rel="stylesheet" href="css/notices.css" />
+    <link rel="stylesheet" href="css/log.css" />
+    
+    <script type="module" src="js/design.js"></script>
+    <script type="module" src="js/log.js"></script>
+    <script type="module" src="js/queue.js"></script>
+    <script type="module" src="js/morph.js"></script>
+    <script type="module" src="js/keyboard.js"></script>
+    <script type="module" src="js/wide.js"></script>
+    <link rel="stylesheet" href="css/wide.css" />
+    <link rel="stylesheet" href="css/bars.css" />
+  </head>
+  <body>
+    <div class="device">
+      <div class="screen">
+        <header class="app-bar" data-mode="title">
+          <div class="bar-row bar-title">
+            <button class="icon-button" data-open="drawer" aria-label="Menu"><svg class="i"><use href="#i-menu"></use></svg></button>
+            <h1>log</h1>
+            <div class="actions">
+              <button class="icon-button filter-pill" data-open="view" aria-label="Filter and order"><svg class="i"><use href="#i-filter"></use></svg><span class="badge count"></span></button>
+              <button class="icon-button notices-pill" data-open="notices" aria-label="Notices"><svg class="i"><use href="#i-bell"></use></svg><span class="badge"></span></button>
+            </div>
+          </div>
+          <div class="bar-row bar-marking">
+            <button class="icon-button" data-mark-stop aria-label="Stop selecting"><svg class="i"><use href="#i-close"></use></svg></button>
+            <h1 class="marked-n">0 selected</h1>
+            <button class="pill plain" data-mark-all>All</button>
+          </div>
+          <form class="bar-row bar-search" role="search">
+            <button type="button" class="icon-button" data-search="close" aria-label="Close the search"><svg class="i"><use href="#i-back"></use></svg></button>
+            <input type="search" name="words" placeholder="Search the log" autocomplete="off" />
+            <button type="button" class="icon-button" data-search="clear" aria-label="Clear"><svg class="i"><use href="#i-close"></use></svg></button>
+          </form>
+        </header>
+
+        <main>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Tuesday</span>
+              <time datetime="2026-11-03">2026-11-03</time>
+              <span class="count">12</span>
+            </h2>
+            <ol class="items">
+              <li class="item log-row" data-view="routing">
+                <time>10:21</time>
+                <div class="body">
+                  <p class="kind"><span>routed</span><span class="fact">Todo</span></p>
+                  <p class="text">ask Mira whether the workshop moved to thursday</p>
+                  <ul class="went"><li class="delivered"><a href="record.html" data-record='{"about": "ask Mira whether the workshop moved to thursday", "state": "delivered", "facts": [["destination", "Vault"], ["action", "append"], ["shape", "task"], ["file", "todo.md"], ["template", "Todo"]], "decided": "2026-11-03 10:21", "output": "- [ ] ask Mira whether the workshop moved to thursday #work", "place": "todo.md", "delivered": "10:21"}'><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">todo</span>.md</span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification">
+                <time>10:20</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#work</span></span></p>
+                  <p class="text">ask Mira whether the workshop moved to thursday</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="captures">
+                <time>10:20</time>
+                <div class="body">
+                  <p class="kind"><span>captured</span><span class="fact">web app</span></p>
+                  <p class="text">ask Mira whether the workshop moved to thursday</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="routing">
+                <time>09:06</time>
+                <div class="body">
+                  <p class="kind"><span>routed</span></p>
+                  <p class="text">the light in the stairwell at 9, almost orange</p>
+                  <ul class="went"><li class="delivered"><a href="record.html" data-record='{"about": "the light in the stairwell at 9, almost orange", "state": "delivered", "facts": [["destination", "Vault"], ["action", "new note"], ["shape", "raw"], ["file", "seeded/the-light-in-the-stairwell-at-9-almost.md"]], "decided": "2026-11-03 09:05", "output": "the light in the stairwell at 9, almost orange", "place": "seeded/the-light-in-the-stairwell-at-9-almost.md", "delivered": "09:06"}'><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/the-light-in-the-stairwell-at-9-almost</span>.md</span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="routing">
+                <time>09:05</time>
+                <div class="body">
+                  <p class="kind"><span>routed</span></p>
+                  <p class="text">the light in the stairwell at 9, almost orange</p>
+                  <ul class="went"><li class="delivered"><a href="record.html" data-record='{"about": "the light in the stairwell at 9, almost orange", "state": "delivered", "facts": [["destination", "Board"], ["action", "new block"], ["channel", "seeded"]], "decided": "2026-11-03 09:05", "output": "the light in the stairwell at 9, almost orange", "place": "seeded", "delivered": "09:05"}'><svg class="i"><use href="#i-route"></use></svg><b>Board</b><span class="place"><span class="cut">seeded</span></span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="captures">
+                <time>09:02</time>
+                <div class="body">
+                  <p class="kind"><span>captured</span><span class="fact">phone shortcut</span></p>
+                  <p class="text">the light in the stairwell at 9, almost orange</p>
+                  <span class="thumb"><img src="assets/still-here.jpg" alt="" /></span>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification">
+                <time>08:41</time>
+                <div class="body">
+                  <p class="kind"><span>discarded</span></p>
+                  <p class="text">unsubscribe from the hardware store newsletter</p>
+                </div>
+              </li>
+              <li class="item log-row batch" data-view="classification" data-batch="b1">
+                <time>08:30</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#home</span></span></p>
+                  <p class="text">4 items</p>
+                  <ol class="batch-entries" hidden><li><time>12:31</time><span>call the plumber about the kitchen tap before friday</span></li><li><time>12:40</time><span>buy a new filter for the extractor fan</span></li><li><time>13:58</time><span>idea: a bike rack that folds flat into the hallway wall</span></li><li><time>08:15</time><span>the lease, signed</span></li></ol>
+                  <a class="batch-read" href="log.html?batch=b1">Read this batch in the log</a>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification" data-in-batch="b1">
+                <time>08:30</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#home</span></span></p>
+                  <p class="text">call the plumber about the kitchen tap before friday</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification" data-in-batch="b1">
+                <time>08:30</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#home</span></span></p>
+                  <p class="text">buy a new filter for the extractor fan</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification" data-in-batch="b1">
+                <time>08:30</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#home</span></span></p>
+                  <p class="text">idea: a bike rack that folds flat into the hallway wall</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification" data-in-batch="b1">
+                <time>08:30</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#home</span></span></p>
+                  <p class="text">the lease, signed</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Monday</span>
+              <time datetime="2026-11-02">2026-11-02</time>
+              <span class="count">5</span>
+            </h2>
+            <ol class="items">
+              <li class="item log-row" data-view="routing">
+                <time>22:14</time>
+                <div class="body">
+                  <p class="kind"><span>withdrawn</span></p>
+                  <p class="text">the bench by the river has a plaque now</p>
+                  <ul class="went"><li class="withdrawn"><a href="record.html" data-record='{"about": "the bench by the river has a plaque now", "state": "withdrawn", "facts": [["destination", "Vault"], ["action", "append"], ["shape", "raw"], ["file", "journal/2026-11.md"]], "decided": "2026-11-02 11:15", "output": "the bench by the river has a plaque now", "place": "journal/2026-11.md", "delivered": "11:15"}'><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/2026-11</span>.md</span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="pool">
+                <time>18:30</time>
+                <div class="body">
+                  <p class="kind"><span>pool setting changed</span><span class="fact">yes</span></p>
+                  <p class="text">show link previews</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="routing">
+                <time>16:02</time>
+                <div class="body">
+                  <p class="kind alarm"><span>delivery failed</span><span class="fact">401</span></p>
+                  <p class="text">soup: leek, potato, a little mustard at the end</p>
+                  <ul class="went"><li class="abandoned"><a href="record.html" data-record='{"about": "soup: leek, potato, a little mustard at the end", "state": "abandoned", "facts": [["destination", "Cloud"], ["action", "new note"], ["shape", "raw"], ["file", "shared/soup-leek-potato-a-little-mustard-at-the.md"]], "decided": "2026-11-02 16:01", "output": "soup: leek, potato, a little mustard at the end", "place": "shared/soup-leek-potato-a-little-mustard-at-the.md", "why": "the password was not accepted"}'><svg class="i"><use href="#i-route"></use></svg><b>Cloud</b><span class="place"><span class="cut">…/soup-leek-potato-a-little-mustard-at-the</span>.md</span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="captures">
+                <time>11:12</time>
+                <div class="body">
+                  <p class="kind"><span>amended</span><span class="fact">the words</span></p>
+                  <p class="text">the bench by the river has a plaque now</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="pool">
+                <time>09:00</time>
+                <div class="body">
+                  <p class="kind"><span>destination disabled</span><span class="fact">markdown folder</span></p>
+                  <p class="text">Old vault</p>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <section>
+            <h2 class="day-head">
+              <span class="weekday">Friday</span>
+              <time datetime="2026-10-30">2026-10-30</time>
+              <span class="count">5</span>
+            </h2>
+            <ol class="items">
+              <li class="item log-row" data-view="routing">
+                <time>11:20</time>
+                <div class="body">
+                  <p class="kind alarm"><span>delivery failed</span><span class="fact">folder missing</span></p>
+                  <p class="text">still here, on the wall by the station</p>
+                  <ul class="went"><li class="abandoned"><a href="record.html" data-record='{"about": "still here, on the wall by the station", "state": "abandoned", "facts": [["destination", "Vault"], ["action", "new note"], ["shape", "raw"], ["file", "projects/street/still-here-on-the-wall-by-the-station.md"], ["if missing", "Must exist"]], "decided": "2026-10-30 11:20", "output": "still here, on the wall by the station", "place": "projects/street/still-here-on-the-wall-by-the-station.md", "why": "Vault has no folder named projects/street/, and the route said it must exist"}'><svg class="i"><use href="#i-route"></use></svg><b>Vault</b><span class="place"><span class="cut">…/still-here-on-the-wall-by-the-station</span>.md</span></a></li></ul>
+                </div>
+              </li>
+              <li class="item log-row" data-view="classification">
+                <time>11:08</time>
+                <div class="body">
+                  <p class="kind"><span>tagged</span><span class="fact"><span class="tag">#street</span></span></p>
+                  <p class="text">still here, on the wall by the station</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="captures">
+                <time>11:07</time>
+                <div class="body">
+                  <p class="kind"><span>captured</span><span class="fact">phone shortcut</span></p>
+                  <p class="text">still here, on the wall by the station</p>
+                  <span class="thumb"><img src="assets/still-here.jpg" alt="" /></span>
+                </div>
+              </li>
+              <li class="item log-row" data-view="pool">
+                <time>10:00</time>
+                <div class="body">
+                  <p class="kind"><span>template created</span><span class="fact">Vault</span></p>
+                  <p class="text">Project note</p>
+                </div>
+              </li>
+              <li class="item log-row" data-view="pool">
+                <time>08:00</time>
+                <div class="body">
+                  <p class="kind"><span>purged</span><span class="fact">3 captures</span></p>
+                  <p class="text"></p>
+                </div>
+              </li>
+            </ol>
+          </section>
+          <div class="nothing" hidden>
+            <p>Nothing in the log matches</p>
+            <button class="pill" data-clear-filter>Clear filter</button>
+          </div>
+          <div class="nothing drained" hidden>
+            <p>Nothing has happened yet</p>
+          </div>
+          <div class="end"></div>
+        </main>
+
+
+        <div class="veil" data-close hidden></div>
+
+        <aside class="drawer" id="drawer" aria-label="Menu" hidden>
+          <div class="drawer-head">
+            <span class="mark">notemap</span>
+            <button class="icon-button" data-close aria-label="Close the menu"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <nav>
+            <a href="queue.html"><svg class="i"><use href="#i-queue"></use></svg><span>queue</span><span class="n">9</span></a>
+            <a href="feed.html"><svg class="i"><use href="#i-feed"></use></svg><span>feed</span><span class="n">24</span></a>
+            <a href="log.html" aria-current="page"><svg class="i"><use href="#i-log"></use></svg><span>log</span></a>
+            <a href="settings.html"><svg class="i"><use href="#i-settings"></use></svg><span>settings</span></a>
+          </nav>
+          <p class="drawer-pending" hidden><span class="pending-dot"></span><span class="n"></span> waiting to send</p>
+          <div class="drawer-foot">
+            <span class="online">online</span>
+            <span>signed in as admin</span>
+          </div>
+        </aside>
+
+        <section class="sheet" id="view" aria-label="Filter" hidden>
+          <div class="sheet-head">
+            <h2>filter</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <div class="sheet-part">
+            <h3>Order</h3>
+            <div class="toggles one" data-group="order">
+              <button class="pill" data-value="newest" data-default aria-pressed="true">Newest first</button>
+              <button class="pill" data-value="oldest" aria-pressed="false">Oldest first</button>
+            </div>
+          </div>
+          <div class="sheet-part">
+            <h3>Views</h3>
+            <div class="toggles" data-group="view">
+              <button class="tag" data-value="routing" aria-pressed="false">routing</button>
+              <button class="tag" data-value="captures" aria-pressed="false">captures</button>
+              <button class="tag" data-value="classification" aria-pressed="false">classification</button>
+              <button class="tag" data-value="pool" aria-pressed="false">pool</button>
+            </div>
+          </div>
+          <div class="sheet-foot toolbar">
+            <button type="button" class="pill" data-reset><svg class="i"><use href="#i-undo"></use></svg>Reset</button>
+            <button type="button" class="pill primary" data-close><svg class="i"><use href="#i-check"></use></svg>Show <span class="shown">9</span></button>
+          </div>
+        </section>
+
+        <section class="sheet quick" id="batch-route" aria-label="Route the selected" hidden>
+          <div class="sheet-head">
+            <h2>route</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <p class="quick-what"></p>
+          <ul class="quick-templates"></ul>
+          <p class="sheet-note">A batch is routed by a template's trigger tag. Templates without one are routed an item at a time.</p>
+        </section>
+
+        <section class="sheet" id="batch-tags" aria-label="Tag the selected" hidden>
+          <div class="sheet-head">
+            <h2>tag</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <p class="quick-what"></p>
+          <div class="sheet-part">
+            <div class="toggles batch-tag-list"></div>
+            <p class="sheet-note">A tag on some of them is marked with a dash. Tap it to put it on all, again to take it off all.</p>
+          </div>
+          <div class="sheet-foot toolbar">
+            <button type="button" class="pill" data-close><svg class="i"><use href="#i-close"></use></svg>Cancel</button>
+            <button type="button" class="pill primary" data-batch-tags-apply><svg class="i"><use href="#i-check"></use></svg>Apply</button>
+          </div>
+        </section>
+
+
+        <div class="alarm-strip" role="alert" hidden>
+          <span class="say"></span>
+          <button class="pill" data-alarm-open>Open</button>
+          <button class="icon-button" data-alarm-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+        </div>
+        <div class="status-line" hidden>
+          <button class="sl-open" data-open="notices" aria-label="Open the notices"><span class="sl-say"></span><span class="sl-counts"></span></button>
+          <button class="sl-cancel" hidden>Cancel</button>
+        </div>
+
+        <section class="sheet notices" id="notices" aria-label="Notices" hidden>
+          <div class="sheet-head">
+            <h2>notices</h2>
+            <button class="icon-button" data-close aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+          </div>
+          <h3 class="notices-part">on its way</h3>
+          <ol class="notice-list" data-flying>
+            <li class="notice">
+              <time>10:02</time>
+              <div class="body">
+                <p class="what"><span class="spinner"></span>Waiting for <b>Cloud</b></p>
+                <p class="about">notes from the planning meeting</p>
+                <p class="why">Cloud has not answered since 09:40. It is tried again when it does.</p>
+                <div class="ways"><button class="pill" data-online>Cancel</button></div>
+              </div>
+            </li>
+            <li class="notice">
+              <time>09:58</time>
+              <div class="body">
+                <p class="what"><span class="spinner"></span>Sending to <b>Vault</b></p>
+                <p class="about">the lease, signed</p>
+              </div>
+            </li>
+          </ol>
+          <h3 class="notices-part waiting-part">waiting to send</h3>
+          <ol class="notice-list" data-waiting></ol>
+          <h3 class="notices-part">this session</h3>
+          <ol class="notice-list" data-live>
+            <li class="notice alarm">
+              <time>11:52</time>
+              <div class="body">
+                <p class="what">Rejected by <b>Vault</b></p>
+                <p class="about">still here, on the wall by the station</p>
+                <p class="why">Vault has no folder named projects/street/, and the route said it must exist. The item is back in the queue.</p>
+                <div class="ways"><a class="pill" href="route.html">Route again</a></div>
+              </div>
+            </li>
+            <li class="notice alarm">
+              <time>09:31</time>
+              <div class="body">
+                <p class="what">Refused by the pool</p>
+                <p class="about">receipt for the bike, and the photos of the frame</p>
+                <p class="why">The pictures are 52 MB together, over the pool's 25 MB. Kept on this device until you change or delete it.</p>
+                <div class="ways"><button class="pill" data-open-item>Open</button><button class="pill danger" data-delete-refused>Delete</button></div>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <div class="viewer" hidden>
+          <div class="viewer-head">
+            <button class="icon-button" data-viewer="close" aria-label="Close"><svg class="i"><use href="#i-close"></use></svg></button>
+            <span class="where"></span>
+          </div>
+          <img alt="" />
+          <button class="icon-button step prev" data-viewer="prev" aria-label="Previous picture"><svg class="i"><use href="#i-back"></use></svg></button>
+          <button class="icon-button step next" data-viewer="next" aria-label="Next picture"><svg class="i"><use href="#i-next"></use></svg></button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

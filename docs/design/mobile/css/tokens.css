@@ -1,0 +1,70 @@
+@font-face {
+  font-family: "Syne";
+  src: url("../fonts/syne/Syne-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Syne";
+  src: url("../fonts/syne/Syne-Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Arimo";
+  src: url("../fonts/arimo/arimo-latin-400-normal.woff2") format("woff2");
+  font-weight: 400;
+}
+@font-face {
+  font-family: "Arimo";
+  src: url("../fonts/arimo/arimo-latin-700-normal.woff2") format("woff2");
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Arimo";
+  src: url("../fonts/arimo/arimo-latin-400-italic.woff2") format("woff2");
+  font-style: italic;
+}
+@font-face {
+  font-family: "Syne Mono";
+  src: url("../fonts/syne/SyneMono-Regular.ttf") format("truetype");
+}
+
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --band: #e4e4e4;
+  --chip: #dedede;
+  --off: var(--card);
+  --off-line: color-mix(in srgb, var(--off), var(--ink) 25%);
+  --off-down: color-mix(in srgb, var(--off), var(--ink) 8%);
+  --chip-line: #a9a9a9;
+  --muted: #5c5c5c;
+  --card: #e9e6df;
+  --danger: #c4231b;
+  --signal: #e1f2a6;
+  --step-done: #8c8c8c;
+  --tag: #f1f1f1;
+  --tag-line: #d2d2d2;
+  --tag-ink: #4a4a4a;
+  --veil: rgb(0 0 0 / 0.35);
+  --rule: 1px solid var(--chip-line);
+
+  --face-display: "Syne", serif;
+  --display-style: normal;
+  --face-text: "Arimo", Arial, "Liberation Sans", sans-serif;
+
+  --size-title: 1.5rem;
+  --size-weekday: 1.125rem;
+  --size-time: 0.875rem;
+  --size-body: 0.9375rem;
+  --size-small: 0.8125rem;
+
+  --gutter: 0.75rem;
+  --time-column: 3.25rem;
+  --radius-control: 0.5rem;
+  --icon: 1.625rem;
+  --fab: 4rem;
+  --thumb: 4.5rem;
+  --bar: 3.5rem;
+}

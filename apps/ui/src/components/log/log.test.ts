@@ -6,6 +6,7 @@ import type { Action } from "@notemap/client";
 import { anItem, json, refusal, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool, sentUrls } from "$testing/pool";
+import { commandOf } from "$lib/command/stack.svelte";
 import { log } from "$lib/log.svelte";
 import { NOTHING_LOGGED } from "$lib/said";
 import Log from "./Log.svelte";
@@ -195,7 +196,7 @@ test("says what the narrowed log is narrowed to in the capture's own words", asy
   render(Log);
   reading(SUBJECT);
 
-  const head = (await screen.findByText("history")).parentElement;
+  const head = (await screen.findByText("this item")).parentElement;
   expect(head?.textContent).toContain("the picker needs a trail");
   expect(
     screen.getByRole("link", { name: "the picker needs a trail" }),
@@ -219,7 +220,7 @@ test("says what it is narrowed to, and offers the way back", async () => {
   reading("0198f0c2-9d3a-7b21-8e4f-112233445e6f");
 
   expect(
-    await screen.findByRole("link", { name: "all of the log" }),
+    await screen.findByRole("link", { name: "All of the log" }),
   ).toBeDefined();
 
   await vi.waitFor(() => {
@@ -246,7 +247,7 @@ test("walks on from the position the last page handed back", async () => {
   reading();
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   );
 
   await vi.waitFor(() => {
@@ -264,7 +265,7 @@ test("keeps one row for an id a second page hands back again", async () => {
   reading();
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   );
 
   await vi.waitFor(() => {
@@ -296,7 +297,7 @@ test("turning the log around walks it again rather than stitching two orders", a
   expect(turned.has("after")).toBe(false);
 });
 
-test("spends the accent on a failure: the kind, the code, and the block's word", async () => {
+test("spends the accent on a failure: the kind, the code, and its own words", async () => {
   render(LogRow, {
     action: {
       id: "one",
@@ -314,19 +315,15 @@ test("spends the accent on a failure: the kind, the code, and the block's word",
     },
   });
 
-  expect(screen.getByText("delivery failed").className).toContain("text-alarm");
-  expect(screen.getByText("unreachable").className).toContain("text-alarm");
-  expect(screen.queryByText("/vaults/obsidian: ENOENT")).toBeNull();
-  // Pending, but what failed is no reservation to call off.
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
-
-  await fireEvent.click(screen.getByRole("button", { name: "a destination" }));
-  // The failure's own words are the block's body, said in alarm.
-  expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
-    "text-alarm",
+  expect(screen.getByText("delivery failed").className).toContain(
+    "text-danger",
   );
-  expect(screen.queryByText("attempt")).toBeNull();
-  expect(screen.queryByText("rec")).toBeNull();
+  expect(screen.getByText("unreachable").className).toContain("text-danger");
+  expect(screen.getByText("/vaults/obsidian: ENOENT").className).toContain(
+    "text-danger",
+  );
+  // Pending, but what failed is no reservation to call off.
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
 });
 
 test("leaves a destruction as a fact rather than a warning", () => {
@@ -341,7 +338,7 @@ test("leaves a destruction as a fact rather than a warning", () => {
   });
 
   const word = screen.getByText("purged");
-  expect(word.className).not.toContain("text-alarm");
+  expect(word.className).not.toContain("text-danger");
 });
 
 test("says no refusal before a read, and counts nothing", async () => {
@@ -368,7 +365,7 @@ test("puts a refusal in the head, in alarm", async () => {
     "the app lost its place in the list; reload",
   );
   expect(said.getAttribute("role")).toBe("status");
-  expect(said.className).toContain("text-alarm");
+  expect(said.className).toContain("text-danger");
 });
 
 /**
@@ -428,7 +425,7 @@ test("narrows to a view's kinds, asking the pool rather than sifting the page", 
   expect(log.rows.map((action) => action.id)).toEqual(["one"]);
 });
 
-test("offers the views in a panel and says which are being read", async () => {
+test("offers the order and the views in the filter, saying which are being read", async () => {
   pool(held([anAction("one", { kind: "routed" })]));
   render(Log);
   log.reading("newest-first", undefined, [
@@ -440,21 +437,21 @@ test("offers the views in a panel and says which are being read", async () => {
   ]);
   await screen.findByText("routed");
 
-  await fireEvent.click(
-    screen.getByRole("button", { name: /narrow the log to/i }),
-  );
+  const filter = commandOf("filter");
+  expect(filter !== undefined && "count" in filter ? filter.count : 0).toBe(1);
+  if (filter !== undefined && "run" in filter) await filter.run();
 
-  const views = screen.getByRole("listbox", { name: "Views" });
-  const options = within(views).getAllByRole("option");
+  const views = await screen.findByRole("group", { name: "Views" });
+  const options = within(views).getAllByRole("button");
   expect(options.map((one) => one.textContent?.trim())).toEqual([
-    "▸ routing",
+    "routing",
     "captures",
     "classification",
     "pool",
   ]);
-  expect(options[0]?.getAttribute("aria-selected")).toBe("true");
-  expect(options[1]?.getAttribute("aria-selected")).toBe("false");
-  expect(screen.getByRole("button", { name: "everything" })).toBeDefined();
+  expect(options[0]?.getAttribute("aria-pressed")).toBe("true");
+  expect(options[1]?.getAttribute("aria-pressed")).toBe("false");
+  expect(screen.getByRole("button", { name: "Everything" })).toBeDefined();
 });
 
 /**
@@ -545,17 +542,17 @@ test("keeps an oldest-first walk where more happened than a page holds", async (
 });
 
 /** The kind is the rail's second line, under the stamp, and is read as words. */
-test("draws the kind in the rail, under the stamp", async () => {
+test("draws the kind at the head of the row, beside its fact, and the time alone in the rail", async () => {
   pool(held([anAction("one", { kind: "template-edited" })]));
   const { container } = render(Log);
   reading();
 
   const word = await screen.findByText("template edited");
   const rail = container.querySelector(".col-start-1");
-  expect(rail?.contains(word)).toBe(true);
+  expect(rail?.contains(word)).toBe(false);
+  expect(word.closest("[data-body]")).not.toBeNull();
   expect(screen.queryByText("template-edited")).toBeNull();
 });
-
 test("says discarded where the pool says archived", async () => {
   pool(
     held([
@@ -608,16 +605,11 @@ const VAULT = {
   retired: false,
 };
 
-test("draws routed as a line beside what it was about, opening into the block, and none under tagged", async () => {
+test("draws routed with a line saying where it went, which opens the record, and none under tagged", async () => {
   pool((request) => {
     switch (routeOf(request)) {
       case "GET /v1/destinations":
         return json(200, { values: [VAULT] });
-      case "GET /v1/routing/rec/output":
-        return new Response("# what went\n", {
-          status: 200,
-          headers: { "content-type": "text/markdown" },
-        });
       default:
         return held([
           anAction("one", {
@@ -638,114 +630,15 @@ test("draws routed as a line beside what it was about, opening into the block, a
   render(Log);
   reading();
 
-  const line = (await screen.findByText("Fiction vault")).closest(
-    "[data-folded]",
+  const line = (await screen.findByText("Fiction vault")).closest("a");
+  expect(line?.getAttribute("href")).toBe(`/items/${SUBJECT}/records/rec`);
+  expect(screen.getAllByRole("link", { name: /Fiction vault/ })).toHaveLength(
+    1,
   );
-  expect(line).not.toBeNull();
-  expect(await screen.findByText("drafts/note.md")).toBeDefined();
-  expect(screen.getByText("created")).toBeDefined();
+  expect(screen.queryByText("created")).toBeNull();
   expect(asked()).not.toContain("GET /v1/routing/rec/output");
-
-  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
-  expect(await screen.findByText("# what went")).toBeDefined();
-  // The excerpt on the line is the way to the item, so the block offers none.
-  expect(screen.queryByRole("link", { name: "item" })).toBeNull();
-  // One record: the tag's row has none.
-  expect(screen.getAllByText("created")).toHaveLength(2);
-  expect(screen.queryByText("target")).toBeNull();
 });
-
-test("opens a routed row into the record itself, as its item draws it", async () => {
-  pool((request) => {
-    switch (routeOf(request)) {
-      case "GET /v1/destinations":
-        return json(200, { values: [VAULT] });
-      case `GET /v1/items/${SUBJECT}/routing`:
-        return json(200, {
-          values: [
-            {
-              id: "rec",
-              item: SUBJECT,
-              target: {
-                kind: "destination",
-                destination: "vault",
-                capability: "create",
-                arguments: { directory: "drafts" },
-              },
-              state: "delivered",
-              at: "2026-09-02T11:14:00.000Z",
-              pointer: "drafts/note.md",
-              url: "https://vault.example/drafts/note.md",
-            },
-          ],
-        });
-      case "GET /v1/routing/rec/output":
-        return json(404, { error: { code: "no-output", facts: {} } });
-      default:
-        return held([
-          anAction("one", {
-            kind: "routed",
-            detail: {
-              record: "rec",
-              target: "destination",
-              destination: "vault",
-              capability: "create",
-              pointer: "drafts/note.md",
-            },
-          }),
-        ])(request);
-    }
-  });
-  await client.destinations.load();
-  render(Log);
-  reading();
-
-  await screen.findByText("Fiction vault");
-  expect(asked()).not.toContain(`GET /v1/items/${SUBJECT}/routing`);
-
-  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
-  expect(await screen.findByText("drafts")).toBeDefined();
-  expect(screen.getByRole("link", { name: "open ↗" })).toBeDefined();
-  expect(await screen.findByText("nothing kept")).toBeDefined();
-  expect(screen.queryByText(/could not be read/)).toBeNull();
-
-  await fireEvent.click(
-    screen.getAllByRole("button", { name: "Fiction vault" })[0]!,
-  );
-  await fireEvent.click(screen.getByRole("button", { name: "Fiction vault" }));
-  expect(
-    asked().filter((route) => route === `GET /v1/items/${SUBJECT}/routing`),
-  ).toHaveLength(1);
-});
-
-/** The detail does not say whether a copy was kept, so a refusal saying none is none. */
-test("says nothing kept where the pool has no copy of what a routed row sent", async () => {
-  pool((request) =>
-    routeOf(request) === "GET /v1/routing/rec/output"
-      ? json(404, { error: { code: "no-output", facts: {} } })
-      : held([
-          anAction("one", {
-            kind: "routed",
-            detail: {
-              record: "rec",
-              target: "destination",
-              destination: "vault",
-              capability: "append",
-            },
-          }),
-        ])(request),
-  );
-  render(Log);
-  reading();
-
-  await fireEvent.click(
-    await screen.findByRole("button", { name: "a destination" }),
-  );
-  expect(await screen.findByText("nothing kept")).toBeDefined();
-  expect(screen.queryByText(/could not be read/)).toBeNull();
-});
-
-test("draws a cancelled delivery as called off", async () => {
+test("draws a cancelled delivery as called off, with nothing to take back", async () => {
   pool(
     held([
       anAction("one", {
@@ -764,16 +657,11 @@ test("draws a cancelled delivery as called off", async () => {
   render(Log);
   reading();
 
-  // Where it was going, which is no decision made by hand.
-  const name = await screen.findByRole("button", { name: "a destination" });
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
-  await fireEvent.click(name);
   expect(await screen.findByText("called off")).toBeDefined();
-  expect(screen.queryByRole("button", { name: "cancel" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
 });
-
-test("opens a gap where more than half a day passed, and not where less did", async () => {
+test("heads each day with how many it holds, and opens no gap under the band", async () => {
   pool(
     held([
       anAction("one", { at: "2026-09-02T11:14:00.000Z" }),
@@ -785,15 +673,14 @@ test("opens a gap where more than half a day passed, and not where less did", as
   reading();
   await screen.findAllByText("captured");
 
+  expect(
+    [...container.querySelectorAll("[aria-label$='on this day']")].map(
+      (count) => count.textContent?.trim(),
+    ),
+  ).toEqual(["2", "1"]);
   const rails = [...container.querySelectorAll(".col-start-1")];
-  expect(rails).toHaveLength(3);
-  expect(rails.map((rail) => rail.className.includes("gap-time"))).toEqual([
-    false,
-    false,
-    true,
-  ]);
+  expect(rails.some((rail) => rail.className.includes("gap-time"))).toBe(false);
 });
-
 /**
  * Emptied at the turn and filled at the answer, a quick answer was a frame
  * with nothing in it: the log flickered.

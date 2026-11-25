@@ -1,23 +1,13 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  let {
-    slim = false,
-    children,
-  }: {
-    /** The rail holds a time and nothing more. */
-    slim?: boolean;
-    children: Snippet;
-  } = $props();
+  let { children }: { children: Snippet } = $props();
 </script>
 
-<!-- Two columns and one vertical rule between them, drawn by the rail; no rule
-     between rows. Each item drops its cells into this, so the columns stay in
-     register down the whole page. -->
+<!-- Two columns, the time and the words, each row ruled under; every item
+     drops its cells into this, so the columns stay in register down the page. -->
 <div
-  class="grid {slim
-    ? 'grid-cols-[var(--spacing-rail-time)_1fr]'
-    : 'grid-cols-[var(--spacing-rail)_1fr] max-narrow:grid-cols-[var(--spacing-rail-narrow)_1fr]'}"
+  class="-mx-3.5 grid grid-cols-[calc(var(--spacing-time)+var(--spacing-gutter))_minmax(0,1fr)] wide:-mx-8"
 >
   {@render children()}
 </div>

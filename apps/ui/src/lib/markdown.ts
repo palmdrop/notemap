@@ -30,6 +30,24 @@ export function rendered(text: string): string {
     }
   }
 
+  // A task list item, `- [ ] call back`: drawn as the box it stands for rather
+  // than as the brackets it was typed with.
+  for (const item of holder.content.querySelectorAll("li")) {
+    const first = item.firstChild;
+    if (first?.nodeType !== Node.TEXT_NODE) continue;
+    const said = first.textContent ?? "";
+    const task = /^\[( |x|X)\]\s/.exec(said);
+    if (task === null) continue;
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.setAttribute("disabled", "");
+    if (task[1] !== " ") box.setAttribute("checked", "");
+    box.className = "task";
+    first.textContent = said.slice(task[0].length);
+    item.insertBefore(box, first);
+    item.classList.add("task-item");
+  }
+
   return holder.innerHTML;
 }
 

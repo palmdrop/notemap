@@ -1,0 +1,78 @@
+body.lab {
+  margin: 0;
+  padding: 1.5rem;
+  background: var(--band);
+  font-family: var(--face-text);
+  font-size: var(--size-body);
+}
+
+.lab-head h1 {
+  margin: 0;
+  font-family: var(--face-display);
+  font-style: var(--display-style);
+  font-weight: 400;
+}
+
+.lab-head p {
+  max-width: 48rem;
+  color: var(--muted);
+}
+
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 24.375rem);
+  gap: 1.25rem;
+}
+
+.variant h2 {
+  margin: 0;
+  font-family: var(--face-display);
+  font-style: var(--display-style);
+  font-weight: 400;
+}
+
+.variant > p {
+  min-height: 2.5em;
+  margin: 0.25rem 0 0.5rem;
+  color: var(--muted);
+  font-size: var(--size-small);
+}
+
+.screenish {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem var(--gutter) 1.25rem;
+  border: var(--rule);
+  background: var(--paper);
+}
+
+.sample h3 {
+  margin: 0 0 0.375rem;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sample.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sample.row h3 {
+  flex-basis: 100%;
+}
+
+.sample .pos {
+  color: var(--muted);
+  font-size: var(--size-small);
+}
+
+.sample .pair {
+  display: flex;
+  gap: 0.75rem;
+}

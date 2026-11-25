@@ -55,7 +55,7 @@ export async function manual(item: Item): Promise<void> {
   try {
     const record = await client.routing.markProcessed(id);
     notices.raise({
-      what: "marked manual",
+      what: "manual",
       about,
       href: itemHref(id),
       only: MANUAL,

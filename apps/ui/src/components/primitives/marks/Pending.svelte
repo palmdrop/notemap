@@ -2,7 +2,7 @@
   import { onMount, untrack } from "svelte";
 
   import { SHOWN_AFTER } from "./Asking.svelte";
-  import Turning from "./Turning.svelte";
+  import Dot from "./Dot.svelte";
 
   /**
    * Drawn only once the work has been waiting as long as the asking mark
@@ -25,6 +25,6 @@
 
 {#if due}
   <span class={inline ? "inline-block" : "mt-2 block"}>
-    <Turning said="pending" />
+    <Dot said="waiting to send" />
   </span>
 {/if}

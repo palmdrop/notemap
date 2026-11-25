@@ -4,7 +4,12 @@ import { on } from "svelte/events";
 type Watched = {
   readonly node: HTMLElement;
   readonly tell: (stuck: boolean) => void;
+  /** Where it holds: its sticky `top`, read again when the window is resized. */
+  at: number;
 };
+
+const holdsAt = (node: HTMLElement): number =>
+  Number.parseFloat(getComputedStyle(node).top) || 0;
 
 const watched: Watched[] = [];
 let queued = false;
@@ -16,9 +21,9 @@ let stop: (() => void) | undefined;
  */
 function measure(): void {
   queued = false;
-  for (const { node, tell } of watched) {
-    const at = node.getBoundingClientRect();
-    tell(at.top < at.height && at.bottom > 0);
+  for (const { node, tell, at } of watched) {
+    const box = node.getBoundingClientRect();
+    tell(box.top < at + 1 && box.bottom > at);
   }
 }
 
@@ -33,11 +38,14 @@ export function watch(
   node: HTMLElement,
   tell: (stuck: boolean) => void,
 ): () => void {
-  const one = { node, tell };
+  const one = { node, tell, at: holdsAt(node) };
   watched.push(one);
   if (stop === undefined) {
     const scrolled = on(window, "scroll", soon, { passive: true });
-    const resized = on(window, "resize", soon);
+    const resized = on(window, "resize", () => {
+      for (const each of watched) each.at = holdsAt(each.node);
+      soon();
+    });
     stop = () => {
       scrolled();
       resized();
@@ -54,10 +62,23 @@ export function watch(
 
 const dating = new SvelteSet<HTMLElement>();
 
-/** The day headings in the band, which the list head lets show through it. */
+/** The day headings held in the band at the top. */
 export const band = {
-  get dated(): boolean {
-    return dating.size > 0;
+  /**
+   * The heading the band shows: the last of those held there. One that went
+   * before it is under it, and is hidden rather than left to show at an edge.
+   */
+  get shown(): HTMLElement | undefined {
+    let last: HTMLElement | undefined;
+    for (const node of dating) {
+      if (
+        last === undefined ||
+        last.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING
+      ) {
+        last = node;
+      }
+    }
+    return last;
   },
   hold(node: HTMLElement, stuck: boolean): void {
     if (stuck) dating.add(node);

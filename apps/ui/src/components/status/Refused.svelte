@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Box from "$components/primitives/blocks/Box.svelte";
   import { copyable } from "$lib/clipboard";
   import { attachmentCount, wordsOf, type RefusedCapture } from "$lib/refused";
   import { timeOf } from "$lib/stamp";
@@ -30,7 +31,7 @@
 
 <Entry
   when={timeOf(held.at)}
-  what={`capture refused${held.failure === undefined ? "" : `: ${held.failure}`}`}
+  what={`Refused by the pool${held.failure === undefined ? "" : `: ${held.failure}`}`}
   why={[
     words,
     carried === 0
@@ -46,18 +47,14 @@
   {#snippet actions()}
     {#if asked}
       <span>delete it for good?</span>
-      <button type="button" class="underline" onclick={ondelete}>delete</button>
-      <button type="button" class="underline" onclick={() => (asked = false)}
-        >keep</button
-      >
+      <Box danger onclick={ondelete}>delete</Box>
+      <Box onclick={() => (asked = false)}>keep</Box>
     {:else}
       {#if copyable() && words !== ""}
-        <button type="button" class="underline" onclick={oncopy}>copy</button>
+        <Box icon="copy" onclick={oncopy}>copy</Box>
       {/if}
-      <button type="button" class="underline" onclick={onedit}>edit</button>
-      <button type="button" class="underline" onclick={() => (asked = true)}
-        >delete</button
-      >
+      <Box icon="edit" onclick={onedit}>edit</Box>
+      <Box danger onclick={() => (asked = true)}>delete</Box>
     {/if}
   {/snippet}
 </Entry>

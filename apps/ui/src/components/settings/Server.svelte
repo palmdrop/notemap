@@ -5,13 +5,12 @@
 
   import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
   import Lead from "$components/primitives/text/Lead.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { client } from "$lib/client";
   import { reachable } from "$lib/reachable.svelte";
   import { since } from "$lib/stamp";
-  import { slide } from "$lib/motion";
 
   const address = $derived(
     import.meta.env.VITE_API_URL ??
@@ -60,7 +59,6 @@
   let sources = $state<readonly SourceUse[]>([]);
   let sourcesAsked = $state(false);
   let sourcesFailed = $state("");
-  let showSources = $state(false);
 
   const sourceSince = (source: SourceUse) => ({
     lead: `${String(source.items)} captured`,
@@ -96,7 +94,6 @@
     {:else}
       <Lead {...status} />
     {/if}
-    <Action disabled={asking} onclick={() => void knock()}>check again</Action>
   </Fact>
   <Fact name="api">
     <!-- The daemon serves this one, not this app: let the browser leave. -->
@@ -105,23 +102,23 @@
     </a>
   </Fact>
 
+  <div class="px-gutter py-3">
+    <Box icon="refresh" disabled={asking} onclick={() => void knock()}
+      >Check again</Box
+    >
+  </div>
+
   <Section name="sources" sub>
-    {#snippet right()}
-      <Action onclick={() => (showSources = !showSources)}>
-        {showSources ? "hide" : "show"}
-      </Action>
-    {/snippet}
+    {#each sources as source (source.id)}
+      <Fact name={source.id}><Lead {...sourceSince(source)} /></Fact>
+    {:else}
+      {#if sourcesAsked && sourcesFailed === ""}
+        <p class="m-0 px-gutter py-3 text-muted">Nothing has captured yet.</p>
+      {/if}
+    {/each}
 
-    {#if showSources}
-      <div transition:slide={{ magnitude: "short" }}>
-        {#each sources as source (source.id)}
-          <Fact name={source.id}><Lead {...sourceSince(source)} /></Fact>
-        {/each}
-
-        {#if sourcesFailed !== ""}
-          <p class="mt-2 text-alarm">{sourcesFailed}</p>
-        {/if}
-      </div>
+    {#if sourcesFailed !== ""}
+      <p class="m-0 px-gutter py-3 text-danger">{sourcesFailed}</p>
     {/if}
   </Section>
 </Section>

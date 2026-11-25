@@ -1,7 +1,8 @@
 # 46. The shell is one face, one size, ink on white, and processing is a surface
 
 **Date**: 2026-09-14
-**Status**: Accepted — supersedes the visual direction in
+**Status**: Superseded by [ADR 71](0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md) (type, colour, grid, chrome) and [ADR 72](0072-processing-is-a-quick-sheet-and-a-route-in-steps.md) (processing).
+Was: Accepted — supersedes the visual direction in
 [shell.md](../specs/shell.md#visual-direction) as settled on 2026-08-19, and the composer-as-modal
 decision of 2026-08-24. First draft: revisable once drawn.
 **Deciders**: palmdrop, with Claude

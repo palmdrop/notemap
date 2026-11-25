@@ -290,7 +290,9 @@ _Avoid_: result, output, derived data
 
 **Accept** / **Reject**:
 What a person does to a suggestion. Accepting writes real state that records which agent the
-suggestion came from; rejecting is kept as signal about the suggester. Both are kept.
+suggestion came from; rejecting is kept as signal about the suggester. Both are kept. **Rejected**
+is also a **delivery**'s outcome, said of what a destination turned down; the two never meet, a
+suggestion being a person's to decide and a delivery a destination's.
 _Avoid_: ratify, approve, confirm, apply
 
 **Decision**:
@@ -355,9 +357,9 @@ item, so a routing record still pending delivery counts, and an item whose deliv
 resurfaces in the queue, as does one whose only delivered records are **withdrawn**. Marking an item processed by hand is routing whose destination is the
 user, and is presented in the UI as **manual**. Scrolling past an item is a **skip**, which changes
 nothing. Every **sealed** item is processed, and nearly every processed one is sealed.
-_Avoid_: done as a name for the state, handled, cleared. **Done** is spent on the gesture instead —
-it is what the button that ends the `manual` step says, a verb beside `route` rather than a word for
-what an item now is.
+_Avoid_: done, handled, cleared. The button that takes the decision says **Manual** too, beside
+**Route** and **Discard**: what it does is route the item to the person, which *done* does not
+say.
 
 **Sealed**:
 Said of an item whose capture can no longer be edited in place, so an edit of it makes a
@@ -386,6 +388,13 @@ folder, a host, a token. A kind the running code does not have makes a destinati
 which is reported rather than hiding it.
 _Avoid_: type, driver, backend, provider
 
+**Unavailable** / **unusable** / **stranded**:
+Said of a destination a shell cannot route to now. **Unavailable** is a check that failed, said with
+the destination's own reason, and passes when the place answers again. **Unusable** is a destination
+of a kind the running code no longer has, and lasts until the kind comes back. A routing template on
+an unusable destination is **stranded**: kept, and offered nowhere until its destination is usable.
+_Avoid_: offline, broken, down, failing, orphaned
+
 **Retired**:
 Said of a destination that is no longer offered for new routing. Reversible, and nothing already
 decided is disturbed: records keep resolving and a pending delivery still lands. It is archive's
@@ -413,7 +422,11 @@ asks the capability rather than knowing it by name. It may say the same of itsel
 a capture's assets and nothing else, which is how a surface finds the one to offer as
 "attachments only". Core matches and refuses; it holds no list of
 its own, so a new kind of destination needs no change in core.
-_Avoid_: verb, action, method, operation
+_Avoid_: verb, action, method, operation. The shell alone labels it **action** where it reads a
+route out as facts — on the route page's check, a record and a template — beside **shape** for the
+**conversion**, in one vocabulary: new note, append, new note or append, attachments only; raw,
+list, task. That is a label on a drawn fact, as `discard` is drawn for archive, and the glossary's
+words stay what code and docs say.
 
 **Route**:
 To decide that an item belongs at a destination. Non-destructive: the item stays in the feed, and
@@ -425,7 +438,9 @@ _Avoid_: export, publish, send, file
 One attempt to place an item at a destination through one of its capabilities. Everything durable
 about the item is handed to the adapter, which reaches back for nothing. A delivery is **pending**
 until it lands, and then either delivered or abandoned; a person may cancel one that is still
-pending. Every decision that makes one waits the **undo window** before its first attempt, and a
+pending. One the destination turned down is **rejected**, and abandoned at once, since asking again
+gets the same answer; one given up on after its retries is **abandoned**, and a shell says it was
+not delivered. Every decision that makes one waits the **undo window** before its first attempt, and a
 fired template waits the trigger window. Reshaping the item into the destination's dialect happens here, inside the delivery, and
 never to the capture — so one item reaches several destinations in several forms and none of them
 is the item. A delivery may also carry **its own words** in place of the capture's, a **rewrite**,
@@ -506,15 +521,16 @@ retract; restore for its inverse, which is a rebuild's word
 Removing a pending reservation before its delivery lands, which returns the item to the queue; and
 removing a mark by hand, which never reached anywhere. Refused while the delivery is being
 attempted, and once it has landed: that record is **withdrawn**. A shell offers it on a
-reservation whose delivery the pool is retrying.
+reservation whose delivery the pool is retrying, and is the shell's word for taking back a route
+still in its window, by hand or by a trigger tag. Cancelling needs the pool, so a shell offers it
+only while the pool answers.
 _Avoid_: abort, revoke
 
 **Undo**:
-The shell's word for cancelling the decision just made, offered only while its delivery waits out
-its window — the **undo window**, or a fired template's — before anything is attempted. The same
-call as **cancel**. Never offered on a
-delivered record, and never a word for withdrawing. A manual mark's `undo` and a discard's
-`undiscard` take back decisions that make no delivery.
+The shell's word for taking back a decision just made that makes no delivery: a mark by hand, whose
+call is **cancel**, and a discard, whose inverse is `undiscard`. A route still in its window — the
+**undo window**, or a fired template's — is taken back with **cancel**, the shell's word too. Never
+offered on a delivered record, and never a word for withdrawing.
 _Avoid_: revert, rollback
 
 **Undo window**:
@@ -633,8 +649,10 @@ _Avoid_: bulk action, group, selection
 **Marked**:
 Of a row: picked for a batch, one of any number. What is done to a marked row's tags is done to
 every marked row, and the head's `discard` and `undiscard` act on all of them. Marking is a mode,
-on for as long as anything is marked.
-_Avoid_: selected, checked, picked
+on for as long as anything is marked. The shell says **selected** ("3 selected"), as it says
+discard for archive; the **selected row** is not a marked one, and the shell never prints that
+word for it.
+_Avoid_: checked, picked
 
 **Cursor**:
 The row the keys are on while rows are **marked**. It moves, marks and unmarks, and is not itself
@@ -665,7 +683,8 @@ Said of an outbox operation applied to a client's cache and not yet drained to t
 ordinary state of every mutation and a self-healing one — it drains when the pool is next
 reachable — so it is never a failure and is never dressed as one. An **item** is drawn as pending
 when an operation about it is: the client answers those as the **undrained** set, which is every
-operation that is not refused and so is wider than the one operation state named `pending`.
+operation that is not refused and so is wider than the one operation state named `pending`. The
+shell says **waiting to send** ("2 waiting" on the status line), as it says discard for archive.
 _Avoid_: unsynced, unsaved, queued, offline
 
 **Asking**:
@@ -690,10 +709,13 @@ once, and then let go of — a refused capture being held until somebody edits o
 _Avoid_: toast, notification, alert, banner, message
 
 **Status line**:
-The one ruled line a shell keeps at the foot of every surface, and the only place it speaks in its
-own voice: the newest live **notice**, what is in flight — a route a trigger tag or a person made,
-counting down its window, and what is **pending** — how much the queue holds, and whether the pool answers. Opens into a panel holding the session's notices and everything in
-flight. A route in flight is drawn there and is not a notice, nothing having happened yet.
+The ruled line a shell draws at the foot of the queue, the feed and the log, only while it has
+something to say, and the only place it speaks in its own voice. On the left, the newest thing
+happening or just said: a route in its window, counting down, one being attempted or retried, or the
+newest live **notice**. On the right, what is true, counted in words: how much is **pending**, then
+whether the pool answers. Opens into a panel holding the session's notices and everything in
+flight. A route in flight is drawn there and is not a notice, nothing having happened yet. A page
+with a bar docked at its foot has no status line, and says what happens on it on the page.
 _Avoid_: status bar, footer, corner, toast area
 
 **Refused**:
@@ -701,7 +723,7 @@ Said of an outbox operation the pool answered no to. Terminal: waiting will not 
 client's cache is left holding something the pool never accepted, so a shell says it as a
 **notice** and dismisses it rather than retrying it. A refused capture is the exception: its
 operation is the only copy of what was written, so it is held until somebody edits or deletes it.
-_Avoid_: failed, error, rejected (reserved for suggestions)
+_Avoid_: failed, error, rejected (a destination's answer, not the pool's)
 
 ### Reaching out
 

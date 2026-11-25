@@ -8,14 +8,23 @@
     type RoutingTemplate,
   } from "@notemap/client";
 
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Option from "$components/primitives/composer/Option.svelte";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import RadioRows from "$components/primitives/blocks/RadioRows.svelte";
+  import Segmented from "$components/primitives/blocks/Segmented.svelte";
+  import Toggle from "$components/primitives/blocks/Toggle.svelte";
   import CandidateBrowser from "$components/routing/CandidateBrowser.svelte";
   import PathLine from "$components/routing/PathLine.svelte";
   import { OWN_ARGUMENTS } from "$lib/arguments";
   import { askable } from "$lib/asked";
   import { carriesAssets } from "$lib/capability";
   import { client } from "$lib/client";
+  import { headed } from "$lib/heading.svelte";
+  import { trailTo } from "./href";
+  import { kindName } from "$lib/looks";
+  import { actionOf, labelFor, wordFor } from "$lib/vocabulary";
+
+  import FormBar from "./form/FormBar.svelte";
+  import Guard from "./form/Guard.svelte";
   import type { RoutingTemplateDraft } from "$lib/template-draft";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
   import {
@@ -55,18 +64,27 @@
 
   /** The namespace a trigger tag lives in. Not typed: it is what marks one. */
 
+  /** What a place can be named from, in words, and the pattern each puts in. */
   const PATTERNS = [
-    "{{captured_at}}",
-    "{{captured_at:month}}",
-    "{{captured_at:week}}",
-    "{{item}}",
-    "{{source}}",
-  ];
+    { word: "date", pattern: "{{captured_at}}" },
+    { word: "month", pattern: "{{captured_at:month}}" },
+    { word: "week", pattern: "{{captured_at:week}}" },
+    { word: "the item's words", pattern: "{{item}}" },
+    { word: "source", pattern: "{{source}}" },
+  ] as const;
 
   const FOLDERS = [
-    { name: "create", note: "make it" },
-    { name: "require", note: "refuse" },
-    { name: "establish", note: "make once, require after" },
+    { name: "create", word: "Make it", note: "Made when it isn't there." },
+    {
+      name: "require",
+      word: "Must exist",
+      note: "The delivery is rejected when it isn't there.",
+    },
+    {
+      name: "establish",
+      word: "Make it once",
+      note: "Made the first time, and must exist after.",
+    },
   ] as const;
 
   // Where the form starts, not what it holds: nothing changes under a typist.
@@ -288,6 +306,7 @@
           triggerTag: wanted.triggerTag ?? null,
         });
       }
+      saved = true;
       done();
     } catch (error) {
       said = saidBy(error);
@@ -295,234 +314,264 @@
       busy = false;
     }
   }
+
+  const begun = untrack(() =>
+    JSON.stringify([name, tag, destination, capability, folder, typed, asked]),
+  );
+  let saved = false;
+  const changed = (): boolean =>
+    !saved &&
+    JSON.stringify([
+      name,
+      tag,
+      destination,
+      capability,
+      folder,
+      typed,
+      asked,
+    ]) !== begun;
+
+  /** Why it cannot be saved yet, said over Save. */
+  const missing = $derived(
+    disabled
+      ? "The pool is out of reach."
+      : unnamed
+        ? "Name it to save."
+        : destination === ""
+          ? "Pick a destination to save."
+          : undefined,
+  );
+
+  headed(() => ({
+    title: editing === undefined ? "new template" : "edit template",
+    trail: trailTo("templates", editing),
+    out: { icon: "close", label: "Cancel", run: done },
+  }));
 </script>
+
+<Guard about={editing?.name ?? "a new template"} {changed} />
 
 <form
   onsubmit={(event) => {
     event.preventDefault();
     void save();
   }}
-  class="mt-5 grid grid-cols-[9rem_1fr] gap-y-1.5 pt-3 max-narrow:grid-cols-1"
 >
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">name</span>
-  <input
-    bind:this={nameField}
-    bind:value={name}
-    aria-label="name"
-    aria-describedby={unnamed ? `${id}-unnamed` : undefined}
-    class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
-  />
-  {#if unnamed}
-    <span></span>
-    <p id={`${id}-unnamed`} class="col-start-2 max-narrow:col-start-1">
-      a template needs a name
-    </p>
-  {/if}
-
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">trigger tag</span>
-  <div class="flex items-baseline border-b border-ink">
-    <span aria-hidden="true">{TRIGGER_NAMESPACE}</span>
+  <Band>template</Band>
+  <label class="block border-b border-rule px-gutter py-3">
+    <span class="mb-1.5 block text-small">name</span>
     <input
-      bind:value={tag}
-      aria-label="trigger tag"
-      class="w-full border-0 bg-transparent px-0 py-0.5 outline-none"
+      bind:this={nameField}
+      bind:value={name}
+      aria-label="name"
+      aria-describedby={unnamed ? `${id}-unnamed` : undefined}
+      placeholder="what it is called when routing"
+      class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
     />
-  </div>
-
-  <span class="tracking-caps uppercase max-narrow:mt-1.5">destination</span>
-  <div class="flex flex-wrap gap-x-[2ch]">
-    {#each destinations as one (one.id)}
-      <Option
-        label={one.name}
-        chosen={destination === one.id}
-        why={one.retired === true ? "disabled" : undefined}
-        onchoose={() => (destination = one.id)}
-      />
-    {/each}
-  </div>
-
-  {#if offersOutput}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">output</span>
-    <div class="flex flex-wrap gap-x-[2ch]">
-      <Option
-        label="everything"
-        chosen={!assetsOnly}
-        onchoose={() => output(false)}
-      />
-      <Option
-        label="attachments only"
-        chosen={assetsOnly}
-        onchoose={() => output(true)}
-      />
-    </div>
-  {/if}
-
-  {#if !(offersOutput && assetsOnly)}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">action</span>
-    <div class="flex flex-wrap gap-x-[2ch]">
-      {#each offersOutput ? actions : capabilities as one (one.name)}
-        <Option
-          label={one.name}
-          chosen={capability === one.name}
-          onchoose={() => (capability = one.name)}
-        />
-      {/each}
-    </div>
-  {/if}
-
-  {#each typeable as field (field.name)}
-    {#if Object.hasOwn(asked, field.name)}
-      <input
-        bind:value={asked[field.name]}
-        aria-label={`${field.title ?? field.name} label`}
-        aria-describedby={undefaulted(field)}
-        placeholder={field.title ?? field.name}
-        class="w-[calc(100%-2ch)] self-start border-b border-ink bg-transparent px-0 py-0.5 tracking-caps uppercase outline-none max-narrow:mt-1.5 max-narrow:w-full"
-      />
-    {:else}
-      <span class="tracking-caps uppercase max-narrow:mt-1.5">
-        {field.title ?? field.name}
-      </span>
+    {#if unnamed}
+      <span id={`${id}-unnamed`} class="sr-only">a template needs a name</span>
     {/if}
-    <div class="flex items-baseline gap-x-[1ch]">
-      <div class="min-w-0 flex-1">
-        {#if fixed(field) !== undefined}
-          <!-- Taking the option already taken gives it back: absent inherits,
-             and the hollow mark says what that comes out as. A required field
-             has no absent to go back to. -->
-          {@const implied =
-            (typed[field.name] ?? "") === ""
-              ? impliedOf(field, inherited)
-              : undefined}
-          <div class="flex flex-wrap gap-x-[2ch]">
-            {#each fixed(field) ?? [] as one (one)}
-              <Option
-                label={labelOf(field, one)}
-                chosen={typed[field.name] === one}
-                implied={implied === one}
-                onchoose={() =>
-                  (typed[field.name] =
-                    typed[field.name] === one && !field.required ? "" : one)}
-              />
-            {/each}
-          </div>
-        {:else if field.listable && destination !== "" && field.path !== undefined}
-          <!-- No forecast and no remembered continuation: a pattern names no
-             one note, so neither has anything to read off it. -->
-          <PathLine
-            {destination}
-            {capability}
-            field={field.name}
-            label={field.title ?? field.name}
-            value={typed[field.name] ?? ""}
-            claims={false}
-            onchange={(value) => (typed[field.name] = value)}
-          />
-        {:else if field.listable && destination !== ""}
-          <!--
-          `durable`, because this is the decision that fires again: a template
-          sits on a tag for months, and a value that rots takes the template
-          with it. Where a destination offers no second name for a thing this
-          changes nothing.
+  </label>
 
-          And read by name where the field may hold only what was offered,
-          which is where that lasting form is an id: the person picked a
-          channel, not a number, and the form is the only thing that can say
-          which one it was.
-        -->
-          <CandidateBrowser
-            {destination}
-            {capability}
-            field={field.name}
-            label={field.title ?? field.name}
-            value={typed[field.name] ?? ""}
-            durable
-            naming={field.offeredOnly}
-            offeredOnly={field.offeredOnly}
-            given={givenFor(field, typed)}
-            claims={false}
-            onchange={(value) => (typed[field.name] = value)}
-          />
-        {:else}
-          <input
-            bind:value={typed[field.name]}
-            aria-label={field.title ?? field.name}
-            aria-describedby={undefaulted(field)}
-            placeholder={Object.hasOwn(asked, field.name)
-              ? undefined
-              : field.required
-                ? "required"
-                : "optional"}
-            class="w-full border-b border-ink bg-transparent px-0 py-0.5 outline-none"
-          />
-        {/if}
-        {#if undefaulted(field) !== undefined}
-          <!-- Only the template's own value is a default: a destination's setting is not. -->
-          <p id={undefaulted(field)}>no default</p>
+  <label class="block border-b border-rule px-gutter py-3">
+    <span class="mb-1.5 block text-small">trigger tag (optional)</span>
+    <span
+      class="flex min-h-11 items-center rounded-control border border-edge bg-paper px-3 focus-within:border-ink"
+    >
+      <span aria-hidden="true" class="text-muted">#{TRIGGER_NAMESPACE}</span>
+      <input
+        bind:value={tag}
+        aria-label="trigger tag"
+        class="min-w-0 flex-1 bg-transparent outline-none"
+      />
+    </span>
+    <span class="mt-1.5 block text-small text-muted">
+      An item tagged with it is routed by this template. Left blank, the
+      template is only picked when routing.
+    </span>
+  </label>
+
+  <Band>where</Band>
+  <RadioRows
+    label="destination"
+    value={destination === "" ? undefined : destination}
+    options={destinations.map((one) => ({
+      value: one.id,
+      word: one.name,
+      line: `${kindName(one.kind)}${one.retired === true ? ", disabled" : ""}`,
+    }))}
+    onchoose={(one) => (destination = one)}
+  />
+
+  {#if offersOutput || !(offersOutput && assetsOnly)}
+    <Band>how</Band>
+    {#if offersOutput}
+      <div class="border-b border-rule px-gutter py-3">
+        <span class="mb-1.5 block text-small">output</span>
+        <Segmented
+          label="output"
+          value={assetsOnly ? "assets" : "everything"}
+          options={[
+            { value: "everything", word: "Everything" },
+            { value: "assets", word: "Attachments only" },
+          ]}
+          onchoose={(one) => output(one === "assets")}
+        />
+      </div>
+    {/if}
+    {#if !(offersOutput && assetsOnly)}
+      <div class="border-b border-rule px-gutter py-3">
+        <span class="mb-1.5 block text-small">action</span>
+        <Segmented
+          label="action"
+          value={capability === "" ? undefined : capability}
+          options={(offersOutput ? actions : capabilities).map((one) => ({
+            value: one.name,
+            word: actionOf(one.name),
+          }))}
+          onchoose={(one) => (capability = one)}
+        />
+      </div>
+    {/if}
+  {/if}
+
+  {#if typeable.length > 0}
+    <Band>place</Band>
+  {/if}
+  {#each typeable as field (field.name)}
+    <div class="border-b border-rule px-gutter py-3">
+      <div class="mb-1.5 flex items-center justify-between gap-3">
+        <span class="text-small">{labelFor(field)}</span>
+        {#if askable(field)}
+          <span class="flex-none" title={`ask ${labelFor(field)} each time`}>
+            <Toggle
+              small
+              label={`ask ${labelFor(field)} each time`}
+              on={Object.hasOwn(asked, field.name)}
+              ontoggle={() => ask(field.name)}>Ask each time</Toggle
+            >
+          </span>
         {/if}
       </div>
-      {#if askable(field)}
-        <span class="flex-none">
-          <Option
-            label="ask"
-            name={`ask ${field.title ?? field.name} each time`}
-            chosen={Object.hasOwn(asked, field.name)}
-            onchoose={() => ask(field.name)}
+      {#if Object.hasOwn(asked, field.name)}
+        <!-- Asked each time: the question it is asked as, then what it is
+             when the question is left unanswered. -->
+        <label class="mb-3 block">
+          <span class="mb-1 block text-small text-muted">asked as</span>
+          <input
+            bind:value={asked[field.name]}
+            aria-label={`${labelFor(field)} label`}
+            placeholder={`which ${labelFor(field)}?`}
+            class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
           />
-        </span>
+        </label>
+        <span class="mb-1 block text-small text-muted">default</span>
+      {/if}
+      {#if fixed(field) !== undefined}
+        {@const implied =
+          (typed[field.name] ?? "") === ""
+            ? impliedOf(field, inherited)
+            : undefined}
+        <Segmented
+          label={labelFor(field)}
+          value={(typed[field.name] ?? "") === "" ? implied : typed[field.name]}
+          options={(fixed(field) ?? []).map((one) => ({
+            value: one,
+            word: wordFor(field.name, labelOf(field, one)),
+          }))}
+          onchoose={(one) => (typed[field.name] = one)}
+        />
+      {:else if field.listable && destination !== "" && field.path !== undefined}
+        <!-- No forecast and no remembered continuation: a pattern names no
+             one note, so neither has anything to read off it. -->
+        <PathLine
+          {destination}
+          {capability}
+          field={field.name}
+          label={labelFor(field)}
+          value={typed[field.name] ?? ""}
+          claims={false}
+          onchange={(value) => (typed[field.name] = value)}
+        />
+      {:else if field.listable && destination !== ""}
+        <!-- `durable`: a template sits on a tag for months, and a value that
+             rots takes the template with it. -->
+        <CandidateBrowser
+          {destination}
+          {capability}
+          field={field.name}
+          label={labelFor(field)}
+          value={typed[field.name] ?? ""}
+          durable
+          naming={field.offeredOnly}
+          offeredOnly={field.offeredOnly}
+          given={givenFor(field, typed)}
+          claims={false}
+          onchange={(value) => (typed[field.name] = value)}
+        />
+      {:else}
+        <input
+          bind:value={typed[field.name]}
+          aria-label={labelFor(field)}
+          aria-describedby={undefaulted(field)}
+          placeholder={Object.hasOwn(asked, field.name)
+            ? "no default"
+            : field.required
+              ? "required"
+              : "optional"}
+          class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+        />
+      {/if}
+      {#if undefaulted(field) !== undefined && (fixed(field) !== undefined || field.listable)}
+        <!-- Only the template's own value is a default: a destination's setting is not. -->
+        <p id={undefaulted(field)} class="mt-1.5 mb-0 text-small text-muted">
+          no default
+        </p>
+      {/if}
+      <!-- Said once, terse: what each comes out as is the pool's answer. -->
+      {#if field.name === patterned}
+        <!-- Named from the item: each word puts its pattern at the end. -->
+        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+          <span class="text-small text-muted">name from</span>
+          {#each PATTERNS as one (one.pattern)}
+            <button
+              type="button"
+              title={one.pattern}
+              onclick={() =>
+                (typed[field.name] =
+                  `${typed[field.name] ?? ""}${one.pattern}`)}
+              class="inline-flex min-h-8 items-center rounded-control border border-off-line bg-off px-2.5 text-small active:bg-off-down"
+              >+ {one.word}</button
+            >
+          {/each}
+        </div>
       {/if}
     </div>
-    <!-- Said once, terse, rather than a paragraph per pattern: what each comes
-         out as is the pool's answer, and the pool refuses one it does not know. -->
-    {#if field.name === patterned}
-      <span></span>
-      <p class="col-start-2 flex flex-wrap gap-x-[2ch] max-narrow:col-start-1">
-        {#each PATTERNS as pattern (pattern)}
-          <span>{pattern}</span>
-        {/each}
-      </p>
-    {/if}
   {/each}
 
   {#if starting?.rewriteLeft === true}
-    <span></span>
-    <p class="col-start-2 max-narrow:col-start-1">
+    <p class="m-0 border-b border-rule px-gutter py-3 text-small text-muted">
       The rewrite stays with its item: a template files each item's own words.
     </p>
   {/if}
 
   {#if folders}
-    <span class="tracking-caps uppercase max-narrow:mt-1.5">if missing</span>
-    <div class="grid grid-cols-[max-content_1fr] items-baseline gap-x-[2ch]">
-      {#each FOLDERS as one (one.name)}
-        <Option
-          label={one.name}
-          chosen={folder === one.name}
-          onchoose={() => (folder = one.name)}
-        />
-        <span>{one.note}</span>
-      {/each}
-    </div>
+    <Band level={3}>if the folder is missing</Band>
+    <RadioRows
+      label="if missing"
+      value={folder}
+      options={FOLDERS.map((one) => ({
+        value: one.name,
+        word: one.word,
+        line: one.note,
+      }))}
+      onchoose={(one) => (folder = one)}
+    />
   {/if}
-
-  <div
-    class="col-span-2 mt-3.5 flex items-center justify-between border-t border-ink pt-2.5 max-narrow:col-span-1"
-  >
-    <Action onclick={done}>cancel</Action>
-    <span class="inverted">
-      <Action
-        disabled={disabled || unnamed}
-        working={busy}
-        onclick={() => void save()}
-      >
-        save
-      </Action>
-    </span>
-  </div>
 
   {#if said !== ""}
-    <p role="status" class="col-span-2 text-alarm max-narrow:col-span-1">
-      {said}
-    </p>
+    <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
   {/if}
 </form>
+
+<FormBar {missing} {busy} oncancel={done} onsave={() => void save()} />

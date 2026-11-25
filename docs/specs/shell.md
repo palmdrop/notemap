@@ -1,8 +1,47 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-13
+**Last updated**: 2026-11-24
 **Shipped**:
+
+- 2026-11-24 — **The phone-first shell, after its second review**
+  ([review](../reviews/mobile-first-rethink-pr-130-2026-11-24.md)). Previous and Next are entries in
+  history and back walks them; Discard moves on; the manual decision says **Manual** again; a row's
+  edit has the item's bar; rows walked to clear the header; no empty tag line on a phone; a trigger
+  tag's question has its own field and the tag offer opens downward; sheets stand on the keyboard;
+  settings' menu has a foot; the old register's pieces and tokens go.
+
+- 2026-11-23 — **Settling, and skeletons.** Skeletons where nothing is cached (superseding "no
+  skeletons"); a routed row's line holds its shape while records are read; the bold face preloaded;
+  the tag line a box of a tag's size; the batch's tag sheet with its field at the head; the place
+  line naming its folders; a heading field listing its headings at once.
+
+- 2026-11-19 — **Bars at the foot, and two squares.** A docked bar stays at the foot of its pane at
+  every width; the item reads as a row does, a route's window on its record's line; settings and a
+  record's page run to the window's edge at a readable measure; the date and what was captured today
+  under the menu.
+
+- 2026-11-18 — **The phone-first shell, after its review** ([review](../reviews/phone-first-shell-review-2026-11-18.md)).
+  The item drawn as its own view rather than a selected row; the log's rows in the queue's
+  register; one tag chooser in the blocks register; a selection takes the header; a route's
+  window survives a reload; leaving the route page goes back; no strip under a selected row;
+  a form's Save at its head when wide; settings' sections nested in the menu at full width.
+
+- 2026-11-18 — **The phone-first shell, tuned after use.** An item opens across the window when
+  wide; the list marks the row last opened; selecting tints and ticks a row with no gutter, and
+  rows hold their height; a row takes a tag in place; the log is filtered and ruled as the lists
+  are; settings add from their lists; the place picker is a tree of rows; a link's preview is a
+  quiet box; bars and rules line up across the menu and the page. ([plan](../plans/phone-first-shell.md))
+
+- 2026-11-16 — **The phone-first shell** (ADRs 71 to 76): new tokens, faces and icons; a header,
+  a drawer, a menu column or rail, and a status line only while something is true; rows by day
+  with a filter sheet and search in the header; capture as a page on a phone and a box when wide;
+  the item full screen or beside its list; the quick route and a route's row kept through its
+  window; the route page in steps on a phone; selecting for a batch by holding a row; the log by
+  day; settings as pages, each destination, template and form a page of its own with defaults
+  drawn as picked; the route page in steps on a phone and as one surface when wide, with a check
+  and a routed state; a record's own page in the one vocabulary; rows that say a delivery rejected
+  or a capture refused. ([plan](../plans/phone-first-shell.md))
 
 - 2026-11-12 — **A batch is one row in the log**, counted in its notice's words and opening to
   every entry it wrote, wherever those fell, drawn inside it. A batch's notice opens the log read by that batch,
@@ -787,39 +826,95 @@ fills in. It does not name a colour or a font; those come out of the design sess
 
 ### The shape of the shell
 
-Two columns, designed at 375px and given air on a wider screen. There is no second layout: no
-two-pane desktop, no bottom bar, no sheet. *Amended 2026-09-30
-([ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md))*: there is one bar at the bottom,
-the **status line** ([below](#the-status-line)), fixed under every surface; a page's foot is padded
-clear of it, whatever is scrolled or focused into view stops clear of it with a little room to
-spare *(2026-10-08)*, and the process surface fills the viewport less its height. *Amended 2026-08-24*: the second column is the metadata
-rail, and it survives a phone rather than collapsing into the first. *Amended 2026-09-29
-([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md))*: the register has a second
-layout, **by day** ([below](#rows-by-day)), chosen per device in Appearance and the default below
-`narrow`. The two columns stay; by day, below `narrow`, the rail narrows to the width of a time.
+*(Rewritten 2026-11-13, [ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)
+and [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md).
+From 2026-08-20 it was two columns designed at 375px and given air on a wider screen, four words in
+a bar for navigation, and one ruled status line under every surface.)*
 
-Navigation names **four** surfaces — `queue`, `feed`, `log` and `settings` — as four equals at the
-bar's left, the current one bold, each holding its bold width so the one beside it does not move
-([Motion](#visual-direction)). *Amended 2026-09-14*: the log and settings joined the two; the
-wordmark, the theme toggle, the order control and the waiting count left. Capture is not a
-surface: it is the head of the queue. Sign-in is drawn in the same system, with the word `notemap`
-where the surfaces would be.
+**One build, drawn for a phone first.** The queue, the feed and the log are lists under a
+**header**. A page that acts — the item, capture, a route, settings — docks its actions in a bar at
+its foot. Filters, the notices, the quick route and questions open as **sheets** from the foot.
+An item opens full screen. Below 900px every width draws this.
 
-The chrome carries what is true of the shell rather than of any item. *Amended 2026-09-30*: it says
-it in the **status line** rather than in one glyph at the bar's right, which said `●`, `○` or `◐`
-with the count only in its title; the bar is navigation alone. The order control is a reading
-preference and sits in the head of each list that has one; the palette is a preference and sits in
-settings. A refusal goes to the status line.
+**The header** is the title in the display face and, on a list, icons for **search**, **filter**
+(with how many tags it holds) and **notices** (with a red count of what went wrong). Each icon
+stands for the surface's own command — `/`, `f`, `n` — so a key and a press do one thing, and the
+counts come from the same rows as everywhere else. A page that is not a list has the title alone,
+until its own header is drawn.
+
+**Navigation is the drawer** on a phone, opened from the header's menu icon and coming in from the
+left over a veil: `queue`, `feed`, `log` and `settings`, each an icon and a word, the current one on
+the band, the queue with how much it holds. Under them, how much is waiting to send, and at its foot
+whether the pool answers — `online`, or `offline, last answered 12:31` in ink — and who this is.
+*(Amended 2026-11-19, by the developer, to see how it reads.)* **Under the surfaces, two squares**
+in the box grey: today's date (the month, and the day in a large figure) and how much was captured
+today, counted by the pool from this device's midnight. In the drawer and the menu column, not on
+the rail.
+**The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
+queue.
+
+**A wide window** (900px and wider) draws the same views, and a handful of pieces take a wide form.
+**The menu is a column**, always there, from 1200px, holding the same as the drawer; **from 900 to
+1199px it is a rail of icons**, each with its count as a small figure and its word as its label, and
+at its foot a dot for whether the pool answers. The header loses its menu icon. The status line
+runs under the list only. The other pieces' wide forms — the capture box, the item across the
+window, a panel or a dialog for a sheet — are described with each. A docked bar stays docked at
+the foot of its pane at every width *(2026-11-19)*.
+
+*Amended 2026-11-18.* **`notemap` at the menu's head** goes to the queue. **The search** sits at the
+right of the header, beside the filter and the notices. **One height for each bar**: the header and
+the menu's head are `--spacing-bar`, the status line and the menu's foot `--spacing-foot`, and a
+page's subject sits in the header's bar when wide rather than on a line of its own. **A band's top
+rule lies on the rule above it**, so no two rules meet as one thick one. **Pages read from the
+left** beside the menu, at their measure, rather than centred in the window.
+
+**The chrome carries what is true of the shell rather than of any item**, and says it on the status
+line ([below](#the-status-line)) while it is true, and in the drawer or the menu: the queue's size,
+what is waiting to send, whether the pool answers. The order control is a reading preference and
+sits in each list's filter; the palette is a preference and sits in settings.
 
 ### Capture is the head of the queue
 
-*Redrawn 2026-09-14.* The capture box sits above the list, spanning the page: a ruled box — the
-one thing on the queue boxed on four sides besides a selected row — with the field inside it and a
-foot along its bottom rule carrying `attach` behind a rule of its own and the tag chooser at the
-left, and a bold `capture` at the right behind a rule of its own. **No placeholder and no stamp**: the box is the invitation, and the capture is
-stamped when it is sent. It is no longer a row of the register, and says nothing until it fails —
-or until `capture` is taken with nothing written and nothing attached, when it says `nothing to
-capture` in its foot, plainly rather than in the accent since nothing failed, until something is written *(2026-10-08)*.
+*Redrawn 2026-11-13 ([ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).
+It was a ruled box above the list at every width from 2026-09-14; the box is now the wide form,
+and a phone writes on a page of its own.*
+
+**Below 900px, the + and the capture page.** A round + floats at the queue's lower right, clear of
+where the status line goes with a few pixels between, and stays there when the line is gone. It
+opens **`/capture`**, a page titled `capture` in the header: the field fills it, with **no
+placeholder and no clock**, since the capture is stamped when it is sent. Under the field are its
+tags, and at its foot a docked bar: **Attach**, **Tag** and **Save**. **Save with nothing to send
+says what is missing** on the line over the bar — `Nothing to capture yet: write something, or
+attach a file.` — rather than doing nothing. Saving goes back to the queue. **A draft kept by
+closing the page says so** when the page opens again — `Draft kept from last time.` — with
+**Clear**, which starts over. The draft is the same one the box holds, words, tags, the answers its
+trigger tags were given and its files, kept across a reload. *(Amended 2026-11-18, after the
+review.)* **The page is closed by ×**, which goes back. Its bar is **Attach**, **Camera** and
+**Save**; Tag is the + tag above it. **Save stays dashed until there is something to send**, and
+pressed then says what is missing.
+
+**At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
+the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **Capture**,
+the field and the controls on the rows' words column (`--spacing-words`) *(2026-11-18)*, and **in
+the time column the time it would be stamped with now**, so the box reads as the row it is about
+to be. The capture page keeps no clock.
+`mod+⏎` captures from the field.
+
+**At every width, a capture says where it landed**, since the queue reads oldest first by default
+and a new one lands out of sight: `Captured, at the end of the queue` (or `at the top`, read
+newest first) on the status line, with **Show**, which brings its row into view.
+
+**A trigger tag added while writing** asks what its template asks, and the tag is put on only once
+it is answered; closing the question leaves the tag off. Once it is on, a line under the tags says
+what will happen when the capture is sent: `Routes by **Todo**, list Next once it is sent`.
+*(Amended 2026-11-16.)* The question is asked in the quick sheet's shape, here and on the item:
+a sheet at the foot on a phone, or a panel by the tag line when wide, headed with the trigger's
+name and a close that leaves the tag off, then the template's row, then the answers ruled, each
+ending in **Route** on the last question and a chevron before it. The question's own field keeps
+the tag line's keys: `↑↓` walk the answers and `⏎` takes one.
+
+What follows from 2026-09-14 still holds of the box, and of the page where it says so.
 
 A capture asks nothing — text, any number of attachments, send. Nothing waits on the pool: the client
 mints the asset id and holds the bytes, which go up with the capture when it drains
@@ -828,10 +923,13 @@ button is pressed whether or not the daemon is there — and the box attaches an
 gesture, bytes with no capture behind them being bytes nothing will claim.
 
 The queue is therefore where notemap opens: the surface you are meant to empty, with the way to
-add to it at the top of it. **The field takes the caret when the queue is drawn**: the surface
+add to it at the top of it. ~~**The field takes the caret when the queue is drawn**: the surface
 exists to be typed into, and a click before the first keystroke is a click nothing asked for.
 *Except on the way back from processing with a row still selected* *(amended 2026-09-14)*: the
-keys are that row's then, and a caret in the field would swallow them.
+keys are that row's then, and a caret in the field would swallow them.~~ *Amended 2026-11-18*:
+**the field takes the caret only when it is pressed**, or reached by `k` from the first row. The
+header's search, filter and notices are icons with keys now, and a caret taken on arrival typed
+`f`, `n` and `j` into the box instead of doing what their tooltips said.
 
 **The box is selected the way a row is** *(2026-09-27)*. It is the head of the queue, and one thing
 is selected at a time, the box or a row: anything in the box taking the focus selects it and lets
@@ -899,6 +997,10 @@ attachment by its **media type**, never by the payload's ([Content](#content)).
 
 ### Dropping and pasting files
 
+*Amended 2026-11-13: files dropped or pasted land in the capture box when wide, and on the capture
+page on a phone; a phone's queue has no box to take them, and a phone seldom drops anything.*
+
+
 *Added 2026-10-28.* **A file dropped anywhere on the page is attached**, and so is a picture
 pasted. What takes it is **the open edit**, on whichever surface draws it, and otherwise **the
 capture box**; one edit is open at a time, and it outranks the box the queue draws beside it. A
@@ -937,11 +1039,12 @@ nor even listed, whole. A file that cannot be read is named on the status line, 
 that drop is attached.
 
 **What is many or large asks first.** Up to three files, together under 25 MB, attach at once; any
-more, or more bytes, open a dialog — drawn as the leaving dialog is — saying how many files, how
+more, or more bytes, open a dialog — the one dialog every question is asked in — titled *Attach these files?*, saying how many files, how
 much in all and to what, the first five by name and size, how many more, and how many hidden
 ones were left out. The count, the size and each name are bold, and nothing else is, so `and 12
-more` never reads as a file; a capture being edited is named in quotes, with `cancel` and `attach`, `attach` taking the focus. `esc`, the backdrop and
-`cancel` attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
+more` never reads as a file; a capture being edited is named in quotes, with **Cancel** and **Attach**, **Cancel**
+taking the focus, since what is asked about may have arrived by accident *(2026-11-23)*. `esc`, the backdrop and
+**Cancel** attach nothing. A paste is asked about the same way. One arrival is settled at a time: a
 drop made while a folder is being read waits its turn. Where what would take the
 files closed while they were asked about, nothing is attached and the status line says so. Where
 nothing is asked, the hidden files a folder left out are said on the status line.
@@ -953,10 +1056,40 @@ view** once it has grown, since a drop can come from far down the queue; an edit
 
 ### The row
 
-*Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
-What was here before — the open row as a fill with an accent edge, the facts it opened with, the
-furlable rail — is superseded; the dated amendments it carried are folded in below where they
-still hold.*
+*Redrawn 2026-11-13 ([ADR 73](../adr/0073-the-register-is-read-by-day-and-the-rail-goes.md),
+[ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)).
+The rail, the ruled box of a selected row and the `rows` setting went; what follows from 2026-09-14
+still holds where it does not speak of them.*
+
+*Amended 2026-11-16.* **A delivery turned down after its window is said on the queue row it came
+back to**, in red under the route icon: `Rejected by **Vault**: taken.md is already there`, or
+`Not delivered to **Vault**` for one the pool gave up on. The line and the strip say the same, and
+the notices keep it; the row says it for this session, the shell holding no record of a failure the
+pool kept none of. **A capture the pool refused is a row at the queue's end**, kept on this device:
+its time, its words, `Refused by the pool: why. Kept on this device only, until it is changed or
+deleted.` with the cloud-off icon, and **Copy**, **Edit** (which opens it on the capture page) and
+**Delete**, which asks first, it being the only copy. It has no item page: it is not in the pool.
+
+**Rows are read by day, at every width.** Each day has a band: the weekday in the display face,
+then the date, then how many rows the day holds in a circle at the end. The band holds under the
+header while its rows scroll beneath it. A row is ruled under, white, and runs the width of its
+pane: on the left a narrow column holding the time alone, at `text-time`; on the right the body,
+holding in order the capture's words, a link's preview (which is not a link: a grey box with the
+page's title, a line of its description and its site, its picture beside them where it offers one
+*(2026-11-18)*), the record lines with
+the route icon and the end of the path, the tags, and the state lines in words. **The waiting dot**
+sits in the row's corner while something about the item is waiting to send.
+
+**Tags are small boxes of the box grey** with their `#`; **a trigger tag is the route icon and the
+name after `route/`**, everywhere — a row, the item, the filter, the offer — never `#route/…` and
+never small caps *(2026-11-13; bold small caps from 2026-09-14)*. The `+ tag` that adds one is a
+dashed box.
+
+**A selected row** — by its time when wide, or walked to by `j` and `k` — is tinted `picked`, with
+a ruled edge while the keys are on it; its actions are the item's, and nothing is drawn under it
+*(amended 2026-11-24, to say what was built on 2026-11-18: it was drawn on the band with a beige
+strip of actions, and a tap selected it rather than opening the item)*. **When wide**, a row under the pointer turns the box grey and offers **Route**
+beside its words, at a readable measure rather than at the window's edge.
 
 **Processing starts in the row.** The queue is one scrollable list a person works freely
 ([client.md](client.md#the-queue)), and leaving it costs the reader their place — so every
@@ -978,7 +1111,8 @@ off by pressing them, and the stamp, which is the accessible way to select it.
 **Under the text, a block per link** *(2026-09-24)* — what each link points at, as
 [Content](#content) describes, outside the clamp so a long note's cue does not hide them.
 
-**A trigger tag is drawn as the name after `route/`, in bold small caps** — `journal`, not
+**A trigger tag is drawn as the name after `route/`, in bold small caps** *(until 2026-11-13: since,
+the route icon and the name)* — `journal`, not
 `route/journal → journal`. The style is what says the word files the item; the namespace is not a
 decision and is not repeated on every row. The chooser's offer keeps the whole name, being what is
 typed against, with the template it fires beside it after an arrow: `route/journal → journal`.
@@ -993,9 +1127,9 @@ appears. **Nothing else changes**: no fill, no colour, no facts appear.
 **`edit` rewrites the capture where it is read** *(amended 2026-09-27; it drew a second ruled box
 inside the body, with its own foot, and the row's actions still under that)*. The body's words
 become the field, with no ring or colour from the browser, and **the box's foot trades the actions
-for `close`, `revert` and `attach` on the left and a bold `save` on the right**, `revert` drawn only
-while the edit holds something the item does not say — words, an attachment, or a trigger tag waiting
-for the save — sliding in beside `close` as it appears. **No decision is reached while it is
+for the item's editing bar: Attach and Cancel, and Save at the right** *(2026-11-24; it was `close`,
+`revert` and `attach` in words with a bold `save`, `revert` drawn while the edit held a change)*. The
+row's bar and the item's are one bar. **No decision is reached while it is
 open** — its foot draws none, so no key reaches one, and `enter` does not open process on it — but
 the tags are: `+`, `×` and `t` work as
 on any selected row, a tag being an outbox operation of its own and not part of the edit. **A
@@ -1051,7 +1185,8 @@ recorded takes its bytes with it. A save asked for from the leaving dialog and n
 question unanswered: the edit stays where it is, and nothing goes on towards wherever the person
 was leaving. The item's own surface edits the same way, its actions giving way to the same foot. The
 one thing the selected row adds to the rail is a `+` after the last tag, which
-opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25)*:
+opens the chooser in place ([Tagging](#tagging)). **Its place is kept on every row** *(2026-09-25;
+since 2026-11-24 when wide only)*:
 a row with no tags still holds the tag line, empty, so selecting a row and opening the line move
 nothing — the price being one line more in the rail of a row that carries no tags — and is how a template is applied, a template
 being a tag. `esc` deselects, and leaves the editable shape first where the row is in one
@@ -1091,8 +1226,12 @@ a long path does not wrap the line into several — the full place is still in t
 arrow, the destination and the turning mark could each end up on a line of its own)*: the arrow
 and the destination are one unit and the place with the mark after it another, and the line breaks
 between the two and nowhere else. Each is cut with `…` where it does not fit on its own line, so
-the mark always ends the place. A summary's line is one line, cut the same way, its mark beside
-it. **A held row's line for a record not yet delivered ends in what its route in flight offers**
+the mark always ends the place. **On a phone the place is always on the second line, and when wide
+always beside the destination, cut** *(2026-11-23; it went under only where it did not fit, so a
+place read late, or named after it was read, changed the row's height)*. **A summary is drawn in
+the records' shape** *(2026-11-23; it was one line in the body's size, `→ **Vault**, manual`)*: a
+line per place it went, `manual` as `✓ Manual` *(2026-11-24; `✓ Done` for a day)*, the place held by a skeleton while the records are
+read, its turning mark ending the last line. **A held row's line for a record not yet delivered ends in what its route in flight offers**
 *(2026-11-01; amended 2026-11-03, when it always said `cancel`)*, on the queue and the feed alike, as
 a mark by hand's ends in `undo`: `undo` inside the window, nothing while the delivery is attempted,
 and `cancel` once the pool is retrying it — read from the same route in flight the status line
@@ -1129,7 +1268,9 @@ one and deselects otherwise; `f` opens the tags panel ([below](#tags-and-a-filte
 list to the other view *(2026-10-01)*. The selected row adds every command its own actions draw
 ([below](#a-command-is-what-a-key-and-a-button-both-reach)): `p` process, `m` manual, `D` discard,
 `u` undiscard, `e` edit, `c` copy, `o` open, `t` the tag chooser. So a key reaches exactly what a
-button reaches, on either surface, and a control that is not drawn has no key either. On the queue
+button reaches, on either surface. *(Amended 2026-11-24.)* A row no longer draws its actions — they
+are the item's — so its keys reach what the item's bar and ⋯ menu draw rather than anything on the
+row; a command with a refusal has no key. On the queue
 the capture box is the row above the first ([above](#capture-is-the-head-of-the-queue)): `k` off
 the first row goes into its field, and `j` from the box is the first row.
 
@@ -1137,9 +1278,10 @@ the first row goes into its field, and `j` from the box is the first row.
 away, and a capital is one deliberate press rather than a different gesture. Nothing else is
 guarded, the status line's `undo` being what makes the rest cheap to take back.
 
-**The index is a second view of the same list**, chosen in the list head as the order is —
-`timeline ▾` or `index ▾` *(amended 2026-10-01; it was `timeline` and `index` at the head's left, the
-current one bold)* — and carried on the URL as `view=index`,
+**The index is a second view of the same list**, chosen in the filter beside the order *(amended
+2026-11-24, to say what was built on 2026-11-16; from 2026-10-01 it was `timeline ▾` or `index ▾`
+in the list head, and before that `timeline` and `index` at the head's left, the current one
+bold)* — and carried on the URL as `view=index`,
 remembered per surface the way the order is. One line per item: the stamp as `2026-09-13 07:02`,
 the first words cut at a word with `…`, the tags at the right, dropped below the narrow
 breakpoint. **Where more than half a day passed** between two items the list opens a gap of one
@@ -1166,45 +1308,40 @@ walked to by `j`/`k` stops clear of the line, by day or not, and clear of the st
 
 #### Rows by day
 
-*Added 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)).* **A register
-can be read by day**, the reader's choice under Appearance as `rows` with `auto`, `by day` or `rail`, held
-on the device like the palette. `rail` is everything above. `by day` is below. `auto`, the
-default, is by day below `narrow` and the rail above it, since the rail's width is what a phone
-cannot spare.
+*Rewritten 2026-11-13 ([ADR 73](../adr/0073-the-register-is-read-by-day-and-the-rail-goes.md)).
+From 2026-09-29 ([ADR 52](../adr/0052-reading-by-day-is-a-readers-choice.md)) reading by day was
+the reader's choice under Appearance, `auto`, `by day` or `rail`; the choice went with the rail.*
 
-**By day, each day is headed once.** A heading goes before the first row of each local day, in
-whichever order the list is read: the date bold, the weekday beside it (`2026-09-13 sunday`),
-ruled under. **Below `narrow` the weekday is not drawn** *(2026-10-01)*: held at the top, the
-heading shares its line with the list head's controls, and a phone has room for the date and
-them and no more. There is no month heading. It spans both columns and holds at the top of the page
-while its day's rows scroll beneath it, and the next day's heading slides over it. A row walked
-to by `j`/`k` stops clear of it. A heading comes and goes with the rows it heads: the last row of
-a day leaving takes the heading with it. **Held at the top, a heading spans the screen**, its
-ground and its rule reaching both edges, since a selected row's box reaches past the columns and
-its edges would otherwise show beside the heading as the row scrolls under it. It spans the screen
-from the moment it reaches the top's band, so the next day's heading covers the last one edge to
-edge as it slides over it, and at no other time. **The heading is a line tall with even room
-above and below the date**, and the room between one day and the next is margin outside it: held
-at the top, the date sits as far from the top of the screen as from the rule under it.
-
-**The row keeps only its time**, the heading having said the day, **in bold** *(2026-10-02)*, so it
-stands apart from the tags under or beside it. The index's line keeps it plain; a selected line has
-opened into the row, which keeps it bold. The stamp still names the whole
-instant to assistive technology. **Below `narrow`, the rail holds the time and nothing else**, as
-wide as a time, and everything else it held **follows the capture** in the body: the state word,
-`pending`, the tags with their `+`, the routing line. So the time stands beside the capture's first
-line, and nothing above the text reads as its title. The tag line is held on every row, as it is
-in the rail, so selecting a row moves nothing; under the text, an untagged row's empty line is
-only space. The tags are told from the capture by their `#` ([Tagging](#tagging)), not by a rule
-between the two: a short one was tried the same day and taken out. **Above `narrow`, the rail
-keeps its width** and holds the time and the tags.
-
-**The first row of a day lays its top edge on the heading's rule.** Every row draws its box's
-edges whether or not it is selected ([above](#the-row)), so the first row under a heading sits one
-rule's width higher and its top edge falls on the heading's rule. A selected first row draws one
-line where the heading's rule and its box meet, not two, and nothing asks which row is selected.
+**Each day is headed once**, before its first row in whichever order the list is read, and the
+heading comes and goes with the rows it heads: the last row of a day leaving takes the heading
+with it. A row walked to by `j`/`k` stops clear of it and of the header above it *(2026-11-24; it
+allowed for the heading alone, from before the header was held)*. **A heading held under a later
+one is hidden** rather than left to show at an edge: held is where its sticky top puts it, under
+the header. **The row keeps only its time**, the heading
+having said the day; the stamp still names the whole instant to assistive technology. **The first
+row of a day lays its top edge on the heading's rule.** The index reads by day too: a heading per
+day, and a line per item with its time, its first words and its tags.
 
 #### Tags, and a filter
+
+*Amended 2026-11-18, after the review.* The bands are labelled as Order and Tags are
+(State, Destination, Source). **On the queue a source is counted by what the queue holds**
+(`unprocessed` on `GET /v1/sources`), and **every template's trigger is offered** under
+Templates, the queue rarely holding one. The bar is **Reset** and **Show n**, n the rows shown.
+A list that matches nothing offers a box named for what narrows it: Clear search, Clear filter,
+or both, centred under the box with room above it *(2026-11-19)*.
+
+*Amended 2026-11-13: the filter is a sheet, or a panel at the right when wide, opened by the
+header's filter icon, which counts what the filter holds, or by `f`. It holds, under plain labels,
+the **order** (Oldest first, Newest first; the feed also When captured and When processed — held
+while the list is read again, and greyed only once that read has taken longer than 400 ms, so a
+press elsewhere in the panel does not flash it *(2026-11-23)*), the
+**view** (Rows or Index), the feed's bands for what became of an item, its destination and its
+source, then the **tags** — each a box that can be on, filled and ticked when on, with its count —
+found by typing into a line, and the trigger tags apart under **Templates**, each the route icon
+and its name. Its foot is `clear n` and **Show**. **Search moved to the header** *(2026-11-13)*: on
+a phone the search icon, or `/`, turns the header into the search line, `Search the queue`, with a
+way back; when wide the line is always in the header. The list head holds only what a batch does.*
 
 *Added 2026-09-28.* **The list head holds a `tags ▾` control beside the order**, the way to a
 **filter** ([CONTEXT.md](../../CONTEXT.md)) and what answers which tags exist at all, which nothing
@@ -1321,7 +1458,82 @@ source and tag it holds, and `f` still opens it.
 - With the pool out of reach the feed draws the filter from what it holds, and says so as any
   cache-drawn surface does ([client.md](client.md#a-filtered-surface)).
 
+#### The quick route
+
+*Added 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md)).*
+**Routing starts in a sheet**, titled `route`, a dialog in the middle when wide. It names the item
+by its first words, then lists the templates whose destination is still offered, each a row with
+an icon for what it files into (a note for one that appends, a folder, a cloud, a board), its name,
+and where it files — `todo.md in Vault`. **A template that asks nothing routes on its Route.** One
+that asks ([ADR 63](../adr/0063-a-template-may-ask-for-an-argument-each-time-it-is-applied.md))
+opens in place and asks it: the destination's answers as rows, which move on as they are tapped,
+the last of them routing, and a line for a typed answer with Next, which says **Route** on the last
+question. **More options** leads to the route page, `/items/{id}/process`. *(2026-11-24.)* With no
+templates it says `No templates yet. More options picks a destination.`; with the pool out of reach
+it says so, and its templates stay drawn and cannot be pressed.
+
+**It is reached** from the item's Route, from a row's Route under the pointer when wide, by **a
+swipe left on a row** on a phone — the row following the finger, and a swipe that starts within
+24px of either edge left to the system's back gesture — and with `p` wherever an item is in hand.
+`process` is the quick route's command now; the route page is reached through it.
+
+**A route made from it is in its window at once** ([below](#the-status-line)): drawn on the line,
+and on its row.
+
+**A route in its window keeps its row** *(2026-11-13)*, by hand or by trigger tag. The pool has
+already taken the item off the queue, so the row is drawn from what the list last held of it, at
+its place in the order, with a box-grey line: the spinner, `Routing by **Todo**, list Next`, the
+seconds left, and **Cancel** (not offline). Cancelled, it is work again and stays. When the window
+closes the row **slides out sideways and the rows below close up**; the line goes on saying the
+delivery's next step, `Sending to Vault`, until it lands. *(Amended 2026-11-18, after the
+review.)* **A reload does not lose a window**: on start the shell reads the log for windows still
+open and counts those whose records are pending, so the row, the line and Cancel come back; the
+row is read from the pool where the list never held it. A template's route is said on the line
+by its answers alone, never by a file name it made.
+
 #### The process surface
+
+*Amended 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)): the
+process surface is **the route page**, reached from the quick route's More options. **Below 900px
+its steps come one at a time** — where (templates, then destinations), how where the destination
+offers a choice of output, the place where a template does not fix it, then the check (the tags
+and the preview, under the band **body**, since it can be edited *(2026-11-23)*) — each under a band, with a bar docked at the foot: **Back**, and **Next**, or
+**Route** at the check, dashed with the reason above it until there is something to send. Picking
+where moves on by itself. **At 900px and wider it is one surface**: the item, whole, on the left
+with **Discard** and **Done** at its head, and every step at once on the right under its own
+heading, a step that waits on an earlier one saying so in a line ("Pick a template or a destination
+first."), and Route at the foot of the steps. What the steps do is unchanged below.
+
+*Amended 2026-11-16.* **The header** says which step of how many on a phone (`where  1 of 4`), the
+words of the item under it. A template's questions are steps of their own (`question  2 of 3`),
+whose answers move on as they are tapped on a phone and are radio rows when wide; a typed answer
+has **Next**, and Next is otherwise only on how and place. **A picked template or destination folds
+to one row** with its icon, where it files, and **Change**. **How** holds the output (everything
+or attachments only), the action where the kind offers a choice, and every short choice of shape
+as a segmented row, the default drawn as picked. **Place** holds the line or the fields, and the
+folder mode as radio rows only where the place is a new note in a folder. *(2026-11-18)* The line's
+tree is ruled rows, a folder or a note icon beside each name, the one walked to filled, a note to
+be made marked `+`, and the note appended to saying `append here`.
+
+**The check** lists the decision's facts in the one vocabulary — destination, template, action,
+the place, shape, if missing — each opening the step that set it, or scrolling to it when wide. A
+place a template fixed says `set by Todo; change it for this route`, and changing it carries the
+route on by hand. Under the facts, the item's own tags, said to be the item's, and **as it will be
+written**: the preview, with **Edit** under it for the words this route alone carries.
+
+**After routing** the steps give way to **the routed state**, titled `routed`: the facts, a state
+row saying where the route stands (in its window with the seconds to cancel, sending, waiting for
+the destination, delivered, or rejected in the destination's words), and **and then**: Route it
+somewhere else too, Save this as a template (for a route made by hand), Open the item. The bar is
+**Cancel** while the window is open, and **Next item**. The steps are not entries in history, so
+back after routing leaves for where the route began. *(Amended 2026-11-18, after the review.)*
+**× does the same**: it goes back to where the route began rather than pushing the queue, and
+Next item replaces the routed page in history; opened at its address, × replaces it with the
+queue. Nothing comes back selected. *(Amended 2026-11-24.)* `[` and `]` are entries of their own,
+as Previous and Next on the item are, and × goes back past every one of them to where the route
+began, not to the item stepped from.
+
 
 *Redrawn 2026-09-14 ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md)).
 What was here — the composer as a modal over the register, its chrome, its two columns and its
@@ -1359,7 +1571,7 @@ the item is never changed, words nobody changed carry nothing, and wanting the f
 wanting the row's `edit`.
 
 **The middle is ruled sections**, each a label column and a content column, the label in bold
-capitals; below `narrow` the label stacks over the content. In order: `destination`, `output`
+capitals; below `wide` the label stacks over the content. In order: `destination`, `output`
 where it is drawn, `place`, `tags`, `preview`. **`place` and `preview` are drawn collapsed** — the label alone, opened by a
 press or when the flow reaches them — except where they already hold something: a preview that has
 answered draws open. **`tags` is always open** *(amended 2026-09-27; it was collapsed on an item
@@ -1489,8 +1701,10 @@ folder taken otherwise, so `seeded/new` becomes `seeded/` and then empty — and
 is it the field's own, as it is while a composition is under way. **Leaving the surface asks first
 where something was entered** since it opened or last routed: a destination or template chosen, or
 the words rewritten, and with them any argument, since a destination chosen is already a decision
-begun. It asks *go back to the queue?*: `leave`, in the alarm, goes and drops what was entered;
-`stay`, `esc` or a press outside returns with everything as it was. Nothing entered leaves at once.
+begun. It asks *Leave without routing?* in the one dialog every question is asked in *(2026-11-23;
+since 2026-11-24 in those words, since it may have begun from the feed or an item)*:
+**Leave**, in the alarm, goes and drops what was entered; **Stay**, `esc` or a press outside
+returns with everything as it was. Nothing entered leaves at once.
 Tags are not part of it, being applied to the pool when taken.
 
 **The surface opens with the pool out of reach.** A surface that refused to would be a queue that
@@ -1508,7 +1722,9 @@ kind still draws). Typing filters the entries at the deepest settled scope, `/` 
 completes the segment under the caret as far as the matches agree — and **does nothing where there
 is nothing to complete** *(added 2026-09-04)*, rather than handing focus to whatever is next: the
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
-that ends in one pops the whole segment rather than one character of it, and `↑↓` move through
+that ends in one pops the whole segment rather than one character of it *(and for the pointer, since
+2026-11-23: the folders the line runs through are named above it, the destination first, each a
+press back up to that level, and a × at the line's end empties it)*, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
 press landing on the first or last row of the level the caret is in; where that level drew
 nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
@@ -1645,9 +1861,12 @@ taking one fills the field with the heading's own words. Changing the note asks 
 the browser keeps between asks is keyed on what it was given, so one note's headings are never
 drawn for another's. A destination that cannot answer leaves the field typed, as any browse does.
 Such a field never takes the caret when it is drawn: the field it depends on comes first and is
-where the caret belongs. **Its list is drawn only while it has the caret** *(amended 2026-10-16;
-it kept a floor of several rows, under a field most decisions leave empty)*, so the line beneath
-it is all it takes until it is typed into. The template form does the same.
+where the caret belongs. ~~Its list is drawn only while it has the caret~~ *(amended 2026-10-16,
+reversed 2026-11-23: an empty line under the place read as nothing to choose from)* **Its list is
+drawn as soon as there is an answer**, the note's headings in view without a press. The line is a
+field drawn as the place's is, with a placeholder (`Under a heading (optional)`, or the schema's own),
+a × that clears what was typed, and **Back** and **Use …** as boxes beneath it while a level is
+browsed into. The template form does the same.
 
 **A shape is chosen beside the place** *(2026-10-14,
 [ADR 61](../adr/0061-a-conversion-is-a-named-argument-a-kind-publishes.md))*. The markdown kinds'
@@ -1861,6 +2080,53 @@ leaves it somewhere to land.
 
 ### An item has an address
 
+*Redrawn 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
+[ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
+**Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
+it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
+its bar at its foot. Coming back to the list, the row last opened is marked in the box grey,
+so the reader finds their place; it is not selected and draws no strip.
+
+*Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
+selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
+each the destination, the end of its place and a chevron, opening the record's page; the words
+whole and a step larger (`text-read`); then its tags, each with its ×, and + tag. Opened at its
+address, it reads its list for Previous and Next. **Manual and Discard move on** to the next item
+in its list (back to the list after the last), and that item's bar says `Manual: …` or
+`Discarded: …` with Undo. Where to is settled before the decision is sent, since a discard takes
+the item off its list at once. The bar says only what moved it there: a notice about any other
+item is left to the status line and the bell. A routed or discarded item offers **Route** (again) alone; one state
+box says Discarded with Undiscard, or Manual: processed by hand with Undo.
+
+*Amended 2026-11-19, by the developer.* **The item reads as a row reads**: its words, then where
+it went, then its tags, the top of it being only what was captured. **A route in its window is said
+on its record's line** — a spinner in place of the route icon, the seconds left and **Cancel** —
+which becomes the plain line once it lands; the window's box stands in only until the record has
+been read.
+
+**Its header** is back on a phone (close when wide, and `esc`), the day and the time, where it
+stands in its list (`2/13`), and Previous and Next in the morph shape, also `[` and `]`. **The ⋯
+menu** holds Edit, Copy (only where there is a clipboard and something to copy) and History; it
+takes the focus as it opens, `↑` `↓` walk it, and `esc` or a press outside closes it rather than
+the item. Back returns where the item was opened from; reached by a link, it goes to the item's
+list. **Each step of Previous and Next is an entry in history** *(2026-11-24; a step replaced the
+entry, so the system's back gesture left for the list)*, so the system's back walks back through
+the items stepped through, and back or close goes back past all of them at once to where the walk
+began. A decision moving on replaces its entry, as a step taken by the decision rather than by
+the person.
+
+**Its bar** is Discard, Manual and Route, docked at the foot of its pane at every width *(amended
+2026-11-19; it was a toolbar at the head when wide)*. A routed item, sealed, offers **Route again**. What a press just did is said on
+the ruled line over the bar, with Undo. **Discarded** is a grey state box with **Undiscard**, and
+**Manual: processed by hand** a box of its own; the Undo of a manual mark is in its record.
+
+**Editing** is Edit in the ⋯ menu, `e`, or a double tap on the words. The field has a ruled edge,
+and the bar becomes **Attach, Cancel and Save**. **Leaving with changes asks** `lose your
+changes?` — Keep editing, Lose changes, Save — and that includes the system's back gesture, which
+reaches the same guard through history. *(Save stays in the question: it was there before, and
+dropping it would lose a way out; DECISIONS.md names only the first two.)*
+
+
 **`/items/{id}` draws one item, `/items/{id}/process` is where it is processed, and
 `/items/{id}/records/{recordId}` draws one of its routing records.** All three are surfaces
 *(amended 2026-09-14: the decision was a modal until then)*: the first and last are things being
@@ -2055,6 +2321,14 @@ drawn where there is none.
 
 ### Actions
 
+*Amended 2026-11-16.* When wide, a click on a row opens its item, as a tap does on a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
+selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
+**Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
+right — each naming its key in its title. The rest of this section holds under those words.
+**A sealed item is edited as a revision** on its own page and in the feed, never on the queue: the
+bar's line says `Sealed: saving makes a revision, and what was routed stays as it was.`, and the
+pool makes the revision a capture of its own. A discarded item is undiscarded first.
+
 *Redrawn 2026-09-14.* A selected row's actions are the foot of the box it is drawn as, in two
 groups, and are not six of a kind.
 
@@ -2160,6 +2434,46 @@ discarded is two visits — which is what it is, two decisions. The pool refuses
 
 ### Marking rows for a batch
 
+*Amended 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md)).*
+The shell says **selected** for marked ([CONTEXT.md](../../CONTEXT.md)). **On a phone, holding a row
+selects it** and starts selecting, said once the first time — `Hold a row to select several.`, over
+the skeleton too while the first page is read, so the rows do not land under it — and a tap then selects more; a tap that ends a hold is not a second press. **When wide**, a round
+circle shows under a row's time on hover, and ctrl/cmd-click, shift-click, `space` and `J`/`K`
+select as before. While selecting, every row shows a round check in its time column, ticked when
+selected. *(Amended 2026-11-18.)* A selected row is tinted in the box grey; there is no gutter bar,
+the keys' place while selecting being a ruled edge round the row. **Every row is at least
+`--spacing-row` tall**, its time and its circle, so the circle showing on hover moves nothing.
+Letting go of the last selected row ends selecting with nothing selected. **Every row keeps its
+tag line's height when wide**, tags or none, so the + tag a hovered row offers moves nothing. **On
+a phone a row with no tags draws no tag line** *(2026-11-24)*: nothing hovers there, and a tag is
+added on the item's own page or in a batch's sheet, so the line would only ever be empty. **The view,
+rows or index, is one choice** for the queue and the feed. *(Amended 2026-11-18, after the
+review.)* **Holding a row selects at any width** for a finger or a pen, a tablet held
+wide having no ctrl and no hover. A row's tints: under the pointer the lightest, opened or
+selected for the keys the box grey, selected for a batch the strongest, with its tick and nothing
+more *(2026-11-19: the ink edge went)*; the keys' place while selecting is an outline round the
+whole row, drawn only while the keys are what is being used. **No strip** opens under
+a selected row: its actions are the keys and the hovered Route. **While rows are selected the
+header is the selection's** — × and `n selected` with All, and when wide Discard, Tag and Route
+beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
+the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
+**Discard** (or **Undiscard** where something selected is discarded), **Tag** and **Route**: docked
+at the foot on a phone, in the list's head when wide. **Tag** opens a sheet with **a field at its head**, `# Add a tag`, drawn as the place field is,
+the caret in it and the offer always beneath it, and under those the tags the rows carry, the most
+carried first *(2026-11-23, replacing a sheet of toggles sent on Apply, 2026-11-16)*. Leaving the
+field moves nothing, so the tags stay where they were pressed; `esc` empties the field, and on an
+empty one closes the sheet. The offer keeps the order it opened in, and a tag taken off stays in it
+to be put back: a tag typed or picked goes on every row at once, and its ×
+takes it off every one, as a row's own tags do. A tag on only some of the rows is drawn dashed with
+how many (`2/5`), and a press puts it on the rest. Trigger tags are left to **Route**. **Done**
+closes the sheet. **Route** offers
+only templates with a trigger tag: one that asks asks once, for every note; the batch is then
+confirmed (`Route 3 notes?`, then `With Todo, list Next.` with the template's name in bold, and
+what will not go as asked, with **Back** and **Route**, in the dialog every other question is asked
+in *(2026-11-21)*), and counts down on one line with one Cancel,
+which is one `POST /v1/routing/cancel` for the batch.
+
+
 *Added 2026-10-30* ([plan](../plans/batch-processing.md)). On the queue and the feed, many rows
 can be tagged, untagged, discarded or undiscarded at once. A template is applied the way it always
 is, by its trigger tag.
@@ -2234,6 +2548,22 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 
 ### Tagging
 
+*Amended 2026-11-18, after the review.* **The chooser is drawn in the blocks register**: where a
+tag can be changed each carries its × — no press to select it first — and elsewhere tags are
+words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
+its template's name muted at the right, and a typed name no offer holds says `new`. **The offer
+opens downward at every width** *(2026-11-24; on a phone it opened upward, over the words the tag
+was for)*, and on a phone the line is first scrolled to the top of the view, so the offer has the
+room under it down to the keyboard. **A trigger tag's question is the quick route's shape**: a
+sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
+**The question has a field of its own** under what it asks, which takes the caret, since the tag
+line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The
+sheet slides back down to the foot as it closes, its veil fading, whether it was answered, closed,
+or the veil pressed. **A sheet stands on the keyboard**: held to the part of the page that can be
+seen, it rises with the keyboard and stays put while the browser pans the page under it.
+*(2026-11-23; it was an underline across the row.)* **The line `+ tag` opens is a box of a tag's
+size**, ruled in ink, where the `+ tag` stood.
+
 Tagging is a **chooser over known names with free entry**, not a bare text field. It sits on the
 row, because it replays from the outbox and is therefore the one processing gesture that survives
 an unreachable pool. *Amended 2026-09-14*: the tags a row carries are on every row and taken off
@@ -2279,7 +2609,7 @@ one beneath the eight, ruled off from them, since a tag that files the item is n
 ones that say what it is. Typed into, the rule goes and each match takes its place by how it
 matched. The rule is not a row: the walk passes it as though it were not there. **Opened near the
 end of a line, the panel is drawn back to end where the line does** *(added 2026-09-29; below
-`narrow` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
+`wide` by day, the tags follow the capture across the body, and a panel hung from a `+` near its
 end ran off the side of the screen)*. *Amended 2026-10-01*: the browser holds it there. It is
 **anchored to the line**, so it follows the line as tags taken beside it push the line along or
 onto a row of its own, rather than being measured once and left where the line used to be; and
@@ -2371,7 +2701,7 @@ line; with no default an empty line stays and asks again. `esc` steps back a fie
 the tags; leaving the line takes nothing. **The tag lands with its values once the last is
 given**, as one operation, which is the same whether it drains now or tomorrow. The destination is
 asked to describe itself for at most two seconds first, and one that does not answer leaves every
-field typed. **Below `narrow` the panel is a sheet across the foot of the screen** while it asks.
+field typed. **Below `wide` the panel is a sheet across the foot of the screen** while it asks.
 
 **A trigger tag carried with values says them after it** — `route/todo` then `list Next`, label
 then value, a value left out reading as the default it will take — wherever the tag has not yet
@@ -2433,12 +2763,21 @@ is keeping the reader waiting. Settings' `asking`, `asking now` and `checking`, 
 in`, and the pool settings' `reading…` all became the mark.
 
 Where a region is waiting rather than an action, the mark stands on the first line its answer will
-take: a list read cold draws it in the foot's place, where `load more` would have been, and no
-`load more` beside it, there being nothing yet to have more of; an item read cold, in the body
-column where the capture will be; an item's routing records, under the capture's box, where the first
+take: an item's routing records, under the capture's box, where the first
 record will be; a link's block, inside its fixed frame, below the host; a browse or the typed
 line's tree, where its first row will be. A browse or a tree already drawn is
 not marked while it is asked again, being what the last answer said and exactly as useful.
+
+**Where there is nothing at all to draw, a skeleton is drawn instead** *(2026-11-23, superseding
+[No skeletons](#prior-decisions), 2026-09-25)*: grey bars in the shape of what will come, after the
+mark's own 250ms, fading in and breathing while they wait, still under `prefers-reduced-motion`.
+**A list read cold** — the queue, the feed or the log with no page held — draws a day band and six
+rows in the register, or eight lines in the index, where `load more` would have been, and no `load
+more`, there being nothing yet to have more of. **An item read cold** draws three lines of words
+and two tags in the body column. **A record's line drawn before its place is known** — from the
+summary while the records are read, or before the destination has said how its arguments read —
+holds the place with a bar of its own width, so the place landing moves nothing. Where the cache
+holds anything, it is drawn, and no skeleton is.
 
 **A surface says nothing about what it is drawn from** *(amended 2026-08-26)*. It used to: while the
 pool had not answered for the queue or the feed, the surface named itself in the register and said
@@ -2461,82 +2800,90 @@ never answered still draws no failure at all.
 
 ### The status line
 
-*(2026-09-30, [ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md). It replaces the corner,
-which said what happened from 2026-09-03, and the bar's glyph.)* The shell says anything in its own
-voice from **one ruled line fixed to the bottom of every surface**, at the shell's one size,
-ruled along its top and down both its ends *(2026-10-01)*. **It is as wide as a selected row's box**
-*(2026-10-02)*, reaching as far past the page's column as the box does, so its ends fall on the
-box's edges. **Below `narrow` it spans the screen** and its ends are the screen's, drawn with no
-rule, as the panel above it is. **One place, with gradations** — a second place would be a reader learning where
-to look to learn nothing more. A **notice** is work that has already happened, reported to somebody
-who did not ask: an item routed and where it went, a delivery that failed, a delivery given up on.
-Beside the notices the line says what is true of the shell rather than of any item: what is in
-flight, how much is left, and whether the pool answers.
+*Amended 2026-11-18, after the review.* **Offline says when the pool last answered**, on the line
+(`Offline, last answered 12:17`) and at the menu's foot, which keeps one line the status line's
+height; a destination's state read before says `as of` that time. **The notices** say only a time
+and the words, with no empty column for work in flight; their Cancel and Undo are underlined
+words, Open and Save as template capitalised as the line's are.
 
-**The left is the message line.** It begins with **`notices ▴`**, always there, which opens the
-panel and is what the panel hangs from — a button that came and went with what had been said would
-be one nobody could find when they wanted it. Between the word and its arrow it counts, in the
-accent, **what went wrong since the panel was last opened** — `notices (1) ▴` (below). After it, the **newest notice still live**, in its few words and
-cut to fit rather than wrapped, and beside it whatever the notice offers (`undo`; on the landing of
-a route made by hand, `save as template` *(2026-11-01)*, which opens Templates on that record).
-**The line is
-short** *(2026-10-01)*: what happened, and why in the destination's own words where it gave any —
-`routing failed: taken.md is already there` — and never the code, the place, or the capture, which
-are the panel's, and the log's beyond it. Below `narrow`, `notices` is its mark alone. A notice rises into the line as it arrives: the line is read at
-the edge of the eye, and motion is what tells that edge something was said.
+*(Rewritten 2026-11-13, [ADR 74](../adr/0074-the-status-line-is-at-the-foot-of-the-lists-while-something-is-true.md).
+It was one ruled line fixed under every surface from 2026-09-30,
+[ADR 54](../adr/0054-the-shell-speaks-from-a-status-line.md), which replaced the corner and the
+bar's glyph.)* The shell says anything in its own voice from **one ruled line at the foot of the
+queue, the feed and the log**, the surfaces with no docked bar, and **only while it has something to
+say**. It fades in when something becomes true and out when nothing is. A page with a bar docked at
+its foot — the item, capture, a route, settings — has no line, and says what happens there on the
+page. When wide it runs under the list only, not under the menu. It is drawn at `text-small`,
+ruled along its top, `paper` under it, and it clears the phone's home indicator. **One place, with
+gradations** — a second place would be a reader learning where to look to learn nothing more. A
+**notice** is work that has already happened, reported to somebody who did not ask: an item routed
+and where it went, a delivery that failed, a delivery given up on. Beside the notices the line says
+what is true of the shell rather than of any item: what is in flight, how much is waiting, and
+whether the pool answers.
 
-**Every notice goes on its own, and none is dismissed** *(2026-10-01; until then a failure stood
-until somebody cleared it)*. A success is a glance and leaves after four seconds; one that offers
-something, and anything that went wrong, after ten, which is long enough to reach for an `undo` or
-read the reason. Nothing has to be cleared, because nothing is lost by going: the panel reads back
-every notice of the session, and the way back is not only here either — a discarded row offers
-`unarchive`, and a manual mark's record offers `undo` on the item surface. **What went wrong is
-counted** on `notices` until the panel is next opened, so a failure that lingered and went while
-nobody was looking is still in front of them when they return; opening the panel is the whole of
-acknowledging it, and what goes wrong while it is open is seen as it arrives. The accent is spent on what went wrong and on nothing else, as it is in the log.
-**Nothing leaves while the pointer is over the line or focus is inside it**, its panel included, so
-nothing vanishes under somebody's hand; let go, everything lingers again from the start.
+**The left is the newest thing happening or just said**, one of:
 
-**The right is the counts**, each drawn only while it is true, in a fixed order:
+- **A route in its window**: the spinner, `Routing by **Todo**`, what it was given for what it
+  asks, label then value (`, list Next`), the seconds left, and **Cancel**.
+- **A route being attempted**, once its window has closed: `Sending to **Vault**`, with nothing to
+  offer, since the pool refuses to call off a delivery it is attempting.
+- **A route the pool will retry**: `Waiting for **Vault**`, with **Cancel**.
+- **Otherwise the newest notice still live**, cut to fit rather than wrapped, and beside it whatever
+  it offers: `Undo` for a discard or a manual mark just made, and on the landing of a route made by
+  hand `save as template` *(2026-11-01)*.
 
-- **A route in flight** — `routing **research** 12s`, with `undo`; `cancel` once the pool is
-  retrying it (below).
-- **Work this device holds** — `3 pending`, the outbox operations that have not drained and never a
-  refusal. It says nothing while there is nothing, since pending is ordinary and heals itself, and
-  **it counts work only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
-  row's own mark does: a tag drains within a moment, and `1 pending` that came and went would say
+**Cancel and Undo are underlined words, not buttons.** Cancel is for a route still in its window, or
+one the pool is retrying; Undo is for a decision just made that makes no delivery
+([CONTEXT.md](../../CONTEXT.md)). **Offline, nothing offers Cancel** — not the line, not the row,
+not the notices — since cancelling needs the pool.
+
+**The right is what is true, counted in words, in a fixed order**, each only while it is true:
+
+- **`2 waiting`**, with the dot: the outbox operations this device has not sent, never a refusal.
+  It counts work **only once it has waited as long as the asking mark does** *(2026-10-01)*, as a
+  row's own mark does: a tag drains within a moment, and a count that came and went would say
   nothing but move the line. Work restored from an earlier session has waited already.
-- **How much is left** — `14 in queue`, the pool's own count of what the queue holds, read from
-  `GET /v1/counts` and leading to the queue. It is the pool's number: what this device has not sent
-  is the pending count's. It keeps its last answer while the pool is out of reach.
-- **`offline`**, last, while the pool does not answer *(2026-10-01; a glyph said both states
-  until then)*. A pool that answers is the ordinary state and says nothing, as pending work says
-  nothing while there is none.
+- **`Offline`**, last, in ink with a cloud struck out, while the pool does not answer. Offline is
+  not a failure.
 
-A press on any count but the queue's opens the panel. **Below `narrow`** the words go: a route in
-flight is `routing 12s cancel`, pending `◐ 3`, the queue's count is not drawn, and `offline` stays
-a word.
+**The queue's size left the line** *(2026-11-13; `14 in queue` was its third count)*: it is in the
+drawer and the menu, beside `queue`. So did **`notices (n) ▴`**: the notices open from the
+header's bell, which carries the red count, and from the line itself.
 
-**The panel** opens above the line from `notices`, a press on the message or a count, or `n`
-anywhere, and closes on `esc`, on its own `close`, or on a press anywhere outside the line. It
-**hangs from `notices`** at the line's left, its left edge on the line's own, at most `28rem` wide
-so it reads as the notices' own rather than as a sheet over the page, and spans the line below
-`narrow`. It **slides open and shut** as a section does, and stands clear of the line's rule,
-which stays drawn under it so the two never read as one box. **It is read from the bottom**: it
-opens on the newest, and a notice arriving while it is open slides in there and stays in view. Opened before anything has been said, it says `No notices.` It is the one place a
-notice that has gone can be read again: this session's notices, **oldest first so the newest sits
-nearest the line**, each with its time, what happened in bold, why, the capture it was about as
-`<stamp>: <first words>`, and `open` *(amended 2026-10-08; it was `look`, and what happened was
-plain)*. A notice
-still live keeps its offer; one that has gone does not, since what it offered may no longer be true.
-`clear` lets go of what has gone, each one sliding out, so the panel shrinks into what is left. Under the notices, **in flight**: each route in flight with its
-countdown, `open` and `cancel`, and each operation this device has not sent, with its time and
-`open`. The log, reached from the bar, is where the whole of it is *(2026-10-08; the panel's head
-led there too)*. It holds the last hundred notices and is the
-session's: a reload empties it, and the log is the durable account. While it is open, `esc` is its
-own before any surface's.
+**A press on the line opens the notices**, and a press on them again — on the veil or the × —
+closes them, as do `esc` and `n`. **The bell in the header** opens the same notices from the queue,
+the feed and the log, and carries **a red count of what went wrong since they were last opened**,
+and of the refused captures still held; opening them is the whole of acknowledging it, and what
+goes wrong while they are open is seen as it arrives.
 
-**A notice is never wider than the screen allows**: the line cuts its message to fit, and the panel
+**Every notice goes on its own, and none is dismissed** *(2026-10-01)*. A success is a glance and
+leaves after four seconds; one that offers something, and anything that went wrong, after ten.
+Nothing has to be cleared, because nothing is lost by going: the notices read back every notice of
+the session. **Nothing leaves while the pointer is over the line or focus is inside it**, so nothing
+vanishes under somebody's hand; let go, everything lingers again from the start. A notice rises into
+the line as it arrives.
+
+**The notices** are a sheet on a phone and a panel at the right when wide
+([the pieces](#visual-direction)), titled `notices`, read top down under bands:
+
+- **on its way**: each route in flight, the spinner and its phrase, its seconds, what it was given,
+  the capture, `open`, and Cancel as a box where it is offered.
+- **waiting to send**: each operation this device has not sent, with its time and the dot.
+- **refused**: the captures the pool refused and this device still holds (below).
+- **this session**: this session's notices, newest first, each with its time and its words, the
+  capture it was about, why, and `open`; `Clear` lets go of what has gone. A notice still live
+  keeps its offer; one that has gone does not.
+
+Opened before anything has been said, it says `No notices.` It holds the last hundred notices and is
+the session's: a reload empties it, and the log is the durable account.
+
+**The one popup** *(2026-11-13)*. A delivery turned down after its window has closed — a delivery
+the destination rejected, or one given up on after its retries — gets **a red strip under the
+header**, said once, with `Show` where it has somewhere to go, and gone after eight seconds or on
+its ×. The row says it too, and the notices keep it. Nothing else interrupts: a retry is not over
+and says nothing there.
+
+**A notice is never wider than the screen allows**: the line cuts its message to fit, and the notices
 wraps a path or an address with no break in it anywhere rather than pushing past its edge.
 
 **A gesture speaks when its subject leaves the screen.** Routing, marking done and archiving take
@@ -2612,15 +2959,14 @@ clipboard. It is never resent as it was, since what refused it would refuse it a
 
 **A route made by hand is in flight too** *(2026-11-01, [ADR 69](../adr/0069-every-decision-that-makes-a-delivery-waits-a-short-window.md))*: every decision that makes a
 delivery waits the undo window, so a route from the composer, a template taken there included, is
-drawn on the right as a fired one is — `routing` **`Vault`** `inbox/a-thought.md 4s` — named for
-the destination, or for the template where one was taken, and followed by its place. It is drawn
+drawn on the line as a fired one is — `Routing by` **`Vault`**, `4s`, Cancel — named for
+the destination, or for the template where one was taken. It is drawn
 the moment the route answers, from the record and `until` the answer carries, and the log's
 `delivery-held` entry, carrying `until`, opens the same one on another device. **Inside the window the offer
-is `undo`; once it has closed, nothing, and `cancel` once the pool is retrying the delivery**
-*(amended 2026-11-03: `cancel` was offered as soon as the window closed, while the delivery was
-being attempted and a cancel was refused)* — the same call, said as what it is: taking back the
-decision just made, and calling off a delivery the pool will try again. It never
-says `undo` of a record that has landed, which is withdrawn in its block. The route is no longer
+is Cancel; once it has closed, nothing, and Cancel again once the pool is retrying the delivery**
+*(amended 2026-11-13: the window's offer was `undo` from 2026-11-01; amended 2026-11-03: `cancel`
+was offered as soon as the window closed, while the delivery was being attempted and a cancel was
+refused)*. It never offers Cancel of a record that has landed, which is withdrawn in its block. The route is no longer
 a notice when it is made; the landing is, `routed **Vault** inbox/a-thought.md`, as a fired
 template's is. A destination that refuses it after the window is said as a fired template's
 failure is: `routing failed: …`, in the accent, `back in the queue`, leading to the item. The
@@ -2630,21 +2976,22 @@ decision typed into the composer is gone by then.
 Putting a trigger tag on an item reserves a delivery and waits a configured window before
 attempting it, precisely so there is something to call off
 ([ADR 37](../adr/0037-a-fired-template-waits-and-a-route-that-never-landed-gives-the-tag-back.md)).
-Nothing has happened yet, so the line draws it with the counts rather than as a notice: `routing`
-**`research`**, the seconds left in the window, and **`undo`** *(`cancel` until 2026-11-01)*. Where the template asked for
-something, what it was given follows the name, label then value — `routing **todo** list Next`
+Nothing has happened yet, so the line draws it in place of a notice: `Routing by`
+**`Research`**, the seconds left in the window, and **Cancel** *(2026-11-13; `undo` from
+2026-11-01, `cancel` before)*. Where the template asked for
+something, what it was given follows the name, label then value — `Routing by **Todo**, list Next`
 *(2026-10-19)* — read from the record the tag made, or from `template-fired`'s `arguments`. It names the **template**, not the
 destination, because the template's name is what the person pressed. **The countdown is measured**:
 the log's `template-fired` carries `until`, the instant the window closes, which the pool gave the
 delivery's job, so the shell is counting down to a fact rather than inventing a progress. When the
-window closes the count gives way to the asking mark — the delivery is being attempted — and the
+window closes the count gives way to `Sending to` and the destination — the delivery is being attempted — and the
 offer goes with it, since the pool refuses to call off a delivery it is attempting *(amended
 2026-11-03; `cancel` stayed)*. It comes back once the pool says it will try again. **The shell asks how it
 went just after the window closes** *(2026-10-01)* — half a second, two and five seconds after,
 once each, timed by this device's clock as the countdown is, and only those still ahead for a
 firing first heard of from the log — rather than waiting on the watcher's ten-second tempo, since most deliveries land
-within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `routing 2 4s`, the soonest window
-— and each is read and cancelled in the panel.
+within a second of being attempted. It is never drawn in the accent: nothing has gone wrong. **More than one is counted** — `Routing 2 4s`, the soonest window
+— and each is read and cancelled in the notices; a batch's routes are said and cancelled as one.
 
 **Everything that ends it takes it away**: the landing, a delivery that failed for good, one given
 up on, and a cancellation. A delivery the pool will try again has not ended *(2026-10-01)*: the
@@ -2848,11 +3195,76 @@ replaced rather than pushed, as the order is.
 
 ### Settings
 
+*(2026-11-19)* The open section is marked square, its tint running to the column's edges. **Storage
+draws its stats and its paths always**, under quiet labels and in the small size, apart from the
+sizes above them.
+
+*Amended 2026-11-23.* **A settings page's head says where it is.** When wide, the levels above
+it lead its title as links, each followed by a chevron: `settings › destinations › Vault`, and a
+form's `settings › destinations › Vault › edit destination`. On a phone the head stays a back
+arrow and the title alone, since a whole trail does not fit.
+
+*Amended 2026-11-18, after the review, and again the same day by the developer.* **Settings read
+as a phone's settings do**: one list, each group under a quiet label (Routing, The pool, This
+device) rather than a band, each section a row with its icon, what is worth knowing and a
+chevron. On a phone the list is the page and a section is pushed over it; **when wide, at every
+width, the list is a column of its own** beside the section, the open one marked. *(Nesting the
+sections in the app's menu at full width, tried first, drew settings two ways at two widths.)* **A form's
+Cancel and Save dock at the foot of the section's pane** at every width *(amended 2026-11-24, to
+say what was built on 2026-11-19: they were at its head when wide)*. A field is labelled in the route's words — place, shape, if missing — or in lowercase
+words (`base URL`), never by its schema name. **A template's asked field** says what it is asked
+as and its default, each a field of its own, and what a place can be named from is offered in
+words (date, month, week, the item's words, source) that put their pattern in. A place drawn in a
+list leaves out anything still to be filled from the item.
+
+*Amended 2026-11-13 ([ADR 75](../adr/0075-a-setting-left-unset-is-drawn-as-its-default.md)).*
+**The menu of sections** is a list of rows, each leading to its section with a chevron on a phone,
+the current one on the band; **when wide** it is a column beside the section, which keeps a readable
+column. **A choice left unset is drawn with the kind's default as picked**; there is no `default
+(x)` option. The field stays unset — nothing is sent for it — until another value is picked; picking
+the default again after that pins it. **Save is "Save"**, and until there is something to save the
+line over it says what is missing: `Name it to save.`, `Pick a kind to save.`, `Fill in root to
+save.`, `Pick a destination to save.`, `Give it a secret to save.` **A pool with no password** says so in Access, and how to set one where the daemon
+runs: nothing sets a password over HTTP. **Sign in** is a page of its own under the header `sign
+in`: a name and a password in ruled boxes, and **Sign in** as the main action, dashed until a
+password is typed; a password that is not accepted is said in red above it.
+
+*Amended 2026-11-16.* **The menu is in bands**, routing (Destinations, Templates, Accounts), the
+pool (Pool settings, Access, Server, Storage) and this device (Appearance), each row saying the one
+thing worth knowing before it is opened. **A section is a page** with its name in the header and,
+on a phone, back to the menu. **A destination and a template each have a page of their own**, at
+`?open={id}` on their section: where it stands in a box (`Available. Checked 2 min ago.` in green,
+`Unavailable:` or `Unusable:` with the destination's reason in red, `Stranded.` for a template
+whose destination was deleted), its facts in ruled rows in the one vocabulary, and **Disable**
+and **Delete…** in a band of their own, Delete asking in a dialog. Its bar is **Check again** and
+**Edit**. Lists are rows with an icon by kind, a line saying where or what, the state at the right
+(`available`, `unavailable`, `unusable`, `disabled`) and a chevron; a template's row carries its
+trigger tag, and says in red what its report found wrong. **A form is a page too** (`?new`, or
+`?open={id}&edit`), headed `new destination` or `edit template` with a close: bands for its parts,
+plain labels for single fields, a short choice a segmented row and a long one radio rows, a field's
+description under it. Leaving it with changes, by its Cancel or the system's back, asks **lose
+your changes?** — Keep editing or Lose changes. **Access** draws the session's line, `Signed in.
+This browser holds a session.`, with **Sign out** in it, and each token with **Revoke** inline in
+red. A page's bar is docked at the foot of the section's pane at every width *(amended
+2026-11-19)*. **When wide the section runs to the window's edge**, its rules full width as the
+log's are, and what is in each row kept to a readable measure, the bar's actions with it: Save
+ends where the fields do *(2026-11-24; it stood at the window's edge)*. **The menu of sections has
+a foot when wide**, empty, ruled and the foot's height, so the app menu's foot, it and the
+section's bar are one line across the window *(2026-11-24)*. **Settings head their groups with
+quiet labels** — small, grey, under a rule — rather than the grey band, which is the lists' day
+heading. The app's menu marks the current surface in the `picked` tint, so the grey band means only
+a heading. *(Amended 2026-11-18.)* **A section's add is a row at the end of its list** — Add a
+destination, Add a template, Add an account, Add a token — with the plus icon, held with its reason
+where it cannot be taken. *(A page's toolbar at its head when wide, drawn without the bar's beige,
+went with the head on 2026-11-19.)*
+**Server shows its sources** without being asked. What follows is the register this replaced, kept
+where it still holds.
+
 Settings is the register's own grid *(redrawn 2026-09-16, [shell-redesign](../plans/shell-redesign.md)
 phase 6)*: the menu sits on the rail, ruled at its right, and one section sits beside it at
 `--spacing-read`. **Each section is a route**, `/settings/{destinations | accounts | templates |
 access | server | storage | appearance | pool}`; `/settings` itself redirects to `destinations` from
-`--breakpoint-narrow` up.
+`--breakpoint-wide` up.
 Below it there is no rail beside a section to draw, so the menu becomes the phone's own landing page
 at `/settings` — each item 44px tall, ruled between — and a section carries `← settings` above its
 head instead. One component draws both; there is no second design for the phone. It has no lede and
@@ -2861,7 +3273,7 @@ the page. A section's heading is bold capitals over a rule; a sub-head, for each
 accounts, **access tokens** under access and **sources** under server, is the same, lower down.
 
 **A row's facts are the process surface's grid** — `9rem` uppercase labels beside their values,
-stacked below `--breakpoint-narrow` — so a destination, a template and a field read the same way
+stacked below `--breakpoint-wide` — so a destination, a template and a field read the same way
 this shell already reads a decision being made. **No mark is drawn except `+` on an add and `↗` on a
 link that leaves the app.** `●/○` for offered and retired, `✓/⚠` for reached and refused, `↻` for
 asking, `✎` and `×` for edit and delete are all words now, at the row's right; only what a person has
@@ -2921,8 +3333,8 @@ and the button reads `use it anyway`, both unchanged from when they were drawn a
 of a grid.
 
 **Templates** sits under Destinations, unchanged in what it draws and how it asks: one line per
-template — name, destination, its trigger tag as the queue draws one (bold small-caps of the name
-after `route/`), the place it files to, and what it last answered — and, opened, the facts `TAG`,
+template — name, destination, its trigger tag as the queue draws one (the route icon and the name
+after `route/` since 2026-11-13; bold small-caps of it before), the place it files to, and what it last answered — and, opened, the facts `TAG`,
 `DESTINATION`, `ACTION` and `PLACE` — `OUTPUT attachments only` in place of `ACTION` for a template that
 places the attachments alone *(2026-10-08)* — then **one fact per setting the template takes for its deliveries**
 — `FRONTMATTER none` on its own line rather than after the place *(2026-10-01)* — then `IF MISSING` and
@@ -2982,8 +3394,8 @@ end of the sentence beside it.
 out of the probe's own turn, and `API reference ↗`. Nothing is pressed to find out whether the
 daemon answers, unchanged from 2026-09-02: the client probes on its own and every answered request
 settles the same mark. `daemon` is not said anywhere; `log` is not offered here either — the bar
-already carries it. **Sources**, folded under its sub-head with `show`/`hide`, is otherwise
-unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
+already carries it. **Sources**, folded under its sub-head with `show`/`hide` until 2026-11-18 and
+always shown since, is otherwise unchanged: one row per source, how many it captured and how long ago, read fresh each time the pool
 comes back into reach and held nowhere.
 
 **Storage** sits under Server *(added 2026-10-12,
@@ -2997,7 +3409,7 @@ database say nothing there, holding bytes and nothing else, and no filler is inv
 them.
 
 **A figure beside its row rather than under it was tried first and does not survive a narrow
-window.** A third column for it is squeezed to nothing well before the shell's own `narrow` breaks,
+window.** A third column for it is squeezed to nothing well before the shell's own `wide` breaks,
 because settings draws into a column the menu has already taken from — so these are two facts in
 sequence, not two columns to compare down. **Nothing separates two figures on a line**, because no
 line carries two: `in` joins them where both belong to one row, and the `·` the first attempt
@@ -3008,7 +3420,8 @@ is left where it took it are the two figures a person reads as a pair, and a rul
 them off from the rows they are a sum of. The total counts the daemon's own database, because what
 notemap has taken on this machine is what the section's name asks.
 
-**The paths fold away behind `PATHS show`**, on `sources`' own terms — they are reference material a
+**The paths folded away behind `PATHS show`** until 2026-11-19, when they came to be always shown,
+on `sources`' own terms — they are reference material a
 person wants once, not a figure anyone scans, and four absolute paths at full width were most of
 what the section looked like. **`FREE` is said once per figure, not once per root**: the three roots
 default to siblings under one volume, and repeating `52 GB` three times says nothing three times. A
@@ -3083,6 +3496,39 @@ last heard. Choosing the option already chosen sends nothing.
 
 ### The log
 
+*Amended 2026-11-18, after the review.* **A log row is in the queue's register**: the time alone
+in the rail; the kind in small capitals with its one fact at the right; the item's words, plain;
+and for a route, a line like the feed's — the destination and the end of its place — which opens
+the record's page. No outcome column. Each day's band counts its rows, and no gap opens under it.
+
+*Amended 2026-11-18.* **The log's order and views are in its filter**, as the queue's and the
+feed's are: the header's filter opens a sheet on a phone and a panel at the right when wide, the
+order a segmented row and each view a box that can be on, with **Everything** where any is. Its
+entries are ruled as rows are. **An opened record is drawn in the new register** — the head on the
+box grey, what was written, the facts in the shell's words (shape, if missing), and its ways as
+beige boxes. **A record whose place is no path** — a channel, a board — is read when its entry is
+drawn, the entry carrying no arguments, so its line names the place rather than an id.
+
+*Amended 2026-11-13: the log is read in the new register — a band per day, the time in a narrow
+column, every row ruled under — and its status line is at its foot only while something is true.
+Read by one item it is headed **this item**, by one batch **this batch**, each band with the
+capture or the batch said beside it and **All of the log** as a box. A batch is still one row that
+opens in place.*
+
+**A record's own page** *(2026-11-13, amended 2026-11-16; 2026-11-19: when wide its rows run to
+the window's edge, as settings' do, what is in them kept to the reading measure)* is headed `record`, with back and the
+item's words under it. A box says where it stands: **Delivered to Vault.** in green, a pending one
+grey with a spinner and its window's words, **Withdrawn at 16:31.** grey. Its facts are in the one
+vocabulary — destination, the place, template, action, shape, if missing, decided — and under the
+band **as written** is what the delivery wrote, exactly. **Withdraw** has a band of its own,
+saying what it does and that nothing at the destination is touched, and asks in a dialog that says
+what the destination answered. The bar holds **Item**, **Save as template** for a route made by
+hand, **Cancel** for a pending one, **Undo** for a manual mark, and as the main action **Open in
+Vault** where the record has an address, **Copy path** otherwise, or **Reinstate** just after a
+withdrawal made here. A delivery that was cancelled or given up on left no record: its page is the
+log's account, titled `tried`, saying `Cancelled. Nothing reached Vault.` or why it was not
+delivered.
+
 `/log` is the register *(redrawn 2026-09-14, [shell-redesign](../plans/shell-redesign.md) phase
 5b)*: the rail carries the stamp and, under it, **the kind**; the body carries what the action was
 about and the one fact the kind is worth; and for a routing kind, the record itself, folded to
@@ -3121,14 +3567,14 @@ a quote, a list item, a task box — and its emphasis, code marks and link targe
 `## Inbox` reads `Inbox` and a rule is passed over. A capture with no words is named by what it is — `image` — and one the pool no longer
 holds says `purged`; where the pool cannot be reached it is `a capture`. The words are
 a link to the item, at the body's left; the fact is at its right, and stacks under the words below
-`narrow`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
+`wide`. *`only this` is gone (2026-09-14)*: the way into one item's history is `history` on the
 item, and a row of the log offers nothing about narrowing.
 
 **A routing kind is the record's line** *(amended 2026-10-22; the row drew the whole block under
 the capture's words)*. The body is the capture's words, `→`, then the folded record — the
 destination bold and the place — with what was done at the right where the kind has no fact of its
 own; `delivery-failed` and `delivery-cancelled` keep theirs there. The words give way before the
-destination does, since where it went is what the line is for, and below `narrow` they take a line
+destination does, since where it went is what the line is for, and below `wide` they take a line
 of their own, the record's under them. **Opened, the line stays** as the
 row's heading and the block is drawn under it: **the record itself**, read with the item's records
 on opening *(amended 2026-10-23; the block was built from the action alone and drew no arguments,
@@ -3316,135 +3762,156 @@ Every colour, face, size and spacing step is named by **role** in one `@theme` b
 `tokens.test.ts` fails the build on one — a hex, a colour function, a `dark:` variant, a font
 family, a Tailwind palette colour, or any of the roles the shell used to have and no longer does.
 
-The roles, as of 2026-09-14: `ground`, `ink`, `alarm`, and `inert` for the one grey admitted where
-nothing else can say a control is inert; `font-shell`, the one face; `text-shell`, the one size,
-with its line height; `tracking-caps` for a label; `rail`, `rail-narrow`, `gutter`, `measure`,
-`read`, `prose` and `gap-time` for the widths and the one gap; `narrow` and `wide` for the two
-breakpoints.
+**The roles, as of 2026-11-13** ([ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)):
+
+- **Surfaces.** `paper`, white, for what is read; `ink` on it. `off`, beige, for what can be
+  pressed, with `off-line` for its edge and `off-down` for it pressed. `band`, grey, for a heading
+  over a group of rows. `rule` for the rule between regions, which is grey and not ink.
+  *Amended 2026-11-18*: `edge` for a field's edge, and `off-line` darkened, both to 3:1 against
+  the page as a control's boundary must be. A row has its own tints, `hover`, `picked` (opened,
+  or selected for the keys) and `chosen` (selected for a batch); a row never takes `band`. Dark's `off` is warmer and lighter than its
+  `band`, so what can be pressed and what heads a group differ there too.
+- **The box grey.** `tag`, `tag-line` and `tag-ink`, for what is under way and for a state's box:
+  "Routing by Todo", "On its way", a tag.
+- **Meaning.** `signal`, green, for delivered or available and nothing else. `danger`, red, for
+  failed, rejected or destructive. `muted` for a secondary line and for what cannot be taken.
+  `veil` behind a sheet or a dialog. `chip`, the one chip grey left, for the + button.
+- **Faces.** `font-display`, Syne, for headings, bands and titles. `font-text`, Arimo, for
+  everything else.
+- **Sizes, five, by role.** `text-title`, `text-weekday`, `text-body`, `text-time` and
+  `text-small`, each with its line height; `text-read` *(2026-11-18)*, a step larger, for an item
+  read on its own. `tracking-caps` stays for a label the old views still
+  draw.
+- **Spacing.** `gutter`; `time`, the time column; `words`, where a row's words start; `bar`, a
+  header or a docked bar; `stuck`, where a held day heading sits, its rule on the header's; `target`, the
+  least a target is on a phone; `icon`, `fab` and `thumb`; `menu` and `menu-rail`, the menu as a
+  column and as a rail of icons; `panel`, a side panel; `measure`, `read` and `prose`. `radius-control`
+  and `radius-tag`.
+- **Breakpoints, two.** `wide` at 900px, below which every piece is drawn in its phone's form,
+  and `full` at 1200px, from which the menu is a column rather than a rail. They are in pixels,
+  since they are the window's width and not the type's. `lib/breakpoint.ts` holds the same two for
+  the pieces that are a different component at each width, and reads them reactively. The old
+  `narrow` (44rem) is folded into `wide`.
+
+The old register's widths (`rail`, `rail-narrow`, `rail-time`, `day-head`, `gap-time`, `status`,
+`tag`, `tag-line`) are kept only until the views that use them are redrawn.
 
 **Durations are the one scale named by magnitude** *(2026-09-25)*: `duration-short` for what
 opens in place, `duration-long` for what enters, leaves or moves across, `ease-motion` for what
-travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both ends,
-since a fade on `ease-motion` is most of the way there in its first frames and reads as a snap on
-the way in *(amended 2026-09-25; there was one easing)*, and `duration-step` for one beat of the asking mark's loop. What uses which is decided by how
-far a thing moves rather than by what it is, which is why these alone are not roles. The durations
-are zero under `prefers-reduced-motion`, so a reader who asked for stillness gets it from the one file,
-and the gate fails a duration, delay or easing named anywhere else. Ground and ink are `light-dark()` pairs and swap; the alarm does not. Dark is the
-inversion of light, `#000` on `#fff` becoming `#fff` on `#000`, and nothing warmer.
+travels and `ease-fade` for what changes in place — a fade, a colour, a weight — even at both
+ends, since a fade on `ease-motion` is most of the way there in its first frames and reads as a
+snap on the way in. `duration-turn` is one turn of the spinner *(2026-11-13; `duration-step`, a
+beat of the asking mark's stepping squares, went with them)*. What uses which is decided by how far
+a thing moves rather than by what it is, which is why these alone are not roles. The durations are
+zero under `prefers-reduced-motion`, and the spinner stands still, so a reader who asked for
+stillness gets it from the one file; the gate fails a duration, delay or easing named anywhere
+else.
 
-**Which palette is on is the reader's**, chosen in settings under *Appearance* as a row of three
-words, `auto`, `light` and `dark`, the chosen one bold. `auto` is the browser's own answer and the
-default, because it is the only one that can be right before a person has said anything. The
-choice is remembered and applied **before first paint**, or the page shows one palette and
-corrects itself in front of the reader.
+**Dark is rough** *(2026-11-13)*. Every colour role is a `light-dark()` pair, and dark is each
+role inverted: ink and paper swap, beige, the band and the box grey go dark, the red and the green
+are lifted to read on black. It is there so every view works in it, and it is not designed beyond
+that; the developer gives feedback on it once it is built. *(2026-11-24, after that feedback.)*
+Dark's beige is lifted and warmed and its band lightened, so what can be pressed and a heading do
+not read as one grey.
+
+**Which palette is on is the reader's**, chosen in settings under *Appearance*: `auto`, `light`
+or `dark`. `auto` is the browser's own answer and the default, because it is the only one that can
+be right before a person has said anything. The choice is remembered and applied **before first
+paint**, or the page shows one palette and corrects itself in front of the reader.
 
 ### Visual direction
 
-*Settled 2026-09-14 in [ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md),
-against [the brief](../design/brief.md) and the drawings in `docs/design/redrawn/`. What they
-settled is below. Where this section and the drawings disagree, the drawings win.*
+*Settled 2026-11-13 in [ADR 71](../adr/0071-the-shell-is-drawn-for-a-phone-first-in-blocks-on-three-surfaces.md)
+and, for a wide window, [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md),
+against the design in [`docs/design/mobile/`](../design/mobile/) and what was settled with it in
+its [DECISIONS.md](../design/mobile/DECISIONS.md). Where this section and the design disagree,
+DECISIONS.md wins, then the drawings.*
 
-**Printed and digital at once.** An index, a ledger, a running head — set on screen with nothing
-that pretends to be paper. The references are one face, one weight or two, one size, black on
-white, with columns and a few rules doing all the work. None of them use size for hierarchy.
-None of them use grey.
+**Drawn for a phone first.** Capture and triage happen on a phone, with one hand and the thumb at
+the foot. Below 900px every width draws the phone's views. At 900px and wider the views are the
+same, and a handful of pieces take a wide form; a piece that differs by width is one component
+with two forms, chosen by width.
 
-**Colour.** Ground `#fff`, ink `#000`, and nothing between them by default. **One red**, for
-failure and for destructive action only: a refused operation, a delivery that is retrying or
-abandoned, `discard`. Never for a primary action, never for a link, never for structure. Primary
-actions are ink — bold, or inverted. **Green went** on 2026-09-14: a destination that answered
-says `reached` in words. **Grey went** with it; secondary is regular weight, primary is bold or
-capitals, and the one grey the tokens hold is for a control that is genuinely inert and for
-nothing else. Dark theme is the inversion, designed once, in light.
+**Three surfaces.** Beige is what can be pressed: every button, toggle and choice. A grey band
+heads a group of rows. White with a rule is what is read: rows, records, the words of an item.
+The box grey is kept for what is under way and for a state's box. A plain label is enough for a
+single field; a band is for a group of rows.
 
-**Type.** One face, Bricolage Grotesque at 400 and 600, self-hosted from `static/fonts/` and
-served by the daemon beside the app — a face on the same origin is exactly as offline as the app,
-which is what the browser's-own-faces rule was for. **One size**, 15px on 22px, everywhere:
-captured prose, timestamps, labels, actions, the bar. **The size grows with the screen**
-*(2026-10-02)*: 15px on 22px is the size at 350px wide and below, at the browser's default, and
-the root grows from there in straight lines to a quarter more at 500px and half as much again at
-1200px, where it stops. Every size and measure is in `rem`, so the whole shell grows with it as it
-would under the browser's zoom, the one size staying one size at any width. The breakpoints do not
-move: a media query's `rem` is the browser's, not the root's. Hierarchy is weight, capitals or small-caps
-with tracking for a label, and position. Tabular figures on the stamp and nowhere else. A link
-under the cursor is underlined, never coloured. **The face is asked for in the page's head and never
-swapped in** *(2026-09-25)*: it comes from the same origin as the page, so it is there before first
-paint, and a fallback laid out first and replaced would move every line on the page once.
+**Blocks.** The pieces are in `components/primitives/`, each with its phone form and its wide form
+where it has one:
+
+- **An action bar** (`blocks/ActionBar`, `blocks/BarAction`) is beige and docked at a page's foot
+  under a rule. The main action is a wide filled block in ink; the others are an icon over a word,
+  with no box. When wide it stays at the foot of the pane it acts on *(amended 2026-11-19; it was
+  a toolbar at the head)*, each action an icon beside its word and the main one at the right, and a
+  button with a key says it in its tooltip ("Manual (m)"). The route page's item has its Discard and
+  Manual at its foot, level with Route at the foot of the steps.
+- **A main action that cannot be taken yet** stays in its place, dashed, and the ruled line over
+  the bar says why ("Pick a destination to save."). Pressing it does nothing.
+- **One choice of a few** is a segmented row (`blocks/Segmented`), the chosen part filled. It is
+  a radio group: one part in the tab order, the arrows moving the choice *(2026-11-24)*. Every
+  box, toggle and dialog way is 44px tall on a phone and 36px when wide.
+  **Choices that can all be on** are boxes of their own (`blocks/Toggle`), filled and ticked when
+  on. **A long choice** is radio rows (`blocks/RadioRows`), each with a line saying what it does
+  where it needs one.
+- **An action standing alone in a page**, and every other button, is a beige box (`blocks/Box`),
+  red words in it where it is destructive.
+- **A band** (`blocks/Band`) heads a group of rows: grey, ruled edge to edge, the display face,
+  lower case.
+- **A sheet** (`sheets/Sheet`) rises from the foot over a veil on a phone. When wide it is a panel
+  at the right, or a dialog in the middle for a quick choice. It closes by its ×, by `esc` and by
+  a press on the veil.
+- **A dialog** (`sheets/Dialog`) is for what needs an answer before anything else: losing changes,
+  a delete that loses something. Its first way keeps things as they are and has the focus.
+- **Under way** is the spinner (`marks/Spinner`); **waiting to send** is the dot (`marks/Dot`).
+  The stepping squares and the turning quarter went on 2026-11-13.
+
+**Type.** Syne, upright, at one weight, for headings, bands and titles; Arimo, which has Arial's
+metrics, for everything else. Five sizes, by role. Both faces are self-hosted from
+`static/fonts/`, with their licences (SIL OFL 1.1), and served beside the app, so they are exactly
+as offline as the app. **Faces are asked for in the page's head and never swapped in**
+*(2026-09-25)*: a fallback laid out first and replaced would move every line on the page once.
+**The root no longer grows with the screen** *(2026-11-13; it grew from 350px to 1200px since
+2026-10-02)*: the five sizes are the scale, and a wide window spends its width on a second pane,
+not on bigger type.
+
+**Colour.** Ink on white is the ground. Green means delivered or available and nothing else. Red
+means failed, rejected or destructive. Anything under way is grey, with a spinner. Offline is not
+a failure, and is said in ink.
+
+**Icons with words.** Every state and every action has words; an icon only supports them, and is
+hidden from a reader where a word is beside it. An icon that is a button alone carries its own
+label. The set is Carbon, with Tabler's route icon and a few drawn glyphs (a circle and a ticked
+circle, refresh, a lock, a cloud struck out), kept as one sprite, `primitives/icon/notemap.svg`, drawn once into the page so an icon first
+drawn while the pool is out of reach is there all the same, and named by role in
+`primitives/icon/Icon`.
+
+**No dots as separators.** Words or space do the job: "Rejected by Vault in projects/", "todo.md
+in Vault".
+
+**Focus is visible**: a 2px ink outline, offset, on whatever has the keyboard's focus.
 
 **The page's width does not depend on its length** *(2026-09-25)*. The scrollbar's gutter is kept
-whether or not the page scrolls, so a list emptied for a moment while it is read again, or a page
-growing past the window as it loads, moves nothing sideways.
+whether or not the page scrolls.
 
-**Grid.** Two idioms, and the rule for which is where. *Lists are open*: queue, feed and log rows
-align on shared columns with no rule between rows; whitespace separates entries. *Rules mark a
-change of region*: a 1px ink rule under the bar; a vertical rule between the date column and the
-body, running the height of the list; a ruled box around the capture field; a ruled box around
-the selected row with the actions as its foot; rules between sections of the process surface and
-of settings; a ruled frame around a routing record. Nothing is ever boxed on four sides except the
-capture field, a record block, a control, and the selected row.
+**Motion.** Movement says what changed, and never delays a press or the next read; everything is
+still under `prefers-reduced-motion`. The transitions the pieces share are in `lib/motion.ts`:
+`fromFoot`, a sheet rising its whole height; `fromSide`, a panel or the drawer coming in from its
+side; `fade`, the veil behind a sheet or a dialog, the line over a bar; `rise`, a dialog; and
+`leave`, a row going out sideways while the rows below close up behind it, half the time each.
+**A control fades into its state** *(2026-11-23)*: every button, link and option — chosen, taken,
+pressed, hovered, the page being read — changes colour over the short duration rather than
+snapping, a selected row's tint and a filter's box with it; and **a segmented choice's fill slides**
+from the part it stood under to the one chosen, arriving where it is first drawn rather than
+sliding there. **What a read brought never moves** *(2026-09-25)*: a page, a re-read, a turned order, the pool's
+first answer over the cache. Only a change moves — a decision let go, a capture, an item heard
+about, a row processed elsewhere — so the reader's eye goes to the one thing that changed.
 
-**Every surface is a register.** A fixed column of times, a wide column of content: the row reads
-as a dated entry in a ledger, which is why the capture time is its title. The left column is a
-**metadata rail** — the stamp, the tags, and on the feed the state word and where the item went.
-The right column holds nothing but what was captured. Both surfaces are one grid, each item
-one element laid on the grid's own tracks, so the columns stay in register down the whole page
-and a row still has a height of its own to arrive and leave by *(amended 2026-09-25; an item
-dropped two bare cells into the grid, which left nothing to slide)*.
-
-**A phone keeps both columns.** Below 44rem the rail narrows to the width of a stacked date and
-time, and the two columns survive, because the rail is what says what a thing is.
-
-**The measure.** Every surface, the bar with it, is capped at 72rem *(amended 2026-09-25; the page
-and the bar were 56rem and the process surface alone 72rem, which widened the bar and moved the
-navigation on the way in; before 2026-09-14 the page was 72rem too, when at a desk the capture
-field and the bar read as wider than anything under them)*. **A paragraph
-is capped at 38rem** — about seventy characters — inside the body column: the column keeps its
-width, the prose stops early, as prose is set. Paragraphs are set apart by a blank line, never an
-indent.
-
-**Motion.** Few, structural, and still under `prefers-reduced-motion` *(built 2026-09-25)*. A row
-slides in and out of a list; a notice rises into the status line; a section, a
-settings row and `more` slide open and shut over `short`; each attachment in the capture box and
-in an edit comes and goes as a row does, sliding and fading over `long`, being a thing arriving
-rather than a disclosure — the list as a whole too, as its first arrives or its last is dropped
-*(each one since 2026-10-07; the box held one picture until then)*; an
-open section of the
-process surface grows and shrinks into what it holds as it changes — a destination chosen, a place
-described, the decision cleared by `route` — over `short`, turned from wherever it stands when a
-change lands mid-way, typing included; the process surface's next item fades up; a form in
-settings — adding or editing a template, a destination, an account, a token — and the server's
-sources slide open and shut, a `+ add` sliding shut as its form opens — or, where its line also
-holds the disabled destinations, fading out of it — and a form grows and
-shrinks into the fields a choice in it brings — a destination's kind, an account's. The selected
-row's box fades in and out whole, its foot with its edges and the rail's rule it covers, the one
-leaving and the one arriving in step. The current surface in the
-bar and the current view **ease into bold and out of it** over `short`,
-each word holding its bold width throughout so nothing beside it moves. A surface is current
-anywhere under its own address — `settings` at a section's. A selected index line grows into its row and shrinks back
-out of it, the one height easing into the other. No navigation moves: an item carried from its
-row onto its own surfaces was tried on 2026-09-25 and taken out the same day. The selected row's box and foot **fade and never slide**, since selecting shifts nothing. The
-overlays — the order chooser, the path and candidate lists — do not move of themselves: they
-are used at typing speed, and a panel fading in behind a keystroke reads as lag. **The path and
-candidate lists grow and shrink into what they hold** *(2026-10-16)*, over `short`, wherever they
-are drawn — the template form too, where the open section's own growing was the whole form's
-and nothing beside the list moved with it. A box already following a list that grows lets the list
-lead rather than starting over a frame behind it. **Except the tag
-chooser** *(2026-09-25)*: its line opens where the `+` stood, the underline running out to the
-right across the room the `+` held *(2026-10-01; it used to widen into it)*, and its panel unrolls
-downward from where it will stand, both over `short` and back again as it closes; the panel
-grows and shrinks over `short` as typing narrows it, turned from wherever it stands at each key.
-Nothing waits on either: the caret is live from the first frame and a key is never held back,
-though a quick hand may be a step ahead of the panel. **A tag slides in** across its line when it
-is added and out when it is taken off, down where a narrow width stacks the tags; one drawn with
-its row does not. **What a read
-brought never moves**: a page, a re-read, a turned order, the pool's first answer over the cache.
-Only a change moves — a decision let go, a capture, an item heard about, a row processed
-elsewhere — so the reader's eye goes to the one thing that changed. Nothing else moves.
-
-*What was here before* — industrial bones on paper skin, two faces at two sizes, muted ink, green
-for a result and red for an action, the accent edge on the open row, the furlable rail — was the
-direction of 2026-08-19 and is superseded. The furl went with the old row on 2026-09-14: the index
-view is how a reader sees more at once.
+*What was here before* — one face at one size, ink on white with no grey, a rail of metadata beside
+every row, rules and columns doing all the work ([ADR 46](../adr/0046-the-shell-is-one-face-one-size-ink-on-white-and-processing-is-a-surface.md),
+2026-09-14) — was drawn for a desk and narrowed for a phone, and is superseded. The views not yet
+redrawn keep their structure in the new tokens until their phase of
+[the phone-first plan](../plans/phone-first-shell.md) lands.
 
 ## Constraints
 
@@ -3476,7 +3943,7 @@ view is how a reader sees more at once.
   sending another; and **the question in the row's own foot**, which arrives on a row the person
   may have scrolled far from.
 
-- **No skeletons, and no grey to draw one.** *2026-09-25.* A placeholder shaped like a typical
+- **No skeletons, and no grey to draw one.** *2026-09-25; superseded 2026-11-23, below.* A placeholder shaped like a typical
   answer was weighed for the waits the asking mark now covers, with a grey admitted to fill it.
   Declined: the cache draws the queue, the feed and an item before the pool answers, so an empty
   surface is a cold cache or a question the cache never holds — a description, a preview, a
@@ -3485,6 +3952,15 @@ view is how a reader sees more at once.
   when the answer replaces it, which is what it was for. And grey went on 2026-09-14 for reasons a
   rarely-seen state does not outweigh. What a skeleton is for, where it is right, the shell already
   has without one: the unfurl block's fixed four lines, and the preview's five.
+
+- **Skeletons where there is nothing to draw.** *2026-11-23, superseding the above.* Measured on
+  a production build, the surfaces did settle: a list read cold went from the mark's one line to
+  its rows in a jump, the log's foot stood and then folded, and every routed row on the feed grew a
+  line as its records came, one row at a time, over the network. The earlier reasoning held where
+  the cache answers, so nothing changes there; what it did not weigh was a phone on a slow link,
+  where the cold read is the first thing seen and the records are never cached. The grey it lacked
+  is the box grey now in use. A skeleton guessing wrong still moves the page, so it guesses only
+  shapes that do not vary: the register's rows below the head, and a place's one line.
 
 - **A held row is released by selection, not by a clock.** *2026-09-08; retired 2026-09-14: the
   queue holds no processed row now that processing is a surface which moves on to the next item,
@@ -3674,7 +4150,7 @@ view is how a reader sees more at once.
 - The status line is on every surface: it says the newest live notice in a few words, `N pending`
   while this device holds unsent work, the queue's count once the pool has answered, and whether
   the pool answers; `notices` counts, in the accent, what went wrong since the panel was last
-  opened. Below `narrow` its counts are numbers and marks.
+  opened. Below `wide` its counts are numbers and marks.
 - A delivery the pool will retry reads `retrying: …` without the accent; one that ended reads
   `routing failed: …` in the destination's own words, and its code and place are in the panel.
 - The panel opens on a press or `n`, closes on `esc` or a press outside, lists this session's
@@ -3710,8 +4186,7 @@ view is how a reader sees more at once.
 - A template whose destination was deleted is drawn in `where` with that as its reason, not removed.
 - A disabled destination is not offered on the process surface; a template filing to one is drawn
   with `its destination is disabled`.
-- A row being edited offers `close`, `attach` and `save` in its foot, and `revert` once it holds a
-  change; no key reaches a decision, `enter` included, and its tags stay taken on and off.
+- A row being edited offers Attach, Cancel and Save in its foot, the item's editing bar; no key reaches a decision, `enter` included, and its tags stay taken on and off.
 - Leaving an edit with changes by any way at all asks in a dialog naming the capture; `save` and
   `revert` answer and go on the way the leaving was asked, `esc` goes back into the field with the
   caret in it, and an unchanged edit closes silently.

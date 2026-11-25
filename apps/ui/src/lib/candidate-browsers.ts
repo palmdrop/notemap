@@ -17,6 +17,8 @@ export type BrowserProps = {
   field: string;
   /** What the field is called, for the label the control's own input carries. */
   label: string;
+  /** Drawn in the empty line. */
+  placeholder?: string;
   value: string;
   /** What the item says, for a control that can show the name a note would get. */
   said?: Said;

@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Key, Order } from "@notemap/client";
 
-  import Chooser from "$components/primitives/controls/Chooser.svelte";
+  import Segmented from "$components/primitives/blocks/Segmented.svelte";
+
+  const SLOW = 400;
 
   /**
    * Held while a read is walking: the surface cannot turn around until that one
@@ -23,45 +25,45 @@
     onchoose: (order: Order, by: Key) => void;
   } = $props();
 
-  type Choice = `${Order} ${Key}`;
+  /** Greyed only once a read has walked long enough to be seen walking. */
+  let slow = $state(false);
+  $effect(() => {
+    if (!reading) {
+      slow = false;
+      return;
+    }
+    const timer = setTimeout(() => (slow = true), SLOW);
+    return () => clearTimeout(timer);
+  });
 
-  const ENDS: readonly { value: Choice; word: string }[] = [
-    { value: "oldest-first capture", word: "oldest" },
-    { value: "newest-first capture", word: "newest" },
+  const ENDS: readonly { value: Order; word: string }[] = [
+    { value: "oldest-first", word: "Oldest first" },
+    { value: "newest-first", word: "Newest first" },
   ];
 
-  const KEYED: readonly {
-    value: Choice;
-    word: string;
-    said?: string;
-    band: string;
-  }[] = [
-    { value: "newest-first capture", word: "newest", band: "captured" },
-    { value: "oldest-first capture", word: "oldest", band: "captured" },
-    {
-      value: "newest-first processed",
-      word: "latest",
-      said: "latest processed",
-      band: "processed",
-    },
-    {
-      value: "oldest-first processed",
-      word: "earliest",
-      said: "earliest processed",
-      band: "processed",
-    },
+  const KEYS: readonly { value: Key; word: string }[] = [
+    { value: "capture", word: "When captured" },
+    { value: "processed", word: "When processed" },
   ];
-
-  function choose(choice: Choice): void {
-    const [end, key] = choice.split(" ") as [Order, Key];
-    onchoose(end, key);
-  }
 </script>
 
-<Chooser
-  label="Order"
-  value={`${order} ${keyed ? by : "capture"}` as Choice}
-  options={keyed ? KEYED : ENDS}
-  disabled={reading}
-  onchoose={choose}
-/>
+<div class="flex flex-col gap-2">
+  <Segmented
+    label="Order"
+    value={order}
+    options={ENDS}
+    held={reading}
+    disabled={slow}
+    onchoose={(end) => onchoose(end, keyed ? by : "capture")}
+  />
+  {#if keyed}
+    <Segmented
+      label="Ordered by"
+      value={by}
+      options={KEYS}
+      held={reading}
+      disabled={slow}
+      onchoose={(key) => onchoose(order, key)}
+    />
+  {/if}
+</div>

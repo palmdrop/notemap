@@ -25,10 +25,10 @@ test("under a heading that says the day, draws the time alone and still names th
   ).toBeDefined();
 });
 
-test("bolds the time alone on a row, and leaves the index's bold to its selection", () => {
+test("draws the time plain on a row and on the index alike", () => {
   const at = new Date(2026, 8, 13, 7, 2).toISOString();
   render(Stamp, { at, dated: false });
-  expect(screen.getByText("07:02").className).toContain("font-semibold");
+  expect(screen.getByText("07:02").className).not.toContain("font-semibold");
   cleanup();
 
   render(Stamp, { at, dated: false, inline: true });
@@ -55,7 +55,7 @@ test("lays the day over the time below the breakpoint", () => {
   const { container } = render(Stamp, { at });
 
   const written = container.querySelector("span");
-  expect(written?.className).toContain("max-narrow:flex-col");
+  expect(written?.className).toContain("max-wide:flex-col");
   const [day, between, time] = [...(written?.children ?? [])];
   expect(day?.tagName).toBe("TIME");
   // The space between is a thing of its own, for no reader to read.
@@ -102,11 +102,10 @@ describe("the asking mark", () => {
 
   test("stands still for a reader who asked for stillness", () => {
     const { container } = render(Asking);
-    const squares = container.querySelectorAll("[aria-hidden] > span");
-    expect(squares).toHaveLength(3);
-    for (const square of squares) {
-      expect(square.className).toContain("motion-reduce:animate-none");
-    }
+    const spinner = container.querySelector("[data-spinner]");
+    // The utility stills it under `prefers-reduced-motion`; the mark has nothing of its own that moves.
+    expect(spinner?.className).toContain("spinner");
+    expect(spinner?.className).not.toContain("animate-");
   });
 });
 
@@ -116,18 +115,18 @@ describe("the pending mark", () => {
 
   test("is not drawn for work that drains before the asking mark would show", async () => {
     render(Pending, { since: Date.now() });
-    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "waiting to send" })).toBeNull();
 
     await vi.advanceTimersByTimeAsync(SHOWN_AFTER - 1);
-    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "waiting to send" })).toBeNull();
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(screen.getByRole("img", { name: "pending" })).toBeDefined();
+    expect(screen.getByRole("img", { name: "waiting to send" })).toBeDefined();
   });
 
   /** Drawn again on every visit, it would grow its row a line each time. */
   test("is drawn at once for work that has already waited that long", () => {
     render(Pending, { since: Date.now() - SHOWN_AFTER });
-    expect(screen.getByRole("img", { name: "pending" })).toBeDefined();
+    expect(screen.getByRole("img", { name: "waiting to send" })).toBeDefined();
   });
 });

@@ -1,14 +1,21 @@
 <script lang="ts">
-  import { CLEAR_FILTERS } from "$lib/said";
+  import type { Filter } from "@notemap/client";
+  import { filterSize } from "@notemap/client";
 
-  /** Ruled round, since it stands in a sentence and would otherwise read as more of it. */
-  let { onclick }: { onclick?: () => void } = $props();
+  import Box from "$components/primitives/blocks/Box.svelte";
+
+  /** The way back to the whole list, named for what is narrowing it. */
+  let { filter, onclick }: { filter: Filter; onclick?: () => void } = $props();
+
+  const label = $derived(
+    filterSize(filter) === 0
+      ? "Clear search"
+      : filter.words.length === 0
+        ? "Clear filter"
+        : "Clear search and filter",
+  );
 </script>
 
-<button
-  type="button"
-  class="ml-[1ch] border border-ink px-[1ch] hover:underline"
-  {onclick}
->
-  {CLEAR_FILTERS}
-</button>
+<span class="mt-3 block">
+  <Box {onclick}>{label}</Box>
+</span>

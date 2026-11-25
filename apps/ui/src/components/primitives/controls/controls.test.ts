@@ -1,105 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
-import Action from "./Action.svelte";
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
-import ActionFixture from "./Action.fixture.svelte";
-import { SHOWN_AFTER } from "../marks/Asking.svelte";
 
-test("an unavailable action reads as unavailable rather than as broken", () => {
-  render(ActionFixture, { label: "route", disabled: true, onclick: vi.fn() });
-
-  const action = screen.getByRole("button", { name: "route" });
-  expect((action as HTMLButtonElement).disabled).toBe(true);
-});
-
-test("somewhere to go is a link, so the browser's own gestures come with it", () => {
-  render(ActionFixture, {
-    label: "open",
-    href: "/items/one",
-    onclick: vi.fn(),
-  });
-
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
-    "/items/one",
-  );
-});
-
-test("somewhere that cannot be gone to is not a link at all", () => {
-  render(ActionFixture, {
-    label: "open",
-    href: "/items/one",
-    disabled: true,
-    onclick: vi.fn(),
-  });
-
-  // A disabled anchor still navigates, so there is no anchor to disable.
-  expect(screen.queryByRole("link")).toBeNull();
-  expect(screen.getByText("open").getAttribute("aria-disabled")).toBe("true");
-});
-
-test("an available action is taken once", async () => {
-  const taken = vi.fn();
-  render(ActionFixture, { label: "capture", primary: true, onclick: taken });
-
-  await fireEvent.click(screen.getByRole("button", { name: "capture" }));
-
-  expect(taken).toHaveBeenCalledTimes(1);
-});
-
-test("an action that has asked cannot be taken again, and keeps its label until the mark is due", async () => {
-  vi.useFakeTimers();
-  try {
-    const taken = vi.fn();
-    const { rerender } = render(ActionFixture, {
-      label: "save",
-      working: true,
-      onclick: taken,
-    });
-
-    const action = screen.getByRole("button", { name: /save/ });
-    expect((action as HTMLButtonElement).disabled).toBe(true);
-    expect(action.getAttribute("aria-busy")).toBe("true");
-    expect(
-      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
-    ).toBe("hidden");
-
-    await vi.advanceTimersByTimeAsync(SHOWN_AFTER);
-    expect(
-      action.querySelector("[data-asking]")?.getAttribute("data-asking"),
-    ).toBe("shown");
-    // Both sit in one cell, so the button is as wide as the wider of them throughout.
-    expect(screen.getByText("save").getAttribute("aria-hidden")).toBe("true");
-
-    await rerender({ label: "save", working: false, onclick: taken });
-    expect(action.querySelector("[data-asking]")).toBeNull();
-    expect((action as HTMLButtonElement).disabled).toBe(false);
-
-    await rerender({ label: "save", working: true, onclick: taken });
-    expect(screen.getByText("save").getAttribute("aria-hidden")).not.toBe(
-      "true",
-    );
-  } finally {
-    vi.useRealTimers();
-  }
-});
-
-/** A word, a mark, and a panel of marked options: the shell draws its own. */
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
   render(OrderSelector, { order: "oldest-first", onchoose: chose });
 
-  const control = screen.getByLabelText("Order");
-  expect(control.textContent).toContain("oldest");
-  expect(control.getAttribute("aria-expanded")).toBe("false");
-  expect(document.querySelector("select")).toBeNull();
+  const oldest = screen.getByRole("radio", { name: "Oldest first" });
+  expect(oldest.getAttribute("aria-checked")).toBe("true");
 
-  await fireEvent.click(control);
-  await fireEvent.click(screen.getByRole("button", { name: "newest" }));
-
+  await fireEvent.click(screen.getByRole("radio", { name: "Newest first" }));
   expect(chose).toHaveBeenCalledWith("newest-first", "capture");
-  expect(control.getAttribute("aria-expanded")).toBe("false");
 });
 
 test("offers the feed the key as well as the end", async () => {
@@ -111,72 +24,17 @@ test("offers the feed the key as well as the end", async () => {
     onchoose: chose,
   });
 
-  const control = screen.getByLabelText("Order");
-  expect(control.textContent).toContain("latest processed");
+  expect(
+    screen
+      .getByRole("radio", { name: "When processed" })
+      .getAttribute("aria-checked"),
+  ).toBe("true");
 
-  await fireEvent.click(control);
-  expect(screen.getByText("captured")).toBeTruthy();
-  expect(screen.getByText("processed")).toBeTruthy();
-  for (const word of ["newest", "oldest", "latest", "earliest"]) {
-    expect(screen.getByRole("button", { name: word })).toBeTruthy();
-  }
-
-  await fireEvent.click(screen.getByRole("button", { name: "earliest" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "Oldest first" }));
   expect(chose).toHaveBeenCalledWith("oldest-first", "processed");
-});
 
-test("marks the end it is already reading from, and offers the other", async () => {
-  render(OrderSelector, { order: "newest-first", onchoose: vi.fn() });
-
-  await fireEvent.click(screen.getByLabelText("Order"));
-
-  const marked = screen
-    .getAllByRole("button")
-    .filter((one) => one.getAttribute("aria-pressed") === "true");
-  // The mark is the pointer `where` already uses.
-  expect(marked.map((one) => one.textContent?.trim())).toEqual(["▸ newest"]);
-});
-
-test("shuts on escape without choosing anything", async () => {
-  const chose = vi.fn();
-  render(OrderSelector, { order: "oldest-first", onchoose: chose });
-
-  const control = screen.getByLabelText("Order");
-  await fireEvent.click(control);
-  await fireEvent.keyDown(control, { key: "Escape" });
-
-  expect(control.getAttribute("aria-expanded")).toBe("false");
-  expect(chose).not.toHaveBeenCalled();
-});
-
-/**
- * The panel is shut by leaving the control, so a pointer that moved the caret
- * into it would shut it on the way to the option being taken. Safari is where
- * that bites: it gives a clicked button no focus, and the trigger's own would
- * have gone. The place line prevents the same default for the same reason.
- */
-test("takes no focus when it is pointed at, so choosing survives the pointer", async () => {
-  render(OrderSelector, { order: "oldest-first", onchoose: vi.fn() });
-
-  await fireEvent.click(screen.getByLabelText("Order"));
-
-  const down = fireEvent.mouseDown(
-    screen.getByRole("button", { name: "oldest" }),
-  );
-  // `fireEvent` answers false where the default was prevented.
-  expect(await down).toBe(false);
-});
-
-/** A panel of buttons is what it is, and `listbox` would promise options. */
-test("draws its panel as a named group rather than a listbox", async () => {
-  render(OrderSelector, { order: "oldest-first", onchoose: vi.fn() });
-
-  const control = screen.getByLabelText("Order");
-  await fireEvent.click(control);
-
-  expect(screen.queryByRole("listbox")).toBeNull();
-  const panel = screen.getByRole("group", { name: "Order" });
-  expect(control.getAttribute("aria-controls")).toBe(panel.id);
+  await fireEvent.click(screen.getByRole("radio", { name: "When captured" }));
+  expect(chose).toHaveBeenCalledWith("newest-first", "capture");
 });
 
 function tagSet(
@@ -185,18 +43,20 @@ function tagSet(
     offered: readonly string[];
     fires: (name: string) => string | undefined;
     held: (name: string) => boolean;
+    addable: boolean;
+    field: boolean;
   }> = {},
 ) {
   const added = vi.fn();
   const removed = vi.fn();
-  render(TagSet, {
+  const { container } = render(TagSet, {
     names: [],
     offered: [],
     ...props,
     onadd: added,
     onremove: removed,
   });
-  return { added, removed };
+  return { added, removed, container };
 }
 
 const opened = async () => {
@@ -210,11 +70,15 @@ const typed = (line: HTMLElement, value: string) =>
 const pressed = (line: HTMLElement, key: string) =>
   fireEvent.keyDown(line, { key });
 
-/** A row's words as read, its template beside it after a space that does not break. */
+/** A row's words as a screen reader has them, without what is drawn for the eye alone. */
 const options = () =>
-  screen
-    .queryAllByRole("option")
-    .map((one) => one.textContent?.replace(/\s+/g, " ").trim());
+  screen.queryAllByRole("option").map((one) => {
+    const read = one.cloneNode(true) as HTMLElement;
+    for (const hidden of read.querySelectorAll("[aria-hidden='true']")) {
+      hidden.remove();
+    }
+    return read.textContent?.replace(/\s+/g, " ").trim();
+  });
 
 test("a tag typed is taken on enter, trimmed, and an empty line takes nothing", async () => {
   const { added } = tagSet();
@@ -276,15 +140,15 @@ test("an empty line offers trigger tags apart beneath the rest, and typing mixes
     container.querySelector("[role='listbox'] > [aria-hidden='true']");
   expect(options()).toEqual([
     ...many.slice(0, 8),
-    "route/research → research",
-    "route/journal → journal",
+    "route/research, routes to research",
+    "route/journal, routes to journal",
   ]);
   expect(rule()?.nextElementSibling?.getAttribute("role")).toBe("option");
   expect(rule()?.previousElementSibling?.textContent).toContain("tag-7");
 
   await typed(line, "r");
   expect(rule()).toBeNull();
-  expect(options()[0]).toBe("route/research → research");
+  expect(options()[0]).toBe("route/research, routes to research");
 
   // The walk passes the rule as though it were not there.
   await typed(line, "");
@@ -410,50 +274,25 @@ test("escape and leaving the line put it away and take nothing", async () => {
 });
 
 test("a carried tag is marked #, and the mark is no part of its name", () => {
-  tagSet({ names: ["design"] });
+  const { container } = tagSet({ names: ["design"] });
 
-  const word = screen.getByRole("button", { name: "design" });
+  const word = container.querySelector("[data-tag='design'] > span")!;
   expect(word.textContent?.trim()).toBe("#design");
 });
 
-test("a tag the item carries is removed by pressing it, then its ×", async () => {
+test("where tags can be changed each carries its ×, and pressing it takes the tag off", async () => {
   const { removed } = tagSet({ names: ["design", "notemap"] });
 
-  const word = screen.getByRole("button", { name: "notemap" });
-  expect(word.getAttribute("aria-pressed")).toBe("true");
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
-
-  await fireEvent.click(word);
-  expect(removed).not.toHaveBeenCalled();
-  // Selected is bold, the × beside it, so the × has a word it visibly
-  // belongs to.
-  const remove = screen.getByRole("button", { name: "remove notemap" });
-  expect(word.parentElement!.hasAttribute("data-chosen")).toBe(true);
-  expect(word.parentElement!.contains(remove)).toBe(true);
-  expect(
-    screen
-      .getByRole("button", { name: "design" })
-      .parentElement!.hasAttribute("data-chosen"),
-  ).toBe(false);
-
-  await fireEvent.click(remove);
+  await fireEvent.click(screen.getByRole("button", { name: "remove notemap" }));
   expect(removed).toHaveBeenCalledWith("notemap");
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
+  expect(screen.getByRole("button", { name: "remove design" })).toBeDefined();
 });
 
-/** Its room is held either side whether or not it is selected, so nothing beside it moves. */
-test("a selected tag's × takes no room of its own", async () => {
-  tagSet({ names: ["design", "notemap"] });
-  const word = screen.getByRole("button", { name: "design" });
-  const box = word.parentElement!;
-  expect(box.classList.contains("px-tag")).toBe(true);
+test("where tags cannot be changed they are words, with no ×", () => {
+  tagSet({ names: ["design"], addable: false });
 
-  await fireEvent.click(word);
-
-  const remove = screen.getByRole("button", { name: "remove design" });
-  expect(remove.parentElement).toBe(box);
-  expect(remove.classList.contains("absolute")).toBe(true);
-  expect(box.classList.contains("px-tag")).toBe(true);
+  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "design" })).toBeNull();
 });
 
 /** The `+` wraps where the line would, so opening the line moves nothing. */
@@ -466,31 +305,6 @@ test("the + holds the place the line opens into", async () => {
   await fireEvent.click(plus);
 
   expect(place.contains(screen.getByRole("combobox"))).toBe(true);
-});
-
-test("pressing it again, esc, or pressing another tag deselects it", async () => {
-  const { removed } = tagSet({ names: ["design", "notemap"] });
-
-  const design = screen.getByRole("button", { name: "design" });
-  const notemap = screen.getByRole("button", { name: "notemap" });
-
-  await fireEvent.click(design);
-  await fireEvent.click(design);
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-
-  await fireEvent.click(design);
-  await fireEvent.keyDown(design, { key: "Escape" });
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-
-  await fireEvent.click(design);
-  await fireEvent.click(notemap);
-  expect(screen.queryByRole("button", { name: "remove design" })).toBeNull();
-  expect(screen.getByRole("button", { name: "remove notemap" })).toBeDefined();
-
-  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
-  expect(screen.queryByRole("button", { name: "remove notemap" })).toBeNull();
-
-  expect(removed).not.toHaveBeenCalled();
 });
 
 test("a trigger tag that filed the item is inert, not a control", async () => {
@@ -536,18 +350,13 @@ test("a trigger tag is marked with the template it applies, carried or offered",
     fires: (name) => (name.startsWith("route/") ? name.slice(6) : undefined),
   });
 
-  expect(
-    screen.getByRole("button", { name: "route/research, routes to research" }),
-  ).toBeDefined();
+  expect(screen.getByText("route/research, routes to research")).toBeDefined();
 
   await opened();
   expect(
-    screen.getByRole("option", { name: /route\/reading.*reading/ }),
+    screen.getByRole("option", { name: "route/reading, routes to reading" }),
   ).toBeDefined();
 });
-
-/** Referenced so a rename cannot leave the fixture pointing at nothing. */
-void Action;
 
 test("a tag set that cannot be added to still holds the +'s place, unreachable", () => {
   const { container } = render(TagSet, {
@@ -560,7 +369,7 @@ test("a tag set that cannot be added to still holds the +'s place, unreachable",
 
   expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
   const held = [...container.querySelectorAll("button")].find(
-    (button) => button.textContent?.trim() === "+",
+    (button) => button.textContent?.replace(/\s+/g, " ").trim() === "+ tag",
   );
   expect(held?.getAttribute("aria-hidden")).toBe("true");
   expect(held?.getAttribute("tabindex")).toBe("-1");
@@ -598,6 +407,47 @@ test("the offer's panel grows and shrinks with the narrowing, from the height it
  * against it. The place outlives the line, which is gone the moment it
  * closes while the offer is still sliding shut beneath it.
  */
+test("as a field, the line stands over the tags and stays, its offer with it, and takes one tag after another", async () => {
+  const { added, container } = tagSet({
+    field: true,
+    names: ["home"],
+    offered: ["reading", "research"],
+  });
+
+  const line = screen.getByRole("combobox", { name: "Add a tag" });
+  const chip = container.querySelector("[data-tag='home']")!;
+  expect(
+    line.compareDocumentPosition(chip) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(options()).toEqual(["reading", "research"]);
+
+  await typed(line, "rea");
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("reading");
+  expect(screen.getByRole("combobox", { name: "Add a tag" })).toBe(line);
+  expect((line as HTMLInputElement).value).toBe("");
+
+  await fireEvent.blur(line);
+  expect(screen.getByRole("listbox", { name: "Tags in use" })).toBeDefined();
+});
+
+test("as a field, esc on an empty line is left to what holds it", async () => {
+  tagSet({ field: true });
+  const line = screen.getByRole("combobox", { name: "Add a tag" });
+  const outside = vi.fn();
+  document.addEventListener("keydown", outside);
+
+  await typed(line, "re");
+  // A sheet's dialog closes on the key's default, not on hearing it.
+  expect(await pressed(line, "Escape")).toBe(false);
+  expect((line as HTMLInputElement).value).toBe("");
+  expect(outside).not.toHaveBeenCalled();
+
+  expect(await pressed(line, "Escape")).toBe(true);
+  expect(outside).toHaveBeenCalledTimes(1);
+  document.removeEventListener("keydown", outside);
+});
+
 test("the offer hangs from the line's place, which outlives the line", async () => {
   tagSet({ offered: ["reading", "research", "design"] });
   const line = await opened();

@@ -34,48 +34,62 @@
     /** More than one thing to do about it, drawn after the offer. */
     actions?: Snippet;
   } = $props();
+
+  const capital = (word: string): string =>
+    word.charAt(0).toUpperCase() + word.slice(1);
 </script>
 
+<!-- Under a heading, a notice says only its time and its words; work still
+     in flight has no time, and takes the whole width. -->
 <li
   transition:slide={{ fade: true }}
-  class="grid grid-cols-[3rem_1fr] gap-x-4 border-b border-ink px-3 py-2 last:border-b-0 max-narrow:grid-cols-1 {alarm
-    ? 'text-alarm'
-    : ''}"
+  class="grid gap-x-gutter border-b border-rule px-gutter py-3 {when ===
+  undefined
+    ? 'grid-cols-1'
+    : 'grid-cols-[var(--spacing-time)_1fr]'}"
 >
-  <span class="tabular-nums max-narrow:hidden">{when ?? ""}</span>
+  {#if when !== undefined}
+    <span class="text-time text-muted tabular-nums">{when}</span>
+  {/if}
 
-  <span class="grid min-w-0 gap-0.5">
-    <span class="flex items-baseline gap-2 wrap-anywhere">
-      <span class="font-semibold">
+  <span class="grid min-w-0 gap-1">
+    <span
+      class="flex items-center gap-2 wrap-anywhere {alarm ? 'text-danger' : ''}"
+    >
+      {@render mark?.()}
+      <span>
         {what}
         {#if subject !== undefined}
-          {subject}
+          <b>{subject}</b>
         {/if}
       </span>
-      {@render mark?.()}
     </span>
+
+    {#if about !== undefined}
+      <span class="text-small wrap-anywhere text-muted">{about}</span>
+    {/if}
 
     {#if why !== undefined}
       <span class="wrap-anywhere whitespace-pre-line">{why}</span>
     {/if}
 
-    {#if about !== undefined}
-      <span class="wrap-anywhere">{about}</span>
-    {/if}
-
     {#if href !== undefined || offer !== undefined || actions !== undefined}
-      <span class="flex justify-end gap-4">
-        {#if href !== undefined}
-          <a {href} class="underline">open</a>
-        {/if}
-
+      <span class="mt-1 flex flex-wrap items-center gap-2">
         {#if offer !== undefined}
-          <button type="button" onclick={offer.take} class="underline">
-            {offer.label}
-          </button>
+          <!-- Cancel and Undo are quiet: underlined words, not boxes. -->
+          <button
+            type="button"
+            onclick={offer.take}
+            class="underline underline-offset-[0.2em]"
+            >{capital(offer.label)}</button
+          >
         {/if}
 
         {@render actions?.()}
+
+        {#if href !== undefined}
+          <a {href} class="ml-auto underline underline-offset-[0.2em]">Open</a>
+        {/if}
       </span>
     {/if}
   </span>

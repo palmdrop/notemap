@@ -15,6 +15,7 @@ function clientOver(handler: Handler) {
 const use = (id: string, items: number, at: string): SourceUse => ({
   id,
   items,
+  unprocessed: items,
   lastCapturedAt: at,
 });
 

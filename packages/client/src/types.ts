@@ -264,6 +264,8 @@ export interface TagsApi {
 export interface CountsApi {
   /** The items the queue holds. Absent until the pool has answered once. */
   readonly queue: Observable<number | undefined>;
+  /** The items captured since this device's midnight. Absent until the pool has answered once. */
+  readonly capturedToday: Observable<number | undefined>;
   load(): Promise<Counts>;
 }
 

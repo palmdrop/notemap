@@ -1,8 +1,8 @@
 <script lang="ts">
+  import Dialog from "$components/primitives/sheets/Dialog.svelte";
   import { onDestroy, onMount, untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
-  import Action from "$components/primitives/controls/Action.svelte";
   import { commits } from "$lib/command/keys";
   import { publish } from "$lib/command/stack.svelte";
   import { aboutItem } from "$lib/excerpt";
@@ -14,8 +14,6 @@
   import { isPicked, type Editing, type Held } from "./editing.svelte";
 
   let { editing }: { editing: Editing } = $props();
-
-  const id = $props.id();
 
   const pictures = $derived(editing.attachments.filter((held) => held.image));
   const files = $derived(editing.attachments.filter((held) => !held.image));
@@ -91,19 +89,10 @@
       take: (files) => editing.pick(files),
     }),
   );
-
-  /** Opened as a modal the moment it is drawn, with `save` taking the focus. */
-  function modal(dialog: HTMLDialogElement): () => void {
-    dialog.showModal();
-    dialog.querySelector<HTMLElement>("[data-save] button")?.focus();
-    return () => {
-      if (dialog.open) dialog.close();
-    };
-  }
 </script>
 
 <!-- The capture's own place, edited where it is read: the foot that saves it
-     is the row's, drawn by `EditFoot` in place of the actions. -->
+     is the row's, drawn by `EditBar` in place of the actions. -->
 {#if pictures.length > 0}
   <!-- Ruled off from the words only while pictures lie past the edge they share. -->
   <div
@@ -136,7 +125,7 @@
     }
   }}
   aria-label="What it says"
-  class="block min-h-[88px] w-full resize-y bg-transparent outline-none max-narrow:min-h-[72px]"
+  class="block min-h-[88px] w-full resize-y rounded-control border border-rule bg-transparent p-3 outline-none max-wide:min-h-[30dvh]"
 ></textarea>
 
 <!-- Under the words behind the short rule, where the row being edited draws them. -->
@@ -166,33 +155,19 @@
 <!-- Asked wherever the row has scrolled to, so it says which capture. `esc`,
      the backdrop and a close nobody answered all stay. -->
 {#if question.about === self}
-  <dialog
-    {@attach modal}
-    aria-label="Unsaved changes"
-    aria-describedby="{id}-about"
-    oncancel={(event) => {
-      event.preventDefault();
-      void answer("stay");
-    }}
-    onclose={() => void answer("stay")}
-    onclick={(event) => {
-      if (event.target === event.currentTarget) void answer("stay");
-    }}
-    class="m-auto w-[min(28rem,calc(100vw-2rem))] border border-ink bg-ground p-0 text-ink backdrop:bg-ground/70"
+  <Dialog
+    title="lose your changes?"
+    ways={[
+      { label: "Keep editing", value: "stay" as const },
+      {
+        label: "Lose changes",
+        value: "revert" as const,
+        kind: "danger" as const,
+      },
+      { label: "Save", value: "save" as const, kind: "primary" as const },
+    ]}
+    onanswer={(choice) => void answer(choice ?? "stay")}
   >
-    <p id="{id}-about" class="px-3 py-2.5 wrap-anywhere">
-      unsaved changes to {self.about}
-    </p>
-    <div
-      class="flex items-baseline justify-between border-t border-ink px-3 leading-8"
-    >
-      <Action onclick={() => void answer("stay")}>keep editing</Action>
-      <span class="flex items-baseline gap-x-5">
-        <Action onclick={() => void answer("revert")}>revert</Action>
-        <span data-save class="contents">
-          <Action primary onclick={() => void answer("save")}>save</Action>
-        </span>
-      </span>
-    </div>
-  </dialog>
+    <span class="wrap-anywhere">Unsaved changes to {self.about}.</span>
+  </Dialog>
 {/if}

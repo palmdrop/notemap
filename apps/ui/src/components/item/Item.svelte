@@ -1,49 +1,53 @@
 <script lang="ts">
+  import { quick } from "$lib/quicking.svelte";
   import { untrack } from "svelte";
   import { SvelteSet } from "svelte/reactivity";
-  import type { ItemState, RoutingRecord } from "@notemap/client";
+  import { saidBy, type ItemState } from "@notemap/client";
 
-  import Row from "$components/item/Row.svelte";
-  import Body from "$components/primitives/register/Body.svelte";
-  import Day from "$components/primitives/register/Day.svelte";
-  import Rail from "$components/primitives/register/Rail.svelte";
-  import Register from "$components/primitives/register/Register.svelte";
+  import Edit from "$components/item/Edit.svelte";
+  import { Editing } from "$components/item/editing.svelte";
+  import ItemBar from "$components/item/ItemBar.svelte";
+  import Payload from "$components/item/Payload.svelte";
+  import Routing from "$components/item/Routing.svelte";
+  import Tags from "$components/item/Tags.svelte";
+  import Windowed from "$components/item/Windowed.svelte";
   import Asking from "$components/primitives/marks/Asking.svelte";
-  import Stamp from "$components/primitives/marks/Stamp.svelte";
-  import StateWord from "$components/primitives/marks/StateWord.svelte";
+  import Cached from "$components/primitives/marks/Cached.svelte";
+  import Pending from "$components/primitives/marks/Pending.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
-  import Block from "$components/record/Block.svelte";
-  import { goto } from "$app/navigation";
-
-  import { processHref, recordHref } from "$components/item/href";
   import { client } from "$lib/client";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain } from "$lib/days";
+  import { firings } from "$lib/firings.svelte";
+  import { notices } from "$lib/notices.svelte";
+  import { cancelledKey, keyFor } from "$lib/routing";
   import { pending } from "$lib/pending.svelte";
+  import { doubled } from "$lib/pick";
   import { reachable } from "$lib/reachable.svelte";
+  import { trail } from "$lib/trail.svelte";
   import { recordsOf } from "$lib/records.svelte";
-  import { rows as layout } from "$lib/rows.svelte";
-  import {
-    NO_ITEM_OFFLINE,
-    NO_RECORDS_OFFLINE,
-    NO_SUCH_ITEM,
-    NO_SUCH_RECORD,
-  } from "$lib/said";
+  import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE, NO_SUCH_ITEM } from "$lib/said";
+  import { undrainedSince } from "$lib/undrained-since";
+
+  import { itemHref } from "./href";
+  import { walkOf } from "./walk.svelte";
 
   /**
-   * The item as a register: the capture is the first row, then a rule, then
-   * each routing record is a row of its own — its stamp and state in the rail,
-   * the record as a block in the body. `only` narrows the records to one,
-   * which is what the record's own address draws.
+   * The item read on its own: a route in its window, where it went as a box
+   * of rows each opening its record, the words whole, its tags, and its
+   * actions in a bar. Manual and Discard move on to the next item in its list,
+   * whose bar then says what was done, with Undo.
    */
-  let { id, only }: { id: string; only?: string } = $props();
+  let { id }: { id: string } = $props();
 
   const pool = reachable();
   const undrained = pending();
+  const walk = walkOf(() => id);
 
   let read = $state<ItemState | undefined>(undefined);
-  let row = $state<Row | undefined>(undefined);
+  let editing = $state<Editing | undefined>(undefined);
+  let tags = $state<Tags | undefined>(undefined);
 
   // The read settles what is drawn and what it was drawn from; the item itself
   // is then the client's held copy, so an archive made here marks it at once.
@@ -52,20 +56,17 @@
 
   /**
    * Records this view has drawn standing. A withdrawn record is drawn only if
-   * it is one of them — withdrawn while the person was here, where reinstating
-   * is still offered — and read again later it is left out.
+   * it is one of them — withdrawn while the person was here — and read again
+   * later it is left out.
    */
   const standing = new SvelteSet<string>();
 
-  // An item that was never routed has no records to read, unless one is
-  // being asked for by name — then the pool is what says it is not there —
-  // or one this view drew has been withdrawn since.
+  // An item that was never routed has no records to read, unless one this
+  // view drew has been withdrawn since.
   const records = recordsOf(
     () =>
       item !== undefined &&
-      (only !== undefined ||
-        item.routing !== undefined ||
-        untrack(() => standing.size > 0))
+      (item.routing !== undefined || untrack(() => standing.size > 0))
         ? item.id
         : undefined,
     () => pool.yes,
@@ -80,6 +81,7 @@
   $effect(() => {
     const wanted = id;
     read = undefined;
+    editing = undefined;
     untrack(() => standing.clear());
 
     void (async () => {
@@ -88,157 +90,193 @@
     })();
   });
 
-  // One subject and no selection: the page is the item, so what it offers is
-  // what its own `Actions` draws, built once and published as it stands. No
-  // address — this surface is where `open` would lead.
-  const commands = $derived(
-    item === undefined
-      ? []
-      : commandsFor(item, {
-          offline: !pool.yes,
-          onprocess: () => void goto(processHref(id)),
-          onedit: () => row?.edit(),
-          tag: () => row?.tag(),
-        }),
-  );
+  /** A sealed item is edited by revising it; a discarded one is undiscarded first. */
+  const mayEdit = $derived(item !== undefined && item.archived === undefined);
 
-  publish(() =>
-    row?.isEditing() === true ? whileEditing(commands) : commands,
-  );
+  function edit(): void {
+    if (item !== undefined && mayEdit && editing === undefined) {
+      editing = new Editing(item, () => (editing = undefined));
+    }
+  }
+
+  /**
+   * On to the next item in its list, or back to the list where it was the
+   * last. Where to is settled before the decision is sent: a discard takes the
+   * item off its list at once, and the list would no longer say what was next.
+   */
+  function moveOn(): () => void {
+    const next = walk.next;
+    const home = walk.home;
+    const left = id;
+    return () =>
+      void trail.moveOn(next === undefined ? home : itemHref(next.id), {
+        left,
+      });
+  }
+
+  // One subject and no selection: the page is the item, so what it offers is
+  // what its own bar draws, built once and published as it stands. No
+  // address — this surface is where `open` would lead.
+  const commands = $derived.by(() => {
+    if (item === undefined) return [];
+    return commandsFor(item, {
+      revises: true,
+      offline: !pool.yes,
+      onprocess: () => quick.open(id),
+      onedit: edit,
+      tag: () => tags?.add(),
+    }).map((command) =>
+      (command.id === "manual" || command.id === "discard") && "run" in command
+        ? {
+            ...command,
+            run: async () => {
+              const onward = moveOn();
+              await command.run();
+              onward();
+            },
+          }
+        : command,
+    );
+  });
+
+  publish(() => (editing !== undefined ? whileEditing(commands) : commands));
 
   const refused = $derived(
     read?.failure?.refused === true ? read.failure.said : undefined,
   );
 
   const drawn = $derived(
-    only === undefined
-      ? records.all.filter(
-          (record) =>
-            record.withdrawnAt === undefined || standing.has(record.id),
-        )
-      : records.all.filter((record) => record.id === only),
+    records.all.filter(
+      (record) => record.withdrawnAt === undefined || standing.has(record.id),
+    ),
   );
 
-  /** The records as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived.by(() => {
-    const dated = drawn.map((record) => ({
-      id: record.id,
-      createdAt: record.at,
-      record,
-    }));
-    return layout.byDay ? byDay(dated) : plain(dated);
+  const firing = $derived(firings.open.find((one) => one.item === id));
+
+  /** The manual mark standing on the item, which its box takes back. */
+  const marked = $derived(
+    drawn.find(
+      (record) =>
+        record.target.kind === "user" && record.withdrawnAt === undefined,
+    ),
+  );
+
+  async function undoManual(): Promise<void> {
+    if (marked === undefined) return;
+    try {
+      await client.routing.cancel(marked.id, marked.item);
+      notices.settled(keyFor(marked.id));
+      notices.mark(cancelledKey(marked.id));
+      records.reread();
+    } catch (error) {
+      notices.raise({ what: saidBy(error), alarm: true });
+    }
+  }
+
+  // A route made here is drawn on its record's line, which is read for it.
+  $effect(() => {
+    const flying = firing;
+    if (flying === undefined) return;
+    untrack(() => {
+      if (!drawn.some((one) => one.id === flying.record)) records.reread();
+    });
   });
 
-  const stateOf = (record: RoutingRecord): string =>
-    record.withdrawnAt === undefined ? record.state : "withdrawn";
-
-  /** What the record rows say instead of records, where they have none to say. */
+  /** What the records box says instead of records, where it has none to say. */
   const aboutRecords = $derived.by(() => {
-    if (item?.routing === undefined && only === undefined) return undefined;
+    if (item?.routing === undefined) return undefined;
     if (records.refused !== "") return { said: records.refused, alarm: true };
     if (drawn.length > 0) return undefined;
     if (!pool.yes) return { said: NO_RECORDS_OFFLINE, alarm: false };
-    if (only !== undefined && records.settled)
-      return { said: NO_SUCH_RECORD, alarm: false, gone: true };
     if (!records.settled) return { said: "", alarm: false, asking: true };
     return undefined;
   });
 </script>
 
-<Register slim={layout.slim}>
+<div
+  class="-mx-3.5 flex flex-col gap-4 px-gutter pt-4 pb-4 wide:-mx-8 wide:px-5"
+>
   {#if item !== undefined}
-    {#if layout.byDay}
-      <Day at={item.createdAt} />
-    {:else}
-      <!-- The room a heading would hold, so the box's top edge is not drawn
-           against the bar's rule. -->
-      <div class="col-span-full h-3.5"></div>
-    {/if}
-
-    <!-- The capture as a selected row is drawn, box and foot, the page being
-         the one item there is. An item view is where a person looks to find
-         out what happened, so it says when it was drawn from the cache. -->
-    <Row
-      bind:this={row}
-      {item}
-      surface="item"
-      selected
-      offline={!pool.yes}
-      {commands}
-      pending={undrained.has(item.id)}
-      layout={layout.drawn}
-      opens={layout.byDay}
-      cached={read?.fromCache === true}
-    />
-
-    {#each headed as one (one.key)}
-      {#if one.kind === "day"}
-        <Day at={one.at} />
-      {:else}
-        {@const record = one.row.record}
-        <Rail>
-          <!-- The record's own address, where this is not already it. -->
-          {#if only === undefined}
-            <a href={recordHref(record.item, record.id)} class="block w-max">
-              <Stamp at={record.at} dated={!layout.byDay} />
-            </a>
-          {:else}
-            <Stamp at={record.at} dated={!layout.byDay} />
-          {/if}
-          {#if !layout.slim}
-            <StateWord word={stateOf(record)} />
-          {/if}
-        </Rail>
-        <Body>
-          <Block
-            {record}
-            held={item}
-            folds={only === undefined}
-            editing={row?.isEditing() === true}
-            onundone={() => records.reread()}
-          />
-          {#if layout.slim}
-            <StateWord word={stateOf(record)} />
-          {/if}
-        </Body>
-      {/if}
-    {/each}
-
-    {#if aboutRecords !== undefined}
-      <Rail>
-        {#if aboutRecords.gone === true}
-          <StateWord word="gone" />
+    <!-- Read as a row reads: the words, where it went, then its tags. -->
+    <div class="flex max-w-read flex-col gap-4">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="flex flex-col gap-3 text-read"
+        ondblclick={editing === undefined && mayEdit
+          ? doubled(edit)
+          : undefined}
+      >
+        {#if editing !== undefined}
+          <Edit {editing} />
+        {:else}
+          <Payload {item} whole />
         {/if}
-      </Rail>
-      <Body>
+      </div>
+
+      {#if read?.fromCache === true || undrained.has(item.id)}
+        <p class="flex items-center gap-3 text-small text-muted">
+          {#if read?.fromCache === true}<Cached inline />{/if}
+          {#if undrained.has(item.id)}
+            <Pending since={undrainedSince(item.id)} inline />
+          {/if}
+        </p>
+      {/if}
+
+      <!-- A route in its window is said on its record's line; the box only
+           stands in until that record has been read. -->
+      {#if firing !== undefined && !drawn.some((one) => one.id === firing.record)}
+        <Windowed {firing} offline={!pool.yes} />
+      {/if}
+      <Routing
+        boxed
+        summary={item.routing}
+        records={drawn}
+        offline={!pool.yes}
+        onundone={() => records.reread()}
+      />
+      {#if aboutRecords !== undefined}
         {#if aboutRecords.asking === true}
           <Asking />
         {:else if aboutRecords.alarm}
-          <div role="status" class="text-alarm">{aboutRecords.said}</div>
-        {:else if aboutRecords.gone === true}
-          <Prose text={aboutRecords.said} />
+          <div role="status" class="text-danger">{aboutRecords.said}</div>
         {:else}
           <div>{aboutRecords.said}</div>
         {/if}
-      </Body>
-    {/if}
+      {/if}
+
+      <div class="flex flex-wrap items-center gap-1">
+        <Tags
+          bind:this={tags}
+          {item}
+          {editing}
+          addable={item.archived === undefined}
+          stacked={false}
+        />
+      </div>
+    </div>
   {:else if read !== undefined}
-    <Rail>
-      {#if refused === undefined && read.failure === undefined}
-        <StateWord word="gone" />
-      {/if}
-    </Rail>
-    <Body>
-      {#if refused !== undefined}
-        <div role="status" class="text-alarm">{refused}</div>
-      {:else if read.failure !== undefined}
-        <div>{NO_ITEM_OFFLINE}</div>
-      {:else}
-        <Prose text={NO_SUCH_ITEM} />
-      {/if}
-    </Body>
+    {#if refused !== undefined}
+      <div role="status" class="text-danger">{refused}</div>
+    {:else if read.failure !== undefined}
+      <div>{NO_ITEM_OFFLINE}</div>
+    {:else}
+      <p class="text-small text-muted">gone</p>
+      <Prose text={NO_SUCH_ITEM} />
+    {/if}
   {:else}
-    <Rail />
-    <Body><Asking /></Body>
+    <Skeleton shape="item" />
   {/if}
-</Register>
+</div>
+
+<!-- Docked at the foot of the item's pane at every width. -->
+{#if item !== undefined}
+  <div aria-hidden="true" class="h-28"></div>
+  <div class="fixed right-0 bottom-0 left-(--pane-left,0) z-20">
+    <ItemBar
+      {item}
+      {commands}
+      {editing}
+      onundomanual={marked === undefined ? undefined : () => void undoManual()}
+    />
+  </div>
+{/if}

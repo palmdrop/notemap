@@ -1,33 +1,54 @@
+<script lang="ts" module>
+  import { SvelteMap } from "svelte/reactivity";
+  import type { Item as Held } from "@notemap/client";
+
+  /**
+   * What the queue last held of each item, kept across the surface being
+   * drawn again, so a row in its window survives leaving and coming back.
+   */
+  const seen = new SvelteMap<string, Held>();
+
+  /** More than a session's windows, and the oldest let go past it. */
+  const REMEMBERED = 500;
+</script>
+
 <script lang="ts">
+  import { quick } from "$lib/quicking.svelte";
+  import { resolve } from "$app/paths";
+
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import { width } from "$lib/breakpoint";
+  import { sayLanded } from "$lib/landed";
+  import { heldHint } from "$lib/held-hint.svelte";
   import { onMount, tick, untrack } from "svelte";
 
-  import { goto, replaceState } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import type { Item } from "@notemap/client";
+  import { filterSize, type Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
-  import Order from "$components/order/Order.svelte";
-  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
+  import { isCapture } from "$lib/refused";
+  import RefusedRow from "./RefusedRow.svelte";
   import Day from "$components/primitives/register/Day.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
-  import Search from "$components/tags/Search.svelte";
-  import ViewChooser from "$components/view/ViewChooser.svelte";
-  import { itemHref, processHref } from "$components/item/href";
+  import { searching } from "$components/frame/searching.svelte";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands, markCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, plain, type Drawn } from "$lib/days";
+  import { byDay, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
+  import { firings, phaseOf } from "$lib/firings.svelte";
   import { leave } from "$lib/leaving.svelte";
   import { Marking, PLAINLY, picked, type Picked } from "$lib/marking.svelte";
   import { batched } from "$lib/batched.svelte";
@@ -38,10 +59,12 @@
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { rows as layout } from "$lib/rows.svelte";
   import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
+
+  /** Drawn beside an open item when wide: the list without its capture box. */
+  let { beside = false }: { beside?: boolean } = $props();
 
   const SURFACE = "queue";
 
@@ -72,7 +95,7 @@
   const arrived = page.url.searchParams.get(SELECTED);
 
   /** Going back and forward moves through the views a filter was taken from. */
-  let view = $derived<View>(viewFor(SURFACE, page.url));
+  let view = $derived<View>(viewFor(page.url));
 
   const reading = filtering(
     SURFACE,
@@ -84,9 +107,14 @@
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
   let filterPanel = $state<FilterPanel | undefined>(undefined);
-  let search = $state<Search | undefined>(undefined);
 
   const refused = $derived(refusalIn($queue));
+
+  /** Captures the pool refused, kept on this device: rows at the queue's end. */
+  const outbox = client.outbox;
+  const kept = $derived(
+    $outbox.filter((held) => held.state === "refused").filter(isCapture),
+  );
 
   /**
    * Whether there is more is what the pool's first page answers, so rows drawn
@@ -107,12 +135,59 @@
   const heldRow = $derived(client.held(selected ?? ""));
 
   /**
-   * A decision takes the selected row off the queue, and the row stays drawn
-   * where it stood until the selection leaves it: the decision can be looked
-   * at, and taken back from the row, after it is made.
+   * A route in its window keeps its row, by hand or by trigger tag, until the
+   * window closes and the row slides out. The pool has already taken the item
+   * off the queue, so the row is drawn from what this list last held of it,
+   * or, after a reload, from the item read again.
    */
+  $effect(() => {
+    for (const row of $queue.items) seen.set(row.id, row);
+    untrack(() => {
+      for (const id of seen.keys()) {
+        if (seen.size <= REMEMBERED) break;
+        seen.delete(id);
+      }
+    });
+  });
+  /** Items read for a window, once each; one whose read failed is asked again. */
+  const asked: Record<string, true> = {};
+  $effect(() => {
+    for (const firing of firings.open) {
+      if (untrack(() => seen.has(firing.item)) || asked[firing.item]) continue;
+      asked[firing.item] = true;
+      void client.item(firing.item).then(
+        ({ item }) => {
+          if (item === undefined) {
+            delete asked[firing.item];
+            return;
+          }
+          // Only one whose every record is this window's was queue work: a
+          // route again from the feed is not.
+          const first =
+            item.archived === undefined &&
+            (item.routing === undefined ||
+              item.routing.records === item.routing.pending);
+          if (first) seen.set(item.id, item);
+        },
+        () => {
+          delete asked[firing.item];
+        },
+      );
+    }
+  });
+  const inWindow = $derived(
+    firings.open
+      .filter(
+        (firing) =>
+          phaseOf(firing, firings.now) === "window" &&
+          !$queue.items.some((row) => row.id === firing.item) &&
+          seen.has(firing.item),
+      )
+      .map((firing) => seen.get(firing.item) as Item),
+  );
+
   const rows = $derived.by(() => {
-    const live = $queue.items;
+    const live = withWindows($queue.items);
     const kept = $heldRow;
     if (
       selected === undefined ||
@@ -127,6 +202,16 @@
     );
     return [...live.slice(0, place), kept, ...live.slice(place)];
   });
+
+  function withWindows(live: readonly Item[]): readonly Item[] {
+    let drawn = [...live];
+    for (const kept of inWindow) {
+      if (drawn.some((row) => row.id === kept.id)) continue;
+      const place = placeOf(drawn, kept, $queue.order);
+      drawn = [...drawn.slice(0, place), kept, ...drawn.slice(place)];
+    }
+    return drawn;
+  }
 
   /** A held row is still drawn, so the queue is not empty until it is let go. */
   const drained = $derived(
@@ -181,7 +266,10 @@
         how,
         selected,
       );
-      if (marked !== undefined) selected = marked;
+      // Letting go of the last mark ends the mode with nothing selected,
+      // rather than leaving the row it ended on selected with its strip.
+      if (marked !== undefined && !marking.on) deselect();
+      else if (marked !== undefined) selected = marked;
       else if (selected === id) deselect();
       else selected = id;
     });
@@ -232,19 +320,19 @@
 
   /** The deep tier: a surface of its own, which comes back here when it is done. */
   function process(item: Item) {
-    void goto(processHref(item.id));
+    quick.open(item.id);
   }
 
   function read(wanted: View) {
     view = wanted;
-    remember(SURFACE, wanted);
+    remember(wanted);
     replaceState(withView(page.url, wanted), {});
   }
 
   const current = $derived(rows.find((row) => row.id === selected));
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived(layout.byDay ? byDay(rows) : plain(rows));
+  const headed = $derived(byDay(rows));
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -343,8 +431,18 @@
           { id: "capture", label: "capture", run: () => capture?.commit() },
         ]
       : []),
-    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
-    { id: "search", label: "search", run: () => search?.focus() },
+    {
+      id: "filter",
+      label: "filter",
+      count: filterSize(reading.filter),
+      run: () => void filterPanel?.show(),
+    },
+    {
+      id: "search",
+      label: "search",
+      field: { words: reading.words, onsearch: reading.search },
+      run: () => searching.focus(),
+    },
     {
       id: "view",
       label: "view",
@@ -359,50 +457,59 @@
   </title>
 </svelte:head>
 
-<Capture
-  bind:this={capture}
-  focus={arrived === null}
-  selected={atCapture}
-  onfocus={captureFocused}
-/>
+{#if width.wide && !beside}
+  <Capture
+    bind:this={capture}
+    focus={false}
+    selected={atCapture}
+    onfocus={captureFocused}
+    oncaptured={(item) => sayLanded(item, $queue.order)}
+  />
+{:else if !width.wide && !marking.on}
+  <!-- At the foot, and lifted clear of the status line while it is drawn.
+       Selecting, the foot is the batch's. -->
+  <a
+    href={resolve("/capture")}
+    aria-label="Capture"
+    title="Capture"
+    class="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
+  >
+    <Icon name="plus" class="size-10" />
+  </a>
+{/if}
 
-<Head>
-  {#if marking.on}
-    <Marked
-      marked={rows.filter((row) => marking.has(row.id))}
-      full={marking.full}
-      onbatch={(action) => batch.do(action)}
-      onall={() => {
-        const ids = rows.map((row) => row.id);
-        const last = ids.at(-1);
-        if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
-      }}
-      onclear={() => marking.clear()}
-    />
-  {:else}
-    <ViewChooser {view} onchoose={read} />
-    <FilterPanel
-      bind:this={filterPanel}
-      surface={SURFACE}
-      filter={reading.filter}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-    <Search
-      bind:this={search}
-      words={reading.words}
-      onsearch={reading.search}
-    />
-    <Order />
-  {/if}
-</Head>
+{#if marking.on}
+  <Marked
+    marked={rows.filter((row) => marking.has(row.id))}
+    full={marking.full}
+    onbatch={(action) => batch.do(action)}
+    onall={() => {
+      const ids = rows.map((row) => row.id);
+      const last = ids.at(-1);
+      if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
+    }}
+    onclear={() => marking.clear()}
+  />
+{/if}
+
+<FilterPanel
+  bind:this={filterPanel}
+  surface={SURFACE}
+  filter={reading.filter}
+  {view}
+  onview={read}
+  ontoggle={reading.toggle}
+  onclear={reading.clear}
+  shown={rows.length}
+/>
 
 {#if batch.asked !== undefined}
   {@const asked = batch.asked}
   <Confirming
     question={asked.question}
+    by={asked.by}
     notes={asked.notes}
-    verb={asked.action.kind === "archive" ? "discard" : "route"}
+    verb={asked.action.kind === "archive" ? "Discard" : "Route"}
     alarm={asked.action.kind === "archive"}
     onanswer={(go) => void batch.answer(go)}
   />
@@ -411,6 +518,7 @@
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
   <Day
     at={one.at}
+    count={one.count}
     leads={refused === undefined && one.key === headed[0]?.key}
     {motion}
   />
@@ -438,9 +546,8 @@
     marking={marking.on}
     onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
-    commands={!marking.on && selected === row.id ? commands : []}
     pending={undrained.has(row.id)}
-    layout={layout.drawn}
+    firing={firings.open.find((firing) => firing.item === row.id)}
     {opens}
     onselect={(how) => select(row.id, how)}
     onprocess={marking.on ? undefined : () => process(row)}
@@ -454,20 +561,33 @@
 
 <!-- The list stays drawn while the queue is drained, so the first row into it
      and the last row out of it move as any other. -->
+<!-- Said over the skeleton too, so the first page does not land under it. -->
+{#if !width.wide && heldHint.due && (rows.length > 1 || ($queue.loading && rows.length === 0)) && !marking.on}
+  <p class="-mx-3.5 px-gutter py-2 text-small text-muted">
+    Hold a row to select several.
+  </p>
+{/if}
+
 {#if view === "index"}
   {#if refused !== undefined}
     <Register><Refused surface="queue" {refused} /></Register>
   {/if}
 
+  {#if kept.length > 0}
+    <Register>
+      {#each kept as held (held.id)}
+        <RefusedRow {held} />
+      {/each}
+    </Register>
+  {/if}
+
   <Index
     {motion}
     bind:this={index}
-    byDay={layout.byDay}
     leads={refused === undefined}
     items={rows}
     selected={marking.on ? undefined : selected}
     cursor={marking.on ? selected : undefined}
-    slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
     marking={marking.on}
@@ -482,13 +602,15 @@
     <More
       loading={$queue.loading}
       first={rows.length === 0}
+      view="lines"
+      shown={rows.length}
       offline={!pool.yes}
       failed={$queue.failure !== undefined}
       onmore={() => void client.loadQueue()}
     />
   {/if}
 {:else}
-  <Register slim={layout.slim}>
+  <Register>
     {#if refused !== undefined}
       <Refused surface="queue" {refused} />
     {/if}
@@ -500,10 +622,15 @@
       {@render (one.kind === "day" ? heading : entry)(one as never)}
     {/each}
 
+    {#each kept as held (held.id)}
+      <RefusedRow {held} />
+    {/each}
+
     {#if footed}
       <More
         loading={$queue.loading}
         first={rows.length === 0}
+        shown={rows.length}
         offline={!pool.yes}
         failed={$queue.failure !== undefined}
         onmore={() => void client.loadQueue()}

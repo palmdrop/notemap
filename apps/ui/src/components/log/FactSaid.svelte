@@ -13,9 +13,9 @@
 </script>
 
 <span
-  class="max-w-[22rem] shrink-0 truncate max-narrow:max-w-full {fact.alarm ===
+  class="max-w-[22rem] shrink-0 truncate max-wide:max-w-full {fact.alarm ===
   true
-    ? 'text-alarm'
+    ? 'text-danger'
     : ''} {trigger === undefined
     ? ''
     : 'font-semibold tracking-[0.04em] [font-variant-caps:all-small-caps]'}"

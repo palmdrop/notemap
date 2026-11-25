@@ -57,7 +57,7 @@ test("counts a routing batch by how each reservation ended, as its notice does",
   );
 
   expect(said).toEqual({
-    what: "2 notes routed",
+    what: "2 items routed",
     subject: "Research",
     why: "1 failed",
     alarm: true,
@@ -78,7 +78,7 @@ test("counts a reservation with no ending yet as pending, and one the pool will 
     named,
   );
 
-  expect(said).toMatchObject({ what: "0 notes routed", why: "2 pending" });
+  expect(said).toMatchObject({ what: "0 items routed", why: "2 pending" });
 });
 
 test("does not take a trigger tag given back for the batch's own untag", () => {
@@ -93,7 +93,7 @@ test("does not take a trigger tag given back for the batch's own untag", () => {
   );
 
   expect(said).toMatchObject({
-    what: "0 notes routed",
+    what: "0 items routed",
     subject: "Research",
     why: "1 cancelled",
   });
@@ -106,7 +106,7 @@ test("counts a discard by the items it discarded", () => {
       undefined,
       named,
     ),
-  ).toEqual({ what: "2 notes discarded" });
+  ).toEqual({ what: "2 items discarded" });
 });
 
 test("counts what this client was answered, refusals and skips included, where it still holds it", () => {
@@ -128,7 +128,7 @@ test("counts what this client was answered, refusals and skips included, where i
       named,
     ),
   ).toEqual({
-    what: "1 note routed",
+    what: "1 item routed",
     subject: "Research",
     why: "1 already filed, 1 refused",
     alarm: true,
@@ -168,7 +168,7 @@ test("names the template its tag fires where the batch reserved nothing, as its 
   );
 
   expect(said).toEqual({
-    what: "0 notes routed",
+    what: "0 items routed",
     subject: "Research",
     why: "2 already filed",
   });
@@ -186,7 +186,7 @@ test("counts an item the template had already filed as left as it was, not as ta
   );
 
   expect(said).toEqual({
-    what: "1 note routed",
+    what: "1 item routed",
     subject: "Research",
     why: "1 already filed",
   });

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import {
     saidBy,
     type CandidateEntry,
@@ -22,6 +23,7 @@
     completionOf,
     continuationOf,
     ghostFor,
+    isFolder,
     landedOn,
     levelAt,
     marked,
@@ -34,9 +36,11 @@
     scopesAlong,
     steppedBack,
     textOf,
+    upTo,
     walkStart,
     withTyping,
     type Level,
+    type Row,
     type Refusal,
   } from "$lib/path-line";
 
@@ -57,6 +61,7 @@
     onrelease,
     onforecast,
     claims = true,
+    placeholder,
   }: {
     destination: string;
     capability: string;
@@ -78,6 +83,8 @@
     onforecast?: (word: "create" | "append" | undefined) => void;
     /** Takes the caret when drawn, which a form whose first field is something else does not want. */
     claims?: boolean;
+    /** Said in the empty line: where to look. */
+    placeholder?: string;
   } = $props();
 
   const id = $props.id();
@@ -140,11 +147,18 @@
   $effect(() => onforecast?.(forecast?.word));
 
   /**
-   * The typed tail that is not there yet, drawn under the deepest folder that
-   * is rather than named off beside the word. Only where there is a forecast:
-   * with nothing answered there is nothing to say is missing.
+   * A note's place is a folder or a note: a picture or a PDF beside them is
+   * nothing a note can be written into, so it is not offered as one.
    */
-  const drawn = $derived.by(() => {
+  const placeable = (row: Row): boolean =>
+    said === undefined ||
+    row.made === true ||
+    isFolder(row.entry) ||
+    /\.(md|markdown)$/i.test(row.entry.label);
+
+  const drawn = $derived(drawnRows().filter(placeable));
+
+  function drawnRows(): readonly Row[] {
     if (forecast === undefined) return rowsOf(levels, path);
 
     // Appending, the note's file is one the tree is already drawing, so the
@@ -156,7 +170,7 @@
       pending(path, forecast.making, appending ? undefined : forecast.leaf),
     );
     return appending ? landedOn(rows, path, forecast.leaf) : rows;
-  });
+  }
 
   /** In the order they are drawn, so `↑↓` moves down the tree as the eye does. */
   const here = $derived(reachable(drawn));
@@ -388,18 +402,48 @@
 </script>
 
 <div>
-  <div class="relative border-b border-ink px-2 py-0.5">
+  {#if path.complete.length > 0}
+    <!-- Where the line stands, each level a way back to it. -->
+    <nav
+      aria-label="Folders along {label}"
+      class="mb-1.5 -ml-1.5 flex flex-wrap items-center text-small text-muted"
+    >
+      {#each [nameOf(destination), ...path.complete] as level, depth (depth)}
+        {#if depth > 0}<Icon name="chevron" class="size-3.5" />{/if}
+        <button
+          type="button"
+          onclick={() => {
+            onchange(upTo(value, depth));
+            input?.focus();
+          }}
+          class="min-h-8 rounded-control px-1.5 hover:bg-hover hover:text-ink"
+          >{level}</button
+        >
+      {/each}
+    </nav>
+  {/if}
+  <div
+    class="relative min-h-11 rounded-control border border-rule bg-tag py-2.5 pl-3 focus-within:border-ink {value ===
+    ''
+      ? 'pr-3'
+      : 'pr-11'}"
+  >
     <!-- The input's own text is transparent and this is what is read, so the
          completion offered can be drawn after what was typed. Alignment is
          exact: one face, one size, in both. -->
     <div
       bind:this={shown}
       aria-hidden="true"
-      class="pointer-events-none absolute inset-0 overflow-hidden px-2 py-0.5 whitespace-pre"
+      class="pointer-events-none absolute inset-0 overflow-hidden py-2.5 pl-3 whitespace-pre {value ===
+      ''
+        ? 'pr-3'
+        : 'pr-11'}"
     >
-      <span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
+      {#if value === "" && placeholder !== undefined}<span class="text-muted"
+          >{placeholder}</span
+        >{/if}<span>{settled}{path.typing}</span>{#if ghost !== undefined}<span
           data-ghost
-          class="text-inert">{ghost}</span
+          class="text-muted">{ghost}</span
         >{/if}
     </div>
 
@@ -425,6 +469,18 @@
       aria-activedescendant={active}
       class="relative w-full bg-transparent text-transparent caret-ink outline-none"
     />
+    {#if value !== ""}
+      <button
+        type="button"
+        onclick={() => {
+          onchange("");
+          input?.focus();
+        }}
+        class="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted hover:text-ink"
+      >
+        <Icon name="close" label="Clear {label}" class="size-4" />
+      </button>
+    {/if}
   </div>
 
   {#if refusal !== undefined}
@@ -464,12 +520,28 @@
             indent={row.depth}
             ontake={() => take(row.entry)}
           >
-            <!-- Inline-block, so the row's underline stops at the name. -->
-            {row.made === true
-              ? `+ ${textOf(row.entry)}`
-              : textOf(row.entry)}{#if row.held === true}<span
-                class="ml-[1ch] inline-block font-normal">[append]</span
-              >{/if}
+            {@const label = textOf(row.entry)}
+            <span
+              class="-mx-gutter flex min-h-target items-center gap-2 border-b border-rule px-gutter {picked
+                ? 'bg-ink text-paper'
+                : ''}"
+            >
+              <Icon
+                name={label.endsWith("/") ? "folder" : "file"}
+                class="size-5 flex-none"
+              />
+              <span
+                class="min-w-0 truncate {!moved &&
+                (row.onPath || row.made === true || row.held === true)
+                  ? 'font-semibold'
+                  : ''}">{row.made === true ? `+ ${label}` : label}</span
+              >
+              {#if row.held === true}<span
+                  class="ml-auto text-small font-normal {picked
+                    ? ''
+                    : 'text-muted'}">append here</span
+                >{/if}
+            </span>
           </Walked>
         {/each}
       </div>

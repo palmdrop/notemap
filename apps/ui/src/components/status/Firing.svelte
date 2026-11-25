@@ -1,30 +1,27 @@
 <script lang="ts">
-  import Asking from "$components/primitives/marks/Asking.svelte";
-  import { notes } from "$lib/batching";
-  import { left, offerOf, type Firing } from "$lib/firings.svelte";
-
-  import { PANEL } from "./panel";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
+  import { itemCount } from "$lib/batching";
+  import { left, offerOf, phaseOf, type Firing } from "$lib/firings.svelte";
 
   /**
-   * Routes in flight: a trigger tag's, or a decision made by hand. One says its
-   * name and how long is left to call it off, and offers `undo`; once its window
-   * has closed the count gives way to the asking mark, the delivery being
-   * attempted, and nothing is offered until the pool says it will try again,
-   * when the offer is `cancel`. More than one are counted, and read and called
-   * off one by one in the panel — unless one batch fired them all, which is
-   * said and cancelled as one.
+   * Routes in flight, on the line's left. One says which of its three steps it
+   * is on: in its window, "Routing by Todo", the seconds left and Cancel;
+   * being attempted, "Sending to Vault", with nothing to offer; retrying,
+   * "Waiting for Vault", with Cancel. A batch is said and cancelled as one.
+   * More than one otherwise are counted, and read one by one in the panel.
+   * Offline, nothing offers Cancel: cancelling needs the pool.
    */
   let {
     open,
     now,
-    expanded,
+    offline = false,
     oncancel,
     oncancelbatch,
     ontoggle,
   }: {
     open: readonly Firing[];
     now: number;
-    expanded: boolean;
+    offline?: boolean;
     oncancel: (firing: Firing) => void;
     oncancelbatch: (batch: string) => void;
     ontoggle: () => void;
@@ -51,66 +48,75 @@
   );
 </script>
 
+{#snippet cancel(label: string, take: () => void)}
+  {#if !offline}
+    <button
+      type="button"
+      class="flex-none underline underline-offset-[0.2em]"
+      aria-label={label}
+      onclick={take}
+    >
+      Cancel
+    </button>
+  {/if}
+{/snippet}
+
 {#if open.length === 1}
   {@const firing = open[0]!}
   {@const seconds = left(firing, now)}
-  {@const word = offerOf(firing, now)}
-  <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
-    <span class="max-narrow:hidden"
-      >routing <span class="font-semibold">{firing.name}</span
-      >{#if firing.where !== undefined}&nbsp;{firing.where}{/if}</span
-    >
-    <span class="narrow:hidden">routing</span>
+  {@const phase = phaseOf(firing, now)}
+  <button
+    type="button"
+    onclick={ontoggle}
+    class="flex min-w-0 flex-1 items-center gap-2 text-left"
+  >
+    <Spinner />
+    <span class="min-w-0 truncate">
+      {#if phase === "window"}
+        Routing by <b>{firing.name}</b>{#if firing.where !== undefined}, {firing.where}{/if}
+      {:else if phase === "sending"}
+        Sending to <b>{firing.to ?? firing.name}</b>
+      {:else}
+        Waiting for <b>{firing.to ?? firing.name}</b>
+      {/if}
+    </span>
     {#if seconds !== undefined}
-      <span class="tabular-nums">{seconds}s</span>
-    {:else}
-      <Asking />
+      <span class="flex-none text-muted tabular-nums">{seconds}s</span>
     {/if}
-    {#if word !== undefined}
-      <button
-        type="button"
-        class="underline"
-        aria-label={`${word} routing ${firing.name}`}
-        onclick={() => oncancel(firing)}
-      >
-        {word}
-      </button>
-    {/if}
-  </span>
+  </button>
+  {#if offerOf(firing, now) !== undefined}
+    {@render cancel(`Cancel routing ${firing.name}`, () => oncancel(firing))}
+  {/if}
 {:else if batch !== undefined}
   {@const name = open[0]!.name}
-  <span class="flex flex-none items-baseline gap-2 whitespace-nowrap">
-    <span class="max-narrow:hidden"
-      >routing {notes(open.length)} with
-      <span class="font-semibold">{name}</span></span
+  <button
+    type="button"
+    onclick={ontoggle}
+    class="flex min-w-0 flex-1 items-center gap-2 text-left"
+  >
+    <Spinner />
+    <span class="min-w-0 truncate"
+      >Routing {itemCount(open.length)} by <b>{name}</b></span
     >
-    <span class="narrow:hidden">routing {open.length}</span>
     {#if soonest !== undefined}
-      <span class="tabular-nums">{soonest}s</span>
-    {:else}
-      <Asking />
+      <span class="flex-none text-muted tabular-nums">{soonest}s</span>
     {/if}
-    {#if open.some((firing) => offerOf(firing, now) !== undefined)}
-      <button
-        type="button"
-        class="underline"
-        aria-label={`cancel routing ${notes(open.length)} with ${name}`}
-        onclick={() => oncancelbatch(batch)}
-      >
-        cancel
-      </button>
-    {/if}
-  </span>
+  </button>
+  {#if open.some((firing) => offerOf(firing, now) !== undefined)}
+    {@render cancel(`Cancel routing ${itemCount(open.length)} by ${name}`, () =>
+      oncancelbatch(batch),
+    )}
+  {/if}
 {:else if open.length > 1}
   <button
     type="button"
-    class="flex-none whitespace-nowrap"
-    aria-expanded={expanded}
-    aria-controls={PANEL}
     onclick={ontoggle}
+    class="flex min-w-0 flex-1 items-center gap-2 text-left"
   >
-    routing {open.length}{#if soonest !== undefined}<span class="tabular-nums"
-        >&ensp;{soonest}s</span
-      >{/if}
+    <Spinner />
+    <span class="truncate">Routing {open.length}</span>
+    {#if soonest !== undefined}
+      <span class="flex-none text-muted tabular-nums">{soonest}s</span>
+    {/if}
   </button>
 {/if}

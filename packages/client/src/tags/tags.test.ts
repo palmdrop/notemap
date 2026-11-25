@@ -81,6 +81,55 @@ describe("the tags in use", () => {
     expect(counted).toBe(1);
   });
 
+  it("reads them again once a capture carrying a tag reaches the pool", async () => {
+    let counted = 0;
+    const { client } = clientOver(async (request) => {
+      if (routeOf(request) === "GET /v1/tags") {
+        counted += 1;
+        return inUse(use("kind/quote", 1));
+      }
+      const body = (await request.json()) as { id: string };
+      return json(201, { kind: "captured", item: anItem(body.id) });
+    });
+
+    await client.capture({ channel: "web", text: "one", tags: ["kind/quote"] });
+    await client.drain();
+
+    expect(counted).toBe(1);
+    expect(read(client.tags.inUse)).toEqual([use("kind/quote", 1)]);
+  });
+
+  it("reads them again once a batch that tags reaches the pool", async () => {
+    let counted = 0;
+    const { client } = clientOver(async (request) => {
+      if (routeOf(request) === "GET /v1/tags") {
+        counted += 1;
+        return inUse(use("kind/quote", 2));
+      }
+      const body = (await request.json()) as { batch: string };
+      return json(200, { batch: body.batch, values: [] });
+    });
+
+    await client.batch(["one", "two"], { kind: "tag", tag: "kind/quote" });
+    await client.drain();
+
+    expect(counted).toBe(1);
+  });
+
+  it("leaves them be after a capture with no tags", async () => {
+    let counted = 0;
+    const { client } = clientOver(async (request) => {
+      if (routeOf(request) === "GET /v1/tags") counted += 1;
+      const body = (await request.json()) as { id: string };
+      return json(201, { kind: "captured", item: anItem(body.id) });
+    });
+
+    await client.capture({ channel: "web", text: "one" });
+    await client.drain();
+
+    expect(counted).toBe(0);
+  });
+
   it("survives a pool that answers the tag and then fails the read", async () => {
     const failures: unknown[] = [];
     const onUnhandled = (reason: unknown) => failures.push(reason);

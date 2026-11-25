@@ -64,7 +64,7 @@ export function createPool(config: PoolConfig, wired: PoolPorts): Pool {
         store.queue(ordered(page, "oldest-first"), filter),
       archived: (page, filter) =>
         store.archived(ordered(page, "oldest-first"), filter),
-      counts: () => store.counts(),
+      counts: (since) => store.counts(since),
     },
 
     tags: { inUse: () => store.tagsInUse() },

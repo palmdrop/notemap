@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import { search } from "$lib/matching";
   import type { Takeable } from "$lib/processing";
 
@@ -17,6 +18,7 @@
     unusable = {},
     ontake,
     ontyped,
+    focus = true,
   }: {
     /**
      * Everything offered, which is the templates, the destinations and the two
@@ -29,6 +31,8 @@
     ontake: (id: string) => void;
     /** What is typed, for the bands beneath to narrow by. */
     ontyped?: (typed: string) => void;
+    /** Takes the caret on arrival: not on a phone, where it would raise the keyboard over the list. */
+    focus?: boolean;
   } = $props();
 
   let typed = $state("");
@@ -36,7 +40,9 @@
 
   // The first step of a decision you type is this line, so it takes the caret
   // rather than waiting to be clicked into.
-  $effect(() => input?.focus());
+  $effect(() => {
+    if (focus) input?.focus();
+  });
 
   $effect(() => ontyped?.(typed.trim()));
 
@@ -62,17 +68,23 @@
   }
 </script>
 
-<input
-  bind:this={input}
-  bind:value={typed}
-  {onkeydown}
-  spellcheck="false"
-  autocapitalize="off"
-  autocomplete="off"
-  aria-label="what became of it"
-  role="combobox"
-  aria-autocomplete="list"
-  aria-expanded="true"
-  aria-controls="destination-bands"
-  class="mb-2 w-full border-b border-ink pb-0.5 outline-none"
-/>
+<div
+  class="flex min-h-11 items-center gap-2 rounded-control border border-rule bg-tag px-3 focus-within:border-ink"
+>
+  <Icon name="search" class="size-5 text-muted" />
+  <input
+    bind:this={input}
+    bind:value={typed}
+    {onkeydown}
+    spellcheck="false"
+    autocapitalize="off"
+    autocomplete="off"
+    aria-label="what became of it"
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded="true"
+    aria-controls="destination-bands"
+    placeholder="Find a template or a destination"
+    class="min-w-0 flex-1 bg-transparent outline-none"
+  />
+</div>

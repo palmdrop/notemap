@@ -26,6 +26,7 @@ import {
   OUTPUT_STATUS,
   KIND_FILTER_STATUS,
   PARAMETER_STATUS,
+  SINCE_STATUS,
   TAG_FILTER_STATUS,
   WORDS_FILTER_STATUS,
   SOURCE_FILTER_STATUS,
@@ -555,12 +556,26 @@ export const countsRoute = createRoute({
   path: "/v1/counts",
   summary: "Count what the pool holds",
   description:
-    "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer.",
+    "How much the pool holds, counted rather than paged, so a client can say it on every surface without reading a surface to its end. `queue` is every item `GET /v1/queue` would answer. With `since`, `captured` is every item captured at or after it: a client asks from its own midnight to say what was captured today.",
+  request: {
+    query: z.object({
+      since: z
+        .string()
+        .optional()
+        .openapi({
+          param: { name: "since", in: "query" },
+          description:
+            "An ISO 8601 instant. Anything that is not one is refused with `422 bad-since`.",
+          example: "2026-11-18T23:00:00.000Z",
+        }),
+    }),
+  },
   responses: {
     200: {
       description: "The counts.",
       content: { [JSON_MEDIA_TYPE]: { schema: countsSchema } },
     },
+    422: errorResponse("`since` is not an instant.", 422, SINCE_STATUS),
   },
 });
 

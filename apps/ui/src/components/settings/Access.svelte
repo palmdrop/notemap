@@ -1,18 +1,16 @@
 <script lang="ts">
   import { saidBy, type MintedToken, type Token } from "@notemap/client";
 
-  import Fact from "$components/settings/Fact.svelte";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import Box from "$components/primitives/blocks/Box.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Lead from "$components/primitives/text/Lead.svelte";
   import { client } from "$lib/client";
   import { copyable } from "$lib/clipboard";
   import { log } from "$lib/log.svelte";
   import { session } from "$lib/session.svelte";
-  import { slide } from "$lib/motion";
   import { forgetOutputs } from "$lib/outputs";
-
-  const FIELD = "w-full border-b border-ink bg-transparent focus:outline-none";
 
   const who = session();
 
@@ -58,13 +56,12 @@
   const day = (instant?: string) =>
     instant === undefined ? undefined : instant.slice(0, 10);
 
-  const why = (token: Token) => ({
-    lead: `made ${day(token.createdAt) ?? ""}`,
-    rest:
+  const why = (token: Token) =>
+    `made ${day(token.createdAt) ?? ""}, ${
       token.lastUsedAt === undefined
         ? "never used"
-        : `last used ${day(token.lastUsedAt) ?? ""}`,
-  });
+        : `last used ${day(token.lastUsedAt) ?? ""}`
+    }`;
 
   async function attempt(what: () => Promise<unknown>) {
     said = "";
@@ -131,93 +128,126 @@
 </script>
 
 <Section name="access">
-  {#if who.canSignOut}
-    <Fact name="signed in">
-      <span class="flex flex-wrap items-baseline justify-between gap-x-[2ch]">
-        <span>
-          this browser holds a session
-          {#if signOutFailed !== undefined}
-            <span class="text-alarm">— {signOutFailed}</span>
-          {/if}
-        </span>
-        <Action working={signingOut} onclick={() => void signOut()}>
-          sign out
-        </Action>
-      </span>
-    </Fact>
-  {:else}
-    <Fact name="open">
-      no password is set, so every request is let through — run
-      <code>notemap password set</code> where the daemon runs to close the door
-    </Fact>
-  {/if}
-
-  {#if who.canSignOut}
-    <Section name="access tokens" sub>
-      {#each held as token (token.id)}
-        <Fact name={token.name}>
-          <span
-            class="flex flex-wrap items-baseline justify-between gap-x-[2ch]"
+  <div class="flex flex-col">
+    <div>
+      {#if who.canSignOut}
+        <div class="px-gutter py-4">
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 rounded-control border border-tag-line bg-tag px-4 py-3"
           >
-            <span><Lead {...why(token)} /></span>
-            <Action
-              disabled={going}
-              working={revoking === token.id}
-              onclick={() => void revoke(token)}
+            <span>
+              Signed in. This browser holds a session.
+              {#if signOutFailed !== undefined}
+                <span role="status" class="block text-danger"
+                  >{signOutFailed}</span
+                >
+              {/if}
+            </span>
+            <Box working={signingOut} onclick={() => void signOut()}
+              >Sign out</Box
             >
-              revoke
-            </Action>
-          </span>
-        </Fact>
-      {/each}
-
-      {#if minted !== undefined}
-        <div
-          class="mt-4 border border-alarm p-3"
-          transition:slide={{ magnitude: "short" }}
-        >
-          <p class="text-alarm">Copy now. The token will not be shown again.</p>
-          <p class="mt-2 break-all select-all">{minted.token}</p>
-          <div class="mt-2 flex flex-wrap items-baseline gap-x-6">
-            {#if copyable()}
-              <Action onclick={() => void copy()}>
-                <span class="font-semibold">{copied ? "copied" : "copy"}</span>
-              </Action>
-            {/if}
-            <Action onclick={() => (minted = undefined)}>done</Action>
           </div>
         </div>
-      {/if}
-
-      {#if addingToken}
-        <form
-          onsubmit={mint}
-          class="mt-4 flex flex-wrap items-baseline gap-x-3"
-          transition:slide={{ magnitude: "short" }}
-        >
-          <label for="token-name" class="tracking-caps uppercase">name</label>
-          <input
-            id="token-name"
-            bind:value={name}
-            class="{FIELD} max-w-[24ch] flex-1"
-          />
-          <Action
-            submit
-            disabled={going || name.trim() === ""}
-            working={minting}
-          >
-            create
-          </Action>
-        </form>
       {:else}
-        <div class="mt-4" transition:slide={{ magnitude: "short" }}>
-          <Action onclick={() => (addingToken = true)}>+ add a token</Action>
+        <div class="px-gutter py-4">
+          <p
+            role="status"
+            class="m-0 flex items-start gap-3 rounded-control border border-danger px-4 py-3 text-danger"
+          >
+            <Icon name="unlock" class="mt-0.5 size-5 flex-none" />
+            <span>
+              <b>No password.</b> Every request is let through: anyone who
+              reaches this pool can read and change everything in it. Run
+              <code>notemap password set</code> where the daemon runs to close the
+              door.
+            </span>
+          </p>
         </div>
       {/if}
 
-      {#if said !== ""}
-        <p role="status" class="mt-3 text-alarm">{said}</p>
+      {#if who.canSignOut}
+        <Band>access tokens</Band>
+        {#each held as token (token.id)}
+          <div
+            class="flex min-h-bar items-center justify-between gap-3 border-b border-rule px-gutter py-2"
+          >
+            <span class="min-w-0">
+              <span class="block">{token.name}</span>
+              <small class="block text-small text-muted">{why(token)}</small>
+            </span>
+            <Box
+              danger
+              disabled={going}
+              working={revoking === token.id}
+              onclick={() => void revoke(token)}>Revoke</Box
+            >
+          </div>
+        {:else}
+          <p class="m-0 border-b border-rule px-gutter py-3 text-muted">
+            No tokens.
+          </p>
+        {/each}
+
+        {#if minted !== undefined}
+          <div class="px-gutter py-4">
+            <div
+              class="rounded-control border border-danger px-4 py-3"
+              role="status"
+            >
+              <p class="m-0 text-danger">
+                Copy now. The token will not be shown again.
+              </p>
+              <p class="mt-2 mb-0 break-all select-all">{minted.token}</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {#if copyable()}
+                  <Box icon="copy" onclick={() => void copy()}
+                    >{copied ? "Copied" : "Copy"}</Box
+                  >
+                {/if}
+                <Box icon="check" onclick={() => (minted = undefined)}>Done</Box
+                >
+              </div>
+            </div>
+          </div>
+        {/if}
+
+        {#if !addingToken}
+          <LinkRow
+            icon="plus"
+            title="Add a token"
+            label="Add a token"
+            chevron={false}
+            onclick={() => (addingToken = true)}
+          />
+        {:else}
+          <form
+            onsubmit={mint}
+            class="flex flex-wrap items-end gap-2 border-b border-rule px-gutter py-3"
+          >
+            <label class="min-w-0 flex-1">
+              <span class="mb-1.5 block text-small">name</span>
+              <input
+                id="token-name"
+                bind:value={name}
+                aria-label="name"
+                placeholder="what it is for"
+                class="min-h-11 w-full rounded-control border border-edge bg-paper px-3 outline-none focus:border-ink"
+              />
+            </label>
+            <Box
+              disabled={going || name.trim() === ""}
+              working={minting}
+              onclick={() =>
+                mint(new SubmitEvent("submit", { cancelable: true }))}
+              >Create</Box
+            >
+          </form>
+        {/if}
+
+        {#if said !== ""}
+          <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
+        {/if}
       {/if}
-    </Section>
-  {/if}
+    </div>
+  </div>
 </Section>

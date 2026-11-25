@@ -9,13 +9,14 @@ import { expect, test } from "vitest";
 
 import Appearance from "./Appearance.svelte";
 
-const group = (name: string) => within(screen.getByRole("group", { name }));
+const group = (name: string) =>
+  within(screen.getByRole("radiogroup", { name }));
 const option = (name: string, among = "Theme") =>
-  group(among).getByRole("button", { name });
+  group(among).getByRole("radio", { name });
 const chosen = (among = "Theme") =>
   group(among)
-    .getAllByRole("button")
-    .find((one) => one.getAttribute("aria-pressed") === "true")
+    .getAllByRole("radio")
+    .find((one) => one.getAttribute("aria-checked") === "true")
     ?.textContent?.trim();
 const wearing = () => document.documentElement.dataset["theme"];
 
@@ -28,8 +29,6 @@ test("offers the three palettes and marks the one on", async () => {
 
   await fireEvent.click(option("dark"));
   expect(chosen()).toBe("dark");
-  expect(option("dark").classList.contains("font-semibold")).toBe(true);
-  expect(option("auto").classList.contains("font-semibold")).toBe(false);
   expect(wearing()).toBe("dark");
 
   await fireEvent.click(option("auto"));
@@ -48,15 +47,7 @@ test("remembers the choice, so a reload does not undo it", async () => {
   expect(chosen()).toBe("light");
 });
 
-test("offers the three ways of drawing rows, auto until one is chosen, and remembers it", async () => {
+test("keeps only the theme: rows are read by day at every width", () => {
   render(Appearance);
-  expect(chosen("Rows")).toBe("auto");
-
-  await fireEvent.click(option("by day", "Rows"));
-  expect(chosen("Rows")).toBe("by day");
-  expect(localStorage.getItem("notemap:rows")).toBe("by day");
-
-  cleanup();
-  render(Appearance);
-  expect(chosen("Rows")).toBe("by day");
+  expect(screen.queryByRole("group", { name: "Rows" })).toBeNull();
 });

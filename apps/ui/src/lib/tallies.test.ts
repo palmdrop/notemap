@@ -17,7 +17,7 @@ test("a batch with nothing left to wait for is said at once, and only once", () 
     outcomes: [{ id: "a", outcome: "archived", item: anItem("a") } as const],
   };
 
-  expect(tallying.answered(batch, undefined)?.what).toBe("1 note discarded");
+  expect(tallying.answered(batch, undefined)?.what).toBe("1 item discarded");
   expect(tallying.answered(batch, undefined)).toBeUndefined();
 });
 
@@ -36,7 +36,7 @@ test("a batch that reserved is said when its last reservation ends", () => {
   expect(tallying.ended("r1", "routed")).toBeUndefined();
   expect(tallying.ended("r1", "routed")).toBeUndefined();
   expect(tallying.ended("r2", "cancelled")).toMatchObject({
-    what: "1 note routed",
+    what: "1 item routed",
     why: "1 cancelled",
   });
 });
@@ -77,7 +77,7 @@ test("a reservation that ends before the pool's answer still counts toward its b
       },
       "Research links",
     ),
-  ).toMatchObject({ what: "1 note routed" });
+  ).toMatchObject({ what: "1 item routed" });
   expect(tallying.over("r1")).toBe(true);
 });
 

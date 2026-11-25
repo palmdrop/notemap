@@ -6,6 +6,8 @@ export const sourceUseSchema = z
     id: z.string(),
     /** Items it captured, archived and revised alike. */
     items: z.number().int().positive(),
+    /** Of those, the ones the queue holds. */
+    unprocessed: z.number().int().nonnegative(),
     /** The capture time of the newest of them, never the time it arrived. */
     lastCapturedAt: z.string(),
   })

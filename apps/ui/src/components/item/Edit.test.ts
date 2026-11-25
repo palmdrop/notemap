@@ -85,7 +85,7 @@ test("draws the picture the item carries, and removing it saves the item without
   );
   expect(screen.queryByAltText("shot.png")).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   // Closes once the operation has been recorded, not before it.
   await vi.waitFor(async () => {
@@ -125,7 +125,7 @@ test("attaching adds after what the item carries, and the edit names every slot 
     field.compareDocumentPosition(paper) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
 
-  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(async () => {
     expect(await edits(transport)).toHaveLength(1);
@@ -211,17 +211,18 @@ test("holds a picked file and leaves no bytes behind where the edit is never sav
   );
   expect(screen.queryByText("paper.pdf")).toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
-  expect(screen.queryByText("first.png")).toBeNull();
-
   await fireEvent.change(picker, {
     target: { files: [new File(["two"], "second.png", { type: "image/png" })] },
   });
   await screen.findByText("second.png");
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
-  const dialog = await screen.findByRole("dialog", { name: "Unsaved changes" });
-  await fireEvent.click(within(dialog).getByRole("button", { name: "revert" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  const dialog = await screen.findByRole("dialog", {
+    name: "lose your changes?",
+  });
+  await fireEvent.click(
+    within(dialog).getByRole("button", { name: "Lose changes" }),
+  );
 
   expect(closed).toHaveBeenCalled();
   expect(heldBlobs()).toEqual([]);
@@ -252,7 +253,7 @@ test("a file dropped while the edit is open goes to the edit rather than the box
   expect(within(box).queryByAltText("dropped.png")).toBeNull();
 
   await fireEvent.click(
-    within(edit.container).getByRole("button", { name: "save" }),
+    within(edit.container).getByRole("button", { name: "Save" }),
   );
   await vi.waitFor(async () => {
     expect((await edits(transport))[0]?.payload.assets).toHaveLength(1);
@@ -311,7 +312,7 @@ test("a save whose attach fails lets go of what it held, and keeps the edit open
   });
   await screen.findByText("second.png");
 
-  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => {
     expect(notices.latest?.what).toContain("second.png: no room");
@@ -349,7 +350,7 @@ test("a save the pool would now refuse removes the file, says so, and does not s
     ).toBeDefined();
   });
 
-  await fireEvent.click(screen.getByRole("button", { name: "save" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => {
     expect(notices.latest?.what).toContain("huge.bin: that file is larger");
@@ -389,5 +390,4 @@ test("an edit of a capture that carries a file holds nothing the item does not s
   await screen.findByText("shot.png");
 
   expect(unsaved()).toBe(false);
-  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
 });

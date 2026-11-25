@@ -105,3 +105,12 @@ test("lists the links a reader could follow, each once", () => {
     ),
   ).toEqual(["https://a.example/one", "http://www.b.example"]);
 });
+
+test("draws a task list item as a box, ticked where it is done", () => {
+  const html = drawn("- [ ] call back\n- [x] paid");
+
+  const boxes = [...html.querySelectorAll<HTMLInputElement>("input.task")];
+  expect(boxes.map((box) => box.checked)).toEqual([false, true]);
+  expect(html.textContent).not.toContain("[");
+  expect(html.textContent).toContain("call back");
+});

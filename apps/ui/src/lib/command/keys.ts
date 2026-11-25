@@ -58,3 +58,25 @@ export function activates(event: KeyboardEvent): boolean {
       target.getAttribute("role") === "button")
   );
 }
+
+const SAID: Record<string, string> = {
+  mod: "Ctrl",
+  alt: "Alt",
+  shift: "Shift",
+  enter: "Enter",
+  escape: "Esc",
+  " ": "Space",
+};
+
+/** A chord as a tooltip says it: `mod+enter` is `Ctrl+Enter`, `escape` is `Esc`. */
+export function spoken(held: string): string {
+  if (held === " ") return SAID[" "]!;
+  return held
+    .split("+")
+    .map(
+      (part) =>
+        SAID[part] ??
+        (part.length > 1 ? part.charAt(0).toUpperCase() + part.slice(1) : part),
+    )
+    .join("+");
+}

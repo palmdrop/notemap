@@ -26,10 +26,10 @@ test("draws what the pool said", async () => {
 
   await screen.findByText("show link previews");
   expect(screen.queryByText("unfurl")).toBeNull();
-  const yes = await screen.findByRole("button", { name: "yes" });
-  expect(yes.getAttribute("aria-pressed")).toBe("true");
-  const no = screen.getByRole("button", { name: "no" });
-  expect(no.getAttribute("aria-pressed")).toBe("false");
+  const yes = await screen.findByRole("radio", { name: "yes" });
+  expect(yes.getAttribute("aria-checked")).toBe("true");
+  const no = screen.getByRole("radio", { name: "no" });
+  expect(no.getAttribute("aria-checked")).toBe("false");
 });
 
 test("flipping it sends only that pool setting", async () => {
@@ -37,7 +37,7 @@ test("flipping it sends only that pool setting", async () => {
 
   render(PoolSettings);
 
-  await fireEvent.click(await screen.findByRole("button", { name: "no" }));
+  await fireEvent.click(await screen.findByRole("radio", { name: "no" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("PATCH /v1/settings");
@@ -68,10 +68,10 @@ test("a cold client draws it as unread rather than as on, while the read is in f
   render(PoolSettings);
 
   await screen.findByText("loading");
-  expect(screen.queryByRole("button", { name: "yes" })).toBeNull();
+  expect(screen.queryByRole("radio", { name: "yes" })).toBeNull();
 
   settle(json(200, { values: [{ name: "unfurl", value: true }] }));
-  await screen.findByRole("button", { name: "yes" });
+  await screen.findByRole("radio", { name: "yes" });
 });
 
 test("a cached answer is read again on opening, and the pool's current one is drawn", async () => {
@@ -88,7 +88,7 @@ test("a cached answer is read again on opening, and the pool's current one is dr
 
   await vi.waitFor(() => {
     expect(
-      screen.getByRole("button", { name: "no" }).getAttribute("aria-pressed"),
+      screen.getByRole("radio", { name: "no" }).getAttribute("aria-checked"),
     ).toBe("true");
   });
 });
@@ -98,8 +98,8 @@ test("choosing the option already chosen sends nothing", async () => {
 
   render(PoolSettings);
 
-  await fireEvent.click(await screen.findByRole("button", { name: "yes" }));
-  await fireEvent.click(screen.getByRole("button", { name: "no" }));
+  await fireEvent.click(await screen.findByRole("radio", { name: "yes" }));
+  await fireEvent.click(screen.getByRole("radio", { name: "no" }));
 
   await vi.waitFor(() => {
     expect(asked()).toContain("PATCH /v1/settings");

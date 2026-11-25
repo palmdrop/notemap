@@ -11,6 +11,7 @@ type Asked = {
   readonly action: BatchAction;
   readonly items: readonly string[];
   readonly question: string;
+  readonly by?: { readonly name: string; readonly where?: string };
   readonly notes: readonly string[];
 };
 

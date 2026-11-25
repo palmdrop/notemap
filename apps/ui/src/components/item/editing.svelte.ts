@@ -50,8 +50,8 @@ function same(one: Held, other: Held | undefined): boolean {
 
 /**
  * A capture being edited where it stands: the words and the attachments the
- * body draws, and the `close`, `revert`, `attach` and `save` the row's foot
- * draws in place of its actions. Nothing it holds outlives it — a picked file
+ * body draws, and the Attach, Cancel and Save its bar draws in place of the
+ * item's actions. Nothing it holds outlives it — a picked file
  * is held here and attached as the edit is saved, so an edit that is never
  * saved leaves no bytes behind.
  *

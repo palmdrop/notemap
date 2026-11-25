@@ -41,6 +41,7 @@ export type DaemonRefusal =
       readonly allowed: readonly string[];
     }
   | { readonly kind: "bad-position"; readonly after: string }
+  | { readonly kind: "bad-since"; readonly since: string }
   | {
       readonly kind: "bad-by";
       readonly by: string;

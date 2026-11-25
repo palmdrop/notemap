@@ -161,7 +161,8 @@ export interface ViewsApi {
   /** Oldest first unless asked otherwise, which is the only way it differs from the feed. */
   queue(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
   archived(page: PageRequest, filter?: SurfaceFilter): Promise<Slice<Item>>;
-  counts(): Promise<Counts>;
+  /** `since` adds how many were captured from then on: a shell asks from its own midnight. */
+  counts(since?: Timestamp): Promise<Counts>;
 }
 
 export interface TagsApi {

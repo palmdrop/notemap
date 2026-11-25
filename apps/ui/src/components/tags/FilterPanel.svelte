@@ -8,7 +8,14 @@
     type SourceUse,
   } from "@notemap/client";
 
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
   import Walked from "$components/primitives/composer/Walked.svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
+  import Sheet from "$components/primitives/sheets/Sheet.svelte";
+  import Order from "$components/order/Order.svelte";
+  import ViewChooser from "$components/view/ViewChooser.svelte";
+  import type { View } from "$lib/view";
   import { client } from "$lib/client";
   import { narrowed } from "$lib/candidate-list";
   import type { FilterKind } from "$lib/filter";
@@ -25,20 +32,33 @@
   let {
     surface,
     filter,
+    view,
+    onview,
     ontoggle,
     onclear,
+    shown,
   }: {
     surface: "queue" | "feed";
     filter: Filter;
+    /** Rows or the index, chosen here. */
+    view?: View;
+    onview?: (view: View) => void;
     ontoggle: (kind: FilterKind, value: string) => void;
     onclear: () => void;
+    /** How many rows the surface draws through the filter, for Show to say. */
+    shown?: number;
   } = $props();
 
   const id = $props.id();
-  const TRIGGER =
-    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+  const TRIGGER = "inline-flex items-center gap-1";
+  /** An option drawn as a box that can be on, beside the others. */
+  const BOX =
+    "inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-control border px-3.5 transition-colors duration-(--duration-short) ease-fade";
+  const boxed = (on: boolean): string =>
+    `${BOX} ${on ? "border-ink bg-ink pl-2.5 text-paper" : "border-off-line bg-off text-ink"}`;
 
   const inUse = client.tags.inUse;
+  const templates = client.templates.all;
   const destinations = client.destinations.all;
 
   let sources = $state<readonly SourceUse[]>([]);
@@ -69,7 +89,7 @@
   const bands = $derived.by((): readonly Band[] => {
     const state: Band = {
       kind: "states",
-      label: "state",
+      label: "State",
       lines: FILTER_STATES.map((value) => ({
         value,
         said: STATE_WORD[value],
@@ -79,7 +99,7 @@
     const retired = $destinations.filter((one) => one.retired === true);
     const destination: Band = {
       kind: "destinations",
-      label: "destination",
+      label: "Destination",
       lines: withHeld(
         [
           ...live.map((one) => ({ value: one.id, said: one.name })),
@@ -90,12 +110,12 @@
     };
     const source: Band = {
       kind: "sources",
-      label: "source",
+      label: "Source",
       lines: withHeld(
         sources.map((one) => ({
           value: one.id,
           said: one.id,
-          count: one.items,
+          count: surface === "queue" ? one.unprocessed : one.items,
         })),
         filter.sources,
       ),
@@ -128,9 +148,29 @@
       .filter((tag) => !counted.some((use) => use.name === tag))
       .map((name) => ({ name, count: 0 }));
 
-    return [...counted, ...unheld]
-      .filter((use) => use.count > 0 || filter.tags.includes(use.name))
-      .map((use) => ({ ...use, template: triggeredBy(use.name)?.name }));
+    // On the queue every template's trigger is offered, held or not: a
+    // trigger tag files what carries it, so the queue rarely holds one.
+    const triggers =
+      surface === "queue"
+        ? $templates
+            .map((one) => one.triggerTag)
+            .filter(
+              (tag): tag is string =>
+                tag !== undefined &&
+                !counted.some((use) => use.name === tag) &&
+                !unheld.some((use) => use.name === tag),
+            )
+            .map((name) => ({ name, count: 0 }))
+        : [];
+
+    return [...counted, ...unheld, ...triggers]
+      .map((use) => ({ ...use, template: triggeredBy(use.name)?.name }))
+      .filter(
+        (use) =>
+          use.count > 0 ||
+          filter.tags.includes(use.name) ||
+          (surface === "queue" && use.template !== undefined),
+      );
   });
 
   const matched = $derived.by(() => {
@@ -171,7 +211,7 @@
       .then((read) => (sources = read))
       .catch(() => undefined);
     await tick();
-    line?.focus();
+    line?.focus({ preventScroll: true });
   }
 
   function shut(): void {
@@ -223,64 +263,79 @@
       onhover={() => (at = index)}
       ontake={() => ontoggle("tags", one.name)}
     >
-      <span class="flex items-baseline gap-2.5">
-        <span aria-hidden="true" class="w-[1ch] flex-none">
-          {taken ? "▸" : ""}
-        </span>
+      <span class={boxed(taken)}>
+        {#if taken}<Icon name="check" class="size-4" />{/if}
         <span class={one.template === undefined ? "" : TRIGGER}>
-          {said(one)}
+          {#if one.template === undefined}<span aria-hidden="true">#</span
+            >{:else}<Icon name="route" class="size-4" />{/if}<span
+            >{said(one)}</span
+          >
         </span>
-        {#if one.template !== undefined}
-          <span class="max-narrow:hidden">→ {one.template}</span>
-        {/if}
-        <span class="ml-auto pl-4 tabular-nums">{one.count}</span>
+        <span class="tabular-nums opacity-70">{one.count}</span>
       </span>
     </Walked>
   </div>
 {/snippet}
 
-<!-- Leaving the control is what shuts it, whichever way a person leaves. -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="relative"
-  onfocusout={(event) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-      shut();
-    }
-  }}
-  onkeydown={(event) => {
-    if (event.key !== "Escape" || !open) return;
-    // Shutting this is what the key did here, so nothing above it — a
-    // selection let go of — also acts on the one press.
-    event.stopPropagation();
-    event.preventDefault();
-    shut();
-  }}
->
-  <!-- Not taken on `mousedown` while open: a browser that gives a pressed
-       button no focus would shut the panel as the line lost it, and the click
-       would open it again. -->
-  <button
-    type="button"
-    aria-expanded={open}
-    aria-controls={open ? `${id}-panel` : undefined}
-    onmousedown={(event) => {
-      if (open) event.preventDefault();
-    }}
-    onclick={() => (open ? shut() : void show())}
-    class="flex items-baseline gap-1 tabular-nums"
-  >
-    <span>filter</span>
-    {#if size > 0}<span>{size}</span>{/if}
-    <span aria-hidden="true">▾</span>
-  </button>
+{#snippet part(label: string)}
+  <h3 class="mb-2">{label}</h3>
+{/snippet}
 
-  {#if open}
+{#if open}
+  <Sheet title="filter" onclose={shut}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       id="{id}-panel"
-      class="absolute top-full right-0 z-30 mt-1 w-max max-w-[min(32rem,90vw)] min-w-56 border border-ink bg-ground px-2.5 py-1"
+      onkeydown={(event) => {
+        if (event.key !== "Escape") return;
+        event.stopPropagation();
+        event.preventDefault();
+        shut();
+      }}
     >
-      <div class="mb-1 flex items-baseline gap-3">
+      <section class="border-b border-rule px-gutter pt-3 pb-4">
+        {@render part("Order")}
+        <Order />
+      </section>
+      {#if view !== undefined && onview !== undefined}
+        <section class="border-b border-rule px-gutter pt-3 pb-4">
+          {@render part("View")}
+          <ViewChooser {view} onchoose={onview} />
+        </section>
+      {/if}
+      {#each bands as band (band.kind)}
+        <section class="border-b border-rule px-gutter pt-3 pb-4">
+          {@render part(band.label)}
+          <div
+            role="listbox"
+            aria-label={band.label}
+            aria-multiselectable="true"
+            class="flex flex-wrap gap-1.5"
+          >
+            {#each band.lines as one (one.value)}
+              {@const taken = (filter[band.kind] as readonly string[]).includes(
+                one.value,
+              )}
+              <div data-filter={band.kind} role="none">
+                <Walked
+                  selected={taken}
+                  ontake={() => ontoggle(band.kind, one.value)}
+                >
+                  <span class={boxed(taken)}>
+                    {#if taken}<Icon name="check" class="size-4" />{/if}
+                    <span>{one.said}</span>
+                    {#if one.count !== undefined}
+                      <span class="tabular-nums opacity-70">{one.count}</span>
+                    {/if}
+                  </span>
+                </Walked>
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/each}
+      <section class="px-gutter pt-3 pb-4">
+        {@render part("Tags")}
         <input
           bind:this={line}
           bind:value={draft}
@@ -289,6 +344,7 @@
           autocapitalize="off"
           autocomplete="off"
           aria-label="Find a tag"
+          placeholder="Find a tag"
           role="combobox"
           aria-autocomplete="list"
           aria-expanded="true"
@@ -296,86 +352,59 @@
           aria-activedescendant={marked === undefined
             ? undefined
             : `${id}-tag-${at}`}
-          class="min-w-0 flex-1 border-b border-ink px-1 outline-none"
+          class="mb-2 w-full border-b border-rule bg-transparent py-1 outline-none"
         />
-        {#if size > 0}
-          <!-- Taken on `mousedown` with the default prevented, so the caret stays
-             in the line and the panel open for what is taken next. -->
-          <button
-            type="button"
-            onmousedown={(event) => event.preventDefault()}
-            onclick={() => {
-              // The control goes with the filter, and the focus is not left
-              // on nothing.
-              line?.focus();
-              onclear();
-            }}
-            class="flex-none tabular-nums hover:underline"
-          >
-            clear {size}
-          </button>
+        {#if walked.length === 0}
+          <p class="text-muted">
+            {lines.length === 0 ? "No tags." : "No tag matches."}
+          </p>
         {/if}
-      </div>
-      {#each bands as band (band.kind)}
         <div
+          id="{id}-tags"
           role="listbox"
-          aria-label={band.label}
+          aria-label="Tags"
           aria-multiselectable="true"
-          class="mb-1 border-b border-ink pb-1"
+          class="flex flex-wrap gap-1.5"
         >
-          <div class="tracking-caps uppercase" aria-hidden="true">
-            {band.label}
-          </div>
-          {#each band.lines as one (one.value)}
-            {@const taken = (filter[band.kind] as readonly string[]).includes(
-              one.value,
-            )}
-            <div data-filter={band.kind} role="none">
-              <Walked
-                selected={taken}
-                ontake={() => ontoggle(band.kind, one.value)}
-              >
-                <span class="flex items-baseline gap-2.5">
-                  <span aria-hidden="true" class="w-[1ch] flex-none">
-                    {taken ? "▸" : ""}
-                  </span>
-                  <span>{one.said}</span>
-                  {#if one.count !== undefined}
-                    <span class="ml-auto pl-4 tabular-nums">{one.count}</span>
-                  {/if}
-                </span>
-              </Walked>
-            </div>
-          {/each}
-        </div>
-      {/each}
-      {#if walked.length === 0}
-        <div class="py-px">
-          {lines.length === 0 ? "No tags." : "No tag matches."}
-        </div>
-      {/if}
-      <div
-        id="{id}-tags"
-        role="listbox"
-        aria-label="Tags"
-        aria-multiselectable="true"
-        class="max-h-72 overflow-y-auto"
-      >
-        {#each ordinary as one (one.name)}
-          {@render row(one)}
-        {/each}
-        {#if triggers.length > 0}
-          <div
-            class="mt-2 border-t border-ink pt-1 tracking-caps uppercase"
-            aria-hidden="true"
-          >
-            templates
-          </div>
-          {#each triggers as one (one.name)}
+          {#each ordinary as one (one.name)}
             {@render row(one)}
           {/each}
+        </div>
+        {#if triggers.length > 0}
+          <div class="mt-4">
+            {@render part("Templates")}
+            <div
+              role="listbox"
+              aria-label="Templates"
+              aria-multiselectable="true"
+              class="flex flex-wrap gap-1.5"
+            >
+              {#each triggers as one (one.name)}
+                {@render row(one)}
+              {/each}
+            </div>
+          </div>
         {/if}
-      </div>
+      </section>
     </div>
-  {/if}
-</div>
+    {#snippet foot()}
+      <ActionBar label="Filter">
+        <BarAction
+          icon="undo"
+          label="Reset"
+          disabled={size === 0}
+          onclick={() => {
+            line?.focus();
+            onclear();
+          }}
+        />
+        <BarAction
+          icon="check"
+          label={shown === undefined ? "Show" : `Show ${String(shown)}`}
+          primary
+          onclick={shut}
+        />
+      </ActionBar>
+    {/snippet}
+  </Sheet>
+{/if}

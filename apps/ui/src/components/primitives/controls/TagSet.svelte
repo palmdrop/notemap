@@ -1,16 +1,27 @@
 <script lang="ts">
+  import { tick } from "svelte";
+  import Icon from "$components/primitives/icon/Icon.svelte";
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
   import type { Ask, Supplied } from "$lib/asked";
   import { completed, narrowed, takenAs } from "$lib/candidate-list";
-  import { drawOut, fade, grow, pinned, slide, unfold } from "$lib/motion";
+  import { width } from "$lib/breakpoint";
+  import {
+    drawOut,
+    fade,
+    fromFoot,
+    grow,
+    pinned,
+    rise,
+    slide,
+    unfold,
+  } from "$lib/motion";
   import { TRIGGER_NAMESPACE } from "$lib/trigger";
 
   /**
    * A chooser over known names with free entry. What the item carries is a row
-   * of pressed words, each taken off by pressing it once to select it — bold —
-   * and again on the `×` that appears beside it. `+` opens a line with the pool's offer in a
+   * of tags, each taken off by its `×` where tags can be changed. `+` opens a line with the pool's offer in a
    * panel beneath it, narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
@@ -34,6 +45,8 @@
     marked,
     ask,
     besides,
+    partly,
+    field = false,
     addable = true,
     label = "Add a tag",
     onadd,
@@ -67,6 +80,17 @@
     ask?: (name: string) => Promise<Ask | undefined> | undefined;
     /** Said after a carried tag: where the values it was given put the item. */
     besides?: (name: string) => string | undefined;
+    /**
+     * A tag on only some of what the set stands for, said as how many of how
+     * many (`2/5`): drawn dashed, and pressing it puts it on the rest.
+     */
+    partly?: (name: string) => string | undefined;
+    /**
+     * The line drawn as a field over the tags, its offer in the flow beneath
+     * it, both always there: for a set in a sheet, which clips what hangs over
+     * it, and where leaving the line must not move the tags under a press.
+     */
+    field?: boolean;
     /** Whether the `+` is drawn. A row offers it only while it is selected. */
     addable?: boolean;
     /** What the `+` and the line are called, where two sets share a page. */
@@ -84,23 +108,47 @@
   let draft = $state("");
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
-  /** A carried tag pressed to select it, so its `×` is drawn. */
-  let chosen = $state<string | undefined>(undefined);
+  let line = $state<HTMLInputElement | null>(null);
+  // On a phone the line goes to the top of the view, so the offer has the room
+  // under it down to the keyboard.
+  $effect(() => {
+    if (adding && !field && !width.wide) {
+      line?.scrollIntoView({ block: "start" });
+    }
+  });
 
   /** Opens the line, for a key that asks for it from outside. */
   export function add(): void {
-    open();
+    if (field) line?.focus({ preventScroll: true });
+    else open();
   }
 
   function open(): void {
     adding = true;
-    chosen = undefined;
   }
 
   function close(): void {
     adding = false;
     draft = "";
     stepping = undefined;
+  }
+
+  /** The question put away unanswered: the tag stays off. */
+  function leaveOff(): void {
+    if (field) done();
+    else close();
+  }
+
+  /** A tag taken: the line is put away, or as a field emptied for the next. */
+  function done(): void {
+    if (!field) {
+      close();
+      return;
+    }
+    const asked = stepping !== undefined;
+    draft = "";
+    stepping = undefined;
+    if (asked) void tick().then(() => line?.focus({ preventScroll: true }));
   }
 
   /** A trigger tag taken, and the values it is being given before it lands. */
@@ -134,12 +182,6 @@
         // A destination that cannot answer leaves the field typed.
       },
     );
-  });
-
-  // The row is the only caller that toggles this, and a `×` left on a row
-  // nobody is on is a control nobody asked for.
-  $effect(() => {
-    if (!addable) chosen = undefined;
   });
 
   const entries = $derived<readonly CandidateEntry[]>(
@@ -243,6 +285,14 @@
     if (panel !== null && tall !== undefined) grow(panel, tall);
   });
 
+  // A field's offer stands in the flow and changes height instead: sliding
+  // out, it would keep drawing the rows it no longer has.
+  const hung = (node: Element) =>
+    field ? {} : slide(node, { magnitude: "short" });
+  const unhung = (node: HTMLElement) =>
+    field ? {} : pinned(node, { magnitude: "short" });
+  const asking = (node: Element) => (width.wide ? rise(node) : fromFoot(node));
+
   /** Names the line's place for the offer to hang from, one per set on the page. */
   const anchor = `--tags-${id.replace(/[^\w-]/g, "")}`;
 
@@ -251,8 +301,11 @@
   );
 
   /** How a trigger tag is drawn, in the chooser and on the row alike. */
-  const TRIGGER =
-    "font-semibold [font-variant-caps:all-small-caps] tracking-[0.04em]";
+  const TRIGGER = "inline-flex items-center gap-1";
+
+  /** A tag on a row or an item: a small box of the box grey. */
+  const CHIP =
+    "inline-flex min-h-6 items-center rounded-tag border border-tag-line bg-tag px-1.5 text-small text-tag-ink";
 
   const WAITING = "files the item once the edit is saved";
 
@@ -264,21 +317,21 @@
 
   function take(name: string): void {
     if (name === "" || names.includes(name)) {
-      close();
+      done();
       return;
     }
     const asking = ask?.(name);
     if (asking === undefined) {
-      close();
+      done();
       onadd(name);
       return;
     }
 
     draft = "";
     void asking.then((found) => {
-      if (!adding) return;
+      if (!adding && !field) return;
       if (found === undefined || found.steps.length === 0) {
-        close();
+        done();
         onadd(name);
         return;
       }
@@ -303,7 +356,7 @@
       return;
     }
     const tag = stepping.tag;
-    close();
+    done();
     onadd(
       tag,
       Object.keys(values).length === 0 ? undefined : $state.snapshot(values),
@@ -335,11 +388,9 @@
     draft = "";
     stepping =
       stepping.at === 0 ? undefined : { ...stepping, at: stepping.at - 1 };
-  }
-
-  /** Pressing a carried tag selects it, or clears the selection where it already was. */
-  function press(name: string): void {
-    chosen = chosen === name ? undefined : name;
+    if (stepping === undefined) {
+      void tick().then(() => line?.focus({ preventScroll: true }));
+    }
   }
 
   function walk(step: 1 | -1): void {
@@ -383,232 +434,343 @@
         return;
       }
       const picked = at === undefined ? undefined : rows[at];
-      if (picked === undefined) close();
+      if (picked === undefined) done();
       else take(picked.label);
       return;
     }
 
     if (event.key === "Escape") {
+      // An empty field has nothing to put away, so the key goes on to close
+      // what holds it.
+      if (field && stepping === undefined && draft === "") return;
       // Putting this away is what the key did here, so nothing above it — a
-      // composer stepping back, a row closing — also acts on the one press.
+      // composer stepping back, a row closing, a sheet's dialog — also acts
+      // on the one press.
       event.stopPropagation();
+      event.preventDefault();
       if (stepping !== undefined) stepBack();
-      else close();
+      else done();
     }
   }
 </script>
 
 <!-- A carried tag is marked `#`, which is how it reads as a tag beside prose
-     in the same face and size; the mark is not part of its name. Bold when
-     selected, holding its width so nothing beside it moves. -->
-{#snippet said(word: string)}
-  <span class="steady-weight" data-word={`#${word}`}
-    ><span><span aria-hidden="true">#</span><span>{word}</span></span></span
+     in the same face and size; the mark is not part of its name. A trigger
+     tag is the route icon and the name after `route/`: the namespace is not a
+     decision. -->
+{#snippet said(word: string, triggered = false)}
+  <span class="inline-flex items-center {triggered ? 'gap-1' : ''}"
+    >{#if triggered}<Icon name="route" class="size-3.5" />{:else}<span
+        aria-hidden="true">#</span
+      >{/if}<span>{word}</span></span
   >
 {/snippet}
 
-<!-- A carried trigger tag is drawn as the name after `route/`, in small caps:
-     the style says which words file, and the namespace is not a decision. The
-     offer below keeps the whole name, being what is typed against. -->
-{#each names as name (name)}
-  {@const fired = fires?.(name)}
-  {@const filed = held?.(name) === true}
-  {@const inert = fixed || filed}
-  {@const filtered = marked?.(name) === true}
-  {@const pending = waiting?.(name) === true}
-  {@const where = besides?.(name)}
-  <span
-    class="whitespace-nowrap"
-    data-marked={filtered ? "" : undefined}
-    transition:unfold={{ fade: true }}
-  >
-    {#if inert}
+{#snippet carried()}
+  <!-- Where tags can be changed every one carries its ×; elsewhere they are
+     words, and pressing one is pressing what it sits on. -->
+  {#each names as name (name)}
+    {@const fired = fires?.(name)}
+    {@const filed = held?.(name) === true}
+    {@const inert = fixed || filed}
+    {@const filtered = marked?.(name) === true}
+    {@const pending = waiting?.(name) === true}
+    {@const where = besides?.(name)}
+    {@const some = partly?.(name)}
+    <span
+      class="whitespace-nowrap"
+      data-marked={filtered ? "" : undefined}
+      data-tag={name}
+      transition:unfold={{ fade: true }}
+    >
       <span
         title={filed
           ? "filed the item — cancel the routing to take it off"
-          : undefined}
-        aria-label={fired === undefined
-          ? undefined
-          : `${name}, routes to ${fired}`}
-        class="px-tag {fired === undefined ? '' : TRIGGER} {filtered
-          ? 'underline'
-          : ''}"
+          : pending
+            ? WAITING
+            : undefined}
+        class="{CHIP} {filtered || filed ? 'border-ink' : ''} {pending
+          ? 'text-muted'
+          : ''} {some === undefined ? '' : 'border-dashed bg-transparent'}"
       >
-        {@render said(fired === undefined ? name : trigger(name))}
-      </span>
-    {:else}
-      <!-- Room on both sides, always: selected, the word steps left by one
-           side's room and the `×` takes the two, so nothing beside it moves. -->
-      <span
-        class="relative inline-block px-tag"
-        data-chosen={chosen === name ? "" : undefined}
-      >
-        <button
-          type="button"
-          aria-pressed="true"
-          onclick={() => press(name)}
-          onkeydown={(event) => {
-            if (event.key === "Escape" && chosen === name) {
-              event.stopPropagation();
-              chosen = undefined;
-            }
-          }}
-          aria-label={fired === undefined && !pending
-            ? undefined
-            : [
-                name,
-                fired === undefined ? undefined : `routes to ${fired}`,
-                pending ? WAITING : undefined,
-              ]
-                .filter((part) => part !== undefined)
-                .join(", ")}
-          title={pending ? WAITING : undefined}
-          class="transition-transform duration-(--duration-short) ease-(--ease-motion) {chosen ===
-          name
-            ? '-translate-x-(--spacing-tag) font-semibold'
-            : 'hover:underline'} {fired === undefined ? '' : TRIGGER} {filtered
-            ? 'underline'
-            : ''} {pending ? 'text-inert' : ''}"
-        >
-          {@render said(fired === undefined ? name : trigger(name))}
-        </button>{#if chosen === name}<button
+        {#if some !== undefined}
+          <button
+            type="button"
+            aria-label="put {name} on every one, on {some} now"
+            onclick={() => onadd(name)}
+            class="inline-flex items-center gap-1"
+            >{@render said(name)}<span class="text-muted tabular-nums"
+              >{some}</span
+            ></button
+          >
+        {:else if fired === undefined && !pending}
+          {@render said(name)}
+        {:else}
+          <span aria-hidden="true"
+            >{@render said(
+              fired === undefined ? name : trigger(name),
+              fired !== undefined,
+            )}</span
+          ><span class="sr-only"
+            >{[
+              name,
+              fired === undefined ? undefined : `routes to ${fired}`,
+              pending ? WAITING : undefined,
+            ]
+              .filter((part) => part !== undefined)
+              .join(", ")}</span
+          >
+        {/if}
+        {#if filed}
+          <Icon name="lock" class="ml-1 size-3.5" />
+        {:else if addable && !inert}
+          <button
             type="button"
             aria-label={`remove ${name}`}
-            onclick={() => {
-              chosen = undefined;
+            onclick={(event) => {
+              event.stopPropagation();
               onremove(name);
             }}
-            class="absolute right-0 hover:underline"
-            transition:fade
+            class="relative -mr-1 ml-1 grid place-items-center text-muted before:absolute before:-inset-2.5 before:content-[''] hover:text-ink"
           >
-            ×
-          </button>{/if}
+            <Icon name="close" class="size-3.5" />
+          </button>
+        {/if}
       </span>
-    {/if}
-    {#if where !== undefined}<span class="pr-tag">{where}</span>{/if}
-  </span>
-{/each}
+      {#if where !== undefined}<span class="pr-tag">{where}</span>{/if}
+    </span>
+  {/each}
+{/snippet}
 
-<!-- The line's place, held whether or not it is open: at least the room the
+{#snippet entry(classes: string)}
+  <!-- svelte-ignore a11y_autofocus -->
+  <input
+    bind:this={line}
+    autofocus={!field}
+    bind:value={draft}
+    onblur={field || stepping !== undefined ? undefined : close}
+    inert={step !== undefined}
+    {onkeydown}
+    spellcheck="false"
+    autocapitalize="off"
+    autocomplete="off"
+    aria-label={label}
+    placeholder={field ? "Add a tag" : ""}
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded={(adding || field) && rows.length > 0}
+    aria-controls="{id}-tags"
+    aria-activedescendant={step === undefined ? active : undefined}
+    class={classes}
+    in:drawOut
+  />
+{/snippet}
+
+{#snippet place()}
+  <!-- The line's place, held whether or not it is open: at least the room the
      line opens at, so the `+` wraps where the line would and opening it moves
      nothing. Open, the line takes what is left of its row. The offer hangs
      from the place rather than the line, which is gone before the offer has
      finished closing. -->
-<span
-  class="h-(--text-shell--line-height) min-w-tag-line flex-1 self-start pl-tag"
->
-  <span class="block h-full" style="anchor-name: {anchor}">
-    {#if adding}
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        bind:value={draft}
-        autofocus
-        onblur={close}
-        {onkeydown}
-        spellcheck="false"
-        autocapitalize="off"
-        autocomplete="off"
-        aria-label={step === undefined ? label : step.label}
-        placeholder={step?.default ?? ""}
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded={rows.length > 0}
-        aria-controls="{id}-tags"
-        aria-activedescendant={active}
-        aria-describedby={stepping !== undefined && step !== undefined
-          ? `${id}-step`
-          : undefined}
-        class="h-full w-full border-b border-ink px-1 outline-none"
-        in:drawOut
-      />
-    {:else}
-      <!-- Drawn only where it can be taken: selecting a row then moves nothing
-         under it. -->
-      <button
-        type="button"
-        aria-label={addable ? label : undefined}
-        aria-hidden={!addable || undefined}
-        tabindex={addable ? undefined : -1}
-        disabled={!addable}
-        onclick={open}
-        class="hover:underline {addable ? '' : 'invisible'}">+</button
-      >
-    {/if}
-  </span>
-</span>
-
-{#if adding && (rows.length > 0 || step !== undefined)}
-  <!-- Rows taken on `mousedown` with the default prevented, so taking one
-       never blurs the line out from under the click. -->
-  <!-- Hung from the line where the browser can tie it there, and from the
-       start of the set's own row where it cannot; the set's container is
-       what it is placed against, so callers make that container relative.
-       Outside the line's own block, so the line goes the moment it closes
-       while the offer slides shut where it stood. -->
-  <!-- Asking for a value, a narrow screen draws the panel as a sheet across
-       its foot rather than hung from a line it may not have room beside. -->
-  <div
-    class="offer z-30 {step === undefined
-      ? ''
-      : 'max-narrow:fixed max-narrow:inset-x-0 max-narrow:top-auto max-narrow:bottom-0'}"
-    style="position-anchor: {anchor}"
-    in:slide|global={{ magnitude: "short" }}
-    out:pinned|global={{ magnitude: "short" }}
+  <span
+    class="h-(--text-body--line-height) min-w-tag-line flex-1 self-start {names.length >
+    0
+      ? 'pl-tag'
+      : ''}"
   >
-    <div
-      bind:this={panel}
-      class="mt-1 max-h-64 w-max min-w-36 overflow-y-auto border border-ink bg-ground px-2.5 py-1 {step ===
-      undefined
-        ? ''
-        : 'max-narrow:w-full'}"
-    >
-      {#if stepping !== undefined && step !== undefined}
-        <!-- What is being asked, and for which template, since the line holds
-             only the value. -->
-        <div
-          id="{id}-step"
-          class="-mx-2.5 mb-1 border-b border-ink px-2.5 pb-1"
+    <span class="block h-full" style="anchor-name: {anchor}">
+      {#if adding}
+        {@render entry(
+          "h-full min-h-6 w-full rounded-tag border border-ink bg-paper px-1.5 text-small outline-none",
+        )}
+      {:else}
+        <!-- Drawn only where it can be taken: selecting a row then moves nothing
+         under it. -->
+        <button
+          type="button"
+          aria-label={addable ? label : undefined}
+          aria-hidden={!addable || undefined}
+          tabindex={addable ? undefined : -1}
+          disabled={!addable}
+          onclick={open}
+          class="{addable
+            ? 'inline-flex'
+            : 'hidden'} relative min-h-6 items-center gap-1 rounded-tag border border-dashed border-edge px-1.5 text-small text-muted before:absolute before:-inset-2.5 before:content-['']"
+          ><span aria-hidden="true">+</span> tag</button
         >
-          <span class={TRIGGER}>{trigger(stepping.tag)}</span>
-          → {stepping.ask.template},
-          <span class="font-semibold">{step.label}</span>
-          {#if step.default !== undefined}
-            <span>default {step.default}</span>
-          {/if}
-        </div>
       {/if}
-      <div
-        id="{id}-tags"
-        role="listbox"
-        aria-label={step === undefined ? "Tags in use" : step.label}
+    </span>
+  </span>
+{/snippet}
+
+{#snippet listbox()}
+  <div
+    id="{id}-tags"
+    role="listbox"
+    aria-label={step === undefined ? "Tags in use" : step.label}
+    class="divide-y divide-rule"
+  >
+    {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
+      {@const on = at === index}
+      {@const fired = step !== undefined ? undefined : fires?.(row.label)}
+      {#if row.apart}
+        <div aria-hidden="true" class="h-2 border-b border-rule bg-band"></div>
+      {/if}
+      <Walked
+        id={on ? `${id}-tag-${index}` : undefined}
+        {on}
+        onhover={() => (at = index)}
+        ontake={() =>
+          step === undefined ? take(row.label) : give(row.value ?? row.label)}
       >
-        {#each rows as row, index (row.fresh ? `fresh:${row.label}` : row.label)}
-          {@const on = at === index}
-          {@const fired = step !== undefined ? undefined : fires?.(row.label)}
-          {#if row.apart}
-            <div
-              aria-hidden="true"
-              class="-mx-2.5 my-1 border-t border-ink"
-            ></div>
+        <span
+          class="flex min-h-target items-center justify-between gap-3 px-gutter {on
+            ? 'bg-off'
+            : ''}"
+        >
+          {#if step !== undefined}
+            <span
+              >{row.fresh
+                ? `+ ${row.value ?? row.label}`
+                : (row.value ?? row.label)}</span
+            >
+            <Icon name="chevron" class="size-5 flex-none" />
+          {:else if fired !== undefined}
+            <span aria-hidden="true" class={TRIGGER}
+              >{#if row.fresh}+&nbsp;{/if}<Icon
+                name="route"
+                class="size-4"
+              />{trigger(row.label)}</span
+            ><span aria-hidden="true" class="text-small text-muted"
+              >{fired}</span
+            ><span class="sr-only"
+              >{row.fresh ? "+ " : ""}{row.label}, routes to {fired}</span
+            >
+          {:else}
+            <span
+              >{#if row.fresh}+&nbsp;{/if}<span aria-hidden="true">#</span
+              >{row.label}</span
+            >{#if row.fresh}<span
+                aria-hidden="true"
+                class="text-small text-muted">new</span
+              >{/if}
           {/if}
-          <Walked
-            id={on ? `${id}-tag-${index}` : undefined}
-            {on}
-            onhover={() => (at = index)}
-            ontake={() =>
-              step === undefined
-                ? take(row.label)
-                : give(row.value ?? row.label)}
+        </span>
+      </Walked>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet offer()}
+  {#if stepping !== undefined && step !== undefined}
+    <!-- Asking for a value it is the quick route's shape: a sheet across a
+       phone's foot, a dialog in the middle of a wide window, over a veil, with
+       a field of its own for a typed answer. Closing it leaves the tag off. -->
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="{id}-step-title"
+      class="fixed inset-x-0 top-[var(--visible-top,0px)] z-50 flex h-[var(--visible-height,100dvh)] items-end justify-center wide:items-center"
+    >
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="absolute inset-0 bg-veil"
+        transition:fade|global
+        onmousedown={(event) => {
+          event.preventDefault();
+          leaveOff();
+        }}
+      ></div>
+      <div
+        bind:this={panel}
+        transition:asking|global
+        class="relative max-h-[70%] w-full overflow-y-auto rounded-t-control border-t border-rule bg-paper wide:w-[26rem] wide:rounded-control wide:border"
+      >
+        <div id="{id}-step">
+          <div
+            class="flex min-h-bar items-center justify-between gap-3 border-b border-rule pl-gutter"
           >
-            {#if row.fresh}
-              + {row.label}
-            {:else}
-              <span class={fired === undefined ? "" : TRIGGER}>{row.label}</span
-              >
-            {/if}{#if fired !== undefined}<span>&nbsp;→ {fired}</span>{/if}
-          </Walked>
-        {/each}
+            <span
+              id="{id}-step-title"
+              class="inline-flex items-center gap-2 font-display text-title lowercase"
+              ><Icon name="route" />{trigger(stepping.tag)}</span
+            >
+            <button
+              type="button"
+              aria-label="Leave the tag off"
+              onmousedown={(event) => event.preventDefault()}
+              onclick={leaveOff}
+              class="grid min-h-target min-w-target place-items-center"
+            >
+              <Icon name="close" />
+            </button>
+          </div>
+          <div class="px-gutter py-3">
+            <span class="block">{stepping.ask.template}</span>
+            <small class="block text-small text-muted"
+              >{step.label}{#if step.default !== undefined}, default {step.default}{/if}</small
+            >
+          </div>
+        </div>
+        <div class="border-b border-rule px-gutter pb-3">
+          <input
+            {@attach (node) => node.focus({ preventScroll: true })}
+            bind:value={draft}
+            {onkeydown}
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            aria-label={step.label}
+            placeholder={step.default ?? ""}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={rows.length > 0}
+            aria-controls="{id}-tags"
+            aria-activedescendant={active}
+            aria-describedby="{id}-step"
+            class="min-h-11 w-full rounded-control border border-rule bg-tag px-3 caret-ink outline-none placeholder:text-muted focus:border-ink"
+          />
+        </div>
+        {@render listbox()}
       </div>
     </div>
-  </div>
+  {:else if (adding || field) && rows.length > 0}
+    <!-- Rows taken on `mousedown` with the default prevented, so taking one
+       never blurs the line out from under the click. -->
+    <!-- Hung from the line where the browser can tie it there, and from the
+       start of the set's own row where it cannot; the set's container is
+       what it is placed against, so callers make that container relative. -->
+    <div
+      class={field ? "mb-2 basis-full" : "offer z-30"}
+      style="position-anchor: {anchor}"
+      in:hung|global
+      out:unhung|global
+    >
+      <div
+        bind:this={panel}
+        class="overflow-y-auto rounded-control border border-rule bg-paper {field
+          ? 'max-h-72 w-full'
+          : 'my-1 max-h-72 w-max max-w-[min(22rem,calc(100vw-2*var(--spacing-gutter)))] min-w-56'}"
+      >
+        {@render listbox()}
+      </div>
+    </div>
+  {/if}
+{/snippet}
+
+{#if field}
+  <span
+    class="relative flex min-h-11 basis-full items-center rounded-control border border-rule bg-tag focus-within:border-ink"
+  >
+    <span aria-hidden="true" class="pl-3 text-muted">#</span>
+    {@render entry(
+      "min-w-0 flex-1 bg-transparent py-2.5 pr-3 pl-1 caret-ink outline-none placeholder:text-muted",
+    )}
+  </span>
+  {@render offer()}
+  {@render carried()}
+{:else}
+  {@render carried()}
+  {@render place()}
+  {@render offer()}
 {/if}

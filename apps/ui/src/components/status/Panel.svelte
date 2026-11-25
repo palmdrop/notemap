@@ -2,9 +2,12 @@
   import type { PendingOperation } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
-  import Asking from "$components/primitives/marks/Asking.svelte";
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import Dot from "$components/primitives/marks/Dot.svelte";
+  import Spinner from "$components/primitives/marks/Spinner.svelte";
+  import Sheet from "$components/primitives/sheets/Sheet.svelte";
   import { publish } from "$lib/command/stack.svelte";
-  import { left, offerOf, type Firing } from "$lib/firings.svelte";
+  import { left, offerOf, phaseOf, type Firing } from "$lib/firings.svelte";
   import { slide } from "$lib/motion";
   import type { Said } from "$lib/notices.svelte";
   import { outgoing } from "$lib/outgoing";
@@ -14,12 +17,13 @@
 
   import Entry from "./Entry.svelte";
   import Refused from "./Refused.svelte";
-  import { PANEL } from "./panel";
+  import { PANEL } from "./panel.svelte";
 
   /**
-   * Opened above the status line: this session's notices, oldest first so the
-   * newest is nearest the line, and then everything in flight. What a notice
-   * offered is offered only while the notice is live.
+   * The notices, as a sheet, or a panel at the right when wide: what is on its
+   * way, what is waiting to send, the refused captures held here, and this
+   * session's notices, newest first. What a notice offered is offered only
+   * while it is live. Offline, nothing offers Cancel.
    */
   let {
     history,
@@ -27,6 +31,7 @@
     now,
     unsent,
     refused = [],
+    offline = false,
     onclose,
     ontake,
     oncancel,
@@ -41,6 +46,7 @@
     unsent: readonly PendingOperation[];
     /** Captures the pool refused, held until somebody decides what becomes of them. */
     refused?: readonly RefusedCapture[];
+    offline?: boolean;
     onclose: () => void;
     ontake: (id: string) => void;
     oncancel: (firing: Firing) => void;
@@ -55,50 +61,108 @@
     atop: true,
   });
 
-  const flying = $derived(firings.length + unsent.length > 0);
   const gone = $derived(history.some((said) => !said.live));
+  const newest = $derived([...history].reverse());
 
   function at(ms: number): string {
     return timeOf(new Date(ms).toISOString());
   }
+
+  const PHRASED = {
+    window: "Routing by",
+    sending: "Sending to",
+    retrying: "Waiting for",
+  } as const;
 </script>
 
-<!--
-  Hung from `notices` at the line's left, its edge on the line's own, and clear
-  of the line's rule so the two never read as one box. A phone has no room to
-  spare, so there it spans the screen, as the line does. Reversed so it
-  scrolls from the bottom: it opens on the newest, and what arrives while it
-  is read there stays in view.
--->
-<section
-  transition:slide
-  id={PANEL}
-  aria-label="notices"
-  class="absolute bottom-[calc(100%+1px)] -left-px flex max-h-[60dvh] w-[calc(100%+2px)] max-w-panel flex-col-reverse overflow-y-auto border-x border-t border-ink bg-ground max-narrow:left-0 max-narrow:w-full max-narrow:max-w-none max-narrow:border-x-0"
->
-  <div>
-    <header
-      class="sticky top-0 flex items-baseline justify-between gap-4 border-b border-ink bg-ground px-3 py-1.5"
-    >
-      <span class="font-semibold">notices</span>
-      <span class="flex gap-4">
-        {#if gone}
-          <button type="button" class="underline" onclick={onforget}
-            >clear</button
-          >
-        {/if}
-        <button type="button" class="underline" onclick={onclose}>close</button>
-      </span>
-    </header>
-
-    {#if history.length === 0 && !flying && refused.length === 0}
-      <p class="px-3 py-2" transition:slide={{ fade: true }}>{NO_NOTICES}</p>
+<Sheet title="notices" {onclose}>
+  <section id={PANEL} aria-label="notices">
+    {#if history.length === 0 && firings.length + unsent.length + refused.length === 0}
+      <p class="px-gutter py-3 text-muted" transition:slide={{ fade: true }}>
+        {NO_NOTICES}
+      </p>
     {/if}
 
-    <!-- Drawn while empty too, so the last notice cleared slides out rather than
-         going with the list. -->
+    {#if firings.length > 0}
+      <Band level={3}>on its way</Band>
+      <ol aria-label="on its way">
+        {#each firings as firing (firing.record)}
+          {@const seconds = left(firing, now)}
+          {@const phase = phaseOf(firing, now)}
+          {@const offered = offline ? undefined : offerOf(firing, now)}
+          <Entry
+            what={PHRASED[phase]}
+            subject={phase === "window"
+              ? firing.name
+              : (firing.to ?? firing.name)}
+            {...firing.where === undefined ? {} : { why: firing.where }}
+            href={firing.href}
+            {...offered === undefined
+              ? {}
+              : { offer: { label: "Cancel", take: () => oncancel(firing) } }}
+          >
+            {#snippet mark()}
+              <Spinner />
+              {#if seconds !== undefined}
+                <span class="order-last text-muted tabular-nums"
+                  >{seconds}s</span
+                >
+              {/if}
+            {/snippet}
+          </Entry>
+        {/each}
+      </ol>
+    {/if}
+
+    {#if unsent.length > 0}
+      <Band level={3}>waiting to send</Band>
+      <ol aria-label="waiting to send">
+        {#each unsent as held (held.id)}
+          {@const said = outgoing(held.operation)}
+          <Entry
+            when={timeOf(held.at)}
+            what={said.what}
+            subject={said.subject}
+            href={said.item === undefined ? undefined : itemHref(said.item)}
+          >
+            {#snippet mark()}<Dot said="waiting to send" />{/snippet}
+          </Entry>
+        {/each}
+      </ol>
+    {/if}
+
+    {#if refused.length > 0}
+      <Band level={3}>refused</Band>
+      <ol aria-label="refused">
+        {#each refused as held (held.id)}
+          <Refused
+            {held}
+            oncopy={() => oncopy?.(held)}
+            onedit={() => onedit?.(held)}
+            ondelete={() => ondelete?.(held)}
+          />
+        {/each}
+      </ol>
+    {/if}
+
+    {#if history.length > 0}
+      <Band level={3}>
+        this session
+        {#snippet end()}
+          {#if gone}
+            <button
+              type="button"
+              class="underline underline-offset-[0.2em]"
+              onclick={onforget}>Clear</button
+            >
+          {/if}
+        {/snippet}
+      </Band>
+    {/if}
+    <!-- Drawn while empty too, so the last notice cleared slides out rather
+         than going with the list. -->
     <ol aria-label="said" aria-hidden={history.length === 0 || undefined}>
-      {#each history as said (said.id)}
+      {#each newest as said (said.id)}
         <Entry
           when={at(said.at)}
           what={said.what}
@@ -113,67 +177,5 @@
         />
       {/each}
     </ol>
-
-    {#if refused.length > 0}
-      <h2
-        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
-      >
-        refused
-      </h2>
-      <ol aria-label="refused">
-        {#each refused as held (held.id)}
-          <Refused
-            {held}
-            oncopy={() => oncopy?.(held)}
-            onedit={() => onedit?.(held)}
-            ondelete={() => ondelete?.(held)}
-          />
-        {/each}
-      </ol>
-    {/if}
-
-    {#if flying}
-      <h2
-        class="sticky top-0 border-y border-ink bg-ground px-3 py-1.5 font-semibold"
-      >
-        in flight
-      </h2>
-      <ol aria-label="in flight">
-        {#each firings as firing (firing.record)}
-          {@const seconds = left(firing, now)}
-          {@const label = offerOf(firing, now)}
-          <Entry
-            what="routing"
-            subject={firing.name}
-            {...firing.where === undefined ? {} : { why: firing.where }}
-            href={firing.href}
-            {...label === undefined
-              ? {}
-              : { offer: { label, take: () => oncancel(firing) } }}
-          >
-            {#snippet mark()}
-              {#if seconds !== undefined}
-                <span class="tabular-nums">{seconds}s</span>
-              {:else}
-                <Asking />
-              {/if}
-            {/snippet}
-          </Entry>
-        {/each}
-
-        {#each unsent as held (held.id)}
-          {@const said = outgoing(held.operation)}
-          <Entry
-            when={timeOf(held.at)}
-            what={said.what}
-            subject={said.subject}
-            why={held.state === "unreachable"
-              ? "pending while the pool is out of reach"
-              : "pending"}
-            href={said.item === undefined ? undefined : itemHref(said.item)}
-          />
-        {/each}
-      </ol>
-    {/if}
-  </div>
-</section>
+  </section>
+</Sheet>

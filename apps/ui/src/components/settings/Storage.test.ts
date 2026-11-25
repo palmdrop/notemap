@@ -13,9 +13,6 @@ import StorageSection from "./Storage.svelte";
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
-const pressNth = async (name: string, nth: number) =>
-  fireEvent.click((await screen.findAllByRole("button", { name }))[nth]!);
-
 const REPORT: Storage = {
   pool: {
     path: "/var/lib/notemap/state/notemap.db",
@@ -113,8 +110,8 @@ test("says it twice where a root is on a mount of its own", async () => {
 
   render(StorageSection);
 
-  await screen.findByText(/where the pool and the assets live/);
-  await screen.findByText(/where the mirror lives/);
+  await screen.findByText(/holding the pool and the assets/);
+  await screen.findByText(/holding the mirror/);
   await screen.findByText("210 GB");
 });
 
@@ -130,27 +127,7 @@ test("says what identical bytes saved, which is the registry's own figure", asyn
   await screen.findByText(/identical bytes held once/);
 });
 
-test("folds the paths away, and gives them up on asking", async () => {
-  serving(
-    () => json(200, REPORT),
-    () => json(200, { ...REPORT, measured: MEASURED }),
-  );
-
-  render(StorageSection);
-  await screen.findByText("4.3 MB");
-
-  // Reference material, not a figure anyone scans: it does not crowd the rows.
-  expect(screen.queryByText("/var/lib/notemap/state/notemap.db")).toBeNull();
-
-  await pressNth("show", 1);
-
-  await screen.findByText("/var/lib/notemap/state/notemap.db");
-  await screen.findByText("/var/lib/notemap/assets");
-  await screen.findByText("/var/lib/notemap/pool-mirror");
-  await screen.findByText("/var/lib/notemap/state/auth.db");
-});
-
-test("folds what the roots hold away, and says it with each root's size", async () => {
+test("draws the paths and what the roots hold under labels of their own, always", async () => {
   serving(
     () => json(200, REPORT),
     () => json(200, { ...REPORT, measured: MEASURED }),
@@ -159,10 +136,11 @@ test("folds what the roots hold away, and says it with each root's size", async 
   render(StorageSection);
   await screen.findByText("78 MB");
 
-  expect(screen.queryByText(/142 assets/)).toBeNull();
-
-  await pressNth("show", 0);
-
+  expect(screen.getByRole("heading", { name: "Stats" })).toBeDefined();
+  expect(screen.getByRole("heading", { name: "Paths" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
+  await screen.findByText("/var/lib/notemap/state/notemap.db");
+  await screen.findByText("/var/lib/notemap/assets");
   await screen.findByText("142 assets / 140 files (70 MB)");
   await screen.findByText("1,204 records / 2,408 files (3.5 MB)");
 });
@@ -212,7 +190,7 @@ test("the reclaim is inert where there is nothing to take", async () => {
   // The figure says it: a label naming the action needs no sentence beside it.
   await screen.findByText("0 bytes");
   const button = await screen.findByRole<HTMLButtonElement>("button", {
-    name: "reclaim now",
+    name: /^Reclaim/,
   });
   expect(button.disabled).toBe(true);
 });
@@ -237,7 +215,7 @@ test("the reclaim fires, says what it took, and asks again", async () => {
   await screen.findByText(/2 files left behind/);
   await screen.findByText("714 KB");
 
-  await press("reclaim now");
+  await press(/^Reclaim/);
 
   await screen.findByText(/took 2 files, 714 KB/);
   await screen.findByText("0 bytes");
@@ -262,7 +240,7 @@ test("drops what a reclaim took once the section looks again", async () => {
   render(StorageSection);
   await screen.findByText(/2 files left behind/);
 
-  await press("reclaim now");
+  await press(/^Reclaim/);
   await screen.findByText(/took 2 files, 714 KB/);
 
   transport.unreachable(true);

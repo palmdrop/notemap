@@ -15,6 +15,7 @@ import {
   pathOf,
   pending,
   popped,
+  upTo,
   steppedBack,
   reachable,
   rowsOf,
@@ -522,7 +523,7 @@ describe("the path that is not there yet", () => {
    * The bug this is here for: appended after the walk, the tail lands past
    * `reading/` and reads as a note about to be made inside it.
    */
-  test("draws the tail where the trail runs out, not after the whole tree", () => {
+  test("draws the tail first where the trail runs out, not after the whole tree", () => {
     const path = parsePath("projects/notemap/drafts/picker.md");
     const levels = [...VAULT, { scope: "projects/notemap/drafts" }];
 
@@ -533,15 +534,15 @@ describe("the path that is not there yet", () => {
     ).toEqual([
       ["projects/", 0],
       ["notemap/", 1],
-      ["notes/", 2],
-      ["readme.md", 2],
       ["drafts/", 2],
       ["picker.md", 3],
+      ["notes/", 2],
+      ["readme.md", 2],
       ["reading/", 0],
     ]);
   });
 
-  test("draws a note under the folder that holds it, above that folder's siblings", () => {
+  test("draws a note first under the folder that holds it, before what is there", () => {
     const path = parsePath("projects/notemap/");
 
     expect(
@@ -552,9 +553,9 @@ describe("the path that is not there yet", () => {
     ).toEqual([
       ["projects/", 0],
       ["notemap/", 1],
+      ["picker.md", 2],
       ["notes/", 2],
       ["readme.md", 2],
-      ["picker.md", 2],
       ["reading/", 0],
     ]);
   });
@@ -788,4 +789,10 @@ describe("alignedTo", () => {
     const levels = [level(""), level("projects")];
     expect(alignedTo(levels, [""])).toEqual([level("")]);
   });
+});
+
+test("goes up to a folder along the path, or to the root", () => {
+  expect(upTo("projects/notemap/todo.md", 1)).toBe("projects/");
+  expect(upTo("projects/notemap/todo.md", 2)).toBe("projects/notemap/");
+  expect(upTo("projects/notemap/", 0)).toBe("");
 });

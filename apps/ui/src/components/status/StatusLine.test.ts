@@ -9,7 +9,8 @@ import { firings } from "$lib/firings.svelte";
 import { clearDraft, heldFiles, readDraft } from "$lib/draft";
 import { notices } from "$lib/notices.svelte";
 import { tallying } from "$lib/tallies";
-import StatusLine from "./StatusLine.svelte";
+import StatusLine from "./StatusLine.fixture.svelte";
+import { panel } from "./panel.svelte";
 
 /** The one element saying this, whatever spans it is drawn in. */
 const says = (text: string) =>
@@ -36,6 +37,7 @@ function firstValueOf<T>(source: {
 }
 
 afterEach(() => {
+  panel.close();
   notices.clear();
   firings.clear();
   tallying.clear();
@@ -104,7 +106,7 @@ test("what a notice offers is taken from the line", async () => {
   const put = vi.fn();
 
   notices.raise({ what: "discarded", offer: { label: "undo", take: put } });
-  await fireEvent.click(await screen.findByRole("button", { name: "undo" }));
+  await fireEvent.click(await screen.findByRole("button", { name: "Undo" }));
 
   expect(put).toHaveBeenCalledTimes(1);
   await vi.waitFor(() => {
@@ -137,7 +139,7 @@ test("nothing leaves the line while focus is inside it", async () => {
 
   notices.raise({ what: "discarded", offer: { label: "undo", take: vi.fn() } });
   await vi.advanceTimersByTimeAsync(0);
-  const undo = screen.getByRole("button", { name: "undo" });
+  const undo = screen.getByRole("button", { name: "Undo" });
 
   await fireEvent.focusIn(undo);
   await vi.advanceTimersByTimeAsync(60_000);
@@ -168,7 +170,7 @@ test("the panel reads back what the line has let go of", async () => {
   expect(said.textContent).toContain("routed · vault");
   expect(said.textContent).toContain("a thought");
   expect(
-    within(said).getByRole("link", { name: "open" }).getAttribute("href"),
+    within(said).getByRole("link", { name: "Open" }).getAttribute("href"),
   ).toBe("/items/one");
   // Nothing is ever dismissed: a notice goes on its own and is read here.
   expect(within(said).queryByRole("button", { name: "dismiss" })).toBeNull();
@@ -186,7 +188,7 @@ test("what went wrong is counted on notices until the panel is opened", async ()
   await vi.advanceTimersByTimeAsync(60_000);
 
   const toggle = screen.getByRole("button", { name: "notices, 1 gone wrong" });
-  expect(toggle.textContent?.replace(/\s+/g, " ").trim()).toBe("notices (1) ▴");
+  expect(toggle.textContent?.trim()).toBe("1");
 
   await fireEvent.click(toggle);
   expect(screen.getByRole("button", { name: "notices" })).toBeDefined();
@@ -220,7 +222,7 @@ test("notices opens the panel when nothing has been said", async () => {
   ).toBe("true");
 });
 
-test("the panel opens and closes by command, and closes on a press outside", async () => {
+test("the panel opens and closes by command, and closes on a press on the veil", async () => {
   pool(quiet);
   render(StatusLine);
   notices.raise({ what: "copied" });
@@ -236,7 +238,7 @@ test("the panel opens and closes by command, and closes on a press outside", asy
 
   command("notices").run();
   await screen.findByRole("region", { name: "notices" });
-  await fireEvent.pointerDown(document.body);
+  await fireEvent.click(document.querySelector(".bg-veil")!);
   await vi.waitFor(() => {
     expect(screen.queryByRole("region", { name: "notices" })).toBeNull();
   });
@@ -368,29 +370,51 @@ test("counts the work this device holds, and lists it in the panel", async () =>
 
   await client.tag("one", "kind/quote");
 
-  await screen.findByRole("button", { name: "1 pending" });
-  expect(screen.getByText("offline")).toBeDefined();
+  await screen.findByRole("button", { name: "1 waiting" });
+  expect(screen.getByText("Offline")).toBeDefined();
 
   command("notices").run();
-  const flying = await screen.findByRole("list", { name: "in flight" });
-  expect(flying.textContent?.replace(/\s+/g, " ")).toContain("tag kind/quote");
-  expect(flying.textContent).toContain("pending");
+  const waiting = await screen.findByRole("list", { name: "waiting to send" });
+  expect(waiting.textContent?.replace(/\s+/g, " ")).toContain("tag kind/quote");
 });
 
-test("says how many items the queue holds, once the pool has counted", async () => {
+test("leaves the queue's size to the drawer, and is not drawn while nothing is true", async () => {
   const transport = pool(quiet);
   transport.counts = () => json(200, { queue: 14 });
-  render(StatusLine);
-
-  expect(screen.queryByText(/in queue/)).toBeNull();
+  const { container } = render(StatusLine);
 
   await client.counts.load();
 
-  expect((await screen.findByText("14 in queue")).getAttribute("href")).toBe(
-    "/",
-  );
+  expect(screen.queryByText(/14/)).toBeNull();
   // A pool that answers is the ordinary state, and says nothing.
-  expect(screen.queryByText("offline")).toBeNull();
+  expect(screen.queryByText("Offline")).toBeNull();
+  expect(container.querySelector("[data-status-line]")).toBeNull();
+
+  notices.raise({ what: "copied" });
+  await vi.waitFor(() => {
+    expect(container.querySelector("[data-status-line]")).not.toBeNull();
+  });
+});
+
+test("offline, nothing offers Cancel: not the line, and not the notices", async () => {
+  const transport = pool(quiet);
+  transport.unreachable(true);
+  render(StatusLine);
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Research",
+    until: Date.now() + 15_000,
+  });
+
+  await screen.findByText("Offline");
+  expect(says("Routing by Research")).toBeDefined();
+  expect(screen.queryByRole("button", { name: /Cancel/ })).toBeNull();
+
+  command("notices").run();
+  const flying = await screen.findByRole("list", { name: "on its way" });
+  expect(within(flying).queryByRole("button", { name: "Cancel" })).toBeNull();
 });
 
 /** The log is the only place this is written, and nobody was reading it. */
@@ -440,9 +464,8 @@ test("says what logged while nobody was asking", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
 
   const said = await screen.findByRole("alert");
-  expect(said.textContent).toContain(
-    "routing failed: taken.md is already there",
-  );
+  expect(said.textContent).toContain("Rejected by");
+  expect(said.textContent).toContain("taken.md is already there");
 
   // Which capture it was about, read in the panel: the log names an id.
   command("notices").run();
@@ -450,7 +473,7 @@ test("says what logged while nobody was asking", async () => {
     const panel = screen.getByRole("list", { name: "said" });
     expect(panel.textContent).toContain("the picker needs a trail");
     expect(
-      within(panel).getByRole("link", { name: "open" }).getAttribute("href"),
+      within(panel).getByRole("link", { name: "Open" }).getAttribute("href"),
     ).toBe("/items/one");
   });
 });
@@ -511,7 +534,7 @@ test("a landing made by hand offers to keep it as a template, and one a template
     ...logged,
   ];
   await vi.advanceTimersByTimeAsync(10_000);
-  expect(notices.latest?.offer?.label).toBe("save as template");
+  expect(notices.latest?.offer?.label).toBe("Save as template");
 
   logged = [
     anAction("3", "routed", {
@@ -722,11 +745,11 @@ test("a fired template counts down on the line, with its cancel", async () => {
   });
   await vi.advanceTimersByTimeAsync(0);
 
-  expect(says("routing Research")).toBeDefined();
+  expect(says("Routing by Research")).toBeDefined();
   expect(screen.getByText("15s")).toBeDefined();
   // Inside the window the decision is the person's to take back.
   expect(
-    screen.getByRole("button", { name: "undo routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   ).toBeDefined();
 
   await vi.advanceTimersByTimeAsync(5_000);
@@ -735,18 +758,18 @@ test("a fired template counts down on the line, with its cancel", async () => {
   await vi.advanceTimersByTimeAsync(10_000);
   expect(screen.queryByText(/^\d+s$/)).toBeNull();
   // Still in flight, and being attempted: a cancel now would be refused.
-  expect(says("routing Research")).toBeDefined();
+  expect(says("Sending to Research")).toBeDefined();
   expect(screen.queryByRole("button", { name: /routing Research/ })).toBeNull();
 
   // The pool could not reach it and will try again: between attempts it can be called off.
   firings.retrying("r1");
   await vi.advanceTimersByTimeAsync(0);
   expect(
-    screen.getByRole("button", { name: "cancel routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   ).toBeDefined();
 
   await fireEvent.click(
-    screen.getByRole("button", { name: "cancel routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   );
   await vi.waitFor(() => {
     expect(firings.open).toHaveLength(0);
@@ -776,7 +799,7 @@ test("a cancel the pool refuses says why", async () => {
   });
   await vi.advanceTimersByTimeAsync(0);
   await fireEvent.click(
-    screen.getByRole("button", { name: "undo routing Research" }),
+    screen.getByRole("button", { name: "Cancel routing Research" }),
   );
 
   await vi.waitFor(() => {
@@ -809,7 +832,7 @@ test("the log opens a firing and closes it with the landing", async () => {
     ...logged,
   ];
   await vi.advanceTimersByTimeAsync(10_000);
-  await vi.waitFor(() => says("routing Research links"));
+  await vi.waitFor(() => says("Routing by Research links"));
 
   logged = [
     anAction("3", "routed", {
@@ -829,6 +852,40 @@ test("the log opens a firing and closes it with the landing", async () => {
   expect(notices.latest?.what).toBe("routed");
 });
 
+test("a window open before a reload is counted again, and one that ended is not", async () => {
+  const fired = (id: string, record: string) =>
+    anAction(id, "template-fired", {
+      record,
+      template: "t1",
+      name: "Research links",
+      until: "2099-01-01T00:00:00.000Z",
+    });
+  pool((request) => {
+    const route = routeOf(request);
+    if (route.startsWith("GET /v1/actions")) {
+      return json(200, {
+        values: new URL(request.url).searchParams.has("kind")
+          ? [fired("2", "r1"), fired("1", "r0")]
+          : [],
+      });
+    }
+    if (route === "GET /v1/items/one/routing") {
+      return json(200, {
+        values: [
+          { id: "r1", item: "one", state: "pending" },
+          { id: "r0", item: "one", state: "delivered" },
+        ],
+      });
+    }
+    return quiet();
+  });
+  render(StatusLine);
+
+  await vi.waitFor(() => {
+    expect(firings.open.map((one) => one.record)).toEqual(["r1"]);
+  });
+});
+
 test("more than one firing is counted, and each is cancelled in the panel", async () => {
   pool(quiet);
   render(StatusLine);
@@ -837,12 +894,12 @@ test("more than one firing is counted, and each is cancelled in the panel", asyn
   firings.opened({ record: "r2", item: "two", name: "Reading" });
 
   await fireEvent.click(
-    await screen.findByRole("button", { name: /routing 2/ }),
+    await screen.findByRole("button", { name: /Routing 2/ }),
   );
 
-  const flying = screen.getByRole("list", { name: "in flight" });
+  const flying = screen.getByRole("list", { name: "on its way" });
   expect(
-    within(flying).getAllByRole("button", { name: "cancel" }),
+    within(flying).getAllByRole("button", { name: "Cancel" }),
   ).toHaveLength(2);
 });
 
@@ -876,7 +933,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   await client.drain();
 
   const cancel = await screen.findByRole("button", {
-    name: /^cancel routing 2 notes/,
+    name: /^Cancel routing 2 items/,
   });
   await fireEvent.click(cancel);
 
@@ -885,7 +942,7 @@ test("a batch's routes are said as one, and called off with one cancel", async (
   });
   expect(bodies).toEqual([{ records: ["r1", "r2"] }]);
   expect(notices.latest).toMatchObject({
-    what: "0 notes routed",
+    what: "0 items routed",
     why: "2 cancelled",
     href: expect.stringMatching(/^\/log\?batch=/),
   });
@@ -929,7 +986,7 @@ test("a batch that ends is said once, not once per item", async () => {
 
   await vi.waitFor(() => {
     expect(notices.latest).toMatchObject({
-      what: "1 note routed",
+      what: "1 item routed",
       why: "1 refused",
       alarm: true,
     });
@@ -958,18 +1015,18 @@ test("an undo taken elsewhere takes the line's undo away", async () => {
   render(StatusLine);
 
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
-  await screen.findByRole("button", { name: "undo" });
+  await screen.findByRole("button", { name: "Undo" });
 
   notices.settled("record:r1");
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("button", { name: "undo" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
   });
-  expect(screen.getByText("marked manual")).toBeDefined();
+  expect(screen.getByText("manual")).toBeDefined();
 });
 
 test("a decision taken back on another device takes the line's undo away", async () => {
@@ -986,7 +1043,7 @@ test("a decision taken back on another device takes the line's undo away", async
 
   notices.hold();
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
@@ -998,7 +1055,7 @@ test("a decision taken back on another device takes the line's undo away", async
   await vi.advanceTimersByTimeAsync(10_000);
 
   expect(
-    notices.shown.find((notice) => notice.what === "marked manual")?.offer,
+    notices.shown.find((notice) => notice.what === "manual")?.offer,
   ).toBeUndefined();
 });
 
@@ -1008,17 +1065,17 @@ test("an undo taken elsewhere leaves the panel too", async () => {
   render(StatusLine);
 
   notices.raise({
-    what: "marked manual",
+    what: "manual",
     settles: "record:r1",
     offer: { label: "undo", take: vi.fn() },
   });
   const panel = await opened();
-  expect(within(panel).getByRole("button", { name: "undo" })).toBeDefined();
+  expect(within(panel).getByRole("button", { name: "Undo" })).toBeDefined();
 
   notices.settled("record:r1");
 
   await vi.waitFor(() => {
-    expect(within(panel).queryByRole("button", { name: "undo" })).toBeNull();
+    expect(within(panel).queryByRole("button", { name: "Undo" })).toBeNull();
   });
 });
 
@@ -1032,10 +1089,10 @@ test("work that drains at once is never counted", async () => {
   transport.unreachable(true);
   await client.tag("one", "kind/quote");
   await vi.advanceTimersByTimeAsync(100);
-  expect(screen.queryByRole("button", { name: "1 pending" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "1 waiting" })).toBeNull();
 
   await vi.advanceTimersByTimeAsync(200);
-  expect(screen.getByRole("button", { name: "1 pending" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "1 waiting" })).toBeDefined();
 });
 
 test("a refused capture edited puts every file it carried back in the box, by name", async () => {
@@ -1078,4 +1135,18 @@ test("a refused capture edited puts every file it carried back in the box, by na
   ]);
   clearDraft();
   vi.unstubAllGlobals();
+});
+
+test("says offline with when the pool last answered", async () => {
+  const { default: Counts } = await import("./Counts.svelte");
+  render(Counts, {
+    pending: 0,
+    reachable: false,
+    at: new Date(2026, 10, 18, 12, 17).toISOString(),
+    ontoggle: () => {},
+  });
+
+  expect(screen.getByRole("status").textContent).toMatch(
+    /Offline\s*, last answered 12:17/,
+  );
 });

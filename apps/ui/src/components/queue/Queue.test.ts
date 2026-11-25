@@ -8,21 +8,24 @@ import {
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { tick } from "svelte";
 
-import { anItem, json, routeOf } from "@notemap/client/testing";
+import { anItem, json, read, routeOf } from "@notemap/client/testing";
 
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
+import { quick } from "$lib/quicking.svelte";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
 import { registering, said } from "$testing/highlights";
-import { rows as layout } from "$lib/rows.svelte";
 import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
+import { firings } from "$lib/firings.svelte";
+import { commandOf } from "$lib/command/stack.svelte";
 import Queue from "./Queue.svelte";
+import Listed from "./Queue.fixture.svelte";
 
 keyboard();
 
-/** Every slide asked for, to tell a row that moved from one drawn still or not at all. */
+/** Every slide and every leaving asked for, to tell a row that moved from one drawn still or not at all. */
 const slid = vi.hoisted(() => ({
   calls: [] as { node: Element; still: boolean | undefined }[],
 }));
@@ -33,6 +36,10 @@ vi.mock("$lib/motion", async (actual) => {
     slide: (node: Element, params?: Parameters<typeof motion.slide>[1]) => {
       slid.calls.push({ node, still: params?.still });
       return motion.slide(node, params);
+    },
+    leave: (node: Element, params?: Parameters<typeof motion.leave>[1]) => {
+      slid.calls.push({ node, still: params?.still });
+      return motion.leave(node, params);
     },
   };
 });
@@ -67,6 +74,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  quick.close();
   notices.clear();
   went.to = [];
   replaced.urls = [];
@@ -94,9 +102,19 @@ function stamps(expanded: boolean) {
   });
 }
 
+/** What the selected row offers: the keys' commands, there being no strip. */
+const offered = (id: string) => commandOf(id);
+const refused = (id: string) => offered(id)?.refusal !== undefined;
+
+async function run(id: string) {
+  const command = offered(id);
+  if (command !== undefined && "run" in command) await command.run();
+  await tick();
+}
+
 /** Discarding is the quick tier: it acts from the row, at once. */
 async function discard() {
-  await fireEvent.click(screen.getByRole("button", { name: "discard" }));
+  await run("discard");
 }
 
 /** Where the person had scrolled, as the browser would report it. */
@@ -134,15 +152,12 @@ test("discards with the pool unreachable, and says what it cannot queue", async 
   // Processing happens in the row, so the actions are behind opening it.
   await fireEvent.click(stamps(false)[0]!);
 
-  const disabled = (name: string | RegExp) =>
-    (screen.getByRole("button", { name }) as HTMLButtonElement).disabled;
-
   // The door itself never closes: what a decision needs of the pool is said
   // by the surface behind it. On the row, discarding is the one decision that
   // needs nothing of the pool.
-  expect(disabled("process")).toBe(false);
-  expect(disabled("manual")).toBe(true);
-  expect(disabled("discard")).toBe(false);
+  expect(refused("process")).toBe(false);
+  expect(refused("manual")).toBe(true);
+  expect(refused("discard")).toBe(false);
 
   await discard();
 
@@ -160,14 +175,12 @@ test("opens one row at a time, in place", async () => {
   await screen.findByText("one");
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
   expect(stamps(true)).toHaveLength(1);
 
   await open(0);
 
   // The second row's stamp, the first one now being expanded.
   expect(stamps(true)).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "process" })).toHaveLength(1);
 });
 
 /** The queue holds unrouted items, so opening one has nothing to ask about. */
@@ -182,7 +195,7 @@ test("opens a row without asking where an item has never been, and without sayin
 
   await open(0);
 
-  expect(await screen.findByRole("button", { name: "process" })).toBeDefined();
+  expect(offered("process")).toBeDefined();
   expect(asked()).not.toContain("GET /v1/items/one/routing");
 });
 
@@ -224,11 +237,11 @@ test("offers the edit on an unprocessed row and not on a processed one", async (
   await screen.findByText("mine");
 
   await open(1);
-  expect(screen.queryByRole("button", { name: "edit" })).toBeNull();
-  expect(screen.getByText("revised")).toBeDefined();
+  expect(offered("edit")).toBeUndefined();
+  expect(screen.getByText("Revised")).toBeDefined();
 
   await open(0);
-  expect(screen.getAllByRole("button", { name: "edit" })).toHaveLength(1);
+  expect(offered("edit")).toBeDefined();
 });
 
 test("reads from the end the reader last chose, not the one the queue defaults to", async () => {
@@ -278,14 +291,13 @@ function taken(request: Request) {
 async function capture(said: string) {
   const written = screen.getByLabelText("What to capture");
   await fireEvent.input(written, { target: { value: said } });
-  return fireEvent.click(screen.getByRole("button", { name: "capture" }));
+  return fireEvent.click(screen.getByRole("button", { name: "Capture" }));
 }
 
 /** A row comes and goes by sliding, by day or not: a read is what draws still. */
-test.each(["rail", "by day"] as const)(
+test.each(["by day"] as const)(
   "a captured row slides in and a released one slides out, read %s",
-  async (reading) => {
-    layout.choose(reading);
+  async () => {
     let queued = [anItem("one")];
     pool((request) => {
       const route = routeOf(request);
@@ -323,7 +335,7 @@ test.each(["rail", "by day"] as const)(
 test.each(["timeline", "index"] as const)(
   "the first row into a drained queue slides in, and the last one out slides out, in the %s",
   async (view) => {
-    rememberView("queue", view);
+    rememberView(view);
     pool((request) =>
       routeOf(request) === "POST /v1/captures"
         ? taken(request)
@@ -367,13 +379,15 @@ test("says a capture is pending until the pool has taken it", async () => {
 
   await capture("made with the pool out of reach");
   await screen.findByText("made with the pool out of reach");
-  expect(await screen.findByRole("img", { name: "pending" })).toBeDefined();
+  expect(
+    await screen.findByRole("img", { name: "waiting to send" }),
+  ).toBeDefined();
 
   transport.unreachable(false);
   await client.drain();
 
   await vi.waitFor(() => {
-    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "waiting to send" })).toBeNull();
   });
   expect(screen.getByText("made with the pool out of reach")).toBeDefined();
 });
@@ -397,7 +411,7 @@ test("does not draw a refused operation as pending", async () => {
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/archive");
     expect(screen.queryByText("Queue is empty.")).toBeNull();
-    expect(screen.queryByRole("img", { name: "pending" })).toBeNull();
+    expect(screen.queryByRole("img", { name: "waiting to send" })).toBeNull();
   });
 });
 
@@ -420,14 +434,14 @@ test("offers no page it cannot fetch while the pool is out of reach", async () =
 
   render(Queue);
   expect(
-    await screen.findByRole("button", { name: "load more" }),
+    await screen.findByRole("button", { name: "Load more" }),
   ).toBeDefined();
 
   transport.unreachable(true);
   await client.loadQueue();
 
   expect(await screen.findByText(NO_MORE_OFFLINE)).toBeDefined();
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 });
 
 test("says nothing in the foot of a queue read to the end", async () => {
@@ -435,7 +449,7 @@ test("says nothing in the foot of a queue read to the end", async () => {
 
   render(Queue);
   await screen.findByText("one");
-  expect(screen.queryByRole("button", { name: "load more" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 
   // There is no next page to be denied, so being out of reach costs nothing.
   online(false);
@@ -506,16 +520,17 @@ test("offers the way to an item without taking the gesture that opens the row", 
 
   // Triage is opening a row in place, and the address is behind that rather
   // than instead of it.
-  expect(screen.queryByRole("link", { name: "open" })).toBeNull();
+  expect(offered("open")).toBeUndefined();
 
   await open(0);
-  expect(screen.getByRole("link", { name: "open" }).getAttribute("href")).toBe(
+  const open_ = offered("open");
+  expect(open_ !== undefined && "href" in open_ ? open_.href : "").toBe(
     "/items/one",
   );
   expect(stamps(true)).toHaveLength(1);
 });
 
-test("keeps a record to one line on the opened row, and makes it the way in", async () => {
+test("a route takes no room on a queue row: the feed keeps its record line", async () => {
   pool((request) => {
     switch (routeOf(request)) {
       case "GET /v1/queue":
@@ -557,12 +572,8 @@ test("keeps a record to one line on the opened row, and makes it the way in", as
   await screen.findByText("one");
   await open(0);
 
-  // Where it went and the place it landed: the capability is the adapter's
-  // word and delivered is what a record with no alarm on it already means.
-  const line = await screen.findByRole("link", { name: /drafts/ });
-  expect(line.getAttribute("href")).toBe("/items/one/records/rec");
-  expect(screen.queryByText(/create-note/)).toBeNull();
-  expect(screen.queryByText(/delivered/)).toBeNull();
+  await tick();
+  expect(screen.queryByRole("link", { name: /drafts/ })).toBeNull();
 });
 
 test("a row that leaves the queue says where it went", async () => {
@@ -587,12 +598,10 @@ test("a row that leaves the queue says where it went", async () => {
   await screen.findByText("one");
   await open(0);
 
-  await fireEvent.click(screen.getByRole("button", { name: "manual" }));
+  await run("manual");
 
   await vi.waitFor(() => {
-    expect(notices.shown.map((notice) => notice.what)).toContain(
-      "marked manual",
-    );
+    expect(notices.shown.map((notice) => notice.what)).toContain("manual");
   });
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 });
@@ -703,10 +712,10 @@ test("a discarded row stays where it stood while it is selected, and leaves when
   await discard();
 
   await vi.waitFor(() => {
-    expect(screen.getByText("discarded")).toBeDefined();
+    expect(screen.getByText("Discarded")).toBeDefined();
   });
   expect(screen.getByText("one")).toBeDefined();
-  expect(screen.getByRole("button", { name: "undiscard" })).toBeDefined();
+  expect(offered("undiscard")).toBeDefined();
   expect(container.querySelectorAll("[data-selected]")).toHaveLength(2);
   expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
 
@@ -733,7 +742,7 @@ test("the queue is not empty while its last row is held", async () => {
   await screen.findByText("one");
   await open(0);
   await discard();
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   expect(screen.queryByText("Queue is empty.")).toBeNull();
 
@@ -757,7 +766,7 @@ test("walking off a held row leaves it behind", async () => {
   await screen.findByText("one");
   await open(0);
   await discard();
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   await fireEvent.keyDown(window, { key: "j" });
   await vi.waitFor(() => {
@@ -778,9 +787,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.click(body, { detail: 2 });
   await fireEvent.dblClick(body);
 
-  expect(went.to).toEqual(["/items/one/process"]);
-  // The second click of a double is not a toggle: select, nothing, go.
-  expect(stamps(true)).toHaveLength(1);
+  expect(quick.item).toBe("one");
+  // When wide a click opens the item beside the list; the second click of a
+  // double is not a second opening.
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 /** The box is the selection, and the actions are its foot. */
@@ -798,29 +808,22 @@ test("draws the box around the selected row and nowhere else", async () => {
   await open(0);
   expect(boxed()).toHaveLength(2);
   expect(screen.getAllByRole("button", { name: "Add a tag" })).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+  expect(offered("discard")).toBeDefined();
 });
 
-/** Every row reserves the foot's height, so selecting one shifts nothing. */
-test("keeps the foot's height on every row, selected or not", async () => {
+/** A selected row's actions are the keys' and the hover's Route: no strip under it. */
+test("draws no strip of actions under the selected row", async () => {
   pool(queued("one", "two"));
 
   const { container } = render(Queue);
   await screen.findByText("one");
 
-  // Unselected, the foot is one cell per column with the rail's rule between
-  // them; selected, one strip holding the actions. Both are the same height.
-  const feet = () =>
-    [...container.querySelectorAll(".h-9")].map((foot) =>
-      foot.classList.contains("col-span-full") ? "box" : "cell",
-    );
-  expect(feet()).toEqual(["cell", "cell", "cell", "cell"]);
-
   await open(0);
-  expect(feet()).toEqual(["box", "cell", "cell"]);
+  expect(container.querySelectorAll("[data-foot]")).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Discard" })).toBeNull();
+  expect(offered("discard")).toBeDefined();
 });
 
-/** The keys the actions are drawn to be guessed from. */
 const LATER = "2026-08-19T10:00:00.000Z";
 
 test("j past the last row held reads the next page and steps into it", async () => {
@@ -905,7 +908,7 @@ test("enter selects, and enter on a selected row opens process", async () => {
   expect(went.to).toEqual([]);
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/one/process"]);
+  expect(quick.item).toBe("one");
 });
 
 /** A decision takes the row away; the selection stays where the hand is. */
@@ -927,7 +930,7 @@ test("a decision, then j, then the same decision walks the list", async () => {
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "D" });
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
 
   await fireEvent.keyDown(window, { key: "j" });
   await vi.waitFor(() => {
@@ -954,7 +957,7 @@ test("arrives with the row named on its address selected, and takes the name off
   await vi.waitFor(() => {
     expect(stamps(true)).toHaveLength(1);
   });
-  expect(screen.getAllByRole("button", { name: "discard" })).toHaveLength(1);
+  expect(offered("discard")).toBeDefined();
   expect(replaced.urls).toEqual(["http://localhost/"]);
 
   // The keys are the row's: the capture field did not take the caret.
@@ -998,13 +1001,16 @@ test("back from processing, a row the queue no longer holds is drawn where its o
   ).toBeTruthy();
 });
 
-test("gives the capture field the caret when the queue is simply arrived at", async () => {
+test("leaves the caret out of the capture field on arrival, so the keys are the queue's", async () => {
   pool(queued("one"));
 
   render(Queue);
   await screen.findByText("one");
 
-  expect(document.activeElement).toBe(screen.getByLabelText("What to capture"));
+  const field = screen.getByLabelText("What to capture");
+  expect(document.activeElement).not.toBe(field);
+  await fireEvent.keyDown(window, { key: "f" });
+  expect((field as HTMLTextAreaElement).value).toBe("");
 });
 
 /** The index is one line per item, for scanning; the timeline is for reading. */
@@ -1024,28 +1030,27 @@ test("draws the index on request, keeps it on the URL, and reads it back on arri
   const { container } = render(Queue);
   await screen.findByText("one");
 
-  await fireEvent.click(screen.getByRole("button", { name: "View" }));
-  await fireEvent.click(screen.getByRole("button", { name: "index" }));
+  await fireEvent.keyDown(window, { key: "f" });
+  await fireEvent.click(await screen.findByRole("radio", { name: "Index" }));
+  await fireEvent.click(screen.getByRole("button", { name: /^Show/ }));
 
   expect(replaced.urls).toEqual(["http://localhost/?view=index"]);
-  expect(localStorage.getItem("notemap:view:queue")).toBe("index");
+  expect(localStorage.getItem("notemap:view")).toBe("index");
 
-  // A gap after more than half a day, and not after less.
-  const gapped = [...container.querySelectorAll("[data-gap]")];
-  expect(gapped).toHaveLength(1);
-  expect(gapped[0]?.textContent).toContain("three");
-  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
-    "index",
-  );
+  // Read by day, as the rows are: a heading for each day and no gaps.
+  expect(container.querySelectorAll("[data-gap]")).toHaveLength(0);
+  expect(container.querySelectorAll("[data-day]").length).toBeGreaterThan(0);
 
   cleanup();
-  rememberView("queue", "index");
+  rememberView("index");
   render(Queue);
   await screen.findByText("one");
-  expect(container.querySelector("[data-gap]")).toBeDefined();
-  expect(screen.getByRole("button", { name: "View" }).textContent).toContain(
-    "index",
-  );
+  await fireEvent.keyDown(window, { key: "f" });
+  expect(
+    (await screen.findByRole("radio", { name: "Index" })).getAttribute(
+      "aria-checked",
+    ),
+  ).toBe("true");
 });
 
 test("v turns the list to the other view, and back", async () => {
@@ -1067,7 +1072,7 @@ test("v turns the list to the other view, and back", async () => {
 /** The stamp is a button of its own, and a click on it must not reach the line as a second one. */
 test("an index line is selected from its stamp as from anywhere else on it", async () => {
   pool(queued("one"));
-  rememberView("queue", "index");
+  rememberView("index");
 
   const { container } = render(Queue);
   await screen.findByText("one");
@@ -1075,17 +1080,15 @@ test("an index line is selected from its stamp as from anywhere else on it", asy
   await fireEvent.click(stamps(false)[0]!);
   expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
 
+  // Selected, the line is the whole row, and a click on it opens the item beside.
   await fireEvent.click(container.querySelector("[data-row] [data-body]")!);
-  expect(container.querySelector("[data-rail]")).toBeNull();
-
-  await fireEvent.click(screen.getByText("one"));
-  expect(container.querySelector("[data-rail][data-selected]")).not.toBeNull();
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 /** Selected, an index line is the row the timeline draws, and does what it does. */
 test("the selected index line opens into the whole row, actions and all", async () => {
   pool(queued("one", "two"));
-  rememberView("queue", "index");
+  rememberView("index");
 
   const { container } = render(Queue);
   await screen.findByText("one");
@@ -1094,7 +1097,7 @@ test("the selected index line opens into the whole row, actions and all", async 
   await fireEvent.keyDown(window, { key: "j" });
   expect(container.querySelectorAll("[data-row]")).toHaveLength(1);
   expect(container.querySelector("[data-row]")?.textContent).toContain("one");
-  expect(screen.getByRole("button", { name: "discard" })).toBeDefined();
+  expect(offered("discard")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "e" });
   expect(await screen.findByLabelText("What it says")).toBeTruthy();
@@ -1105,7 +1108,7 @@ test("the selected index line opens into the whole row, actions and all", async 
   expect(screen.getByText("one").closest("[data-row]")).toBeNull();
 
   await fireEvent.keyDown(window, { key: "Enter" });
-  expect(went.to).toEqual(["/items/two/process"]);
+  expect(quick.item).toBe("two");
 });
 
 /** Shift is the guard on the one decision that sends an item away. */
@@ -1289,7 +1292,8 @@ test("mod-enter in the editable shape saves it", async () => {
   expect(screen.queryByLabelText("What it says")).toBeNull();
 });
 
-const dialog = () => screen.queryByRole("dialog", { name: "Unsaved changes" });
+const dialog = () =>
+  screen.queryByRole("dialog", { name: "lose your changes?" });
 
 /** Leaving an edit with changes asks first, wherever the row has scrolled to. */
 test("leaving a row edited with changes asks, and staying goes back into the field", async () => {
@@ -1331,10 +1335,10 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   await fireEvent.input(field, { target: { value: "rewritten" } });
   field.blur();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "revert" }),
+    within(dialog()!).getByRole("button", { name: "Lose changes" }),
   );
   await tick();
   expect(screen.queryByLabelText("What it says")).toBeNull();
@@ -1349,7 +1353,7 @@ test("save in the question saves and goes on; revert lets the changes go and goe
   await fireEvent.keyDown(window, { key: "j" });
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/edit");
@@ -1381,7 +1385,7 @@ test("staying, asked from the capture box, goes back into the field and asks not
   expect(dialog()).not.toBeNull();
 
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "keep editing" }),
+    within(dialog()!).getByRole("button", { name: "Keep editing" }),
   );
   await vi.waitFor(() => {
     expect(document.activeElement).toBe(field);
@@ -1407,7 +1411,7 @@ test("saving, asked from the capture box, lands the caret in the box", async () 
   box.focus();
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
 
   await vi.waitFor(() => {
@@ -1469,7 +1473,7 @@ test("an edit left unchanged closes without asking", async () => {
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
   await fireEvent.input(field, { target: { value: "rewritten" } });
-  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  await fireEvent.input(field, { target: { value: "one" } });
   field.blur();
 
   await fireEvent.keyDown(window, { key: "j" });
@@ -1489,8 +1493,7 @@ test("while a row is edited only its tags are reached", async () => {
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: "e" });
   const field = await screen.findByLabelText("What it says");
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "revert" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Route" })).toBeNull();
 
   field.blur();
   await fireEvent.keyDown(window, { key: "D" });
@@ -1619,15 +1622,15 @@ test("an edit let go takes a waiting trigger tag with it, and not an ordinary on
   await tick();
   expect(waitingTag()).not.toBeNull();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "revert" }),
+    within(dialog()!).getByRole("button", { name: "Lose changes" }),
   );
   await tick();
 
   expect(waitingTag()).toBeNull();
-  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
+  expect(screen.getByRole("button", { name: "remove reading" })).toBeDefined();
   expect(
     asked().filter((request) => request === "POST /v1/items/one/tag"),
   ).toHaveLength(1);
@@ -1651,12 +1654,12 @@ test("a waiting trigger tag alone asks before the edit is left, and saving it se
   await tagWith("route/research");
   await tick();
 
-  await fireEvent.click(screen.getByRole("button", { name: "close" }));
+  await fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await tick();
   expect(dialog()).not.toBeNull();
 
   await fireEvent.click(
-    within(dialog()!).getByRole("button", { name: "save" }),
+    within(dialog()!).getByRole("button", { name: "Save" }),
   );
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/items/one/tag");
@@ -1679,9 +1682,6 @@ test("a waiting trigger tag comes off unsent, and the edit's own revert takes th
   ).toHaveLength(2);
 
   await fireEvent.click(
-    screen.getByRole("button", { name: /^route\/one, files the item/ }),
-  );
-  await fireEvent.click(
     screen.getByRole("button", { name: "remove route/one" }),
   );
   await tick();
@@ -1689,7 +1689,9 @@ test("a waiting trigger tag comes off unsent, and the edit's own revert takes th
     screen.getAllByTitle("files the item once the edit is saved"),
   ).toHaveLength(1);
 
-  await fireEvent.click(screen.getByRole("button", { name: "revert" }));
+  await fireEvent.click(
+    screen.getByRole("button", { name: "remove route/two" }),
+  );
   await tick();
   expect(waitingTag()).toBeNull();
   expect(screen.queryByLabelText("What it says")).not.toBeNull();
@@ -1733,7 +1735,7 @@ test("reads by day on a narrow screen: a heading per day, the time alone on the 
   const days = [...container.querySelectorAll("[data-day]")];
   expect(
     days.map((day) => day.textContent?.replace(/\s+/g, " ").trim()),
-  ).toEqual(["2026-09-12 saturday", "2026-09-13 sunday"]);
+  ).toEqual(["saturday 2026-09-12 2", "sunday 2026-09-13 1"]);
   expect(screen.getByText("08:14")).toBeDefined();
   expect(
     screen.queryByText("2026-09-12", { selector: "button *:not(.sr-only)" }),
@@ -1762,7 +1764,7 @@ test.each(["timeline", "index"] as const)(
   "by day, the %s's first heading shares the list head's line, and no other does",
   async (view) => {
     viewport(390);
-    rememberView("queue", view);
+    rememberView(view);
     pool(overDays());
 
     const { container } = render(Queue);
@@ -1776,45 +1778,17 @@ test.each(["timeline", "index"] as const)(
   },
 );
 
-test("reads by day on a wide screen only when chosen, keeping the tags in the rail", async () => {
+test("reads by day at every width, the tags with the words", async () => {
   pool(overDays());
 
   const { container } = render(Queue);
   await screen.findByText("three");
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-
-  layout.choose("by day");
-  await tick();
   expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
-  expect(screen.getByText("design").closest("[data-rail]")).not.toBeNull();
-});
-
-test("the rail, chosen, draws no headings on a narrow screen", async () => {
-  viewport(390);
-  layout.choose("rail");
-  pool(overDays());
-
-  const { container } = render(Queue);
-  await screen.findByText("three");
-
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-  expect(screen.getAllByText("2026-09-12").length).toBeGreaterThan(0);
-});
-
-test("auto follows the window as it crosses narrow", async () => {
-  pool(overDays());
-
-  const { container } = render(Queue);
-  await screen.findByText("three");
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-
-  viewport(390);
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
-
-  viewport(1024);
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
+  expect(screen.getByText("design").closest("[data-body]")).not.toBeNull();
+  const counts = [...container.querySelectorAll("[data-day]")].map(
+    (day) => day.lastElementChild?.textContent,
+  );
+  expect(counts).toEqual(["2", "1"]);
 });
 
 test("walks across a heading, and a day's heading leaves with its last row", async () => {
@@ -1845,7 +1819,7 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
 
   await fireEvent.keyDown(window, { key: "k" });
   await fireEvent.keyDown(window, { key: "D" });
-  await screen.findByText("discarded");
+  await screen.findByText("Discarded");
   // Held where it stood, its heading with it, until the selection leaves.
   expect(container.querySelectorAll("[data-day]")).toHaveLength(2);
 
@@ -1857,7 +1831,7 @@ test("walks across a heading, and a day's heading leaves with its last row", asy
 
 test("the index reads by day too: headings, the time alone, and no gap", async () => {
   viewport(390);
-  rememberView("queue", "index");
+  rememberView("index");
   pool(overDays());
 
   const { container } = render(Queue);
@@ -1870,11 +1844,6 @@ test("the index reads by day too: headings, the time alone, and no gap", async (
       .getByRole("button", { name: "2026-09-13 07:02" })
       .querySelector("time")?.textContent,
   ).toBe("07:02");
-
-  layout.choose("rail");
-  await tick();
-  expect(container.querySelectorAll("[data-day]")).toHaveLength(0);
-  expect(container.querySelectorAll("[data-gap]")).toHaveLength(1);
 });
 
 test("a trigger tag on a row asks what its template asks, and sends it with the tag", async () => {
@@ -1976,62 +1945,65 @@ function stampOf(said: string) {
   return within(row).getByRole("button", { name: /^\d{4}-\d{2}-\d{2}/ });
 }
 
-const head = () => document.querySelector("[data-head]") as HTMLElement;
+/** The list head, drawn only while rows are selected; the page stands in for it otherwise. */
+const head = () =>
+  (document.querySelector("[data-head]") as HTMLElement | null) ??
+  document.body;
 
 test("a click with mod held marks rows, and esc lets go of them all", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("three"), { metaKey: true });
 
-  expect(within(head()).getByText("2 notes marked")).toBeDefined();
+  expect(within(head()).getByText("2 selected")).toBeDefined();
   expect(document.querySelectorAll("[data-marked]")).toHaveLength(2);
 
   // In the mode a plain click marks too, rather than starting over.
   await fireEvent.click(stampOf("two"));
-  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+  expect(within(head()).getByText("3 selected")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "Escape" });
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
   expect(document.querySelectorAll("[data-marked]")).toHaveLength(0);
 });
 
 test("space marks the selected row, and J marks on down the list", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "j" });
   await fireEvent.keyDown(window, { key: " " });
-  expect(within(head()).getByText("1 note marked")).toBeDefined();
+  expect(within(head()).getByText("1 selected")).toBeDefined();
 
   await fireEvent.keyDown(window, { key: "J" });
   await vi.waitFor(() => {
-    expect(within(head()).getByText("2 notes marked")).toBeDefined();
+    expect(within(head()).getByText("2 selected")).toBeDefined();
   });
 });
 
 test("a discard of the marked rows is asked first, then sent as one batch", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.click(
-    within(head()).getByRole("button", { name: "discard" }),
+    within(head()).getByRole("button", { name: "Discard" }),
   );
   const dialog = screen.getByRole("dialog");
-  expect(within(dialog).getByText("discard 2 notes?")).toBeDefined();
+  expect(within(dialog).getByText("Discard 2 items?")).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
   await fireEvent.click(
-    within(dialog).getByRole("button", { name: "discard" }),
+    within(dialog).getByRole("button", { name: "Discard" }),
   );
 
   await vi.waitFor(() => {
@@ -2043,45 +2015,45 @@ test("a discard of the marked rows is asked first, then sent as one batch", asyn
       action: { kind: "archive" },
     }),
   );
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
 });
 
 test("backing out of the question sends nothing and keeps the rows marked", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
   await fireEvent.click(
-    within(head()).getByRole("button", { name: "discard" }),
+    within(head()).getByRole("button", { name: "Discard" }),
   );
   await fireEvent.click(
-    within(screen.getByRole("dialog")).getByRole("button", { name: "back" }),
+    within(screen.getByRole("dialog")).getByRole("button", { name: "Back" }),
   );
 
   expect(asked()).not.toContain("POST /v1/batches");
-  expect(within(head()).getByText("1 note marked")).toBeDefined();
+  expect(within(head()).getByText("1 selected")).toBeDefined();
 });
 
 test("unmarking the last row leaves the mode", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("one"));
 
-  expect(within(head()).queryByText(/marked/)).toBeNull();
+  expect(within(head()).queryByText(/selected/)).toBeNull();
 });
 
 test("marked rows carry the gutter's bar, and no row is boxed or offered what one row is given", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"));
-  expect(screen.getByRole("button", { name: "process" })).toBeDefined();
+  expect(offered("process")).toBeDefined();
 
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
@@ -2092,7 +2064,6 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
   expect(document.querySelectorAll("[data-rail][data-selected]")).toHaveLength(
     0,
   );
-  expect(screen.queryByRole("button", { name: "process" })).toBeNull();
   await fireEvent.keyDown(window, { key: "p" });
   expect(went.to).toEqual([]);
 });
@@ -2100,7 +2071,7 @@ test("marked rows carry the gutter's bar, and no row is boxed or offered what on
 test("while marking, a marked stamp is bold and every other is not", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
@@ -2112,7 +2083,7 @@ test("while marking, a marked stamp is bold and every other is not", async () =>
 test("the cursor keeps its outline on a row it unmarks", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
@@ -2124,14 +2095,14 @@ test("the cursor keeps its outline on a row it unmarks", async () => {
 test("a tag added on a marked row goes on every marked row at once, unasked", async () => {
   pool(queued("one", "two"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.keyDown(window, { key: "t" });
   const line = screen.getByRole("combobox", {
-    name: "Add a tag to every marked note",
+    name: "Add a tag to every selected item",
   });
   await fireEvent.input(line, { target: { value: "reading" } });
   await fireEvent.keyDown(line, { key: "Enter" });
@@ -2156,13 +2127,14 @@ test("a tag taken off a marked row comes off every marked row", async () => {
     holding(anItem("one", { tags: reading }), anItem("two", { tags: reading })),
   );
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
-  await fireEvent.click(screen.getAllByRole("button", { name: "reading" })[0]!);
-  await fireEvent.click(screen.getByRole("button", { name: "remove reading" }));
+  await fireEvent.click(
+    screen.getAllByRole("button", { name: "remove reading" })[0]!,
+  );
 
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/batches");
@@ -2181,26 +2153,24 @@ test("an unmarked row's tags are not controls while rows are marked", async () =
   ];
   pool(holding(anItem("one"), anItem("two", { tags: reading })));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
-  expect(screen.getByRole("button", { name: "reading" })).toBeDefined();
-
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
-  expect(screen.queryByRole("button", { name: "reading" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "remove reading" })).toBeNull();
   expect(screen.getByText("reading")).toBeDefined();
 });
 
 test("all marks every row the queue holds", async () => {
   pool(queued("one", "two", "three"));
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
 
-  await fireEvent.click(within(head()).getByRole("button", { name: "all" }));
+  await fireEvent.click(within(head()).getByRole("button", { name: "All" }));
 
-  expect(within(head()).getByText("3 notes marked")).toBeDefined();
+  expect(within(head()).getByText("3 selected")).toBeDefined();
 });
 
 test("a trigger tag added on a marked row asks first, naming its template", async () => {
@@ -2226,23 +2196,26 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
   });
   await client.templates.load();
 
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
   await fireEvent.click(stampOf("one"), { metaKey: true });
   await fireEvent.click(stampOf("two"), { metaKey: true });
 
   await fireEvent.keyDown(window, { key: "t" });
   const line = screen.getByRole("combobox", {
-    name: "Add a tag to every marked note",
+    name: "Add a tag to every selected item",
   });
   await fireEvent.input(line, { target: { value: "route/todo" } });
   await fireEvent.keyDown(line, { key: "Enter" });
 
   const asking = await screen.findByRole("dialog");
-  expect(within(asking).getByText("route 2 notes with todo?")).toBeDefined();
+  expect(within(asking).getByText("Route 2 items?")).toBeDefined();
+  expect(
+    within(asking).getByText("todo", { selector: "strong" }),
+  ).toBeDefined();
   expect(asked()).not.toContain("POST /v1/batches");
 
-  await fireEvent.click(within(asking).getByRole("button", { name: "route" }));
+  await fireEvent.click(within(asking).getByRole("button", { name: "Route" }));
   await vi.waitFor(() => {
     expect(asked()).toContain("POST /v1/batches");
   });
@@ -2256,7 +2229,7 @@ test("a trigger tag added on a marked row asks first, naming its template", asyn
 
 test("`/` puts the caret in the search line, and the words go on the address", async () => {
   pool(queued("one"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("one");
 
   await fireEvent.keyDown(window, { key: "/" });
@@ -2273,10 +2246,248 @@ test("highlights in each row the words the queue is searched by", async () => {
   const highlights = registering();
   at.path = "/?words=BIKE";
   pool(queued("a bike rack", "a bíke shed"));
-  render(Queue);
+  render(Listed);
   await screen.findByText("a bike rack");
 
   await vi.waitFor(() => {
     expect(said(highlights())).toEqual(["bike", "bíke"]);
   });
+});
+
+test("a route in its window keeps its row, counting down with Cancel", async () => {
+  let held = ["one", "two"];
+  const cancelled: string[] = [];
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: held.map((id) => anItem(id)) });
+    }
+    if (route === "POST /v1/routing/r1/cancel") {
+      cancelled.push(route);
+      return json(200, {});
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Listed);
+  await screen.findByText("one");
+
+  firings.opened({
+    record: "r1",
+    item: "one",
+    name: "Vault",
+    until: Date.now() + 10_000,
+  });
+  held = ["two"];
+  await client.loadQueue();
+
+  // Off the queue in the pool's eyes, and still drawn while its window is open.
+  const line = await screen.findByText(/Routing by/);
+  expect(line.closest("[data-row]")?.getAttribute("data-row")).toBe("one");
+  expect(screen.getByText("10s")).toBeDefined();
+
+  await fireEvent.click(
+    screen.getByRole("button", { name: "Cancel routing Vault" }),
+  );
+  await vi.waitFor(() => {
+    expect(cancelled).toEqual(["POST /v1/routing/r1/cancel"]);
+  });
+
+  // Called off, it is work again: the row stays, and says nothing of a route.
+  await vi.waitFor(() => {
+    expect(screen.queryByText(/Routing by/)).toBeNull();
+  });
+  expect(document.querySelector('[data-row="one"]')).not.toBeNull();
+  firings.clear();
+});
+
+test("a route's row leaves once its window has closed", async () => {
+  pool((request) => {
+    const route = routeOf(request);
+    if (route === "GET /v1/queue") {
+      return json(200, { values: ["one", "two"].map((id) => anItem(id)) });
+    }
+    if (route === "POST /v1/items/one/route") {
+      return json(200, {
+        id: "r1",
+        item: "one",
+        at: new Date().toISOString(),
+        state: "pending",
+        until: new Date(Date.now() + 10_000).toISOString(),
+        target: {
+          kind: "destination",
+          destination: "vault",
+          capability: "create",
+          arguments: {},
+        },
+      });
+    }
+    return json(200, { values: [] });
+  });
+
+  render(Listed);
+  await screen.findByText("one");
+  const record = await client.routing.route("one", {
+    destination: "vault",
+    capability: "create",
+    arguments: {},
+  });
+  firings.opened({
+    record: record.id,
+    item: "one",
+    name: "Vault",
+    until: Date.parse(record.until ?? ""),
+  });
+  expect(read(client.queue).items.map((one) => one.id)).toEqual(["two"]);
+  await screen.findByText(/Routing by/);
+
+  firings.closed("r1");
+  await vi.waitFor(() => {
+    expect(document.querySelector('[data-row="one"]')).toBeNull();
+  });
+});
+
+test("on a phone holding a row selects it, and says the hint no more", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  expect(screen.getByText("Hold a row to select several.")).toBeDefined();
+
+  vi.useFakeTimers();
+  const row = document.querySelector('[data-row="one"]')!;
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(await screen.findByText("1 selected")).toBeDefined();
+  expect(screen.queryByText("Hold a row to select several.")).toBeNull();
+});
+
+test("a wide touch screen selects by holding a row, as a phone does", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+
+  vi.useFakeTimers();
+  const row = document.querySelector('[data-row="one"]')!;
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(await screen.findByText(/1 selected/)).toBeDefined();
+});
+
+test("a delivery turned down after its window is said in red on the row it came back to", async () => {
+  pool(queued("a", "b"));
+  render(Listed);
+  await screen.findByText("a");
+
+  notices.raise({
+    what: "Rejected by",
+    subject: "Vault",
+    why: "taken.md is already there, back in the queue",
+    href: "/items/a",
+    alarm: true,
+  });
+
+  const said = await screen.findByText(/taken\.md is already there/);
+  expect(said.textContent).toBe("Rejected by Vault: taken.md is already there");
+  expect(said.closest("p")?.className).toContain("text-danger");
+  expect(screen.getAllByText(/Rejected by/)).toHaveLength(1);
+});
+
+test("a capture the pool refused is a row of the queue, kept on this device", async () => {
+  pool((request) =>
+    routeOf(request) === "POST /v1/captures"
+      ? json(422, { error: { code: "payload-invalid" } })
+      : queued("a")(request),
+  );
+  render(Listed);
+  await screen.findByText("a");
+
+  await client.capture({ channel: "web-manual", text: "a thought refused" });
+  await client.drain();
+
+  const words = await screen.findByText("a thought refused");
+  const row = words.closest("[data-refused]") as HTMLElement;
+  expect(row.textContent).toContain("Refused by the pool");
+  expect(row.textContent).toContain("Kept on this device only");
+
+  // The only copy: Delete asks before it goes.
+  await fireEvent.click(within(row).getByRole("button", { name: "Delete" }));
+  expect(within(row).getByText("Delete it for good?")).toBeDefined();
+});
+
+test("letting go of the last marked row ends marking with nothing selected", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  expect(document.querySelectorAll("[data-gutter='marked']")).toHaveLength(1);
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+  expect(document.querySelectorAll("[data-gutter='marked']")).toHaveLength(0);
+  expect(document.querySelector("[data-foot]")).toBeNull();
+  expect(document.querySelector("[data-rail][data-selected]")).toBeNull();
+  expect(went.to).toEqual([]);
+});
+
+test("when wide, a row under the pointer offers + tag, and taking a tag keeps the queue", async () => {
+  pool(queued("one"));
+  render(Listed);
+  const words = await screen.findByText("one");
+  const row = words.closest("[data-row]") as HTMLElement;
+
+  expect(within(row).queryByRole("button", { name: "Add a tag" })).toBeNull();
+  await fireEvent.pointerEnter(row);
+  await fireEvent.mouseEnter(row);
+  await fireEvent.click(
+    await within(row).findByRole("button", { name: "Add a tag" }),
+  );
+  expect(went.to).toEqual([]);
+});
+
+test("when wide a row opens its item, and is marked as the one last opened", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+  expect(went.to).toEqual(["/items/one"]);
+  const row = words.closest("[data-row]") as HTMLElement;
+  expect(row.hasAttribute("data-last-opened")).toBe(true);
+  expect(
+    (screen.getByText("two").closest("[data-row]") as HTMLElement).hasAttribute(
+      "data-last-opened",
+    ),
+  ).toBe(false);
+});
+
+test("selecting takes the head, × lets go, and on a phone the + gives the foot to the batch", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  expect(screen.getByRole("link", { name: "Capture" })).toBeDefined();
+
+  await fireEvent.click(stampOf("one"), { metaKey: true });
+
+  expect(within(head()).getByText("1 selected")).toBeDefined();
+  expect(within(head()).getByRole("button", { name: "All" })).toBeDefined();
+  expect(screen.queryByRole("link", { name: "Capture" })).toBeNull();
+  expect(
+    within(screen.getByRole("toolbar", { name: "Selected" })).getByRole(
+      "button",
+      { name: "Route" },
+    ),
+  ).toBeDefined();
+
+  await fireEvent.click(
+    within(head()).getByRole("button", { name: "Clear the selection" }),
+  );
+  expect(screen.queryByText("1 selected")).toBeNull();
 });

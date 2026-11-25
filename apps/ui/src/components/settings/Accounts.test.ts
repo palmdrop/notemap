@@ -1,10 +1,20 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
-import { expect, test, vi } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool, sent } from "$testing/pool";
 import Accounts from "./Accounts.svelte";
+import { address } from "$testing/address.svelte";
+import { follow } from "$testing/router";
+
+vi.mock("$app/state", () => import("$testing/address.svelte"));
+vi.mock("$app/navigation", () => import("$testing/router"));
+
+follow();
+beforeEach(() => {
+  address.path = "/settings/accounts";
+});
 
 const KINDS = [
   {
@@ -62,6 +72,10 @@ function serving(
 const press = async (name: string | RegExp) =>
   fireEvent.click(await screen.findByRole("button", { name }));
 
+/** An account's form, and a new one's, each open on a page of its own. */
+const go = async (name: string | RegExp) =>
+  fireEvent.click(await screen.findByRole("link", { name }));
+
 test("lists accounts by kind, saying where each came from and whether a secret is set", async () => {
   serving([
     anAccount(),
@@ -82,26 +96,32 @@ test("lists accounts by kind, saying where each came from and whether a secret i
 
   render(Accounts);
 
-  // The fields lead, in bold, and what is true of them follows in plain.
-  await screen.findByText("secret set, stored 2026-09-23");
+  // The fields lead, and what is true of them follows.
+  await screen.findByText(
+    `${FIELDS.baseUrl}, alice, secret set, stored 2026-09-23`,
+  );
   expect(
-    screen.getByText("no secret, config — ignored, a stored one replaces it"),
+    screen.getByText(
+      `${FIELDS.baseUrl}, alice, no secret, config — ignored, a stored one replaces it`,
+    ),
   ).toBeDefined();
   // An account with no fields leads with its secret.
-  expect(screen.getByText("secret set").className).toContain("font-semibold");
-  expect(screen.getByText("config")).toBeDefined();
-  // Only the stored one can be removed here; a shadowed one cannot be edited.
-  expect(screen.getAllByRole("button", { name: "remove" })).toHaveLength(1);
-  expect(screen.getAllByRole("button", { name: "edit" })).toHaveLength(2);
+  expect(screen.getByText("secret set, config")).toBeDefined();
+  // A shadowed one cannot be opened; the others open their forms.
+  await vi.waitFor(() =>
+    expect(
+      screen.getAllByRole("link", { name: /nextcloud|mine/ }),
+    ).toHaveLength(2),
+  );
 });
 
 test("creates one from its kind's schema, the secret sent once and never shown", async () => {
   serving([]);
 
   render(Accounts);
-  await press("+ add an account");
+  await go("Add an account");
 
-  await fireEvent.input(await screen.findByLabelText("Name"), {
+  await fireEvent.input(await screen.findByLabelText("name"), {
     target: { value: "nextcloud" },
   });
   const baseUrl = screen.getByLabelText("baseUrl");
@@ -112,10 +132,10 @@ test("creates one from its kind's schema, the secret sent once and never shown",
   await fireEvent.input(screen.getByLabelText("username"), {
     target: { value: FIELDS.username },
   });
-  const secret = screen.getByLabelText("Secret") as HTMLInputElement;
+  const secret = screen.getByLabelText("secret") as HTMLInputElement;
   expect(secret.type).toBe("password");
   await fireEvent.input(secret, { target: { value: "app-password" } });
-  await press("create");
+  await press("Save");
 
   await vi.waitFor(() =>
     expect(asked()).toContain("PUT /v1/accounts/webdav/nextcloud"),
@@ -130,15 +150,15 @@ test("leaves the held secret alone when an edit leaves the field blank", async (
   serving([anAccount()]);
 
   render(Accounts);
-  await press("edit");
+  await go("nextcloud");
 
-  const secret = (await screen.findByLabelText("Secret")) as HTMLInputElement;
+  const secret = (await screen.findByLabelText("secret")) as HTMLInputElement;
   expect(secret.value).toBe("");
   expect(secret.required).toBe(false);
   await fireEvent.input(screen.getByLabelText("username"), {
     target: { value: "bob" },
   });
-  await press("save");
+  await press("Save");
 
   await vi.waitFor(() =>
     expect(asked()).toContain("PUT /v1/accounts/webdav/nextcloud"),
@@ -152,12 +172,12 @@ test("edits a config account by storing a copy, which needs a secret of its own"
   serving([anAccount({ from: "config", changedAt: undefined })]);
 
   render(Accounts);
-  await press("edit");
+  await go("nextcloud");
 
   expect(
     ((await screen.findByLabelText("username")) as HTMLInputElement).value,
   ).toBe("alice");
-  expect((screen.getByLabelText("Secret") as HTMLInputElement).required).toBe(
+  expect((screen.getByLabelText("secret") as HTMLInputElement).required).toBe(
     true,
   );
 });
@@ -169,7 +189,9 @@ test("removes a stored one, and names a refusal", async () => {
   });
 
   render(Accounts);
-  await press("remove");
+  await go("nextcloud");
+  await press(/^Remove…/);
+  await press("Remove");
 
   expect(
     await screen.findByText(/2 destination\(s\) still use that account/),

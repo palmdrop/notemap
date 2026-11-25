@@ -4,7 +4,7 @@
 </script>
 
 <div class="hatch flex h-40 max-w-80 items-end border border-ink">
-  <span class="m-2 bg-ground px-1.5">{label}</span>
+  <span class="m-2 bg-paper px-1.5">{label}</span>
 </div>
 
 <style>

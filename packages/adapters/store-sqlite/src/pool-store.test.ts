@@ -1183,6 +1183,34 @@ describe("the queue and the archive", () => {
     expect((await p.queue(OLDEST_FIRST)).values).toHaveLength(2);
   });
 
+  it("counts what was captured from a time on, wherever it went since", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 4);
+    await setArchived(p, "item-3", { archivedAt: "2026-08-03T12:00:00.000Z" });
+
+    expect(await p.counts("2026-08-03T09:02:00.000Z" as Timestamp)).toEqual({
+      queue: 3,
+      captured: 2,
+    });
+  });
+
+  it("counts no revision as a capture, though it is an item of its own", async () => {
+    const { pool: p } = pool();
+    await minutelyItems(p, 2);
+    await appendCapture(
+      p,
+      revisionOf(capture({ id: "item-0" }), {
+        id: "revision",
+        text: "reworded",
+        at: "2026-08-03T10:00:00.000Z",
+      }),
+    );
+
+    expect(
+      (await p.counts("2026-08-03T09:00:00.000Z" as Timestamp)).captured,
+    ).toBe(2);
+  });
+
   it("shows an item something was revised from on neither surface", async () => {
     const { pool: p } = pool();
     const original = capture({ id: "item-1" });
@@ -2259,9 +2287,15 @@ describe("the sources in use", () => {
       {
         id: SCRATCHPAD,
         items: 2,
+        unprocessed: 2,
         lastCapturedAt: "2026-08-03T11:00:00.000Z",
       },
-      { id: "memos", items: 1, lastCapturedAt: "2026-08-03T10:00:00.000Z" },
+      {
+        id: "memos",
+        items: 1,
+        unprocessed: 1,
+        lastCapturedAt: "2026-08-03T10:00:00.000Z",
+      },
     ]);
   });
 

@@ -1,25 +1,36 @@
 <script lang="ts">
   import { saidBy, type Account, type AccountKind } from "@notemap/client";
 
-  import Unfolding from "$components/primitives/motion/Unfolding.svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+
+  import Band from "$components/primitives/blocks/Band.svelte";
+  import LinkRow from "$components/primitives/rows/LinkRow.svelte";
+  import Dialog from "$components/primitives/sheets/Dialog.svelte";
   import AccountForm from "$components/settings/AccountForm.svelte";
-  import Fact from "$components/settings/Fact.svelte";
   import Section from "$components/settings/Section.svelte";
-  import Action from "$components/primitives/controls/Action.svelte";
-  import Lead from "$components/primitives/text/Lead.svelte";
   import { client } from "$lib/client";
+  import { kindName } from "$lib/looks";
   import { reachable } from "$lib/reachable.svelte";
-  import { slide } from "$lib/motion";
+
+  import { newHref, openHref, settingsHref } from "./href";
 
   const pool = reachable();
 
   let kinds = $state<readonly AccountKind[]>([]);
   let held = $state<readonly Account[]>([]);
-  let adding = $state(false);
-  let editing = $state<string | undefined>(undefined);
-  let going = $state(false);
-  /** Which account a `remove` was pressed on, while it is asked. */
-  let removing = $state<string | undefined>(undefined);
+  /** The list, or an account's form: read off the address. */
+  const opened = $derived(page.url.searchParams.get("open") ?? undefined);
+  const adding = $derived(page.url.searchParams.has("new"));
+  const editing = $derived(
+    held.find((one) => !one.shadowed && `${one.kind}/${one.name}` === opened),
+  );
+  let doomed = $state<Account | undefined>(undefined);
+
+  /** A form done with gives way to the list, in its place in history. */
+  function back(): void {
+    void goto(settingsHref("accounts"), { replaceState: true });
+  }
   let said = $state("");
 
   const keyOf = (one: Account) =>
@@ -34,13 +45,10 @@
 
   async function attempt(what: () => Promise<unknown>) {
     said = "";
-    going = true;
     try {
       await what();
     } catch (error) {
       said = saidBy(error);
-    } finally {
-      going = false;
     }
   }
 
@@ -56,23 +64,20 @@
     if (pool.yes && kinds.length === 0) void read();
   });
 
-  const remove = (one: Account) => {
-    removing = keyOf(one);
-    return attempt(async () => {
+  const remove = (one: Account) =>
+    attempt(async () => {
       await client.accounts.remove(one.kind, one.name);
       held = await client.accounts.list();
-    }).finally(() => (removing = undefined));
-  };
+    });
 
   const saved = () => {
-    adding = false;
-    editing = undefined;
+    back();
     void attempt(async () => {
       held = await client.accounts.list();
     });
   };
 
-  function describe(one: Account): { lead: string; rest: string } {
+  function describe(one: Account): string {
     const fields = Object.values(one.fields).map((value) => String(value));
     const secret = one.secretSet ? "secret set" : "no secret";
     const origin =
@@ -83,80 +88,89 @@
           : "config";
 
     return fields.length === 0
-      ? { lead: secret, rest: origin }
-      : { lead: fields.join(", "), rest: `${secret}, ${origin}` };
+      ? `${secret}, ${origin}`
+      : `${fields.join(", ")}, ${secret}, ${origin}`;
   }
 </script>
 
-<Section name="accounts">
-  {#if !pool.yes}
-    <p role="status" class="mt-4">Accounts can be read but not changed.</p>
-  {/if}
-
-  {#each grouped as group (group.kind)}
-    <Section name={group.kind} sub>
-      {#each group.accounts as one (keyOf(one))}
-        <Fact name={one.name}>
-          <span
-            class="flex flex-wrap items-baseline justify-between gap-x-[2ch] {one.shadowed
-              ? 'opacity-60'
-              : ''}"
-          >
-            <span><Lead {...describe(one)} /></span>
-            {#if !one.shadowed}
-              <span class="flex gap-x-[2ch]">
-                <Action
-                  disabled={going || !pool.yes}
-                  onclick={() =>
-                    (editing = editing === keyOf(one) ? undefined : keyOf(one))}
-                >
-                  edit
-                </Action>
-                {#if one.from === "stored"}
-                  <Action
-                    disabled={going || !pool.yes}
-                    working={removing === keyOf(one)}
-                    onclick={() => void remove(one)}
-                  >
-                    remove
-                  </Action>
-                {/if}
-              </span>
-            {/if}
-          </span>
-        </Fact>
-        {#if editing === keyOf(one)}
-          <Unfolding>
-            <AccountForm
-              {kinds}
-              editing={one}
-              disabled={!pool.yes}
-              done={saved}
-            />
-          </Unfolding>
+{#if adding}
+  <AccountForm {kinds} disabled={!pool.yes} done={saved} />
+{:else if editing !== undefined}
+  {@const one = editing}
+  <AccountForm
+    {kinds}
+    editing={one}
+    disabled={!pool.yes}
+    done={saved}
+    onremove={one.from === "stored" ? () => (doomed = one) : undefined}
+  />
+{:else}
+  <Section name="accounts">
+    <div class="flex flex-col">
+      <div>
+        {#if !pool.yes}
+          <p role="status" class="m-0 px-gutter py-3 text-small text-muted">
+            The pool is out of reach. Accounts can be read but not changed.
+          </p>
         {/if}
-      {:else}
-        <p class="mt-2">none</p>
-      {/each}
-    </Section>
-  {/each}
 
-  {#if adding}
-    <Unfolding>
-      <AccountForm {kinds} disabled={!pool.yes} done={saved} />
-    </Unfolding>
-  {:else}
-    <div class="mt-6" transition:slide={{ magnitude: "short" }}>
-      <Action
-        disabled={!pool.yes || kinds.length === 0}
-        onclick={() => (adding = true)}
-      >
-        + add an account
-      </Action>
+        {#each grouped as group (group.kind)}
+          <Band>{kindName(group.kind)}</Band>
+          {#each group.accounts as one (keyOf(one))}
+            <LinkRow
+              title={one.name}
+              label={one.name}
+              line={describe(one)}
+              end={one.from === "stored" ? undefined : "config file"}
+              muted={one.shadowed}
+              chevron={!one.shadowed}
+              disabled={one.shadowed}
+              href={one.shadowed
+                ? undefined
+                : openHref("accounts", `${one.kind}/${one.name}`)}
+            />
+          {:else}
+            <p class="m-0 border-b border-rule px-gutter py-3 text-muted">
+              none
+            </p>
+          {/each}
+        {/each}
+
+        {#if said !== ""}
+          <p role="status" class="m-0 px-gutter py-3 text-danger">{said}</p>
+        {/if}
+      </div>
+
+      <LinkRow
+        icon="plus"
+        title="Add an account"
+        label="Add an account"
+        chevron={false}
+        why={!pool.yes
+          ? "The pool is out of reach."
+          : kinds.length === 0
+            ? "The pool has said no kinds of account."
+            : undefined}
+        href={newHref("accounts")}
+      />
     </div>
-  {/if}
+  </Section>
+{/if}
 
-  {#if said !== ""}
-    <p role="status" class="mt-3 text-alarm">{said}</p>
-  {/if}
-</Section>
+{#if doomed !== undefined}
+  {@const leaving = doomed}
+  <Dialog
+    title="Remove {leaving.name}?"
+    ways={[
+      { label: "Keep", value: false },
+      { label: "Remove", value: true, kind: "danger" },
+    ]}
+    onanswer={(yes) => {
+      const one = leaving;
+      doomed = undefined;
+      if (yes === true) void remove(one).then(back);
+    }}
+  >
+    <p class="m-0">A destination that names it can no longer sign in.</p>
+  </Dialog>
+{/if}

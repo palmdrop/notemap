@@ -250,3 +250,25 @@ test("a settled offer is taken off whatever notice made it, and the notice stays
     "undo",
   ]);
 });
+
+test("a delivery turned down after its window is said once in the strip, and goes after a while or when dismissed", () => {
+  vi.useFakeTimers();
+  notices.raise({ what: "routed", subject: "Vault" });
+  expect(notices.strip).toBeUndefined();
+
+  notices.raise({
+    what: "Rejected by",
+    subject: "Vault",
+    alarm: true,
+    strip: true,
+  });
+  expect(notices.strip?.subject).toBe("Vault");
+
+  notices.unstrip();
+  expect(notices.strip).toBeUndefined();
+
+  notices.raise({ what: "Not delivered", alarm: true, strip: true });
+  vi.advanceTimersByTime(8_000);
+  expect(notices.strip).toBeUndefined();
+  vi.useRealTimers();
+});

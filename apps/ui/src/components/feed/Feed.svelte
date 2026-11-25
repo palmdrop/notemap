@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { quick } from "$lib/quicking.svelte";
   import { onMount, tick, untrack } from "svelte";
 
-  import { goto, replaceState } from "$app/navigation";
+  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
   import {
+    filterSize,
     isWhole,
     type Item,
     type Key,
@@ -12,10 +14,8 @@
   } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
-  import Order from "$components/order/Order.svelte";
   import Index from "$components/queue/Index.svelte";
   import Body from "$components/primitives/register/Body.svelte";
-  import Head from "$components/primitives/register/Head.svelte";
   import More from "$components/primitives/register/More.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import Day from "$components/primitives/register/Day.svelte";
@@ -24,15 +24,14 @@
   import Prose from "$components/primitives/text/Prose.svelte";
   import ClearFilters from "$components/tags/ClearFilters.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
-  import Search from "$components/tags/Search.svelte";
-  import ViewChooser from "$components/view/ViewChooser.svelte";
-  import { itemHref, processHref } from "$components/item/href";
+  import { searching } from "$components/frame/searching.svelte";
+  import { itemHref } from "$components/item/href";
   import { client } from "$lib/client";
   import type { Command } from "$lib/command/command";
   import { commandsFor, whileEditing } from "$lib/command/item";
   import { listCommands, markCommands } from "$lib/command/list";
   import { publish } from "$lib/command/stack.svelte";
-  import { byDay, dayAtFor, plain, type Drawn } from "$lib/days";
+  import { byDay, dayAtFor, type Drawn } from "$lib/days";
   import { filtering } from "$lib/filtering.svelte";
   import { placeOf } from "$lib/held";
   import { leave } from "$lib/leaving.svelte";
@@ -45,7 +44,6 @@
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { rows as layout } from "$lib/rows.svelte";
   import { refusalIn } from "$lib/refusal";
   import { restorePlace } from "$lib/scroll-mark";
   import { nameOf } from "$lib/destinations";
@@ -65,7 +63,7 @@
   const marking = new Marking();
   const batch = batched(marking, () => rows);
   /** Going back and forward moves through the views a filter was taken from. */
-  let view = $derived<View>(viewFor(SURFACE, page.url));
+  let view = $derived<View>(viewFor(page.url));
 
   const reading = filtering(
     SURFACE,
@@ -77,7 +75,6 @@
   let drawn = $state<Record<string, Row | undefined>>({});
   let index = $state<Index | undefined>(undefined);
   let filterPanel = $state<FilterPanel | undefined>(undefined);
-  let search = $state<Search | undefined>(undefined);
 
   const refused = $derived(refusalIn($feed));
 
@@ -118,7 +115,11 @@
         how,
         selected,
       );
-      selected = marked ?? (selected === id ? undefined : id);
+      // Letting go of the last mark ends the mode with nothing selected.
+      selected =
+        marked !== undefined && !marking.on
+          ? undefined
+          : (marked ?? (selected === id ? undefined : id));
     });
   }
 
@@ -188,9 +189,7 @@
   const current = $derived(rows.find((row) => row.id === selected));
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
-  const headed = $derived(
-    layout.byDay ? byDay(rows, dayAtFor($feed.by)) : plain(rows),
-  );
+  const headed = $derived(byDay(rows, dayAtFor($feed.by)));
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -243,12 +242,12 @@
   });
 
   function process(item: Item) {
-    void goto(processHref(item.id));
+    quick.open(item.id);
   }
 
   function read(wanted: View) {
     view = wanted;
-    remember(SURFACE, wanted);
+    remember(wanted);
     replaceState(withView(page.url, wanted), {});
   }
 
@@ -258,6 +257,7 @@
     current === undefined
       ? []
       : commandsFor(current, {
+          revises: true,
           address: itemHref(current.id),
           offline: !pool.yes,
           onprocess: () => process(current),
@@ -301,8 +301,18 @@
     }),
     // Nothing one row is given is offered while many are marked.
     ...(marking.on ? [] : reached()),
-    { id: "filter", label: "filter", run: () => void filterPanel?.show() },
-    { id: "search", label: "search", run: () => search?.focus() },
+    {
+      id: "filter",
+      label: "filter",
+      count: filterSize(reading.filter),
+      run: () => void filterPanel?.show(),
+    },
+    {
+      id: "search",
+      label: "search",
+      field: { words: reading.words, onsearch: reading.search },
+      run: () => searching.focus(),
+    },
     {
       id: "view",
       label: "view",
@@ -311,43 +321,38 @@
   ]);
 </script>
 
-<Head>
-  {#if marking.on}
-    <Marked
-      marked={rows.filter((row) => marking.has(row.id))}
-      full={marking.full}
-      onbatch={(action) => batch.do(action)}
-      onall={() => {
-        const ids = rows.map((row) => row.id);
-        const last = ids.at(-1);
-        if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
-      }}
-      onclear={() => marking.clear()}
-    />
-  {:else}
-    <ViewChooser {view} onchoose={read} />
-    <FilterPanel
-      bind:this={filterPanel}
-      surface={SURFACE}
-      filter={reading.filter}
-      ontoggle={reading.toggle}
-      onclear={reading.clear}
-    />
-    <Search
-      bind:this={search}
-      words={reading.words}
-      onsearch={reading.search}
-    />
-    <Order />
-  {/if}
-</Head>
+{#if marking.on}
+  <Marked
+    marked={rows.filter((row) => marking.has(row.id))}
+    full={marking.full}
+    onbatch={(action) => batch.do(action)}
+    onall={() => {
+      const ids = rows.map((row) => row.id);
+      const last = ids.at(-1);
+      if (last !== undefined) marking.range(ids, last, ids[0] ?? last);
+    }}
+    onclear={() => marking.clear()}
+  />
+{/if}
+
+<FilterPanel
+  bind:this={filterPanel}
+  surface={SURFACE}
+  filter={reading.filter}
+  {view}
+  onview={read}
+  ontoggle={reading.toggle}
+  onclear={reading.clear}
+  shown={rows.length}
+/>
 
 {#if batch.asked !== undefined}
   {@const asked = batch.asked}
   <Confirming
     question={asked.question}
+    by={asked.by}
     notes={asked.notes}
-    verb={asked.action.kind === "archive" ? "discard" : "route"}
+    verb={asked.action.kind === "archive" ? "Discard" : "Route"}
     alarm={asked.action.kind === "archive"}
     onanswer={(go) => void batch.answer(go)}
   />
@@ -356,6 +361,7 @@
 {#snippet heading(one: Extract<Drawn<Item>, { kind: "day" }>)}
   <Day
     at={one.at}
+    count={one.count}
     leads={refused === undefined && one.key === headed[0]?.key}
     {motion}
   />
@@ -383,12 +389,10 @@
     marking={marking.on}
     onbatch={(action) => batch.do(action)}
     offline={!pool.yes}
-    commands={!marking.on && selected === item.id ? commands : []}
     pending={undrained.has(item.id)}
-    layout={layout.drawn}
     {opens}
     onselect={(how) => select(item.id, how)}
-    onprocess={marking.on ? undefined : () => void goto(processHref(item.id))}
+    onprocess={marking.on ? undefined : () => quick.open(item.id)}
   />
 {/snippet}
 
@@ -405,19 +409,17 @@
   <Index
     {motion}
     bind:this={index}
-    byDay={layout.byDay}
     dayAt={dayAtFor($feed.by)}
     leads={refused === undefined}
     items={rows}
     selected={marking.on ? undefined : selected}
     cursor={marking.on ? selected : undefined}
-    slim={layout.slim}
     open={opened}
     marked={(id) => marking.has(id)}
     marking={marking.on}
     onselect={select}
     onprocess={(id) => {
-      if (!marking.on) void goto(processHref(id));
+      if (!marking.on) quick.open(id);
     }}
   />
 
@@ -425,27 +427,34 @@
     <More
       loading={$feed.loading}
       first={rows.length === 0}
+      view="lines"
+      shown={rows.length}
       offline={!pool.yes}
       failed={$feed.failure !== undefined}
       onmore={() => void client.loadFeed()}
     />
   {/if}
 {:else}
-  <Register slim={layout.slim}>
+  <Register>
     {#if refused !== undefined}
       <Refused surface="feed" {refused} />
     {/if}
 
     {#if bare}
-      <Rail>feed</Rail>
-      <Body>
-        {#if isWhole($feed.filter)}
+      {#if isWhole($feed.filter)}
+        <Rail>feed</Rail>
+        <Body>
           <Prose text={NOTHING_CAPTURED} />
-        {:else}
+        </Body>
+      {:else}
+        <!-- Centred, with room above, as the queue's is. -->
+        <div
+          class="col-span-full flex flex-col items-center px-gutter pt-12 pb-6 text-center text-muted"
+        >
           {nothingMatches($feed.filter, nameOf)}
-          <ClearFilters onclick={reading.clear} />
-        {/if}
-      </Body>
+          <ClearFilters filter={$feed.filter} onclick={reading.clear} />
+        </div>
+      {/if}
     {/if}
 
     {#each headed as one (one.key)}
@@ -459,6 +468,7 @@
       <More
         loading={$feed.loading}
         first={rows.length === 0}
+        shown={rows.length}
         offline={!pool.yes}
         failed={$feed.failure !== undefined}
         onmore={() => void client.loadFeed()}

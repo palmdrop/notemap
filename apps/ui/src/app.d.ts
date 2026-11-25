@@ -5,7 +5,11 @@ declare global {
     // interface Error {}
     // interface Locals {}
     // interface PageData {}
-    // interface PageState {}
+    interface PageState {
+      trail?: { readonly within: boolean; readonly steps: number };
+      /** The item a decision just moved on from, which the next item's bar speaks of. */
+      left?: string;
+    }
     // interface Platform {}
   }
 }

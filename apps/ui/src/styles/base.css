@@ -5,7 +5,7 @@
        list is read again, would otherwise move everything centred sideways. */
     scrollbar-gutter: stable;
     /* Whatever is scrolled or focused into view stops clear of the status line. */
-    scroll-padding-bottom: calc(var(--spacing-status) + 0.75rem);
+    scroll-padding-bottom: calc(var(--spacing-foot) + 0.75rem);
   }
 
   /* A person's own answer, where they have given one. */
@@ -18,11 +18,11 @@
   }
 
   body {
-    background: var(--color-ground);
+    background: var(--color-paper);
     color: var(--color-ink);
-    font-family: var(--font-shell);
-    font-size: var(--text-shell);
-    line-height: var(--text-shell--line-height);
+    font-family: var(--font-text);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
     text-wrap: pretty;
     -webkit-font-smoothing: antialiased;
   }
@@ -38,6 +38,30 @@
 
   ::highlight(search) {
     text-shadow: var(--text-shadow-bold);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* A control changing state fades into it rather than snapping: chosen,
+     taken, pressed, hovered. A piece with motion of its own says so with a
+     utility, which outranks this. */
+  :where(
+    button,
+    a,
+    [role="option"],
+    [role="radio"],
+    [role="checkbox"],
+    [aria-pressed],
+    [aria-current],
+    [aria-selected]
+  ) {
+    transition-property:
+      color, background-color, border-color, outline-color, opacity;
+    transition-duration: var(--duration-short);
+    transition-timing-function: var(--ease-fade);
   }
 
   /* Tailwind's preflight leaves a button on the arrow; a control is pointed at. */

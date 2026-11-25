@@ -532,17 +532,17 @@ test("draws a name the folder does not hold as a note to be made", async () => {
   draw("picker.md", SAID);
 
   expect(await screen.findByText("+ picker.md")).toBeDefined();
-  expect(screen.queryByText("[append]")).toBeNull();
+  expect(screen.queryByText("append here")).toBeNull();
 });
 
 test("marks a name it does hold as the note appended to", async () => {
   servingFolder([file("decisions.md", "decisions.md")]);
   draw("decisions.md", SAID);
 
-  const marked = await screen.findByText("[append]");
-  expect(marked.closest('[role="option"]')?.textContent).toBe(
-    "decisions.md[append]",
-  );
+  const marked = await screen.findByText("append here");
+  expect(
+    marked.closest('[role="option"]')?.textContent?.replace(/\s+/g, " ").trim(),
+  ).toBe("decisions.md append here");
 });
 
 /** In the tree, where they will be, rather than named off beside the word. */
@@ -554,8 +554,8 @@ test("draws the folders it will make under the deepest one that is there", async
   expect(screen.getByText("+ deep/")).toBeDefined();
   expect(screen.getByText("+ picker.md")).toBeDefined();
 
-  const made = screen.getByText("+ drafts/");
-  expect(made.getAttribute("aria-disabled")).toBe("true");
+  const made = screen.getByText("+ drafts/").closest('[role="option"]');
+  expect(made?.getAttribute("aria-disabled")).toBe("true");
 });
 
 test("draws the note itself under the folder that already holds it", async () => {
@@ -588,8 +588,8 @@ test("draws what it will make inside the folder that will hold it", async () => 
   draw("projects/drafts/picker.md", SAID);
 
   await screen.findByText("+ drafts/");
-  const drawn = [...screen.getByRole("listbox").children].map(
-    (row) => row.textContent,
+  const drawn = [...screen.getByRole("listbox").children].map((row) =>
+    row.textContent?.trim(),
   );
 
   expect(drawn).toEqual(["projects/", "+ drafts/", "+ picker.md", "reading/"]);
@@ -599,7 +599,7 @@ test("mod-shift-enter writes the free name beside one that is taken, and routes 
   servingFolder([file("decisions.md", "decisions.md")]);
   const line = draw("decisions.md", SAID);
 
-  await screen.findByText("[append]");
+  await screen.findByText("append here");
   const press = new KeyboardEvent("keydown", {
     key: "Enter",
     shiftKey: true,
@@ -832,4 +832,53 @@ test("going to a sibling folder drops the first one's contents until the sibling
   await vi.waitFor(() => expect(answer).toBeDefined());
   answer?.(json(200, answered([folder("from home", "letters/from home")])));
   expect(await screen.findByText("from home/")).toBeDefined();
+});
+
+test("offers a note's place only folders and notes, never a picture beside them", async () => {
+  serving((scope) =>
+    answered(
+      scope === "projects/notemap"
+        ? [
+            file("readme.md", "projects/notemap/readme.md"),
+            file("pixel.png", "projects/notemap/pixel.png"),
+          ]
+        : (TREE[scope ?? ""] ?? []),
+    ),
+  );
+  draw("projects/notemap/", { text: "a thought" });
+
+  await screen.findByText("readme.md");
+  expect(screen.queryByText("pixel.png")).toBeNull();
+});
+
+test("names the folders along the line, each a way back up to it", async () => {
+  servingTree();
+  const line = draw("projects/notemap/readme.md");
+
+  const along = await screen.findByRole("navigation", {
+    name: "Folders along where",
+  });
+  await fireEvent.click(
+    [...along.querySelectorAll("button")].find(
+      (one) => one.textContent === "projects",
+    )!,
+  );
+  expect(line.value()).toBe("projects/");
+
+  await fireEvent.click(along.querySelectorAll("button")[0]!);
+  expect(line.value()).toBe("");
+  expect(
+    screen.queryByRole("navigation", { name: "Folders along where" }),
+  ).toBeNull();
+});
+
+test("clears the line with its ×, which only a line holding something has", async () => {
+  servingTree();
+  const line = draw("projects/notemap/");
+  await screen.findByText("notes/");
+
+  await fireEvent.click(screen.getByRole("button", { name: "Clear where" }));
+
+  expect(line.value()).toBe("");
+  expect(screen.queryByRole("button", { name: "Clear where" })).toBeNull();
 });

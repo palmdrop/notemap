@@ -27,6 +27,24 @@ function clientOver(handler: Handler, counted: () => number) {
 }
 
 describe("the pool's counts", () => {
+  it("asks what was captured since this device's midnight, and holds it as today's", async () => {
+    let asked: URL | undefined;
+    const transport = mockTransport((request) => {
+      asked = new URL(request.url);
+      return json(200, { queue: 1, captured: 4 });
+    });
+    transport.counts = null;
+    const client = createClient({ transport, store: createMemoryStore() });
+    built.push(client);
+
+    await client.counts.load();
+
+    const midnight = new Date();
+    midnight.setHours(0, 0, 0, 0);
+    expect(asked?.searchParams.get("since")).toBe(midnight.toISOString());
+    expect(read(client.counts.capturedToday)).toBe(4);
+  });
+
   it("is absent until the pool has answered, and holds its answer after", async () => {
     const { client } = clientOver(
       () => json(200, {}),
