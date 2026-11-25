@@ -14,6 +14,7 @@
 
 <script lang="ts">
   import { quick } from "$lib/quicking.svelte";
+  import { hand } from "$lib/hand.svelte";
   import { resolve } from "$app/paths";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
@@ -472,7 +473,9 @@
     href={resolve("/capture")}
     aria-label="Capture"
     title="Capture"
-    class="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
+    class="fixed {hand.choice === 'left'
+      ? 'left-4'
+      : 'right-4'} bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
   >
     <Icon name="plus" class="size-10" />
   </a>

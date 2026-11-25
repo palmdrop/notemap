@@ -886,7 +886,8 @@ sits in each list's filter; the palette is a preference and sits in settings.
 It was a ruled box above the list at every width from 2026-09-14; the box is now the wide form,
 and a phone writes on a page of its own.*
 
-**Below 900px, the + and the capture page.** A round + floats at the queue's lower right, clear of
+**Below 900px, the + and the capture page.** A round + floats at the queue's lower right — lower left
+for a left hand, chosen under Appearance *(2026-11-25)* — clear of
 where the status line goes with a few pixels between, and stays there when the line is gone. It
 opens **`/capture`**, a page titled `capture` in the header: the field fills it, with **no
 placeholder and no clock**, since the capture is stamped when it is sent. Under the field are its
@@ -3501,7 +3502,9 @@ client has no measurement to draw and says so.
 
 **Appearance** is `THEME` with `auto`, `light` and `dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS` with `auto`, `by
-day` and `rail` under it, the same control ([Rows by day](#rows-by-day)).
+day` and `rail` under it, the same control ([Rows by day](#rows-by-day)). *Added 2026-11-25*: `HAND`
+with `right` and `left`, kept on this device: the side the + stands on, on a phone. Nothing else
+follows it — swipes, bars and sheets stay where they are.
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts

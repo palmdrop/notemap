@@ -99,11 +99,12 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 
 ### Phase 5: the + for a left hand (depends on nothing)
 
-- [ ] A `hand` setting, right or left, kept on this device. It is shown in Appearance on a phone.
-- [ ] The queue's + sits at the lower left when the setting is left. Nothing else moves.
-- [ ] Spec: "Settings" and "Capture is the head of the queue" say so.
-- [ ] Tests: the setting is kept and read back, and the + follows it.
-- [ ] Commit
+- [x] A `hand` setting, right or left, kept on this device. It is shown in Appearance at
+      every width, a tablet being either.
+- [x] The queue's + sits at the lower left when the setting is left. Nothing else moves.
+- [x] Spec: "Settings" and "Capture is the head of the queue" say so.
+- [x] Tests: the setting is kept and read back, and the + follows it.
+- [x] Commit
 
 ### Phase 6: finish
 

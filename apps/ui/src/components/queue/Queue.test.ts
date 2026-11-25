@@ -20,6 +20,7 @@ import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { firings } from "$lib/firings.svelte";
 import { commandOf } from "$lib/command/stack.svelte";
+import { hand } from "$lib/hand.svelte";
 import Queue from "./Queue.svelte";
 import Listed from "./Queue.fixture.svelte";
 
@@ -2604,4 +2605,20 @@ test("the row last opened is marked at its edge, and not tinted as a selection i
   const row = words.closest("[data-row]") as HTMLElement;
   expect(row.className).not.toContain("bg-picked");
   expect(row.className).toContain("before:bg-ink");
+});
+
+test("on a phone the + stands on the side of the hand chosen, and nothing else moves", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const plus = () => screen.getByRole("link", { name: "Capture" });
+  expect(plus().className).toContain("right-4");
+
+  hand.choose("left");
+  await tick();
+
+  expect(plus().className).toContain("left-4");
+  expect(plus().className).not.toContain("right-4");
+  hand.choose("right");
 });

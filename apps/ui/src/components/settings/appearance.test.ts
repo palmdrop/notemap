@@ -47,7 +47,19 @@ test("remembers the choice, so a reload does not undo it", async () => {
   expect(chosen()).toBe("light");
 });
 
-test("keeps only the theme: rows are read by day at every width", () => {
+test("offers no choice of rows: they are read by day at every width", () => {
   render(Appearance);
   expect(screen.queryByRole("group", { name: "Rows" })).toBeNull();
+});
+
+test("keeps the hand the + stands on, right until said otherwise", async () => {
+  render(Appearance);
+  expect(chosen("Hand")).toBe("right");
+
+  await fireEvent.click(option("left", "Hand"));
+
+  expect(localStorage.getItem("notemap:hand")).toBe("left");
+  cleanup();
+  render(Appearance);
+  expect(chosen("Hand")).toBe("left");
 });
