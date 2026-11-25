@@ -129,6 +129,11 @@
   ([plan](plans/client-store-on-a-filesystem.md)); it affects the web shell the same way. Worth
   checking what deep imports cost before assuming they are the answer — the observable seam is one
   file, and whether the client needs rxjs at all is the bigger question underneath.
+- [ ] **Signed asset URLs. The developer implements this, with guidance. No agent builds it
+  unattended.** It is a learning exercise first. An `<img>` cannot carry a bearer token, so a shell
+  that is not same-origin cannot render `/v1/assets/{id}/content`. security.md owes a short-lived
+  signed URL for this, not a token in a query string. Nothing needs it while every shell is the
+  daemon's own origin ([research](research/mobile-shell.md)).
 
 ## Classification
 
