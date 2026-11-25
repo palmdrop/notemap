@@ -233,6 +233,8 @@
   would read as a changed capture. If continuations get lost far down the queue, the fix is on the
   drawing side, not the capture time.
 
+- [ ] linux notemap inbox similar to raycast, short command, tui maybe, to input, same features as the raycast command.
+
 ## Pool, store and correctness
 
 - [ ] add a way to edit tags, remove tags, rename tags, see tag statistics, etc
