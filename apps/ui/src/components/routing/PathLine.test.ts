@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 import { json, routeOf } from "@notemap/client/testing";
 
 import { asked, pool } from "$testing/pool";
+import { viewport } from "$testing/dom";
 import PathLine from "./PathLine.svelte";
 
 const VAULT = "019a3f2c-0e6e-7c31-9f3a-6b1f2d5c4a77";
@@ -881,4 +882,43 @@ test("clears the line with its ×, which only a line holding something has", asy
 
   expect(line.value()).toBe("");
   expect(screen.queryByRole("button", { name: "Clear where" })).toBeNull();
+});
+
+/** Drawn once, the value never handed back: what a press does to the caret is all that is watched. */
+async function tapped(name: string) {
+  servingTree();
+  const changed = vi.fn();
+  render(PathLine, {
+    props: {
+      destination: VAULT,
+      capability: "create-or-append",
+      field: "path",
+      label: "where",
+      value: "",
+      places: [],
+      onchange: changed,
+    } as never,
+  });
+  const entry = await screen.findByText(name);
+  (screen.getByRole("combobox") as HTMLInputElement).blur();
+
+  await fireEvent.pointerDown(window);
+  await fireEvent.mouseDown(entry);
+  await fireEvent.click(entry);
+  expect(changed).toHaveBeenCalledWith(name);
+  return screen.getByRole("combobox");
+}
+
+test("on a phone a folder tapped is gone into without raising the keyboard", async () => {
+  viewport(390);
+  const line = await tapped("projects/");
+
+  expect(document.activeElement).not.toBe(line);
+  viewport(1024);
+});
+
+test("when wide a folder clicked is gone into with the caret in the line", async () => {
+  const line = await tapped("projects/");
+
+  expect(document.activeElement).toBe(line);
 });

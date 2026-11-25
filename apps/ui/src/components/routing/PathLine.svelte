@@ -16,6 +16,7 @@
   import { nameOf } from "$lib/destinations";
   import { recall, remember } from "$lib/candidate-cache";
   import { following } from "$lib/motion";
+  import { caretFollows } from "$lib/caret";
   import { client } from "$lib/client";
   import { forecastOf, type Said } from "$lib/forecast";
   import {
@@ -308,7 +309,7 @@
   // gluing its name onto the end of what is typed.
   function take(entry: CandidateEntry): void {
     onchange(pathOf(entry));
-    input?.focus();
+    if (caretFollows()) input?.focus();
   }
 
   function taken(choice: (typeof choices)[number]): void {
@@ -412,9 +413,10 @@
         {#if depth > 0}<Icon name="chevron" class="size-3.5" />{/if}
         <button
           type="button"
+          onmousedown={(event) => event.preventDefault()}
           onclick={() => {
             onchange(upTo(value, depth));
-            input?.focus();
+            if (caretFollows()) input?.focus();
           }}
           class="min-h-8 rounded-control px-1.5 hover:bg-hover hover:text-ink"
           >{level}</button
@@ -472,9 +474,10 @@
     {#if value !== ""}
       <button
         type="button"
+        onmousedown={(event) => event.preventDefault()}
         onclick={() => {
           onchange("");
-          input?.focus();
+          if (caretFollows()) input?.focus();
         }}
         class="absolute inset-y-0 right-0 grid w-11 place-items-center text-muted hover:text-ink"
       >

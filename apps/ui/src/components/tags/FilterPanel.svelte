@@ -17,8 +17,7 @@
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import type { View } from "$lib/view";
   import { client } from "$lib/client";
-  import { width } from "$lib/breakpoint";
-  import { modality } from "$lib/modality.svelte";
+  import { caretFollows } from "$lib/caret";
   import { narrowed } from "$lib/candidate-list";
   import type { FilterKind } from "$lib/filter";
   import { STATE_WORD } from "$lib/said";
@@ -216,7 +215,7 @@
       .then((read) => (sources = read))
       .catch(() => undefined);
     await tick();
-    if (modality.keys || width.wide) line?.focus({ preventScroll: true });
+    if (caretFollows()) line?.focus({ preventScroll: true });
   }
 
   function shut(): void {
