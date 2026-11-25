@@ -1485,6 +1485,14 @@ it says so, and its templates stay drawn and cannot be pressed.
 **It is reached** from the item's Route, from a row's Route under the pointer when wide, by **a
 swipe left on a row** on a phone — the row following the finger, and a swipe that starts within
 24px of either edge left to the system's back gesture — and with `p` wherever an item is in hand.
+**What the swipe uncovers is the route** *(2026-11-25)*: the route mark on the grey `off` behind
+the row, turning ink once the swipe has gone far enough to open it.
+
+**A queue row swiped right stands open on Manual and Discard** *(2026-11-25)*, two buttons behind
+it, Discard in red. A tap on either acts at once, with `undo` on the status line as from the item;
+a tap on the row, a scroll, or a swipe of another row puts it back and opens nothing. Buttons rather
+than a second, longer swipe: two actions told apart by how far a finger went are taken by mistake.
+The feed swipes left only, its rows not all still to be decided.
 `process` is the quick route's command now; the route page is reached through it.
 
 **A route made from it is in its window at once** ([below](#the-status-line)): drawn on the line,

@@ -36,6 +36,9 @@
   } from "$lib/motion";
   import { pickedBy, type Picked } from "$lib/marking.svelte";
   import { noteHeld } from "$lib/held-hint.svelte";
+  import { DISCARD, MANUAL, refusalFor, type ByHand } from "$lib/processing";
+  import { discard, manual } from "$lib/quick";
+  import { swiped } from "$lib/swiped.svelte";
   import { recordsOf } from "$lib/records.svelte";
   import { undrainedSince } from "$lib/undrained-since";
 
@@ -195,15 +198,29 @@
 
   /**
    * A swipe left on a row opens the quick route, the row following the
-   * finger. One that starts within the edge's 24px is the system's back
-   * gesture, not the row's.
+   * finger. On the queue a swipe right stands the row open on Manual and
+   * Discard, until one is taken, the row is tapped or the list moves. One that
+   * starts within the edge's 24px is the system's back gesture, not the row's.
    */
   const EDGE = 24;
   const ENOUGH = 80;
-  let swipe = $state<{ from: number; dx: number } | undefined>(undefined);
+  /** How far a row swiped right stands open: two actions of 88px. */
+  const SHELF = 176;
+  let swipe = $state<{ from: number; base: number; dx: number } | undefined>(
+    undefined,
+  );
   const swipes = $derived(
     !width.wide && !marking && surface !== "item" && onprocess !== undefined,
   );
+  const shelves = $derived(swipes && surface === "queue");
+  const shelved = $derived(shelves && swiped.id === item.id);
+  const offset = $derived(swipe?.dx ?? (shelved ? SHELF : 0));
+
+  function byHand(id: ByHand): void {
+    swiped.shut();
+    if (id === MANUAL) void manual(item);
+    else discard(item);
+  }
 
   /**
    * Holding a row selects it, and starts selecting: the first time a row is
@@ -241,20 +258,37 @@
     if (!swipes || event.pointerType === "mouse") return;
     const x = event.clientX;
     if (x < EDGE || x > window.innerWidth - EDGE) return;
-    swipe = { from: x, dx: 0 };
+    if (!shelved) swiped.shut();
+    const base = shelved ? SHELF : 0;
+    swipe = { from: x, base, dx: base };
   }
 
   function swipeAlong(event: PointerEvent): void {
     if (swipe === undefined) return;
-    if (Math.abs(event.clientX - swipe.from) > 10) letGo();
-    swipe = { ...swipe, dx: Math.min(0, event.clientX - swipe.from) };
+    const moved = event.clientX - swipe.from;
+    if (Math.abs(moved) > 10) letGo();
+    swipe = {
+      ...swipe,
+      dx: Math.min(shelves ? SHELF : 0, swipe.base + moved),
+    };
   }
 
   function swipeEnd(): void {
     letGo();
-    const went = swipe?.dx ?? 0;
+    const was = swipe;
     swipe = undefined;
-    if (went <= -ENOUGH) onprocess?.();
+    if (was === undefined) return;
+    if (was.dx <= -ENOUGH) {
+      swiped.shut();
+      onprocess?.();
+    } else if (
+      shelves &&
+      was.dx >= was.base + (was.base === 0 ? ENOUGH : -ENOUGH)
+    ) {
+      swiped.open(item.id);
+    } else if (shelved) {
+      swiped.shut();
+    }
   }
 
   /** The editable shape, for the bar that saves it. */
@@ -380,15 +414,56 @@
   {/if}
 {/snippet}
 
+{#snippet shelf(id: ByHand, icon: "check" | "trash", label: string)}
+  {@const refused = refusalFor(id, item, offline)}
+  <button
+    type="button"
+    disabled={refused !== undefined}
+    title={refused}
+    onclick={() => byHand(id)}
+    class="flex w-[88px] flex-none flex-col items-center justify-center gap-1 text-small disabled:opacity-50 {id ===
+    DISCARD
+      ? 'bg-danger text-paper'
+      : 'bg-off text-ink'}"
+  >
+    <Icon name={icon} />
+    {label}
+  </button>
+{/snippet}
+
 <!-- One element on the register's own tracks, so the row has a height of its
      own and the columns stay in register with every other row: the outer box
      is what moves, the inner what its height follows. -->
 <div
-  class="col-span-full grid grid-cols-subgrid"
+  class="relative col-span-full grid grid-cols-subgrid"
   in:slide={{ fade: true, still: motion?.still ?? true }}
   out:leave={{ still: motion?.still ?? true }}
   {@attach following}
 >
+  {#if offset < 0}
+    <!-- What a swipe left uncovers: the route it opens, in ink once it would. -->
+    <div
+      aria-hidden="true"
+      data-uncovered="route"
+      class="absolute inset-y-0 right-0 flex items-center justify-end overflow-hidden pr-gutter transition-[background-color,color] duration-(--duration-short) ease-fade {offset <=
+      -ENOUGH
+        ? 'bg-ink text-paper'
+        : 'bg-off text-ink'}"
+      style:width="{-offset}px"
+    >
+      <Icon name="route" />
+    </div>
+  {:else if offset > 0}
+    <div
+      data-uncovered="by-hand"
+      inert={!shelved}
+      class="absolute inset-y-0 left-0 flex overflow-hidden"
+      style:width="{offset}px"
+    >
+      {@render shelf(MANUAL, "check", "Manual")}
+      {@render shelf(DISCARD, "trash", "Discard")}
+    </div>
+  {/if}
   <!-- Where the pointer is decides whether a marked row offers its `+`, and,
        when wide, whether the row offers Route beside its words. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -411,12 +486,19 @@
       swipe = undefined;
       letGo();
     }}
-    style:translate={swipe === undefined || swipe.dx === 0
-      ? undefined
-      : `${String(swipe.dx)}px 0`}
+    onclickcapture={(event) => {
+      if (!shelved) return;
+      // A tap on a row standing open puts it back, and opens nothing.
+      event.stopPropagation();
+      event.preventDefault();
+      swiped.shut();
+    }}
+    style:translate={offset === 0 ? undefined : `${String(offset)}px 0`}
     class="relative col-span-full grid min-h-row scroll-mt-held grid-cols-subgrid border-b border-rule {swipes
       ? 'touch-pan-y'
-      : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
+      : ''} {swipe === undefined
+      ? 'transition-[background-color,translate]'
+      : 'transition-[background-color]'} duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
     modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
       : ''} {marked
@@ -425,7 +507,9 @@
         ? 'bg-picked'
         : pointed && width.wide && onprocess !== undefined
           ? 'bg-hover'
-          : ''}"
+          : swipes
+            ? 'bg-paper'
+            : ''}"
   >
     <Rail {selected} {marked} {cursor} onpick={pick} onreach={reach}>
       <Stamp

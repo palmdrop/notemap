@@ -75,15 +75,15 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 
 ### Phase 3: swipes show what they uncover, and swipe right (depends on nothing)
 
-- [ ] Behind a row swiped left, the route mark on the uncovered side, strengthening once the swipe
+- [x] Behind a row swiped left, the route mark on the uncovered side, strengthening once the swipe
       has gone far enough to count.
-- [ ] A queue row swiped right past the threshold settles open with Manual and Discard behind it.
+- [x] A queue row swiped right past the threshold settles open with Manual and Discard behind it.
       A tap on either acts and closes it. A tap on the row, a swipe of another row, or a scroll
       closes it without acting.
-- [ ] Spec: "The row" and "Actions" say both swipes and what each uncovers.
-- [ ] Tests: a swipe right past the threshold opens the buttons, and a short one does not. Manual
+- [x] Spec: "The row" and "Actions" say both swipes and what each uncovers.
+- [x] Tests: a swipe right past the threshold opens the buttons, and a short one does not. Manual
       and Discard call `$lib/quick`. Opening one row's buttons closes another's.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 4: the hovered queue row, when wide (depends on nothing)
 

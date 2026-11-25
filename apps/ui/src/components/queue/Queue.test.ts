@@ -2491,3 +2491,82 @@ test("selecting takes the head, × lets go, and on a phone the + gives the foot 
   );
   expect(screen.queryByText("1 selected")).toBeNull();
 });
+
+/** A finger drawn across a row, from one x to another. */
+async function swipe(row: Element, from: number, to: number) {
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: from });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: to });
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: to });
+}
+
+const uncovered = (id: string, what: string) =>
+  document
+    .querySelector(`[data-row="${id}"]`)
+    ?.parentElement?.querySelector(`[data-uncovered="${what}"]`) ?? null;
+
+test("on a phone a row swiped left far enough opens the quick route, and a short one does not", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 300 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 250 });
+  expect(uncovered("one", "route")).not.toBeNull();
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 250 });
+  expect(quick.item).toBeUndefined();
+  expect(uncovered("one", "route")).toBeNull();
+
+  await swipe(row, 300, 200);
+  expect(quick.item).toBe("one");
+});
+
+test("on a phone a queue row swiped right stands open on Manual and Discard, and a short swipe does not", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await swipe(row, 100, 150);
+  expect(uncovered("one", "by-hand")).toBeNull();
+
+  await swipe(row, 100, 200);
+  const shelf = uncovered("one", "by-hand")!;
+  expect(
+    within(shelf as HTMLElement).getByRole("button", { name: /Manual/ }),
+  ).toBeDefined();
+
+  await fireEvent.click(
+    within(shelf as HTMLElement).getByRole("button", { name: /Discard/ }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+  });
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
+  expect(uncovered("one", "by-hand")).toBeNull();
+});
+
+test("a row standing open puts itself back on a tap, a scroll, or another row's swipe, and opens nothing", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  const one = document.querySelector('[data-row="one"]')!;
+  const two = document.querySelector('[data-row="two"]')!;
+
+  await swipe(one, 100, 200);
+  await fireEvent.click(within(one as HTMLElement).getByText("one"));
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(went.to).toEqual([]);
+
+  await swipe(one, 100, 200);
+  await fireEvent.scroll(window);
+  expect(uncovered("one", "by-hand")).toBeNull();
+
+  await swipe(one, 100, 200);
+  await swipe(two, 100, 200);
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(uncovered("two", "by-hand")).not.toBeNull();
+});
