@@ -10,6 +10,31 @@ let held: SessionState = $state({
   known: false,
 });
 
+const KEPT = "notemap:session";
+
+/** The last answer the pool gave, kept on this device for a start with no pool to ask. */
+function kept(): SessionState | undefined {
+  try {
+    const said = JSON.parse(localStorage.getItem(KEPT) ?? "null") as unknown;
+    if (said === null || typeof said !== "object") return undefined;
+    const { required, signedIn } = said as Record<string, unknown>;
+    if (typeof required !== "boolean" || typeof signedIn !== "boolean") {
+      return undefined;
+    }
+    return { required, signedIn, known: true };
+  } catch {
+    return undefined;
+  }
+}
+
+function keep(answer: SessionState): void {
+  if (!answer.known) return;
+  localStorage.setItem(
+    KEPT,
+    JSON.stringify({ required: answer.required, signedIn: answer.signedIn }),
+  );
+}
+
 let readers = 0;
 let drop: (() => void) | undefined;
 
@@ -22,11 +47,16 @@ function hold(): () => void {
   if (readers === 0) {
     const watching = client.session.subscribe((current) => {
       held = current;
+      keep(current);
     });
 
-    // Swallowed: a daemon that cannot be reached leaves this unknown, which the
-    // chrome draws as waiting rather than as a login nobody asked for.
-    void client.askSession().catch(() => undefined);
+    // A daemon that cannot be reached answers with what it last said here, so
+    // a start in flight mode draws what this device holds; with nothing kept
+    // it stays unknown, drawn as waiting rather than as a login nobody asked for.
+    void client.askSession().catch(() => {
+      const last = kept();
+      if (!held.known && last !== undefined) held = last;
+    });
 
     drop = () => watching.unsubscribe();
   }
