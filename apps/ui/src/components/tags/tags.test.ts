@@ -532,3 +532,29 @@ test("leaves a state on the queue's address out of what it reads", async () => {
   expect(asked?.searchParams.getAll("state")).toEqual([]);
   expect(asked?.searchParams.getAll("source")).toEqual(["memos"]);
 });
+
+test("opened by a tap, the filter sheet leaves its tag line alone, so a phone raises no keyboard", async () => {
+  serving({ tags: [{ name: "kind/quote", items: 2, unprocessed: 1 }] });
+
+  render(Queue);
+  await fireEvent.pointerDown(window);
+  const filter = commandOf("filter");
+  if (filter !== undefined && "run" in filter) filter.run();
+  await screen.findByText("kind/quote");
+
+  expect(document.activeElement).not.toBe(
+    screen.getByRole("combobox", { name: "Find a tag" }),
+  );
+});
+
+test("opened by f, the filter sheet's tag line takes what is typed", async () => {
+  serving({ tags: [{ name: "kind/quote", items: 2, unprocessed: 1 }] });
+
+  render(Queue);
+  await fireEvent.keyDown(window, { key: "f" });
+  await screen.findByText("kind/quote");
+
+  expect(document.activeElement).toBe(
+    screen.getByRole("combobox", { name: "Find a tag" }),
+  );
+});

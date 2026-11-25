@@ -1357,7 +1357,9 @@ the feed's taking more than tags: [below](#a-filter-by-state-destination-and-sou
 the same day: a filter of several tags meant going back and forth between it and the list once per
 tag.
 
-- **It opens a panel with a line to find a tag in**, the caret on it, and every tag beneath with
+- **It opens a panel with a line to find a tag in**, the caret on it when opened from the keys
+  — opened by a tap, nothing takes the caret, so a phone keeps its keyboard down *(2026-11-25)* —
+  and every tag beneath with
   how many items on this surface carry it: the queue counts the unprocessed ones, the feed every
   one, as the pool counts them. Typing narrows the list as completion does. `f` opens it from
   either surface.

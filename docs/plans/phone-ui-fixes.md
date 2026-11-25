@@ -53,9 +53,9 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 
 ### Phase 1: the filter panel leaves the keyboard down
 
-- [ ] `show()` focuses the Find a tag line only when the panel is opened from the keys. A tap
+- [x] `show()` focuses the Find a tag line only when the panel is opened from the keys. A tap
       focuses the sheet, as the sheet already does on open.
-- [ ] Test: opened by a pointer, the line is not focused. Opened by `f`, it is.
+- [x] Test: opened by a pointer, the line is not focused. Opened by `f`, it is.
 - [ ] Commit
 
 ### Phase 2: tags on the capture page and in an edit (depends on nothing)
