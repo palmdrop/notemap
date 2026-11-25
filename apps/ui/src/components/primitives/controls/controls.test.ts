@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
+import { viewport } from "$testing/dom";
 
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
@@ -472,10 +473,7 @@ test("the offer hangs from the line's place, which outlives the line", async () 
 });
 
 test("on a phone whose offer cannot choose its side, the line goes to the top to give it room", async () => {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    value: 390,
-  });
+  viewport(390);
   vi.stubGlobal("CSS", { supports: () => false });
   const scrolled = vi.mocked(Element.prototype.scrollIntoView);
   scrolled.mockClear();
@@ -485,17 +483,11 @@ test("on a phone whose offer cannot choose its side, the line goes to the top to
   expect(scrolled).toHaveBeenCalledWith({ block: "start" });
 
   vi.unstubAllGlobals();
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    value: 1024,
-  });
+  viewport(1024);
 });
 
 test("on a phone whose offer chooses its roomier side, the line stays where it is", async () => {
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    value: 390,
-  });
+  viewport(390);
   vi.stubGlobal("CSS", { supports: () => true });
   const scrolled = vi.mocked(Element.prototype.scrollIntoView);
   scrolled.mockClear();
@@ -505,8 +497,5 @@ test("on a phone whose offer chooses its roomier side, the line stays where it i
   expect(scrolled).not.toHaveBeenCalled();
 
   vi.unstubAllGlobals();
-  Object.defineProperty(window, "innerWidth", {
-    configurable: true,
-    value: 1024,
-  });
+  viewport(1024);
 });
