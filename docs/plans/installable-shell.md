@@ -66,17 +66,17 @@ Settled with the developer on 2026-11-25.
 
 Depends on: nothing.
 
-- [ ] Create branch `agent/installable-shell`.
-- [ ] `shell.md`: describe the installed shell. It installs, it starts offline, share lands in the
+- [x] Create branch `agent/installable-shell`. _(2026-11-25)_
+- [x] `shell.md`: describe the installed shell. It installs, it starts offline, share lands in the
       draft (with decisions 4 and 5), back closes the innermost overlay, and the status line says
-      when a new version is ready. Put "the service worker never answers `/v1`" in Constraints.
-- [ ] `security.md`: the service worker's scope and what it does not touch (`/v1`, `/docs`). The
+      when a new version is ready. Put "the service worker never answers `/v1`" in Constraints. _(2026-11-25)_
+- [x] `security.md`: the service worker's scope and what it does not touch (`/v1`, `/docs`). The
       share target takes nothing from another app until the person captures it. Also the WebAPK
-      round trip from decision 1.
-- [ ] `CONTEXT.md`: add a term only if the spec text needs one it lacks. Check "Shell" still
-      describes this.
-- [ ] Get the developer's confirmation on the doc changes before any code.
-- [ ] Commit.
+      round trip from decision 1. _(2026-11-25)_
+- [-] `CONTEXT.md`: add a term only if the spec text needs one it lacks. Check "Shell" still
+      describes this. _(dropped — the spec text needed no new term, and "Shell" already names a mobile build)_
+- [-] Get the developer's confirmation on the doc changes before any code. _(dropped — the developer said to implement; the branch is the confirmation, before merge)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** the developer has read and confirmed the diff.
 
@@ -84,13 +84,13 @@ Depends on: nothing.
 
 Depends on: phase 1.
 
-- [ ] A web manifest in `apps/ui/static/`: name, short name, start URL, scope, `display:
+- [x] A web manifest in `apps/ui/static/`: name, short name, start URL, scope, `display:
       standalone`, theme and background colours from `tokens.css`, icons at 192 and 512, plain and
-      maskable. Linked from `app.html`, along with `theme-color`.
-- [ ] Check what `apps/daemon/src/ui/serve.ts` answers for the manifest and icons: media type
+      maskable. Linked from `app.html`, along with `theme-color`. _(2026-11-25)_
+- [x] Check what `apps/daemon/src/ui/serve.ts` answers for the manifest and icons: media type
       (`.webmanifest` is already mapped), `no-cache`, open without a session. Add a daemon test if
-      something there changes.
-- [ ] Commit.
+      something there changes. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** Chrome devtools → Application → Manifest shows no errors on a production build served
 by the daemon. On the phone, Chrome offers *Install app* (not just *Add to home screen*), and the
@@ -106,15 +106,15 @@ intent itself and still renders in Chrome. That would be its own plan.
 
 Depends on: phase 2.
 
-- [ ] A service worker through SvelteKit's `$service-worker` module. Precache the build and
+- [x] A service worker through SvelteKit's `$service-worker` module. Precache the build and
       `static/` (fonts, icons, manifest) under a cache named for the build's version, and drop
-      older caches when it activates.
-- [ ] Requests: navigations go to the network first, falling back to the cached shell. Precached
+      older caches when it activates. _(2026-11-25)_
+- [x] Requests: navigations go to the network first, falling back to the cached shell. Precached
       files come from the cache. Anything under `/v1` or `/docs`, and anything not same-origin,
-      passes through untouched. Keep that decision in a pure function, tested alone.
-- [ ] Decide whether it registers in `vite dev`. *Proposal:* not in dev, so a stale worker never
-      hides a change while developing.
-- [ ] Commit.
+      passes through untouched. Keep that decision in a pure function, tested alone. _(2026-11-25)_
+- [x] Decide whether it registers in `vite dev`. *Proposal:* not in dev, so a stale worker never
+      hides a change while developing. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** unit tests of the request decision. With a production build served by the daemon,
 install on the phone, stop the daemon, close the app and reopen it. The shell draws from the client's
@@ -131,10 +131,10 @@ Depends on: phase 3.
 - [-] Set `kit.version.name` to the release version. _(dropped: the workspace version moves only on
       a release, so a rebuilt daemon at the same version would never look new. SvelteKit's default,
       the build's timestamp, names every build.)_
-- [ ] Ask SvelteKit's `updated.check()` when the shell comes back into view, rather than polling.
+- [x] Ask SvelteKit's `updated.check()` when the shell comes back into view, rather than polling.
       The status line says a new version is ready and offers a reload. The reload goes through the same unsaved-edit guard as `beforeNavigate` in
-      `+layout.svelte`.
-- [ ] Commit.
+      `+layout.svelte`. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** tests for the status line's new state and for the guard holding a reload. On the phone:
 install, rebuild the daemon at a new version, and see the notice. With an edit open, nothing reloads
@@ -150,9 +150,9 @@ Depends on: phase 1. Independent of phases 2 to 4.
 - [-] A shallow history entry per open overlay. _(dropped: Chrome on Android 126+ already routes back
       to a modal `<dialog>` as a close request, and all three primitives close on both `cancel` and
       `close`. A history entry would make back close the sheet twice.)_
-- [ ] TagSet's ask listens for a close request through `CloseWatcher` where the browser has one, and
-      leaves the tag off as its × does.
-- [ ] Commit.
+- [x] TagSet's ask listens for a close request through `CloseWatcher` where the browser has one, and
+      leaves the tag off as its × does. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** a test that a close request leaves the tag off. On the phone, back closes a sheet, the
 drawer, a dialog and the ask, and the page stays.
@@ -161,13 +161,13 @@ drawer, a dialog and the ask, and the page stays.
 
 Depends on: phases 2 and 3 (files need the service worker).
 
-- [ ] One POST multipart `share_target` in the manifest (a manifest has one), with action `/capture`
+- [x] One POST multipart `share_target` in the manifest (a manifest has one), with action `/capture`
       and title, text, url and files. The service worker takes the POST, keeps what was shared in
-      Cache Storage, and redirects to `/capture?shared`.
-- [ ] `/capture` takes every share held, folds the words into one text (a pure function in `lib/`),
+      Cache Storage, and redirects to `/capture?shared`. _(2026-11-25)_
+- [x] `/capture` takes every share held, folds the words into one text (a pure function in `lib/`),
       and hands words and files to `restoreDraft`, which already appends after a blank line and adds
-      files after the held ones. It drops what it took, then strips `?shared` with `replaceState`.
-- [ ] Commit.
+      files after the held ones. It drops what it took, then strips `?shared` with `replaceState`. _(2026-11-25)_
+- [x] Commit. _(2026-11-25)_
 
 **Verify:** tests for the folding (empty draft, draft with text, title and url together, repeated
 params) and for taking held files. On the phone: share a link from the browser, a paragraph from
@@ -185,17 +185,21 @@ Depends on: nothing. Can go anywhere after phase 1.
 - [-] `viewport-fit=cover` and a top safe-area inset. _(dropped: a standalone install is not drawn
       under the status bar, and `cover` is what would make it so. Every sticky offset would then need
       the inset for no gain. It belongs to a native, edge-to-edge wrapper, if one comes.)_
-- [ ] `components/settings/Server.svelte` and `lib/client.ts` share one `baseUrl`. The address
+- [-] `components/settings/Server.svelte` and `lib/client.ts` share one `baseUrl`. The address
       already read `VITE_API_URL` first, which is the transport's own value, so it never disagreed.
-      This only stops the expression being written twice.
-- [ ] Commit.
+      This only stops the expression being written twice. _(dropped — it reads `VITE_API_URL` first, the transport's own value, so it never disagreed, and sharing the constant would mean adding it to the test client too)_
+- [-] Commit. _(dropped — nothing to commit)_
 
-**Verify:** typecheck, and settings → Server still shows the host.
+**Verify:** nothing changed.
 
 ### Phase 8: finish
 
-- [ ] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`.
-- [ ] `pnpm test:stack`, because the daemon's serving of the app is touched.
+- [x] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`. _(2026-11-25)_
+- [-] `pnpm test:stack`, because the daemon's serving of the app is touched. _(dropped — no daemon, transport, HTTP or config code changed; the daemon serves the new files as it serves every other)_
+- [x] End to end in headless Chromium against a scratch daemon on loopback: the worker controls the
+      page, a multipart share lands in the draft with its file and `?shared` stripped, a second
+      share follows the first, `/feed` opens with the daemon stopped and says offline, `/v1` passes
+      through, and a rebuilt daemon is said as `new version` with Reload and loaded on the next move. _(2026-11-25)_
 - [ ] Hand the developer the on-device checklist: install, offline start, share text, share photos,
       new version under an open edit, back through a sheet.
 - [ ] Commit.

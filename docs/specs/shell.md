@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-24
+**Last updated**: 2026-11-25
 **Shipped**:
+
+- 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
+  daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
+  shared is added to the end of the draft. A newer build is said in the status line with Reload and
+  loaded on the next move that loses nothing. Back puts a trigger tag's question away as it does
+  every sheet. See [installable-shell](../plans/installable-shell.md).
 
 - 2026-11-24 — **The phone-first shell, after its second review**
   ([review](../reviews/mobile-first-rethink-pr-130-2026-11-24.md)). Previous and Next are entries in

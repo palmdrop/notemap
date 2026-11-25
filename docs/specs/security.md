@@ -1,8 +1,13 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-10-13
+**Last updated**: 2026-11-25
 **Shipped**:
+
+- 2026-11-25 — **An installed shell is still the same origin.** A service worker keeps the shell's
+  files and nothing of the pool's, a share is held on the device until the capture page takes it,
+  and installing on Android passes the manifest through Google. See
+  [installable-shell](../plans/installable-shell.md).
 
 - 2026-10-13 — **A stage per branch, and an are.na account that names its own address.** A
   branch can be run as a containerised stack beside a real WebDAV server and fakes for are.na and
