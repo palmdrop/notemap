@@ -842,6 +842,37 @@ test("closing a trigger tag's question leaves the tag off", async () => {
   expect(readDraft().tags).toEqual([]);
 });
 
+test("back on a phone, a close request, leaves a trigger tag's question with the tag off", async () => {
+  const watching: { onclose: (() => void) | null; destroyed: boolean }[] = [];
+  vi.stubGlobal(
+    "CloseWatcher",
+    class {
+      onclose: (() => void) | null = null;
+      destroyed = false;
+      constructor() {
+        watching.push(this);
+      }
+      destroy() {
+        this.destroyed = true;
+      }
+    },
+  );
+  await servingTodo(todo());
+
+  await takeTag("route/todo");
+  await screen.findByRole("combobox", { name: "list" });
+  const live = watching.filter((watcher) => !watcher.destroyed);
+  expect(live).toHaveLength(1);
+  live[0]?.onclose?.();
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("combobox", { name: "list" })).toBeNull();
+  });
+  expect(readDraft().tags).toEqual([]);
+  expect(watching.every((watcher) => watcher.destroyed)).toBe(true);
+  vi.unstubAllGlobals();
+});
+
 test("a trigger tag's question is a dialog whose own field takes the caret", async () => {
   await servingTodo(todo());
 

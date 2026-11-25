@@ -160,6 +160,17 @@
   };
 
   let stepping = $state<Stepping | undefined>(undefined);
+  const stepped = $derived(stepping !== undefined);
+
+  // Drawn without a <dialog>, so back on a phone would leave the page: the
+  // close request it sends puts the question away as its × does.
+  $effect(() => {
+    if (!stepped || typeof CloseWatcher === "undefined") return;
+    const watcher = new CloseWatcher();
+    watcher.onclose = leaveOff;
+    return () => watcher.destroy();
+  });
+
   const step = $derived(
     stepping === undefined ? undefined : stepping.ask.steps[stepping.at],
   );

@@ -12,6 +12,13 @@ declare global {
     }
     // interface Platform {}
   }
+
+  /** Shipped in Chromium, and not yet in TypeScript's DOM library. */
+  class CloseWatcher {
+    constructor(options?: { signal?: AbortSignal });
+    onclose: ((event: Event) => void) | null;
+    destroy(): void;
+  }
 }
 
 export {};
