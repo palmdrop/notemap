@@ -2,7 +2,7 @@
   import { untrack } from "svelte";
   import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { page } from "$app/state";
+  import { page, updated } from "$app/state";
 
   import Dropping from "$components/dropping/Dropping.svelte";
   import SignIn from "$components/session/SignIn.svelte";
@@ -32,6 +32,12 @@
   import { session } from "$lib/session.svelte";
   import { arrived } from "$lib/trail.svelte";
   import { watchVisible } from "$lib/visible";
+  import {
+    loadInstead,
+    registerWorker,
+    reload,
+    watchVersion,
+  } from "$lib/worker/version.svelte";
 
   import "./layout.css";
 
@@ -43,6 +49,23 @@
   watched();
 
   $effect(() => watchVisible());
+
+  $effect(() => {
+    registerWorker();
+  });
+
+  $effect(() => watchVersion());
+
+  $effect(() => {
+    if (!updated.current) return;
+    untrack(() =>
+      notices.raise({
+        what: "new version",
+        offer: { label: "Reload", take: reload },
+        key: "new-version",
+      }),
+    );
+  });
 
   afterNavigate(({ from, type }) => {
     arrived(type !== "enter" && from !== null);
@@ -129,7 +152,13 @@
   // Asked, the navigation goes on the way it would have: back and forward move
   // through history, and a link out of the app is left to the browser.
   beforeNavigate((navigation) => {
-    if (!unsaved()) return;
+    if (!unsaved()) {
+      // A newer build is served: this move loads it, rather than moving
+      // within the old one.
+      const instead = loadInstead(updated.current, navigation);
+      if (instead !== undefined) location.href = instead.href;
+      return;
+    }
     navigation.cancel();
     const { type, to, delta, willUnload } = navigation;
     if (type === "leave" || to === null) return;
