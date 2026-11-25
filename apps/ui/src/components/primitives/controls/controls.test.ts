@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import OrderSelector from "./OrderSelector.svelte";
@@ -472,30 +472,45 @@ test("the offer hangs from the line's place, which outlives the line", async () 
   expect(place.getAttribute("style")).toContain(`anchor-name: ${named}`);
 });
 
-test("on a phone whose offer cannot choose its side, the line goes to the top to give it room", async () => {
+test("on a phone the + opens a sheet, its line taking what is typed, one tag after another until Done", async () => {
   viewport(390);
-  vi.stubGlobal("CSS", { supports: () => false });
-  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
-  scrolled.mockClear();
-  tagSet({ offered: ["reading"] });
+  const { added } = tagSet({ offered: ["reading", "recipe"] });
 
-  await opened();
-  expect(scrolled).toHaveBeenCalledWith({ block: "start" });
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
 
-  vi.unstubAllGlobals();
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  const line = within(sheet).getByRole("combobox", { name: "Add a tag" });
+  await vi.waitFor(() => expect(document.activeElement).toBe(line));
+
+  await typed(line, "rec");
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("recipe");
+  expect(screen.getByRole("dialog", { name: "tags" })).toBeDefined();
+  expect((line as HTMLInputElement).value).toBe("");
+
+  await fireEvent.click(within(sheet).getByRole("button", { name: "Done" }));
+  expect(screen.queryByRole("dialog", { name: "tags" })).toBeNull();
   viewport(1024);
 });
 
-test("on a phone whose offer chooses its roomier side, the line stays where it is", async () => {
+test("on a phone the tag sheet holds what is carried, each taken off by its ×", async () => {
   viewport(390);
-  vi.stubGlobal("CSS", { supports: () => true });
-  const scrolled = vi.mocked(Element.prototype.scrollIntoView);
-  scrolled.mockClear();
+  const { removed } = tagSet({ names: ["seedling"] });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  await fireEvent.click(
+    within(sheet).getByRole("button", { name: "remove seedling" }),
+  );
+
+  expect(removed).toHaveBeenCalledWith("seedling");
+  viewport(1024);
+});
+
+test("when wide the + opens the line in place, with no sheet", async () => {
   tagSet({ offered: ["reading"] });
 
   await opened();
-  expect(scrolled).not.toHaveBeenCalled();
 
-  vi.unstubAllGlobals();
-  viewport(1024);
+  expect(screen.queryByRole("dialog")).toBeNull();
 });

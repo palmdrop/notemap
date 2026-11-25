@@ -112,6 +112,26 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 - [x] `Shipped:` entry in `docs/specs/shell.md`, plan ticked
 - [x] Commit
 
+### Phase 7: the review, and a second round on the device _(added 2026-11-25)_
+
+Asked for after the PR's review (`docs/reviews/phone-ui-fixes-pr-132-2026-11-25.md`) and a second
+look on the phone. Decided with the developer: a tag sheet on a phone rather than an offer anchored
+to the line; Manual stays refused while the pool is out of reach.
+
+- [x] The review's findings, as its Resolution says.
+- [x] The width is read once a resize, not once a row: `innerWidth` laid the page out again on every
+  read, and a hold took a second to select at a phone's speed (measured at 6× CPU: 1464ms from the
+  press to the selection, 534ms after).
+- [x] On a phone a tap in the composer — a folder, a level, the × — leaves the caret where it was.
+- [x] A move to another surface draws a line along the top while under way, and every surface's code
+  is fetched once the first is drawn.
+- [x] On a phone `+ tag` opens a sheet: the set as a field, Done at its foot. The anchored phone
+  offer and the scroll that stood in for it are gone.
+- [x] Spec: Tagging, the place line, the drawer, the Shipped entry.
+- [x] Tests for each; typecheck, lint, `pnpm -r --no-sort --silent test`; headless Chromium at phone
+  width for the sheet, the line and the timings.
+- [x] Commit
+
 ---
 
 ## Testing

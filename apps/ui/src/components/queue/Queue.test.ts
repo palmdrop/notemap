@@ -2738,3 +2738,21 @@ test("when wide a selected row offers Manual and Discard beside Route", async ()
     expect(within(row).getByRole("button", { name })).toBeDefined();
   }
 });
+
+test("on a phone a press held inside a sheet opened from a row does not select the row", async () => {
+  vi.useFakeTimers();
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await vi.waitFor(() => screen.getByText("one"));
+  const sheet = document.createElement("dialog");
+  document.querySelector('[data-row="one"] [data-body]')!.append(sheet);
+
+  await fireEvent.pointerDown(sheet, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(sheet, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(screen.queryByText("1 selected")).toBeNull();
+  sheet.remove();
+});

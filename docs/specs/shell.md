@@ -10,7 +10,9 @@
   height, its bar held still. A swiped row shows what it uncovers, and a queue row swiped right
   stands open on Manual and Discard; a hovered queue row offers both beside Route, selected or not.
   The row last opened is marked at its edge rather than tinted. A hand setting puts the + at the
-  lower left.
+  lower left. Then, from a second round on the device: on a phone `+ tag` opens a sheet, a tap in the
+  composer leaves the keyboard down, a move to another surface draws a line while under way and
+  every surface's code is fetched ahead, and holding a row selects it without a second's wait.
 
 - 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
   daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
@@ -864,6 +866,11 @@ whether the pool answers — `online`, or `offline, last answered 12:31` in ink 
 in the box grey: today's date (the month, and the day in a large figure) and how much was captured
 today, counted by the pool from this device's midnight. In the drawer and the menu column, not on
 the rail.
+**A move to another surface still under way after 250ms draws a line along the top** *(2026-11-25)*,
+a third of the width running across it, the wait the asking mark keeps, so a quick move shows
+nothing; the drawer closing first is then not a move that did nothing. **Every surface's code is
+fetched once the first is drawn and the page is idle**, so a move waits on drawing and not on the
+network.
 **The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
 queue.
 
@@ -1753,7 +1760,9 @@ is nothing to complete** *(added 2026-09-04)*, rather than handing focus to what
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it *(and for the pointer, since
 2026-11-23: the folders the line runs through are named above it, the destination first, each a
-press back up to that level, and a × at the line's end empties it)*, and `↑↓` move through
+press back up to that level, and a × at the line's end empties it; **on a phone a tap on a folder,
+a level or the × leaves the caret where it was** *(2026-11-25)*, so going down a tree by taps never
+raises the keyboard over it, while the keys and a wide window keep the caret in the line)*, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
 press landing on the first or last row of the level the caret is in; where that level drew
 nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
@@ -2584,15 +2593,16 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 *Amended 2026-11-18, after the review.* **The chooser is drawn in the blocks register**: where a
 tag can be changed each carries its × — no press to select it first — and elsewhere tags are
 words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
-its template's name muted at the right, and a typed name no offer holds says `new`. **The offer
-opens downward when wide; on a phone it opens on whichever side of the line has more room, held to
-that room**, and nothing scrolls under it *(amended 2026-11-25: it opened downward at every width,
-the line first scrolled to the top of the view, which on a device took the line out of view under
-the keyboard; before 2026-11-24 it opened upward always, over the words the tag was for)*. With the
-keyboard up the roomier side is nearly always above, so on the capture page and in an edit the
-offer covers the words while a tag is chosen: what was given up on 2026-11-24 comes back, as the
-price of the line staying in sight. A browser that cannot choose the side (one without
-`position-try-order`) keeps the older way: the line scrolls to the top and the offer opens beneath. **A trigger tag's question is the quick route's shape**: a
+its template's name muted at the right, and a typed name no offer holds says `new`. **When wide the offer
+opens downward from the line. On a phone `+ tag` opens a sheet instead** *(2026-11-25)*: titled
+`tags`, held to what the keyboard leaves of the view, it is the set as a field — the line on top
+taking the caret, the offer beneath it, what is carried beneath that with each ×, as the sheet that
+tags selected rows has it — and Done at its foot. A tag taken lands at once and the line empties
+for the next; Done, ×, `esc` or the veil put the sheet away. A press in the sheet is the sheet's,
+never the row it was opened from. *(It opened downward at every width before, the line first
+scrolled to the top of the view, which on a device took the line out of view under the keyboard;
+anchored to the line's roomier side it opened over the words. Before 2026-11-24 it opened upward
+always, over the words the tag was for. A sheet covers the words too, but says it does.)* **A trigger tag's question is the quick route's shape**: a
 sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
 **The question has a field of its own** under what it asks, which takes the caret, since the tag
 line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The

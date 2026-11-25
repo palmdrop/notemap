@@ -1,9 +1,9 @@
 import { pickedBy, type Picked } from "./marking.svelte";
 
 const CONTROLS =
-  "a, button, input, textarea, select, label, [role='button'], [role='option']";
+  "a, button, input, textarea, select, label, [role='button'], [role='option'], dialog";
 
-/** A click on a control inside the cell is that control's, not the row's. */
+/** A click on a control inside the cell, or on a sheet opened from it, is that control's, not the row's. */
 function inside(event: MouseEvent): boolean {
   const from = event.target;
   return from instanceof Element && from.closest(CONTROLS) !== null;

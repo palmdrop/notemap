@@ -263,6 +263,10 @@
   let swallowing = false;
 
   function swipeFrom(event: PointerEvent): void {
+    // A sheet opened from the row is drawn over everything, and is not the row.
+    if (event.target instanceof Element && event.target.closest("dialog")) {
+      return;
+    }
     holdFrom(event);
     if (!swipes || event.pointerType === "mouse") return;
     swallowing = swiped.id !== undefined && !shelved;
