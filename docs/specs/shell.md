@@ -4,6 +4,14 @@
 **Last updated**: 2026-11-25
 **Shipped**:
 
+- 2026-11-25 — **Phone fixes from the first days on a device**
+  ([plan](../plans/phone-ui-fixes.md)). A tapped filter sheet leaves the keyboard down; the tag offer
+  opens on the roomier side of its line and fits above the keyboard; the capture page is the view's
+  height, its bar held still. A swiped row shows what it uncovers, and a queue row swiped right
+  stands open on Manual and Discard; a hovered queue row offers both beside Route, selected or not.
+  The row last opened is marked at its edge rather than tinted. A hand setting puts the + at the
+  lower left.
+
 - 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
   daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
   shared is added to the end of the draft. A newer build is said in the status line with Reload and

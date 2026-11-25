@@ -1,9 +1,9 @@
 # Phone UI fixes from the first days on a device
 
 **Date**: 2026-11-25
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`
-**Closed**:
+**Closed**: 2026-11-25
 
 ---
 
@@ -108,9 +108,9 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 
 ### Phase 6: finish
 
-- [ ] Typecheck, lint, `pnpm -r --no-sort --silent test`
-- [ ] `Shipped:` entry in `docs/specs/shell.md`, plan ticked
-- [ ] Commit
+- [x] Typecheck, lint, `pnpm -r --no-sort --silent test`
+- [x] `Shipped:` entry in `docs/specs/shell.md`, plan ticked
+- [x] Commit
 
 ---
 
