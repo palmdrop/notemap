@@ -87,13 +87,15 @@ setting moves the + to the lower left. Each of these has a test or a headless Ch
 
 ### Phase 4: the hovered queue row, when wide (depends on nothing)
 
-- [ ] Find out why Route is sometimes missing (see Unknowns), and fix it if it is a bug.
-- [ ] Manual and Discard beside the hovered Route, under the same conditions.
-- [ ] The last-opened row is marked by an edge on its rail, and no longer by the box grey.
-- [ ] Spec: amend "The row" (tints, the last-opened mark) and "Actions" (what a hovered row offers).
-- [ ] Tests: the hovered row offers Route, Manual and Discard. The last-opened row is not drawn
+- [x] Find out why Route is sometimes missing (see Unknowns), and fix it if it is a bug. _(A
+      selected row hid it, against the spec's "its actions are the keys and the hovered Route". Open
+      and back did not reproduce. The feed still draws none, as written.)_
+- [x] Manual and Discard beside the hovered Route, under the same conditions.
+- [x] The last-opened row is marked by an edge on its rail, and no longer by the box grey.
+- [x] Spec: amend "The row" (tints, the last-opened mark) and "Actions" (what a hovered row offers).
+- [x] Tests: the hovered row offers Route, Manual and Discard. The last-opened row is not drawn
       as selected.
-- [ ] Commit
+- [x] Commit
 
 ### Phase 5: the + for a left hand (depends on nothing)
 

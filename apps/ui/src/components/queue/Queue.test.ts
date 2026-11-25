@@ -2570,3 +2570,38 @@ test("a row standing open puts itself back on a tap, a scroll, or another row's 
   expect(uncovered("one", "by-hand")).toBeNull();
   expect(uncovered("two", "by-hand")).not.toBeNull();
 });
+
+test("when wide a hovered row offers Manual and Discard beside Route, selected or not", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const row = (await screen.findByText("one")).closest(
+    "[data-row]",
+  ) as HTMLElement;
+
+  await fireEvent.pointerEnter(row);
+  for (const name of ["Route", "Manual", "Discard"]) {
+    expect(within(row).getByRole("button", { name })).toBeDefined();
+  }
+  await fireEvent.click(within(row).getByRole("button", { name: "Manual" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/mark-processed");
+  });
+  expect(went.to).toEqual([]);
+
+  await fireEvent.click(stampOf("two"));
+  const two = screen.getByText("two").closest("[data-row]") as HTMLElement;
+  await fireEvent.pointerEnter(two);
+  expect(within(two).getByRole("button", { name: "Route" })).toBeDefined();
+});
+
+test("the row last opened is marked at its edge, and not tinted as a selection is", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+
+  const row = words.closest("[data-row]") as HTMLElement;
+  expect(row.className).not.toContain("bg-picked");
+  expect(row.className).toContain("before:bg-ink");
+});

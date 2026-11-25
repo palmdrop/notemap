@@ -2102,8 +2102,9 @@ leaves it somewhere to land.
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
 **Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
 it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
-its bar at its foot. Coming back to the list, the row last opened is marked in the box grey,
-so the reader finds their place; it is not selected and draws no strip.
+its bar at its foot. Coming back to the list, the row last opened is marked by an ink edge at its rail
+*(2026-11-25; it was the box grey, which read as a selection)*, so the reader finds their place; it
+is not selected and draws no strip.
 
 *Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
 selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
@@ -2471,7 +2472,10 @@ wide having no ctrl and no hover. A row's tints: under the pointer the lightest,
 selected for the keys the box grey, selected for a batch the strongest, with its tick and nothing
 more *(2026-11-19: the ink edge went)*; the keys' place while selecting is an outline round the
 whole row, drawn only while the keys are what is being used. **No strip** opens under
-a selected row: its actions are the keys and the hovered Route. **While rows are selected the
+a selected row: its actions are the keys and the hovered Route. **A queue row under the pointer,
+selected or not, offers Manual and Discard beside its Route** *(2026-11-25)*, the two as icons
+named on hover, acting at once with `undo` as from the item; the column beside the words is held
+wide enough for all three, so a hover moves nothing. **While rows are selected the
 header is the selection's** — × and `n selected` with All, and when wide Discard, Tag and Route
 beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
 the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds

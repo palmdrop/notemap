@@ -216,6 +216,11 @@
   const shelved = $derived(shelves && swiped.id === item.id);
   const offset = $derived(swipe?.dx ?? (shelved ? SHELF : 0));
 
+  /** The row last opened from this list, marked as the reader's place and not as a selection. */
+  const lastSeen = $derived(
+    surface !== "item" && !selected && !marked && lastOpened.id === item.id,
+  );
+
   function byHand(id: ByHand): void {
     swiped.shut();
     if (id === MANUAL) void manual(item);
@@ -501,9 +506,11 @@
       : 'transition-[background-color]'} duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
     modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
+      : ''} {lastSeen
+      ? "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-ink before:content-['']"
       : ''} {marked
       ? 'bg-chosen'
-      : surface !== 'item' && (selected || lastOpened.id === item.id)
+      : surface !== 'item' && selected
         ? 'bg-picked'
         : pointed && width.wide && onprocess !== undefined
           ? 'bg-hover'
@@ -551,8 +558,25 @@
     </Rail>
 
     {#snippet routeBeside()}
-      {#if pointed && width.wide && !selected && !marking && reach !== undefined && surface === "queue"}
-        <span transition:fade>
+      {#if pointed && width.wide && !marking && reach !== undefined && surface === "queue"}
+        {@const manualRefused = refusalFor(MANUAL, item, offline)}
+        {@const discardRefused = refusalFor(DISCARD, item, offline)}
+        <span transition:fade class="flex justify-end gap-1">
+          <Box
+            icon="check"
+            title={manualRefused ?? "Manual (m)"}
+            disabled={manualRefused !== undefined}
+            onclick={() => byHand(MANUAL)}
+            ><span class="sr-only">Manual</span></Box
+          >
+          <Box
+            icon="trash"
+            danger
+            title={discardRefused ?? "Discard (shift+d)"}
+            disabled={discardRefused !== undefined}
+            onclick={() => byHand(DISCARD)}
+            ><span class="sr-only">Discard</span></Box
+          >
           <Box icon="route" title="Route (p)" onclick={reach}>Route</Box>
         </span>
       {/if}
