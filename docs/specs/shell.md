@@ -3755,6 +3755,39 @@ A payload type this shell cannot draw **says so by name** and stays taggable, ar
 routable, since none of those need to understand the content. An item never becomes an invisible
 row, and adding a renderer later is additive.
 
+### Installed on a phone
+
+*(2026-11-25, [plan](../plans/installable-shell.md))*
+
+**The shell can be installed** from a browser that installs web apps. It runs standalone, with its
+own icon, name and window. It is the same shell, served by the same daemon from the same origin:
+installing changes where it opens from, not what it is or how it reaches the pool. The daemon has to
+be reached over HTTPS for a browser to offer it.
+
+**It opens without the daemon.** A service worker keeps the shell's own files: the build, the faces,
+the icons and the manifest. A page asked for while the daemon does not answer is drawn from those,
+and what it shows is the client's store, with the status line saying `offline`, as it would for a
+daemon that went away while the shell was open. The worker keeps nothing the pool says. `/v1` and
+`/docs` go to the network, or fail, as they would without it. So an image not captured on this
+device does not show offline.
+
+**It is offered in the system's share sheet**, where the platform allows. On Android that is Chrome,
+once the shell is installed. Text, a link or files shared from another app open the capture page,
+with what was shared **added to the end of the draft**, as a capture put back is: words after a
+blank line, files after the files already held. Nothing is overwritten and nothing is captured. The
+person sees what arrived and captures it, or not. The capture's source is the shell's own; the share
+sheet delivered the words and did not write them. A share that repeats itself, a link given both as
+the text and as the url, or a title that is the text, adds each part once.
+
+**A new version is offered, not forced.** The shell looks for a newer build of itself when it comes
+back into view. When there is one, the status line says `new version` and offers **Reload**. The
+shell does not reload on its own while anything is unsaved: the next move to another page that has
+nothing to lose loads the new version instead of moving within the old one.
+
+**Back closes what is open before it leaves.** On Android, back and the back gesture close the
+innermost sheet, dialog or drawer, and the page stays where it was. With nothing open, back walks
+history as it always has.
+
 ### Tokens and themes
 
 Every colour, face, size and spacing step is named by **role** in one `@theme` block in
@@ -3917,6 +3950,9 @@ redrawn keep their structure in the new tokens until their phase of
 
 - SvelteKit, Svelte 5 and Tailwind v4, static build, served by the daemon from its own origin. No
   new framework, no CSS-in-JS, no component library.
+- **The service worker never answers for the pool.** It keeps the shell's files and holds a share
+  until the page takes it. Anything under `/v1` or `/docs`, and anything from another origin, passes
+  through untouched. The client's store is where the pool's state lives offline, and there is one.
 - **The shell holds no domain logic.** Anything this design implies that the client does not expose
   is a change to `@notemap/client`, made deliberately, not a rule smuggled into a component.
 - Tokens live in `apps/ui/src/styles/tokens.css` as `@theme`. The global stylesheets sit together

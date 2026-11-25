@@ -1,7 +1,7 @@
 # An installable shell, on Android first
 
 **Date**: 2026-11-25
-**Status**: Todo
+**Status**: In progress
 **Spec**: `docs/specs/shell.md`, `docs/specs/security.md`
 **Closed**:
 
@@ -128,10 +128,11 @@ files is enough, or whether the daemon has to send `Service-Worker-Allowed` or o
 
 Depends on: phase 3.
 
-- [ ] Set `kit.version.name` to the release version the daemon reports, so `$service-worker`'s
-      `version`, `_app/version.json` and `/v1/health` agree.
-- [ ] Turn on SvelteKit's `updated` polling. The status line says a new version is ready and offers
-      a reload. The reload goes through the same unsaved-edit guard as `beforeNavigate` in
+- [-] Set `kit.version.name` to the release version. _(dropped: the workspace version moves only on
+      a release, so a rebuilt daemon at the same version would never look new. SvelteKit's default,
+      the build's timestamp, names every build.)_
+- [ ] Ask SvelteKit's `updated.check()` when the shell comes back into view, rather than polling.
+      The status line says a new version is ready and offers a reload. The reload goes through the same unsaved-edit guard as `beforeNavigate` in
       `+layout.svelte`.
 - [ ] Commit.
 
@@ -139,38 +140,33 @@ Depends on: phase 3.
 install, rebuild the daemon at a new version, and see the notice. With an edit open, nothing reloads
 until it is saved or left.
 
-**Unknown:** whether the polling interval and the status line's existing tempo clash (ADR 74: it
-shows while something is true). *If they do:* the notice reads the version reachability already
-carries from `/v1/health` instead of polling a second file.
-
 ### Phase 5: back closes the innermost thing
 
 Depends on: phase 1. Independent of phases 2 to 4.
 
-- [ ] Inventory everything that opens over a page: `primitives/sheets/Sheet.svelte`,
-      `Dialog.svelte`, `frame/Drawer.svelte`, and any panel drawn without them (`status/Panel`,
-      `tags/FilterPanel`, `log/Views`).
-- [ ] Opening one pushes a shallow history entry (`pushState` with `page.state`). Back pops it and
-      closes it through the same path Escape takes. Closing it any other way removes the entry, so
-      back does not land on a closed sheet. This lives in the primitives, not in each user of them.
-- [ ] Check it alongside `lib/trail.svelte.ts`, which already keeps state in `page.state`.
+- [x] Inventory everything that opens over a page. _(2026-11-25)_ `Sheet`, `Dialog` and `Drawer`
+      are modal `<dialog>`s, and every panel is drawn in a `Sheet`. The one overlay drawn without
+      them is TagSet's trigger-tag ask.
+- [-] A shallow history entry per open overlay. _(dropped: Chrome on Android 126+ already routes back
+      to a modal `<dialog>` as a close request, and all three primitives close on both `cancel` and
+      `close`. A history entry would make back close the sheet twice.)_
+- [ ] TagSet's ask listens for a close request through `CloseWatcher` where the browser has one, and
+      leaves the tag off as its × does.
 - [ ] Commit.
 
-**Verify:** component tests with `src/testing/router.ts`: open a sheet, go back, the sheet is closed
-and the route unchanged. Close by the button, go back, the route goes back. On the phone, the back
-gesture does the same in the installed app.
+**Verify:** a test that a close request leaves the tag off. On the phone, back closes a sheet, the
+drawer, a dialog and the ask, and the page stays.
 
 ### Phase 6: share into capture
 
 Depends on: phases 2 and 3 (files need the service worker).
 
-- [ ] Text and links: a GET `share_target` in the manifest, with action `/capture` and title, text
-      and url params. `/capture` reads them once and folds them into the draft as decision 4 says.
-      Then it strips them with `replaceState`, so a reload does not add them twice. Keep the folding
-      in a pure function in `lib/`, tested alone.
-- [ ] Files: a POST multipart `share_target`. The service worker intercepts the POST, keeps the files
-      where the page can read them, and redirects to `/capture` with a marker. The page takes the
-      files into the held files (`lib/draft.ts`), and the worker's copy is dropped once taken.
+- [ ] One POST multipart `share_target` in the manifest (a manifest has one), with action `/capture`
+      and title, text, url and files. The service worker takes the POST, keeps what was shared in
+      Cache Storage, and redirects to `/capture?shared`.
+- [ ] `/capture` takes every share held, folds the words into one text (a pure function in `lib/`),
+      and hands words and files to `restoreDraft`, which already appends after a blank line and adds
+      files after the held ones. It drops what it took, then strips `?shared` with `replaceState`.
 - [ ] Commit.
 
 **Verify:** tests for the folding (empty draft, draft with text, title and url together, repeated
@@ -186,16 +182,15 @@ use real samples taken on the phone.
 
 Depends on: nothing. Can go anywhere after phase 1.
 
-- [ ] `viewport-fit=cover` in `app.html`, and the header honouring `safe-area-inset-top`. Inside a
-      standalone install this changes nothing until a display mode draws under the status bar, so it
-      is checked rather than assumed.
-- [ ] `components/settings/Server.svelte` reads the address from the client's transport
-      (`baseUrl`), falling back to `location.host` only when that is empty. Today the answer is the
-      same, and the change stops it lying in any shell that is not same-origin.
+- [-] `viewport-fit=cover` and a top safe-area inset. _(dropped: a standalone install is not drawn
+      under the status bar, and `cover` is what would make it so. Every sticky offset would then need
+      the inset for no gain. It belongs to a native, edge-to-edge wrapper, if one comes.)_
+- [ ] `components/settings/Server.svelte` and `lib/client.ts` share one `baseUrl`. The address
+      already read `VITE_API_URL` first, which is the transport's own value, so it never disagreed.
+      This only stops the expression being written twice.
 - [ ] Commit.
 
-**Verify:** a test for the address with an empty and an absolute `baseUrl`. On the phone, the header
-and the foot bar are clear of the status bar and the gesture bar.
+**Verify:** typecheck, and settings → Server still shows the host.
 
 ### Phase 8: finish
 

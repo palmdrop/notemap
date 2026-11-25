@@ -739,6 +739,23 @@ Said plainly, because an absence reads as an oversight otherwise:
   have guarded is closed in the content-type rule instead, which depends on no header surviving a
   proxy — see the section below.
 
+### An installed shell is still the same origin
+
+*(2026-11-25, [plan](../plans/installable-shell.md))* Installing the shell from a browser
+([shell.md](shell.md#installed-on-a-phone)) changes none of the above. It is the same files, served
+by the daemon from its own origin, carrying the same cookie. It reaches `/v1` the way a tab does.
+
+- **The service worker keeps the shell's files and nothing of the pool's.** It passes `/v1`, `/docs`
+  and every other origin through untouched, so nothing it holds outlives a sign-out or bypasses the
+  door. The manifest, the icons and the worker itself are open, as the shell's other files are.
+- **A share is held on the device until the page takes it.** The worker keeps what another app
+  shared, in the browser's own storage for this origin, only until the capture page reads it into
+  the draft. Nothing goes to the pool until the person captures it.
+- **Installing on Android passes the manifest through Google.** Chrome mints a *WebAPK* through
+  Google's servers to register an installed app with the system, which is what puts it in the share
+  sheet. The shell's name, icons, address and share target go there. Pool material does not. A
+  browser without that service installs a shortcut, which has no share target.
+
 ### Why there is no `Origin` check, and why `hono/csrf` was not the answer
 
 `hono/csrf` is already a dependency, so declining it costs an argument rather than a package. It
