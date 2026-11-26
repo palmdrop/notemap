@@ -37,8 +37,8 @@
     }
 
     const watching = new IntersectionObserver(
-      ([entry]) => {
-        near = entry?.isIntersecting ?? false;
+      (entries) => {
+        near = entries.at(-1)?.isIntersecting ?? false;
       },
       { rootMargin: "0px 0px 100% 0px" },
     );

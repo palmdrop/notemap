@@ -64,7 +64,6 @@
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -262,8 +261,8 @@
     void (async () => {
       await reading.arrive(!back);
       await shown.drawn;
+      reading.drawn(back && arrived === null);
       if (arrived !== null) reveal(arrived);
-      else if (back) restorePlace(reading.place);
     })();
   });
 
@@ -617,7 +616,7 @@
     />
   {/if}
 
-  {#if footed}
+  {#if footed && shown.ready}
     <More
       loading={$queue.loading}
       first={rows.length === 0}
@@ -649,7 +648,7 @@
       <RefusedRow {held} />
     {/each}
 
-    {#if footed}
+    {#if footed && shown.ready}
       <More
         loading={$queue.loading}
         first={rows.length === 0}

@@ -49,7 +49,6 @@
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
   import { refusalIn } from "$lib/refusal";
-  import { restorePlace } from "$lib/scroll-mark";
   import { nameOf } from "$lib/destinations";
   import { NOTHING_CAPTURED, nothingMatches } from "$lib/said";
   import { remember, viewFor, withView, type View } from "$lib/view";
@@ -110,7 +109,7 @@
     void (async () => {
       await reading.arrive(!back);
       await shown.drawn;
-      if (back) restorePlace(reading.place);
+      reading.drawn(back);
     })();
   });
 
@@ -437,7 +436,7 @@
     />
   {/if}
 
-  {#if footed}
+  {#if footed && shown.ready}
     <More
       loading={$feed.loading}
       first={rows.length === 0}
@@ -482,7 +481,7 @@
       {/each}
     {/if}
 
-    {#if footed}
+    {#if footed && shown.ready}
       <More
         loading={$feed.loading}
         first={rows.length === 0}

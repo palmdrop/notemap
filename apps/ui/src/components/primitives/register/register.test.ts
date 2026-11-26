@@ -84,8 +84,9 @@ function watchingTheFoot() {
       disconnect() {}
     },
   );
-  return (isIntersecting: boolean) => {
-    for (const callback of seen) callback([{ isIntersecting }]);
+  return (...readings: boolean[]) => {
+    const entries = readings.map((isIntersecting) => ({ isIntersecting }));
+    for (const callback of seen) callback(entries);
   };
 }
 
@@ -116,6 +117,19 @@ test("a page that lands with the foot still near asks for the next", async () =>
   await rerender({ ...reading, loading: true, onmore: more });
   await rerender({ ...reading, onmore: more });
   expect(more).toHaveBeenCalledTimes(2);
+});
+
+test("of readings that arrive together, the newest is where the foot is", async () => {
+  const scroll = watchingTheFoot();
+  const more = vi.fn();
+  const { rerender } = render(More, { ...reading, onmore: more });
+
+  // Near while the page was short, then pushed away by what was drawn.
+  scroll(true, false);
+  await rerender({ ...reading, loading: true, onmore: more });
+  await rerender({ ...reading, onmore: more });
+
+  expect(more).not.toHaveBeenCalled();
 });
 
 test("a read that failed is not asked for again by scrolling", async () => {

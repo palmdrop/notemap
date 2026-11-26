@@ -589,6 +589,30 @@ test("puts the view back where the reader left it to read one item", async () =>
   });
 });
 
+test("keeps the place it was left at while it is drawn, whatever scrolls meanwhile", async () => {
+  const many = [...Array(PAGE + 5).keys()].map((at) =>
+    anItem(`row-${String(at)}`),
+  );
+  pool(held(...many));
+  render(Feed);
+  await screen.findByText("row-0");
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+  await fireEvent.scroll(window);
+
+  cleanup();
+  arriving("popstate");
+  render(Feed);
+  // The page put back where it was, while it is still only a skeleton tall.
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 40 });
+  await fireEvent.scroll(window);
+
+  await screen.findByText("row-0");
+  await vi.waitFor(() => {
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 40 });
+});
+
 test("comes to the feed at the top, read again from its first page", async () => {
   pool(held(anItem("one")));
 
@@ -611,7 +635,11 @@ test("draws a long feed once the view is on screen, and says it is drawing", asy
   const many = [...Array(PAGE + 5).keys()].map((at) =>
     anItem(`row-${String(at)}`),
   );
-  pool(held(...many));
+  pool((request) =>
+    routeOf(request) === "GET /v1/feed"
+      ? json(200, { values: many, next: "/v1/feed?after=past" })
+      : json(200, { values: [] }),
+  );
   render(Feed);
   await screen.findByText("row-0");
 
@@ -622,10 +650,13 @@ test("draws a long feed once the view is on screen, and says it is drawing", asy
   expect(screen.queryByText("row-0")).toBeNull();
   expect(document.querySelector("[data-skeleton]")).not.toBeNull();
   expect(drawing.now).toBe(true);
+  // Under a skeleton the foot would stand in view, and ask for what is past it.
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
 
   expect(await screen.findByText("row-0")).toBeDefined();
   expect(document.querySelector("[data-skeleton]")).toBeNull();
   expect(drawing.now).toBe(false);
+  expect(screen.getByRole("button", { name: "Load more" })).toBeDefined();
 });
 
 test("walks the rows with j and k, and processes the one selected", async () => {

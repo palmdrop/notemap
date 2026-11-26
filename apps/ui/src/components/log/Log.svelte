@@ -264,7 +264,7 @@
       {/each}
     {/if}
 
-    {#if log.more || (log.loading && rows.length === 0)}
+    {#if shown.ready && (log.more || (log.loading && rows.length === 0))}
       <More
         loading={log.loading}
         first={rows.length === 0}
