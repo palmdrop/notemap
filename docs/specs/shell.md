@@ -1,7 +1,7 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-25
+**Last updated**: 2026-11-26
 **Shipped**:
 
 - 2026-11-25 — **Phone fixes from the first days on a device**
@@ -13,6 +13,9 @@
   lower left. Then, from a second round on the device: on a phone `+ tag` opens a sheet, a tap in the
   composer leaves the keyboard down, a move to another surface draws a line while under way and
   every surface's code is fetched ahead, and holding a row selects it without a second's wait.
+  Then, on 2026-11-26: a list come to starts at its top and reads a page, back and forward keep it
+  as it was, and a long list is drawn after the view is on screen; when wide a click selects a row
+  and a second click opens it; the row last opened is tinted faintly.
 
 - 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
   daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
@@ -870,7 +873,18 @@ the rail.
 a third of the width running across it, the wait the asking mark keeps, so a quick move shows
 nothing; the drawer closing first is then not a move that did nothing. **Every surface's code is
 fetched once the first is drawn and the page is idle**, so a move waits on drawing and not on the
-network.
+network. The line also runs while a list is drawing rows it held back (below).
+
+**A list come back to stands as it was left; a list come to starts at its top** *(2026-11-26)*.
+Back and forward — from an item, from the log's row, between filters — put the queue, the feed and
+the log back as they were: every row walked, and the view where it was. Any other arrival — the
+drawer, a link, a reload, opening the app — reads the list again from its first page and lets go of
+what was walked past it, so arriving costs a page however far the reader went last time. Until that
+page is answered, the list draws a page of what the device holds
+([client.md](client.md#surfaces-drawn-from-the-cache)). **A list holding more than a page when it
+is drawn is drawn once the view is on screen**: the move lands at once, on the list's skeleton and
+the line along the top, and the rows follow, the view then put back where it was. Rows are not
+drawn as they come into view; every row walked is built.
 **The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
 queue.
 
@@ -2122,9 +2136,10 @@ leaves it somewhere to land.
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
 **Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
 it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
-its bar at its foot. Coming back to the list, the row last opened is marked by an ink edge at its rail
-*(2026-11-25; it was the box grey, which read as a selection)*, so the reader finds their place; it
-is not selected and draws no strip.
+its bar at its foot. Coming back to the list, the row last opened is drawn in the hover grey
+*(2026-11-26; an ink edge at its rail from 2026-11-25, which sat oddly in the register, and the box
+grey before that, which read as a selection)*, so the reader finds their place; it is not selected
+and draws no strip.
 
 *Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
 selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
@@ -2360,7 +2375,10 @@ drawn where there is none.
 
 ### Actions
 
-*Amended 2026-11-16.* When wide, a click on a row opens its item, as a tap does on a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
+*Amended 2026-11-16, and 2026-11-26.* When wide, **a click on a row selects it**, so its keys
+reach it, and **a click on the selected row opens its item**; ctrl or cmd and shift select, and
+the row's time selects it in place. On a phone a tap opens the item at once. *(From 2026-11-16 a
+click opened the item as a tap does, and `m` on a row meant opening it first.)* The
 selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
 **Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
 right — each naming its key in its title. The rest of this section holds under those words.

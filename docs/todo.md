@@ -42,6 +42,13 @@
 
 - [x] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
 
+- [ ] **Virtualise the lists?** A list come back to builds every row walked before its place can be
+  scrolled to: 175 rows took about a second at 6× CPU on 2026-11-26, behind a skeleton. Drawing only
+  the rows near the view would make that constant, at a price: rows differ in height and sit under
+  day headings, the place kept is a scroll offset rather than a row, `j`/`k` and range marking
+  assume every row is in the page, and find-in-page and a screen reader see only what is drawn. A
+  middle way is to draw from the row the reader was at and add rows above as they scroll up.
+
 ## Composer and capture
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.

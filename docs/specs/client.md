@@ -1,9 +1,12 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-24
+**Last updated**: 2026-11-26
 **Shipped**:
 
+- 2026-11-26 — **A surface come to is read from its first page**, and one drawn from the cache draws
+  a page until the pool answers or fails to; a feed come back to no longer reads a page more.
+  ([plan](../plans/phone-ui-fixes.md))
 - 2026-11-23 — **The tags in use are read again after a capture, an edit or a batch that carries
   one**, not only after a tag or an untag. ([plan](../plans/phone-first-shell.md))
 - 2026-11-19 — **`client.counts.capturedToday`** says how much was captured since this device's
@@ -539,6 +542,10 @@ processed — routed or archived — which the pool decides, not the scroll.
   capture is the newest thing there is, so it lands at the head of a surface read newest first, and
   at the far end of one read oldest first only once that has been read to its end — the pool's next
   page carries it otherwise. A returned item keeps its capture time and lands wherever that sorts.
+- **Arriving from the start** *(2026-11-26)*. `enter` is told whether the surface is **come to**
+  or **come back to**, which is the shell's to say ([shell.md](shell.md)). Come to `fromStart`,
+  either surface is cut to its first page, drawn while that page is read again, and what was walked
+  past it is let go of; the feed and the queue alike. What follows is coming back.
 - **Arriving at the queue reads it again** *(added 2026-09-08, amended 2026-09-09)*. A surface a
   reader returns to is not a surface that stopped changing while they were away: a trigger tag
   fires, another device processes something, and the queue then holds rows the pool no longer names.
@@ -546,6 +553,8 @@ processed — routed or archived — which the pool decides, not the scroll.
   the domain's rather than a convenience: the feed accumulates and nothing ever leaves it, so a
   fresh first page there answers a question nobody asked, where being right about what is left is
   the queue's whole job. A surface nobody has read yet is read for the first time either way.
+  *(Amended 2026-11-26: a feed come back to reads nothing at all. It used to read the page past
+  where it stood on every arrival, which grew it by a page each time.)*
 - **The fresh page corrects the head, and the walked tail is kept** *(amended 2026-09-09)*. A first
   page answers for its own window and for nothing past it, so a row inside that window the pool no
   longer names has left, and one below it stays: nothing was read that says otherwise. The position
@@ -1349,6 +1358,9 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
   asked of the rows the client holds. **The feed is everything it holds.** Both rank by capture
   time, in whichever order the surface is being read, the feed by processed at where it is read
   by that, and a **filtered** one holds only what meets its filter.
+- **A page of it, until the pool answers or fails to** *(2026-11-26)*. The cache keeps hundreds of
+  items, and a shell drawing all of them on start was seconds of work on a phone for rows the first
+  page then replaced. Once a read has failed the whole of it is drawn, being all there is to read.
 - **A cache-drawn surface is marked as one.** A shell that drew it as the pool's reading would tell
   a person that three rows means they are nearly done, so the state carries the claim and what a
   shell draws from it is [shell.md](shell.md)'s. *(Amended 2026-08-26: it draws nothing above the

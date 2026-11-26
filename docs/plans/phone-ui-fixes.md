@@ -2,8 +2,8 @@
 
 **Date**: 2026-11-25
 **Status**: Done
-**Spec**: `docs/specs/shell.md`
-**Closed**: 2026-11-25
+**Spec**: `docs/specs/shell.md`, `docs/specs/client.md`
+**Closed**: 2026-11-26
 
 ---
 
@@ -130,6 +130,25 @@ to the line; Manual stays refused while the pool is out of reach.
 - [x] Spec: Tagging, the place line, the drawer, the Shipped entry.
 - [x] Tests for each; typecheck, lint, `pnpm -r --no-sort --silent test`; headless Chromium at phone
   width for the sheet, the line and the timings.
+- [x] Commit
+
+### Phase 8: lists that arrive at once, and a click that selects _(added 2026-11-26)_
+
+Asked for after a third look on the phone: Feed took seconds to arrive. Measured at 6× CPU, every
+row ever walked was drawn on arrival — 199 rows, 935ms after a reload — and the cache drew every
+item it held before the first page landed. Decided with the developer: cut a list to its first page
+on any arrival but back and forward, rather than virtualise it now.
+
+- [x] The client: `enter` takes `fromStart`; a cache-drawn surface draws a page until a read
+  answers or fails; a feed come back to reads nothing.
+- [x] The shell: back and forward keep a list and its place; anything else starts at the top; a
+  list holding more than a page is drawn after the view is on screen, under the skeleton and the
+  line. The queue, the feed and the log.
+- [x] When wide a click selects and a second click opens.
+- [x] The row last opened in the hover grey.
+- [x] Spec: shell.md and client.md, their Shipped entries; virtualisation in `docs/todo.md`.
+- [x] Tests for each; typecheck, lint, `pnpm -r --no-sort --silent test`; headless Chromium timings
+  at phone width.
 - [x] Commit
 
 ---
