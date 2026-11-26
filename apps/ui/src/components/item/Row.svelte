@@ -316,9 +316,9 @@
 
   /**
    * A row being rewritten is not picked, nor processed, until that is left.
-   * A tap or a click opens the item, full screen on a phone and beside the
-   * list when wide; ctrl or shift selects instead. On the item a double tap
-   * on the words edits it.
+   * A tap opens the item full screen. When wide a click selects the row, for
+   * the keys, and a click on the selected row opens it; ctrl or shift selects
+   * either way. On the item a double tap on the words edits it.
    */
   const picked = $derived(
     editing !== undefined
@@ -326,6 +326,8 @@
       : !marking && surface !== "item"
         ? (how: Picked) => {
             if (how.toggle || how.range) onselect?.(how);
+            else if (width.wide && !selected && onselect !== undefined)
+              onselect(how);
             else {
               lastOpened.set(item.id);
               void goto(itemHref(item.id));
@@ -520,13 +522,11 @@
       : 'transition-[background-color]'} duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
     modality.keys
       ? 'outline-1 -outline-offset-1 outline-ink'
-      : ''} {isLastOpened
-      ? "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-ink before:content-['']"
       : ''} {marked
       ? 'bg-chosen'
       : surface !== 'item' && selected
         ? 'bg-picked'
-        : pointed && width.wide && onprocess !== undefined
+        : (pointed && width.wide && onprocess !== undefined) || isLastOpened
           ? 'bg-hover'
           : swipes
             ? 'bg-paper'

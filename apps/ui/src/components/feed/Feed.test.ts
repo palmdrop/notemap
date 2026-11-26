@@ -566,9 +566,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // When wide a click opens the item beside the list; the second click of a
-  // double is not a second opening.
-  expect(went.to).toEqual(["/items/one"]);
+  // When wide the first click selects; the second of a double neither
+  // deselects nor opens.
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 });
 
 test("puts the view back where the reader left it to read one item", async () => {

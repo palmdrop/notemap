@@ -808,9 +808,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // When wide a click opens the item beside the list; the second click of a
-  // double is not a second opening.
-  expect(went.to).toEqual(["/items/one"]);
+  // When wide the first click selects; the second of a double neither
+  // deselects nor opens.
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 });
 
 /** The box is the selection, and the actions are its foot. */
@@ -2471,10 +2472,14 @@ test("when wide, a row under the pointer offers + tag, and taking a tag keeps th
   expect(went.to).toEqual([]);
 });
 
-test("when wide a row opens its item, and is marked as the one last opened", async () => {
+test("when wide a click selects a row, and a click on the selected row opens its item", async () => {
   pool(queued("one", "two"));
   render(Listed);
   const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 
   await fireEvent.click(words);
   expect(went.to).toEqual(["/items/one"]);
@@ -2614,7 +2619,8 @@ test("when wide a hovered row offers Manual and Discard beside Route, selected o
   expect(within(two).getByRole("button", { name: "Route" })).toBeDefined();
 });
 
-test("the row last opened is marked at its edge, and not tinted as a selection is", async () => {
+test("the row last opened is tinted faintly, and not as a selection is", async () => {
+  viewport(390);
   pool(queued("one", "two"));
   render(Listed);
   const words = await screen.findByText("one");
@@ -2623,7 +2629,17 @@ test("the row last opened is marked at its edge, and not tinted as a selection i
 
   const row = words.closest("[data-row]") as HTMLElement;
   expect(row.className).not.toContain("bg-picked");
-  expect(row.className).toContain("before:bg-ink");
+  expect(row.className).toContain("bg-hover");
+});
+
+test("on a phone a tap opens the row's item at once", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+
+  await fireEvent.click(await screen.findByText("one"));
+
+  expect(went.to).toEqual(["/items/one"]);
 });
 
 test("on a phone the + stands on the side of the hand chosen, and nothing else moves", async () => {
