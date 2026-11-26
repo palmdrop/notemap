@@ -145,7 +145,11 @@ on any arrival but back and forward, rather than virtualise it now.
   list holding more than a page is drawn after the view is on screen, under the skeleton and the
   line. The queue, the feed and the log.
 - [x] When wide a click selects and a second click opens.
-- [x] The row last opened in the hover grey.
+- [x] The row last opened in the hover grey, let go of once another row is selected.
+- [x] Settings drop the sheet's foot room, so the settings column stays put at a form's foot.
+- [x] On a phone back steps back through the route, through a close watcher.
+- [x] With the keyboard up: a sheet's main action in its head, a page's bar one short row. Being
+  tried; the developer reports from the device.
 - [x] Spec: shell.md and client.md, their Shipped entries; virtualisation in `docs/todo.md`.
 - [x] Tests for each; typecheck, lint, `pnpm -r --no-sort --silent test`; headless Chromium timings
   at phone width.

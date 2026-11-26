@@ -71,7 +71,11 @@
   onMount(() => set?.add());
 </script>
 
-<Sheet title="tag {marked.length} selected" {onclose}>
+<Sheet
+  title="tag {marked.length} selected"
+  {onclose}
+  main={{ label: "Done", onclick: onclose }}
+>
   <div class="flex flex-wrap items-center gap-1 px-gutter py-4">
     <TagSet
       bind:this={set}

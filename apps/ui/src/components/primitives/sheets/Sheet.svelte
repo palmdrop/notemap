@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   import { width } from "$lib/breakpoint";
+  import { keyboard } from "$lib/keyboard.svelte";
   import { fade, fromFoot, fromSide, rise } from "$lib/motion";
   import Icon from "$components/primitives/icon/Icon.svelte";
 
@@ -9,7 +10,8 @@
    * A sheet rising from the foot over a veil, on a phone. When wide it is a
    * panel at the right, or a dialog in the middle for a quick choice. Closed
    * by its ×, by `esc`, and by a press on the veil; `onclose` is told once
-   * and the caller removes it.
+   * and the caller removes it. With the keyboard up on a phone the foot gives
+   * way, and `main`, its main action, stands in the head beside the ×.
    */
   let {
     title,
@@ -17,6 +19,7 @@
     onclose,
     children,
     foot,
+    main,
   }: {
     title: string;
     wide?: "panel" | "dialog";
@@ -24,11 +27,16 @@
     children: Snippet;
     /** A bar docked at the sheet's foot: Reset and Show, Apply. */
     foot?: Snippet;
+    main?: { readonly label: string; readonly onclick: () => void };
   } = $props();
 
   const id = $props.id();
 
   const form = $derived(width.wide ? wide : "sheet");
+
+  const headed = $derived(
+    main !== undefined && form === "sheet" && keyboard.up,
+  );
 
   // Focused without scrolling: the panel is still off the edge as it slides
   // in, and the dialog scrolling to the focus is what made it overshoot and
@@ -92,18 +100,30 @@
       <h2 id="{id}-title" class="font-display text-title font-normal">
         {title}
       </h2>
-      <button
-        type="button"
-        onclick={close}
-        class="grid min-h-target min-w-target place-items-center"
-      >
-        <Icon name="close" label="Close" />
-      </button>
+      <div class="flex items-center gap-1">
+        {#if headed && main !== undefined}
+          <button
+            type="button"
+            onmousedown={(event) => event.preventDefault()}
+            onclick={main.onclick}
+            class="min-h-9 rounded-control border border-ink bg-ink px-4 text-paper active:bg-muted"
+          >
+            {main.label}
+          </button>
+        {/if}
+        <button
+          type="button"
+          onclick={close}
+          class="grid min-h-target min-w-target place-items-center"
+        >
+          <Icon name="close" label="Close" />
+        </button>
+      </div>
     </header>
     <div class="min-h-0 flex-1 overflow-y-auto">
       {@render children()}
     </div>
-    {#if foot !== undefined}
+    {#if foot !== undefined && !headed}
       {@render foot()}
     {/if}
   </section>

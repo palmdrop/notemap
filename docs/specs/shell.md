@@ -15,7 +15,9 @@
   every surface's code is fetched ahead, and holding a row selects it without a second's wait.
   Then, on 2026-11-26: a list come to starts at its top and reads a page, back and forward keep it
   as it was, and a long list is drawn after the view is on screen; when wide a click selects a row
-  and a second click opens it; the row last opened is tinted faintly.
+  and a second click opens it; the row last opened is tinted faintly; settings end where their rows
+  do; back steps back through the route; with the keyboard up a sheet's main action moves to its
+  head and a page's bar is one short row.
 
 - 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
   daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
@@ -895,6 +897,14 @@ at its foot a dot for whether the pool answers. The header loses its menu icon. 
 runs under the list only. The other pieces' wide forms — the capture box, the item across the
 window, a panel or a dialog for a sheet — are described with each. A docked bar stays docked at
 the foot of its pane at every width *(2026-11-19)*.
+
+**With the keyboard up on a phone a bar gives the words the room** *(2026-11-26, being tried)*. The
+keyboard is up while a field that types has the focus and the view is short of its tallest by
+about a keyboard, so one put away by Android's back with the focus left behind counts as down.
+**A sheet's foot gives way**, and its main action — Done, Show — stands in its head beside the ×.
+**A page's bar is one short row**: its main action small at the right, the others icons alone,
+the line over it as it was. Pressing an action leaves the focus where it was, so the bar does not
+grow under the finger before the action runs.
 
 *Amended 2026-11-18.* **`notemap` at the menu's head** goes to the queue. **The search** sits at the
 right of the header, beside the filter and the notices. **One height for each bar**: the header and

@@ -792,7 +792,11 @@
   {@render place()}
   {@render offer()}
   {#if sheet}
-    <Sheet title="tags" onclose={() => (sheet = false)}>
+    <Sheet
+      title="tags"
+      onclose={() => (sheet = false)}
+      main={{ label: "Done", onclick: () => (sheet = false) }}
+    >
       <div class="flex flex-wrap items-center gap-1 px-gutter py-4">
         <TagSet
           bind:this={inner}

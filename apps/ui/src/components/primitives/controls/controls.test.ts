@@ -493,6 +493,29 @@ test("on a phone the + opens a sheet, its line taking what is typed, one tag aft
   viewport(1024);
 });
 
+test("on a phone, with the keyboard up, the tag sheet's Done stands in its head and its foot gives way", async () => {
+  viewport(390);
+  tagSet({ offered: ["reading"] });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  const line = within(sheet).getByRole("combobox", { name: "Add a tag" });
+  await vi.waitFor(() => expect(document.activeElement).toBe(line));
+
+  expect(within(sheet).queryByRole("toolbar")).toBeNull();
+  const done = within(sheet).getByRole("button", { name: "Done" });
+  expect(done.closest("header")).not.toBeNull();
+
+  line.blur();
+  await vi.waitFor(() =>
+    expect(within(sheet).getByRole("toolbar", { name: "Tags" })).toBeDefined(),
+  );
+  expect(
+    within(sheet).getByRole("button", { name: "Done" }).closest("header"),
+  ).toBeNull();
+  viewport(1024);
+});
+
 test("on a phone the tag sheet holds what is carried, each taken off by its ×", async () => {
   viewport(390);
   const { removed } = tagSet({ names: ["seedling"] });

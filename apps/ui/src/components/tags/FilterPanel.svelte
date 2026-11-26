@@ -286,7 +286,14 @@
 {/snippet}
 
 {#if open}
-  <Sheet title="filter" onclose={shut}>
+  <Sheet
+    title="filter"
+    onclose={shut}
+    main={{
+      label: shown === undefined ? "Show" : `Show ${String(shown)}`,
+      onclick: shut,
+    }}
+  >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       id="{id}-panel"
