@@ -167,3 +167,24 @@ test("reads the tags in use again once the door opens", async () => {
     expect(inUse.map((use) => use.name)).toEqual(["quote"]);
   });
 });
+
+test("settings end where their rows do; a list keeps room under its last row", async () => {
+  const { page } = await import("$app/state");
+  const route = page.route as { id: string };
+  pool(() => json(200, { values: [] }));
+
+  const sheet = async () =>
+    (await screen.findByText("the surface")).closest(".overflow-x-clip");
+
+  const listed = render(Layout, { children });
+  expect((await sheet())?.className).toContain("pb-24");
+  listed.unmount();
+
+  route.id = "/settings/[section]";
+  try {
+    render(Layout, { children });
+    expect((await sheet())?.className).not.toContain("pb-24");
+  } finally {
+    route.id = "/";
+  }
+});

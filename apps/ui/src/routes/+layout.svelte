@@ -266,7 +266,11 @@
     {/if}
     <Strip />
     <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
-      <Sheet {fills} bleeds={bleeds && !shut}>
+      <Sheet
+        {fills}
+        bleeds={bleeds && !shut}
+        clears={shut || page.route.id?.startsWith("/settings") !== true}
+      >
         <Column
           {fills}
           list={list ||
