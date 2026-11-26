@@ -48,6 +48,10 @@
   day headings, the place kept is a scroll offset rather than a row, `j`/`k` and range marking
   assume every row is in the page, and find-in-page and a screen reader see only what is drawn. A
   middle way is to draw from the row the reader was at and add rows above as they scroll up.
+- [ ] **One observer for the feed's rows.** Each feed row makes its own `IntersectionObserver` to
+  learn it has been on screen (`Row.svelte`, `onScreen`), so drawing 125 rows makes 125. One shared
+  observer, with a map from element to row, would do the same. A cleanup rather than a speed-up:
+  making the 125 took about 12ms at 4× CPU on 2026-11-26, against a second for the rows themselves.
 
 ## Composer and capture
 
