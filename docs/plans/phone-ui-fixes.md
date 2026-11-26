@@ -150,6 +150,11 @@ on any arrival but back and forward, rather than virtualise it now.
 - [x] On a phone back steps back through the route, through a close watcher.
 - [x] With the keyboard up: a sheet's main action in its head, a page's bar one short row. Being
   tried; the developer reports from the device.
+- [x] Back to a long list reads no pages past it and keeps its place: the foot takes the newest of
+  the readings handed over together, and is not drawn under a skeleton; a list come back to keeps
+  its place once its first drawing is on screen.
+- [x] On a phone too a tap selects, offering the row's `+`, and a second tap opens: a tag goes on
+  without opening the item and coming back.
 - [x] Spec: shell.md and client.md, their Shipped entries; virtualisation in `docs/todo.md`.
 - [x] Tests for each; typecheck, lint, `pnpm -r --no-sort --silent test`; headless Chromium timings
   at phone width.

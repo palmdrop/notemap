@@ -2626,6 +2626,9 @@ test("the row last opened is tinted faintly, and not as a selection is", async (
   const words = await screen.findByText("one");
 
   await fireEvent.click(words);
+  await fireEvent.click(words);
+  // Opened, the queue is left; the selection does not outlive it.
+  await fireEvent.keyDown(window, { key: "Escape" });
 
   const row = words.closest("[data-row]") as HTMLElement;
   expect(row.className).not.toContain("bg-picked");
@@ -2650,12 +2653,21 @@ test("the row last opened is no longer marked once another row is selected", asy
   expect(row.className).not.toContain("bg-hover");
 });
 
-test("on a phone a tap opens the row's item at once", async () => {
+test("on a phone a tap selects a row and offers its +, and a tap on the selected row opens it", async () => {
   viewport(390);
   pool(queued("one"));
   render(Listed);
+  const one = await screen.findByText("one");
+  expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
 
-  await fireEvent.click(await screen.findByText("one"));
+  await fireEvent.click(one);
+
+  expect(went.to).toEqual([]);
+  expect(
+    screen.getByRole("button", { name: "Add a tag" }).closest("[data-row]"),
+  ).toBe(document.querySelector('[data-row="one"]'));
+
+  await fireEvent.click(one);
 
   expect(went.to).toEqual(["/items/one"]);
 });
@@ -2736,9 +2748,12 @@ test("a tap on another row while one stands open puts that one back, and opens n
   expect(uncovered("one", "by-hand")).toBeNull();
   expect(went.to).toEqual([]);
 
-  await fireEvent.pointerDown(two, { pointerType: "touch", clientX: 100 });
-  await fireEvent.pointerUp(two, { pointerType: "touch", clientX: 100 });
-  await fireEvent.click(within(two as HTMLElement).getByText("two"));
+  // From there a tap is a tap: it selects, and the next opens.
+  for (let tap = 0; tap < 2; tap++) {
+    await fireEvent.pointerDown(two, { pointerType: "touch", clientX: 100 });
+    await fireEvent.pointerUp(two, { pointerType: "touch", clientX: 100 });
+    await fireEvent.click(within(two as HTMLElement).getByText("two"));
+  }
   expect(went.to).toEqual(["/items/two"]);
 });
 

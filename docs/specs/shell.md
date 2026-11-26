@@ -14,8 +14,8 @@
   composer leaves the keyboard down, a move to another surface draws a line while under way and
   every surface's code is fetched ahead, and holding a row selects it without a second's wait.
   Then, on 2026-11-26: a list come to starts at its top and reads a page, back and forward keep it
-  as it was, and a long list is drawn after the view is on screen; when wide a click selects a row
-  and a second click opens it; the row last opened is tinted faintly; settings end where their rows
+  as it was, and a long list is drawn after the view is on screen; a click or a tap selects a row,
+  offering its `+` on a phone, and a second opens it; the row last opened is tinted faintly; settings end where their rows
   do; back steps back through the route; with the keyboard up a sheet's main action moves to its
   head and a page's bar is one short row.
 
@@ -2144,7 +2144,7 @@ leaves it somewhere to land.
 
 *Redrawn 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
-**Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
+**Below 900px the item is full screen**: a tap on the selected row opens `/items/{id}`. **At 900px and wider
 it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
 its bar at its foot. Coming back to the list, the row last opened is drawn in the hover grey
 *(2026-11-26; an ink edge at its rail from 2026-11-25, which sat oddly in the register, and the box
@@ -2386,10 +2386,12 @@ drawn where there is none.
 
 ### Actions
 
-*Amended 2026-11-16, and 2026-11-26.* When wide, **a click on a row selects it**, so its keys
-reach it, and **a click on the selected row opens its item**; ctrl or cmd and shift select, and
-the row's time selects it in place. On a phone a tap opens the item at once. *(From 2026-11-16 a
-click opened the item as a tap does, and `m` on a row meant opening it first.)* The
+*Amended 2026-11-16, and 2026-11-26.* **A click or a tap on a row selects it**, and **one on
+the selected row opens its item**; ctrl or cmd and shift select, and the row's time selects it in
+place. When wide the selection is where the keys reach; on a phone it is where the row's `+` is, so
+a tag goes on without opening the item and coming back. *(From 2026-11-16 a click opened the item
+as a tap does, and `m` on a row meant opening it first; on a phone a tap opened the item at once
+until later on 2026-11-26.)* The
 selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
 **Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
 right — each naming its key in its title. The rest of this section holds under those words.

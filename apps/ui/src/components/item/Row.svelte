@@ -320,9 +320,9 @@
 
   /**
    * A row being rewritten is not picked, nor processed, until that is left.
-   * A tap opens the item full screen. When wide a click selects the row, for
-   * the keys, and a click on the selected row opens it; ctrl or shift selects
-   * either way. On the item a double tap on the words edits it.
+   * A click or tap selects the row, for its keys and its tags, and one on the
+   * selected row opens it; ctrl or shift selects either way. On the item a
+   * double tap on the words edits it.
    */
   const picked = $derived(
     editing !== undefined
@@ -330,8 +330,7 @@
       : !marking && surface !== "item"
         ? (how: Picked) => {
             if (how.toggle || how.range) onselect?.(how);
-            else if (width.wide && !selected && onselect !== undefined)
-              onselect(how);
+            else if (!selected && onselect !== undefined) onselect(how);
             else {
               lastOpened.set(item.id);
               void goto(itemHref(item.id));
@@ -406,7 +405,7 @@
     <Cached />
   {/if}
 
-  {#if width.wide || (item.tags ?? []).length > 0 || editing !== undefined}
+  {#if width.wide || selected || (item.tags ?? []).length > 0 || editing !== undefined}
     <div>
       <Tags
         bind:this={tags}
