@@ -6,8 +6,11 @@
   import { BATCH_PARAM } from "$components/log/href";
   import Log from "$components/log/Log.svelte";
   import { kindsIn } from "$components/log/views";
+  import { cameBack } from "$lib/arrival";
   import { log } from "$lib/log.svelte";
   import { orderFor } from "$lib/order";
+
+  let fromStart = !cameBack();
 
   // The URL is what the log is reading: an order or a subject named on it is
   // what a reload and a shared link both come back to. Untracked because the
@@ -21,8 +24,10 @@
         url.searchParams.get("item") ?? undefined,
         kindsIn(url),
         url.searchParams.get(BATCH_PARAM) ?? undefined,
+        fromStart,
       ),
     );
+    fromStart = false;
   });
 </script>
 

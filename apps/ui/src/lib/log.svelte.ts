@@ -287,19 +287,22 @@ export const log = {
    * Reads the log as the URL names it. A page already answered for that reading
    * is kept — coming back to a surface is not a reason to throw away a long
    * walk — but a read that failed is not a page, so re-entering asks again.
+   * Come to `fromStart` rather than back to, it is read from its first page.
    */
   reading(
     wanted: Order,
     subject: ItemId | undefined,
     narrowed?: readonly ActionKind[],
     one?: string,
+    fromStart = false,
   ): void {
     const same =
       wanted === order &&
       subject === item &&
       one === batch &&
       sameKinds(narrowed, kinds);
-    if (same && (answered || loading)) return;
+    const kept = fromStart ? loading && !answered : answered || loading;
+    if (same && kept) return;
     restart(wanted, subject, narrowed, one, true);
   },
 

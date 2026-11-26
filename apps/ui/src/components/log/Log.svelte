@@ -6,22 +6,25 @@
   import Box from "$components/primitives/blocks/Box.svelte";
   import { onMount, tick, untrack } from "svelte";
 
-  import type { Action } from "@notemap/client";
+  import { PAGE, type Action } from "@notemap/client";
 
   import { itemHref } from "$components/item/href";
   import Asking from "$components/primitives/marks/Asking.svelte";
   import Body from "$components/primitives/register/Body.svelte";
   import More from "$components/primitives/register/More.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import StateWord from "$components/primitives/marks/StateWord.svelte";
   import { batchSaid, byKind, namesIn } from "$lib/batch-log";
   import { wordsFor } from "$lib/batching";
+  import { cameBack } from "$lib/arrival";
   import { client } from "$lib/client";
   import { log } from "$lib/log.svelte";
   import { duration } from "$lib/motion";
   import { reachable } from "$lib/reachable.svelte";
   import { NOT_ALL_READ, NOTHING_LOGGED } from "$lib/said";
+  import { shownFirst } from "$lib/shown.svelte";
 
   import BatchRow from "./BatchRow.svelte";
   import { grouped } from "./groups";
@@ -41,6 +44,10 @@
    * are not held: they belong to a reading nobody is looking at.
    */
   let drawn = $state.raw<readonly Action[]>(untrack(() => log.rows));
+
+  // Come to, the log is read again from its first page; only a walk come back
+  // to is long enough to hold back.
+  const shown = shownFirst(cameBack() && untrack(() => log.rows.length) > PAGE);
   let dim = $state(false);
   let fading: ReturnType<typeof setTimeout> | undefined;
   let entered = false;
@@ -241,17 +248,21 @@
     {/each}
 
     <!-- The band says the day changed, so no gap opens under it. -->
-    {#each rows as { row, key } (key)}
-      {@const head = heads.get(key)}
-      {#if head !== undefined}
-        <Day at={head.at} count={head.count} />
-      {/if}
-      {#if row.kind === "action"}
-        <LogRow action={row.action} heard={log.heard(row.action.id)} />
-      {:else}
-        <BatchRow id={row.id} at={row.at} entries={row.entries} />
-      {/if}
-    {/each}
+    {#if !shown.ready}
+      <Skeleton shape="rows" />
+    {:else}
+      {#each rows as { row, key } (key)}
+        {@const head = heads.get(key)}
+        {#if head !== undefined}
+          <Day at={head.at} count={head.count} />
+        {/if}
+        {#if row.kind === "action"}
+          <LogRow action={row.action} heard={log.heard(row.action.id)} />
+        {:else}
+          <BatchRow id={row.id} at={row.at} entries={row.entries} />
+        {/if}
+      {/each}
+    {/if}
 
     {#if log.more || (log.loading && rows.length === 0)}
       <More
