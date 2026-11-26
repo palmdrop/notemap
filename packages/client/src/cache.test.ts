@@ -8,6 +8,7 @@ import { read, until } from "./testing/observing";
 import { anItem, routeOf, stoppedClock } from "./testing/pool";
 import { json, mockTransport, type Handler } from "./testing/transport";
 import type { Client, ListState } from "./types";
+import { PAGE } from "./surfaces/reads";
 
 const clock = stoppedClock();
 
@@ -40,6 +41,24 @@ beforeEach(() => {
 });
 
 describe("a surface drawn from the cache", () => {
+  it("draws a page of what it holds until the pool answers, and all of it once the pool is out of reach", async () => {
+    const store = createMemoryStore();
+    await store.writeItems(
+      [...Array(PAGE * 2).keys()].map((year) =>
+        at(`at-${String(year)}`, 2000 + year),
+      ),
+    );
+
+    const { client, transport } = clientOver(store, nothing);
+    transport.unreachable(true);
+    await until(() => ids(read(client.feed)).length > 0);
+    expect(ids(read(client.feed))).toHaveLength(PAGE);
+
+    await client.enter("feed");
+    await until(() => read(client.feed).failure !== undefined);
+    expect(ids(read(client.feed))).toHaveLength(PAGE * 2);
+  });
+
   it("draws both surfaces from a cold store with no transport to ask", async () => {
     const store = createMemoryStore();
     await store.writeItems([at("older", 2020), at("newer", 2021)]);

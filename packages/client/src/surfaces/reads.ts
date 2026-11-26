@@ -27,7 +27,8 @@ import type { Key, Order } from "../types";
 
 const SURFACES: readonly Surface[] = ["feed", "queue"];
 
-const PAGE = 25;
+/** Rows a read asks for, and what a surface draws from the cache before the pool has answered. */
+export const PAGE = 25;
 
 /** The slice hands back a ready-made URL; the typed client takes parameters. */
 function positionIn(next: string): string | undefined {
@@ -241,6 +242,10 @@ export async function loadMore(
  * reader four pages into a drain session may not be charged those four pages
  * for having looked at a row.
  *
+ * Arriving `fromStart` is coming to the surface rather than back to it: either
+ * surface is read from its first page, and what was walked past it is let go of.
+ * The first page stays drawn while it is read.
+ *
  * Arriving through a filter the surface is not already read through starts a
  * filtered page afresh, the whole one kept beside it; arriving through none
  * drops the filtered page and goes back to the whole one as it stood.
@@ -252,10 +257,10 @@ export async function enter(
   order?: Order,
   named: FilterNamed = {},
   by?: Key,
+  fromStart = false,
 ): Promise<void> {
   const filter = filterFor(surface, filterOf(named));
   const before = reading(state.get(), surface);
-  const lifted = isWhole(filter) && !isWhole(before.filter);
 
   if (!sameFilter(before.filter ?? WHOLE, filter)) {
     state.update((current) =>
@@ -275,13 +280,29 @@ export async function enter(
 
   const held = reading(state.get(), surface);
   if (held.loading) return;
-
-  // Back to the feed as it stood: arriving is not a reason to read past it.
-  if (lifted && surface === "feed" && !unpositioned(held)) return;
+  if (unpositioned(held)) return loadMore(state, api, surface, order, by);
 
   const wanted = order ?? held.order;
-  if (surface !== "queue" || unpositioned(held))
+  const key = surface === "feed" ? (by ?? held.by) : "capture";
+  if (wanted !== held.order || key !== held.by)
     return loadMore(state, api, surface, order, by);
+
+  if (fromStart) {
+    state.update((current) =>
+      withReading(current, surface, {
+        ...held,
+        ids: held.ids.slice(0, PAGE),
+      }),
+    );
+    await walk(state, api, surface, {
+      ...emptyPage(wanted, held.filter, key),
+      answered: held.answered,
+    });
+    return;
+  }
+
+  // Back to the feed as it stood: arriving is not a reason to read past it.
+  if (surface === "feed") return;
 
   await walk(state, api, surface, emptyPage(wanted, held.filter), true);
 }

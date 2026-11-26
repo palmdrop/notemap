@@ -61,7 +61,7 @@ import { createStorage } from "./storage/storage";
 import { createTags } from "./tags/tags";
 import { createAccounts } from "./accounts/accounts";
 import { createTokens } from "./tokens/tokens";
-import { enter, loadMore, readAfterReturn } from "./surfaces/reads";
+import { enter, loadMore, PAGE, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 function copied(file: File): Promise<File> {
@@ -136,8 +136,13 @@ function sameIds(
 function listOf(state: ClientState, surface: Surface): ListState {
   const page = reading(state, surface);
   const drawn = fromCache(page);
+  // Until the pool answers or fails to, what the cache holds stands in for the
+  // first page and no more of it.
   const items = drawn
-    ? drawnFrom(state, surface)
+    ? drawnFrom(state, surface).slice(
+        0,
+        page.failure === undefined ? PAGE : undefined,
+      )
     : page.ids
         .map((id) => state.items.get(id))
         .filter((item): item is Item => item !== undefined);
@@ -602,8 +607,8 @@ export function createClient(config: ClientConfig): Client {
     loadFeed: (order, by) =>
       after(() => loadMore(state, api, "feed", order, by)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order, filter, by) =>
-      after(() => enter(state, api, surface, order, filter, by)),
+    enter: (surface, order, filter, by, fromStart) =>
+      after(() => enter(state, api, surface, order, filter, by, fromStart)),
 
     item: (id) =>
       after(async () => {

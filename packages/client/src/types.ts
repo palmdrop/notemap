@@ -464,7 +464,7 @@ export interface Client {
   /**
    * Somebody has arrived at a surface. The queue is read again from the start,
    * its membership having changed under a reader who was elsewhere; the feed
-   * keeps what it walked, nothing ever leaving it. A surface nobody has read is
+   * keeps what it walked, and reads nothing past it. A surface nobody has read is
    * read for the first time either way.
    *
    * `filter` is what the surface is read through, tidied here; the queue keeps
@@ -478,6 +478,8 @@ export interface Client {
     filter?: FilterNamed,
     /** The feed's key; the queue has capture time alone. */
     by?: Key,
+    /** Come to rather than back to: read from the first page, letting go of the rest. */
+    fromStart?: boolean,
   ): Promise<void>;
   /**
    * One item, whether or not a surface has ever drawn it, so an address the

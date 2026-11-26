@@ -43,7 +43,8 @@ describe("retention", () => {
     const transport = mockTransport(() => json(200, { values: [] }));
     transport.unreachable(true);
     const client = createClient({ transport, store });
-    await until(() => read(client.feed).items.length > 0);
+    await client.enter("feed");
+    await until(() => read(client.feed).failure !== undefined);
 
     const kept = read(client.feed).items.map((item) => item.id);
 
