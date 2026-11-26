@@ -2632,6 +2632,24 @@ test("the row last opened is tinted faintly, and not as a selection is", async (
   expect(row.className).toContain("bg-hover");
 });
 
+test("the row last opened is no longer marked once another row is selected", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const one = await screen.findByText("one");
+  const row = one.closest("[data-row]") as HTMLElement;
+
+  await fireEvent.click(one);
+  await fireEvent.click(one);
+  expect(went.to).toEqual(["/items/one"]);
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(row.className).toContain("bg-hover");
+
+  await fireEvent.click(screen.getByText("two"));
+
+  expect(row.hasAttribute("data-last-opened")).toBe(false);
+  expect(row.className).not.toContain("bg-hover");
+});
+
 test("on a phone a tap opens the row's item at once", async () => {
   viewport(390);
   pool(queued("one"));

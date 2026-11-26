@@ -2139,7 +2139,8 @@ it takes the window beside the menu** *(amended 2026-11-18; it sat beside the li
 its bar at its foot. Coming back to the list, the row last opened is drawn in the hover grey
 *(2026-11-26; an ink edge at its rail from 2026-11-25, which sat oddly in the register, and the box
 grey before that, which read as a selection)*, so the reader finds their place; it is not selected
-and draws no strip.
+and draws no strip. Selecting or marking a row lets the mark go, the selection being the place
+from then on.
 
 *Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
 selected row: no time column; a route in its window in its box; **where it went as a box of rows**,

@@ -217,6 +217,10 @@
   const offset = $derived(swipe?.dx ?? (shelved ? SHELF : 0));
 
   /** The row last opened from this list, marked as the reader's place and not as a selection. */
+  $effect(() => {
+    if (surface !== "item" && (selected || marked)) lastOpened.clear();
+  });
+
   const isLastOpened = $derived(
     surface !== "item" && !selected && !marked && lastOpened.id === item.id,
   );
