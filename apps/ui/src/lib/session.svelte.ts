@@ -45,17 +45,20 @@ let drop: (() => void) | undefined;
  */
 function hold(): () => void {
   if (readers === 0) {
+    // What the daemon last said here is drawn until it answers, so a start
+    // waits on nothing over the network; with nothing kept it stays unknown,
+    // drawn as waiting rather than as a login nobody asked for.
+    const last = kept();
+    if (!held.known && last !== undefined) held = last;
+
     const watching = client.session.subscribe((current) => {
+      if (!current.known && held.known) return;
       held = current;
       keep(current);
     });
 
-    // A daemon that cannot be reached answers with what it last said here, so
-    // a start in flight mode draws what this device holds; with nothing kept
-    // it stays unknown, drawn as waiting rather than as a login nobody asked for.
     void client.askSession().catch(() => {
-      const last = kept();
-      if (!held.known && last !== undefined) held = last;
+      // Not answering leaves what was kept standing.
     });
 
     drop = () => watching.unsubscribe();
@@ -69,6 +72,7 @@ function hold(): () => void {
 
     drop?.();
     drop = undefined;
+    held = { required: false, signedIn: false, known: false };
   };
 }
 

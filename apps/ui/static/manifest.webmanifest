@@ -33,6 +33,19 @@
       "purpose": "any"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Capture",
+      "url": "/capture",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
   "share_target": {
     "action": "/capture",
     "method": "POST",

@@ -1,8 +1,12 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-25
+**Last updated**: 2026-11-26
 **Shipped**:
+
+- 2026-11-26 — **Opens at once.** Every page is drawn from the kept shell, without waiting on
+  the daemon, and from who was last signed in here. A newer build is fetched and kept in the
+  background, and offered once it is. The installed shell offers a Capture shortcut. See [installable-shell](../plans/installable-shell.md).
 
 - 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
   daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
@@ -3771,17 +3775,23 @@ installing changes where it opens from, not what it is or how it reaches the poo
 be reached over HTTPS for a browser to offer it.
 
 **It opens without the daemon.** A service worker keeps the shell's own files: the build, the faces,
-the icons and the manifest. A page asked for while the daemon does not answer is drawn from those,
-and what it shows is the client's store, with the status line saying `offline`, as it would for a
+the icons and the manifest. **Every page is drawn from those, at once** *(amended 2026-11-26)*:
+opening waits on nothing over the network, so a capture can be typed the moment the shell is up,
+however slowly the daemon answers or whether it answers at all. Before anything is kept, on the very
+first visit, a page is the daemon's. Where the daemon does not answer, what the shell shows is the client's store, with the status line saying `offline`, as it would for a
 daemon that went away while the shell was open. **Who is signed in is the last answer the pool gave
-this device** *(amended 2026-11-25)*: kept on the device, it is what a start with no pool to ask
-draws from — the queue the store holds, the capture page, and captures held to send — where without
-it nothing under the header was drawn at all. With nothing kept, the shell waits, as before. The
-pool's own answer replaces it whenever it comes. **A build being replaced keeps its files** until
+this device** *(amended 2026-11-25, and 2026-11-26)*: kept on the device, it is what every start
+draws from until the pool answers — the queue the store holds, the capture page, and captures held
+to send. A daemon that hangs rather than refuses is not waited on. With nothing kept, the shell
+waits, as before. The pool's own answer replaces it whenever it comes. **A build being replaced keeps its files** until
 the one after: a page still drawn from it asks for what it has not loaded yet, and offline nothing
 else could answer. The worker keeps nothing the pool says. `/v1` and
 `/docs` go to the network, or fail, as they would without it. So an image not captured on this
 device does not show offline.
+
+**The installed shell offers a Capture shortcut** *(2026-11-26)*, straight to the capture page,
+where the launcher shows a web app's shortcuts: on Android, a long press on the icon, from where it
+can be put on the home screen as an icon of its own; on a desktop, the taskbar's or dock's menu.
 
 **It is offered in the system's share sheet**, where the platform allows. On Android that is Chrome,
 once the shell is installed. Text, a link or files shared from another app open the capture page,
@@ -3798,7 +3808,10 @@ sheet delivered the words and did not write them. A share that repeats itself, a
 the text and as the url, or a title that is the text, adds each part once.
 
 **A new version is offered, not forced.** The shell looks for a newer build of itself when it comes
-back into view. When there is one, the status line says `new version` and offers **Reload**. The
+back into view, and the worker fetches and keeps one it finds, in the background *(2026-11-26)*.
+Once it is kept, the status line says `new version` and offers **Reload**: a reload draws from what
+is kept, so a build not yet kept is not one to offer. Without a worker, as in development, a newer
+build is offered as soon as the daemon serves it. The
 shell does not reload on its own while anything is unsaved: the next move to another page that has
 nothing to lose loads the new version instead of moving within the old one; back or forward loads it
 where it went, without a step added to history. **Reload waits for attachments held** and says so —
