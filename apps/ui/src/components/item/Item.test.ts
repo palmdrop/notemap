@@ -16,6 +16,7 @@ import { asked, client, pool } from "$testing/pool";
 import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
 import { remember } from "$lib/order";
 import { address } from "$testing/address.svelte";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
@@ -159,6 +160,7 @@ test("costs the queue neither its order nor its place", async () => {
   await scrolledTo(900);
   cleanup();
 
+  arriving("popstate");
   render(Queue);
   await screen.findByText("still in the queue");
 

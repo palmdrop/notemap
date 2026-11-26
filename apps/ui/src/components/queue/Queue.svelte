@@ -27,13 +27,14 @@
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { filterSize, type Item } from "@notemap/client";
+  import { filterSize, PAGE, type Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
   import More from "$components/primitives/register/More.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import { isCapture } from "$lib/refused";
   import RefusedRow from "./RefusedRow.svelte";
@@ -57,6 +58,8 @@
   import Confirming from "$components/batch/Confirming.svelte";
   import Marked from "$components/batch/Marked.svelte";
   import { anchored } from "$lib/anchored.svelte";
+  import { cameBack } from "$lib/arrival";
+  import { shownFirst } from "$lib/shown.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -253,12 +256,14 @@
     }
 
     // Scrolling past an item is a skip, and a skip changes nothing: the place
-    // kept is only where to put the view back on reload, and on the way back
-    // from reading one of these items.
+    // kept is only where to put the view back on the way back from reading
+    // one of these items. Come to rather than back to, the queue starts at the
+    // top.
     void (async () => {
-      await reading.arrive();
-      if (arrived === null) restorePlace(reading.place);
-      else reveal(arrived);
+      await reading.arrive(!back);
+      await shown.drawn;
+      if (arrived !== null) reveal(arrived);
+      else if (back) restorePlace(reading.place);
     })();
   });
 
@@ -338,6 +343,9 @@
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
   const headed = $derived(byDay(rows));
+
+  const back = cameBack();
+  const shown = shownFirst(untrack(() => rows.length) > PAGE);
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -588,22 +596,26 @@
     </Register>
   {/if}
 
-  <Index
-    {motion}
-    bind:this={index}
-    leads={refused === undefined}
-    items={rows}
-    selected={marking.on ? undefined : selected}
-    cursor={marking.on ? selected : undefined}
-    open={opened}
-    marked={(id) => marking.has(id)}
-    marking={marking.on}
-    onselect={select}
-    onprocess={(id) => {
-      const item = rows.find((row) => row.id === id);
-      if (item !== undefined && !marking.on) process(item);
-    }}
-  />
+  {#if !shown.ready}
+    <Skeleton shape="lines" />
+  {:else}
+    <Index
+      {motion}
+      bind:this={index}
+      leads={refused === undefined}
+      items={rows}
+      selected={marking.on ? undefined : selected}
+      cursor={marking.on ? selected : undefined}
+      open={opened}
+      marked={(id) => marking.has(id)}
+      marking={marking.on}
+      onselect={select}
+      onprocess={(id) => {
+        const item = rows.find((row) => row.id === id);
+        if (item !== undefined && !marking.on) process(item);
+      }}
+    />
+  {/if}
 
   {#if footed}
     <More
@@ -622,12 +634,16 @@
       <Refused surface="queue" {refused} />
     {/if}
 
-    {#each headed as one (one.key)}
-      <!-- Not an `{#if}`: that would be the block the transitions belong to,
-           and they would play only when it turned, never as a row comes or
-           goes. A render is transparent to them. -->
-      {@render (one.kind === "day" ? heading : entry)(one as never)}
-    {/each}
+    {#if !shown.ready}
+      <Skeleton shape="rows" />
+    {:else}
+      {#each headed as one (one.key)}
+        <!-- Not an `{#if}`: that would be the block the transitions belong to,
+             and they would play only when it turned, never as a row comes or
+             goes. A render is transparent to them. -->
+        {@render (one.kind === "day" ? heading : entry)(one as never)}
+      {/each}
+    {/if}
 
     {#each kept as held (held.id)}
       <RefusedRow {held} />

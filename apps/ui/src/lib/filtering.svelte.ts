@@ -25,8 +25,11 @@ export type Filtering = {
   readonly filter: Filter;
   /** Where this reading keeps its scroll, apart from every other filter's. */
   readonly place: string;
-  /** Reads the surface through the filter its address names, for its first drawing. */
-  arrive(): Promise<void>;
+  /**
+   * Reads the surface through the filter its address names, for its first
+   * drawing: `fromStart` where it was come to rather than come back to.
+   */
+  arrive(fromStart: boolean): Promise<void>;
   /** The words on the address, as they were typed. */
   readonly words: string;
   toggle(kind: FilterKind, value: string): void;
@@ -107,12 +110,13 @@ export function filtering(
       return wordsIn(page.url);
     },
 
-    async arrive() {
+    async arrive(fromStart) {
       await client.enter(
         surface,
         orderFor(surface, page.url),
         filter,
         surface === "feed" ? keyFor(page.url) : undefined,
+        fromStart,
       );
       await tick();
     },

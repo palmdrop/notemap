@@ -11,6 +11,7 @@
     type Item,
     type Key,
     type Order as End,
+    PAGE,
   } from "@notemap/client";
 
   import Row from "$components/item/Row.svelte";
@@ -22,6 +23,7 @@
   import Rail from "$components/primitives/register/Rail.svelte";
   import Register from "$components/primitives/register/Register.svelte";
   import Prose from "$components/primitives/text/Prose.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import ClearFilters from "$components/tags/ClearFilters.svelte";
   import FilterPanel from "$components/tags/FilterPanel.svelte";
   import { searching } from "$components/frame/searching.svelte";
@@ -40,6 +42,8 @@
   import Confirming from "$components/batch/Confirming.svelte";
   import Marked from "$components/batch/Marked.svelte";
   import { anchored } from "$lib/anchored.svelte";
+  import { cameBack } from "$lib/arrival";
+  import { shownFirst } from "$lib/shown.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
@@ -99,10 +103,14 @@
       $feed.items.length === 0,
   );
 
+  // Come back to, the feed stands as it was left; come to, it starts at the top.
+  const back = cameBack();
+
   onMount(() => {
     void (async () => {
-      await reading.arrive();
-      restorePlace(reading.place);
+      await reading.arrive(!back);
+      await shown.drawn;
+      if (back) restorePlace(reading.place);
     })();
   });
 
@@ -190,6 +198,8 @@
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
   const headed = $derived(byDay(rows, dayAtFor($feed.by)));
+
+  const shown = shownFirst(untrack(() => rows.length) > PAGE);
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -406,22 +416,26 @@
     <Register><Refused surface="feed" {refused} /></Register>
   {/if}
 
-  <Index
-    {motion}
-    bind:this={index}
-    dayAt={dayAtFor($feed.by)}
-    leads={refused === undefined}
-    items={rows}
-    selected={marking.on ? undefined : selected}
-    cursor={marking.on ? selected : undefined}
-    open={opened}
-    marked={(id) => marking.has(id)}
-    marking={marking.on}
-    onselect={select}
-    onprocess={(id) => {
-      if (!marking.on) quick.open(id);
-    }}
-  />
+  {#if !shown.ready}
+    <Skeleton shape="lines" />
+  {:else}
+    <Index
+      {motion}
+      bind:this={index}
+      dayAt={dayAtFor($feed.by)}
+      leads={refused === undefined}
+      items={rows}
+      selected={marking.on ? undefined : selected}
+      cursor={marking.on ? selected : undefined}
+      open={opened}
+      marked={(id) => marking.has(id)}
+      marking={marking.on}
+      onselect={select}
+      onprocess={(id) => {
+        if (!marking.on) quick.open(id);
+      }}
+    />
+  {/if}
 
   {#if footed}
     <More
@@ -457,12 +471,16 @@
       {/if}
     {/if}
 
-    {#each headed as one (one.key)}
-      <!-- Not an `{#if}`: that would be the block the transitions belong to,
-           and they would play only when it turned, never as a row comes or
-           goes. A render is transparent to them. -->
-      {@render (one.kind === "day" ? heading : entry)(one as never)}
-    {/each}
+    {#if !shown.ready}
+      <Skeleton shape="rows" />
+    {:else}
+      {#each headed as one (one.key)}
+        <!-- Not an `{#if}`: that would be the block the transitions belong to,
+             and they would play only when it turned, never as a row comes or
+             goes. A render is transparent to them. -->
+        {@render (one.kind === "day" ? heading : entry)(one as never)}
+      {/each}
+    {/if}
 
     {#if footed}
       <More

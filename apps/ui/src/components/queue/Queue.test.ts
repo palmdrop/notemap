@@ -13,6 +13,7 @@ import { anItem, json, read, routeOf } from "@notemap/client/testing";
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
 import { registering, said } from "$testing/highlights";
@@ -132,6 +133,7 @@ test("puts the view back where the person left it, and reads the queue again", a
   await scrolledTo(240);
 
   cleanup();
+  arriving("popstate");
   render(Queue);
 
   await vi.waitFor(() => {
@@ -140,6 +142,23 @@ test("puts the view back where the person left it, and reads the queue again", a
   // The place is the shell's own and costs nothing. The rows are not: what the
   // queue holds changes while the reader is elsewhere, so arriving is a read.
   expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
+});
+
+test("comes to the queue at the top", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await scrolledTo(240);
+
+  cleanup();
+  render(Queue);
+  await screen.findByText("one");
+
+  await vi.waitFor(() => {
+    expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 240 });
 });
 
 test("discards with the pool unreachable, and says what it cannot queue", async () => {

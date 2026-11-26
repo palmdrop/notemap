@@ -17,6 +17,9 @@ import { remember, rememberKey } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
+import { drawing } from "$lib/shown.svelte";
+import { PAGE } from "@notemap/client";
 import Feed from "./Feed.svelte";
 import Headed from "./Feed.fixture.svelte";
 
@@ -577,11 +580,51 @@ test("puts the view back where the reader left it to read one item", async () =>
   await fireEvent.scroll(window);
 
   cleanup();
+  arriving("popstate");
   render(Feed);
 
   await vi.waitFor(() => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
   });
+});
+
+test("comes to the feed at the top, read again from its first page", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+  await fireEvent.scroll(window);
+
+  cleanup();
+  render(Feed);
+  await screen.findByText("one");
+
+  await vi.waitFor(() => {
+    expect(asked().filter((route) => route === "GET /v1/feed")).toHaveLength(2);
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 320 });
+});
+
+test("draws a long feed once the view is on screen, and says it is drawing", async () => {
+  const many = [...Array(PAGE + 5).keys()].map((at) =>
+    anItem(`row-${String(at)}`),
+  );
+  pool(held(...many));
+  render(Feed);
+  await screen.findByText("row-0");
+
+  cleanup();
+  arriving("popstate");
+  render(Feed);
+
+  expect(screen.queryByText("row-0")).toBeNull();
+  expect(document.querySelector("[data-skeleton]")).not.toBeNull();
+  expect(drawing.now).toBe(true);
+
+  expect(await screen.findByText("row-0")).toBeDefined();
+  expect(document.querySelector("[data-skeleton]")).toBeNull();
+  expect(drawing.now).toBe(false);
 });
 
 test("walks the rows with j and k, and processes the one selected", async () => {

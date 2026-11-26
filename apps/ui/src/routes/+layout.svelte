@@ -1,6 +1,11 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
+  import {
+    afterNavigate,
+    beforeNavigate,
+    goto,
+    onNavigate,
+  } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page, updated } from "$app/state";
 
@@ -40,6 +45,7 @@
     watchVersion,
   } from "$lib/installed/version";
   import { preloadSurfaces } from "$lib/preload";
+  import { arriving } from "$lib/arrival";
 
   import "./layout.css";
 
@@ -72,6 +78,8 @@
 
   /** A move back or forward the browser has already made, which then loads the newer build where it went. */
   let loadOnArrival = false;
+
+  onNavigate(({ type }) => arriving(type));
 
   afterNavigate(({ from, type }) => {
     arrived(type !== "enter" && from !== null);
