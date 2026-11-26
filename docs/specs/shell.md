@@ -3869,8 +3869,11 @@ where it went, without a step added to history. **Reload waits for attachments h
 with changes.
 
 **Back closes what is open before it leaves.** On Android, back and the back gesture close the
-innermost sheet, dialog or drawer, and the page stays where it was. With nothing open, back walks
-history as it always has.
+innermost sheet, dialog or drawer, and the page stays where it was. **On the route, back takes a
+step back** *(2026-11-26)*, as the bar's Back does, and leaves the route only from its first step;
+the steps are not entries in history, so routing has none to unwind. Both go through the browser's
+close requests, which Firefox for Android does not send; there back leaves the page. With nothing
+open, back walks history as it always has.
 
 ### Tokens and themes
 
