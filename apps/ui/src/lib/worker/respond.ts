@@ -1,4 +1,4 @@
-import { answered, SHARED_TO, WAITED } from "./answer";
+import { SHARED_TO } from "./answer";
 
 /** The prefix every build's caches share, the build's version after it. */
 export const SHELL_PREFIX = "notemap-shell-";
@@ -6,31 +6,26 @@ export const SHELL_PREFIX = "notemap-shell-";
 /** The page every route is drawn from: the daemon answers it for any path. */
 export const PAGE = "/";
 
-/** The kept shell, where a page asked for while the daemon does not answer is drawn from. */
+/** The kept shell, which every page is drawn from. */
 export type Shell = Pick<Cache, "match">;
 
 /**
- * A page from the daemon, or the shell kept where it does not answer in time
- * or answers with a gateway error. The wait covers the answer's head only: a
- * page arriving slowly is still a page.
+ * The kept shell, without waiting on the daemon: whether a newer build is
+ * served is asked separately, and a newer build is kept before it is offered.
+ * Only where nothing is kept yet is the page the daemon's.
  */
 export async function page(
   request: Request,
   shell: () => Promise<Shell>,
   asked: typeof fetch = fetch,
-  waited: number = WAITED,
 ): Promise<Response> {
-  const giving = new AbortController();
-  const timer = setTimeout(() => giving.abort(), waited);
+  const kept = await (await shell()).match(PAGE);
+  if (kept !== undefined) return kept;
   try {
-    const response = await asked(request, { signal: giving.signal });
-    if (answered(response)) return response;
+    return await asked(request);
   } catch {
-    // Not answering is what the kept page is for.
-  } finally {
-    clearTimeout(timer);
+    return Response.error();
   }
-  return (await (await shell()).match(PAGE)) ?? Response.error();
 }
 
 /**

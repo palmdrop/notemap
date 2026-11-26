@@ -231,6 +231,27 @@ Found on the device and in [the review](../reviews/installable-shell-pr-131-2026
       capture page captures, the capture is held, and it reaches the pool once the network is back. _(2026-11-25)_
 - [x] Commit. _(2026-11-25)_
 
+### Phase 10: opens at once
+
+Asked for by the developer on 2026-11-26, after slow opens on the phone. Amends phase 3's
+navigations-to-the-network-first: a page waited up to four seconds on a daemon that hung rather
+than refused.
+
+- [x] Every page from the kept shell, without asking the daemon; the daemon's only where nothing is
+      kept yet. The wait and its gateway-error rule go. _(2026-11-26)_
+- [x] The version check also has the worker fetch a newer build, and `new version` is offered once
+      the worker drawing the page says it keeps a build other than the page's; without a worker,
+      once the daemon serves it. Asked, not watched for: a new worker can take over before the page
+      listens. _(2026-11-26)_
+- [x] Who is signed in is drawn from the answer kept from the start, not only once the pool has
+      failed to answer: a hanging daemon left nothing under the header. _(2026-11-26)_
+- [x] A Capture shortcut in the manifest, to `/capture`, with the plain icon. _(2026-11-26)_
+- [x] Commit. _(2026-11-26)_
+
+**Verify:** the worker's page tests and the newer-build tests. On the phone: open with the daemon
+unreachable and with it slow, and the capture page is there at once; rebuild the daemon, open, and
+`new version` follows once the new build is kept; long-press the icon for Capture.
+
 ---
 
 ## Testing

@@ -11,51 +11,29 @@ const shell = () =>
 const going = new Request("https://notes.example/feed");
 
 describe("a page asked for", () => {
-  it("is the daemon's where it answers", async () => {
-    const answer = await page(going, shell, () =>
-      Promise.resolve(new Response("from the daemon")),
+  it("is the kept shell, without asking the daemon", async () => {
+    const asked = vi.fn(() => Promise.resolve(new Response("from the daemon")));
+    const answer = await page(going, shell, asked);
+    expect(await answer.text()).toBe("the kept shell");
+    expect(asked).not.toHaveBeenCalled();
+  });
+
+  it("is the daemon's where nothing is kept yet", async () => {
+    const answer = await page(
+      going,
+      () => Promise.resolve({ match: () => Promise.resolve(undefined) }),
+      () => Promise.resolve(new Response("from the daemon")),
     );
     expect(await answer.text()).toBe("from the daemon");
   });
 
-  it("is the kept shell where the daemon cannot be reached", async () => {
-    const answer = await page(going, shell, () =>
-      Promise.reject(new TypeError("Failed to fetch")),
-    );
-    expect(await answer.text()).toBe("the kept shell");
-  });
-
-  it("is the kept shell where a proxy answers for a daemon that is down", async () => {
-    const answer = await page(going, shell, () =>
-      Promise.resolve(new Response("bad gateway", { status: 502 })),
-    );
-    expect(await answer.text()).toBe("the kept shell");
-  });
-
-  it("is the kept shell where the daemon does not answer in time", async () => {
-    const hanging = (_: RequestInfo | URL, init?: RequestInit) =>
-      new Promise<Response>((_, reject) => {
-        init?.signal?.addEventListener("abort", () =>
-          reject(new Error("gone")),
-        );
-      });
-    const answer = await page(going, shell, hanging, 10);
-    expect(await answer.text()).toBe("the kept shell");
-  });
-
-  it("is not cut off once the daemon has started answering", async () => {
-    let signal: AbortSignal | undefined;
-    await page(
+  it("is an error where nothing is kept and the daemon cannot be reached", async () => {
+    const answer = await page(
       going,
-      shell,
-      (_, init) => {
-        signal = init?.signal ?? undefined;
-        return Promise.resolve(new Response("from the daemon"));
-      },
-      10,
+      () => Promise.resolve({ match: () => Promise.resolve(undefined) }),
+      () => Promise.reject(new TypeError("Failed to fetch")),
     );
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(signal?.aborted).toBe(false);
+    expect(answer.type).toBe("error");
   });
 });
 

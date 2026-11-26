@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { answered, answerFor, type Asked } from "./answer";
+import { answerFor, type Asked } from "./answer";
 
 const ORIGIN = "https://notes.example";
 const KEPT = new Set([
@@ -62,7 +62,7 @@ describe("what the worker answers", () => {
     ).toBe("kept");
   });
 
-  it("asks the daemon for a page first, even one it keeps", () => {
+  it("draws every page from the kept shell", () => {
     for (const path of ["/", "/feed", "/items/abc", "/settings/server"]) {
       expect(answerFor(asked({ path, mode: "navigate" }), ORIGIN, KEPT)).toBe(
         "shell",
@@ -97,19 +97,5 @@ describe("what the worker answers", () => {
     expect(
       answerFor(asked({ path: "/feed", method: "POST" }), ORIGIN, KEPT),
     ).toBe("network");
-  });
-});
-
-describe("whether the daemon answered", () => {
-  it("takes a gateway error as no answer", () => {
-    for (const status of [500, 502, 503, 504]) {
-      expect(answered(new Response(null, { status }))).toBe(false);
-    }
-  });
-
-  it("takes anything short of that as an answer", () => {
-    for (const status of [200, 304, 401, 404]) {
-      expect(answered(new Response(null, { status }))).toBe(true);
-    }
   });
 });

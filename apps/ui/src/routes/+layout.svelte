@@ -7,7 +7,7 @@
     onNavigate,
   } from "$app/navigation";
   import { resolve } from "$app/paths";
-  import { page, updated } from "$app/state";
+  import { page } from "$app/state";
 
   import Dropping from "$components/dropping/Dropping.svelte";
   import SignIn from "$components/session/SignIn.svelte";
@@ -44,6 +44,7 @@
     reload,
     watchVersion,
   } from "$lib/installed/version";
+  import { newer, watchWorker } from "$lib/installed/newer.svelte";
   import { preloadSurfaces } from "$lib/preload";
   import { arriving } from "$lib/arrival";
 
@@ -64,9 +65,10 @@
   });
 
   $effect(() => watchVersion());
+  $effect(() => watchWorker());
 
   $effect(() => {
-    if (!updated.current) return;
+    if (!newer.current) return;
     untrack(() =>
       notices.raise({
         what: "new version",
@@ -170,9 +172,9 @@
   // through history, and a link out of the app is left to the browser.
   beforeNavigate((navigation) => {
     if (!unsaved()) {
-      // A newer build is served: this move loads it, rather than moving
+      // A newer build is kept: this move loads it, rather than moving
       // within the old one.
-      const instead = loadInstead(updated.current, navigation);
+      const instead = loadInstead(newer.current, navigation);
       if (instead === undefined) return;
       if (navigation.type === "popstate") {
         loadOnArrival = true;

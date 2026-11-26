@@ -7,6 +7,7 @@ import { build, files, version } from "$service-worker";
 
 import { holdShare, SHARES } from "$lib/sharing/held";
 import { answerFor } from "$lib/worker/answer";
+import { WHICH_BUILD, type Keeps } from "$lib/worker/kept";
 import { page, PAGE, share, SHELL_PREFIX, stale } from "$lib/worker/respond";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
@@ -44,6 +45,12 @@ async function fromKept(request: Request): Promise<Response> {
 async function fromAnyKept(request: Request): Promise<Response> {
   return (await caches.match(request)) ?? fetch(request);
 }
+
+worker.addEventListener("message", (event) => {
+  if (event.data !== WHICH_BUILD) return;
+  const said: Keeps = { keeps: version };
+  event.source?.postMessage(said);
+});
 
 worker.addEventListener("fetch", (event) => {
   const { request } = event;

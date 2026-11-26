@@ -12,13 +12,22 @@ export function registerWorker(): void {
   });
 }
 
-/** Asks whether a newer build is served, now and whenever the shell comes back into view. */
+/**
+ * Asks whether a newer build is served, now and whenever the shell comes back
+ * into view, and has the worker fetch and keep it if so.
+ */
 export function watchVersion(): () => void {
   const ask = () => {
     if (document.visibilityState !== "visible") return;
     updated.check().catch(() => {
       // Unanswered is not newer.
     });
+    navigator.serviceWorker
+      ?.getRegistration()
+      .then((worker) => worker?.update())
+      .catch(() => {
+        // The worker asks again when the next page is opened.
+      });
   };
   ask();
   document.addEventListener("visibilitychange", ask);

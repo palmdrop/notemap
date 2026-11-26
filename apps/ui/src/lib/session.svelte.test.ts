@@ -83,3 +83,32 @@ test("a kept answer that was signed out draws the login, not the surface", async
   expect(await screen.findByRole("button", { name: /sign in/i })).toBeDefined();
   expect(screen.queryByText("the surface")).toBeNull();
 });
+
+test("started with a pool that does not answer, draws at once from the answer kept", async () => {
+  localStorage.setItem(
+    "notemap:session",
+    JSON.stringify({ required: true, signedIn: true }),
+  );
+  pool(() => new Promise<Response>(() => undefined));
+
+  start();
+
+  expect(await screen.findByText("the surface")).toBeDefined();
+});
+
+test("the pool's answer, when it comes, replaces the one kept", async () => {
+  localStorage.setItem(
+    "notemap:session",
+    JSON.stringify({ required: true, signedIn: true }),
+  );
+  pool((request) =>
+    routeOf(request) === "GET /v1/session"
+      ? json(200, { authenticated: false, requiresCredentials: true })
+      : json(200, { values: [] }),
+  );
+
+  start();
+
+  expect(await screen.findByRole("button", { name: /sign in/i })).toBeDefined();
+  expect(screen.queryByText("the surface")).toBeNull();
+});
