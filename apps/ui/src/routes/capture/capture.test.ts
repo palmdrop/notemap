@@ -78,3 +78,19 @@ test("opened as ever, says nothing of shares where none are new", async () => {
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(said().some((words) => /shared/.test(words ?? ""))).toBe(false);
 });
+
+test("signed out, says that what it takes is held until someone signs in", async () => {
+  pool((request) =>
+    new URL(request.url).pathname === "/v1/session"
+      ? json(200, { authenticated: false, requiresCredentials: true })
+      : json(200, { values: [] }),
+  );
+
+  render(CapturePage);
+
+  await waitFor(() => {
+    expect(said()).toContain(
+      "Signed out. What you capture is held until someone signs in.",
+    );
+  });
+});

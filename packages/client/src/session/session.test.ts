@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import { createClient } from "../client";
@@ -117,6 +117,46 @@ describe("signing in", () => {
     ).rejects.toBeDefined();
 
     expect(await read(client.session)).toMatchObject({ signedIn: false });
+  });
+});
+
+describe("a capture made while nobody was signed in", () => {
+  /**
+   * Signing in moves nothing reach would notice — the daemon answered all along
+   * — so it is the session opening that has to send what waited at the door,
+   * whichever account opens it.
+   */
+  it("is sent once someone signs in, without anything else to prod it", async () => {
+    let signedIn = false;
+    const { client, transport } = clientOver((request) => {
+      const asked = route(request);
+      if (asked === "POST /v1/session") {
+        signedIn = true;
+        return said(true, true, { kind: "session", id: "abc" });
+      }
+      if (asked === "GET /v1/session") return said(signedIn);
+      if (!signedIn) return refusal(401, "unauthenticated");
+      if (asked === "POST /v1/captures") {
+        return json(201, { item: anItem("held"), matchedOn: undefined });
+      }
+      return json(200, {});
+    });
+
+    await client.capture({ channel: "web", text: "written signed out" });
+    // The drain at start is queued behind the probe, so it is let finish too.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await client.drain();
+    expect(await read(client.outbox)).toHaveLength(1);
+    const before = transport.sent.length;
+
+    await client.login("someone else", "their password");
+
+    await vi.waitFor(async () => {
+      expect(await read(client.outbox)).toEqual([]);
+    });
+    expect(transport.sent.slice(before).map(route)).toContain(
+      "POST /v1/captures",
+    );
   });
 });
 

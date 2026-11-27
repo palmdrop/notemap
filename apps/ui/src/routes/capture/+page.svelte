@@ -7,6 +7,7 @@
   import Capture from "$components/capture/Capture.svelte";
   import { client } from "$lib/client";
   import { headed } from "$lib/heading.svelte";
+  import { session } from "$lib/session.svelte";
   import { sayLanded } from "$lib/landed";
   import { shareIntoDraft } from "$lib/sharing/into-draft";
 
@@ -17,6 +18,11 @@
   // door was shut waits for the page behind it.
   /** What became of a share, said over the bar: the status line is not drawn here. */
   let told = $state<{ words: string; alarm?: boolean } | undefined>(undefined);
+
+  const who = session();
+  const HELD = {
+    words: "Signed out. What you capture is held until someone signs in.",
+  };
 
   onMount(() => {
     const arrived = page.url.searchParams.get("shared");
@@ -63,7 +69,7 @@
 
 <Capture
   form="page"
-  {told}
+  told={told ?? (who.shut ? HELD : undefined)}
   oncaptured={(item) => {
     sayLanded(item, $queue.order);
     void goto(resolve("/"));

@@ -45,6 +45,7 @@
     watchVersion,
   } from "$lib/installed/version";
   import { newer, watchWorker } from "$lib/installed/newer.svelte";
+  import { installed } from "$lib/installed/standalone";
   import { preloadSurfaces } from "$lib/preload";
   import { arriving } from "$lib/arrival";
 
@@ -130,8 +131,14 @@
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
 
+  // An installed shell still takes a capture behind the door, held until
+  // someone signs in: it is the one page drawing nothing of the pool's.
+  const signIn = $derived(
+    shut && !(page.route.id === "/capture" && installed()),
+  );
+
   const title = $derived(
-    shut
+    signIn
       ? "sign in"
       : (TITLES[page.route.id ?? ""] ??
           (page.route.id?.startsWith("/settings") === true
@@ -281,7 +288,7 @@
             page.route.id?.startsWith("/settings") === true ||
             page.route.id === "/items/[id]/records/[recordId]"}
         >
-          {#if shut}
+          {#if signIn}
             <SignIn />
           {:else}
             {@render children()}

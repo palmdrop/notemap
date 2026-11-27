@@ -114,12 +114,13 @@ the capture page; a kept signed-out answer draws sign-in. `loop.mjs` with `NOKEP
 
 Depends on: phase 3.
 
-- [ ] On the installed shell, the capture page is reachable while signed out, and a capture made
+- [x] On the installed shell, the capture page is reachable while signed out, and a capture made
       there goes to the outbox. It says it is held until someone signs in.
-- [ ] Check the outbox already holds through a `401` and drains when a session opens (client.md
-      says it does). Add a test for a capture made signed out landing after sign-in as another
+- [x] Check the outbox already holds through a `401` and drains when a session opens (client.md
+      says it does). _(2026-11-27: it held, and did not drain on signing in: only a return of
+      reach, a mutation or a restart drained it. A session opening now drains.)_ Add a test for a capture made signed out landing after sign-in as another
       account.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** tests for the capture page while signed out, installed and not; the client test above.
 On the phone: sign out, flight mode, capture, sign in, and the capture lands.
