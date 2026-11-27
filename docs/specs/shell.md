@@ -3834,7 +3834,8 @@ has no reason to know the word, and the settings label is theirs *(2026-09-24)*.
 while it is off **no request is made** and no block is drawn: no placeholder says an unfurl was
 withheld. A client that has not yet read the setting draws none and asks nothing. One whose copy is
 stale — the daemon answers that the setting is off — reads the pool settings again, and every block
-goes.
+goes. **Offline, no block is drawn and nothing is asked** *(2026-11-27)*: every one would ask, wait
+and fold away, moving its row each time it is drawn. They come back once the pool answers.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
