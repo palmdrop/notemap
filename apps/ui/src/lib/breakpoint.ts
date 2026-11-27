@@ -17,16 +17,40 @@ export function full(): boolean {
   return window.innerWidth >= FULL_PX;
 }
 
-const resized = createSubscriber((update) => on(window, "resize", update));
+type Form = { readonly wide: boolean; readonly full: boolean };
+
+function measured(): Form {
+  const across = window.innerWidth;
+  return { wide: across >= WIDE_PX, full: across >= FULL_PX };
+}
+
+/** Held only while something listens, since nothing else keeps it current. */
+let held: Form | undefined;
+
+// A phone resizes as it scrolls, and `innerWidth` lays the page out to answer:
+// read by every row on every resize, that was the whole cost of a scroll.
+const crossed = createSubscriber((update) => {
+  held = measured();
+  const off = on(window, "resize", () => {
+    const now = measured();
+    if (now.wide === held?.wide && now.full === held.full) return;
+    held = now;
+    update();
+  });
+  return () => {
+    off();
+    held = undefined;
+  };
+});
 
 /** The width's form, read reactively: a piece re-draws as the window crosses a breakpoint. */
 export const width = {
   get wide(): boolean {
-    resized();
-    return wide();
+    crossed();
+    return (held ?? measured()).wide;
   },
   get full(): boolean {
-    resized();
-    return full();
+    crossed();
+    return (held ?? measured()).full;
   },
 };

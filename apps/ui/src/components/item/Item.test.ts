@@ -133,10 +133,11 @@ test("says what is missing where nothing is held and the pool is out of reach", 
   expect(screen.queryByText(/No such item/)).toBeNull();
 });
 
-/** Where the person had scrolled, as the browser would report it. */
-function scrolledTo(at: number) {
+/** Where the person had scrolled to and come to rest, as the browser would report it. */
+async function scrolledTo(at: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: at });
-  return fireEvent.scroll(window);
+  await fireEvent.scroll(window);
+  return fireEvent(window, new Event("scrollend"));
 }
 
 test("costs the queue neither its order nor its place", async () => {

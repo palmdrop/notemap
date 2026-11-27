@@ -575,6 +575,7 @@ test("puts the view back where the reader left it to read one item", async () =>
   await screen.findByText("one");
   Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   cleanup();
   render(Feed);

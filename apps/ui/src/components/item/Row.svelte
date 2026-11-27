@@ -414,7 +414,7 @@
     style:translate={swipe === undefined || swipe.dx === 0
       ? undefined
       : `${String(swipe.dx)}px 0`}
-    class="relative col-span-full grid min-h-row scroll-mt-held grid-cols-subgrid border-b border-rule {swipes
+    class="relative col-span-full grid min-h-row scroll-mt-held grid-cols-subgrid self-start border-b border-rule {swipes
       ? 'touch-pan-y'
       : ''} transition-[background-color] duration-(--duration-short) ease-fade has-[[data-stamp]:focus-visible]:outline-2 has-[[data-stamp]:focus-visible]:-outline-offset-2 has-[[data-stamp]:focus-visible]:outline-ink {cursor &&
     modality.keys
