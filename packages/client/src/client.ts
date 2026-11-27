@@ -294,8 +294,14 @@ export function createClient(config: ClientConfig): Client {
       distinctUntilChanged(),
     )
     .subscribe((answerable) => {
-      if (answerable) void askedLimits();
-      else forgetLimits();
+      if (!answerable) {
+        forgetLimits();
+        return;
+      }
+      void askedLimits();
+      // Signing in moves nothing reach notices, the daemon having answered all
+      // along, so what waited at the shut door is sent from here.
+      void drain();
     });
 
   // The watcher keeps its own tempo, and only the gates are the client's to
