@@ -45,9 +45,8 @@ let drop: (() => void) | undefined;
  */
 function hold(): () => void {
   if (readers === 0) {
-    // What the daemon last said here is drawn until it answers, so a start
-    // waits on nothing over the network; with nothing kept it stays unknown,
-    // drawn as waiting rather than as a login nobody asked for.
+    // What the daemon last said here stands until it answers; with nothing
+    // kept it stays unknown, and only a known shut door draws the login.
     const last = kept();
     if (!held.known && last !== undefined) held = last;
 
@@ -87,8 +86,12 @@ export function session() {
     get shut() {
       return held.known && held.required && !held.signedIn;
     },
-    /** Who this is, as the drawer says it: nobody where the pool asks no one. */
+    /**
+     * Who this is, as the drawer says it: nobody where the pool asks no one,
+     * and nothing until it is known.
+     */
     get who(): string {
+      if (!held.known) return "";
       if (!held.required) return "no password set";
       if (!held.signedIn) return "signed out";
       return held.as?.kind === "token"
