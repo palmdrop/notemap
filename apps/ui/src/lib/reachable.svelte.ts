@@ -15,6 +15,8 @@ let daemonVersion = $state<string | undefined>(undefined);
 
 let readers = 0;
 let drop: (() => void) | undefined;
+/** Whether `online` is being kept, or the browser has to be asked. */
+let listening = $state(false);
 
 /**
  * One set of listeners however many surfaces are reading them: an `online`
@@ -41,7 +43,9 @@ function hold(): () => void {
       daemonVersion = mark.version;
     });
 
+    listening = true;
     drop = () => {
+      listening = false;
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
       held.unsubscribe();
@@ -64,7 +68,8 @@ export function reachable() {
 
   return {
     get yes() {
-      return online && answering;
+      // Mounted after what it draws, which would otherwise have asked as if online.
+      return (listening ? online : navigator.onLine) && answering;
     },
     get at() {
       return answeredAt;
