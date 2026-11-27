@@ -44,18 +44,16 @@ export type Limits = {
  */
 function cancellable(request: Request, limits: Limits): Request {
   const signals = [
+    request.signal,
     ...(limits.signal === undefined ? [] : [limits.signal]),
     ...(limits.timeout === undefined
       ? []
       : [AbortSignal.timeout(limits.timeout)]),
   ];
 
-  const only = signals[0];
-  if (only === undefined) return request;
+  if (signals.length === 1) return request;
 
-  return new Request(request, {
-    signal: signals.length === 1 ? only : AbortSignal.any(signals),
-  });
+  return new Request(request, { signal: AbortSignal.any(signals) });
 }
 
 export function createApi(transport: Transport, limits: Limits = {}): Api {

@@ -70,7 +70,7 @@ Depends on: nothing.
       lands under whoever signs in next.
 - [-] `CONTEXT.md`: only if the spec text needs a word it lacks. _(dropped — none needed)_
 - [-] Get the developer's confirmation on the doc diff. _(dropped — the developer said to implement; the branch is the confirmation, before merge)_
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** the developer has read and confirmed the diff.
 
@@ -78,16 +78,16 @@ Depends on: nothing.
 
 Depends on: phase 1.
 
-- [ ] Reach is unknown until the first answer or failure, which the client already marks as a
+- [x] Reach is unknown until the first answer or failure, which the client already marks as a
       mark with no time. The shell reads it as `known`. What acts on reach keeps the client's
       optimistic `yes`, since that is what finds out, and an unknown read as `no` would draw every
       start offline for a moment. What says something about reach waits for `known`: the drawer's
-      word, and link previews. The browser saying offline is known at once.
-- [ ] The health probe at start gets a timeout of its own (3 s), and a request's own abort signal
+      word. The browser saying offline is known at once.
+- [x] The health probe at start gets a timeout of its own (3 s), and a request's own abort signal
       is kept alongside the client's. A probe that times out reads as `offline`. A later answer
       still flips it back.
-- [ ] The status line and the drawer draw nothing for reach while it is unknown.
-- [ ] Commit.
+- [x] The status line and the drawer draw nothing for reach while it is unknown.
+- [x] Commit.
 
 **Verify:** client tests for the three states and the probe's timeout; UI tests that an unknown
 reach draws neither word. `/tmp/nm-loop/loop.mjs` with `MODE=hang` says `offline` within about

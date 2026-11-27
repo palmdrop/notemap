@@ -62,6 +62,14 @@ test("the menu's foot says offline and when the pool last answered on one line",
   expect(said.getAttribute("title")).toBe("offline, last answered 12:17");
 });
 
+test("the menu's foot says nothing about reach until it is known", async () => {
+  const { default: Reach } = await import("./Reach.svelte");
+  render(Reach, { reachable: undefined, at: undefined, who: "" });
+
+  expect(screen.queryByText(/online|offline/)).toBeNull();
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
 test("the menu's squares say today's date and how much was captured today", async () => {
   const { default: Glance } = await import("./Glance.svelte");
   render(Glance);

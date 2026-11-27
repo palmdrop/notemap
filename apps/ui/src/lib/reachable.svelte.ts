@@ -63,13 +63,25 @@ function hold(): () => void {
   };
 }
 
+/** Mounted after what it draws, which would otherwise have asked as if online. */
+function browserSaysOnline(): boolean {
+  return listening ? online : navigator.onLine;
+}
+
 export function reachable() {
   onMount(hold);
 
   return {
     get yes() {
-      // Mounted after what it draws, which would otherwise have asked as if online.
-      return (listening ? online : navigator.onLine) && answering;
+      return browserSaysOnline() && answering;
+    },
+    /**
+     * Whether anything has said yet: the pool, by answering or failing to, or
+     * the browser, by being offline. Until then `yes` is the client's optimism,
+     * which is what acts, and nothing is said either way.
+     */
+    get known() {
+      return !browserSaysOnline() || answeredAt !== undefined;
     },
     get at() {
       return answeredAt;

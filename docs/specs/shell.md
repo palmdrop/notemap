@@ -2831,8 +2831,8 @@ of them the same colour.)*
   pending work.
 
 **Not known yet is said as nothing** *(added 2026-11-27)*. Until the pool has answered or failed
-to, and the browser has not said it is offline, the shell neither says `online` nor `offline`, and
-it draws no link preview. It acts as though the pool answers, which is what finds out. The client
+to, and the browser has not said it is offline, the shell says neither `online` nor `offline`. It
+acts as though the pool answers, which is what finds out. The client
 asks at start with a timeout of its own, so a network that swallows requests rather than refusing
 them reads `offline` within seconds rather than at the request timeout.
 
@@ -3841,8 +3841,7 @@ while it is off **no request is made** and no block is drawn: no placeholder say
 withheld. A client that has not yet read the setting draws none and asks nothing. One whose copy is
 stale — the daemon answers that the setting is off — reads the pool settings again, and every block
 goes. **Offline, no block is drawn and nothing is asked** *(2026-11-27)*: every one would ask, wait
-and fold away, moving its row each time it is drawn. They come back once the pool answers, and are
-not drawn before it is known whether it does.
+and fold away, moving its row each time it is drawn. They come back once the pool answers.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible

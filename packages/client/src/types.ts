@@ -647,6 +647,13 @@ export type ClientConfig = {
    */
   readonly timeout?: number;
   /**
+   * Milliseconds the reachability probe waits before it reads the pool as out
+   * of reach, shorter than a request's: a network that swallows requests
+   * rather than refusing them would otherwise read as answering for as long as
+   * one may take. Left out, three seconds.
+   */
+  readonly probeTimeout?: number;
+  /**
    * Where a failure with no caller waiting on it goes. A shell decides whether
    * that is a console, a log or something a person sees; unwired, these are
    * swallowed as they were before.
