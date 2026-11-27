@@ -1,7 +1,7 @@
 # Review: What no earlier review covered (PR #134)
 
 **Date**: 2026-11-27
-**Status**: Open
+**Status**: Resolved
 **Scope**: `git diff 8daabf34..origin/agent/offline-first-start-2`, which is three things. #131's last commit, `1a48ee30` (a replay of `886d2b35`, "opens at once"); #131 up to `bb9ece3e` was covered by [its review](installable-shell-pr-131-2026-11-25.md). #132's 16 commits after its review fixes, `6205018f..6d1a8160`; #132 up to `8daabf34` was covered by [its review](phone-ui-fixes-pr-132-2026-11-25.md). #134's own 8 commits, `3639e8c1..50418895`.
 **Plan**: `docs/plans/installable-shell.md` (phase 10), `docs/plans/phone-ui-fixes.md` (the rounds after its review), `docs/plans/offline-first-start.md`
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`, `docs/specs/security.md`
@@ -110,3 +110,19 @@ message describes neither. The PR body does, and history read later will not hav
 ---
 
 ## Resolution
+
+1. **Fixed** (`20194635`). A cache-drawn surface is drawn whole once the client's reach is no, as
+   well as once its read fails. client.md says so beside the rule it amends.
+2. **Fixed** (`d2122375`). The probe waits the request timeout only on a steady tick while the pool
+   answers. On start, on being looked at again, and while out of reach, it waits three seconds.
+   Narrowing it to the start alone, as the plan had it, would have brought the symptom back for a
+   shell the phone kept in the background and reopened. client.md is narrowed to match.
+3. **Fixed** (`f2ca8a33`). Signed out, the capture page stays drawn after each capture, its field
+   cleared for the next.
+4. **Won't fix.** Settling `drawn` on unmount would run the surface's after-draw step, which puts
+   the scroll back, against whatever page replaced it. A promise whose resolver nothing holds is
+   collected with the component.
+5. **Won't fix here.** The icon is the developer's to replace, before #134 merges.
+6. **Won't fix.** Rewording a pushed commit on a branch with an open PR needs a force-push. This
+   review and the PR body record what the commit carries.
+
