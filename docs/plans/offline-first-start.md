@@ -1,9 +1,9 @@
 # The shell starts offline-first
 
 **Date**: 2026-11-27
-**Status**: In progress
+**Status**: Done
 **Spec**: `docs/specs/shell.md`, `docs/specs/client.md`, `docs/specs/security.md`
-**Closed**:
+**Closed**: 2026-11-27
 
 ---
 
@@ -131,12 +131,12 @@ which would remove the check.
 
 ### Phase 5: finish
 
-- [ ] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`, `pnpm test:stack`.
-- [ ] `loop.mjs` in every mode (`offline`, `hang`, `stopped`, `lapsed`, each with and without
+- [x] `pnpm typecheck`, `pnpm -r --no-sort --silent test`, `pnpm lint`, `pnpm test:stack`.
+- [x] `loop.mjs` in every mode (`offline`, `hang`, `stopped`, `lapsed`, each with and without
       `NOKEPT=1`): the queue is drawn and reach is right within 3 s, or sign-in where signed out.
-- [ ] Hand the developer the on-device checklist: flight mode with Twingate, open from the icon and
+- [x] Hand the developer the on-device checklist: flight mode with Twingate, open from the icon and
       from the Capture shortcut, capture, come back online, signed-out capture.
-- [ ] Commit.
+- [x] Commit.
 
 ---
 

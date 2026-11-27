@@ -1,8 +1,11 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-26
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **The probe at start gives up after three seconds**, on its own clock rather than
+  the request timeout, and a session opening drains the outbox. ([plan](../plans/offline-first-start.md))
 
 - 2026-11-26 — **A surface come to is read from its first page**, and one drawn from the cache draws
   a page until the pool answers or fails to; a feed come back to no longer reads a page more.
