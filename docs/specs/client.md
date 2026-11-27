@@ -4,8 +4,10 @@
 **Last updated**: 2026-11-27
 **Shipped**:
 
-- 2026-11-27 — **The probe at start gives up after three seconds**, on its own clock rather than
-  the request timeout, and a session opening drains the outbox. ([plan](../plans/offline-first-start.md))
+- 2026-11-27 — **The probe gives up after three seconds** on start, on being looked at again and
+  while the pool is out of reach, on its own clock rather than the request timeout; a cache-drawn
+  surface is drawn whole once the pool is found out of reach; and a session opening drains the
+  outbox. ([plan](../plans/offline-first-start.md))
 
 - 2026-11-26 — **A surface come to is read from its first page**, and one drawn from the cache draws
   a page until the pool answers or fails to; a feed come back to no longer reads a page more.
@@ -1462,7 +1464,11 @@ no time is not known yet** *(2026-11-27)*, and a shell says so by saying nothing
 it — a VPN on a phone in flight mode — leaves the client optimistic for as long as a request may
 take, and the probe at start is what finds out. Three seconds is long for `GET /v1/health` and short
 for a person looking at a shell that says nothing; a probe that runs out reads as out of reach like
-any other, and the next answer from anything puts it back.
+any other, and the next answer from anything puts it back. **Not on a steady tick while the pool
+answers**, which waits the request timeout: there a slow network would read as one that went away
+and came back every ten seconds, each return a drain and a read of every cached surface. On start,
+on being looked at again — a phone reopens a shell it kept rather than starting one — and while the
+pool is out of reach, the probe waits three seconds.
 
 **The probe pauses while nobody is watching.** A client is told whether anyone is looking at what it
 draws ([CONTEXT.md](../../CONTEXT.md)); unwatched it asks nothing, and it asks once when it is

@@ -202,7 +202,7 @@ export function createClient(config: ClientConfig): Client {
     update: (change) => held.update((current) => retained(change(current))),
     changes: held.changes,
   };
-  const reach = reachability(() => askedHealth(), now);
+  const reach = reachability((quick) => askedHealth(quick), now);
 
   // The sessions object needs the api, and the api needs to tell it about a
   // 401, so the notice goes through a binding rather than through either.
@@ -360,13 +360,16 @@ export function createClient(config: ClientConfig): Client {
     if (ours !== undefined) report(new PoolChanged(ours, identity));
   }
 
-  async function askedHealth(): Promise<{
+  async function askedHealth(quick: boolean): Promise<{
     readonly yes: boolean;
     readonly version?: string;
   }> {
     try {
       const health = await answered(
-        api.GET("/v1/health", { signal: AbortSignal.timeout(probeTimeout) }),
+        api.GET(
+          "/v1/health",
+          quick ? { signal: AbortSignal.timeout(probeTimeout) } : {},
+        ),
       );
       const ours = state.get().pool;
       if (

@@ -30,10 +30,16 @@ export type Reachability = {
   stop(): void;
 };
 
-export function reachability(
-  probe: () => Promise<{ readonly yes: boolean; readonly version?: string }>,
-  now: () => string,
-): Reachability {
+/**
+ * `quick` asks the probe to give up soon rather than at the request timeout:
+ * everywhere but a steady tick while the pool answers, where a slow network
+ * would otherwise read as one that went away, and back, every ten seconds.
+ */
+export type Probe = (
+  quick: boolean,
+) => Promise<{ readonly yes: boolean; readonly version?: string }>;
+
+export function reachability(probe: Probe, now: () => string): Reachability {
   const reached = writable<Reach>({ yes: true });
   let waiting: ReturnType<typeof setTimeout> | undefined;
   let backoff = SOONEST;
@@ -76,15 +82,16 @@ export function reachability(
 
     waiting = setTimeout(() => {
       waiting = undefined;
-      void ask();
+      const current = reached.get();
+      void ask(!current.yes || current.at === undefined);
     }, wait);
   }
 
-  async function ask(): Promise<void> {
+  async function ask(quick = true): Promise<void> {
     if (stopped) return;
 
     const from = Date.now();
-    const answered = await probe().catch(
+    const answered = await probe(quick).catch(
       (): { readonly yes: boolean; readonly version?: string } => ({
         yes: false,
       }),
@@ -95,7 +102,7 @@ export function reachability(
   return {
     changes: reached.changes,
     answered: settle,
-    ask,
+    ask: () => ask(),
 
     watched(yes) {
       if (stopped || yes === watching) return;
