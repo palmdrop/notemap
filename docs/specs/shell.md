@@ -2757,6 +2757,12 @@ of them the same colour.)*
   it, being the only copy of what was written ([below](#the-status-line)). It is not drawn in the same shape as
   pending work.
 
+**Not known yet is said as nothing** *(added 2026-11-27)*. Until the pool has answered or failed
+to, and the browser has not said it is offline, the shell neither says `online` nor `offline`, and
+it draws no link preview. It acts as though the pool answers, which is what finds out. The client
+asks at start with a timeout of its own, so a network that swallows requests rather than refusing
+them reads `offline` within seconds rather than at the request timeout.
+
 **Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
 pool and holds no answer to — a read, a description, a preview, a route, a save — is drawn as
 **three small squares stepping**, one filled at a time, in ink, with no fade; under
@@ -3760,7 +3766,8 @@ while it is off **no request is made** and no block is drawn: no placeholder say
 withheld. A client that has not yet read the setting draws none and asks nothing. One whose copy is
 stale — the daemon answers that the setting is off — reads the pool settings again, and every block
 goes. **Offline, no block is drawn and nothing is asked** *(2026-11-27)*: every one would ask, wait
-and fold away, moving its row each time it is drawn. They come back once the pool answers.
+and fold away, moving its row each time it is drawn. They come back once the pool answers, and are
+not drawn before it is known whether it does.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
@@ -3783,8 +3790,19 @@ first visit, a page is the daemon's. Where the daemon does not answer, what the 
 daemon that went away while the shell was open. **Who is signed in is the last answer the pool gave
 this device** *(amended 2026-11-25, and 2026-11-26)*: kept on the device, it is what every start
 draws from until the pool answers — the queue the store holds, the capture page, and captures held
-to send. A daemon that hangs rather than refuses is not waited on. With nothing kept, the shell
-waits, as before. The pool's own answer replaces it whenever it comes. **A build being replaced keeps its files** until
+to send. A daemon that hangs rather than refuses is not waited on. **With nothing kept, nothing is
+waited on either** *(amended 2026-11-27; the shell waited before)*: the shell draws what the store
+holds and takes a capture, and the drawer names nobody until the pool says. Sign-in is drawn only
+on an answer that nobody is signed in, the pool's own or the one kept. The pool's own answer
+replaces it whenever it comes.
+
+**Signed out, the installed shell still captures** *(2026-11-27,
+[plan](../plans/offline-first-start.md))*. Its capture page is open behind the sign-in, and says
+over its bar that what it takes is held until someone signs in. A capture made there waits in the
+outbox as one made offline does, and is sent once a session opens, **whichever account opens it**:
+nothing on the device says whose it was, and a note sent to the one account a pool usually has is
+better than a note lost. Every other page still draws sign-in and nothing behind it. A shell in a
+browser tab captures only signed in, as before. **A build being replaced keeps its files** until
 the one after: a page still drawn from it asks for what it has not loaded yet, and offline nothing
 else could answer. The worker keeps nothing the pool says. `/v1` and
 `/docs` go to the network, or fail, as they would without it. So an image not captured on this

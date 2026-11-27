@@ -770,6 +770,11 @@ by the daemon from its own origin, carrying the same cookie. It reaches `/v1` th
   is not a credential: it decides only whether a start with no pool to ask draws from the store the
   device already holds, and the cookie still decides what the pool answers. A sign-out, or a session
   found lapsed, replaces it and drops the store as it always has.
+- **Signed out, the installed shell still takes a capture** *(2026-11-27)*. Whoever holds the
+  unlocked phone can write one, and it is sent under whoever signs in next, with nothing to say
+  who wrote it. Nothing of the pool's is shown to do it: the capture page draws only what is typed
+  there. Accepted, for a pool of one person on their own phone, over losing what was written while
+  a session had lapsed. A browser tab does not do this.
 - **Installing on Android passes the manifest through Google.** Chrome mints a *WebAPK* through
   Google's servers to register an installed app with the system, which is what puts it in the share
   sheet. The shell's name, icons, address and share target go there. Pool material does not. A
