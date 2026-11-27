@@ -1363,7 +1363,9 @@ a surface holding no rows the pool gave it is **drawn from the cache** instead o
   by that, and a **filtered** one holds only what meets its filter.
 - **A page of it, until the pool answers or fails to** *(2026-11-26)*. The cache keeps hundreds of
   items, and a shell drawing all of them on start was seconds of work on a phone for rows the first
-  page then replaced. Once a read has failed the whole of it is drawn, being all there is to read.
+  page then replaced. Once a read has failed the whole of it is drawn, being all there is to read,
+  **and so it is once the pool is found out of reach** *(2026-11-27)*: a read a network swallowed
+  fails only at the request timeout, long after the probe has said the pool is not answering.
 - **A cache-drawn surface is marked as one.** A shell that drew it as the pool's reading would tell
   a person that three rows means they are nearly done, so the state carries the claim and what a
   shell draws from it is [shell.md](shell.md)'s. *(Amended 2026-08-26: it draws nothing above the

@@ -1,4 +1,4 @@
-import { distinctUntilChanged, filter, map, skip } from "rxjs";
+import { combineLatest, distinctUntilChanged, filter, map, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createActions } from "./actions/actions";
@@ -133,16 +133,19 @@ function sameIds(
   return one.size === other.size && [...one].every((id) => other.has(id));
 }
 
-function listOf(state: ClientState, surface: Surface): ListState {
+function listOf(
+  state: ClientState,
+  surface: Surface,
+  answering: boolean,
+): ListState {
   const page = reading(state, surface);
   const drawn = fromCache(page);
   // Until the pool answers or fails to, what the cache holds stands in for the
-  // first page and no more of it.
+  // first page and no more of it. A pool found out of reach has failed to,
+  // whatever its read is still waiting on.
+  const whole = page.failure !== undefined || !answering;
   const items = drawn
-    ? drawnFrom(state, surface).slice(
-        0,
-        page.failure === undefined ? PAGE : undefined,
-      )
+    ? drawnFrom(state, surface).slice(0, whole ? undefined : PAGE)
     : page.ids
         .map((id) => state.items.get(id))
         .filter((item): item is Item => item !== undefined);
@@ -312,12 +315,13 @@ export function createClient(config: ClientConfig): Client {
   // The watcher keeps its own tempo, and only the gates are the client's to
   // hold: it asks nothing while nobody is reading and nothing while the pool
   // is not answering.
-  const onReach = reach.changes
-    .pipe(
-      map((mark) => mark.yes),
-      distinctUntilChanged(),
-    )
-    .subscribe((yes) => actions.answering(yes));
+  /** Whether the pool answers, apart from when it last did. */
+  const answering = reach.changes.pipe(
+    map((mark) => mark.yes),
+    distinctUntilChanged(),
+  );
+
+  const onReach = answering.subscribe((yes) => actions.answering(yes));
 
   /**
    * Hydration is started here and waited on by everything that touches state,
@@ -595,13 +599,13 @@ export function createClient(config: ClientConfig): Client {
     accounts: createAccounts({ api }),
 
     feed: derived(
-      state.changes,
-      (current) => listOf(current, "feed"),
+      combineLatest([state.changes, answering]),
+      ([current, yes]) => listOf(current, "feed", yes),
       sameList,
     ),
     queue: derived(
-      state.changes,
-      (current) => listOf(current, "queue"),
+      combineLatest([state.changes, answering]),
+      ([current, yes]) => listOf(current, "queue", yes),
       sameList,
     ),
     outbox: derived(state.changes, (current) => current.outbox),

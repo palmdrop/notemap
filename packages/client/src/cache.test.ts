@@ -49,13 +49,50 @@ describe("a surface drawn from the cache", () => {
       ),
     );
 
-    const { client, transport } = clientOver(store, nothing);
-    transport.unreachable(true);
+    // Nothing has answered yet, nor failed to.
+    const { client, transport } = clientOver(
+      store,
+      () => new Promise<Response>(() => undefined),
+    );
+    transport.health = null;
     await until(() => ids(read(client.feed)).length > 0);
     expect(ids(read(client.feed))).toHaveLength(PAGE);
 
+    transport.unreachable(true);
     await client.enter("feed");
     await until(() => read(client.feed).failure !== undefined);
+    expect(ids(read(client.feed))).toHaveLength(PAGE * 2);
+  });
+
+  it("draws all of it once the probe finds the pool out of reach, while a read still hangs", async () => {
+    const store = createMemoryStore();
+    await store.writeItems(
+      [...Array(PAGE * 2).keys()].map((year) =>
+        at(`at-${String(year)}`, 2000 + year),
+      ),
+    );
+
+    // Hangs as a swallowed request does, and gives up when told to, as fetch does.
+    const transport = mockTransport(
+      (request) =>
+        new Promise<Response>((_, reject) =>
+          request.signal.addEventListener("abort", () =>
+            reject(request.signal.reason),
+          ),
+        ),
+    );
+    transport.health = null;
+    const client = createClient({
+      transport,
+      store,
+      now: clock.now,
+      probeTimeout: 20,
+    });
+    built.push(client);
+    void client.enter("feed");
+
+    await until(() => read(client.reachable).yes === false);
+    expect(read(client.feed).failure).toBeUndefined();
     expect(ids(read(client.feed))).toHaveLength(PAGE * 2);
   });
 
