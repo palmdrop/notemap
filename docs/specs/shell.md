@@ -1,8 +1,14 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-26
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **Starts offline-first.** Nothing waits on knowing who is signed in: the store is
+  drawn at once, and sign-in only on an answer that nobody is. Reach is said only once known, and a
+  network that swallows requests reads `offline` within seconds. Signed out, the installed shell
+  still captures, held until someone signs in. Rows lay the page out once per change, and link
+  previews are not drawn offline. See [offline-first-start](../plans/offline-first-start.md).
 
 - 2026-11-26 — **Opens at once.** Every page is drawn from the kept shell, without waiting on
   the daemon, and from who was last signed in here. A newer build is fetched and kept in the

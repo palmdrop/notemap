@@ -1,8 +1,11 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-11-25
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **Signed out, the installed shell still takes a capture**, sent under whoever
+  signs in next. See [offline-first-start](../plans/offline-first-start.md).
 
 - 2026-11-25 — **An installed shell is still the same origin.** A service worker keeps the shell's
   files and nothing of the pool's, a share is held on the device until the capture page takes it,

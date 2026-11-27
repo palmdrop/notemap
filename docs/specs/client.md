@@ -1,8 +1,11 @@
 # Spec: The client
 
 **Status**: Draft — the online contract is settled; the offline protocol is being built through the seam
-**Last updated**: 2026-11-24
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **The probe at start gives up after three seconds**, on its own clock rather than
+  the request timeout, and a session opening drains the outbox. ([plan](../plans/offline-first-start.md))
 
 - 2026-11-23 — **The tags in use are read again after a capture, an edit or a batch that carries
   one**, not only after a tag or an untag. ([plan](../plans/phone-first-shell.md))
