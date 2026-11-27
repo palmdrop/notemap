@@ -266,7 +266,7 @@
         >
           {#if shut}
             <SignIn />
-          {:else if who.known}
+          {:else}
             {@render children()}
           {/if}
         </Column>

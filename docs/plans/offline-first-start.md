@@ -100,11 +100,11 @@ reach draws neither word. `/tmp/nm-loop/loop.mjs` with `MODE=hang` says `offline
 
 Depends on: phase 1. Independent of phase 2.
 
-- [ ] The layout draws its page while the session is unknown, from the store. Only a known
+- [x] The layout draws its page while the session is unknown, from the store. Only a known
       signed-out answer draws sign-in.
-- [ ] The drawer says nothing for who is signed in while it is unknown, rather than
+- [x] The drawer says nothing for who is signed in while it is unknown, rather than
       `no password set`.
-- [ ] Commit.
+- [x] Commit.
 
 **Verify:** layout tests: no session answer and no kept answer draws the queue from the store and
 the capture page; a kept signed-out answer draws sign-in. `loop.mjs` with `NOKEPT=1` in both

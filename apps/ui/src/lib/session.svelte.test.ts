@@ -4,6 +4,7 @@ import { afterEach, expect, test, vi } from "vitest";
 
 import { json, routeOf } from "@notemap/client/testing";
 
+import { viewport } from "$testing/dom";
 import { pool } from "$testing/pool";
 import Layout from "../routes/+layout.svelte";
 
@@ -61,14 +62,31 @@ test("started with no pool to ask, draws what the device holds from the answer k
   expect(screen.queryByRole("button", { name: /sign in/i })).toBeNull();
 });
 
-test("started with no pool to ask and nothing kept, draws neither the surface nor a login", async () => {
+test("started with no pool to ask and nothing kept, draws the surface at once and no login", () => {
   pool(unreachable);
 
   start();
 
-  await new Promise((resolve) => setTimeout(resolve, 50));
-  expect(screen.queryByText("the surface")).toBeNull();
+  expect(screen.getByText("the surface")).toBeDefined();
   expect(screen.queryByRole("button", { name: /sign in/i })).toBeNull();
+});
+
+test("started with a pool that does not answer and nothing kept, draws the surface at once", () => {
+  pool(() => new Promise<Response>(() => undefined));
+
+  start();
+
+  expect(screen.getByText("the surface")).toBeDefined();
+});
+
+test("names nobody until it is known who this is", async () => {
+  viewport(1280);
+  pool(() => new Promise<Response>(() => undefined));
+
+  start();
+
+  await new Promise((resolve) => setTimeout(resolve, 50));
+  expect(screen.queryByText(/no password set|signed (in|out)/)).toBeNull();
 });
 
 test("a kept answer that was signed out draws the login, not the surface", async () => {
