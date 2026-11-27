@@ -34,6 +34,25 @@ test("takes the browser's offline as a second no", async () => {
   expect(await screen.findByText("offline")).toBeDefined();
 });
 
+test("is not known until the pool answers, or the browser says it is offline", async () => {
+  let answer: (response: Response) => void = () => undefined;
+  pool(() => new Promise<Response>((resolve) => (answer = resolve)));
+
+  render(Fixture);
+  expect(screen.getByText("not known")).toBeDefined();
+
+  answer(json(200, { status: "ok", version: "1" }));
+  expect(await screen.findByText("reachable")).toBeDefined();
+});
+
+test("takes the browser's offline as known at once", () => {
+  pool(() => new Promise<Response>(() => undefined));
+  online(false);
+
+  render(Fixture);
+  expect(screen.getByText("offline")).toBeDefined();
+});
+
 test("wires the browser's listeners once, however many surfaces read them", async () => {
   pool(() => json(200, { values: [] }));
 

@@ -160,6 +160,9 @@ function listOf(state: ClientState, surface: Surface): ListState {
  */
 const TIMEOUT_MS = 30_000;
 
+/** Long for `GET /v1/health`, and short for a person looking at a shell that says nothing. */
+const PROBE_TIMEOUT_MS = 3_000;
+
 /** What one read of several items may name. */
 const MOST_IDS = 100;
 
@@ -176,6 +179,7 @@ function timeoutOf(config: ClientConfig): number {
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const timeout = timeoutOf(config);
+  const probeTimeout = config.probeTimeout ?? PROBE_TIMEOUT_MS;
   const now = config.now ?? (() => new Date().toISOString());
   // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
   // counts them east of it.
@@ -346,7 +350,9 @@ export function createClient(config: ClientConfig): Client {
     readonly version?: string;
   }> {
     try {
-      const health = await answered(api.GET("/v1/health"));
+      const health = await answered(
+        api.GET("/v1/health", { signal: AbortSignal.timeout(probeTimeout) }),
+      );
       const ours = state.get().pool;
       if (
         ours !== undefined &&

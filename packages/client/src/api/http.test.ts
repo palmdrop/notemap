@@ -221,3 +221,35 @@ describe("a request against a pool that never answers", () => {
     client.close();
   });
 });
+
+describe("a pool that swallows requests rather than refusing them", () => {
+  it("reads as out of reach once the probe at start gives up, long before a request would", async () => {
+    const client = createClient({
+      transport: createFetchTransport(await accepting()),
+      store: createMemoryStore(),
+      timeout: 20_000,
+      probeTimeout: 200,
+    });
+    const marks: boolean[] = [];
+    const watching = client.reachable.subscribe((mark) => marks.push(mark.yes));
+
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+
+    expect(marks[0]).toBe(true);
+    expect(marks).toContain(false);
+    watching.unsubscribe();
+    client.close();
+  });
+
+  it("gives up on a request at its own signal, under a longer limit", async () => {
+    const api = createApi(createFetchTransport(await accepting()), {
+      timeout: 20_000,
+    });
+
+    const started = Date.now();
+    await expect(
+      answered(api.GET("/v1/health", { signal: AbortSignal.timeout(100) })),
+    ).rejects.toThrow();
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+});

@@ -229,7 +229,7 @@
       {/if}
       <div class="mt-auto">
         <Reach
-          reachable={pool.yes}
+          reachable={pool.known ? pool.yes : undefined}
           at={pool.at}
           who={who.who}
           compact={!width.full}
@@ -281,7 +281,7 @@
     current={page.url.pathname}
     queue={$queue}
     {waiting}
-    reachable={pool.yes}
+    reachable={pool.known ? pool.yes : undefined}
     at={pool.at}
     who={who.who}
     onclose={() => (drawer = false)}
