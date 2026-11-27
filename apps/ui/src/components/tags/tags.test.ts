@@ -418,6 +418,7 @@ test("opens a new filter at the top, not where the list shrinking under it scrol
   await tick();
   Object.defineProperty(window, "scrollY", { configurable: true, value: 500 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
   vi.mocked(window.scrollTo).mockClear();
   release();
 

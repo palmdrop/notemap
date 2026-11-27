@@ -155,7 +155,9 @@
   transition:slide={{ fade: true, still: !heard }}
   {@attach heard && following}
 >
-  <div class="col-span-full grid grid-cols-subgrid border-b border-rule">
+  <div
+    class="col-span-full grid grid-cols-subgrid self-start border-b border-rule"
+  >
     <Rail>
       <Stamp at={action.at} dated={false} />
     </Rail>

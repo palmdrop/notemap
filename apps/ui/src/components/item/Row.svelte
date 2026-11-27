@@ -518,7 +518,7 @@
       swiped.shut();
     }}
     style:translate={offset === 0 ? undefined : `${String(offset)}px 0`}
-    class="relative col-span-full grid min-h-row scroll-mt-held grid-cols-subgrid border-b border-rule {swipes
+    class="relative col-span-full grid min-h-row scroll-mt-held grid-cols-subgrid self-start border-b border-rule {swipes
       ? 'touch-pan-y'
       : ''} {swipe === undefined
       ? 'transition-[background-color,translate]'

@@ -14,29 +14,50 @@ export const FULL_PX = 1200;
  * the page out again wherever anything has changed since, and a list redrawn
  * reads it once a row.
  */
-let measured = typeof window === "undefined" ? 0 : window.innerWidth;
+let across = typeof window === "undefined" ? 0 : window.innerWidth;
 if (typeof window !== "undefined") {
-  on(window, "resize", () => (measured = window.innerWidth));
+  on(window, "resize", () => (across = window.innerWidth));
 }
 
 export function wide(): boolean {
-  return measured >= WIDE_PX;
+  return across >= WIDE_PX;
 }
 
 export function full(): boolean {
-  return measured >= FULL_PX;
+  return across >= FULL_PX;
 }
 
-const resized = createSubscriber((update) => on(window, "resize", update));
+type Form = { readonly wide: boolean; readonly full: boolean };
+
+const form = (): Form => ({ wide: wide(), full: full() });
+
+/** The form readers were last woken for, while anything reads it. */
+let held: Form | undefined;
+
+// A phone resizes as it scrolls: every row woken on every resize was the whole
+// cost of a scroll, so readers are woken only when a breakpoint is crossed.
+const crossed = createSubscriber((update) => {
+  held = form();
+  const off = on(window, "resize", () => {
+    const now = form();
+    if (now.wide === held?.wide && now.full === held.full) return;
+    held = now;
+    update();
+  });
+  return () => {
+    off();
+    held = undefined;
+  };
+});
 
 /** The width's form, read reactively: a piece re-draws as the window crosses a breakpoint. */
 export const width = {
   get wide(): boolean {
-    resized();
+    crossed();
     return wide();
   },
   get full(): boolean {
-    resized();
+    crossed();
     return full();
   },
 };

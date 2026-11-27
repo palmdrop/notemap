@@ -579,6 +579,7 @@ test("puts the view back where the reader left it to read one item", async () =>
   await screen.findByText("one");
   Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   cleanup();
   arriving("popstate");
@@ -598,6 +599,7 @@ test("keeps the place it was left at while it is drawn, whatever scrolls meanwhi
   await screen.findByText("row-0");
   Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   cleanup();
   arriving("popstate");
@@ -605,6 +607,7 @@ test("keeps the place it was left at while it is drawn, whatever scrolls meanwhi
   // The page put back where it was, while it is still only a skeleton tall.
   Object.defineProperty(window, "scrollY", { configurable: true, value: 40 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   await screen.findByText("row-0");
   await vi.waitFor(() => {
@@ -620,6 +623,7 @@ test("comes to the feed at the top, read again from its first page", async () =>
   await screen.findByText("one");
   Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   cleanup();
   render(Feed);

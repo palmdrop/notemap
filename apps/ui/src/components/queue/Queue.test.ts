@@ -119,10 +119,11 @@ async function discard() {
   await run("discard");
 }
 
-/** Where the person had scrolled, as the browser would report it. */
-function scrolledTo(at: number) {
+/** Where the person had scrolled to and come to rest, as the browser would report it. */
+async function scrolledTo(at: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: at });
-  return fireEvent.scroll(window);
+  await fireEvent.scroll(window);
+  return fireEvent(window, new Event("scrollend"));
 }
 
 test("puts the view back where the person left it, and reads the queue again", async () => {
