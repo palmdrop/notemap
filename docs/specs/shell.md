@@ -3878,7 +3878,9 @@ replaces it whenever it comes.
 
 **Signed out, the installed shell still captures** *(2026-11-27,
 [plan](../plans/offline-first-start.md))*. Its capture page is open behind the sign-in, and says
-over its bar that what it takes is held until someone signs in. A capture made there waits in the
+over its bar that what it takes is held until someone signs in, and stays drawn after each
+capture, ready for the next, rather than going on to a queue that would be the sign-in. A capture
+made there waits in the
 outbox as one made offline does, and is sent once a session opens, **whichever account opens it**:
 nothing on the device says whose it was, and a note sent to the one account a pool usually has is
 better than a note lost. Every other page still draws sign-in and nothing behind it. A shell in a

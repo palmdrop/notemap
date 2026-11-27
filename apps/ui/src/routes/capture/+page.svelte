@@ -72,6 +72,7 @@
   told={told ?? (who.shut ? HELD : undefined)}
   oncaptured={(item) => {
     sayLanded(item, $queue.order);
-    void goto(resolve("/"));
+    // Signed out, the queue is the sign-in: the page stays for the next note.
+    if (!who.shut) void goto(resolve("/"));
   }}
 />

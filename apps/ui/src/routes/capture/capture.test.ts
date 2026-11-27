@@ -1,6 +1,6 @@
 import { File as NodeFile } from "node:buffer";
 
-import { render, screen, waitFor } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 import { json } from "@notemap/client/testing";
@@ -13,9 +13,10 @@ import CapturePage from "./+page.svelte";
 
 const at = vi.hoisted(() => ({ url: "http://localhost/capture" }));
 const replaced = vi.hoisted(() => ({ urls: [] as string[] }));
+const went = vi.hoisted(() => ({ to: [] as string[] }));
 
 vi.mock("$app/navigation", () => ({
-  goto: () => undefined,
+  goto: (to: string) => went.to.push(to),
   replaceState: (url: string | URL) => replaced.urls.push(String(url)),
 }));
 vi.mock("$app/paths", () => ({ resolve: (path: string) => path }));
@@ -36,6 +37,7 @@ beforeEach(() => {
 afterEach(() => {
   at.url = "http://localhost/capture";
   replaced.urls = [];
+  went.to = [];
   clearDraft();
   vi.unstubAllGlobals();
 });
@@ -92,5 +94,49 @@ test("signed out, says that what it takes is held until someone signs in", async
     expect(said()).toContain(
       "Signed out. What you capture is held until someone signs in.",
     );
+  });
+});
+
+test("signed out, stays on the page after a capture, ready for the next", async () => {
+  pool((request) => {
+    const path = new URL(request.url).pathname;
+    if (path === "/v1/session") {
+      return json(200, { authenticated: false, requiresCredentials: true });
+    }
+    return path === "/v1/captures"
+      ? json(401, { error: { code: "unauthenticated" } })
+      : json(200, { values: [] });
+  });
+  render(CapturePage);
+  await waitFor(() => {
+    expect(said()).toContain(
+      "Signed out. What you capture is held until someone signs in.",
+    );
+  });
+
+  const written = screen.getByLabelText(
+    "What to capture",
+  ) as HTMLTextAreaElement;
+  await fireEvent.input(written, { target: { value: "a note for later" } });
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => {
+    expect(written.value).toBe("");
+  });
+  expect(went.to).toEqual([]);
+});
+
+test("signed in, goes to the queue after a capture", async () => {
+  pool(() => json(200, { values: [] }));
+  render(CapturePage);
+
+  const written = screen.getByLabelText(
+    "What to capture",
+  ) as HTMLTextAreaElement;
+  await fireEvent.input(written, { target: { value: "a note" } });
+  await fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => {
+    expect(went.to).toEqual(["/"]);
   });
 });
