@@ -2,21 +2,18 @@
 
 ## Shell — layout and interaction
 
-- [x] destination fields should provide succinct placeholder texts
+- [ ] misc new design fixes:
+    - when sliding on mobile, sliding can happen even when scrolling, making capture rows look jittery
+    - sliding has no velocity, a quick flick does not slide open action menu - is there a library for this?
+    - sliding left for routing shows only routing icon, no text, unlike the actions when sliding right 
+    - always a layout shift on unfurl, even when there is data to show, looks like placeholder text is replaced by image. Also, when there is no image, unfurled link shows empty space - either we show no image at all or we add a visible placeholder image.
+    - search bar on mobile is just underline, looks like old design.
+    - no visual indication on capture row when marking something manual, not on desktop and not on mobile
+    - some options are no longer visible, like copying on hover, could be an icon?
+    - on a fresh load, queue/feed sometimes shows the load more icon that shows at the bottom of the view when the user scrolls faster than content can show. On a fresh load, it should not show, we should get skeleton or just a blank feed until it loads in. Also, when seeing the load more button, it should be centered.
+    - when hovering tags in the filter panel, the text becomes bolded, which is probably a remnant from the old design. The tags in that view act as multi-choice buttons, they should not change unless clicked.
 
-- [x] fuzzy search for captures, feed, tags, other views — the queue, the feed and the archive are
-      searched by their words, forgiving of case and accents
-      ([plan](plans/features-from-the-mobile-rethink.md)). Not done: typo-tolerant or ranked
-      search, and search in the log, settings or tags.
-
-- [ ] mobile view improvements (this might be deferred until we do the app?):
-    - action button for adding a new capture
-    - full-screen for editing and capturing
-    - tag input using a centered input field and expandable
-    - bottom bar for switching views
-
-- [x] batch processing, i.e selecting many captures and routing them all at once, or discarding
-    - batch processing by tag, i.e route all items tagged with a specific tag to a location. Default: only unprocessed item. Checkbox for ALL items in the feed.
+- [ ] show tags, templates, etc, by recency/frequency score, so that often-used items are easily accessible. Especially important on mobile.
 
 - [ ] command palette
 
@@ -35,12 +32,6 @@
   fix; this is the note that it is now reachable by anyone who reads far back, and that whatever
   bounds a drawn surface has to leave the auto-read working (a windowed page re-reading what it
   dropped as the reader scrolls back).
-
-- [x] drag-and-drop for adding assets ([plan](plans/drag-in-attachments.md))
-
-- [x] highlight things that match the search
-
-- [x] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
 
 - [ ] **Virtualise the lists?** A list come back to builds every row walked before its place can be
   scrolled to: 175 rows took about a second at 6× CPU on 2026-11-26, behind a skeleton. Drawing only
@@ -64,12 +55,6 @@
 - [ ] auto-route from relay to destination, for example, configure are.na inbox -> notemap -> template -> destination
 
 - [ ] a proper file-picker library would be ideal, or a more traditional file picker/navigation flow at least, while still allowing text-first input
-
-- [x] Composer findings left out of [path-picking-and-enter](plans/path-picking-and-enter.md)
-  ([plan](plans/under-files-where-typed.md)):
-  - a half-typed heading in `under` (`Ne`) is taken as the heading it prefixes (`## Next`), and
-    nothing says so before the route
-  - `↑↓` after taking a folder starts at the top of the whole tree, not inside the folder just taken
 
 - [ ] Consider a picker for a destination's root, in the destination form. Today `root` is typed
   freely. Nothing can be listed before a destination exists, so it needs a listing that does not
@@ -107,11 +92,6 @@
   somebody has lived with one number and found it wrong in both directions.
 
 ## Seeing what happened — log, routing records, revisions
-
-- [x] Group a batch's entries in the log ([plan](plans/batch-in-the-log.md)). Every entry a batch writes carries its batch id from the
-  first batch on ([batch-processing](plans/batch-processing.md)), but the log and the status line
-  still draw them one by one. Open: whether a batch is drawn collapsed into one line that opens to
-  its entries, and whether the log route can be read by batch.
 
 - [ ] **Decide whether the shell rewrites a processed note.** A row offers `edit` only while its
   item is unprocessed, in the queue and the feed alike, so the shell never sets out to make a
@@ -250,6 +230,8 @@
   drawing side, not the capture time.
 
 - [ ] linux notemap inbox similar to raycast, short command, tui maybe, to input, same features as the raycast command.
+
+- [ ] are.na relay: maybe do not push edits as revisions? often, ingestion is a one-time occurrence
 
 ## Pool, store and correctness
 
