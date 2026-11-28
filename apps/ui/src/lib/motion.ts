@@ -68,11 +68,19 @@ export function bezier(said: string): ((t: number) => number) | undefined {
   };
 }
 
+/**
+ * Taken before Svelte's own transitions are asked, which read the node's style
+ * even for no time at all: a page of rows arriving from a read is drawn still,
+ * and each read would lay the page out again behind the row before it.
+ */
+const STILL = { duration: 0, easing: (t: number) => t } as const;
+
 function timing(
   { magnitude = "long", still = false }: Moving = {},
   curve: "motion" | "fade" = "motion",
 ) {
-  return { duration: still ? 0 : duration(magnitude), easing: easing(curve) };
+  if (still) return STILL;
+  return { duration: duration(magnitude), easing: easing(curve) };
 }
 
 /**
@@ -83,6 +91,7 @@ export function slide(
   node: Element,
   params: Moving & { fade?: boolean; axis?: "x" | "y" } = {},
 ): TransitionConfig {
+  if (params.still === true) return STILL;
   const moved = sliding(node, { ...timing(params), axis: params.axis ?? "y" });
   if (params.fade !== true) return moved;
   const css = moved.css;
@@ -100,6 +109,7 @@ export function unfold(
   node: Element,
   params: Moving & { fade?: boolean } = {},
 ): TransitionConfig {
+  if (params.still === true) return STILL;
   const parent = node.parentElement;
   const stacked =
     parent !== null &&
@@ -124,6 +134,7 @@ export function drawOut(node: Element, params: Moving = {}): TransitionConfig {
 }
 
 export function fade(node: Element, params: Moving = {}): TransitionConfig {
+  if (params.still === true) return STILL;
   return fading(node, timing({ magnitude: "short", ...params }, "fade"));
 }
 
@@ -159,6 +170,7 @@ export function pinned(
 
 /** Arriving from the side it is read from: a line that has something new to say. */
 export function arrive(node: Element, params: Moving = {}): TransitionConfig {
+  if (params.still === true) return STILL;
   return fly(node, { ...timing(params), x: -ARRIVE });
 }
 
@@ -209,6 +221,7 @@ export async function settled(node: Element): Promise<void> {
 
 /** Fading in from a little below where it comes to rest. */
 export function rise(node: Element, params: Moving = {}): TransitionConfig {
+  if (params.still === true) return STILL;
   return fly(node, { ...timing(params), y: RISE });
 }
 
@@ -221,13 +234,13 @@ const GROWING = "growing";
  * a `more` opened, and whatever `following` sees change. One already growing is
  * turned toward the new height from wherever it stands.
  */
-export function grow(node: HTMLElement, from: number): void {
+export function grow(node: HTMLElement, from: number, to?: number): void {
   const time = duration("short");
   if (time === 0 || typeof node.animate !== "function") return;
   for (const moving of node.getAnimations()) {
     if (moving.id === GROWING) moving.cancel();
   }
-  const to = node.offsetHeight;
+  to ??= node.offsetHeight;
   if (to === from) return;
   // Clipped on the one axis that moves: `hidden` would clip across too, and a
   // selected row's box reaches outside its columns.
@@ -273,31 +286,73 @@ export function revealed(node: HTMLImageElement): () => void {
  * box stands when a change lands mid-way. The child is what is measured and the
  * box what moves, so a change mid-way is never mistaken for the box's own
  * motion. A change of width is the window's, and moves nothing.
+ *
+ * The child must not stretch to the box — `self-start` in a grid or a flex
+ * box — or every frame of the box's growth reads as a change of its own.
  */
 export function following(node: HTMLElement): () => void {
   const content = node.firstElementChild;
   if (!(content instanceof HTMLElement)) return () => undefined;
 
-  let height: number | undefined;
-  let width: number | undefined;
+  followed.set(content, { node, content });
+  watching ??= new ResizeObserver(heard);
+  watching.observe(content);
+  return () => {
+    watching?.unobserve(content);
+    followed.delete(content);
+  };
+}
 
-  const watching = new ResizeObserver(() => {
-    const was = height;
-    const across = width;
-    height = content.offsetHeight;
-    width = content.offsetWidth;
-    if (was === undefined || across !== width || was === height) return;
+type Follower = {
+  readonly node: HTMLElement;
+  readonly content: HTMLElement;
+  height?: number;
+  width?: number;
+};
+
+type Growth = {
+  readonly node: HTMLElement;
+  readonly content: HTMLElement;
+  readonly from: number;
+  readonly to: number;
+};
+
+const followed = new WeakMap<Element, Follower>();
+
+// One observer for every box, its sizes the observer's own, every one read
+// before any box starts to grow: each growth started dirties the layout the
+// next row's read would otherwise have to lay out again.
+let watching: ResizeObserver | undefined;
+
+function heard(entries: readonly ResizeObserverEntry[]): void {
+  const growths: Growth[] = [];
+  for (const { target, borderBoxSize } of entries) {
+    const follower = followed.get(target);
+    const size = borderBoxSize[0];
+    if (follower === undefined || size === undefined) continue;
+    const { node, content } = follower;
+    const was = follower.height;
+    const across = follower.width;
+    follower.height = Math.round(size.blockSize);
+    follower.width = Math.round(size.inlineSize);
+    if (was === undefined || across !== follower.width) continue;
+    if (was === follower.height) continue;
     // A box inside already grows toward the same height, and the content's
     // every frame of it would otherwise restart this one a frame behind.
-    if (growingWithin(content)) return;
+    if (growingWithin(content)) continue;
     const moving =
       typeof node.getAnimations === "function" &&
       node.getAnimations().length > 0;
-    grow(node, moving ? node.getBoundingClientRect().height : was);
-  });
+    const from = moving ? node.getBoundingClientRect().height : was;
+    growths.push({ node, content, from, to: follower.height });
+  }
 
-  watching.observe(content);
-  return () => watching.disconnect();
+  for (const growth of growths) {
+    const inner = growths.some(
+      (other) => other !== growth && growth.content.contains(other.node),
+    );
+    if (!inner) grow(growth.node, growth.from, growth.to);
+  }
 }
 
 function growingWithin(content: HTMLElement): boolean {
@@ -404,6 +459,7 @@ export function fromSide(
  * time travelling, half closing, so the gap never opens before the row is gone.
  */
 export function leave(node: Element, params: Moving = {}): TransitionConfig {
+  if (params.still === true) return STILL;
   const { duration: time, easing: curve } = timing(params);
   const height = node.getBoundingClientRect().height;
   return {

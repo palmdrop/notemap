@@ -128,7 +128,7 @@
     {@attach following}
   >
     <div
-      class="col-span-full grid grid-cols-subgrid {line.gap
+      class="col-span-full grid grid-cols-subgrid self-start {line.gap
         ? 'pt-[var(--spacing-gap-time)]'
         : ''}"
     >

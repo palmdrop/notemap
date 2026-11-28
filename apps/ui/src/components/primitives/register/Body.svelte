@@ -44,6 +44,6 @@
     {@render children?.()}
   </div>
   {#if aside !== undefined}
-    <div class="hidden w-24 flex-none wide:block">{@render aside()}</div>
+    <div class="hidden w-52 flex-none wide:block">{@render aside()}</div>
   {/if}
 </div>

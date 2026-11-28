@@ -12,6 +12,7 @@
   import Asking from "$components/primitives/marks/Asking.svelte";
   import { commits } from "$lib/command/keys";
   import { nameOf } from "$lib/destinations";
+  import { caretFollows } from "$lib/caret";
   import { client } from "$lib/client";
   import {
     completed,
@@ -377,7 +378,7 @@
   function open(entry: CandidateEntry): void {
     if (entry.scope === undefined) {
       if (entry.value !== undefined) took(takenAs(entry, keeps));
-      input?.focus();
+      if (caretFollows()) input?.focus();
       return;
     }
     filter = undefined;
@@ -389,7 +390,7 @@
         ...(entry.value === undefined ? {} : { value: String(entry.value) }),
       },
     ];
-    input?.focus();
+    if (caretFollows()) input?.focus();
   }
 
   function back(): void {

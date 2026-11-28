@@ -4718,6 +4718,43 @@ test("on a phone the steps come one at a time: where, then the place, then the c
   expect(onScreen()).toEqual(["place"]);
 });
 
+test("on a phone back takes a step back before it leaves the route", async () => {
+  const watching: { onclose: (() => void) | null; destroyed: boolean }[] = [];
+  vi.stubGlobal(
+    "CloseWatcher",
+    class {
+      onclose: (() => void) | null = null;
+      destroyed = false;
+      constructor() {
+        watching.push(this);
+      }
+      destroy() {
+        this.destroyed = true;
+      }
+    },
+  );
+  const open = () => watching.filter((one) => !one.destroyed);
+  viewport(390);
+  serving([aDestination()]);
+  draw();
+
+  await screen.findByRole("button", { name: "Vault" });
+  expect(open()).toHaveLength(0);
+
+  await choose("Vault");
+  await vi.waitFor(() => expect(onScreen()).toEqual(["place"]));
+  await fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(onScreen()).toEqual(["check"]);
+  expect(open()).toHaveLength(1);
+
+  open()[0]?.onclose?.();
+  await vi.waitFor(() => expect(onScreen()).toEqual(["place"]));
+  open()[0]?.onclose?.();
+  await vi.waitFor(() => expect(onScreen()).toEqual(["where"]));
+  expect(open()).toHaveLength(0);
+  vi.unstubAllGlobals();
+});
+
 test("on a phone a template that fixes its place goes from where to the check", async () => {
   viewport(390);
   servingTemplates();

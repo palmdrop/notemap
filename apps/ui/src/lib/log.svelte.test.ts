@@ -3,7 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import type { Action } from "@notemap/client";
 import { json, refusal, routeOf } from "@notemap/client/testing";
 
-import { asked, pool } from "$testing/pool";
+import { asked, pool, sentUrls } from "$testing/pool";
 import { log } from "./log.svelte";
 
 afterEach(() => {
@@ -48,6 +48,25 @@ test("keeps a page it has answered rather than reading it again", async () => {
   // Coming back to a surface is not a reason to throw away a long walk.
   log.reading("newest-first", undefined);
   expect(reads()).toBe(1);
+});
+
+test("reads from the first page again when it is come to rather than come back to", async () => {
+  answering([anAction("one")], `/v1/actions?after=${AT},one`);
+
+  log.reading("newest-first", undefined);
+  await settled();
+  log.next();
+  await settled();
+  expect(reads()).toBe(2);
+  expect(log.rows).toHaveLength(1);
+
+  log.reading("newest-first", undefined, undefined, undefined, true);
+  await settled();
+  expect(reads()).toBe(3);
+  const last = sentUrls()
+    .filter((url) => url.includes("/v1/actions"))
+    .at(-1);
+  expect(new URL(last ?? "http://x").searchParams.has("after")).toBe(false);
 });
 
 /**

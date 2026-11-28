@@ -1,8 +1,39 @@
 # Spec: The web shell
 
 **Status**: Implemented
-**Last updated**: 2026-11-24
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **Starts offline-first.** Nothing waits on knowing who is signed in: the store is
+  drawn at once, and sign-in only on an answer that nobody is. Reach is said only once known, and a
+  network that swallows requests reads `offline` within seconds. Signed out, the installed shell
+  still captures, held until someone signs in. Rows lay the page out once per change, and link
+  previews are not drawn offline. See [offline-first-start](../plans/offline-first-start.md).
+
+- 2026-11-26 — **Opens at once.** Every page is drawn from the kept shell, without waiting on
+  the daemon, and from who was last signed in here. A newer build is fetched and kept in the
+  background, and offered once it is. The installed shell offers a Capture shortcut. See [installable-shell](../plans/installable-shell.md).
+
+- 2026-11-25 — **Phone fixes from the first days on a device**
+  ([plan](../plans/phone-ui-fixes.md)). A tapped filter sheet leaves the keyboard down; the tag offer
+  opens on the roomier side of its line and fits above the keyboard; the capture page is the view's
+  height, its bar held still. A swiped row shows what it uncovers, and a queue row swiped right
+  stands open on Manual and Discard; a hovered queue row offers both beside Route, selected or not.
+  The row last opened is marked at its edge rather than tinted. A hand setting puts the + at the
+  lower left. Then, from a second round on the device: on a phone `+ tag` opens a sheet, a tap in the
+  composer leaves the keyboard down, a move to another surface draws a line while under way and
+  every surface's code is fetched ahead, and holding a row selects it without a second's wait.
+  Then, on 2026-11-26: a list come to starts at its top and reads a page, back and forward keep it
+  as it was, and a long list is drawn after the view is on screen; a click or a tap selects a row,
+  offering its `+` on a phone, and a second opens it; the row last opened is tinted faintly; settings end where their rows
+  do; back steps back through the route; with the keyboard up a sheet's main action moves to its
+  head and a page's bar is one short row.
+
+- 2026-11-25 — **Installed on a phone.** The shell installs from the browser, opens without the
+  daemon from the files a service worker keeps, and is offered in Android's share sheet: what is
+  shared is added to the end of the draft. A newer build is said in the status line with Reload and
+  loaded on the next move that loses nothing. Back puts a trigger tag's question away as it does
+  every sheet. See [installable-shell](../plans/installable-shell.md).
 
 - 2026-11-24 — **The phone-first shell, after its second review**
   ([review](../reviews/mobile-first-rethink-pr-130-2026-11-24.md)). Previous and Next are entries in
@@ -850,6 +881,22 @@ whether the pool answers — `online`, or `offline, last answered 12:31` in ink 
 in the box grey: today's date (the month, and the day in a large figure) and how much was captured
 today, counted by the pool from this device's midnight. In the drawer and the menu column, not on
 the rail.
+**A move to another surface still under way after 250ms draws a line along the top** *(2026-11-25)*,
+a third of the width running across it, the wait the asking mark keeps, so a quick move shows
+nothing; the drawer closing first is then not a move that did nothing. **Every surface's code is
+fetched once the first is drawn and the page is idle**, so a move waits on drawing and not on the
+network. The line also runs while a list is drawing rows it held back (below).
+
+**A list come back to stands as it was left; a list come to starts at its top** *(2026-11-26)*.
+Back and forward — from an item, from the log's row, between filters — put the queue, the feed and
+the log back as they were: every row walked, and the view where it was. Any other arrival — the
+drawer, a link, a reload, opening the app — reads the list again from its first page and lets go of
+what was walked past it, so arriving costs a page however far the reader went last time. Until that
+page is answered, the list draws a page of what the device holds
+([client.md](client.md#surfaces-drawn-from-the-cache)). **A list holding more than a page when it
+is drawn is drawn once the view is on screen**: the move lands at once, on the list's skeleton and
+the line along the top, and the rows follow, the view then put back where it was. Rows are not
+drawn as they come into view; every row walked is built.
 **The four words in the bar went** on 2026-11-13. Capture is not a surface: it is the head of the
 queue.
 
@@ -860,6 +907,14 @@ at its foot a dot for whether the pool answers. The header loses its menu icon. 
 runs under the list only. The other pieces' wide forms — the capture box, the item across the
 window, a panel or a dialog for a sheet — are described with each. A docked bar stays docked at
 the foot of its pane at every width *(2026-11-19)*.
+
+**With the keyboard up on a phone a bar gives the words the room** *(2026-11-26, being tried)*. The
+keyboard is up while a field that types has the focus and the view is short of its tallest by
+about a keyboard, so one put away by Android's back with the focus left behind counts as down.
+**A sheet's foot gives way**, and its main action — Done, Show — stands in its head beside the ×.
+**A page's bar is one short row**: its main action small at the right, the others icons alone,
+the line over it as it was. Pressing an action leaves the focus where it was, so the bar does not
+grow under the finger before the action runs.
 
 *Amended 2026-11-18.* **`notemap` at the menu's head** goes to the queue. **The search** sits at the
 right of the header, beside the filter and the notices. **One height for each bar**: the header and
@@ -880,7 +935,8 @@ sits in each list's filter; the palette is a preference and sits in settings.
 It was a ruled box above the list at every width from 2026-09-14; the box is now the wide form,
 and a phone writes on a page of its own.*
 
-**Below 900px, the + and the capture page.** A round + floats at the queue's lower right, clear of
+**Below 900px, the + and the capture page.** A round + floats at the queue's lower right — lower left
+for a left hand, chosen under Appearance *(2026-11-25)* — clear of
 where the status line goes with a few pixels between, and stays there when the line is gone. It
 opens **`/capture`**, a page titled `capture` in the header: the field fills it, with **no
 placeholder and no clock**, since the capture is stamped when it is sent. Under the field are its
@@ -892,7 +948,9 @@ closing the page says so** when the page opens again — `Draft kept from last t
 trigger tags were given and its files, kept across a reload. *(Amended 2026-11-18, after the
 review.)* **The page is closed by ×**, which goes back. Its bar is **Attach**, **Camera** and
 **Save**; Tag is the + tag above it. **Save stays dashed until there is something to send**, and
-pressed then says what is missing.
+pressed then says what is missing. **The page is the view's height and no more** *(2026-11-25)*:
+the header and the bar hold still, the field gives up height to its tags and files, and what does
+not fit scrolls between them.
 
 **At 900px and wider, the box at the top of the queue**, running the width of the list's pane:
 the field, `Write, or attach…`, then Attach, the tags, `Ctrl+Enter`, and a filled **Capture**,
@@ -1351,7 +1409,9 @@ the feed's taking more than tags: [below](#a-filter-by-state-destination-and-sou
 the same day: a filter of several tags meant going back and forth between it and the list once per
 tag.
 
-- **It opens a panel with a line to find a tag in**, the caret on it, and every tag beneath with
+- **It opens a panel with a line to find a tag in**, the caret on it — except on a phone opened
+  by a tap, where nothing takes the caret, so the keyboard stays down *(2026-11-25)* —
+  and every tag beneath with
   how many items on this surface carry it: the queue counts the unprocessed ones, the feed every
   one, as the pool counts them. Typing narrows the list as completion does. `f` opens it from
   either surface.
@@ -1475,6 +1535,16 @@ it says so, and its templates stay drawn and cannot be pressed.
 **It is reached** from the item's Route, from a row's Route under the pointer when wide, by **a
 swipe left on a row** on a phone — the row following the finger, and a swipe that starts within
 24px of either edge left to the system's back gesture — and with `p` wherever an item is in hand.
+**What the swipe uncovers is the route** *(2026-11-25)*: the route mark on the grey `off` behind
+the row, turning ink once the swipe has gone far enough to open it.
+
+**A queue row swiped right stands open on Manual and Discard** *(2026-11-25)*, two buttons behind
+it, Discard in red. A tap on either acts at once, with `undo` on the status line as from the item;
+a tap on the row or on another, a scroll, a swipe of another row, holding the row to select it,
+or leaving the queue puts it back and opens nothing; from an open row a drag left only puts it
+back, never as far as the route. Buttons rather
+than a second, longer swipe: two actions told apart by how far a finger went are taken by mistake.
+The feed swipes left only, its rows not all still to be decided.
 `process` is the quick route's command now; the route page is reached through it.
 
 **A route made from it is in its window at once** ([below](#the-status-line)): drawn on the line,
@@ -1724,7 +1794,9 @@ is nothing to complete** *(added 2026-09-04)*, rather than handing focus to what
 line is what the surface is for, and leaving it is `⇧⇥` or the pointer — `⌫` at the end of a line
 that ends in one pops the whole segment rather than one character of it *(and for the pointer, since
 2026-11-23: the folders the line runs through are named above it, the destination first, each a
-press back up to that level, and a × at the line's end empties it)*, and `↑↓` move through
+press back up to that level, and a × at the line's end empties it; **on a phone a tap on a folder,
+a level or the × leaves the caret where it was** *(2026-11-25)*, so going down a tree by taps never
+raises the keyboard over it, while the keys and a wide window keep the caret in the line)*, and `↑↓` move through
 everything the tree drew — every row the pointer could take, in the order it is drawn, the first
 press landing on the first or last row of the level the caret is in; where that level drew
 nothing, on the empty folder just taken, or else on the nearest row above that is not on the line —
@@ -2082,10 +2154,13 @@ leaves it somewhere to land.
 
 *Redrawn 2026-11-13 ([ADR 72](../adr/0072-processing-is-a-quick-sheet-and-a-route-in-steps.md),
 [ADR 76](../adr/0076-a-wide-window-draws-the-same-views-with-a-wide-form-of-each-piece.md)).*
-**Below 900px the item is full screen**: a tap on a row opens `/items/{id}`. **At 900px and wider
+**Below 900px the item is full screen**: a tap on the selected row opens `/items/{id}`. **At 900px and wider
 it takes the window beside the menu** *(amended 2026-11-18; it sat beside the list it is read in)*,
-its bar at its foot. Coming back to the list, the row last opened is marked in the box grey,
-so the reader finds their place; it is not selected and draws no strip.
+its bar at its foot. Coming back to the list, the row last opened is drawn in the hover grey
+*(2026-11-26; an ink edge at its rail from 2026-11-25, which sat oddly in the register, and the box
+grey before that, which read as a selection)*, so the reader finds their place; it is not selected
+and draws no strip. Selecting or marking a row lets the mark go, the selection being the place
+from then on.
 
 *Amended 2026-11-18, after the review.* **The item is drawn as a view of its own**, not as a
 selected row: no time column; a route in its window in its box; **where it went as a box of rows**,
@@ -2321,7 +2396,12 @@ drawn where there is none.
 
 ### Actions
 
-*Amended 2026-11-16.* When wide, a click on a row opens its item, as a tap does on a phone; ctrl or cmd and shift select, and the row's time selects it in place, for the keys. The
+*Amended 2026-11-16, and 2026-11-26.* **A click or a tap on a row selects it**, and **one on
+the selected row opens its item**; ctrl or cmd and shift select, and the row's time selects it in
+place. When wide the selection is where the keys reach; on a phone it is where the row's `+` is, so
+a tag goes on without opening the item and coming back. *(From 2026-11-16 a click opened the item
+as a tap does, and `m` on a row meant opening it first; on a phone a tap opened the item at once
+until later on 2026-11-26.)* The
 selected row's foot is beige boxes with icons in the shell's words — **Route**, **Done**,
 **Discard** (or **Undiscard**) on the left; **Edit**, **Copy**, **Open** or **History** on the
 right — each naming its key in its title. The rest of this section holds under those words.
@@ -2453,7 +2533,10 @@ wide having no ctrl and no hover. A row's tints: under the pointer the lightest,
 selected for the keys the box grey, selected for a batch the strongest, with its tick and nothing
 more *(2026-11-19: the ink edge went)*; the keys' place while selecting is an outline round the
 whole row, drawn only while the keys are what is being used. **No strip** opens under
-a selected row: its actions are the keys and the hovered Route. **While rows are selected the
+a selected row: its actions are the keys and the hovered Route. **A queue row under the pointer,
+selected or not, offers Manual and Discard beside its Route** *(2026-11-25)*, the two as icons
+named on hover, acting at once with `undo` as from the item; the column beside the words is held
+wide enough for all three, so a hover moves nothing. **While rows are selected the
 header is the selection's** — × and `n selected` with All, and when wide Discard, Tag and Route
 beside them; on a phone those dock at the foot and the + stands aside. When wide, a row under
 the pointer offers **+ tag**, so a tag is added without leaving the list. **The batch's bar** says `n selected` on its line, with All and Clear, and holds
@@ -2551,10 +2634,16 @@ refused. Nothing is said item by item. **The notice opens the log read by that b
 *Amended 2026-11-18, after the review.* **The chooser is drawn in the blocks register**: where a
 tag can be changed each carries its × — no press to select it first — and elsewhere tags are
 words. The offer is a ruled box of 44px rows; a trigger tag is the route icon and its name, with
-its template's name muted at the right, and a typed name no offer holds says `new`. **The offer
-opens downward at every width** *(2026-11-24; on a phone it opened upward, over the words the tag
-was for)*, and on a phone the line is first scrolled to the top of the view, so the offer has the
-room under it down to the keyboard. **A trigger tag's question is the quick route's shape**: a
+its template's name muted at the right, and a typed name no offer holds says `new`. **When wide the offer
+opens downward from the line. On a phone `+ tag` opens a sheet instead** *(2026-11-25)*: titled
+`tags`, held to what the keyboard leaves of the view, it is the set as a field — the line on top
+taking the caret, the offer beneath it, what is carried beneath that with each ×, as the sheet that
+tags selected rows has it — and Done at its foot. A tag taken lands at once and the line empties
+for the next; Done, ×, `esc` or the veil put the sheet away. A press in the sheet is the sheet's,
+never the row it was opened from. *(It opened downward at every width before, the line first
+scrolled to the top of the view, which on a device took the line out of view under the keyboard;
+anchored to the line's roomier side it opened over the words. Before 2026-11-24 it opened upward
+always, over the words the tag was for. A sheet covers the words too, but says it does.)* **A trigger tag's question is the quick route's shape**: a
 sheet across a phone's foot, a dialog when wide, its answers rows with a chevron. *(2026-11-24.)*
 **The question has a field of its own** under what it asks, which takes the caret, since the tag
 line it was typed into is behind the veil; `↑↓` walk the answers from it and `⏎` takes one. The
@@ -2746,6 +2835,12 @@ of them the same colour.)*
   it, nothing being left to retry — except a capture, which is held until somebody edits or deletes
   it, being the only copy of what was written ([below](#the-status-line)). It is not drawn in the same shape as
   pending work.
+
+**Not known yet is said as nothing** *(added 2026-11-27)*. Until the pool has answered or failed
+to, and the browser has not said it is offline, the shell says neither `online` nor `offline`. It
+acts as though the pool answers, which is what finds out. The client
+asks at start with a timeout of its own, so a network that swallows requests rather than refusing
+them reads `offline` within seconds rather than at the request timeout.
 
 **Asking is a fourth, and the quietest** *(added 2026-09-25)*. A request the shell has put to the
 pool and holds no answer to — a read, a description, a preview, a route, a save — is drawn as
@@ -3478,7 +3573,9 @@ client has no measurement to draw and says so.
 
 **Appearance** is `THEME` with `auto`, `light` and `dark` on the facts grid — the same three-way choice, moved
 under a section of its own rather than a row of buttons alone. *Added 2026-09-29*: `ROWS` with `auto`, `by
-day` and `rail` under it, the same control ([Rows by day](#rows-by-day)).
+day` and `rail` under it, the same control ([Rows by day](#rows-by-day)). *Added 2026-11-25*: `HAND`
+with `right` and `left`, kept on this device: the side the + stands on, on a phone. Nothing else
+follows it — swipes, bars and sheets stay where they are.
 
 **Pool settings** is the last section *(added 2026-09-24,
 [a-pool-holds-settings](../plans/a-pool-holds-settings.md))*, one row per setting on the facts
@@ -3749,11 +3846,85 @@ has no reason to know the word, and the settings label is theirs *(2026-09-24)*.
 while it is off **no request is made** and no block is drawn: no placeholder says an unfurl was
 withheld. A client that has not yet read the setting draws none and asks nothing. One whose copy is
 stale — the daemon answers that the setting is off — reads the pool settings again, and every block
-goes.
+goes. **Offline, no block is drawn and nothing is asked** *(2026-11-27)*: every one would ask, wait
+and fold away, moving its row each time it is drawn. They come back once the pool answers.
 
 A payload type this shell cannot draw **says so by name** and stays taggable, archivable and
 routable, since none of those need to understand the content. An item never becomes an invisible
 row, and adding a renderer later is additive.
+
+### Installed on a phone
+
+*(2026-11-25, [plan](../plans/installable-shell.md))*
+
+**The shell can be installed** from a browser that installs web apps. It runs standalone, with its
+own icon, name and window. It is the same shell, served by the same daemon from the same origin:
+installing changes where it opens from, not what it is or how it reaches the pool. The daemon has to
+be reached over HTTPS for a browser to offer it.
+
+**It opens without the daemon.** A service worker keeps the shell's own files: the build, the faces,
+the icons and the manifest. **Every page is drawn from those, at once** *(amended 2026-11-26)*:
+opening waits on nothing over the network, so a capture can be typed the moment the shell is up,
+however slowly the daemon answers or whether it answers at all. Before anything is kept, on the very
+first visit, a page is the daemon's. Where the daemon does not answer, what the shell shows is the client's store, with the status line saying `offline`, as it would for a
+daemon that went away while the shell was open. **Who is signed in is the last answer the pool gave
+this device** *(amended 2026-11-25, and 2026-11-26)*: kept on the device, it is what every start
+draws from until the pool answers — the queue the store holds, the capture page, and captures held
+to send. A daemon that hangs rather than refuses is not waited on. **With nothing kept, nothing is
+waited on either** *(amended 2026-11-27; the shell waited before)*: the shell draws what the store
+holds and takes a capture, and the drawer names nobody until the pool says. Sign-in is drawn only
+on an answer that nobody is signed in, the pool's own or the one kept. The pool's own answer
+replaces it whenever it comes.
+
+**Signed out, the installed shell still captures** *(2026-11-27,
+[plan](../plans/offline-first-start.md))*. Its capture page is open behind the sign-in, and says
+over its bar that what it takes is held until someone signs in, and stays drawn after each
+capture, ready for the next, rather than going on to a queue that would be the sign-in. A capture
+made there waits in the
+outbox as one made offline does, and is sent once a session opens, **whichever account opens it**:
+nothing on the device says whose it was, and a note sent to the one account a pool usually has is
+better than a note lost. Every other page still draws sign-in and nothing behind it. A shell in a
+browser tab captures only signed in, as before. **A build being replaced keeps its files** until
+the one after: a page still drawn from it asks for what it has not loaded yet, and offline nothing
+else could answer. The worker keeps nothing the pool says. `/v1` and
+`/docs` go to the network, or fail, as they would without it. So an image not captured on this
+device does not show offline.
+
+**The installed shell offers a Capture shortcut** *(2026-11-26)*, straight to the capture page,
+where the launcher shows a web app's shortcuts: on Android, a long press on the icon, from where it
+can be put on the home screen as an icon of its own; on a desktop, the taskbar's or dock's menu.
+
+**It is offered in the system's share sheet**, where the platform allows. On Android that is Chrome,
+once the shell is installed. Text, a link or files shared from another app open the capture page,
+with what was shared **added to the end of the draft**, as a capture put back is: words after a
+blank line, files after the files already held. Nothing is overwritten and nothing is captured. The
+person sees what arrived and captures it, or not, and the line over its bar says `Added what was shared,
+at the end.` **A shared file is kept on the device until the capture carrying it is sent**, removed
+from the draft, or the draft is cleared *(2026-11-25)*: the draft's own attachments are memory and go
+with the page, and a share is a page load — the next share, or Android closing the app behind
+another, would otherwise lose the last one's files. A share that cannot be held still opens the
+capture page, which says `Could not take what was shared.` over its bar. **Only a page shares**: a post to the
+share target from a frame inside another site is refused, as it could only be one nobody saw. The capture's source is the shell's own; the share
+sheet delivered the words and did not write them. A share that repeats itself, a link given both as
+the text and as the url, or a title that is the text, adds each part once.
+
+**A new version is offered, not forced.** The shell looks for a newer build of itself when it comes
+back into view, and the worker fetches and keeps one it finds, in the background *(2026-11-26)*.
+Once it is kept, the status line says `new version` and offers **Reload**: a reload draws from what
+is kept, so a build not yet kept is not one to offer. Without a worker, as in development, a newer
+build is offered as soon as the daemon serves it. The
+shell does not reload on its own while anything is unsaved: the next move to another page that has
+nothing to lose loads the new version instead of moving within the old one; back or forward loads it
+where it went, without a step added to history. **Reload waits for attachments held** and says so —
+`the reload waits for the attachments held: capture or remove them` — and asks first about an edit
+with changes.
+
+**Back closes what is open before it leaves.** On Android, back and the back gesture close the
+innermost sheet, dialog or drawer, and the page stays where it was. **On the route, back takes a
+step back** *(2026-11-26)*, as the bar's Back does, and leaves the route only from its first step;
+the steps are not entries in history, so routing has none to unwind. Both go through the browser's
+close requests, which Firefox for Android does not send; there back leaves the page. With nothing
+open, back walks history as it always has.
 
 ### Tokens and themes
 
@@ -3917,6 +4088,9 @@ redrawn keep their structure in the new tokens until their phase of
 
 - SvelteKit, Svelte 5 and Tailwind v4, static build, served by the daemon from its own origin. No
   new framework, no CSS-in-JS, no component library.
+- **The service worker never answers for the pool.** It keeps the shell's files and holds a share
+  until the page takes it. Anything under `/v1` or `/docs`, and anything from another origin, passes
+  through untouched. The client's store is where the pool's state lives offline, and there is one.
 - **The shell holds no domain logic.** Anything this design implies that the client does not expose
   is a change to `@notemap/client`, made deliberately, not a rule smuggled into a component.
 - Tokens live in `apps/ui/src/styles/tokens.css` as `@theme`. The global stylesheets sit together

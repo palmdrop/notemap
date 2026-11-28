@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
+import { tick } from "svelte";
 import { expect, test, vi } from "vitest";
 
 import { viewport } from "$testing/dom";
@@ -98,6 +99,33 @@ test("a main action that cannot be taken yet stays in its place, and the line ov
 
   await fireEvent.click(route);
   expect(onpress).not.toHaveBeenCalled();
+});
+
+test("with the keyboard up on a phone the bar is one short row, the others icons and the main one small", async () => {
+  viewport(390);
+  render(Pieces);
+  const field = document.createElement("input");
+  document.body.append(field);
+
+  field.focus();
+  await tick();
+  const manual = screen.getByRole("button", { name: "Manual" });
+  expect(manual.querySelector(".sr-only")?.textContent).toBe("Manual");
+  expect(screen.getByRole("button", { name: "Route" }).className).toContain(
+    "flex-none",
+  );
+
+  // Pressed, the field keeps the focus, and the bar its shape.
+  const pressed = await fireEvent.mouseDown(manual);
+  expect(pressed).toBe(false);
+
+  field.blur();
+  await tick();
+  expect(manual.querySelector(".sr-only")).toBeNull();
+  expect(screen.getByRole("button", { name: "Route" }).className).toContain(
+    "flex-1",
+  );
+  field.remove();
 });
 
 test("the bar docks at the foot at every width, and when wide it names its keys", () => {

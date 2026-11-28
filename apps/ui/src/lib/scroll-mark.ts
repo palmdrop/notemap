@@ -26,6 +26,9 @@ export function restorePlace(surface: string): void {
  */
 export function keepPlace(surface: string): () => void {
   const remember = () => writeMark(surface, window.scrollY);
-  window.addEventListener("scroll", remember, { passive: true });
-  return () => window.removeEventListener("scroll", remember);
+  // `scrollY` lays the page out to answer, so it is read once a scroll comes
+  // to rest rather than on every frame of one that is drawing rows.
+  const settles = "onscrollend" in window ? "scrollend" : "scroll";
+  window.addEventListener(settles, remember, { passive: true });
+  return () => window.removeEventListener(settles, remember);
 }

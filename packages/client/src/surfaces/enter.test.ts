@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createMemoryStore } from "../adapters/memory-store";
 import { createClient } from "../client";
-import { read } from "#testing/observing";
+import { read, until } from "#testing/observing";
 import { anItem, routeOf } from "#testing/pool";
 import { json, mockTransport, type Handler } from "#testing/transport";
 import type { Client, ListState } from "../types";
+import { PAGE } from "./reads";
 
 const ids = (list: ListState) => list.items.map((item) => item.id);
 
@@ -114,6 +115,83 @@ describe("arriving at a surface", () => {
 
     await client.enter("feed");
     expect(ids(read(client.feed))).toEqual(["one", "two"]);
+  });
+
+  it("reads nothing past where the feed stood, coming back to it", async () => {
+    const { client, transport } = clientOver(
+      paged("feed", [[anItem("one")], [anItem("two")]]),
+    );
+    const reads = () =>
+      transport.sent.map(routeOf).filter((route) => route === "GET /v1/feed")
+        .length;
+
+    await client.enter("feed");
+    expect(reads()).toBe(1);
+
+    await client.enter("feed");
+    expect(reads()).toBe(1);
+    expect(ids(read(client.feed))).toEqual(["one"]);
+  });
+
+  it("comes to the feed from its first page, letting go of what was walked", async () => {
+    const { client } = clientOver(
+      paged("feed", [[anItem("one")], [anItem("two")]]),
+    );
+
+    await client.enter("feed");
+    await client.loadFeed();
+    expect(ids(read(client.feed))).toEqual(["one", "two"]);
+
+    await client.enter("feed", undefined, {}, undefined, true);
+    expect(ids(read(client.feed))).toEqual(["two"]);
+    expect(read(client.feed).more).toBe(true);
+  });
+
+  it("comes to the queue from its first page, letting go of the tail", async () => {
+    const { client } = clientOver((request) => {
+      if (routeOf(request) !== "GET /v1/queue")
+        return json(200, { values: [] });
+      return new URL(request.url).searchParams.get("after") === null
+        ? json(200, { values: [anItem("one")], next: "/v1/queue?after=one" })
+        : json(200, { values: [anItem("two")] });
+    });
+
+    await client.enter("queue");
+    await client.loadQueue();
+    expect(ids(read(client.queue))).toEqual(["one", "two"]);
+
+    await client.enter("queue", undefined, {}, undefined, true);
+    expect(ids(read(client.queue))).toEqual(["one"]);
+  });
+
+  it("draws the first page it held while that page is read again", async () => {
+    const head = [...Array(PAGE).keys()].map((at) =>
+      anItem(`head-${String(at)}`),
+    );
+    let answer: (response: Response) => void = () => undefined;
+    let heads = 0;
+    const { client } = clientOver((request) => {
+      if (routeOf(request) !== "GET /v1/feed") return json(200, { values: [] });
+      if (new URL(request.url).searchParams.get("after") !== null)
+        return json(200, { values: [anItem("tail")] });
+      heads += 1;
+      return heads === 1
+        ? json(200, { values: head, next: "/v1/feed?after=head" })
+        : new Promise<Response>((done) => (answer = done));
+    });
+
+    await client.enter("feed");
+    await client.loadFeed();
+    expect(ids(read(client.feed))).toHaveLength(PAGE + 1);
+
+    const arriving = client.enter("feed", undefined, {}, undefined, true);
+    await until(() => read(client.feed).loading);
+    expect(ids(read(client.feed))).toEqual(head.map((item) => item.id));
+
+    answer(json(200, { values: head, next: "/v1/feed?after=head" }));
+    await arriving;
+    expect(ids(read(client.feed))).toEqual(head.map((item) => item.id));
+    expect(read(client.feed).more).toBe(true);
   });
 
   it("reads a surface nobody has read yet for the first time", async () => {

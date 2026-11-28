@@ -1,6 +1,11 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
+  import {
+    afterNavigate,
+    beforeNavigate,
+    goto,
+    onNavigate,
+  } from "$app/navigation";
   import { resolve } from "$app/paths";
   import { page } from "$app/state";
 
@@ -13,6 +18,7 @@
   import { quick } from "$lib/quicking.svelte";
   import Menu from "$components/frame/Menu.svelte";
   import Glance from "$components/frame/Glance.svelte";
+  import Going from "$components/frame/Going.svelte";
   import Reach from "$components/frame/Reach.svelte";
   import Strip from "$components/frame/Strip.svelte";
   import Column from "$components/primitives/frame/Column.svelte";
@@ -32,6 +38,16 @@
   import { session } from "$lib/session.svelte";
   import { arrived } from "$lib/trail.svelte";
   import { watchVisible } from "$lib/visible";
+  import {
+    loadInstead,
+    registerWorker,
+    reload,
+    watchVersion,
+  } from "$lib/installed/version";
+  import { newer, watchWorker } from "$lib/installed/newer.svelte";
+  import { installed } from "$lib/installed/standalone";
+  import { preloadSurfaces } from "$lib/preload";
+  import { arriving } from "$lib/arrival";
 
   import "./layout.css";
 
@@ -43,9 +59,34 @@
   watched();
 
   $effect(() => watchVisible());
+  $effect(preloadSurfaces);
+
+  $effect(() => {
+    registerWorker();
+  });
+
+  $effect(() => watchVersion());
+  $effect(() => watchWorker());
+
+  $effect(() => {
+    if (!newer.current) return;
+    untrack(() =>
+      notices.raise({
+        what: "new version",
+        offer: { label: "Reload", take: reload },
+        key: "new-version",
+      }),
+    );
+  });
+
+  /** A move back or forward the browser has already made, which then loads the newer build where it went. */
+  let loadOnArrival = false;
+
+  onNavigate(({ type }) => arriving(type));
 
   afterNavigate(({ from, type }) => {
     arrived(type !== "enter" && from !== null);
+    if (loadOnArrival) location.reload();
   });
 
   const queue = client.counts.queue;
@@ -90,8 +131,14 @@
   // loss would otherwise be silent.
   const shut = $derived(who.shut);
 
+  // An installed shell still takes a capture behind the door, held until
+  // someone signs in: it is the one page drawing nothing of the pool's.
+  const signIn = $derived(
+    shut && !(page.route.id === "/capture" && installed()),
+  );
+
   const title = $derived(
-    shut
+    signIn
       ? "sign in"
       : (TITLES[page.route.id ?? ""] ??
           (page.route.id?.startsWith("/settings") === true
@@ -99,8 +146,10 @@
             : "notemap")),
   );
 
-  /** The one surface that is a frame rather than a page, and takes the window when wide. */
-  const fills = $derived(page.route.id === "/items/[id]/process");
+  /** The one surface that takes the window when wide. */
+  const takesWindow = $derived(page.route.id === "/items/[id]/process");
+  /** Frames rather than pages: head and foot held, the middle scrolling. */
+  const fills = $derived(takesWindow || page.route.id === "/capture");
 
   /** Pages drawn edge to edge in ruled rows, their own padding inside them. */
   const BLEEDS = new Set([
@@ -111,7 +160,7 @@
   ]);
   const bleeds = $derived(BLEEDS.has(page.route.id ?? ""));
   /** The menu column, when wide, everywhere but a route being made. */
-  const menued = $derived(width.wide && !shut && !fills);
+  const menued = $derived(width.wide && !shut && !takesWindow);
 
   // Signing out is the pool's work leaving with it. A failure about a
   // delivery nobody can now look up would outlive the session that raised it.
@@ -129,7 +178,19 @@
   // Asked, the navigation goes on the way it would have: back and forward move
   // through history, and a link out of the app is left to the browser.
   beforeNavigate((navigation) => {
-    if (!unsaved()) return;
+    if (!unsaved()) {
+      // A newer build is kept: this move loads it, rather than moving
+      // within the old one.
+      const instead = loadInstead(newer.current, navigation);
+      if (instead === undefined) return;
+      if (navigation.type === "popstate") {
+        loadOnArrival = true;
+      } else {
+        navigation.cancel();
+        location.assign(instead.href);
+      }
+      return;
+    }
     navigation.cancel();
     const { type, to, delta, willUnload } = navigation;
     if (type === "leave" || to === null) return;
@@ -188,7 +249,7 @@
       {/if}
       <div class="mt-auto">
         <Reach
-          reachable={pool.yes}
+          reachable={pool.known ? pool.yes : undefined}
           at={pool.at}
           who={who.who}
           compact={!width.full}
@@ -214,18 +275,22 @@
     {/if}
     <Strip />
     <div class="flex-1 {fills ? 'flex min-h-0 flex-col' : ''}">
-      <Sheet {fills} bleeds={bleeds && !shut}>
+      <Sheet
+        {fills}
+        bleeds={bleeds && !shut}
+        clears={shut || page.route.id?.startsWith("/settings") !== true}
+      >
         <Column
           {fills}
           list={list ||
-            fills ||
+            takesWindow ||
             page.route.id === "/items/[id]" ||
             page.route.id?.startsWith("/settings") === true ||
             page.route.id === "/items/[id]/records/[recordId]"}
         >
-          {#if shut}
+          {#if signIn}
             <SignIn />
-          {:else if who.known}
+          {:else}
             {@render children()}
           {/if}
         </Column>
@@ -240,7 +305,7 @@
     current={page.url.pathname}
     queue={$queue}
     {waiting}
-    reachable={pool.yes}
+    reachable={pool.known ? pool.yes : undefined}
     at={pool.at}
     who={who.who}
     onclose={() => (drawer = false)}
@@ -253,3 +318,4 @@
 
 <Dropping />
 <Sprite />
+<Going />

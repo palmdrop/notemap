@@ -2,8 +2,9 @@
   import type { Snippet } from "svelte";
 
   /**
-   * `fills` is the process surface, which scrolls inside itself. A list runs
-   * the width of its pane, its rows keeping their own measure.
+   * `fills` is a surface that scrolls inside itself: the process surface, and
+   * the capture page. A list runs the width of its pane, its rows keeping
+   * their own measure.
    */
   let {
     fills = false,

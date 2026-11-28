@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, vi } from "vitest";
 import { cleanup } from "@testing-library/svelte";
+import { arriving } from "$lib/arrival";
 import { forgetEverything } from "$lib/candidate-cache";
 import { chordFor } from "$lib/command/bindings";
 import { dispatch } from "$lib/command/dispatch";
@@ -170,6 +171,7 @@ beforeEach(async () => {
   (await import("$lib/described.svelte")).forgetDescriptions();
   forgetOutputs();
   clearDraft();
+  arriving("enter");
   delete document.documentElement.dataset["theme"];
 });
 

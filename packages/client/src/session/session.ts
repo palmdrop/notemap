@@ -17,9 +17,8 @@ export type SessionState = {
   readonly signedIn: boolean;
   readonly as?: Signed;
   /**
-   * Whether the daemon has been asked yet. A surface draws neither the login nor
-   * the pool until this is true, or a cold start flashes a login at someone who
-   * is already signed in.
+   * Whether the daemon has answered yet. A surface draws no login until this is
+   * true, or a cold start flashes a login at someone who is already signed in.
    */
   readonly known: boolean;
 };

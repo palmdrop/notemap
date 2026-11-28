@@ -44,6 +44,7 @@
     form: drawn = "box",
     onfocus,
     oncaptured,
+    told,
   }: {
     /**
      * Whether the field takes the caret as it is drawn: the page's does, and the
@@ -61,6 +62,8 @@
     onfocus?: () => void;
     /** Sent, with the item it made: for saying where it landed. */
     oncaptured?: (item: string) => void;
+    /** What the page has to say over the bar, where the box itself has nothing to: what a share added. */
+    told?: { readonly words: string; readonly alarm?: boolean };
   } = $props();
 
   // Read where the box is drawn, so coming back from another surface restores
@@ -353,7 +356,7 @@
     }}
     aria-label="What to capture"
     class="block w-full resize-y bg-transparent px-gutter py-3 outline-none {page
-      ? 'min-h-[40dvh] flex-1 resize-none'
+      ? 'min-h-24 flex-1 resize-none'
       : 'min-h-[88px] wide:pl-words'}"></textarea>
 {/snippet}
 
@@ -423,26 +426,28 @@
       event.preventDefault();
       void capture();
     }}
-    class="-mx-3.5 flex min-h-[calc(100dvh-var(--spacing-bar))] flex-col"
+    class="-mx-3.5 flex min-h-0 flex-1 flex-col"
   >
-    {#if kept}
-      <p
-        class="flex items-center gap-3 border-b border-rule bg-tag px-gutter py-2 text-small"
-        transition:fade
-      >
-        <span class="flex-1">Draft kept from last time.</span>
-        <button
-          type="button"
-          class="underline underline-offset-[0.2em]"
-          onclick={clear}>Clear</button
+    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      {#if kept}
+        <p
+          class="flex items-center gap-3 border-b border-rule bg-tag px-gutter py-2 text-small"
+          transition:fade
         >
-      </p>
-    {/if}
-    {@render pictured()}
-    {@render field(undefined, true)}
-    {@render filed()}
-    <div class="flex flex-col gap-2 px-gutter pb-3">
-      {@render tagged()}
+          <span class="flex-1">Draft kept from last time.</span>
+          <button
+            type="button"
+            class="underline underline-offset-[0.2em]"
+            onclick={clear}>Clear</button
+          >
+        </p>
+      {/if}
+      {@render pictured()}
+      {@render field(undefined, true)}
+      {@render filed()}
+      <div class="flex flex-col gap-2 px-gutter pb-3">
+        {@render tagged()}
+      </div>
     </div>
     <ActionBar label="Capture">
       {#snippet say()}{#if said !== ""}<span
@@ -451,6 +456,9 @@
             >{said === NOTHING_TO_CAPTURE
               ? "Nothing to capture yet: write something, or attach a file."
               : said}</span
+          >{:else if told !== undefined}<span
+            role="status"
+            class={told.alarm === true ? "text-danger" : ""}>{told.words}</span
           >{/if}{/snippet}
       <BarAction
         icon="attach"

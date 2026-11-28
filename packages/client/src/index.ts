@@ -25,6 +25,7 @@ export type { Filter, FilterNamed, FilterState } from "./state/state";
 export type { Surface } from "./state/state";
 export type { Batch } from "./state/batches";
 export { MAX_BATCH } from "./state/batches";
+export { PAGE } from "./surfaces/reads";
 
 export type {
   Operation,

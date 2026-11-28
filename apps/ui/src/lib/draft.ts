@@ -3,7 +3,8 @@
  * tags go to `localStorage` on the same terms as the order and the theme —
  * small, string-shaped, and losing it costs retyping. One draft per origin, so
  * two tabs share it and the last write wins. The attachments are held in
- * memory only: they survive the box being drawn again, and not the page.
+ * memory only: they survive the box being drawn again, and not the page —
+ * except a shared file, which the worker's cache keeps until the draft lets go.
  */
 export type Draft = {
   readonly text: string;
@@ -78,17 +79,32 @@ export function writeDraft(draft: Draft): void {
 
 let files: readonly File[] = [];
 
+const holding = new Set<(held: readonly File[]) => void>();
+
+/** Tells whoever keeps a file elsewhere which files the draft still holds. */
+export function onFilesHeld(
+  listener: (held: readonly File[]) => void,
+): () => void {
+  holding.add(listener);
+  return () => holding.delete(listener);
+}
+
+function hold(held: readonly File[]): void {
+  files = held;
+  for (const listener of holding) listener(files);
+}
+
 export function heldFiles(): readonly File[] {
   return files;
 }
 
 export function holdFiles(held: readonly File[]): void {
-  files = held;
+  hold(held);
 }
 
 export function clearDraft(): void {
   writeDraft(EMPTY);
-  files = [];
+  hold([]);
 }
 
 /** Where the box puts a capture back, of the ways it can fail to. */
@@ -129,7 +145,7 @@ export function restoreDraft(
   );
   if (text.trim() !== "" && readDraft().text !== text) return "unwritable";
 
-  files = [...files, ...restored];
+  hold([...files, ...restored]);
   for (const listener of listeners) listener();
   return "restored";
 }

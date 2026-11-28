@@ -16,6 +16,7 @@ import {
   wordsIn,
   type FilterKind,
 } from "$lib/filter";
+import { cameBack } from "$lib/arrival";
 import { leave } from "$lib/leaving.svelte";
 import { keyFor, orderFor } from "$lib/order";
 import { keepPlace, restorePlace } from "$lib/scroll-mark";
@@ -25,8 +26,17 @@ export type Filtering = {
   readonly filter: Filter;
   /** Where this reading keeps its scroll, apart from every other filter's. */
   readonly place: string;
-  /** Reads the surface through the filter its address names, for its first drawing. */
-  arrive(): Promise<void>;
+  /**
+   * Reads the surface through the filter its address names, for its first
+   * drawing: `fromStart` where it was come to rather than come back to.
+   */
+  arrive(fromStart: boolean): Promise<void>;
+  /**
+   * The first drawing is on screen: come back to, the view goes back where it
+   * was left. The place is kept from here on, and not before, as whatever the
+   * page scrolled to while it was drawn is not where the reader was.
+   */
+  drawn(back: boolean): void;
   /** The words on the address, as they were typed. */
   readonly words: string;
   toggle(kind: FilterKind, value: string): void;
@@ -60,9 +70,12 @@ export function filtering(
   });
   const place = $derived(placeKey(surface, filter));
 
-  // Let go of while another filter's rows replace these: a list shrinking under
-  // a new filter scrolls the page, and that is not somewhere the reader went.
-  let kept = $state<string | undefined>(untrack(() => place));
+  // Let go of while rows are being drawn, come back to or under a new filter: a
+  // list growing or shrinking scrolls the page, and that is not somewhere the
+  // reader went.
+  let kept = $state<string | undefined>(
+    cameBack() ? undefined : untrack(() => place),
+  );
   $effect(() => (kept === undefined ? undefined : keepPlace(kept)));
 
   let entered = untrack(() => place);
@@ -107,14 +120,20 @@ export function filtering(
       return wordsIn(page.url);
     },
 
-    async arrive() {
+    async arrive(fromStart) {
       await client.enter(
         surface,
         orderFor(surface, page.url),
         filter,
         surface === "feed" ? keyFor(page.url) : undefined,
+        fromStart,
       );
       await tick();
+    },
+
+    drawn(back) {
+      if (back) restorePlace(place);
+      kept = place;
     },
 
     toggle(kind, value) {

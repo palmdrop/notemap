@@ -11,4 +11,8 @@ export const lastOpened = {
   set(id: string): void {
     last = id;
   },
+  /** A row taken since is the reader's place instead. */
+  clear(): void {
+    last = undefined;
+  },
 };

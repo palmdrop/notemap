@@ -14,24 +14,27 @@
 
 <script lang="ts">
   import { quick } from "$lib/quicking.svelte";
+  import { handedness } from "$lib/handedness.svelte";
+  import { swiped } from "$lib/swiped.svelte";
   import { resolve } from "$app/paths";
 
   import Icon from "$components/primitives/icon/Icon.svelte";
   import { width } from "$lib/breakpoint";
   import { sayLanded } from "$lib/landed";
   import { heldHint } from "$lib/held-hint.svelte";
-  import { onMount, tick, untrack } from "svelte";
+  import { onDestroy, onMount, tick, untrack } from "svelte";
 
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
 
-  import { filterSize, type Item } from "@notemap/client";
+  import { filterSize, PAGE, type Item } from "@notemap/client";
 
   import Capture from "$components/capture/Capture.svelte";
   import Drained from "$components/queue/Drained.svelte";
   import Index from "$components/queue/Index.svelte";
   import Row from "$components/item/Row.svelte";
   import More from "$components/primitives/register/More.svelte";
+  import Skeleton from "$components/primitives/marks/Skeleton.svelte";
   import Refused from "$components/primitives/register/Refused.svelte";
   import { isCapture } from "$lib/refused";
   import RefusedRow from "./RefusedRow.svelte";
@@ -55,11 +58,12 @@
   import Confirming from "$components/batch/Confirming.svelte";
   import Marked from "$components/batch/Marked.svelte";
   import { anchored } from "$lib/anchored.svelte";
+  import { cameBack } from "$lib/arrival";
+  import { shownFirst } from "$lib/shown.svelte";
   import { moving } from "$lib/moving.svelte";
   import { readPast } from "$lib/paging";
   import { pending } from "$lib/pending.svelte";
   import { reachable } from "$lib/reachable.svelte";
-  import { restorePlace } from "$lib/scroll-mark";
   import { refusalIn } from "$lib/refusal";
   import { remember, viewFor, withView, type View } from "$lib/view";
 
@@ -238,6 +242,9 @@
     selected = rows[Math.min(place, rows.length - 1)]?.id;
   });
 
+  // Left without a scroll, a row stood open would be found open on return.
+  onDestroy(swiped.shut);
+
   onMount(() => {
     // Read once: the address is put back so a reload does not reselect it.
     if (arrived !== null) {
@@ -248,12 +255,14 @@
     }
 
     // Scrolling past an item is a skip, and a skip changes nothing: the place
-    // kept is only where to put the view back on reload, and on the way back
-    // from reading one of these items.
+    // kept is only where to put the view back on the way back from reading
+    // one of these items. Come to rather than back to, the queue starts at the
+    // top.
     void (async () => {
-      await reading.arrive();
-      if (arrived === null) restorePlace(reading.place);
-      else reveal(arrived);
+      await reading.arrive(!back);
+      await shown.drawn;
+      reading.drawn(back && arrived === null);
+      if (arrived !== null) reveal(arrived);
     })();
   });
 
@@ -333,6 +342,9 @@
 
   /** The rows as drawn: under a heading per day, where the reader reads by day. */
   const headed = $derived(byDay(rows));
+
+  const back = cameBack();
+  const shown = shownFirst(untrack(() => rows.length) > PAGE);
 
   const motion = anchored(() => rows.map((row) => row.id), moved);
 
@@ -472,7 +484,9 @@
     href={resolve("/capture")}
     aria-label="Capture"
     title="Capture"
-    class="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
+    class="fixed {handedness.choice === 'left'
+      ? 'left-4'
+      : 'right-4'} bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 grid size-fab place-items-center rounded-full border border-rule bg-chip no-underline hover:no-underline active:bg-off-down motion-safe:transition-[bottom] [body:has([data-status-line])_&]:bottom-[calc(var(--spacing-foot)+0.5rem+env(safe-area-inset-bottom))]"
   >
     <Icon name="plus" class="size-10" />
   </a>
@@ -581,24 +595,28 @@
     </Register>
   {/if}
 
-  <Index
-    {motion}
-    bind:this={index}
-    leads={refused === undefined}
-    items={rows}
-    selected={marking.on ? undefined : selected}
-    cursor={marking.on ? selected : undefined}
-    open={opened}
-    marked={(id) => marking.has(id)}
-    marking={marking.on}
-    onselect={select}
-    onprocess={(id) => {
-      const item = rows.find((row) => row.id === id);
-      if (item !== undefined && !marking.on) process(item);
-    }}
-  />
+  {#if !shown.ready}
+    <Skeleton shape="lines" />
+  {:else}
+    <Index
+      {motion}
+      bind:this={index}
+      leads={refused === undefined}
+      items={rows}
+      selected={marking.on ? undefined : selected}
+      cursor={marking.on ? selected : undefined}
+      open={opened}
+      marked={(id) => marking.has(id)}
+      marking={marking.on}
+      onselect={select}
+      onprocess={(id) => {
+        const item = rows.find((row) => row.id === id);
+        if (item !== undefined && !marking.on) process(item);
+      }}
+    />
+  {/if}
 
-  {#if footed}
+  {#if footed && shown.ready}
     <More
       loading={$queue.loading}
       first={rows.length === 0}
@@ -615,18 +633,22 @@
       <Refused surface="queue" {refused} />
     {/if}
 
-    {#each headed as one (one.key)}
-      <!-- Not an `{#if}`: that would be the block the transitions belong to,
-           and they would play only when it turned, never as a row comes or
-           goes. A render is transparent to them. -->
-      {@render (one.kind === "day" ? heading : entry)(one as never)}
-    {/each}
+    {#if !shown.ready}
+      <Skeleton shape="rows" />
+    {:else}
+      {#each headed as one (one.key)}
+        <!-- Not an `{#if}`: that would be the block the transitions belong to,
+             and they would play only when it turned, never as a row comes or
+             goes. A render is transparent to them. -->
+        {@render (one.kind === "day" ? heading : entry)(one as never)}
+      {/each}
+    {/if}
 
     {#each kept as held (held.id)}
       <RefusedRow {held} />
     {/each}
 
-    {#if footed}
+    {#if footed && shown.ready}
       <More
         loading={$queue.loading}
         first={rows.length === 0}

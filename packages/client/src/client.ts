@@ -1,4 +1,4 @@
-import { distinctUntilChanged, filter, map, skip } from "rxjs";
+import { combineLatest, distinctUntilChanged, filter, map, skip } from "rxjs";
 import { v7 as uuidv7 } from "uuid";
 
 import { createActions } from "./actions/actions";
@@ -61,7 +61,7 @@ import { createStorage } from "./storage/storage";
 import { createTags } from "./tags/tags";
 import { createAccounts } from "./accounts/accounts";
 import { createTokens } from "./tokens/tokens";
-import { enter, loadMore, readAfterReturn } from "./surfaces/reads";
+import { enter, loadMore, PAGE, readAfterReturn } from "./surfaces/reads";
 import type { Client, ClientConfig, ListState } from "./types";
 
 function copied(file: File): Promise<File> {
@@ -133,11 +133,19 @@ function sameIds(
   return one.size === other.size && [...one].every((id) => other.has(id));
 }
 
-function listOf(state: ClientState, surface: Surface): ListState {
+function listOf(
+  state: ClientState,
+  surface: Surface,
+  answering: boolean,
+): ListState {
   const page = reading(state, surface);
   const drawn = fromCache(page);
+  // Until the pool answers or fails to, what the cache holds stands in for the
+  // first page and no more of it. A pool found out of reach has failed to,
+  // whatever its read is still waiting on.
+  const whole = page.failure !== undefined || !answering;
   const items = drawn
-    ? drawnFrom(state, surface)
+    ? drawnFrom(state, surface).slice(0, whole ? undefined : PAGE)
     : page.ids
         .map((id) => state.items.get(id))
         .filter((item): item is Item => item !== undefined);
@@ -160,6 +168,9 @@ function listOf(state: ClientState, surface: Surface): ListState {
  */
 const TIMEOUT_MS = 30_000;
 
+/** Long for `GET /v1/health`, and short for a person looking at a shell that says nothing. */
+const PROBE_TIMEOUT_MS = 3_000;
+
 /** What one read of several items may name. */
 const MOST_IDS = 100;
 
@@ -176,6 +187,7 @@ function timeoutOf(config: ClientConfig): number {
 export function createClient(config: ClientConfig): Client {
   const { transport, store } = config;
   const timeout = timeoutOf(config);
+  const probeTimeout = config.probeTimeout ?? PROBE_TIMEOUT_MS;
   const now = config.now ?? (() => new Date().toISOString());
   // Inverted: `getTimezoneOffset` counts minutes *behind* UTC, and the domain
   // counts them east of it.
@@ -190,7 +202,7 @@ export function createClient(config: ClientConfig): Client {
     update: (change) => held.update((current) => retained(change(current))),
     changes: held.changes,
   };
-  const reach = reachability(() => askedHealth(), now);
+  const reach = reachability((quick) => askedHealth(quick), now);
 
   // The sessions object needs the api, and the api needs to tell it about a
   // 401, so the notice goes through a binding rather than through either.
@@ -290,19 +302,26 @@ export function createClient(config: ClientConfig): Client {
       distinctUntilChanged(),
     )
     .subscribe((answerable) => {
-      if (answerable) void askedLimits();
-      else forgetLimits();
+      if (!answerable) {
+        forgetLimits();
+        return;
+      }
+      void askedLimits();
+      // Signing in moves nothing reach notices, the daemon having answered all
+      // along, so what waited at the shut door is sent from here.
+      void drain();
     });
 
   // The watcher keeps its own tempo, and only the gates are the client's to
   // hold: it asks nothing while nobody is reading and nothing while the pool
   // is not answering.
-  const onReach = reach.changes
-    .pipe(
-      map((mark) => mark.yes),
-      distinctUntilChanged(),
-    )
-    .subscribe((yes) => actions.answering(yes));
+  /** Whether the pool answers, apart from when it last did. */
+  const answering = reach.changes.pipe(
+    map((mark) => mark.yes),
+    distinctUntilChanged(),
+  );
+
+  const onReach = answering.subscribe((yes) => actions.answering(yes));
 
   /**
    * Hydration is started here and waited on by everything that touches state,
@@ -341,12 +360,17 @@ export function createClient(config: ClientConfig): Client {
     if (ours !== undefined) report(new PoolChanged(ours, identity));
   }
 
-  async function askedHealth(): Promise<{
+  async function askedHealth(quick: boolean): Promise<{
     readonly yes: boolean;
     readonly version?: string;
   }> {
     try {
-      const health = await answered(api.GET("/v1/health"));
+      const health = await answered(
+        api.GET(
+          "/v1/health",
+          quick ? { signal: AbortSignal.timeout(probeTimeout) } : {},
+        ),
+      );
       const ours = state.get().pool;
       if (
         ours !== undefined &&
@@ -578,13 +602,13 @@ export function createClient(config: ClientConfig): Client {
     accounts: createAccounts({ api }),
 
     feed: derived(
-      state.changes,
-      (current) => listOf(current, "feed"),
+      combineLatest([state.changes, answering]),
+      ([current, yes]) => listOf(current, "feed", yes),
       sameList,
     ),
     queue: derived(
-      state.changes,
-      (current) => listOf(current, "queue"),
+      combineLatest([state.changes, answering]),
+      ([current, yes]) => listOf(current, "queue", yes),
       sameList,
     ),
     outbox: derived(state.changes, (current) => current.outbox),
@@ -602,8 +626,8 @@ export function createClient(config: ClientConfig): Client {
     loadFeed: (order, by) =>
       after(() => loadMore(state, api, "feed", order, by)),
     loadQueue: (order) => after(() => loadMore(state, api, "queue", order)),
-    enter: (surface, order, filter, by) =>
-      after(() => enter(state, api, surface, order, filter, by)),
+    enter: (surface, order, filter, by, fromStart) =>
+      after(() => enter(state, api, surface, order, filter, by, fromStart)),
 
     item: (id) =>
       after(async () => {

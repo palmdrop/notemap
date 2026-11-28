@@ -1,8 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/svelte";
+import { fireEvent, render, screen, within } from "@testing-library/svelte";
 import { expect, test, vi } from "vitest";
 
 import OrderSelector from "./OrderSelector.svelte";
 import TagSet from "./TagSet.svelte";
+import { viewport } from "$testing/dom";
 
 test("the order selector reports which end the reader wants to start from", async () => {
   const chose = vi.fn();
@@ -469,4 +470,70 @@ test("the offer hangs from the line's place, which outlives the line", async () 
   expect(screen.queryByRole("combobox")).toBeNull();
   expect(place.isConnected).toBe(true);
   expect(place.getAttribute("style")).toContain(`anchor-name: ${named}`);
+});
+
+test("on a phone the + opens a sheet, its line taking what is typed, one tag after another until Done", async () => {
+  viewport(390);
+  const { added } = tagSet({ offered: ["reading", "recipe"] });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  const line = within(sheet).getByRole("combobox", { name: "Add a tag" });
+  await vi.waitFor(() => expect(document.activeElement).toBe(line));
+
+  await typed(line, "rec");
+  await pressed(line, "Enter");
+  expect(added).toHaveBeenCalledWith("recipe");
+  expect(screen.getByRole("dialog", { name: "tags" })).toBeDefined();
+  expect((line as HTMLInputElement).value).toBe("");
+
+  await fireEvent.click(within(sheet).getByRole("button", { name: "Done" }));
+  expect(screen.queryByRole("dialog", { name: "tags" })).toBeNull();
+  viewport(1024);
+});
+
+test("on a phone, with the keyboard up, the tag sheet's Done stands in its head and its foot gives way", async () => {
+  viewport(390);
+  tagSet({ offered: ["reading"] });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  const line = within(sheet).getByRole("combobox", { name: "Add a tag" });
+  await vi.waitFor(() => expect(document.activeElement).toBe(line));
+
+  expect(within(sheet).queryByRole("toolbar")).toBeNull();
+  const done = within(sheet).getByRole("button", { name: "Done" });
+  expect(done.closest("header")).not.toBeNull();
+
+  line.blur();
+  await vi.waitFor(() =>
+    expect(within(sheet).getByRole("toolbar", { name: "Tags" })).toBeDefined(),
+  );
+  expect(
+    within(sheet).getByRole("button", { name: "Done" }).closest("header"),
+  ).toBeNull();
+  viewport(1024);
+});
+
+test("on a phone the tag sheet holds what is carried, each taken off by its ×", async () => {
+  viewport(390);
+  const { removed } = tagSet({ names: ["seedling"] });
+
+  await fireEvent.click(screen.getByRole("button", { name: "Add a tag" }));
+  const sheet = screen.getByRole("dialog", { name: "tags" });
+  await fireEvent.click(
+    within(sheet).getByRole("button", { name: "remove seedling" }),
+  );
+
+  expect(removed).toHaveBeenCalledWith("seedling");
+  viewport(1024);
+});
+
+test("when wide the + opens the line in place, with no sheet", async () => {
+  tagSet({ offered: ["reading"] });
+
+  await opened();
+
+  expect(screen.queryByRole("dialog")).toBeNull();
 });

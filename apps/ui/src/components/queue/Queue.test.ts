@@ -13,6 +13,7 @@ import { anItem, json, read, routeOf } from "@notemap/client/testing";
 import { asked, client, pool, sent } from "$testing/pool";
 import { notices } from "$lib/notices.svelte";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
 import { NO_MORE_OFFLINE } from "$lib/said";
 import { keyboard, online, viewport } from "$testing/dom";
 import { registering, said } from "$testing/highlights";
@@ -20,6 +21,7 @@ import { remember } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { firings } from "$lib/firings.svelte";
 import { commandOf } from "$lib/command/stack.svelte";
+import { handedness } from "$lib/handedness.svelte";
 import Queue from "./Queue.svelte";
 import Listed from "./Queue.fixture.svelte";
 
@@ -117,10 +119,11 @@ async function discard() {
   await run("discard");
 }
 
-/** Where the person had scrolled, as the browser would report it. */
-function scrolledTo(at: number) {
+/** Where the person had scrolled to and come to rest, as the browser would report it. */
+async function scrolledTo(at: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: at });
-  return fireEvent.scroll(window);
+  await fireEvent.scroll(window);
+  return fireEvent(window, new Event("scrollend"));
 }
 
 test("puts the view back where the person left it, and reads the queue again", async () => {
@@ -131,6 +134,7 @@ test("puts the view back where the person left it, and reads the queue again", a
   await scrolledTo(240);
 
   cleanup();
+  arriving("popstate");
   render(Queue);
 
   await vi.waitFor(() => {
@@ -139,6 +143,23 @@ test("puts the view back where the person left it, and reads the queue again", a
   // The place is the shell's own and costs nothing. The rows are not: what the
   // queue holds changes while the reader is elsewhere, so arriving is a read.
   expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
+});
+
+test("comes to the queue at the top", async () => {
+  pool(queued("one"));
+
+  render(Queue);
+  await screen.findByText("one");
+  await scrolledTo(240);
+
+  cleanup();
+  render(Queue);
+  await screen.findByText("one");
+
+  await vi.waitFor(() => {
+    expect(asked()).toEqual(["GET /v1/queue", "GET /v1/queue"]);
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 240 });
 });
 
 test("discards with the pool unreachable, and says what it cannot queue", async () => {
@@ -788,9 +809,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // When wide a click opens the item beside the list; the second click of a
-  // double is not a second opening.
-  expect(went.to).toEqual(["/items/one"]);
+  // When wide the first click selects; the second of a double neither
+  // deselects nor opens.
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 });
 
 /** The box is the selection, and the actions are its foot. */
@@ -2451,10 +2473,14 @@ test("when wide, a row under the pointer offers + tag, and taking a tag keeps th
   expect(went.to).toEqual([]);
 });
 
-test("when wide a row opens its item, and is marked as the one last opened", async () => {
+test("when wide a click selects a row, and a click on the selected row opens its item", async () => {
   pool(queued("one", "two"));
   render(Listed);
   const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 
   await fireEvent.click(words);
   expect(went.to).toEqual(["/items/one"]);
@@ -2490,4 +2516,312 @@ test("selecting takes the head, × lets go, and on a phone the + gives the foot 
     within(head()).getByRole("button", { name: "Clear the selection" }),
   );
   expect(screen.queryByText("1 selected")).toBeNull();
+});
+
+/** A finger drawn across a row, from one x to another. */
+async function swipe(row: Element, from: number, to: number) {
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: from });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: to });
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: to });
+}
+
+const uncovered = (id: string, what: string) =>
+  document
+    .querySelector(`[data-row="${id}"]`)
+    ?.parentElement?.querySelector(`[data-uncovered="${what}"]`) ?? null;
+
+test("on a phone a row swiped left far enough opens the quick route, and a short one does not", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 300 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 250 });
+  expect(uncovered("one", "route")).not.toBeNull();
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 250 });
+  expect(quick.item).toBeUndefined();
+  expect(uncovered("one", "route")).toBeNull();
+
+  await swipe(row, 300, 200);
+  expect(quick.item).toBe("one");
+});
+
+test("on a phone a queue row swiped right stands open on Manual and Discard, and a short swipe does not", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await swipe(row, 100, 150);
+  expect(uncovered("one", "by-hand")).toBeNull();
+
+  await swipe(row, 100, 200);
+  const shelf = uncovered("one", "by-hand")!;
+  expect(
+    within(shelf as HTMLElement).getByRole("button", { name: /Manual/ }),
+  ).toBeDefined();
+
+  await fireEvent.click(
+    within(shelf as HTMLElement).getByRole("button", { name: /Discard/ }),
+  );
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/archive");
+  });
+  expect(notices.shown.at(-1)?.offer?.label).toBe("undo");
+  expect(uncovered("one", "by-hand")).toBeNull();
+});
+
+test("a row standing open puts itself back on a tap, a scroll, or another row's swipe, and opens nothing", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  const one = document.querySelector('[data-row="one"]')!;
+  const two = document.querySelector('[data-row="two"]')!;
+
+  await swipe(one, 100, 200);
+  await fireEvent.click(within(one as HTMLElement).getByText("one"));
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(went.to).toEqual([]);
+
+  await swipe(one, 100, 200);
+  await fireEvent.scroll(window);
+  expect(uncovered("one", "by-hand")).toBeNull();
+
+  await swipe(one, 100, 200);
+  await swipe(two, 100, 200);
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(uncovered("two", "by-hand")).not.toBeNull();
+});
+
+test("when wide a hovered row offers Manual and Discard beside Route, selected or not", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const row = (await screen.findByText("one")).closest(
+    "[data-row]",
+  ) as HTMLElement;
+
+  await fireEvent.pointerEnter(row);
+  for (const name of ["Route", "Manual", "Discard"]) {
+    expect(within(row).getByRole("button", { name })).toBeDefined();
+  }
+  await fireEvent.click(within(row).getByRole("button", { name: "Manual" }));
+  await vi.waitFor(() => {
+    expect(asked()).toContain("POST /v1/items/one/mark-processed");
+  });
+  expect(went.to).toEqual([]);
+
+  await fireEvent.click(stampOf("two"));
+  const two = screen.getByText("two").closest("[data-row]") as HTMLElement;
+  await fireEvent.pointerEnter(two);
+  expect(within(two).getByRole("button", { name: "Route" })).toBeDefined();
+});
+
+test("the row last opened is tinted faintly, and not as a selection is", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  const words = await screen.findByText("one");
+
+  await fireEvent.click(words);
+  await fireEvent.click(words);
+  // Opened, the queue is left; the selection does not outlive it.
+  await fireEvent.keyDown(window, { key: "Escape" });
+
+  const row = words.closest("[data-row]") as HTMLElement;
+  expect(row.className).not.toContain("bg-picked");
+  expect(row.className).toContain("bg-hover");
+});
+
+test("the row last opened is no longer marked once another row is selected", async () => {
+  pool(queued("one", "two"));
+  render(Listed);
+  const one = await screen.findByText("one");
+  const row = one.closest("[data-row]") as HTMLElement;
+
+  await fireEvent.click(one);
+  await fireEvent.click(one);
+  expect(went.to).toEqual(["/items/one"]);
+  await fireEvent.keyDown(window, { key: "Escape" });
+  expect(row.className).toContain("bg-hover");
+
+  await fireEvent.click(screen.getByText("two"));
+
+  expect(row.hasAttribute("data-last-opened")).toBe(false);
+  expect(row.className).not.toContain("bg-hover");
+});
+
+test("on a phone a tap selects a row and offers its +, and a tap on the selected row opens it", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  const one = await screen.findByText("one");
+  expect(screen.queryByRole("button", { name: "Add a tag" })).toBeNull();
+
+  await fireEvent.click(one);
+
+  expect(went.to).toEqual([]);
+  expect(
+    screen.getByRole("button", { name: "Add a tag" }).closest("[data-row]"),
+  ).toBe(document.querySelector('[data-row="one"]'));
+
+  await fireEvent.click(one);
+
+  expect(went.to).toEqual(["/items/one"]);
+});
+
+test("on a phone the + stands on the side of the hand chosen, and nothing else moves", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const plus = () => screen.getByRole("link", { name: "Capture" });
+  expect(plus().className).toContain("right-4");
+
+  handedness.choose("left");
+  await tick();
+
+  expect(plus().className).toContain("left-4");
+  expect(plus().className).not.toContain("right-4");
+  handedness.choose("right");
+});
+
+test("a swipe cancelled midway leaves the row where it was", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 100 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 220 });
+  await fireEvent.pointerCancel(row, { pointerType: "touch" });
+
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect((row as HTMLElement).style.translate).toBe("");
+});
+
+test("what a swipe left uncovers turns to ink once letting go would open the route", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 300 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 250 });
+  expect(uncovered("one", "route")?.className).not.toContain("bg-ink");
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 210 });
+  expect(uncovered("one", "route")?.className).toContain("bg-ink");
+  await fireEvent.pointerCancel(row, { pointerType: "touch" });
+});
+
+test("from a row standing open, a long drag left only puts it back", async () => {
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await swipe(row, 100, 200);
+  await swipe(row, 340, 40);
+
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(quick.item).toBeUndefined();
+});
+
+test("a tap on another row while one stands open puts that one back, and opens nothing", async () => {
+  viewport(390);
+  pool(queued("one", "two"));
+  render(Listed);
+  await screen.findByText("one");
+  const one = document.querySelector('[data-row="one"]')!;
+  const two = document.querySelector('[data-row="two"]')!;
+
+  await swipe(one, 100, 200);
+  await fireEvent.pointerDown(two, { pointerType: "touch", clientX: 100 });
+  await fireEvent.pointerUp(two, { pointerType: "touch", clientX: 100 });
+  await fireEvent.click(within(two as HTMLElement).getByText("two"));
+
+  expect(uncovered("one", "by-hand")).toBeNull();
+  expect(went.to).toEqual([]);
+
+  // From there a tap is a tap: it selects, and the next opens.
+  for (let tap = 0; tap < 2; tap++) {
+    await fireEvent.pointerDown(two, { pointerType: "touch", clientX: 100 });
+    await fireEvent.pointerUp(two, { pointerType: "touch", clientX: 100 });
+    await fireEvent.click(within(two as HTMLElement).getByText("two"));
+  }
+  expect(went.to).toEqual(["/items/two"]);
+});
+
+test("holding a row standing open selects it, and it does not stand open again when selecting ends", async () => {
+  vi.useFakeTimers();
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await vi.waitFor(() => screen.getByText("one"));
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await swipe(row, 100, 200);
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 300 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 300 });
+  vi.useRealTimers();
+  expect(screen.getByText("1 selected")).toBeDefined();
+
+  await fireEvent.keyDown(window, { key: "Escape" });
+  await vi.waitFor(() => {
+    expect(screen.queryByText("1 selected")).toBeNull();
+  });
+  expect(uncovered("one", "by-hand")).toBeNull();
+});
+
+test("a row left standing open is not found open on coming back", async () => {
+  viewport(390);
+  pool(queued("one"));
+  const first = render(Listed);
+  await screen.findByText("one");
+  await swipe(document.querySelector('[data-row="one"]')!, 100, 200);
+
+  first.unmount();
+  render(Listed);
+  await screen.findByText("one");
+
+  expect(uncovered("one", "by-hand")).toBeNull();
+});
+
+test("when wide a selected row offers Manual and Discard beside Route", async () => {
+  pool(queued("one"));
+  render(Listed);
+  await screen.findByText("one");
+
+  await fireEvent.click(stampOf("one"));
+  const row = screen.getByText("one").closest("[data-row]") as HTMLElement;
+  await fireEvent.pointerEnter(row);
+
+  for (const name of ["Route", "Manual", "Discard"]) {
+    expect(within(row).getByRole("button", { name })).toBeDefined();
+  }
+});
+
+test("on a phone a press held inside a sheet opened from a row does not select the row", async () => {
+  vi.useFakeTimers();
+  viewport(390);
+  pool(queued("one"));
+  render(Listed);
+  await vi.waitFor(() => screen.getByText("one"));
+  const sheet = document.createElement("dialog");
+  document.querySelector('[data-row="one"] [data-body]')!.append(sheet);
+
+  await fireEvent.pointerDown(sheet, { pointerType: "touch", clientX: 200 });
+  await vi.advanceTimersByTimeAsync(600);
+  await fireEvent.pointerUp(sheet, { pointerType: "touch", clientX: 200 });
+  vi.useRealTimers();
+
+  expect(screen.queryByText("1 selected")).toBeNull();
+  sheet.remove();
 });

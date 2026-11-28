@@ -35,6 +35,9 @@ export default defineConfig(({ mode }) => {
             filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
         },
         adapter: adapter({ fallback: "index.html" }),
+        // Registered by the shell outside dev only, where a kept page would
+        // hide the change being made.
+        serviceWorker: { register: false },
       }),
     ],
     test: {

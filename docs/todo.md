@@ -42,6 +42,17 @@
 
 - [x] when sorting the feed in "processed" order, selecting an item makes it jump to the wrong place in the feed, probably the "actual" placement in the feed
 
+- [ ] **Virtualise the lists?** A list come back to builds every row walked before its place can be
+  scrolled to: 175 rows took about a second at 6× CPU on 2026-11-26, behind a skeleton. Drawing only
+  the rows near the view would make that constant, at a price: rows differ in height and sit under
+  day headings, the place kept is a scroll offset rather than a row, `j`/`k` and range marking
+  assume every row is in the page, and find-in-page and a screen reader see only what is drawn. A
+  middle way is to draw from the row the reader was at and add rows above as they scroll up.
+- [ ] **One observer for the feed's rows.** Each feed row makes its own `IntersectionObserver` to
+  learn it has been on screen (`Row.svelte`, `onScreen`), so drawing 125 rows makes 125. One shared
+  observer, with a map from element to row, would do the same. A cleanup rather than a speed-up:
+  making the 125 took about 12ms at 4× CPU on 2026-11-26, against a second for the rows themselves.
+
 ## Composer and capture
 
 - [ ] Consider capture templates: on capture time, I select a capture format which auto-tags and auto-routes (optionally) the finished capture when it is committed.
@@ -129,6 +140,11 @@
   ([plan](plans/client-store-on-a-filesystem.md)); it affects the web shell the same way. Worth
   checking what deep imports cost before assuming they are the answer — the observable seam is one
   file, and whether the client needs rxjs at all is the bigger question underneath.
+- [ ] **Signed asset URLs. The developer implements this, with guidance. No agent builds it
+  unattended.** It is a learning exercise first. An `<img>` cannot carry a bearer token, so a shell
+  that is not same-origin cannot render `/v1/assets/{id}/content`. security.md owes a short-lived
+  signed URL for this, not a token in a query string. Nothing needs it while every shell is the
+  daemon's own origin ([research](research/mobile-shell.md)).
 
 ## Classification
 
@@ -232,6 +248,8 @@
   rather than at the top. It has to: the relay re-reads it under that time, and a different one
   would read as a changed capture. If continuations get lost far down the queue, the fix is on the
   drawing side, not the capture time.
+
+- [ ] linux notemap inbox similar to raycast, short command, tui maybe, to input, same features as the raycast command.
 
 ## Pool, store and correctness
 

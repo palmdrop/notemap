@@ -16,6 +16,7 @@ import { asked, client, pool } from "$testing/pool";
 import { keyboard, viewport } from "$testing/dom";
 import { notices } from "$lib/notices.svelte";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
 import { remember } from "$lib/order";
 import { address } from "$testing/address.svelte";
 import { NO_ITEM_OFFLINE, NO_RECORDS_OFFLINE } from "$lib/said";
@@ -133,10 +134,11 @@ test("says what is missing where nothing is held and the pool is out of reach", 
   expect(screen.queryByText(/No such item/)).toBeNull();
 });
 
-/** Where the person had scrolled, as the browser would report it. */
-function scrolledTo(at: number) {
+/** Where the person had scrolled to and come to rest, as the browser would report it. */
+async function scrolledTo(at: number) {
   Object.defineProperty(window, "scrollY", { configurable: true, value: at });
-  return fireEvent.scroll(window);
+  await fireEvent.scroll(window);
+  return fireEvent(window, new Event("scrollend"));
 }
 
 test("costs the queue neither its order nor its place", async () => {
@@ -159,6 +161,7 @@ test("costs the queue neither its order nor its place", async () => {
   await scrolledTo(900);
   cleanup();
 
+  arriving("popstate");
   render(Queue);
   await screen.findByText("still in the queue");
 

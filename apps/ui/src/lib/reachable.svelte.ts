@@ -15,6 +15,8 @@ let daemonVersion = $state<string | undefined>(undefined);
 
 let readers = 0;
 let drop: (() => void) | undefined;
+/** Whether `online` is being kept, or the browser has to be asked. */
+let listening = $state(false);
 
 /**
  * One set of listeners however many surfaces are reading them: an `online`
@@ -41,7 +43,9 @@ function hold(): () => void {
       daemonVersion = mark.version;
     });
 
+    listening = true;
     drop = () => {
+      listening = false;
       window.removeEventListener("online", up);
       window.removeEventListener("offline", down);
       held.unsubscribe();
@@ -59,12 +63,25 @@ function hold(): () => void {
   };
 }
 
+/** Mounted after what it draws, which would otherwise have asked as if online. */
+function browserSaysOnline(): boolean {
+  return listening ? online : navigator.onLine;
+}
+
 export function reachable() {
   onMount(hold);
 
   return {
     get yes() {
-      return online && answering;
+      return browserSaysOnline() && answering;
+    },
+    /**
+     * Whether anything has said yet: the pool, by answering or failing to, or
+     * the browser, by being offline. Until then `yes` is the client's optimism,
+     * which is what acts, and nothing is said either way.
+     */
+    get known() {
+      return !browserSaysOnline() || answeredAt !== undefined;
     },
     get at() {
       return answeredAt;

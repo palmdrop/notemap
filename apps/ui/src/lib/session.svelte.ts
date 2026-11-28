@@ -10,6 +10,31 @@ let held: SessionState = $state({
   known: false,
 });
 
+const KEPT = "notemap:session";
+
+/** The last answer the pool gave, kept on this device for a start with no pool to ask. */
+function kept(): SessionState | undefined {
+  try {
+    const said = JSON.parse(localStorage.getItem(KEPT) ?? "null") as unknown;
+    if (said === null || typeof said !== "object") return undefined;
+    const { required, signedIn } = said as Record<string, unknown>;
+    if (typeof required !== "boolean" || typeof signedIn !== "boolean") {
+      return undefined;
+    }
+    return { required, signedIn, known: true };
+  } catch {
+    return undefined;
+  }
+}
+
+function keep(answer: SessionState): void {
+  if (!answer.known) return;
+  localStorage.setItem(
+    KEPT,
+    JSON.stringify({ required: answer.required, signedIn: answer.signedIn }),
+  );
+}
+
 let readers = 0;
 let drop: (() => void) | undefined;
 
@@ -20,13 +45,20 @@ let drop: (() => void) | undefined;
  */
 function hold(): () => void {
   if (readers === 0) {
+    // What the daemon last said here stands until it answers; with nothing
+    // kept it stays unknown, and only a known shut door draws the login.
+    const last = kept();
+    if (!held.known && last !== undefined) held = last;
+
     const watching = client.session.subscribe((current) => {
+      if (!current.known && held.known) return;
       held = current;
+      keep(current);
     });
 
-    // Swallowed: a daemon that cannot be reached leaves this unknown, which the
-    // chrome draws as waiting rather than as a login nobody asked for.
-    void client.askSession().catch(() => undefined);
+    void client.askSession().catch(() => {
+      // Not answering leaves what was kept standing.
+    });
 
     drop = () => watching.unsubscribe();
   }
@@ -39,6 +71,7 @@ function hold(): () => void {
 
     drop?.();
     drop = undefined;
+    held = { required: false, signedIn: false, known: false };
   };
 }
 
@@ -53,8 +86,12 @@ export function session() {
     get shut() {
       return held.known && held.required && !held.signedIn;
     },
-    /** Who this is, as the drawer says it: nobody where the pool asks no one. */
+    /**
+     * Who this is, as the drawer says it: nobody where the pool asks no one,
+     * and nothing until it is known.
+     */
     get who(): string {
+      if (!held.known) return "";
       if (!held.required) return "no password set";
       if (!held.signedIn) return "signed out";
       return held.as?.kind === "token"

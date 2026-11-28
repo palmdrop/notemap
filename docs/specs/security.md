@@ -1,8 +1,16 @@
 # Spec: What is undefended
 
 **Status**: Draft
-**Last updated**: 2026-10-13
+**Last updated**: 2026-11-27
 **Shipped**:
+
+- 2026-11-27 — **Signed out, the installed shell still takes a capture**, sent under whoever
+  signs in next. See [offline-first-start](../plans/offline-first-start.md).
+
+- 2026-11-25 — **An installed shell is still the same origin.** A service worker keeps the shell's
+  files and nothing of the pool's, a share is held on the device until the capture page takes it,
+  and installing on Android passes the manifest through Google. See
+  [installable-shell](../plans/installable-shell.md).
 
 - 2026-10-13 — **A stage per branch, and an are.na account that names its own address.** A
   branch can be run as a containerised stack beside a real WebDAV server and fakes for are.na and
@@ -738,6 +746,42 @@ Said plainly, because an absence reads as an oversight otherwise:
 - **No `Origin` check beside `SameSite`, and `hono/csrf` declined.** What the middleware would
   have guarded is closed in the content-type rule instead, which depends on no header surviving a
   proxy — see the section below.
+
+### An installed shell is still the same origin
+
+*(2026-11-25, [plan](../plans/installable-shell.md))* Installing the shell from a browser
+([shell.md](shell.md#installed-on-a-phone)) changes none of the above. It is the same files, served
+by the daemon from its own origin, carrying the same cookie. It reaches `/v1` the way a tab does.
+
+- **The service worker keeps the shell's files and nothing of the pool's.** It passes `/v1`, `/docs`
+  and every other origin through untouched, so nothing of the pool's it holds outlives a sign-out or
+  bypasses the door. What is shared into it, like the draft, is the device's and does
+  *(amended 2026-11-25)*. The manifest, the icons and the worker itself are open, as the shell's other files are.
+- **A share is held on the device until it is captured or let go of.** The worker keeps what was
+  shared in the browser's own storage for this origin: its words until they are in the draft, its
+  files until the capture carrying them is sent, or they are removed, or the draft is cleared. Nothing
+  goes to the pool until the person captures it.
+- **The share target is a door any site can knock on** *(2026-11-25)*. It is recognised by method
+  and path, so a form on any page that posts to `/capture` is taken by the worker; `SameSite` plays
+  no part, since the post never reaches the daemon. What such a post can do is add words and files
+  to the end of the draft, never capture them. Defended: a post that is not a page — a frame inside
+  another site, where nobody would see it arrive — is refused, and one that is says
+  `Added what was shared, at the end.` when it lands. Undefended: a site that sends the person to the
+  app with a top-level post adds to the draft in plain view, and its size is bounded only by the
+  browser's quota for the origin.
+- **Who is signed in is kept on the device, as the last answer the pool gave** *(2026-11-25)*. It
+  is not a credential: it decides only whether a start with no pool to ask draws from the store the
+  device already holds, and the cookie still decides what the pool answers. A sign-out, or a session
+  found lapsed, replaces it and drops the store as it always has.
+- **Signed out, the installed shell still takes a capture** *(2026-11-27)*. Whoever holds the
+  unlocked phone can write one, and it is sent under whoever signs in next, with nothing to say
+  who wrote it. Nothing of the pool's is shown to do it: the capture page draws only what is typed
+  there. Accepted, for a pool of one person on their own phone, over losing what was written while
+  a session had lapsed. A browser tab does not do this.
+- **Installing on Android passes the manifest through Google.** Chrome mints a *WebAPK* through
+  Google's servers to register an installed app with the system, which is what puts it in the share
+  sheet. The shell's name, icons, address and share target go there. Pool material does not. A
+  browser without that service installs a shortcut, which has no share target.
 
 ### Why there is no `Origin` check, and why `hono/csrf` was not the answer
 

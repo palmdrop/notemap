@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 
 import { json, refusal, routeOf } from "@notemap/client/testing";
 
+import { online } from "$testing/dom";
 import { asked, client, pool, sentUrls } from "$testing/pool";
 import Unfurls from "./Unfurls.svelte";
 
@@ -257,4 +258,25 @@ test("keeps no picture's room where the page offers none", async () => {
   await screen.findByText("A post");
 
   expect(block("A post").querySelector(".aspect-square")).toBeNull();
+});
+
+test("draws nothing and asks nothing offline, and draws once the pool answers again", async () => {
+  await serving(true, {
+    "https://a.example/post": () =>
+      json(200, {
+        url: "https://a.example/post",
+        reached: true,
+        title: "A post",
+      }),
+  });
+  online(false);
+
+  render(Unfurls, { text: "read https://a.example/post" });
+
+  await Promise.resolve();
+  expect(document.querySelector("[data-unfurl]")).toBeNull();
+  expect(unfurls()).toEqual([]);
+
+  online(true);
+  expect(await screen.findByText("A post")).toBeDefined();
 });

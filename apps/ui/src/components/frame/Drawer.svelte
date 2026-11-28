@@ -23,7 +23,8 @@
     current: string;
     queue: number | undefined;
     waiting: number;
-    reachable: boolean;
+    /** Absent until it is known. */
+    reachable: boolean | undefined;
     at: string | undefined;
     who: string;
     onclose: () => void;

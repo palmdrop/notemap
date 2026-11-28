@@ -5,4 +5,4 @@
   const pool = reachable();
 </script>
 
-<span>{pool.yes ? "reachable" : "offline"}</span>
+<span>{pool.known ? (pool.yes ? "reachable" : "offline") : "not known"}</span>

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { getContext } from "svelte";
+
+  import { SHORT } from "$components/primitives/blocks/ActionBar.svelte";
   import { chordFor } from "$lib/command/bindings";
   import { spoken } from "$lib/command/keys";
   import { width } from "$lib/breakpoint";
@@ -42,6 +45,8 @@
 
   const held = $derived(disabled || why !== undefined);
   const head = $derived(width.wide);
+  const shortBar = getContext<(() => boolean) | undefined>(SHORT);
+  const short = $derived(!head && (shortBar?.() ?? false));
   const chord = $derived(command === undefined ? undefined : chordFor(command));
   const title = $derived(
     why ??
@@ -50,12 +55,12 @@
 
   const look = $derived(
     primary
-      ? `flex-1 flex-row gap-2 rounded-control px-4 ${head ? "max-w-48 min-h-9 ml-auto" : "min-h-12"} ${
+      ? `flex-row gap-2 rounded-control px-4 ${head ? "flex-1 max-w-48 min-h-9 ml-auto" : short ? "flex-none min-h-9 ml-auto" : "flex-1 min-h-12"} ${
           why !== undefined
             ? "border border-dashed border-off-line bg-paper text-muted"
             : "border border-ink bg-ink text-paper active:bg-muted disabled:opacity-40"
         }`
-      : `rounded-control px-2.5 ${head ? "flex-row gap-1.5 min-h-9" : "flex-col gap-1 min-h-target text-small leading-none"} ${
+      : `rounded-control px-2.5 ${head ? "flex-row gap-1.5 min-h-9" : short ? "min-h-9 min-w-9" : "flex-col gap-1 min-h-target text-small leading-none"} ${
           why !== undefined ? "text-muted" : danger ? "text-danger" : "text-ink"
         } active:bg-off-down disabled:opacity-40`,
   );
@@ -64,7 +69,9 @@
 {#if href !== undefined && !held}
   <a {href} {title} class="inline-flex items-center justify-center {look}">
     {#if icon !== undefined}<Icon name={icon} class="size-5" />{/if}
-    <span>{label}</span>
+    <span class={short && !primary && icon !== undefined ? "sr-only" : ""}
+      >{label}</span
+    >
   </a>
 {:else}
   <button
@@ -84,6 +91,8 @@
     {:else if icon !== undefined}
       <Icon name={icon} class="size-5" />
     {/if}
-    <span>{label}</span>
+    <span class={short && !primary && icon !== undefined ? "sr-only" : ""}
+      >{label}</span
+    >
   </button>
 {/if}

@@ -17,6 +17,9 @@ import { remember, rememberKey } from "$lib/order";
 import { remember as rememberView } from "$lib/view";
 import { NO_MORE_OFFLINE, NOTHING_CAPTURED } from "$lib/said";
 import { quick } from "$lib/quicking.svelte";
+import { arriving } from "$lib/arrival";
+import { drawing } from "$lib/shown.svelte";
+import { PAGE } from "@notemap/client";
 import Feed from "./Feed.svelte";
 import Headed from "./Feed.fixture.svelte";
 
@@ -563,9 +566,10 @@ test("goes to process on a double click, and leaves the row selected", async () 
   await fireEvent.dblClick(body);
 
   expect(quick.item).toBe("one");
-  // When wide a click opens the item beside the list; the second click of a
-  // double is not a second opening.
-  expect(went.to).toEqual(["/items/one"]);
+  // When wide the first click selects; the second of a double neither
+  // deselects nor opens.
+  expect(went.to).toEqual([]);
+  expect(stamps(true)).toHaveLength(1);
 });
 
 test("puts the view back where the reader left it to read one item", async () => {
@@ -575,13 +579,88 @@ test("puts the view back where the reader left it to read one item", async () =>
   await screen.findByText("one");
   Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
   await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
 
   cleanup();
+  arriving("popstate");
   render(Feed);
 
   await vi.waitFor(() => {
     expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
   });
+});
+
+test("keeps the place it was left at while it is drawn, whatever scrolls meanwhile", async () => {
+  const many = [...Array(PAGE + 5).keys()].map((at) =>
+    anItem(`row-${String(at)}`),
+  );
+  pool(held(...many));
+  render(Feed);
+  await screen.findByText("row-0");
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+  await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
+
+  cleanup();
+  arriving("popstate");
+  render(Feed);
+  // The page put back where it was, while it is still only a skeleton tall.
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 40 });
+  await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
+
+  await screen.findByText("row-0");
+  await vi.waitFor(() => {
+    expect(window.scrollTo).toHaveBeenCalledWith({ top: 320 });
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 40 });
+});
+
+test("comes to the feed at the top, read again from its first page", async () => {
+  pool(held(anItem("one")));
+
+  render(Feed);
+  await screen.findByText("one");
+  Object.defineProperty(window, "scrollY", { configurable: true, value: 320 });
+  await fireEvent.scroll(window);
+  await fireEvent(window, new Event("scrollend"));
+
+  cleanup();
+  render(Feed);
+  await screen.findByText("one");
+
+  await vi.waitFor(() => {
+    expect(asked().filter((route) => route === "GET /v1/feed")).toHaveLength(2);
+  });
+  expect(window.scrollTo).not.toHaveBeenCalledWith({ top: 320 });
+});
+
+test("draws a long feed once the view is on screen, and says it is drawing", async () => {
+  const many = [...Array(PAGE + 5).keys()].map((at) =>
+    anItem(`row-${String(at)}`),
+  );
+  pool((request) =>
+    routeOf(request) === "GET /v1/feed"
+      ? json(200, { values: many, next: "/v1/feed?after=past" })
+      : json(200, { values: [] }),
+  );
+  render(Feed);
+  await screen.findByText("row-0");
+
+  cleanup();
+  arriving("popstate");
+  render(Feed);
+
+  expect(screen.queryByText("row-0")).toBeNull();
+  expect(document.querySelector("[data-skeleton]")).not.toBeNull();
+  expect(drawing.now).toBe(true);
+  // Under a skeleton the foot would stand in view, and ask for what is past it.
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+
+  expect(await screen.findByText("row-0")).toBeDefined();
+  expect(document.querySelector("[data-skeleton]")).toBeNull();
+  expect(drawing.now).toBe(false);
+  expect(screen.getByRole("button", { name: "Load more" })).toBeDefined();
 });
 
 test("walks the rows with j and k, and processes the one selected", async () => {
@@ -860,4 +939,21 @@ test("undiscard is offered only where something marked is discarded, and discard
 
   await fireEvent.click(stamp("gone"), { metaKey: true });
   expect([offers("Discard"), offers("Undiscard")]).toEqual([true, false]);
+});
+
+test("on a phone a feed row swiped right stands open on nothing: Manual and Discard are the queue's", async () => {
+  viewport(390);
+  pool(held(anItem("one")));
+  render(Feed);
+  await screen.findByText("one");
+  const row = document.querySelector('[data-row="one"]')!;
+
+  await fireEvent.pointerDown(row, { pointerType: "touch", clientX: 100 });
+  await fireEvent.pointerMove(row, { pointerType: "touch", clientX: 250 });
+
+  expect(
+    row.parentElement?.querySelector('[data-uncovered="by-hand"]'),
+  ).toBeNull();
+  expect((row as HTMLElement).style.translate).toBe("");
+  await fireEvent.pointerUp(row, { pointerType: "touch", clientX: 250 });
 });

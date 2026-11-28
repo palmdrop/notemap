@@ -1,6 +1,10 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import Icon from "$components/primitives/icon/Icon.svelte";
+  import ActionBar from "$components/primitives/blocks/ActionBar.svelte";
+  import BarAction from "$components/primitives/blocks/BarAction.svelte";
+  import Sheet from "$components/primitives/sheets/Sheet.svelte";
+  import TagSet from "./TagSet.svelte";
   import type { CandidateEntry } from "@notemap/client";
 
   import Walked from "$components/primitives/composer/Walked.svelte";
@@ -22,7 +26,8 @@
   /**
    * A chooser over known names with free entry. What the item carries is a row
    * of tags, each taken off by its `×` where tags can be changed. `+` opens a line with the pool's offer in a
-   * panel beneath it, narrowed as the line is typed into: the first match is
+   * panel beneath it — on a phone, a sheet of its own holding the set as a
+   * field, over the keyboard and the words alike — narrowed as the line is typed into: the first match is
    * marked as soon as the line is typed into, `⇥` completes what was typed as
    * far as the offer agrees and once there is nothing left to complete walks
    * the offer, `↑↓` and the pointer walk it too, `⏎` takes the marked row, and
@@ -109,12 +114,13 @@
   /** Where the walk stands, and the row that is marked. Nothing, until the line is typed into or walked. */
   let at = $state<number | undefined>(undefined);
   let line = $state<HTMLInputElement | null>(null);
-  // On a phone the line goes to the top of the view, so the offer has the room
-  // under it down to the keyboard.
+
+  /** On a phone the `+` opens a sheet: a line hung under a tag, with the keyboard up, has no room. */
+  let sheet = $state(false);
+  let inner = $state<TagSet | null | undefined>(undefined);
   $effect(() => {
-    if (adding && !field && !width.wide) {
-      line?.scrollIntoView({ block: "start" });
-    }
+    const opened = inner;
+    untrack(() => opened?.add());
   });
 
   /** Opens the line, for a key that asks for it from outside. */
@@ -124,7 +130,8 @@
   }
 
   function open(): void {
-    adding = true;
+    if (width.wide) adding = true;
+    else sheet = true;
   }
 
   function close(): void {
@@ -160,6 +167,17 @@
   };
 
   let stepping = $state<Stepping | undefined>(undefined);
+  const stepped = $derived(stepping !== undefined);
+
+  // Drawn without a <dialog>, so back on a phone would leave the page: the
+  // close request it sends puts the question away as its × does.
+  $effect(() => {
+    if (!stepped || typeof CloseWatcher === "undefined") return;
+    const watcher = new CloseWatcher();
+    watcher.onclose = leaveOff;
+    return () => watcher.destroy();
+  });
+
   const step = $derived(
     stepping === undefined ? undefined : stepping.ask.steps[stepping.at],
   );
@@ -773,4 +791,40 @@
   {@render carried()}
   {@render place()}
   {@render offer()}
+  {#if sheet}
+    <Sheet
+      title="tags"
+      onclose={() => (sheet = false)}
+      main={{ label: "Done", onclick: () => (sheet = false) }}
+    >
+      <div class="flex flex-wrap items-center gap-1 px-gutter py-4">
+        <TagSet
+          bind:this={inner}
+          {names}
+          {offered}
+          {fires}
+          {held}
+          {waiting}
+          {marked}
+          {ask}
+          {besides}
+          {partly}
+          field
+          {label}
+          {onadd}
+          {onremove}
+        />
+      </div>
+      {#snippet foot()}
+        <ActionBar label="Tags">
+          <BarAction
+            icon="check"
+            label="Done"
+            primary
+            onclick={() => (sheet = false)}
+          />
+        </ActionBar>
+      {/snippet}
+    </Sheet>
+  {/if}
 {/if}

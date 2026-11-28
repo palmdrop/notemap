@@ -51,6 +51,20 @@ test("leaves a click on an offered option to the chooser", () => {
   expect(open).not.toHaveBeenCalled();
 });
 
+/** A tag sheet opened from a row is drawn over everything, though it sits inside the row. */
+test("leaves a click or a double inside a sheet to the sheet", () => {
+  selected(true);
+  const open = vi.fn();
+  const sheet = document.createElement("dialog");
+  const veil = document.createElement("div");
+  sheet.append(veil);
+
+  pickable(open)(click(1, veil));
+  doubled(open)(click(2, veil));
+
+  expect(open).not.toHaveBeenCalled();
+});
+
 test("goes on a double the browser spent on nothing", () => {
   selected(true);
   const go = vi.fn();

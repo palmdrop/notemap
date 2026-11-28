@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
+  arrive,
   bezier,
   markingHidden,
   drawOut,
@@ -11,6 +12,7 @@ import {
   fade,
   following,
   grow,
+  leave,
   pinned,
   revealed,
   rise,
@@ -45,6 +47,24 @@ describe("duration", () => {
     expect(slide(node).duration).toBe(220);
     expect(slide(node, { still: true }).duration).toBe(0);
     expect(rise(node, { still: true }).duration).toBe(0);
+  });
+
+  test("a transition asked to stand still reads no style, as a page of rows mounts at once", () => {
+    root.style.setProperty("--duration-short", "150ms");
+    root.style.setProperty("--duration-long", "220ms");
+    const parent = document.createElement("div");
+    const node = document.createElement("div");
+    parent.append(node);
+    const styles = vi.spyOn(window, "getComputedStyle");
+    const boxes = vi.spyOn(node, "getBoundingClientRect");
+
+    for (const moving of [slide, fade, rise, arrive, unfold, leave]) {
+      expect(moving(node, { still: true }).duration).toBe(0);
+    }
+
+    expect(styles).not.toHaveBeenCalled();
+    expect(boxes).not.toHaveBeenCalled();
+    styles.mockRestore();
   });
 
   test("a fade is short unless told otherwise", () => {
@@ -228,27 +248,66 @@ describe("revealed", () => {
 });
 
 describe("following", () => {
-  let told: (() => void) | undefined;
+  type Size = { height: number; width: number };
+  const sizes = new WeakMap<Element, () => Size>();
+  const observers = new Set<{
+    told: (entries: unknown[]) => void;
+    watching: Set<Element>;
+  }>();
+  let laidOut = 0;
+  let order: string[] = [];
 
-  function box() {
+  function report(targets: readonly Element[]): void {
+    for (const observer of observers) {
+      const entries = targets
+        .filter((target) => observer.watching.has(target))
+        .map((target) => {
+          const size = sizes.get(target)?.() ?? { height: 0, width: 0 };
+          return {
+            target,
+            borderBoxSize: [{ blockSize: size.height, inlineSize: size.width }],
+          };
+        });
+      if (entries.length > 0) observer.told(entries);
+    }
+  }
+
+  function box(within?: HTMLElement) {
     const node = document.createElement("div");
     const content = document.createElement("div");
     node.append(content);
-    let size = { height: 100, width: 400 };
+    within?.append(node);
+    let size: Size = { height: 100, width: 400 };
     let standing = 100;
-    Object.defineProperty(content, "offsetHeight", { get: () => size.height });
-    Object.defineProperty(content, "offsetWidth", { get: () => size.width });
-    Object.defineProperty(node, "offsetHeight", { get: () => size.height });
-    node.getBoundingClientRect = () => ({ height: standing }) as DOMRect;
-    const animate = vi.fn();
+    sizes.set(content, () => size);
+    for (const read of ["offsetHeight", "offsetWidth"]) {
+      for (const each of [node, content]) {
+        Object.defineProperty(each, read, {
+          get: () => {
+            laidOut += 1;
+            return 0;
+          },
+        });
+      }
+    }
+    node.getBoundingClientRect = () => {
+      order.push("read");
+      return { height: standing } as DOMRect;
+    };
+    const animate = vi.fn(() => order.push("grow"));
     let running: { cancel: () => void }[] = [];
     Object.assign(node, { animate, getAnimations: () => running });
+    Object.assign(content, { getAnimations: () => [] });
     return {
       node,
+      content,
       animate,
-      resize(next: Partial<typeof size>) {
+      changed(next: Partial<Size>) {
         size = { ...size, ...next };
-        told?.();
+      },
+      resize(next: Partial<Size>) {
+        size = { ...size, ...next };
+        report([content]);
       },
       midway(at: number) {
         standing = at;
@@ -263,18 +322,29 @@ describe("following", () => {
     );
 
   beforeEach(() => {
+    laidOut = 0;
     root.style.setProperty("--duration-short", "150ms");
+    order = [];
     vi.stubGlobal(
       "ResizeObserver",
       class {
-        constructor(callback: () => void) {
-          told = callback;
+        #observer: {
+          told: (entries: unknown[]) => void;
+          watching: Set<Element>;
+        };
+        constructor(told: (entries: unknown[]) => void) {
+          this.#observer = { told, watching: new Set() };
+          observers.add(this.#observer);
         }
-        observe() {
-          told?.();
+        observe(target: Element) {
+          this.#observer.watching.add(target);
+          report([target]);
+        }
+        unobserve(target: Element) {
+          this.#observer.watching.delete(target);
         }
         disconnect() {
-          told = undefined;
+          this.#observer.watching.clear();
         }
       },
     );
@@ -292,6 +362,16 @@ describe("following", () => {
     expect(froms(animate)).toEqual([["100px", "240px"]]);
   });
 
+  test("takes the sizes the observer reports, and lays nothing out to learn them", () => {
+    const { node, resize } = box();
+    following(node);
+
+    resize({ height: 240 });
+    resize({ height: 180, width: 300 });
+
+    expect(laidOut).toBe(0);
+  });
+
   test("a change landing mid-way turns the box from where it stands", () => {
     const { node, animate, resize, midway } = box();
     following(node);
@@ -304,12 +384,44 @@ describe("following", () => {
   });
 
   test("a box inside that is already growing is followed rather than grown again", () => {
-    const { node, animate, resize } = box();
+    const { node, content, animate, resize } = box();
     following(node);
-    const content = node.firstElementChild as HTMLElement;
     Object.assign(content, {
       getAnimations: () => [{ id: "growing" }],
     });
+
+    resize({ height: 240 });
+    expect(animate).not.toHaveBeenCalled();
+  });
+
+  test("a box inside that starts growing in the same change is the one that grows", () => {
+    const outer = box();
+    const inner = box(outer.content);
+    following(outer.node);
+    following(inner.node);
+
+    outer.changed({ height: 240 });
+    inner.changed({ height: 160 });
+    report([outer.content, inner.content]);
+
+    expect(outer.animate).not.toHaveBeenCalled();
+    expect(froms(inner.animate)).toEqual([["100px", "160px"]]);
+  });
+
+  test("boxes that change together are all measured before any of them grows", () => {
+    const boxes = [box(), box(), box()];
+    for (const each of boxes) following(each.node);
+    for (const each of boxes) each.midway(120);
+
+    for (const each of boxes) each.changed({ height: 200 });
+    report(boxes.map((each) => each.content));
+
+    expect(order).toEqual(["read", "read", "read", "grow", "grow", "grow"]);
+  });
+
+  test("a box let go of is no longer followed", () => {
+    const { node, animate, resize } = box();
+    following(node)();
 
     resize({ height: 240 });
     expect(animate).not.toHaveBeenCalled();

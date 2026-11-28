@@ -83,6 +83,21 @@
     if (decision.edit() && steps.onPhone) void steps.goTo("check");
   }
 
+  // On a phone back takes a step back before it leaves the route, as it puts a
+  // sheet away before it leaves a page.
+  $effect(() => {
+    if (
+      !steps.onPhone ||
+      steps.at === 0 ||
+      sending.routed !== undefined ||
+      typeof CloseWatcher === "undefined"
+    )
+      return;
+    const watcher = new CloseWatcher();
+    watcher.onclose = () => steps.backward();
+    return () => watcher.destroy();
+  });
+
   // Which destinations exist is not stable for the life of a connection, so
   // arriving reads them again rather than trusting what is held. The queue is
   // what `next` walks, and a deep link arrives without one.

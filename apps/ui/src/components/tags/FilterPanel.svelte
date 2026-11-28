@@ -17,6 +17,7 @@
   import ViewChooser from "$components/view/ViewChooser.svelte";
   import type { View } from "$lib/view";
   import { client } from "$lib/client";
+  import { caretFollows } from "$lib/caret";
   import { narrowed } from "$lib/candidate-list";
   import type { FilterKind } from "$lib/filter";
   import { STATE_WORD } from "$lib/said";
@@ -200,7 +201,10 @@
 
   const marked = $derived(at === undefined ? undefined : walked[at]);
 
-  /** Opens the panel with the line taking what is typed, for a key that asks for it. */
+  /**
+   * Opens the panel, the line taking what is typed. Not on a phone tapped
+   * open, which would raise its keyboard over the panel.
+   */
   export async function show(): Promise<void> {
     open = true;
     // Counts go stale as items are processed here and elsewhere; the held set
@@ -211,7 +215,7 @@
       .then((read) => (sources = read))
       .catch(() => undefined);
     await tick();
-    line?.focus({ preventScroll: true });
+    if (caretFollows()) line?.focus({ preventScroll: true });
   }
 
   function shut(): void {
@@ -282,7 +286,14 @@
 {/snippet}
 
 {#if open}
-  <Sheet title="filter" onclose={shut}>
+  <Sheet
+    title="filter"
+    onclose={shut}
+    main={{
+      label: shown === undefined ? "Show" : `Show ${String(shown)}`,
+      onclick: shut,
+    }}
+  >
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       id="{id}-panel"
